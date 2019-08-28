@@ -99,6 +99,13 @@ class AllowedAddressPairsDriver(neutron_base.BaseNeutronDriver):
             LOG.debug('Created vip port: %(port_id)s for amphora: %(amp)s',
                       {'port_id': new_port.id, 'amp': amphora.id})
 
+        except Exception:
+            message = _('Error creating the base (VRRP) port for the VIP with '
+                        'port details: {}').format(port)
+            LOG.exception(message)
+            raise base.PlugVIPException(message)
+
+        try:
             interface = self.plug_port(amphora, new_port)
         except Exception:
             message = _('Error plugging amphora (compute_id: {compute_id}) '
@@ -106,6 +113,16 @@ class AllowedAddressPairsDriver(neutron_base.BaseNeutronDriver):
                             compute_id=amphora.compute_id,
                             network_id=subnet.network_id)
             LOG.exception(message)
+            try:
+                if new_port:
+                    self.neutron_client.delete_port(new_port.id)
+                    LOG.debug('Deleted base (VRRP) port %s due to plug_port '
+                              'failure.', new_port.id)
+            except Exception:
+                LOG.exception('Failed to delete base (VRRP) port %s after '
+                              'plug_port failed. This resource is being '
+                              'abandoned and should be manually deleted when '
+                              'neutron is functional.', new_port.id)
             raise base.PlugVIPException(message)
         return interface
 
