@@ -23,8 +23,8 @@ This document contains several examples of using basic load balancing services
 as a tenant or "regular" cloud user.
 
 For the purposes of this guide we assume that the neutron and barbican
-command-line interfaces are going to be used to configure all features of
-Neutron LBaaS with an Octavia back-end. In order to keep these examples short,
+command-line interfaces, via the OpenStack client, are going to be used to
+configure all features of Octavia. In order to keep these examples short,
 we also assume that tasks not directly associated with deploying load balancing
 services have already been accomplished. This might include such things as
 deploying and configuring web servers, setting up Neutron networks, obtaining
@@ -132,9 +132,7 @@ floating IP in case the load balancer needs to be destroyed, moved, or
 recreated.
 
 Note that this is not possible to do with IPv6 load balancers as floating IPs
-do not work with IPv6. Further, there is currently a bug in Neutron Distributed
-Virtual Routing (DVR) which prevents floating IPs from working correctly when
-DVR is in use. See: https://bugs.launchpad.net/neutron/+bug/1583694
+do not work with IPv6.
 
 **Scenario description**:
 
