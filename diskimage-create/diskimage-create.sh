@@ -207,6 +207,9 @@ AMP_ARCH=${AMP_ARCH:-"amd64"}
 AMP_BACKEND=${AMP_BACKEND:-"haproxy-octavia"}
 
 AMP_CACHEDIR=${AMP_CACHEDIR:-"$HOME/.cache/image-create"}
+# Make sure we have an absolute path for the cache location
+mkdir -p $AMP_CACHEDIR
+AMP_CACHEDIR="$( cd "$AMP_CACHEDIR" && pwd )"
 
 AMP_BASEOS=${AMP_BASEOS:-"ubuntu-minimal"}
 
@@ -307,7 +310,7 @@ fi
 if [ "$platform" = 'NAME="Ubuntu"' ]; then
     PKG_LIST="qemu-utils git kpartx debootstrap"
     for pkg in $PKG_LIST; do
-        if ! dpkg --get-selections | grep -q "^$pkg[[:space:]]*install$" >/dev/null; then
+        if ! dpkg --get-selections 2> /dev/null | grep -q "^$pkg[[:space:]]*install$" >/dev/null; then
             echo "Required package " $pkg " is not installed.  Exiting."
             echo "Binary dependencies on this platform are: ${PKG_LIST}"
             exit 1
@@ -436,3 +439,9 @@ disk-image-create $AMP_LOGFILE $dib_trace_arg -a $AMP_ARCH -o $AMP_OUTPUTFILENAM
 
 popd > /dev/null # out of $TEMP
 rm -rf $TEMP
+
+if [ -z "$DIB_REPOREF_amphora_agent" ]; then
+    echo "Successfully built the amphora image using amphora-agent from the master branch."
+else
+    echo "Successfully built the amphora using the $DIB_REPOREF_amphora_agent amphora-agent."
+fi
