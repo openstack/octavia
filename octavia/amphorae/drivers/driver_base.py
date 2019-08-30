@@ -22,17 +22,19 @@ import six
 class AmphoraLoadBalancerDriver(object):
 
     @abc.abstractmethod
-    def update_amphora_listeners(self, listeners, amphora_id, timeout_dict):
+    def update_amphora_listeners(self, loadbalancer, amphora,
+                                 timeout_dict):
         """Update the amphora with a new configuration.
 
-        :param listeners: List of listeners to update.
-        :type listener: list
-        :param amphora_id: The ID of the amphora to update
-        :type amphora_id: string
+        :param loadbalancer: List of listeners to update.
+        :type loadbalancer: list(octavia.db.models.Listener)
+        :param amphora: The index of the specific amphora to update
+        :type amphora: octavia.db.models.Amphora
         :param timeout_dict: Dictionary of timeout values for calls to the
                              amphora. May contain: req_conn_timeout,
                              req_read_timeout, conn_max_retries,
                              conn_retry_interval
+        :type timeout_dict: dict
         :returns: None
 
         Builds a new configuration, pushes it to the amphora, and reloads
@@ -41,14 +43,12 @@ class AmphoraLoadBalancerDriver(object):
         pass
 
     @abc.abstractmethod
-    def update(self, listener, vip):
+    def update(self, loadbalancer):
         """Update the amphora with a new configuration.
 
-        :param listener: listener object,
-                         need to use its protocol_port property
-        :type listener: object
-        :param vip: vip object, need to use its ip_address property
-        :type vip: object
+        :param loadbalancer: loadbalancer object, need to use its
+                             vip.ip_address property
+        :type loadbalancer: octavia.db.models.LoadBalancer
         :returns: None
 
         At this moment, we just build the basic structure for testing, will
@@ -57,32 +57,13 @@ class AmphoraLoadBalancerDriver(object):
         pass
 
     @abc.abstractmethod
-    def stop(self, listener, vip):
-        """Stop the listener on the vip.
+    def start(self, loadbalancer, amphora):
+        """Start the listeners on the amphora.
 
-        :param listener: listener object,
-                         need to use its protocol_port property
-        :type listener: object
-        :param vip: vip object, need to use its ip_address property
-        :type vip: object
-        :returns: return a value list (listener, vip, status flag--suspend)
-
-        At this moment, we just build the basic structure for testing, will
-        add more function along with the development.
-        """
-        pass
-
-    @abc.abstractmethod
-    def start(self, listener, vip, amphora):
-        """Start the listener on the vip.
-
-        :param listener: listener object,
-                         need to use its protocol_port property
-        :type listener: object
-        :param vip: vip object, need to use its ip_address property
-        :type vip: object
+        :param loadbalancer: loadbalancer object to start listeners
+        :type loadbalancer: octavia.db.models.LoadBalancer
         :param amphora: Amphora to start. If None, start on all amphora
-        :type amphora: object
+        :type amphora: octavia.db.models.Amphora
         :returns: return a value list (listener, vip, status flag--enable)
 
         At this moment, we just build the basic structure for testing, will
@@ -91,14 +72,12 @@ class AmphoraLoadBalancerDriver(object):
         pass
 
     @abc.abstractmethod
-    def delete(self, listener, vip):
+    def delete(self, listener):
         """Delete the listener on the vip.
 
         :param listener: listener object,
                          need to use its protocol_port property
-        :type listener: object
-        :param vip: vip object, need to use its ip_address property
-        :type vip: object
+        :type listener: octavia.db.models.Listener
         :returns: return a value list (listener, vip, status flag--delete)
 
         At this moment, we just build the basic structure for testing, will
@@ -111,7 +90,7 @@ class AmphoraLoadBalancerDriver(object):
         """Returns information about the amphora.
 
         :param amphora: amphora object, need to use its id property
-        :type amphora: object
+        :type amphora: octavia.db.models.Amphora
         :returns: return a value list (amphora.id, status flag--'info')
 
         At this moment, we just build the basic structure for testing, will
@@ -128,7 +107,7 @@ class AmphoraLoadBalancerDriver(object):
         """Return ceilometer ready diagnostic data.
 
         :param amphora: amphora object, need to use its id property
-        :type amphora: object
+        :type amphora: octavia.db.models.Amphora
         :returns: return a value list (amphora.id, status flag--'ge
                   t_diagnostics')
 
@@ -145,7 +124,7 @@ class AmphoraLoadBalancerDriver(object):
         """Finalize the amphora before any listeners are configured.
 
         :param amphora: amphora object, need to use its id property
-        :type amphora: object
+        :type amphora: octavia.db.models.Amphora
         :returns: None
 
         At this moment, we just build the basic structure for testing, will
@@ -159,6 +138,8 @@ class AmphoraLoadBalancerDriver(object):
     def post_vip_plug(self, amphora, load_balancer, amphorae_network_config):
         """Called after network driver has allocated and plugged the VIP
 
+        :param amphora:
+        :type amphora: octavia.db.models.Amphora
         :param load_balancer: A load balancer that just had its vip allocated
                               and plugged in the network driver.
         :type load_balancer: octavia.common.data_models.LoadBalancer
@@ -177,7 +158,7 @@ class AmphoraLoadBalancerDriver(object):
         """Called after amphora added to network
 
         :param amphora: amphora object, needs id and network ip(s)
-        :type amphora: object
+        :type amphora: octavia.db.models.Amphora
         :param port: contains information of the plugged port
         :type port: octavia.network.data_models.Port
 
@@ -192,7 +173,7 @@ class AmphoraLoadBalancerDriver(object):
         """Start health checks.
 
         :param health_mixin: health mixin object
-        :type amphora: object
+        :type health_mixin: HealthMixin
 
         Starts listener process and calls HealthMixin to update
         databases information.
@@ -211,7 +192,7 @@ class AmphoraLoadBalancerDriver(object):
         """Upload cert info to the amphora.
 
         :param amphora: amphora object, needs id and network ip(s)
-        :type amphora: object
+        :type amphora: octavia.db.models.Amphora
         :param pem_file: a certificate file
         :type pem_file: file object
 
@@ -223,7 +204,7 @@ class AmphoraLoadBalancerDriver(object):
         """Upload and update the amphora agent configuration.
 
         :param amphora: amphora object, needs id and network ip(s)
-        :type amphora: object
+        :type amphora: octavia.db.models.Amphora
         :param agent_config: The new amphora agent configuration file.
         :type agent_config: string
         """

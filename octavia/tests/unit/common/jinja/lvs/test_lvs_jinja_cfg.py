@@ -16,7 +16,7 @@
 from octavia.common import constants
 from octavia.common.jinja.lvs import jinja_cfg
 from octavia.tests.unit import base
-from octavia.tests.unit.common.sample_configs import sample_configs
+from octavia.tests.unit.common.sample_configs import sample_configs_combined
 
 from oslo_config import cfg
 from oslo_config import fixture as oslo_fixture
@@ -76,7 +76,7 @@ class TestLvsCfg(base.TestCase):
                "    }\n\n"
                "}\n\n")
         rendered_obj = self.udp_jinja_cfg.render_loadbalancer_obj(
-            sample_configs.sample_listener_tuple(
+            sample_configs_combined.sample_listener_tuple(
                 proto=constants.PROTOCOL_UDP,
                 persistence_type=constants.SESSION_PERSISTENCE_SOURCE_IP,
                 persistence_timeout=33,
@@ -124,7 +124,7 @@ class TestLvsCfg(base.TestCase):
                "    }\n\n"
                "}\n\n")
 
-        listener = sample_configs.sample_listener_tuple(
+        listener = sample_configs_combined.sample_listener_tuple(
             proto=constants.PROTOCOL_UDP,
             monitor_proto=constants.HEALTH_MONITOR_UDP_CONNECT,
             connection_limit=98,
@@ -172,7 +172,7 @@ class TestLvsCfg(base.TestCase):
                "}\n\n")
 
         rendered_obj = self.udp_jinja_cfg.render_loadbalancer_obj(
-            sample_configs.sample_listener_tuple(
+            sample_configs_combined.sample_listener_tuple(
                 proto=constants.PROTOCOL_UDP,
                 monitor_proto=constants.HEALTH_MONITOR_UDP_CONNECT,
                 persistence=False,
@@ -185,56 +185,57 @@ class TestLvsCfg(base.TestCase):
                "net_namespace amphora-haproxy\n\n\n")
 
         rendered_obj = self.udp_jinja_cfg.render_loadbalancer_obj(
-            sample_configs.sample_listener_tuple(
+            sample_configs_combined.sample_listener_tuple(
                 proto=constants.PROTOCOL_UDP, monitor=False,
                 persistence=False, alloc_default_pool=False))
         self.assertEqual(exp, rendered_obj)
 
     def test_udp_transform_session_persistence(self):
-        persistence_src_ip = sample_configs.sample_session_persistence_tuple(
-            persistence_type=constants.SESSION_PERSISTENCE_SOURCE_IP,
-            persistence_cookie=None,
-            persistence_timeout=33,
-            persistence_granularity='255.0.0.0'
-        )
-        exp = sample_configs.UDP_SOURCE_IP_BODY
+        persistence_src_ip = (
+            sample_configs_combined.sample_session_persistence_tuple(
+                persistence_type=constants.SESSION_PERSISTENCE_SOURCE_IP,
+                persistence_cookie=None,
+                persistence_timeout=33,
+                persistence_granularity='255.0.0.0'
+            ))
+        exp = sample_configs_combined.UDP_SOURCE_IP_BODY
         ret = self.udp_jinja_cfg._transform_session_persistence(
             persistence_src_ip)
         self.assertEqual(exp, ret)
 
     def test_udp_transform_health_monitor(self):
-        in_hm = sample_configs.sample_health_monitor_tuple(
+        in_hm = sample_configs_combined.sample_health_monitor_tuple(
             proto=constants.HEALTH_MONITOR_UDP_CONNECT
         )
         ret = self.udp_jinja_cfg._transform_health_monitor(in_hm)
-        self.assertEqual(sample_configs.RET_UDP_HEALTH_MONITOR, ret)
+        self.assertEqual(sample_configs_combined.RET_UDP_HEALTH_MONITOR, ret)
 
     def test_udp_transform_member(self):
-        in_member = sample_configs.sample_member_tuple('member_id_1',
-                                                       '192.0.2.10')
+        in_member = sample_configs_combined.sample_member_tuple(
+            'member_id_1', '192.0.2.10')
         ret = self.udp_jinja_cfg._transform_member(in_member)
-        self.assertEqual(sample_configs.RET_UDP_MEMBER, ret)
+        self.assertEqual(sample_configs_combined.RET_UDP_MEMBER, ret)
 
     def test_udp_transform_pool(self):
-        in_pool = sample_configs.sample_pool_tuple(
+        in_pool = sample_configs_combined.sample_pool_tuple(
             proto=constants.PROTOCOL_UDP,
             persistence_type=constants.SESSION_PERSISTENCE_SOURCE_IP,
             persistence_timeout=33, persistence_granularity='255.0.0.0',
         )
         ret = self.udp_jinja_cfg._transform_pool(in_pool)
-        self.assertEqual(sample_configs.RET_UDP_POOL, ret)
+        self.assertEqual(sample_configs_combined.RET_UDP_POOL, ret)
 
-        in_pool = sample_configs.sample_pool_tuple(
+        in_pool = sample_configs_combined.sample_pool_tuple(
             proto=constants.PROTOCOL_UDP,
             persistence_type=constants.SESSION_PERSISTENCE_SOURCE_IP,
             persistence_timeout=33, persistence_granularity='255.0.0.0',
             monitor=False)
-        sample_configs.RET_UDP_POOL['health_monitor'] = ''
+        sample_configs_combined.RET_UDP_POOL['health_monitor'] = ''
         ret = self.udp_jinja_cfg._transform_pool(in_pool)
-        self.assertEqual(sample_configs.RET_UDP_POOL, ret)
+        self.assertEqual(sample_configs_combined.RET_UDP_POOL, ret)
 
     def test_udp_transform_listener(self):
-        in_listener = sample_configs.sample_listener_tuple(
+        in_listener = sample_configs_combined.sample_listener_tuple(
             proto=constants.PROTOCOL_UDP,
             persistence_type=constants.SESSION_PERSISTENCE_SOURCE_IP,
             persistence_timeout=33,
@@ -243,9 +244,9 @@ class TestLvsCfg(base.TestCase):
             connection_limit=98
         )
         ret = self.udp_jinja_cfg._transform_listener(in_listener)
-        self.assertEqual(sample_configs.RET_UDP_LISTENER, ret)
+        self.assertEqual(sample_configs_combined.RET_UDP_LISTENER, ret)
 
-        in_listener = sample_configs.sample_listener_tuple(
+        in_listener = sample_configs_combined.sample_listener_tuple(
             proto=constants.PROTOCOL_UDP,
             persistence_type=constants.SESSION_PERSISTENCE_SOURCE_IP,
             persistence_timeout=33,
@@ -254,5 +255,5 @@ class TestLvsCfg(base.TestCase):
             connection_limit=-1)
 
         ret = self.udp_jinja_cfg._transform_listener(in_listener)
-        sample_configs.RET_UDP_LISTENER.pop('connection_limit')
-        self.assertEqual(sample_configs.RET_UDP_LISTENER, ret)
+        sample_configs_combined.RET_UDP_LISTENER.pop('connection_limit')
+        self.assertEqual(sample_configs_combined.RET_UDP_LISTENER, ret)

@@ -13,7 +13,6 @@
 #    under the License.
 
 import mock
-from werkzeug import exceptions
 
 from oslo_utils import uuidutils
 
@@ -28,13 +27,6 @@ class KeepalivedLvsTestCase(base.TestCase):
     def setUp(self):
         super(KeepalivedLvsTestCase, self).setUp()
         self.test_keepalivedlvs = keepalivedlvs.KeepalivedLvs()
-
-    @mock.patch('os.path.exists')
-    def test_get_udp_listener_status_no_exists(self, m_exist):
-        m_exist.return_value = False
-        self.assertRaises(exceptions.HTTPException,
-                          self.test_keepalivedlvs.get_udp_listener_status,
-                          self.FAKE_ID)
 
     @mock.patch.object(keepalivedlvs, "webob")
     @mock.patch('os.path.exists')

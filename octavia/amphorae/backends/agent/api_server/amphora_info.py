@@ -46,7 +46,7 @@ class AmphoraInfo(object):
         return webob.Response(json=body)
 
     def compile_amphora_details(self, extend_udp_driver=None):
-        haproxy_listener_list = util.get_listeners()
+        haproxy_listener_list = sorted(util.get_listeners())
         extend_body = {}
         udp_listener_list = []
         if extend_udp_driver:
@@ -87,8 +87,8 @@ class AmphoraInfo(object):
                 'load': self._load(),
                 'topology': consts.TOPOLOGY_SINGLE,
                 'topology_status': consts.TOPOLOGY_STATUS_OK,
-                'listeners': list(
-                    set(haproxy_listener_list + udp_listener_list))
+                'listeners': sorted(list(
+                    set(haproxy_listener_list + udp_listener_list)))
                 if udp_listener_list else haproxy_listener_list,
                 'packages': {}}
         if extend_body:
@@ -101,10 +101,10 @@ class AmphoraInfo(object):
         version = subprocess.check_output(cmd.split())
         return version
 
-    def _count_haproxy_processes(self, listener_list):
+    def _count_haproxy_processes(self, lb_list):
         num = 0
-        for listener_id in listener_list:
-            if util.is_listener_running(listener_id):
+        for lb_id in lb_list:
+            if util.is_lb_running(lb_id):
                 # optional check if it's still running
                 num += 1
         return num

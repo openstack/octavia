@@ -29,9 +29,7 @@ communication is limited to fail-over protocols.)
 Versioning
 ----------
 All Octavia APIs (including internal APIs like this one) are versioned. For the
-purposes of this document, the initial version of this API shall be v0.5. (So,
-any reference to a *:version* variable should be replaced with the literal
-string 'v0.5'.)
+purposes of this document, the initial version of this API shall be 1.0.
 
 Response codes
 --------------
@@ -73,136 +71,6 @@ a secure way (ex. memory filesystem).
 
 API
 ===
-
-Get amphora topology
---------------------
-* **URL:** /*:version*/topology
-* **Method:** GET
-* **URL params:** none
-* **Data params:** none
-* **Success Response:**
-
-  * Code: 200
-
-    * Content: JSON formatted listing of this amphora's configured topology.
-
-* **Error Response:**
-
-  * none
-
-JSON Response attributes:
-
-* *hostname* - hostname of amphora
-* *uuid* - uuid of amphora
-* *topology* - One of: SINGLE, ACTIVE-STANDBY, ACTIVE-ACTIVE
-* *role* - One of ACTIVE, STANDBY (only applicable to ACTIVE-STANDBY)
-* *ha_ip* - only applicable to ACTIVE-STANDBY topology: Highly-available
-  routing IP address for the ACTIVE-STANDBY pair.
-
-**Examples**
-
-* Success code 200:
-
-::
-
-  JSON response:
-  {
-    'hostname': 'octavia-haproxy-img-00328',
-    'uuid': '6e2bc8a0-2548-4fb7-a5f0-fb1ef4a696ce',
-    'topology': 'SINGLE',
-    'role': 'ACTIVE',
-    'ha_ip': '',
-  }
-
-Set amphora topology
---------------------
-* **URL:** /*:version*/topology
-* **Method:** POST
-* **URL params:** none
-* **Data params:**
-
-  * *topology*: One of: SINGLE, ACTIVE-STANDBY, ACTIVE-ACTIVE
-  * *role*: One of: ACTIVE, STANDBY (only applicable to ACTIVE-STANDBY)
-  * *ha_ip*: (only applicable to ACTIVE-STANDBY) Highly-available IP for the
-    HA pair
-  * *secret*: (only applicable to ACTIVE-STANDBY topology) Shared secret used
-    for authentication with other HA pair member
-
-* **Success Response:**
-
-  * Code: 200
-
-    * Content: OK
-
-  * Code: 202
-
-    * Content: OK
-
-* **Error Response:**
-
-  * Code: 400
-
-    * Content: Invalid request.
-    * *(Response will also include information on which parameters did not*
-      *pass either a syntax check or other topology logic test)*
-
-  * Code: 503
-
-    * Content: Topology transition in progress
-
-* **Response:**
-
-| OK
-
-**Notes:** In an ACTIVE-STANDBY configuration, the 'role' parameter might
-change spontaneously due to a failure of one node. In other topologies, the
-role is not used.
-
-Also note that some topology changes can take several minutes to enact, yet
-we want all API commands to return in a matter of seconds. In this case, a
-topology change is initiated, and the amphora status changes from "OK" to
-"TOPOLOGY-CHANGE". The controller should not try to change any resources during
-this transition. (Any attempts will be met with an error.) Once the
-topology change is complete, amphora status should return to "OK". (When the
-UDP communication from amphorae to controller is defined, a 'transition
-complete' message is probably one good candidate for this type of UDP
-communication.)
-
-**Examples**
-
-* Success code 200:
-
-::
-
-  JSON POST parameters:
-  {
-    'topology': 'ACTIVE-STANDBY',
-    'role': 'ACTIVE',
-    'ha_ip': ' 203.0.113.2',
-    'secret': 'b20e06cf1abcf29c708d3b437f4a29892a0921d0',
-  }
-
-  Response:
-  OK
-
-* Error code 400:
-
-::
-
-  Response:
-  {
-    'message': 'Invalid request',
-    'details': 'Unknown topology: BAD_TEST_DATA',
-  }
-
-* Error code 503:
-
-::
-
-  Response:
-  {
-    'message': 'Topology transition in progress',
-  }
 
 Get amphora info
 ----------------
@@ -249,7 +117,7 @@ version string prepended to it.
 Get amphora details
 -------------------
 
-* **URL:** /*:version*/details
+* **URL:** /1.0/details
 * **Method:** GET
 * **URL params:** none
 * **Data params:** none
@@ -372,7 +240,7 @@ health of the amphora, currently-configured topology and role, etc.
 Get interface
 -------------
 
-* **URL:** /*:version*/interface/*:ip*
+* **URL:** /1.0/interface/*:ip*
 * **Method:** GET
 * **URL params:**
 
@@ -408,7 +276,7 @@ Get interface
 ::
 
   GET URL:
-  https://octavia-haproxy-img-00328.local/v0.5/interface/10.0.0.1
+  https://octavia-haproxy-img-00328.local/1.0/interface/10.0.0.1
 
   JSON Response:
       {
@@ -422,7 +290,7 @@ Get interface
 ::
 
   GET URL:
-  https://octavia-haproxy-img-00328.local/v0.5/interface/10.5.0.1
+  https://octavia-haproxy-img-00328.local/1.0/interface/10.5.0.1
 
   JSON Response:
       {
@@ -435,7 +303,7 @@ Get interface
 ::
 
   GET URL:
-  https://octavia-haproxy-img-00328.local/v0.5/interface/10.6.0.1.1
+  https://octavia-haproxy-img-00328.local/1.0/interface/10.6.0.1.1
 
   JSON Response:
       {
@@ -446,7 +314,7 @@ Get interface
 Get all listeners' statuses
 ---------------------------
 
-* **URL:** /*:version*/listeners
+* **URL:** /1.0/listeners
 * **Method:** GET
 * **URL params:** none
 * **Data params:** none
@@ -492,91 +360,14 @@ a valid haproxy configuration).
     'type': 'TERMINATED_HTTPS',
    }]
 
-Get a listener's status
------------------------
+Start or Stop a load balancer
+-----------------------------
 
-* **URL:** /*:version*/listeners/*:listener*
-* **Method:** GET
-* **URL params:**
-
-  * *:listener* = Listener UUID
-
-* **Data params:** none
-* **Success Response:**
-
-  * Code: 200
-
-    * Content: JSON-formatted listener status
-
-* **Error Response:**
-
-  * Code: 404
-
-    * Content: Not Found
-
-JSON Response attributes:
-
-* *status* - One of the operational status: ACTIVE, STOPPED, ERROR -
-  future versions might support provisioning status:
-  PENDING_CREATE, PENDING_UPDATE, PENDING_DELETE, DELETED
-* *uuid* - Listener UUID
-* *type* - One of: TCP, HTTP, TERMINATED_HTTPS
-* *pools* - Map of pool UUIDs and their overall UP / DOWN / DEGRADED status
-* *members* - Map of member UUIDs and their overall UP / DOWN status
-
-
-**Notes:** Note that this returns a status if: the pid file exists,
-the stats socket exists, or an haproxy configuration is present (not
-just if there is a valid haproxy configuration).
-
-**Examples**
-
-* Success code 200:
-
-::
-
-  JSON Response:
-  {
-    'status': 'ACTIVE',
-    'uuid': 'e2dfddc0-5b9e-11e4-8ed6-0800200c9a66',
-    'type': 'HTTP',
-    'pools':[
-      {
-        'uuid': '399bbf4b-5f6c-4370-a61e-ed2ff2fc9387',
-        'status': 'UP',
-        'members':[
-          {'73f6d278-ae1c-4248-ad02-0bfd50d69aab': 'UP'},
-          {'2edca57c-5890-4bcb-ae67-4ef75776cc67': 'DOWN'},
-        ],
-      },
-      {
-        'uuid': '2250eb21-16ca-44bd-9b12-0b4eb3d18140',
-        'status': 'DOWN',
-        'members':[
-          {'130dff11-4aab-4ba8-a39b-8d77caa7a1ad': 'DOWN'},
-        ],
-      },
-    ],
-  }
-
-* Error code 404:
-
-::
-
-    JSON Response:
-      {
-        'message': 'Listener Not Found',
-        'details': 'No listener with UUID: 04bff5c3-5862-4a13-b9e3-9b440d0ed50a',
-      }
-
-Start or Stop a listener
-------------------------
-
-* **URL:** /*:version*/listeners/*:listener*/*:action*
+* **URL:** /1.0/loadbalancer/*:object_id*/*:action*
 * **Method:** PUT
 * **URL params:**
 
-  * *:listener* = Listener UUID
+  * *:object_id* = Object UUID
   * *:action* = One of: start, stop, reload
 
 * **Data params:** none
@@ -612,7 +403,7 @@ Start or Stop a listener
 
 | OK
 | Configuration file is valid
-| haproxy daemon for 7e9f91eb-b3e6-4e3b-a1a7-d6f7fdc1de7c started (pid 32428)
+| haproxy daemon for 85e2111b-29c4-44be-94f3-e72045805801 started (pid 32428)
 
 **Examples:**
 
@@ -621,12 +412,12 @@ Start or Stop a listener
 ::
 
   PUT URL:
-  https://octavia-haproxy-img-00328.local/v0.5/listeners/04bff5c3-5862-4a13-b9e3-9b440d0ed50a/start
+  https://octavia-haproxy-img-00328.local/1.0/loadbalancer/85e2111b-29c4-44be-94f3-e72045805801/start
 
   JSON Response:
   {
     'message': 'OK',
-    'details': 'Configuration file is valid\nhaproxy daemon for 04bff5c3-5862-4a13-b9e3-9b440d0ed50a started',
+    'details': 'Configuration file is valid\nhaproxy daemon for 85e2111b-29c4-44be-94f3-e72045805801 started',
   }
 
 * Error code 400:
@@ -634,7 +425,7 @@ Start or Stop a listener
 ::
 
   PUT URL:
-  https://octavia-haproxy-img-00328.local/v0.5/listeners/04bff5c3-5862-4a13-b9e3-9b440d0ed50a/BAD_TEST_DATA
+  https://octavia-haproxy-img-00328.local/1.0/loadbalancer/85e2111b-29c4-44be-94f3-e72045805801/BAD_TEST_DATA
 
   JSON Response:
   {
@@ -647,12 +438,12 @@ Start or Stop a listener
 ::
 
   PUT URL:
-  https://octavia-haproxy-img-00328.local/v0.5/listeners/04bff5c3-5862-4a13-b9e3-9b440d0ed50a/stop
+  https://octavia-haproxy-img-00328.local/1.0/loadbalancer/04bff5c3-5862-4a13-b9e3-9b440d0ed50a/stop
 
   JSON Response:
   {
     'message': 'Listener Not Found',
-    'details': 'No listener with UUID: 04bff5c3-5862-4a13-b9e3-9b440d0ed50a',
+    'details': 'No loadbalancer with UUID: 04bff5c3-5862-4a13-b9e3-9b440d0ed50a',
   }
 
 * Error code 500:
@@ -660,7 +451,7 @@ Start or Stop a listener
 ::
 
   PUT URL:
-  https://octavia-haproxy-img-00328.local/v0.5/listeners/04bff5c3-5862-4a13-b9e3-9b440d0ed50a/stop
+  https://octavia-haproxy-img-00328.local/1.0/loadbalancer/85e2111b-29c4-44be-94f3-e72045805801/stop
 
   Response:
   {
@@ -680,7 +471,7 @@ Start or Stop a listener
 Delete a listener
 -----------------
 
-* **URL:** /*:version*/listeners/*:listener*
+* **URL:** /1.0/listeners/*:listener*
 * **Method:** DELETE
 * **URL params:**
 
@@ -724,7 +515,7 @@ Delete a listener
 ::
 
   DELETE URL:
-  https://octavia-haproxy-img-00328.local/v0.5/listeners/04bff5c3-5862-4a13-b9e3-9b440d0ed50a
+  https://octavia-haproxy-img-00328.local/1.0/listeners/04bff5c3-5862-4a13-b9e3-9b440d0ed50a
 
   JSON Response:
   {
@@ -736,7 +527,7 @@ Delete a listener
 ::
 
   DELETE URL:
-  https://octavia-haproxy-img-00328.local/v0.5/listeners/04bff5c3-5862-4a13-b9e3-9b440d0ed50a
+  https://octavia-haproxy-img-00328.local/1.0/listeners/04bff5c3-5862-4a13-b9e3-9b440d0ed50a
 
   JSON Response:
   {
@@ -756,11 +547,11 @@ Delete a listener
 Upload SSL certificate PEM file
 -------------------------------
 
-* **URL:** /*:version*/listeners/*:listener*/certificates/*:filename.pem*
+* **URL:** /1.0/loadbalancer/*:loadbalancer_id*/certificates/*:filename.pem*
 * **Method:** PUT
 * **URL params:**
 
-  * *:listener* = Listener UUID
+  * *:loadbalancer_id* = Load balancer UUID
   * *:filename* = PEM filename (see notes below for naming convention)
 
 * **Data params:** Certificate data. (PEM file should be a concatenation of
@@ -812,7 +603,7 @@ explicitly restarted
 ::
 
   PUT URI:
-  https://octavia-haproxy-img-00328.local/v0.5/listeners/04bff5c3-5862-4a13-b9e3-9b440d0ed50a/certificates/www.example.com.pem
+  https://octavia-haproxy-img-00328.local/1.0/loadbalancer/85e2111b-29c4-44be-94f3-e72045805801/certificates/www.example.com.pem
   (Put data should contain the certificate information, concatenated as
   described above)
 
@@ -826,7 +617,7 @@ explicitly restarted
 ::
 
   PUT URI:
-  https://octavia-haproxy-img-00328.local/v0.5/listeners/04bff5c3-5862-4a13-b9e3-9b440d0ed50a/certificates/www.example.com.pem
+  https://octavia-haproxy-img-00328.local/1.0/loadbalancer/85e2111b-29c4-44be-94f3-e72045805801/certificates/www.example.com.pem
   (If PUT data does not contain a certificate)
 
   JSON Response:
@@ -839,7 +630,7 @@ explicitly restarted
 ::
 
   PUT URI:
-  https://octavia-haproxy-img-00328.local/v0.5/listeners/04bff5c3-5862-4a13-b9e3-9b440d0ed50a/certificates/www.example.com.pem
+  https://octavia-haproxy-img-00328.local/1.0/loadbalancer/85e2111b-29c4-44be-94f3-e72045805801/certificates/www.example.com.pem
   (If PUT data does not contain an RSA key)
 
   JSON Response:
@@ -852,7 +643,7 @@ explicitly restarted
 ::
 
   PUT URI:
-  https://octavia-haproxy-img-00328.local/v0.5/listeners/04bff5c3-5862-4a13-b9e3-9b440d0ed50a/certificates/www.example.com.pem
+  https://octavia-haproxy-img-00328.local/1.0/loadbalancer/85e2111b-29c4-44be-94f3-e72045805801/certificates/www.example.com.pem
   (If the first certificate and the RSA key do not have the same modulus.)
 
   JSON Response:
@@ -865,14 +656,13 @@ explicitly restarted
 ::
 
   PUT URI:
-  https://octavia-haproxy-img-00328.local/v0.5/listeners/04bff5c3-5862-4a13-b9e3-9b440d0ed50a/certificates/www.example.com.pem
+  https://octavia-haproxy-img-00328.local/1.0/loadbalancer/85e2111b-29c4-44be-94f3-e72045805801/certificates/www.example.com.pem
 
   JSON Response:
   {
     'message': 'Listener Not Found',
-    'details': 'No listener with UUID: 04bff5c3-5862-4a13-b9e3-9b440d0ed50a',
+    'details': 'No loadbalancer with UUID: 04bff5c3-5862-4a13-b9e3-9b440d0ed50a',
   }
-
 
 * Error code 503:
 
@@ -883,15 +673,14 @@ explicitly restarted
     'message': 'Topology transition in progress',
   }
 
-
 Get SSL certificate md5sum
 --------------------------
 
-* **URL:** /*:version*/listeners/*:listener*/certificates/*:filename.pem*
+* **URL:** /1.0/loadbalancer/*:loadbalancer_id*/certificates/*:filename.pem*
 * **Method:** GET
 * **URL params:**
 
-  * *:listener* = Listener UUID
+  * *:loadbalancer_id* = Load balancer UUID
   * *:filename* = PEM filename (see notes below for naming convention)
 
 * **Data params:** none
@@ -937,7 +726,7 @@ disclosing it over the wire from the amphora is a security risk.
     JSON Response:
       {
         'message': 'Listener Not Found',
-        'details': 'No listener with UUID: 04bff5c3-5862-4a13-b9e3-9b440d0ed50a',
+        'details': 'No loadbalancer with UUID: 04bff5c3-5862-4a13-b9e3-9b440d0ed50a',
       }
 
 * Error code 404:
@@ -953,11 +742,11 @@ disclosing it over the wire from the amphora is a security risk.
 Delete SSL certificate PEM file
 -------------------------------
 
-* **URL:** /*:version*/listeners/*:listener*/certificates/*:filename.pem*
+* **URL:** /1.0/loadbalancer/*:loadbalancer_id*/certificates/*:filename.pem*
 * **Method:** DELETE
 * **URL params:**
 
-  * *:listener* = Listener UUID
+  * *:loadbalancer_id* = Load balancer UUID
   * *:filename* = PEM filename (see notes below for naming convention)
 
 * **Data params:** none
@@ -988,7 +777,7 @@ Delete SSL certificate PEM file
 ::
 
   DELETE URL:
-  https://octavia-haproxy-img-00328.local/v0.5/listeners/04bff5c3-5862-4a13-b9e3-9b440d0ed50a/certificates/www.example.com.pem
+  https://octavia-haproxy-img-00328.local/1.0/loadbalancer/85e2111b-29c4-44be-94f3-e72045805801/certificates/www.example.com.pem
 
   JSON Response:
   {
@@ -1000,7 +789,7 @@ Delete SSL certificate PEM file
 ::
 
   DELETE URL:
-  https://octavia-haproxy-img-00328.local/v0.5/listeners/04bff5c3-5862-4a13-b9e3-9b440d0ed50a/certificates/www.example.com.pem
+  https://octavia-haproxy-img-00328.local/1.0/loadbalancer/85e2111b-29c4-44be-94f3-e72045805801/certificates/www.example.com.pem
 
  JSON Response:
       {
@@ -1017,14 +806,14 @@ Delete SSL certificate PEM file
     'message': 'Topology transition in progress',
   }
 
-Upload listener haproxy configuration
--------------------------------------
+Upload load balancer haproxy configuration
+------------------------------------------
 
-* **URL:** /*:version*/listeners/*:amphora_id*/*:listener*/haproxy
+* **URL:** /1.0/loadbalancer/*:amphora_id*/*:loadbalancer_id*/haproxy
 * **Method:** PUT
 * **URL params:**
 
-  * *:listener* = Listener UUID
+  * *:loadbalancer_id* = Load Balancer UUID
   * *:amphora_id* = Amphora UUID
 
 * **Data params:** haproxy configuration file for the listener
@@ -1071,7 +860,7 @@ out of the haproxy daemon status interface for tracking health and stats).
 ::
 
   PUT URL:
-  https://octavia-haproxy-img-00328.local/v0.5/listeners/d459b1c8-54b0-4030-9bec-4f449e73b1ef/04bff5c3-5862-4a13-b9e3-9b440d0ed50a/haproxy
+  https://octavia-haproxy-img-00328.local/1.0/loadbalancer/d459b1c8-54b0-4030-9bec-4f449e73b1ef/85e2111b-29c4-44be-94f3-e72045805801/haproxy
   (Upload PUT data should be a raw haproxy.conf file.)
 
   JSON Response:
@@ -1098,14 +887,14 @@ out of the haproxy daemon status interface for tracking health and stats).
     'message': 'Topology transition in progress',
   }
 
-Get listener haproxy configuration
-----------------------------------
+Get loadbalancer haproxy configuration
+--------------------------------------
 
-* **URL:** /*:version*/listeners/*:listener*/haproxy
+* **URL:** /1.0/loadbalancer/*:loadbalancer_id*/haproxy
 * **Method:** GET
 * **URL params:**
 
-  * *:listener* = Listener UUID
+  * *:loadbalancer_id* = Load balancer UUID
 
 * **Data params:** none
 * **Success Response:**
@@ -1122,7 +911,7 @@ Get listener haproxy configuration
 
 * **Response:**
 
-| # Config file for 7e9f91eb-b3e6-4e3b-a1a7-d6f7fdc1de7c
+| # Config file for 85e2111b-29c4-44be-94f3-e72045805801
 | (cut for brevity)
 
 * **Implied actions:** none
@@ -1134,11 +923,11 @@ Get listener haproxy configuration
 ::
 
   GET URL:
-  https://octavia-haproxy-img-00328.local/v0.5/listeners/7e9f91eb-b3e6-4e3b-a1a7-d6f7fdc1de7c/haproxy
+  https://octavia-haproxy-img-00328.local/1.0/loadbalancer/85e2111b-29c4-44be-94f3-e72045805801/haproxy
 
   Response is the raw haproxy.cfg:
 
-  # Config file for 7e9f91eb-b3e6-4e3b-a1a7-d6f7fdc1de7c
+  # Config file for 85e2111b-29c4-44be-94f3-e72045805801
   (cut for brevity)
 
 * Error code 404:
@@ -1147,15 +936,14 @@ Get listener haproxy configuration
 
     JSON Response:
       {
-        'message': 'Listener Not Found',
-        'details': 'No listener with UUID: 04bff5c3-5862-4a13-b9e3-9b440d0ed50a',
+        'message': 'Loadbalancer Not Found',
+        'details': 'No loadbalancer with UUID: 04bff5c3-5862-4a13-b9e3-9b440d0ed50a',
       }
-
 
 Plug VIP
 --------
 
-* **URL:** /*:version*/plug/vip/*:ip*
+* **URL:** /1.0/plug/vip/*:ip*
 * **Method:** Post
 * **URL params:**
 
@@ -1210,7 +998,7 @@ Plug VIP
 ::
 
   POST URL:
-  https://octavia-haproxy-img-00328.local/v0.5/plug/vip/203.0.113.2
+  https://octavia-haproxy-img-00328.local/1.0/plug/vip/203.0.113.2
 
   JSON POST parameters:
   {
@@ -1224,10 +1012,6 @@ Plug VIP
         'message': 'OK',
         'details': 'VIP 203.0.113.2 plugged on interface eth1'
       }
-
-
-
-
 
 * Error code 400:
 
@@ -1251,7 +1035,7 @@ Plug VIP
 Plug Network
 ------------
 
-* **URL:** /*:version*/plug/network/
+* **URL:** /1.0/plug/network/
 * **Method:** POST
 * **URL params:** none
 
@@ -1292,7 +1076,7 @@ Plug Network
 ::
 
   POST URL:
-  https://octavia-haproxy-img-00328.local/v0.5/plug/network/
+  https://octavia-haproxy-img-00328.local/1.0/plug/network/
 
   JSON POST parameters:
   {
@@ -1319,7 +1103,7 @@ Plug Network
 Upload SSL server certificate PEM file for Controller Communication
 -------------------------------------------------------------------
 
-* **URL:** /*:version*/certificate
+* **URL:** /1.0/certificate
 * **Method:** PUT
 
 * **Data params:** Certificate data. (PEM file should be a concatenation of
@@ -1362,7 +1146,7 @@ not be available for some time.
 ::
 
   PUT URI:
-  https://octavia-haproxy-img-00328.local/v0.5/certificate
+  https://octavia-haproxy-img-00328.local/1.0/certificate
   (Put data should contain the certificate information, concatenated as
   described above)
 
@@ -1376,7 +1160,7 @@ not be available for some time.
 ::
 
   PUT URI:
-  https://octavia-haproxy-img-00328.local/v0.5/certificates
+  https://octavia-haproxy-img-00328.local/1.0/certificates
   (If PUT data does not contain a certificate)
 
   JSON Response:
@@ -1389,7 +1173,7 @@ not be available for some time.
 ::
 
   PUT URI:
-  https://octavia-haproxy-img-00328.local/v0.5/certificate
+  https://octavia-haproxy-img-00328.local/1.0/certificate
   (If PUT data does not contain an RSA key)
 
   JSON Response:
@@ -1402,7 +1186,7 @@ not be available for some time.
 ::
 
   PUT URI:
-  https://octavia-haproxy-img-00328.local/v0.5/certificate
+  https://octavia-haproxy-img-00328.local/1.0/certificate
   (If the first certificate and the RSA key do not have the same modulus.)
 
   JSON Response:
@@ -1414,7 +1198,7 @@ not be available for some time.
 Upload keepalived configuration
 -------------------------------
 
-* **URL:** /*:version*/vrrp/upload
+* **URL:** /1.0/vrrp/upload
 * **Method:** PUT
 * **URL params:** none
 * **Data params:** none
@@ -1441,7 +1225,7 @@ OK
 ::
 
   PUT URI:
-  https://octavia-haproxy-img-00328.local/v0.5/vrrp/upload
+  https://octavia-haproxy-img-00328.local/1.0/vrrp/upload
 
   JSON Response:
   {
@@ -1452,7 +1236,7 @@ OK
 Start, Stop, or Reload keepalived
 ---------------------------------
 
-* **URL:** /*:version*/vrrp/*:action*
+* **URL:** /1.0/vrrp/*:action*
 * **Method:** PUT
 * **URL params:**
 
@@ -1489,7 +1273,7 @@ Start, Stop, or Reload keepalived
 ::
 
   PUT URL:
-  https://octavia-haproxy-img-00328.local/v0.5/vrrp/start
+  https://octavia-haproxy-img-00328.local/1.0/vrrp/start
 
   JSON Response:
   {
@@ -1502,7 +1286,7 @@ Start, Stop, or Reload keepalived
 ::
 
   PUT URL:
-  https://octavia-haproxy-img-00328.local/v0.5/vrrp/BAD_TEST_DATA
+  https://octavia-haproxy-img-00328.local/1.0/vrrp/BAD_TEST_DATA
 
   JSON Response:
   {
@@ -1515,7 +1299,7 @@ Start, Stop, or Reload keepalived
 ::
 
   PUT URL:
-  https://octavia-haproxy-img-00328.local/v0.5/vrrp/stop
+  https://octavia-haproxy-img-00328.local/1.0/vrrp/stop
 
   JSON Response:
   {
@@ -1526,7 +1310,7 @@ Start, Stop, or Reload keepalived
 Update the amphora agent configuration
 --------------------------------------
 
-* **URL:** /*:version*/config
+* **URL:** /1.0/config
 * **Method:** PUT
 
 * **Data params:** A amphora-agent configuration file
@@ -1561,7 +1345,7 @@ will be updated.
 ::
 
   PUT URL:
-  https://octavia-haproxy-img-00328.local/v0.5/config
+  https://octavia-haproxy-img-00328.local/1.0/config
   (Upload PUT data should be a raw amphora-agent.conf file.)
 
   JSON Response:

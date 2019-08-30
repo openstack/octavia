@@ -332,7 +332,7 @@ class LoadBalancerFlows(object):
         update_LB_flow.add(network_tasks.ApplyQos(
             requires=(constants.LOADBALANCER, constants.UPDATE_DICT)))
         update_LB_flow.add(amphora_driver_tasks.ListenersUpdate(
-            requires=[constants.LOADBALANCER, constants.LISTENERS]))
+            requires=constants.LOADBALANCER))
         update_LB_flow.add(database_tasks.UpdateLoadbalancerInDB(
             requires=[constants.LOADBALANCER, constants.UPDATE_DICT]))
         update_LB_flow.add(database_tasks.MarkLBActiveInDB(

@@ -27,11 +27,11 @@ def sample_amphora_tuple(id='sample_amphora_id_1', lb_network_ip='10.0.1.1',
                          vrrp_ip='10.1.1.1', ha_ip='192.168.10.1',
                          vrrp_port_id='1234', ha_port_id='1234', role=None,
                          status='ACTIVE', vrrp_interface=None,
-                         vrrp_priority=None):
+                         vrrp_priority=None, api_version='0.5'):
     in_amphora = collections.namedtuple(
         'amphora', 'id, lb_network_ip, vrrp_ip, ha_ip, vrrp_port_id, '
                    'ha_port_id, role, status, vrrp_interface,'
-                   'vrrp_priority')
+                   'vrrp_priority, api_version')
     return in_amphora(
         id=id,
         lb_network_ip=lb_network_ip,
@@ -42,7 +42,8 @@ def sample_amphora_tuple(id='sample_amphora_id_1', lb_network_ip='10.0.1.1',
         role=role,
         status=status,
         vrrp_interface=vrrp_interface,
-        vrrp_priority=vrrp_priority)
+        vrrp_priority=vrrp_priority,
+        api_version=api_version)
 
 
 RET_PERSISTENCE = {
@@ -504,7 +505,7 @@ def sample_listener_loadbalancer_tuple(proto=None, topology=None,
         topology = constants.TOPOLOGY_SINGLE
     in_lb = collections.namedtuple(
         'load_balancer', 'id, name, protocol, vip, amphorae, topology, '
-        'enabled')
+        'listeners, enabled, project_id')
     return in_lb(
         id='sample_loadbalancer_id_1',
         name='test-lb',
@@ -518,7 +519,47 @@ def sample_listener_loadbalancer_tuple(proto=None, topology=None,
                       role=constants.ROLE_BACKUP)]
         if more_amp else [sample_amphora_tuple()],
         topology=topology,
-        enabled=enabled
+        listeners=[],
+        enabled=enabled,
+        project_id='12345'
+    )
+
+
+def sample_lb_with_udp_listener_tuple(
+        proto=None, topology=None, enabled=True, pools=None):
+    proto = 'HTTP' if proto is None else proto
+    if topology and topology in ['ACTIVE_STANDBY', 'ACTIVE_ACTIVE']:
+        more_amp = True
+    else:
+        more_amp = False
+        topology = constants.TOPOLOGY_SINGLE
+    listeners = [sample_listener_tuple(
+        proto=constants.PROTOCOL_UDP,
+        persistence_type=constants.SESSION_PERSISTENCE_SOURCE_IP,
+        persistence_timeout=33,
+        persistence_granularity='255.255.0.0',
+        monitor_proto=constants.HEALTH_MONITOR_UDP_CONNECT)]
+
+    in_lb = collections.namedtuple(
+        'load_balancer', 'id, name, protocol, vip, amphorae, topology, '
+        'pools, enabled, project_id, listeners')
+    return in_lb(
+        id='sample_loadbalancer_id_1',
+        name='test-lb',
+        protocol=proto,
+        vip=sample_vip_tuple(),
+        amphorae=[sample_amphora_tuple(role=constants.ROLE_MASTER),
+                  sample_amphora_tuple(
+                      id='sample_amphora_id_2',
+                      lb_network_ip='10.0.1.2',
+                      vrrp_ip='10.1.1.2',
+                      role=constants.ROLE_BACKUP)]
+        if more_amp else [sample_amphora_tuple()],
+        topology=topology,
+        listeners=listeners,
+        pools=pools or [],
+        enabled=enabled,
+        project_id='12345'
     )
 
 
@@ -558,7 +599,8 @@ def sample_listener_tuple(proto=None, monitor=True, alloc_default_pool=True,
                           client_ca_cert=False, client_crl_cert=False,
                           ssl_type_l7=False, pool_cert=False,
                           pool_ca_cert=False, pool_crl=False,
-                          tls_enabled=False, hm_host_http_check=False):
+                          tls_enabled=False, hm_host_http_check=False,
+                          id='sample_listener_id_1', recursive_nest=False):
     proto = 'HTTP' if proto is None else proto
     if be_proto is None:
         be_proto = 'HTTP' if proto is 'TERMINATED_HTTPS' else proto
@@ -617,8 +659,8 @@ def sample_listener_tuple(proto=None, monitor=True, alloc_default_pool=True,
                 pool_crl=pool_crl, tls_enabled=tls_enabled,
                 hm_host_http_check=hm_host_http_check)]
         l7policies = []
-    return in_listener(
-        id='sample_listener_id_1',
+    listener = in_listener(
+        id=id,
         project_id='12345',
         protocol_port=port,
         protocol=proto,
@@ -682,6 +724,9 @@ def sample_listener_tuple(proto=None, monitor=True, alloc_default_pool=True,
             constants.CLIENT_AUTH_NONE),
         client_crl_container_id='cont_id_crl' if client_crl_cert else '',
     )
+    if recursive_nest:
+        listener.load_balancer.listeners.append(listener)
+    return listener
 
 
 def sample_tls_sni_container_tuple(tls_container_id=None, tls_container=None):

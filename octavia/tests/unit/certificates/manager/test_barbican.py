@@ -134,7 +134,8 @@ class TestBarbicanManager(base.TestCase):
         self.assertIsInstance(data, cert.Cert)
         self.assertEqual(sample.X509_CERT_KEY, data.get_private_key())
         self.assertEqual(sample.X509_CERT, data.get_certificate())
-        self.assertItemsEqual(sample.X509_IMDS_LIST, data.get_intermediates())
+        self.assertEqual(sorted(sample.X509_IMDS_LIST),
+                         sorted(data.get_intermediates()))
         self.assertIsNone(data.get_private_key_passphrase())
 
     def test_delete_cert_legacy(self):

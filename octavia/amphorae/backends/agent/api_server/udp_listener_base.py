@@ -99,18 +99,6 @@ class UdpListenerApiServerBase(object):
         pass
 
     @abc.abstractmethod
-    def get_udp_listener_status(self, listener_id):
-        """Gets the status of a UDP listener
-
-        :param listener_id: The id of the listener
-
-        :returns: HTTP response with status code.
-        :raises Exception: If the listener is failed to find.
-
-        """
-        pass
-
-    @abc.abstractmethod
     def delete_udp_listener(self, listener_id):
         """Delete a UDP Listener from a amphora
 

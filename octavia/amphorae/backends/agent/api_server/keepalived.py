@@ -21,7 +21,7 @@ import jinja2
 from oslo_log import log as logging
 import webob
 
-from octavia.amphorae.backends.agent.api_server import listener
+from octavia.amphorae.backends.agent.api_server import loadbalancer
 from octavia.amphorae.backends.agent.api_server import util
 from octavia.common import constants as consts
 
@@ -41,7 +41,7 @@ check_script_template = j2_env.get_template(consts.CHECK_SCRIPT_CONF)
 class Keepalived(object):
 
     def upload_keepalived_config(self):
-        stream = listener.Wrapped(flask.request.stream)
+        stream = loadbalancer.Wrapped(flask.request.stream)
 
         if not os.path.exists(util.keepalived_dir()):
             os.makedirs(util.keepalived_dir())

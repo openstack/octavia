@@ -20,18 +20,25 @@ from octavia.amphorae.drivers.keepalived import vrrp_rest_driver
 from octavia.common import constants
 import octavia.tests.unit.base as base
 
+# Version 1.0 is functionally identical to all versions before it
+API_VERSION = '1.0'
+
 
 class TestVRRPRestDriver(base.TestCase):
 
     def setUp(self):
         self.keepalived_mixin = vrrp_rest_driver.KeepalivedAmphoraDriverMixin()
-        self.keepalived_mixin.client = mock.MagicMock()
-        self.client = self.keepalived_mixin.client
+        self.keepalived_mixin.clients = {
+            'base': mock.MagicMock(),
+            API_VERSION: mock.MagicMock()}
+        self.keepalived_mixin._populate_amphora_api_version = mock.MagicMock()
+        self.clients = self.keepalived_mixin.clients
         self.FAKE_CONFIG = 'FAKE CONFIG'
         self.lb_mock = mock.MagicMock()
         self.amphora_mock = mock.MagicMock()
         self.amphora_mock.id = uuidutils.generate_uuid()
         self.amphora_mock.status = constants.AMPHORA_ALLOCATED
+        self.amphora_mock.api_version = API_VERSION
         self.lb_mock.amphorae = [self.amphora_mock]
         self.amphorae_network_config = {}
         vip_subnet = mock.MagicMock()
@@ -49,7 +56,7 @@ class TestVRRPRestDriver(base.TestCase):
         self.keepalived_mixin.update_vrrp_conf(self.lb_mock,
                                                self.amphorae_network_config)
 
-        self.client.upload_vrrp_config.assert_called_once_with(
+        self.clients[API_VERSION].upload_vrrp_config.assert_called_once_with(
             self.amphora_mock,
             self.FAKE_CONFIG)
 
@@ -57,16 +64,19 @@ class TestVRRPRestDriver(base.TestCase):
 
         self.keepalived_mixin.stop_vrrp_service(self.lb_mock)
 
-        self.client.stop_vrrp.assert_called_once_with(self.amphora_mock)
+        self.clients[API_VERSION].stop_vrrp.assert_called_once_with(
+            self.amphora_mock)
 
     def test_start_vrrp_service(self):
 
         self.keepalived_mixin.start_vrrp_service(self.lb_mock)
 
-        self.client.start_vrrp.assert_called_once_with(self.amphora_mock)
+        self.clients[API_VERSION].start_vrrp.assert_called_once_with(
+            self.amphora_mock)
 
     def test_reload_vrrp_service(self):
 
         self.keepalived_mixin.reload_vrrp_service(self.lb_mock)
 
-        self.client.reload_vrrp.assert_called_once_with(self.amphora_mock)
+        self.clients[API_VERSION].reload_vrrp.assert_called_once_with(
+            self.amphora_mock)

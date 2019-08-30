@@ -52,13 +52,13 @@ class BaseAmphoraTask(task.Task):
 class AmpListenersUpdate(BaseAmphoraTask):
     """Task to update the listeners on one amphora."""
 
-    def execute(self, listeners, amphora_index, amphorae, timeout_dict=()):
+    def execute(self, loadbalancer, amphora_index, amphorae, timeout_dict=()):
         # Note, we don't want this to cause a revert as it may be used
         # in a failover flow with both amps failing. Skip it and let
         # health manager fix it.
         try:
             self.amphora_driver.update_amphora_listeners(
-                listeners, amphora_index, amphorae, timeout_dict)
+                loadbalancer, amphorae[amphora_index], timeout_dict)
         except Exception as e:
             amphora_id = amphorae[amphora_index].id
             LOG.error('Failed to update listeners on amphora %s. Skipping '
@@ -71,11 +71,9 @@ class AmpListenersUpdate(BaseAmphoraTask):
 class ListenersUpdate(BaseAmphoraTask):
     """Task to update amphora with all specified listeners' configurations."""
 
-    def execute(self, loadbalancer, listeners):
+    def execute(self, loadbalancer):
         """Execute updates per listener for an amphora."""
-        for listener in listeners:
-            listener.load_balancer = loadbalancer
-            self.amphora_driver.update(listener, loadbalancer.vip)
+        self.amphora_driver.update(loadbalancer)
 
     def revert(self, loadbalancer, *args, **kwargs):
         """Handle failed listeners updates."""
@@ -88,56 +86,20 @@ class ListenersUpdate(BaseAmphoraTask):
         return None
 
 
-class ListenerStop(BaseAmphoraTask):
-    """Task to stop the listener on the vip."""
-
-    def execute(self, loadbalancer, listener):
-        """Execute listener stop routines for an amphora."""
-        self.amphora_driver.stop(listener, loadbalancer.vip)
-        LOG.debug("Stopped the listener on the vip")
-
-    def revert(self, listener, *args, **kwargs):
-        """Handle a failed listener stop."""
-
-        LOG.warning("Reverting listener stop.")
-
-        self.task_utils.mark_listener_prov_status_error(listener.id)
-
-        return None
-
-
-class ListenerStart(BaseAmphoraTask):
-    """Task to start the listener on the vip."""
-
-    def execute(self, loadbalancer, listener):
-        """Execute listener start routines for an amphora."""
-        self.amphora_driver.start(listener, loadbalancer.vip)
-        LOG.debug("Started the listener on the vip")
-
-    def revert(self, listener, *args, **kwargs):
-        """Handle a failed listener start."""
-
-        LOG.warning("Reverting listener start.")
-
-        self.task_utils.mark_listener_prov_status_error(listener.id)
-
-        return None
-
-
 class ListenersStart(BaseAmphoraTask):
     """Task to start all listeners on the vip."""
 
-    def execute(self, loadbalancer, listeners, amphora=None):
+    def execute(self, loadbalancer, amphora=None):
         """Execute listener start routines for listeners on an amphora."""
-        for listener in listeners:
-            self.amphora_driver.start(listener, loadbalancer.vip, amphora)
-        LOG.debug("Started the listeners on the vip")
+        if loadbalancer.listeners:
+            self.amphora_driver.start(loadbalancer, amphora)
+            LOG.debug("Started the listeners on the vip")
 
-    def revert(self, listeners, *args, **kwargs):
+    def revert(self, loadbalancer, *args, **kwargs):
         """Handle failed listeners starts."""
 
         LOG.warning("Reverting listeners starts.")
-        for listener in listeners:
+        for listener in loadbalancer.listeners:
             self.task_utils.mark_listener_prov_status_error(listener.id)
 
         return None
@@ -146,9 +108,10 @@ class ListenersStart(BaseAmphoraTask):
 class ListenerDelete(BaseAmphoraTask):
     """Task to delete the listener on the vip."""
 
-    def execute(self, loadbalancer, listener):
+    def execute(self, listener):
         """Execute listener delete routines for an amphora."""
-        self.amphora_driver.delete(listener, loadbalancer.vip)
+        # TODO(rm_work): This is only relevant because of UDP listeners now.
+        self.amphora_driver.delete(listener)
         LOG.debug("Deleted the listener on the vip")
 
     def revert(self, listener, *args, **kwargs):

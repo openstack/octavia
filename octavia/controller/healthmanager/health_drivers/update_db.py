@@ -131,7 +131,7 @@ class UpdateHealthDb(update_base.HealthUpdateBase):
         :type map: string
         :returns: null
 
-        The input health data structure is shown as below::
+        The input v1 health data structure is shown as below::
 
             health = {
                 "id": self.FAKE_UUID_1,
@@ -146,6 +146,33 @@ class UpdateHealthDb(update_base.HealthUpdateBase):
                 }
             }
 
+        Example V2 message::
+
+            {"id": "<amphora_id>",
+             "seq": 67,
+             "listeners": {
+               "<listener_id>": {
+                 "status": "OPEN",
+                 "stats": {
+                   "tx": 0,
+                   "rx": 0,
+                   "conns": 0,
+                   "totconns": 0,
+                   "ereq": 0
+                 }
+               }
+             },
+             "pools": {
+                 "<pool_id>:<listener_id>": {
+                   "status": "UP",
+                   "members": {
+                     "<member_id>": "no check"
+                   }
+                 }
+             },
+             "ver": 2
+            }
+
         """
         session = db_api.get_session()
 
@@ -155,10 +182,15 @@ class UpdateHealthDb(update_base.HealthUpdateBase):
         ignore_listener_count = False
 
         if db_lb:
-            expected_listener_count = len(db_lb.get('listeners', {}))
+            expected_listener_count = 0
             if 'PENDING' in db_lb['provisioning_status']:
                 ignore_listener_count = True
             else:
+                for key, listener in db_lb.get('listeners', {}).items():
+                    # disabled listeners don't report from the amphora
+                    if listener['enabled']:
+                        expected_listener_count += 1
+
                 # If this is a heartbeat older than versioning, handle
                 # UDP special for backward compatibility.
                 if 'ver' not in health:
@@ -252,6 +284,8 @@ class UpdateHealthDb(update_base.HealthUpdateBase):
         else:
             lb_status = constants.ONLINE
 
+        health_msg_version = health.get('ver', 0)
+
         for listener_id in db_lb.get('listeners', {}):
             db_op_status = db_lb['listeners'][listener_id]['operating_status']
             listener_status = None
@@ -288,11 +322,36 @@ class UpdateHealthDb(update_base.HealthUpdateBase):
             if not listener:
                 continue
 
-            pools = listener['pools']
+            if health_msg_version < 2:
+                raw_pools = listener['pools']
+
+                # normalize the pool IDs. Single process listener pools
+                # have the listener id appended with an ':' seperator.
+                # Old multi-process listener pools only have a pool ID.
+                # This makes sure the keys are only pool IDs.
+                pools = {(k + ' ')[:k.rfind(':')]: v for k, v in
+                         raw_pools.items()}
+
+                for db_pool_id in db_lb.get('pools', {}):
+                    # If we saw this pool already on another listener, skip it.
+                    if db_pool_id in processed_pools:
+                        continue
+                    db_pool_dict = db_lb['pools'][db_pool_id]
+                    lb_status = self._process_pool_status(
+                        session, db_pool_id, db_pool_dict, pools,
+                        lb_status, processed_pools, potential_offline_pools)
+
+        if health_msg_version >= 2:
+            raw_pools = health['pools']
+
+            # normalize the pool IDs. Single process listener pools
+            # have the listener id appended with an ':' seperator.
+            # Old multi-process listener pools only have a pool ID.
+            # This makes sure the keys are only pool IDs.
+            pools = {(k + ' ')[:k.rfind(':')]: v for k, v in raw_pools.items()}
 
             for db_pool_id in db_lb.get('pools', {}):
-                # If we saw this pool already on another listener
-                # skip it.
+                # If we saw this pool already, skip it.
                 if db_pool_id in processed_pools:
                     continue
                 db_pool_dict = db_lb['pools'][db_pool_id]
@@ -445,7 +504,7 @@ class UpdateStatsDb(update_base.StatsUpdateBase, stats.StatsMixin):
         :type map: string
         :returns: null
 
-        Example::
+        Example V1 message::
 
             health = {
                 "id": self.FAKE_UUID_1,
@@ -467,6 +526,33 @@ class UpdateStatsDb(update_base.StatsUpdateBase, stats.StatsMixin):
                         }
                     }
                 }
+            }
+
+        Example V2 message::
+
+            {"id": "<amphora_id>",
+             "seq": 67,
+             "listeners": {
+               "<listener_id>": {
+                 "status": "OPEN",
+                 "stats": {
+                   "tx": 0,
+                   "rx": 0,
+                   "conns": 0,
+                   "totconns": 0,
+                   "ereq": 0
+                 }
+               }
+             },
+             "pools": {
+                 "<pool_id>:<listener_id>": {
+                   "status": "UP",
+                   "members": {
+                     "<member_id>": "no check"
+                   }
+                 }
+             },
+             "ver": 2
             }
 
         """

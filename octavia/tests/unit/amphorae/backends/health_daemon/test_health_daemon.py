@@ -52,7 +52,7 @@ SAMPLE_STATS = ({'': '', 'status': 'OPEN', 'lastchg': '',
                  'rate': '0', 'req_rate': '0', 'check_status': '',
                  'econ': '', 'comp_out': '0', 'wredis': '', 'dresp': '0',
                  'ereq': '0', 'tracked': '', 'comp_in': '0',
-                 'pxname': '490b6ae7-21aa-43f1-b82a-68ddcd2ca2fb',
+                 'pxname': LISTENER_ID1,
                  'dreq': '0', 'hrsp_5xx': '0', 'last_chk': '',
                  'check_code': '', 'sid': '0', 'bout': '0', 'hrsp_1xx': '0',
                  'qlimit': '', 'hrsp_other': '0', 'bin': '0', 'rtime': '',
@@ -107,25 +107,16 @@ SAMPLE_STATS = ({'': '', 'status': 'OPEN', 'lastchg': '',
 SAMPLE_STATS_MSG = {
     'listeners': {
         LISTENER_ID1: {
-            'pools': {
-                '432fc8b3-d446-48d4-bb64-13beb90e22bc': {
-                    'members': {
-                        '302e33d9-dee1-4de9-98d5-36329a06fb58': 'DOWN'},
-                    'status': 'UP'}},
             'stats': {
                 'totconns': 0, 'conns': 0,
                 'tx': 0, 'rx': 0, 'ereq': 0},
             'status': 'OPEN'},
-        LISTENER_ID2: {
-            'pools': {
-                '432fc8b3-d446-48d4-bb64-13beb90e22bc': {
-                    'members': {
-                        '302e33d9-dee1-4de9-98d5-36329a06fb58': 'DOWN'},
-                    'status': 'UP'}},
-            'stats': {
-                'totconns': 0, 'conns': 0,
-                'tx': 0, 'rx': 0, 'ereq': 0},
-            'status': 'OPEN'}
+    },
+    'pools': {'432fc8b3-d446-48d4-bb64-13beb90e22bc': {
+        'members': {'302e33d9-dee1-4de9-98d5-36329a06fb58': 'DOWN'},
+        'status': 'UP'}, '432fc8b3-d446-48d4-bb64-13beb90e22bc': {
+        'members': {'302e33d9-dee1-4de9-98d5-36329a06fb58': 'DOWN'},
+        'status': 'UP'},
     },
     'id': None,
     'seq': 0,
@@ -141,7 +132,7 @@ class TestHealthDaemon(base.TestCase):
         conf.config(group="haproxy_amphora", base_path=BASE_PATH)
 
     @mock.patch('octavia.amphorae.backends.agent.'
-                'api_server.util.get_listeners')
+                'api_server.util.get_loadbalancers')
     def test_list_sock_stat_files(self, mock_get_listener):
         mock_get_listener.return_value = LISTENER_IDS
 
@@ -297,7 +288,7 @@ class TestHealthDaemon(base.TestCase):
         stats_query_mock.get_pool_status.assert_called_once_with()
 
     @mock.patch('octavia.amphorae.backends.agent.api_server.'
-                'util.is_listener_running')
+                'util.is_lb_running')
     @mock.patch('octavia.amphorae.backends.health_daemon.'
                 'health_daemon.get_stats')
     @mock.patch('octavia.amphorae.backends.health_daemon.'
@@ -318,7 +309,7 @@ class TestHealthDaemon(base.TestCase):
         mock_get_stats.assert_any_call('TEST2')
 
     @mock.patch('octavia.amphorae.backends.agent.api_server.'
-                'util.is_listener_running')
+                'util.is_lb_running')
     @mock.patch('octavia.amphorae.backends.health_daemon.'
                 'health_daemon.get_stats')
     @mock.patch('octavia.amphorae.backends.health_daemon.'
@@ -335,25 +326,6 @@ class TestHealthDaemon(base.TestCase):
         health_daemon.build_stats_message()
 
         self.assertEqual(1, mock_get_stats.call_count)
-
-    @mock.patch('octavia.amphorae.backends.agent.api_server.'
-                'util.is_listener_running')
-    @mock.patch('octavia.amphorae.backends.health_daemon.'
-                'health_daemon.get_stats')
-    @mock.patch('octavia.amphorae.backends.health_daemon.'
-                'health_daemon.list_sock_stat_files')
-    def test_build_stats_message_mismatch_pool(self, mock_list_files,
-                                               mock_get_stats,
-                                               mock_is_running):
-        mock_list_files.return_value = {LISTENER_ID1: 'TEST',
-                                        LISTENER_ID2: 'TEST2'}
-
-        mock_is_running.return_value = True
-        mock_get_stats.return_value = SAMPLE_STATS, SAMPLE_BOGUS_POOL_STATUS
-
-        msg = health_daemon.build_stats_message()
-
-        self.assertEqual({}, msg['listeners'][LISTENER_ID1]['pools'])
 
     @mock.patch("octavia.amphorae.backends.utils.keepalivedlvs_query."
                 "get_udp_listener_pool_status")
@@ -411,7 +383,7 @@ class TestHealthDaemon(base.TestCase):
                     'status': constants.DOWN,
                     'pools': {},
                     'stats': {'conns': 0, 'totconns': 0, 'ereq': 0,
-                              'rx': 0, 'tx': 0}}}, 'id': None,
+                              'rx': 0, 'tx': 0}}}, 'pools': {}, 'id': None,
                     'seq': mock.ANY, 'ver': health_daemon.MSG_VER}
         msg = health_daemon.build_stats_message()
         self.assertEqual(expected, msg)

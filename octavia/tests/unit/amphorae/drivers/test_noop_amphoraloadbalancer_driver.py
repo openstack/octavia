@@ -12,6 +12,7 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import mock
 from oslo_utils import uuidutils
 
 from octavia.amphorae.drivers.noop_driver import driver
@@ -54,6 +55,7 @@ class TestNoopAmphoraLoadBalancerDriver(base.TestCase):
         self.load_balancer = data_models.LoadBalancer(
             id=FAKE_UUID_1, amphorae=[self.amphora], vip=self.vip,
             listeners=[self.listener])
+        self.listener.load_balancer = self.load_balancer
         self.network = network_models.Network(id=self.FAKE_UUID_1)
         self.port = network_models.Port(id=uuidutils.generate_uuid())
         self.amphorae_net_configs = {
@@ -70,8 +72,7 @@ class TestNoopAmphoraLoadBalancerDriver(base.TestCase):
                              constants.CONN_RETRY_INTERVAL: 4}
 
     def test_update_amphora_listeners(self):
-        amphorae = [self.amphora]
-        self.driver.update_amphora_listeners([self.listener], 0, amphorae,
+        self.driver.update_amphora_listeners(self.load_balancer, self.amphora,
                                              self.timeout_dict)
         self.assertEqual((self.listener, self.amphora.id, self.timeout_dict,
                           'update_amp'),
@@ -80,28 +81,22 @@ class TestNoopAmphoraLoadBalancerDriver(base.TestCase):
                              self.amphora.id)])
 
     def test_update(self):
-        self.driver.update(self.listener, self.vip)
-        self.assertEqual((self.listener, self.vip, 'active'),
+        self.driver.update(self.load_balancer)
+        self.assertEqual(([self.listener], self.vip, 'active'),
                          self.driver.driver.amphoraconfig[(
-                             self.listener.protocol_port,
-                             self.vip.ip_address)])
-
-    def test_stop(self):
-        self.driver.stop(self.listener, self.vip)
-        self.assertEqual((self.listener, self.vip, 'stop'),
-                         self.driver.driver.amphoraconfig[(
-                             self.listener.protocol_port,
+                             (self.listener.protocol_port,),
                              self.vip.ip_address)])
 
     def test_start(self):
-        self.driver.start(self.listener, self.vip, amphora='amp1')
-        self.assertEqual((self.listener, self.vip, 'amp1', 'start'),
+        mock_amphora = mock.MagicMock()
+        mock_amphora.id = '321'
+        self.driver.start(self.load_balancer, amphora=mock_amphora)
+        self.assertEqual((self.load_balancer, mock_amphora, 'start'),
                          self.driver.driver.amphoraconfig[(
-                             self.listener.protocol_port,
-                             self.vip.ip_address, 'amp1')])
+                             self.load_balancer.id, '321')])
 
     def test_delete(self):
-        self.driver.delete(self.listener, self.vip)
+        self.driver.delete(self.listener)
         self.assertEqual((self.listener, self.vip, 'delete'),
                          self.driver.driver.amphoraconfig[(
                              self.listener.protocol_port,
