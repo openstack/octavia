@@ -522,6 +522,86 @@ class TestHaproxyAmphoraLoadBalancerDriverTest(base.TestCase):
             API_VERSION].reload_listener.assert_called_once_with(
             self.amp, sl.load_balancer.id, timeout_dict=None)
 
+    @mock.patch('octavia.amphorae.drivers.haproxy.rest_api_driver.'
+                'HaproxyAmphoraLoadBalancerDriver._process_secret')
+    @mock.patch('octavia.common.tls_utils.cert_parser.load_certificates_data')
+    @mock.patch('octavia.common.tls_utils.cert_parser.get_host_names')
+    def test_delete_second_listener_active_standby(self, mock_cert,
+                                                   mock_load_crt,
+                                                   mock_secret):
+        self.driver.clients[
+            API_VERSION].delete_listener.__name__ = 'delete_listener'
+        sl = sample_configs_combined.sample_listener_tuple(
+            tls=True, sni=True, client_ca_cert=True, client_crl_cert=True,
+            recursive_nest=True, topology=constants.TOPOLOGY_ACTIVE_STANDBY)
+        sl2 = sample_configs_combined.sample_listener_tuple(
+            id='sample_listener_id_2',
+            topology=constants.TOPOLOGY_ACTIVE_STANDBY)
+        sl.load_balancer.listeners.append(sl2)
+        mock_cert.return_value = {'cn': sample_certs.X509_CERT_CN}
+        mock_secret.side_effect = ['filename.pem', 'crl-filename.pem',
+                                   'filename.pem', 'crl-filename.pem']
+        sconts = []
+        for sni_container in self.sl.sni_containers:
+            sconts.append(sni_container.tls_container)
+        mock_load_crt.side_effect = [{
+            'tls_cert': self.sl.default_tls_container, 'sni_certs': sconts},
+            {'tls_cert': None, 'sni_certs': []},
+            {'tls_cert': None, 'sni_certs': []},
+            {'tls_cert': None, 'sni_certs': []}]
+        self.driver.jinja_combo.build_config.side_effect = [
+            'fake_config', 'fake_config']
+        # Execute driver method
+        self.driver.delete(sl)
+
+        amp1 = sl.load_balancer.amphorae[0]
+        amp2 = sl.load_balancer.amphorae[1]
+
+        # All of the pem files should be removed (using amp1 or amp2)
+        dcp_calls_list = [
+            [
+                mock.call(amp1, sl.load_balancer.id,
+                          sl.default_tls_container.id + '.pem'),
+                mock.call(amp2, sl.load_balancer.id,
+                          sl.default_tls_container.id + '.pem')
+            ],
+            [
+                mock.call(amp1, sl.load_balancer.id, sconts[0].id + '.pem'),
+                mock.call(amp2, sl.load_balancer.id, sconts[0].id + '.pem')
+            ],
+            [
+                mock.call(amp1, sl.load_balancer.id, sconts[1].id + '.pem'),
+                mock.call(amp2, sl.load_balancer.id, sconts[1].id + '.pem')
+            ]
+        ]
+        mock_calls = (
+            self.driver.clients[API_VERSION].delete_cert_pem.mock_calls)
+        for dcp_calls in dcp_calls_list:
+            # Ensure that at least one call in each pair has been seen
+            if (dcp_calls[0] not in mock_calls and
+                    dcp_calls[1] not in mock_calls):
+                raise Exception("%s not found in %s" % (dcp_calls, mock_calls))
+
+        # Now just make sure we did an update and not a delete
+        self.driver.clients[API_VERSION].delete_listener.assert_not_called()
+        upload_config_calls = [
+            mock.call(amp1, sl.load_balancer.id, 'fake_config',
+                      timeout_dict=None),
+            mock.call(amp2, sl.load_balancer.id, 'fake_config',
+                      timeout_dict=None)
+        ]
+        self.driver.clients[API_VERSION].upload_config.assert_has_calls(
+            upload_config_calls, any_order=True)
+
+        # start should be called once per amp
+        reload_listener_calls = [
+            mock.call(amp1, sl.load_balancer.id, timeout_dict=None),
+            mock.call(amp2, sl.load_balancer.id, timeout_dict=None)
+        ]
+        self.driver.clients[
+            API_VERSION].reload_listener.assert_has_calls(
+                reload_listener_calls, any_order=True)
+
     @mock.patch('octavia.common.tls_utils.cert_parser.load_certificates_data')
     def test_delete_last_listener(self, mock_load_crt):
         self.driver.clients[
