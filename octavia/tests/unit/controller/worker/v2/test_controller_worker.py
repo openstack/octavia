@@ -53,7 +53,11 @@ _amphora_mock = {
     constants.LOAD_BALANCER_ID: LB_ID,
 }
 _flow_mock = mock.MagicMock()
-_health_mon_mock = mock.MagicMock()
+_db_health_mon_mock = mock.MagicMock()
+_health_mon_mock = {
+    constants.HEALTHMONITOR_ID: HM_ID,
+    constants.POOL_ID: POOL_ID
+}
 _vip_mock = mock.MagicMock()
 _listener_mock = mock.MagicMock()
 _db_load_balancer_mock = mock.MagicMock()
@@ -87,7 +91,7 @@ class TestException(Exception):
 @mock.patch('octavia.db.repositories.AmphoraRepository.get',
             return_value=_db_amphora_mock)
 @mock.patch('octavia.db.repositories.HealthMonitorRepository.get',
-            return_value=_health_mon_mock)
+            return_value=_db_health_mon_mock)
 @mock.patch('octavia.db.repositories.LoadBalancerRepository.get',
             return_value=_db_load_balancer_mock)
 @mock.patch('octavia.db.repositories.ListenerRepository.get',
@@ -112,7 +116,7 @@ class TestControllerWorker(base.TestCase):
 
         _db_pool_mock.listeners = [_listener_mock]
         _db_pool_mock.load_balancer = _db_load_balancer_mock
-        _health_mon_mock.pool = _db_pool_mock
+        _db_health_mon_mock.pool = _db_pool_mock
         _db_load_balancer_mock.amphorae = _db_amphora_mock
         _db_load_balancer_mock.vip = _vip_mock
         _db_load_balancer_mock.id = LB_ID
@@ -134,8 +138,12 @@ class TestControllerWorker(base.TestCase):
         _flow_mock.storage.fetch = fetch_mock
 
         _db_pool_mock.id = POOL_ID
-        _health_mon_mock.pool_id = POOL_ID
-        _health_mon_mock.id = HM_ID
+        _db_health_mon_mock.pool_id = POOL_ID
+        _db_health_mon_mock.id = HM_ID
+        _db_health_mon_mock.to_dict.return_value = {
+            'id': HM_ID,
+            constants.POOL_ID: POOL_ID
+        }
 
         super(TestControllerWorker, self).setUp()
 
@@ -268,13 +276,12 @@ class TestControllerWorker(base.TestCase):
                                    mock_amp_repo_get):
 
         _flow_mock.reset_mock()
-        mock_health_mon_repo_get.side_effect = [None, _health_mon_mock]
 
         cw = controller_worker.ControllerWorker()
         cw.create_health_monitor(_health_mon_mock)
         provider_lb = provider_utils.db_loadbalancer_to_provider_loadbalancer(
             _db_load_balancer_mock).to_dict()
-
+        mock_health_mon_repo_get.return_value = _db_health_mon_mock
         (base_taskflow.BaseTaskFlowEngine._taskflow_load.
             assert_called_once_with(_flow_mock,
                                     store={constants.HEALTH_MON:
@@ -289,7 +296,6 @@ class TestControllerWorker(base.TestCase):
                                                POOL_ID}))
 
         _flow_mock.run.assert_called_once_with()
-        self.assertEqual(2, mock_health_mon_repo_get.call_count)
 
     @mock.patch('octavia.controller.worker.v2.flows.'
                 'health_monitor_flows.HealthMonitorFlows.'
@@ -312,10 +318,11 @@ class TestControllerWorker(base.TestCase):
         _flow_mock.reset_mock()
 
         cw = controller_worker.ControllerWorker()
-        cw.delete_health_monitor(HM_ID)
         provider_lb = provider_utils.db_loadbalancer_to_provider_loadbalancer(
             _db_load_balancer_mock).to_dict()
 
+        cw.delete_health_monitor(_health_mon_mock)
+        mock_health_mon_repo_get.return_value = _db_health_mon_mock
         (base_taskflow.BaseTaskFlowEngine._taskflow_load.
             assert_called_once_with(_flow_mock,
                                     store={constants.HEALTH_MON:
@@ -327,7 +334,8 @@ class TestControllerWorker(base.TestCase):
                                            constants.LOADBALANCER:
                                                provider_lb,
                                            constants.POOL_ID:
-                                               POOL_ID}))
+                                               POOL_ID,
+                                           constants.PROJECT_ID: PROJECT_ID}))
 
         _flow_mock.run.assert_called_once_with()
 
@@ -350,10 +358,11 @@ class TestControllerWorker(base.TestCase):
                                    mock_amp_repo_get):
 
         _flow_mock.reset_mock()
-        _health_mon_mock.provisioning_status = constants.PENDING_UPDATE
+        mock_health_mon_repo_get.return_value = _db_health_mon_mock
+        _db_health_mon_mock.provisioning_status = constants.PENDING_UPDATE
 
         cw = controller_worker.ControllerWorker()
-        cw.update_health_monitor(_health_mon_mock.id,
+        cw.update_health_monitor(_health_mon_mock,
                                  HEALTH_UPDATE_DICT)
         provider_lb = provider_utils.db_loadbalancer_to_provider_loadbalancer(
             _db_load_balancer_mock).to_dict()

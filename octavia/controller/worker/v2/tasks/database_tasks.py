@@ -165,10 +165,12 @@ class DeleteHealthMonitorInDB(BaseDatabaseTask):
         :returns: None
         """
 
-        LOG.debug("DB delete health monitor: %s ", health_mon.id)
+        LOG.debug("DB delete health monitor: %s ",
+                  health_mon[constants.HEALTHMONITOR_ID])
         try:
-            self.health_mon_repo.delete(db_apis.get_session(),
-                                        id=health_mon.id)
+            self.health_mon_repo.delete(
+                db_apis.get_session(),
+                id=health_mon[constants.HEALTHMONITOR_ID])
         except exc.NoResultFound:
             # ignore if the HealthMonitor was not found
             pass
@@ -181,8 +183,10 @@ class DeleteHealthMonitorInDB(BaseDatabaseTask):
         """
 
         LOG.warning("Reverting mark health monitor delete in DB "
-                    "for health monitor with id %s", health_mon.id)
-        self.health_mon_repo.update(db_apis.get_session(), id=health_mon.id,
+                    "for health monitor with id %s",
+                    health_mon[constants.HEALTHMONITOR_ID])
+        self.health_mon_repo.update(db_apis.get_session(),
+                                    id=health_mon[constants.HEALTHMONITOR_ID],
                                     provisioning_status=constants.ERROR)
 
 
@@ -192,23 +196,31 @@ class DeleteHealthMonitorInDBByPool(DeleteHealthMonitorInDB):
     Since sqlalchemy will likely retry by itself always revert if it fails
     """
 
-    def execute(self, pool):
+    def execute(self, pool_id):
         """Delete the health monitor in the DB.
 
-        :param pool: A pool which health monitor should be deleted.
+        :param pool_id: ID of pool which health monitor should be deleted.
         :returns: None
         """
+        db_pool = self.pool_repo.get(db_apis.get_session(),
+                                     id=pool_id)
+        provider_hm = provider_utils.db_HM_to_provider_HM(
+            db_pool.health_monitor).to_dict()
         super(DeleteHealthMonitorInDBByPool, self).execute(
-            pool.health_monitor)
+            provider_hm)
 
-    def revert(self, pool, *args, **kwargs):
+    def revert(self, pool_id, *args, **kwargs):
         """Mark the health monitor ERROR since the mark active couldn't happen
 
-        :param pool: A pool which health monitor couldn't be deleted
+        :param pool_id: ID of pool which health monitor couldn't be deleted
         :returns: None
         """
+        db_pool = self.pool_repo.get(db_apis.get_session(),
+                                     id=pool_id)
+        provider_hm = provider_utils.db_HM_to_provider_HM(
+            db_pool.health_monitor).to_dict()
         super(DeleteHealthMonitorInDBByPool, self).revert(
-            pool.health_monitor, *args, **kwargs)
+            provider_hm, *args, **kwargs)
 
 
 class DeleteMemberInDB(BaseDatabaseTask):
@@ -1433,8 +1445,10 @@ class UpdateHealthMonInDB(BaseDatabaseTask):
         :returns: None
         """
 
-        LOG.debug("Update DB for health monitor id: %s ", health_mon.id)
-        self.health_mon_repo.update(db_apis.get_session(), health_mon.id,
+        LOG.debug("Update DB for health monitor id: %s ",
+                  health_mon[constants.HEALTHMONITOR_ID])
+        self.health_mon_repo.update(db_apis.get_session(),
+                                    health_mon[constants.HEALTHMONITOR_ID],
                                     **update_dict)
 
     def revert(self, health_mon, *args, **kwargs):
@@ -1445,15 +1459,18 @@ class UpdateHealthMonInDB(BaseDatabaseTask):
         """
 
         LOG.warning("Reverting update health monitor in DB "
-                    "for health monitor id %s", health_mon.id)
+                    "for health monitor id %s",
+                    health_mon[constants.HEALTHMONITOR_ID])
         try:
-            self.health_mon_repo.update(db_apis.get_session(),
-                                        health_mon.id,
-                                        provisioning_status=constants.ERROR)
+            self.health_mon_repo.update(
+                db_apis.get_session(),
+                health_mon[constants.HEALTHMONITOR_ID],
+                provisioning_status=constants.ERROR)
         except Exception as e:
             LOG.error("Failed to update health monitor %(hm)s "
                       "provisioning_status to ERROR due to: %(except)s",
-                      {'hm': health_mon.id, 'except': e})
+                      {'hm': health_mon[constants.HEALTHMONITOR_ID],
+                       'except': e})
 
 
 class UpdateListenerInDB(BaseDatabaseTask):
@@ -1823,12 +1840,11 @@ class MarkHealthMonitorActiveInDB(BaseDatabaseTask):
         """
 
         LOG.debug("Mark ACTIVE in DB for health monitor id: %s",
-                  health_mon.id)
-
-        op_status = (constants.ONLINE if health_mon.enabled
+                  health_mon[constants.HEALTHMONITOR_ID])
+        op_status = (constants.ONLINE if health_mon['admin_state_up']
                      else constants.OFFLINE)
         self.health_mon_repo.update(db_apis.get_session(),
-                                    health_mon.id,
+                                    health_mon[constants.HEALTHMONITOR_ID],
                                     provisioning_status=constants.ACTIVE,
                                     operating_status=op_status)
 
@@ -1840,8 +1856,10 @@ class MarkHealthMonitorActiveInDB(BaseDatabaseTask):
         """
 
         LOG.warning("Reverting mark health montor ACTIVE in DB "
-                    "for health monitor id %s", health_mon.id)
-        self.task_utils.mark_health_mon_prov_status_error(health_mon.id)
+                    "for health monitor id %s",
+                    health_mon[constants.HEALTHMONITOR_ID])
+        self.task_utils.mark_health_mon_prov_status_error(
+            health_mon[constants.HEALTHMONITOR_ID])
 
 
 class MarkHealthMonitorPendingCreateInDB(BaseDatabaseTask):
@@ -1858,9 +1876,9 @@ class MarkHealthMonitorPendingCreateInDB(BaseDatabaseTask):
         """
 
         LOG.debug("Mark PENDING CREATE in DB for health monitor id: %s",
-                  health_mon.id)
+                  health_mon[constants.HEALTHMONITOR_ID])
         self.health_mon_repo.update(db_apis.get_session(),
-                                    health_mon.id,
+                                    health_mon[constants.HEALTHMONITOR_ID],
                                     provisioning_status=(constants.
                                                          PENDING_CREATE))
 
@@ -1872,8 +1890,10 @@ class MarkHealthMonitorPendingCreateInDB(BaseDatabaseTask):
         """
 
         LOG.warning("Reverting mark health monitor pending create in DB "
-                    "for health monitor id %s", health_mon.id)
-        self.task_utils.mark_health_mon_prov_status_error(health_mon.id)
+                    "for health monitor id %s",
+                    health_mon[constants.HEALTHMONITOR_ID])
+        self.task_utils.mark_health_mon_prov_status_error(
+            health_mon[constants.HEALTHMONITOR_ID])
 
 
 class MarkHealthMonitorPendingDeleteInDB(BaseDatabaseTask):
@@ -1890,9 +1910,9 @@ class MarkHealthMonitorPendingDeleteInDB(BaseDatabaseTask):
         """
 
         LOG.debug("Mark PENDING DELETE in DB for health monitor id: %s",
-                  health_mon.id)
+                  health_mon[constants.HEALTHMONITOR_ID])
         self.health_mon_repo.update(db_apis.get_session(),
-                                    health_mon.id,
+                                    health_mon[constants.HEALTHMONITOR_ID],
                                     provisioning_status=(constants.
                                                          PENDING_DELETE))
 
@@ -1904,8 +1924,10 @@ class MarkHealthMonitorPendingDeleteInDB(BaseDatabaseTask):
         """
 
         LOG.warning("Reverting mark health monitor pending delete in DB "
-                    "for health monitor id %s", health_mon.id)
-        self.task_utils.mark_health_mon_prov_status_error(health_mon.id)
+                    "for health monitor id %s",
+                    health_mon[constants.HEALTHMONITOR_ID])
+        self.task_utils.mark_health_mon_prov_status_error(
+            health_mon[constants.HEALTHMONITOR_ID])
 
 
 class MarkHealthMonitorPendingUpdateInDB(BaseDatabaseTask):
@@ -1922,9 +1944,9 @@ class MarkHealthMonitorPendingUpdateInDB(BaseDatabaseTask):
         """
 
         LOG.debug("Mark PENDING UPDATE in DB for health monitor id: %s",
-                  health_mon.id)
+                  health_mon[constants.HEALTHMONITOR_ID])
         self.health_mon_repo.update(db_apis.get_session(),
-                                    health_mon.id,
+                                    health_mon[constants.HEALTHMONITOR_ID],
                                     provisioning_status=(constants.
                                                          PENDING_UPDATE))
 
@@ -1936,8 +1958,10 @@ class MarkHealthMonitorPendingUpdateInDB(BaseDatabaseTask):
         """
 
         LOG.warning("Reverting mark health monitor pending update in DB "
-                    "for health monitor id %s", health_mon.id)
-        self.task_utils.mark_health_mon_prov_status_error(health_mon.id)
+                    "for health monitor id %s",
+                    health_mon[constants.HEALTHMONITOR_ID])
+        self.task_utils.mark_health_mon_prov_status_error(
+            health_mon[constants.HEALTHMONITOR_ID])
 
 
 class MarkL7PolicyActiveInDB(BaseDatabaseTask):
@@ -2452,39 +2476,39 @@ class DecrementHealthMonitorQuota(BaseDatabaseTask):
     Since sqlalchemy will likely retry by itself always revert if it fails
     """
 
-    def execute(self, health_mon):
+    def execute(self, project_id):
         """Decrements the health monitor quota.
 
-        :param health_mon: The health monitor to decrement the quota on.
+        :param project_id: The project_id to decrement the quota on.
         :returns: None
         """
 
         LOG.debug("Decrementing health monitor quota for "
-                  "project: %s ", health_mon.project_id)
+                  "project: %s ", project_id)
 
         lock_session = db_apis.get_session(autocommit=False)
         try:
             self.repos.decrement_quota(lock_session,
                                        data_models.HealthMonitor,
-                                       health_mon.project_id)
+                                       project_id)
             lock_session.commit()
         except Exception:
             with excutils.save_and_reraise_exception():
                 LOG.error('Failed to decrement health monitor quota for '
                           'project: %(proj)s the project may have excess '
-                          'quota in use.', {'proj': health_mon.project_id})
+                          'quota in use.', {'proj': project_id})
                 lock_session.rollback()
 
-    def revert(self, health_mon, result, *args, **kwargs):
+    def revert(self, project_id, result, *args, **kwargs):
         """Re-apply the quota
 
-        :param health_mon: The health monitor to decrement the quota on.
+        :param project_id: The project_id to decrement the quota on.
         :returns: None
         """
 
         LOG.warning('Reverting decrement quota for health monitor on project'
                     ' %(proj)s Project quota counts may be incorrect.',
-                    {'proj': health_mon.project_id})
+                    {'proj': project_id})
 
         # Increment the quota back if this task wasn't the failure
         if not isinstance(result, failure.Failure):
@@ -2496,7 +2520,7 @@ class DecrementHealthMonitorQuota(BaseDatabaseTask):
                     self.repos.check_quota_met(session,
                                                lock_session,
                                                data_models.HealthMonitor,
-                                               health_mon.project_id)
+                                               project_id)
                     lock_session.commit()
                 except Exception:
                     lock_session.rollback()

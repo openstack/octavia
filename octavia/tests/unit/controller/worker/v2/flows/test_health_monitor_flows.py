@@ -54,8 +54,9 @@ class TestHealthMonitorFlows(base.TestCase):
         self.assertIn(constants.LOADBALANCER, health_mon_flow.requires)
         self.assertIn(constants.LOADBALANCER_ID, health_mon_flow.requires)
         self.assertIn(constants.POOL_ID, health_mon_flow.requires)
+        self.assertIn(constants.PROJECT_ID, health_mon_flow.requires)
 
-        self.assertEqual(5, len(health_mon_flow.requires))
+        self.assertEqual(6, len(health_mon_flow.requires))
         self.assertEqual(0, len(health_mon_flow.provides))
 
     def test_get_update_health_monitor_flow(self):

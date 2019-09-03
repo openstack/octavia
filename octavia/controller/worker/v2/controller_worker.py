@@ -140,27 +140,19 @@ class ControllerWorker(base_taskflow.BaseTaskFlowEngine):
                                                log=LOG):
             delete_amp_tf.run()
 
-    @tenacity.retry(
-        retry=tenacity.retry_if_exception_type(db_exceptions.NoResultFound),
-        wait=tenacity.wait_incrementing(
-            RETRY_INITIAL_DELAY, RETRY_BACKOFF, RETRY_MAX),
-        stop=tenacity.stop_after_attempt(RETRY_ATTEMPTS))
-    def create_health_monitor(self, health_monitor_id):
+    def create_health_monitor(self, health_monitor):
         """Creates a health monitor.
 
-        :param pool_id: ID of the pool to create a health monitor on
+        :param health_monitor: Provider health monitor dict
         :returns: None
         :raises NoResultFound: Unable to find the object
         """
-        health_mon = self._health_mon_repo.get(db_apis.get_session(),
-                                               id=health_monitor_id)
-        if not health_mon:
-            LOG.warning('Failed to fetch %s %s from DB. Retrying for up to '
-                        '60 seconds.', 'health_monitor', health_monitor_id)
-            raise db_exceptions.NoResultFound
+        db_health_monitor = self._health_mon_repo.get(
+            db_apis.get_session(),
+            id=health_monitor[constants.HEALTHMONITOR_ID])
 
-        pool = health_mon.pool
-        pool.health_monitor = health_mon
+        pool = db_health_monitor.pool
+        pool.health_monitor = db_health_monitor
         load_balancer = pool.load_balancer
         provider_lb = provider_utils.db_loadbalancer_to_provider_loadbalancer(
             load_balancer).to_dict()
@@ -171,7 +163,7 @@ class ControllerWorker(base_taskflow.BaseTaskFlowEngine):
 
         create_hm_tf = self._taskflow_load(
             self._health_monitor_flows.get_create_health_monitor_flow(),
-            store={constants.HEALTH_MON: health_mon,
+            store={constants.HEALTH_MON: health_monitor,
                    constants.POOL_ID: pool.id,
                    constants.LISTENERS: listeners_dicts,
                    constants.LOADBALANCER_ID: load_balancer.id,
@@ -180,17 +172,18 @@ class ControllerWorker(base_taskflow.BaseTaskFlowEngine):
                                                log=LOG):
             create_hm_tf.run()
 
-    def delete_health_monitor(self, health_monitor_id):
+    def delete_health_monitor(self, health_monitor):
         """Deletes a health monitor.
 
-        :param pool_id: ID of the pool to delete its health monitor
+        :param health_monitor: Provider health monitor dict
         :returns: None
         :raises HMNotFound: The referenced health monitor was not found
         """
-        health_mon = self._health_mon_repo.get(db_apis.get_session(),
-                                               id=health_monitor_id)
+        db_health_monitor = self._health_mon_repo.get(
+            db_apis.get_session(),
+            id=health_monitor[constants.HEALTHMONITOR_ID])
 
-        pool = health_mon.pool
+        pool = db_health_monitor.pool
         load_balancer = pool.load_balancer
         provider_lb = provider_utils.db_loadbalancer_to_provider_loadbalancer(
             load_balancer).to_dict()
@@ -201,49 +194,50 @@ class ControllerWorker(base_taskflow.BaseTaskFlowEngine):
 
         delete_hm_tf = self._taskflow_load(
             self._health_monitor_flows.get_delete_health_monitor_flow(),
-            store={constants.HEALTH_MON: health_mon,
+            store={constants.HEALTH_MON: health_monitor,
                    constants.POOL_ID: pool.id,
                    constants.LISTENERS: listeners_dicts,
                    constants.LOADBALANCER_ID: load_balancer.id,
-                   constants.LOADBALANCER: provider_lb})
+                   constants.LOADBALANCER: provider_lb,
+                   constants.PROJECT_ID: load_balancer.project_id})
         with tf_logging.DynamicLoggingListener(delete_hm_tf,
                                                log=LOG):
             delete_hm_tf.run()
 
-    def update_health_monitor(self, health_monitor_id, health_monitor_updates):
+    def update_health_monitor(self, original_health_monitor,
+                              health_monitor_updates):
         """Updates a health monitor.
 
-        :param pool_id: ID of the pool to have it's health monitor updated
+        :param original_health_monitor: Provider health monitor dict
         :param health_monitor_updates: Dict containing updated health monitor
         :returns: None
         :raises HMNotFound: The referenced health monitor was not found
         """
-        health_mon = None
         try:
-            health_mon = self._get_db_obj_until_pending_update(
-                self._health_mon_repo, health_monitor_id)
+            db_health_monitor = self._get_db_obj_until_pending_update(
+                self._health_mon_repo,
+                original_health_monitor[constants.HEALTHMONITOR_ID])
         except tenacity.RetryError as e:
             LOG.warning('Health monitor did not go into %s in 60 seconds. '
                         'This either due to an in-progress Octavia upgrade '
                         'or an overloaded and failing database. Assuming '
                         'an upgrade is in progress and continuing.',
                         constants.PENDING_UPDATE)
-            health_mon = e.last_attempt.result()
+            db_health_monitor = e.last_attempt.result()
 
-        pool = health_mon.pool
+        pool = db_health_monitor.pool
 
         listeners_dicts = (
             provider_utils.db_listeners_to_provider_dicts_list_of_dicts(
                 pool.listeners))
 
-        pool.health_monitor = health_mon
         load_balancer = pool.load_balancer
         provider_lb = provider_utils.db_loadbalancer_to_provider_loadbalancer(
             load_balancer).to_dict()
 
         update_hm_tf = self._taskflow_load(
             self._health_monitor_flows.get_update_health_monitor_flow(),
-            store={constants.HEALTH_MON: health_mon,
+            store={constants.HEALTH_MON: original_health_monitor,
                    constants.POOL_ID: pool.id,
                    constants.LISTENERS: listeners_dicts,
                    constants.LOADBALANCER_ID: load_balancer.id,
