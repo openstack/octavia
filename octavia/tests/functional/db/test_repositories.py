@@ -2661,13 +2661,17 @@ class HealthMonitorRepositoryTest(BaseRepositoryTest):
 
 class LoadBalancerRepositoryTest(BaseRepositoryTest):
 
-    def create_loadbalancer(self, lb_id):
-        lb = self.lb_repo.create(self.session, id=lb_id,
-                                 project_id=self.FAKE_UUID_2, name="lb_name",
-                                 description="lb_description",
-                                 provisioning_status=constants.ACTIVE,
-                                 operating_status=constants.ONLINE,
-                                 enabled=True, tags=['test_tag'])
+    def create_loadbalancer(self, lb_id, **overrides):
+        settings = dict(
+            id=lb_id,
+            project_id=self.FAKE_UUID_2, name="lb_name",
+            description="lb_description",
+            provisioning_status=constants.ACTIVE,
+            operating_status=constants.ONLINE,
+            enabled=True, tags=['test_tag'],
+        )
+        settings.update(**overrides)
+        lb = self.lb_repo.create(self.session, **settings)
         return lb
 
     def test_get(self):
@@ -2936,6 +2940,20 @@ class LoadBalancerRepositoryTest(BaseRepositoryTest):
         lb = self.lb_repo.get(self.session, id=lb_id)
         self.assertEqual(constants.PENDING_UPDATE, lb.provisioning_status)
 
+    def test_get_all_deleted_expiring_load_balancer(self):
+        exp_age = datetime.timedelta(seconds=self.FAKE_EXP_AGE)
+        updated_at = datetime.datetime.utcnow() - exp_age
+        lb1 = self.create_loadbalancer(
+            self.FAKE_UUID_1, updated_at=updated_at,
+            provisioning_status=constants.DELETED)
+        lb2 = self.create_loadbalancer(
+            self.FAKE_UUID_2, provisioning_status=constants.DELETED)
+
+        expiring_ids = self.lb_repo.get_all_deleted_expiring(
+            self.session, exp_age=exp_age)
+        self.assertIn(lb1.id, expiring_ids)
+        self.assertNotIn(lb2.id, expiring_ids)
+
 
 class VipRepositoryTest(BaseRepositoryTest):
 
@@ -3175,7 +3193,7 @@ class AmphoraRepositoryTest(BaseRepositoryTest):
         self.assertIsNotNone(lb)
         self.assertEqual(self.lb, lb)
 
-    def get_all_deleted_expiring_amphora(self):
+    def test_get_all_deleted_expiring_amphora(self):
         exp_age = datetime.timedelta(seconds=self.FAKE_EXP_AGE)
         updated_at = datetime.datetime.utcnow() - exp_age
         amphora1 = self.create_amphora(
@@ -3183,9 +3201,8 @@ class AmphoraRepositoryTest(BaseRepositoryTest):
         amphora2 = self.create_amphora(
             self.FAKE_UUID_2, status=constants.DELETED)
 
-        expiring_list = self.amphora_repo.get_all_deleted_expiring(
+        expiring_ids = self.amphora_repo.get_all_deleted_expiring(
             self.session, exp_age=exp_age)
-        expiring_ids = [amp.id for amp in expiring_list]
         self.assertIn(amphora1.id, expiring_ids)
         self.assertNotIn(amphora2.id, expiring_ids)
 

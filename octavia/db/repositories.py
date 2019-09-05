@@ -196,7 +196,7 @@ class BaseRepository(object):
         if hasattr(self.model_class, 'status'):
             query = query.filter_by(status=consts.DELETED)
         else:
-            query = query.filter_by(operating_status=consts.DELETED)
+            query = query.filter_by(provisioning_status=consts.DELETED)
         # Do not load any relationship
         query = query.options(noload('*'))
         model_list = query.all()

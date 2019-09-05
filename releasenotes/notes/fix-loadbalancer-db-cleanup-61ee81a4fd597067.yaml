@@ -1,0 +1,5 @@
+---
+fixes:
+  - |
+    Fix an issue that prevented the cleanup of load balancer entries in the
+    database by the Octavia housekeeper service.
