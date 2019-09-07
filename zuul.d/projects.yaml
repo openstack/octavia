@@ -66,6 +66,8 @@
               - ^tools/.*$
               - ^(test-|)requirements.txt$
               - ^tox.ini$
+# Temporary to get the gates fixed with a patch revert
+            voting: false
         - octavia-v2-dsvm-tls-barbican:
             irrelevant-files:
               - ^.*\.rst$
@@ -107,17 +109,18 @@
         - octavia-v2-dsvm-scenario
         - octavia-v2-dsvm-py2-scenario
         - octavia-v2-dsvm-scenario-ubuntu-xenial
-        - octavia-grenade:
-            irrelevant-files:
-              - ^.*\.rst$
-              - ^api-ref/.*$
-              - ^doc/.*$
-              - ^octavia/tests/unit/.*$
-              - ^releasenotes/.*$
-              - ^setup.cfg$
-              - ^tools/.*$
-              - ^(test-|)requirements.txt$
-              - ^tox.ini$
+# Temporary to get the gates fixed with a patch revert
+#        - octavia-grenade:
+#            irrelevant-files:
+#              - ^.*\.rst$
+#              - ^api-ref/.*$
+#              - ^doc/.*$
+#              - ^octavia/tests/unit/.*$
+#              - ^releasenotes/.*$
+#              - ^setup.cfg$
+#              - ^tools/.*$
+#              - ^(test-|)requirements.txt$
+#              - ^tox.ini$
     periodic:
       jobs:
         - publish-openstack-octavia-amphora-image-xenial:
