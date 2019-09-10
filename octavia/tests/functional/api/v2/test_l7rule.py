@@ -1014,7 +1014,7 @@ class TestL7Rule(base.BaseAPITest):
         response = self.put(self.l7rule_path.format(
             l7rule_id=api_l7rule.get('id')),
             self._build_body(new_l7rule)).json.get(self.root_tag)
-        self.assertEqual(False, response.get('invert'))
+        self.assertFalse(response.get('invert'))
 
     def test_delete(self):
         api_l7rule = self.create_l7rule(

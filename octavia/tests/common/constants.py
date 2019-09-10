@@ -18,6 +18,7 @@ class MockNovaInterface(object):
     port_id = None
     fixed_ips = []
 
+
 MOCK_NETWORK_ID = 'mock-network-1'
 MOCK_NETWORK_ID2 = 'mock-network-2'
 MOCK_NETWORK_NAME = 'TestNet1'

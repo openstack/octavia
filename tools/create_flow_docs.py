@@ -146,5 +146,6 @@ def generate(flow_list, output_directory):
 def getDiagKey(item):
     return item[0] + '-' + item[1]
 
+
 if __name__ == "__main__":
     main()

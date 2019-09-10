@@ -49,6 +49,7 @@ class TestException(Exception):
     def __str__(self):
         return repr(self.value)
 
+
 _amphora_mock = mock.MagicMock()
 _amphora_mock.id = AMPHORA_ID
 _amphora_mock.compute_id = COMPUTE_ID

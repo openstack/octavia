@@ -139,7 +139,7 @@ class JinjaTemplater(object):
             log_format = log_format.replace('%{+Q}ST', '-')
             log_format = log_format.replace('%ST', '-')
 
-        log_format = log_format.replace(' ', '\ ')
+        log_format = log_format.replace(' ', '\\ ')
         return log_format
 
     def render_loadbalancer_obj(self, host_amphora, listener,

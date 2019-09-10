@@ -151,8 +151,8 @@ class VirtualMachineManager(compute_base.ComputeBase):
                      for i in range(CONF.nova.random_amphora_name_length - 1)]
                 ))
             block_device_mapping = {}
-            if CONF.controller_worker.volume_driver != \
-                    constants.VOLUME_NOOP_DRIVER:
+            if (CONF.controller_worker.volume_driver !=
+                    constants.VOLUME_NOOP_DRIVER):
                 # creating volume
                 LOG.debug('Creating volume for amphora from image %s',
                           image_id)
@@ -180,8 +180,8 @@ class VirtualMachineManager(compute_base.ComputeBase):
 
             return amphora.id
         except Exception as e:
-            if CONF.controller_worker.volume_driver != \
-                    constants.VOLUME_NOOP_DRIVER:
+            if (CONF.controller_worker.volume_driver !=
+                    constants.VOLUME_NOOP_DRIVER):
                 self.volume_driver.delete_volume(volume_id)
             LOG.exception("Nova failed to build the instance due to: %s", e)
             raise exceptions.ComputeBuildException(fault=e)
@@ -269,8 +269,8 @@ class VirtualMachineManager(compute_base.ComputeBase):
                       'os-interfaces extension failed.')
 
         fault = getattr(nova_response, 'fault', None)
-        if CONF.controller_worker.volume_driver == \
-                constants.VOLUME_NOOP_DRIVER:
+        if (CONF.controller_worker.volume_driver ==
+                constants.VOLUME_NOOP_DRIVER):
             image_id = nova_response.image.get("id")
         else:
             try:

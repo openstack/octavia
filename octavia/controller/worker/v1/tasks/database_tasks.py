@@ -1587,9 +1587,9 @@ class GetListenersFromLoadbalancer(BaseDatabaseTask):
         """
         listeners = []
         for listener in loadbalancer.listeners:
-            l = self.listener_repo.get(db_apis.get_session(), id=listener.id)
-            l.load_balancer = loadbalancer
-            listeners.append(l)
+            lb = self.listener_repo.get(db_apis.get_session(), id=listener.id)
+            lb.load_balancer = loadbalancer
+            listeners.append(lb)
         return listeners
 
 

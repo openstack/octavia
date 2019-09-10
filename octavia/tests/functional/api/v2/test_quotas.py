@@ -152,7 +152,7 @@ class TestQuotas(base.BaseAPITest):
         self.conf.config(group='api_settings', auth_strategy=constants.TESTING)
         with mock.patch.object(octavia.common.context.Context, 'project_id',
                                uuidutils.generate_uuid()):
-                response = self.get(self.QUOTAS_PATH, status=403)
+            response = self.get(self.QUOTAS_PATH, status=403)
         self.conf.config(group='api_settings', auth_strategy=auth_strategy)
         self.assertEqual(self.NOT_AUTHORIZED_BODY, response.json)
 
