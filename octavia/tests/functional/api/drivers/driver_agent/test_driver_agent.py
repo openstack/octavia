@@ -123,18 +123,19 @@ class DriverAgentTest(base.OctaviaDBTestBase):
 
         # Create the full load balancer in the database
         self.tls_container_dict = {
-            'certificate': sample_certs.X509_CERT.decode('utf-8'),
-            'id': sample_certs.X509_CERT_SHA1,
-            'intermediates': [
+            lib_consts.CERTIFICATE: sample_certs.X509_CERT.decode('utf-8'),
+            lib_consts.ID: sample_certs.X509_CERT_SHA1,
+            lib_consts.INTERMEDIATES: [
                 i.decode('utf-8') for i in sample_certs.X509_IMDS_LIST],
-            'passphrase': None,
-            'primary_cn': sample_certs.X509_CERT_CN,
-            'private_key': sample_certs.X509_CERT_KEY.decode('utf-8')}
+            lib_consts.PASSPHRASE: None,
+            lib_consts.PRIMARY_CN: sample_certs.X509_CERT_CN,
+            lib_consts.PRIVATE_KEY: sample_certs.X509_CERT_KEY.decode('utf-8')}
 
         # ### Create load balancer
         self.repos.flavor_profile.create(
             self.session, id=self.sample_data.flavor_profile_id,
-            provider_name='amphora', flavor_data='{"something": "else"}')
+            provider_name=constants.AMPHORA,
+            flavor_data='{"something": "else"}')
         self.repos.flavor.create(
             self.session, id=self.sample_data.flavor_id,
             enabled=True, flavor_profile_id=self.sample_data.flavor_profile_id)
@@ -145,17 +146,17 @@ class DriverAgentTest(base.OctaviaDBTestBase):
         # ### Create Pool
         pool_dict = copy.deepcopy(self.sample_data.test_pool1_dict)
 
-        pool_dict['load_balancer_id'] = self.sample_data.lb_id
+        pool_dict[constants.LOAD_BALANCER_ID] = self.sample_data.lb_id
 
         # Use a live certificate
-        pool_dict['tls_certificate_id'] = self.cert_ref
-        pool_dict['ca_tls_certificate_id'] = self.cert_ref
-        pool_dict['crl_container_id'] = self.cert_ref
+        pool_dict[constants.TLS_CERTIFICATE_ID] = self.cert_ref
+        pool_dict[constants.CA_TLS_CERTIFICATE_ID] = self.cert_ref
+        pool_dict[constants.CRL_CONTAINER_ID] = self.cert_ref
 
         # Remove items that are linked in the DB
         del pool_dict[lib_consts.MEMBERS]
         del pool_dict[constants.HEALTH_MONITOR]
-        del pool_dict['session_persistence']
+        del pool_dict[lib_consts.SESSION_PERSISTENCE]
         del pool_dict[lib_consts.LISTENERS]
         del pool_dict[lib_consts.L7POLICIES]
 
@@ -171,21 +172,26 @@ class DriverAgentTest(base.OctaviaDBTestBase):
             constants.LISTENER_ID] = self.sample_data.listener1_id
 
         # Fix for render_unsets = True
-        self.provider_pool_dict['session_persistence']['cookie_name'] = None
-        self.provider_pool_dict['session_persistence'][
-            'persistence_granularity'] = None
-        self.provider_pool_dict['session_persistence'][
-            'persistence_timeout'] = None
+        self.provider_pool_dict[
+            lib_consts.SESSION_PERSISTENCE][lib_consts.COOKIE_NAME] = None
+        self.provider_pool_dict[lib_consts.SESSION_PERSISTENCE][
+            lib_consts.PERSISTENCE_GRANULARITY] = None
+        self.provider_pool_dict[lib_consts.SESSION_PERSISTENCE][
+            lib_consts.PERSISTENCE_TIMEOUT] = None
 
         # Use a live certificate
-        self.provider_pool_dict['tls_container_data'] = self.tls_container_dict
-        self.provider_pool_dict['tls_container_ref'] = self.cert_ref
         self.provider_pool_dict[
-            'ca_tls_container_data'] = sample_certs.X509_CERT.decode('utf-8')
-        self.provider_pool_dict['ca_tls_container_ref'] = self.cert_ref
+            lib_consts.TLS_CONTAINER_DATA] = self.tls_container_dict
+        self.provider_pool_dict[lib_consts.TLS_CONTAINER_REF] = self.cert_ref
         self.provider_pool_dict[
-            'crl_container_data'] = sample_certs.X509_CERT.decode('utf-8')
-        self.provider_pool_dict['crl_container_ref'] = self.cert_ref
+            lib_consts.CA_TLS_CONTAINER_DATA] = (
+                sample_certs.X509_CERT.decode('utf-8'))
+        self.provider_pool_dict[
+            lib_consts.CA_TLS_CONTAINER_REF] = self.cert_ref
+        self.provider_pool_dict[
+            lib_consts.CRL_CONTAINER_DATA] = (
+                sample_certs.X509_CERT.decode('utf-8'))
+        self.provider_pool_dict[lib_consts.CRL_CONTAINER_REF] = self.cert_ref
 
         # ### Create Member
         member_dict = copy.deepcopy(self.sample_data.test_member1_dict)
@@ -197,21 +203,21 @@ class DriverAgentTest(base.OctaviaDBTestBase):
         hm_dict = copy.deepcopy(self.sample_data.test_hm1_dict)
         self.repos.health_monitor.create(self.session, **hm_dict)
         self.provider_pool_dict[
-            'healthmonitor'] = self.sample_data.provider_hm1_dict
+            lib_consts.HEALTHMONITOR] = self.sample_data.provider_hm1_dict
 
         # ### Create Listener
         listener_dict = copy.deepcopy(self.sample_data.test_listener1_dict)
-        listener_dict['default_pool_id'] = self.sample_data.pool1_id
+        listener_dict[lib_consts.DEFAULT_POOL_ID] = self.sample_data.pool1_id
 
         # Remove items that are linked in the DB
         del listener_dict[lib_consts.L7POLICIES]
-        del listener_dict['default_pool']
+        del listener_dict[lib_consts.DEFAULT_POOL]
         del listener_dict[constants.SNI_CONTAINERS]
 
         # Use a live certificate
-        listener_dict['tls_certificate_id'] = self.cert_ref
-        listener_dict['client_ca_tls_certificate_id'] = self.cert_ref
-        listener_dict['client_crl_container_id'] = self.cert_ref
+        listener_dict[constants.TLS_CERTIFICATE_ID] = self.cert_ref
+        listener_dict[constants.CLIENT_CA_TLS_CERTIFICATE_ID] = self.cert_ref
+        listener_dict[constants.CLIENT_CRL_CONTAINER_ID] = self.cert_ref
 
         self.repos.listener.create(self.session,
                                    **listener_dict)
@@ -224,30 +230,35 @@ class DriverAgentTest(base.OctaviaDBTestBase):
             self.sample_data.provider_listener1_dict)
         self.provider_listener_dict['allowed_cidrs'] = None
         self.provider_listener_dict[
-            'default_tls_container_ref'] = self.cert_ref
+            lib_consts.DEFAULT_TLS_CONTAINER_REF] = self.cert_ref
         self.provider_listener_dict[
-            'default_tls_container_data'] = self.tls_container_dict
+            lib_consts.DEFAULT_TLS_CONTAINER_DATA] = self.tls_container_dict
         self.provider_listener_dict[
-            'client_ca_tls_container_ref'] = self.cert_ref
-        self.provider_listener_dict['client_ca_tls_container_data'] = (
-            sample_certs.X509_CERT.decode('utf-8'))
-        self.provider_listener_dict['client_crl_container_ref'] = self.cert_ref
-        self.provider_listener_dict['client_crl_container_data'] = (
-            sample_certs.X509_CERT.decode('utf-8'))
+            lib_consts.CLIENT_CA_TLS_CONTAINER_REF] = self.cert_ref
         self.provider_listener_dict[
-            'sni_container_data'] = [self.tls_container_dict]
-        self.provider_listener_dict['sni_container_refs'] = [self.cert_ref]
+            lib_consts.CLIENT_CA_TLS_CONTAINER_DATA] = (
+                sample_certs.X509_CERT.decode('utf-8'))
+        self.provider_listener_dict[
+            lib_consts.CLIENT_CRL_CONTAINER_REF] = self.cert_ref
+        self.provider_listener_dict[
+            lib_consts.CLIENT_CRL_CONTAINER_DATA] = (
+                sample_certs.X509_CERT.decode('utf-8'))
+        self.provider_listener_dict[
+            lib_consts.SNI_CONTAINER_DATA] = [self.tls_container_dict]
+        self.provider_listener_dict[
+            lib_consts.SNI_CONTAINER_REFS] = [self.cert_ref]
 
-        self.provider_listener_dict['default_pool'] = self.provider_pool_dict
         self.provider_listener_dict[
-            'default_pool_id'] = self.sample_data.pool1_id
+            lib_consts.DEFAULT_POOL] = self.provider_pool_dict
+        self.provider_listener_dict[
+            lib_consts.DEFAULT_POOL_ID] = self.sample_data.pool1_id
 
         self.provider_listener_dict[lib_consts.L7POLICIES] = [
             self.sample_data.provider_l7policy1_dict]
 
         # ### Create L7 Policy
         l7policy_dict = copy.deepcopy(self.sample_data.test_l7policy1_dict)
-        del l7policy_dict['l7rules']
+        del l7policy_dict[lib_consts.L7RULES]
         self.repos.l7policy.create(self.session, **l7policy_dict)
 
         # ### Create L7 Rules

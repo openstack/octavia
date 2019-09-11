@@ -253,6 +253,9 @@ class TestUtils(base.TestCase):
         expect_prov['default_pool'] = expect_pool_prov
         provider_listener = utils.listener_dict_to_provider_dict(
             self.sample_data.test_listener1_dict)
+        # TODO(johnsom) Remove this once the listener ACLs patch merges
+        # https://review.opendev.org/#/c/659626/
+        del expect_prov['allowed_cidrs']
         self.assertEqual(expect_prov, provider_listener)
 
     @mock.patch('octavia.api.drivers.utils._get_secret_data')
