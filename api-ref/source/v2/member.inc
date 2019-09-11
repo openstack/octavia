@@ -367,10 +367,17 @@ For example, assume a pool currently has two members. These members have the
 following address/port combinations: '192.0.2.15:80' and '192.0.2.16:80'.
 Now assume a PUT request is made that includes members with address/port
 combinations: '192.0.2.16:80' and '192.0.2.17:80'.
+
 The member '192.0.2.15:80' will be deleted, because it was not in the request.
+
 The member '192.0.2.16:80' will be updated to match the request data for that
 member, because it was matched.
+
 The member '192.0.2.17:80' will be created, because no such member existed.
+
+The optional parameter ``additive_only`` when defined as ``true`` will skip
+deletions for members missing from the provided list. If this were set in the
+above example, the member '192.0.2.15:80' would have remained in the pool.
 
 If the request is valid, the service returns the ``Accepted (202)``
 response code. To confirm the updates, check that the member provisioning
@@ -397,6 +404,7 @@ Request
 
 .. rest_parameters:: ../parameters.yaml
 
+   - additive_only: additive-only
    - admin_state_up: admin_state_up-default-optional
    - address: address
    - backup: backup-optional

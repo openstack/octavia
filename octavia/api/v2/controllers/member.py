@@ -16,6 +16,7 @@
 from oslo_db import exception as odb_exceptions
 from oslo_log import log as logging
 from oslo_utils import excutils
+from oslo_utils import strutils
 import pecan
 from wsme import types as wtypes
 from wsmeext import pecan as wsme_pecan
@@ -322,9 +323,10 @@ class MembersController(MemberController):
 
     @wsme_pecan.wsexpose(None, wtypes.text,
                          body=member_types.MembersRootPUT, status_code=202)
-    def put(self, members_):
+    def put(self, additive_only=False, members_=None):
         """Updates all members."""
         members = members_.members
+        additive_only = strutils.bool_from_string(additive_only)
         context = pecan.request.context.get('octavia_context')
 
         db_pool = self._get_db_pool(context.session, self.pool_id)
@@ -336,7 +338,9 @@ class MembersController(MemberController):
         # Check POST+PUT+DELETE since this operation is all of 'CUD'
         self._auth_validate_action(context, project_id, constants.RBAC_POST)
         self._auth_validate_action(context, project_id, constants.RBAC_PUT)
-        self._auth_validate_action(context, project_id, constants.RBAC_DELETE)
+        if not additive_only:
+            self._auth_validate_action(context, project_id,
+                                       constants.RBAC_DELETE)
 
         # Validate member subnets
         for member in members:
@@ -350,13 +354,6 @@ class MembersController(MemberController):
 
         with db_api.get_lock_session() as lock_session:
             self._test_lb_and_listener_and_pool_statuses(lock_session)
-
-            member_count_diff = len(members) - len(old_members)
-            if member_count_diff > 0 and self.repositories.check_quota_met(
-                    context.session, lock_session, data_models.Member,
-                    db_pool.project_id, count=member_count_diff):
-                raise exceptions.QuotaException(
-                    resource=data_models.Member._name())
 
             old_member_uniques = {
                 (m.ip_address, m.protocol_port): m.id for m in old_members}
@@ -380,6 +377,16 @@ class MembersController(MemberController):
                 if (m.ip_address, m.protocol_port) not in new_member_uniques:
                     deleted_members.append(m)
 
+            if additive_only:
+                member_count_diff = len(new_members)
+            else:
+                member_count_diff = len(new_members) - len(deleted_members)
+            if member_count_diff > 0 and self.repositories.check_quota_met(
+                    context.session, lock_session, data_models.Member,
+                    db_pool.project_id, count=member_count_diff):
+                raise exceptions.QuotaException(
+                    resource=data_models.Member._name())
+
             provider_members = []
             # Create new members
             for m in new_members:
@@ -392,6 +399,7 @@ class MembersController(MemberController):
             # Update old members
             for m in updated_members:
                 m.provisioning_status = constants.PENDING_UPDATE
+                m.project_id = db_pool.project_id
                 db_member_dict = m.to_dict(render_unsets=False)
                 db_member_dict.pop('id')
                 self.repositories.member.update(
@@ -402,9 +410,19 @@ class MembersController(MemberController):
                     driver_utils.db_member_to_provider_member(m))
             # Delete old members
             for m in deleted_members:
-                self.repositories.member.update(
-                    lock_session, m.id,
-                    provisioning_status=constants.PENDING_DELETE)
+                if additive_only:
+                    # Members are appended to the dict and their status remains
+                    # unchanged, because they are logically "untouched".
+                    db_member_dict = m.to_dict(render_unsets=False)
+                    db_member_dict.pop('id')
+                    m.pool_id = self.pool_id
+                    provider_members.append(
+                        driver_utils.db_member_to_provider_member(m))
+                else:
+                    # Members are changed to PENDING_DELETE and not passed.
+                    self.repositories.member.update(
+                        lock_session, m.id,
+                        provisioning_status=constants.PENDING_DELETE)
 
             # Dispatch to the driver
             LOG.info("Sending Pool %s batch member update to provider %s",

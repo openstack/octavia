@@ -76,6 +76,12 @@ path-provider:
 ###############################################################################
 # Query fields
 ###############################################################################
+additive-only:
+  description: |
+    If ``true`` no members will be deleted during the batch operation.
+  in: query
+  required: false
+  type: boolean
 cascade-delete:
   description: |
     If ``true`` will delete all child objects of the load balancer.
