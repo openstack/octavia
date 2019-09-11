@@ -795,6 +795,22 @@ class ControllerWorker(base_taskflow.BaseTaskFlowEngine):
                          constants.LOADBALANCER_ID: amp.load_balancer_id,
                          constants.BUILD_TYPE_PRIORITY: priority, }
 
+        if amp.role in (constants.ROLE_MASTER, constants.ROLE_BACKUP):
+            amp_role = 'master_or_backup'
+        elif amp.role == constants.ROLE_STANDALONE:
+            amp_role = 'standalone'
+        elif amp.role is None:
+            amp_role = 'spare'
+        else:
+            amp_role = 'undefined'
+
+        LOG.info("Perform failover for an amphora: %s",
+                 {"id": amp.id,
+                  "load_balancer_id": amp.load_balancer_id,
+                  "lb_network_ip": amp.lb_network_ip,
+                  "compute_id": amp.compute_id,
+                  "role": amp_role})
+
         if amp.status == constants.DELETED:
             LOG.warning('Amphora %s is marked DELETED in the database but '
                         'was submitted for failover. Deleting it from the '
@@ -824,6 +840,13 @@ class ControllerWorker(base_taskflow.BaseTaskFlowEngine):
 
         with tf_logging.DynamicLoggingListener(failover_amphora_tf, log=LOG):
             failover_amphora_tf.run()
+
+        LOG.info("Successfully completed the failover for an amphora: %s",
+                 {"id": amp.id,
+                  "load_balancer_id": amp.load_balancer_id,
+                  "lb_network_ip": amp.lb_network_ip,
+                  "compute_id": amp.compute_id,
+                  "role": amp_role})
 
     def failover_amphora(self, amphora_id):
         """Perform failover operations for an amphora.
@@ -855,7 +878,8 @@ class ControllerWorker(base_taskflow.BaseTaskFlowEngine):
             except Exception:
                 LOG.error("Unable to revert LB status to ERROR.")
             with excutils.save_and_reraise_exception():
-                LOG.error("Failover exception: %s", e)
+                LOG.error("Amphora %(id)s failover exception: %(exc)s",
+                          {'id': amphora_id, 'exc': e})
 
     def failover_loadbalancer(self, load_balancer_id):
         """Perform failover operations for a load balancer.
