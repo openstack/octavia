@@ -15,7 +15,6 @@
 
 import errno
 import os
-import signal
 import threading
 
 import six.moves.socketserver as socketserver
@@ -103,10 +102,6 @@ class ForkingUDSServer(socketserver.ForkingMixIn,
     pass
 
 
-def _mutate_config(*args, **kwargs):
-    CONF.mutate_config_files()
-
-
 def _cleanup_socket_file(filename):
     # Remove the socket file if it already exists
     try:
@@ -117,9 +112,6 @@ def _cleanup_socket_file(filename):
 
 
 def status_listener(exit_event):
-    signal.signal(signal.SIGINT, signal.SIG_IGN)
-    signal.signal(signal.SIGHUP, _mutate_config)
-
     _cleanup_socket_file(CONF.driver_agent.status_socket_path)
 
     server = ForkingUDSServer(CONF.driver_agent.status_socket_path,
@@ -140,9 +132,6 @@ def status_listener(exit_event):
 
 
 def stats_listener(exit_event):
-    signal.signal(signal.SIGINT, signal.SIG_IGN)
-    signal.signal(signal.SIGHUP, _mutate_config)
-
     _cleanup_socket_file(CONF.driver_agent.stats_socket_path)
 
     server = ForkingUDSServer(CONF.driver_agent.stats_socket_path,
@@ -163,9 +152,6 @@ def stats_listener(exit_event):
 
 
 def get_listener(exit_event):
-    signal.signal(signal.SIGINT, signal.SIG_IGN)
-    signal.signal(signal.SIGHUP, _mutate_config)
-
     _cleanup_socket_file(CONF.driver_agent.get_socket_path)
 
     server = ForkingUDSServer(CONF.driver_agent.get_socket_path,

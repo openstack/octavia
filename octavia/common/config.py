@@ -704,6 +704,13 @@ driver_agent_opts = [
                  help=_('Percentage of max_processes (both status and stats) '
                         'in use to start logging warning messages about an '
                         'overloaded driver-agent.')),
+    cfg.IntOpt('provider_agent_shutdown_timeout',
+               default=60,
+               help=_('The time, in seconds, to wait for provider agents '
+                      'to shutdown after the exit event has been set.')),
+    cfg.ListOpt('enabled_provider_agents', default='',
+                help=_('List of enabled provider agents. The driver-agent '
+                       'will launch these agents at startup.'))
 ]
 
 # Register the configuration options

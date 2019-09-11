@@ -33,6 +33,10 @@ Octavia API functions not listed here will continue to be handled by the
 Octavia API and will not call into the driver. Examples would be show, list,
 and quota requests.
 
+In addition, drivers may provide a provider agent that the Octavia driver-agent
+will launch at start up. This is a long-running process that is intended to
+support the provider driver.
+
 Driver Entry Points
 -------------------
 
@@ -47,6 +51,18 @@ for the octavia reference driver would be:
 .. code-block:: python
 
   amphora = octavia.api.drivers.amphora_driver.driver:AmphoraProviderDriver
+
+In addition, provider drivers may provide a provider agent also defined by a
+setup tools entry point. The provider agent namespace is
+"octavia.driver_agent.provider_agents". This will be called once, at Octavia
+driver-agent start up, to launch a long-running process. Provider agents must
+be enabled in the Octavia configuration file. An example provider agent
+entry point would be:
+
+.. code-block:: python
+
+  amphora_agent = octavia.api.drivers.amphora_driver.agent:AmphoraProviderAgent
+
 
 Stable Provider Driver Interface
 ================================
@@ -1991,6 +2007,80 @@ references to the failed record if available.
         self.fault_string = kwargs.pop('fault_string', self.fault_string)
         super(DriverAgentTimeout, self).__init__(self.fault_string,
                                                  *args, **kwargs)
+
+Provider Agents
+===============
+
+Provider agents are long-running processes started by the Octavia driver-agent
+process at start up. They are intended to allow provider drivers a long running
+process that can handle periodic jobs for the provider driver or receive events
+from another provider agent. Provider agents are optional and not required for
+a successful Octavia provider driver.
+
+Provider Agents have access to the same `Stable Provider Driver Interface`_
+as the provider driver. A provider agent must not access any other Octavia
+code.
+
+.. warning::
+
+  The methods listed in the `Driver Support Library`_ section are the only
+  Octavia callable methods for provider agents.
+  All other interfaces are not considered stable or safe for provider agents to
+  access. See `Stable Provider Driver Interface`_ for a list of acceptable
+  APIs for provider agents use.
+
+Declaring Your Provider Agent
+-----------------------------
+
+The Octavia driver-agent will use
+`stevedore <https://docs.openstack.org/stevedore/latest/>`_ to load enabled
+provider agents at start up. Provider agents are enabled in the Octavia
+configuration file. Provider agents that are installed, but not enabled, will
+not be loaded. An example configuration file entry for a provider agent is:
+
+.. code-block:: INI
+
+  [driver_agent]
+  enabled_provider_agents = amphora_agent, noop_agent
+
+The provider agent name must match the provider agent name declared in your
+python setup tools entry point. For example:
+
+.. code-block:: python
+
+  octavia.driver_agent.provider_agents =
+      amphora_agent = octavia.api.drivers.amphora_driver.agent:AmphoraProviderAgent
+      noop_agent = octavia.api.drivers.noop_driver.agent:noop_provider_agent
+
+Provider Agent Method Invocation
+--------------------------------
+
+On start up of the Octavia driver-agent, the method defined in the entry point
+will be launched in its own `multiprocessing Process <https://docs.python.org/3/library/multiprocessing.html#multiprocessing.Process>`_.
+
+Your provider agent method will be passed a `multiprocessing Event <https://docs.python.org/3/library/multiprocessing.html#multiprocessing.Event>`_ that will
+be used to signal that the provider agent should shutdown. When this event
+is "set", the provider agent should gracefully shutdown. If the provider agent
+fails to exit within the Octavia configuration file setting
+"provider_agent_shutdown_timeout" period, the driver-agent will forcefully
+shutdown the provider agent with a SIGKILL signal.
+
+Example Provider Agent Method
+-----------------------------
+
+If, for example, you declared a provider agent as "my_agent":
+
+.. code-block:: python
+
+  octavia.driver_agent.provider_agents =
+      my_agent = example_inc.drivers.my_driver.agent:my_provider_agent
+
+The signature of your "my_provider_agent" method would be:
+
+.. code-block:: python
+
+  def my_provider_agent(exit_event):
+
 
 Documenting the Driver
 ======================
