@@ -704,3 +704,13 @@ L4_PROTOCOL_MAP = {
     PROTOCOL_PROXY: PROTOCOL_TCP,
     PROTOCOL_UDP: PROTOCOL_UDP,
 }
+
+# Volume drivers
+VOLUME_NOOP_DRIVER = 'volume_noop_driver'
+SUPPORTED_VOLUME_DRIVERS = [VOLUME_NOOP_DRIVER,
+                            'volume_cinder_driver']
+
+# Cinder volume driver constants
+CINDER_STATUS_AVAILABLE = 'available'
+CINDER_STATUS_ERROR = 'error'
+CINDER_ACTION_CREATE_VOLUME = 'create volume'

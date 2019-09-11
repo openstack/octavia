@@ -10,6 +10,7 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import cinderclient.v3
 import glanceclient.v2
 import mock
 import neutronclient.v2_0
@@ -133,5 +134,43 @@ class TestGlanceAuth(base.TestCase):
         # Getting the session again should return the same object
         bc2 = clients.GlanceAuth.get_glance_client(
             region="test-region", service_name="glanceEndpoint1",
+            endpoint="test-endpoint", endpoint_type='publicURL', insecure=True)
+        self.assertIs(bc1, bc2)
+
+
+class TestCinderAuth(base.TestCase):
+
+    def setUp(self):
+        # Reset the session and client
+        clients.CinderAuth.cinder_client = None
+        keystone._SESSION = None
+
+        super(TestCinderAuth, self).setUp()
+
+    @mock.patch('keystoneauth1.session.Session', mock.Mock())
+    def test_get_cinder_client(self):
+        # There should be no existing client
+        self.assertIsNone(
+            clients.CinderAuth.cinder_client
+        )
+
+        # Mock out the keystone session and get the client
+        keystone._SESSION = mock.MagicMock()
+        bc1 = clients.CinderAuth.get_cinder_client(
+            region=None, endpoint_type='publicURL', insecure=True)
+
+        # Our returned client should also be the saved client
+        self.assertIsInstance(
+            clients.CinderAuth.cinder_client,
+            cinderclient.v3.client.Client
+        )
+        self.assertIs(
+            clients.CinderAuth.cinder_client,
+            bc1
+        )
+
+        # Getting the session again should return the same object
+        bc2 = clients.CinderAuth.get_cinder_client(
+            region="test-region", service_name="cinderEndpoint1",
             endpoint="test-endpoint", endpoint_type='publicURL', insecure=True)
         self.assertIs(bc1, bc2)

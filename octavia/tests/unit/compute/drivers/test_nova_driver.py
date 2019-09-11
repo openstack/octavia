@@ -96,12 +96,13 @@ class TestNovaClient(base.TestCase):
         conf.config(group="controller_worker",
                     amp_boot_network_list=['1', '2'])
         self.conf = conf
+        self.fake_image_uuid = uuidutils.generate_uuid()
 
         self.amphora = models.Amphora(
             compute_id=uuidutils.generate_uuid(),
             status='ACTIVE',
             lb_network_ip='10.0.0.1',
-            image_id=uuidutils.generate_uuid(),
+            image_id=self.fake_image_uuid,
             compute_flavor=uuidutils.generate_uuid()
         )
 
@@ -148,6 +149,9 @@ class TestNovaClient(base.TestCase):
         self.server_group_mock.policy = self.server_group_policy
         self.server_group_mock.id = self.server_group_id
 
+        self.volume_mock = mock.MagicMock()
+        setattr(self.volume_mock, 'volumeId', '1')
+
         self.port_id = uuidutils.generate_uuid()
         self.compute_id = uuidutils.generate_uuid()
         self.network_id = uuidutils.generate_uuid()
@@ -177,7 +181,39 @@ class TestNovaClient(base.TestCase):
             userdata='Blah',
             config_drive=True,
             scheduler_hints=None,
-            availability_zone=None
+            availability_zone=None,
+            block_device_mapping={}
+        )
+
+    @mock.patch('stevedore.driver.DriverManager.driver')
+    def test_build_with_cinder_volume(self, mock_driver):
+        self.conf.config(group="controller_worker",
+                         volume_driver='volume_cinder_driver')
+        self.manager.volume_driver = mock_driver
+        mock_driver.create_volume_from_image.return_value = 1
+        amphora_id = self.manager.build(amphora_flavor=1, image_id=1,
+                                        key_name=1,
+                                        sec_groups=1,
+                                        network_ids=[1],
+                                        port_ids=[2],
+                                        user_data='Blah',
+                                        config_drive_files='Files Blah')
+
+        self.assertEqual(self.amphora.compute_id, amphora_id)
+        mock_driver.create_volume_from_image.assert_called_with(1)
+        self.manager.manager.create.assert_called_with(
+            name="amphora_name",
+            nics=[{'net-id': 1}, {'port-id': 2}],
+            image=None,
+            flavor=1,
+            key_name=1,
+            security_groups=1,
+            files='Files Blah',
+            userdata='Blah',
+            config_drive=True,
+            scheduler_hints=None,
+            availability_zone=None,
+            block_device_mapping={'vda': '1:::true'}
         )
 
     def test_build_with_availability_zone(self):
@@ -205,7 +241,8 @@ class TestNovaClient(base.TestCase):
             userdata='Blah',
             config_drive=True,
             scheduler_hints=None,
-            availability_zone=FAKE_AZ
+            availability_zone=FAKE_AZ,
+            block_device_mapping={}
         )
 
     def test_build_with_random_amphora_name_length(self):
@@ -241,7 +278,8 @@ class TestNovaClient(base.TestCase):
             userdata='Blah',
             config_drive=True,
             scheduler_hints=None,
-            availability_zone=None
+            availability_zone=None,
+            block_device_mapping={}
         )
 
     def test_bad_build(self):
@@ -311,6 +349,22 @@ class TestNovaClient(base.TestCase):
         amphora, fault = self.manager._translate_amphora(self.nova_response)
         self.assertIsNone(amphora.lb_network_ip)
         self.nova_response.interface_list.called_with()
+
+    @mock.patch('stevedore.driver.DriverManager.driver')
+    def test_translate_amphora_use_cinder(self, mock_driver):
+        self.conf.config(group="controller_worker",
+                         volume_driver='volume_cinder_driver')
+        volumes_manager = self.manager._nova_client.volumes
+        volumes_manager.get_server_volumes.return_value = [self.volume_mock]
+        self.manager.volume_driver = mock_driver
+        mock_driver.get_image_from_volume.return_value = self.fake_image_uuid
+        amphora, fault = self.manager._translate_amphora(self.nova_response)
+        self.assertEqual(self.amphora, amphora)
+        self.assertEqual(self.nova_response.fault, fault)
+        self.nova_response.interface_list.called_with()
+        volumes_manager.get_server_volumes.assert_called_with(
+            self.nova_response.id)
+        mock_driver.get_image_from_volume.assert_called_with('1')
 
     def test_create_server_group(self):
         self.manager.server_groups.create.return_value = self.server_group_mock

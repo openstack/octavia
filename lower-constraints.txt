@@ -172,3 +172,4 @@ WebTest==2.0.29
 Werkzeug==0.14.1
 wrapt==1.10.11
 WSME==0.8.0
+python-cinderclient==3.3.0

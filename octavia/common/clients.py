@@ -10,6 +10,7 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+from cinderclient import client as cinder_client
 from glanceclient import client as glance_client
 from neutronclient.neutron import client as neutron_client
 from novaclient import api_versions
@@ -26,6 +27,7 @@ CONF = cfg.CONF
 GLANCE_VERSION = '2'
 NEUTRON_VERSION = '2.0'
 NOVA_VERSION = '2.15'
+CINDER_VERSION = '3'
 
 
 class NovaAuth(object):
@@ -143,3 +145,43 @@ class GlanceAuth(object):
                 with excutils.save_and_reraise_exception():
                     LOG.exception("Error creating Glance client.")
         return cls.glance_client
+
+
+class CinderAuth(object):
+    cinder_client = None
+
+    @classmethod
+    def get_cinder_client(cls, region, service_name=None, endpoint=None,
+                          endpoint_type='publicURL', insecure=False,
+                          cacert=None):
+        """Create cinder client object.
+
+        :param region: The region of the service
+        :param service_name: The name of the cinder service in the catalog
+        :param endpoint: The endpoint of the service
+        :param endpoint_type: The endpoint type of the service
+        :param insecure: Turn off certificate validation
+        :param cacert: CA Cert file path
+        :return: a Cinder Client object
+        :raise Exception: if the client cannot be created
+        """
+        ksession = keystone.KeystoneSession()
+        if not cls.cinder_client:
+            kwargs = {'region_name': region,
+                      'session': ksession.get_session(),
+                      'interface': endpoint_type}
+            if service_name:
+                kwargs['service_name'] = service_name
+            if endpoint:
+                kwargs['endpoint'] = endpoint
+                if endpoint.startwith("https"):
+                    kwargs['insecure'] = insecure
+                    kwargs['cacert'] = cacert
+            try:
+                cls.cinder_client = cinder_client.Client(
+                    CINDER_VERSION, **kwargs
+                )
+            except Exception:
+                with excutils.save_and_reraise_exception():
+                    LOG.exception("Error creating Cinder client.")
+        return cls.cinder_client
