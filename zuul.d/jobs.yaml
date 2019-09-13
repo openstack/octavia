@@ -116,6 +116,7 @@
       zuul_work_dir: src/opendev.org/openstack/octavia
     required-projects:
       - openstack/octavia-lib
+      - openstack/octavia
 
 - job:
     name: octavia-tox-functional-py37-tips
@@ -127,3 +128,4 @@
       zuul_work_dir: src/opendev.org/openstack/octavia
     required-projects:
       - openstack/octavia-lib
+      - openstack/octavia
