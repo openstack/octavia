@@ -188,7 +188,7 @@ class AmphoraLoadBalancerDriver(object):
         Upload cert file to amphora for Controller Communication.
         """
 
-    def update_agent_config(self, amphora, agent_config):
+    def update_amphora_agent_config(self, amphora, agent_config):
         """Upload and update the amphora agent configuration.
 
         :param amphora: amphora object, needs id and network ip(s)
