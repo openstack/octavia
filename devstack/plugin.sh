@@ -384,8 +384,7 @@ function create_mgmt_network_interface {
     MGMT_PORT_ID=$(openstack port create --security-group lb-health-mgr-sec-grp --device-owner Octavia:health-mgr --host=$(hostname) -c id -f value --network lb-mgmt-net $PORT_FIXED_IP octavia-health-manager-$OCTAVIA_NODE-listen-port)
     MGMT_PORT_MAC=$(openstack port show -c mac_address -f value $MGMT_PORT_ID)
 
-    # TODO(johnsom) This gets the IPv4 address, should be updated for IPv6
-    MGMT_PORT_IP=$(openstack port show -f value -c fixed_ips $MGMT_PORT_ID | awk '{FS=",| "; gsub(",",""); gsub("'\''",""); for(i = 1; i <= NF; ++i) {if ($i ~ /^ip_address/) {n=index($i, "="); if (substr($i, n+1) ~ "\\.") print substr($i, n+1)}}}')
+    MGMT_PORT_IP=$(openstack port show -f yaml -c fixed_ips $MGMT_PORT_ID | awk '{FS=",|";gsub(",","");gsub("'\''","");for(line = 1; line <= NF; ++line) {if ($line ~ /^- ip_address:/) {split($line, word, " ");if (ENVIRON["IPV6_ENABLED"] == "" && word[3] ~ /\./) print word[3];if (ENVIRON["IPV6_ENABLED"] != "" && word[3] ~ /:/) print word[3];} else {split($line, word, " ");for(ind in word) {if (word[ind] ~ /^ip_address=/) {split(word[ind], token, "=");if (ENVIRON["IPV6_ENABLED"] == "" && token[2] ~ /\./) print token[2];if (ENVIRON["IPV6_ENABLED"] != "" && token[2] ~ /:/) print token[2];}}}}}')
     if function_exists octavia_create_network_interface_device ; then
         octavia_create_network_interface_device o-hm0 $MGMT_PORT_ID $MGMT_PORT_MAC
     elif [[ $NEUTRON_AGENT == "openvswitch" || $Q_AGENT == "openvswitch" ]]; then
