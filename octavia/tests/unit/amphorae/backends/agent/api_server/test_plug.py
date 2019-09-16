@@ -45,41 +45,43 @@ class TestPlug(base.TestCase):
         self.test_plug = plug.Plug(self.osutil)
         self.addCleanup(self.mock_platform.stop)
 
-    @mock.patch('pyroute2.IPRoute.__enter__', create=True)
+    @mock.patch('pyroute2.IPRoute', create=True)
     def test__interface_by_mac_case_insensitive_ubuntu(self, mock_ipr):
         mock_ipr_instance = mock.MagicMock()
         mock_ipr_instance.link_lookup.return_value = [33]
         mock_ipr_instance.get_links.return_value = ({
             'attrs': [('IFLA_IFNAME', FAKE_INTERFACE)]},)
-        mock_ipr.return_value = mock_ipr_instance
+        mock_ipr().__enter__.return_value = mock_ipr_instance
 
         interface = self.test_plug._interface_by_mac(FAKE_MAC_ADDRESS.upper())
         self.assertEqual(FAKE_INTERFACE, interface)
         mock_ipr_instance.get_links.assert_called_once_with(33)
 
-    @mock.patch('pyroute2.IPRoute.__enter__', create=True)
+    @mock.patch('pyroute2.IPRoute', create=True)
     def test__interface_by_mac_not_found(self, mock_ipr):
         mock_ipr_instance = mock.MagicMock()
         mock_ipr_instance.link_lookup.return_value = []
-        mock_ipr.return_value = mock_ipr_instance
+        mock_ipr().__enter__.return_value = mock_ipr_instance
 
         fd_mock = mock.mock_open()
         open_mock = mock.Mock()
+        isfile_mock = mock.Mock()
         with mock.patch('os.open', open_mock), mock.patch.object(
-                os, 'fdopen', fd_mock):
+                os, 'fdopen', fd_mock), mock.patch.object(
+                os.path, 'isfile', isfile_mock):
             self.assertRaises(wz_exceptions.HTTPException,
                               self.test_plug._interface_by_mac,
                               FAKE_MAC_ADDRESS.upper())
         open_mock.assert_called_once_with('/sys/bus/pci/rescan', os.O_WRONLY)
         fd_mock().write.assert_called_once_with('1')
 
-    @mock.patch('pyroute2.IPRoute.__enter__', create=True)
+    @mock.patch('pyroute2.IPRoute', create=True)
     def test__interface_by_mac_case_insensitive_rh(self, mock_ipr):
         mock_ipr_instance = mock.MagicMock()
         mock_ipr_instance.link_lookup.return_value = [33]
         mock_ipr_instance.get_links.return_value = ({
             'attrs': [('IFLA_IFNAME', FAKE_INTERFACE)]},)
-        mock_ipr.return_value = mock_ipr_instance
+        mock_ipr().__enter__.return_value = mock_ipr_instance
 
         with mock.patch('distro.id', return_value='centos'):
             osutil = osutils.BaseOS.get_os_util()
