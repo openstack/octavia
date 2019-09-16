@@ -183,11 +183,11 @@ def build_stats_message():
                     'totconns': listener_stats['stats']['stot'],
                     'ereq': listener_stats['stats']['ereq']
                 }
-                udp_listener_dict['pools'] = {}
                 if pool_status:
-                    udp_listener_dict['pools'] = {
-                        pool_status['lvs']['uuid']: {
-                            "status": pool_status['lvs']['status'],
-                            "members": pool_status['lvs']['members']}}
+                    pool_id = pool_status['lvs']['uuid']
+                    msg['pools'][pool_id] = {
+                        "status": pool_status['lvs']['status'],
+                        "members": pool_status['lvs']['members']
+                    }
                 msg['listeners'][listener_id] = udp_listener_dict
     return msg
