@@ -333,7 +333,7 @@ class TestHealthDaemon(base.TestCase):
                 "get_udp_listeners_stats")
     @mock.patch("octavia.amphorae.backends.agent.api_server.util."
                 "get_udp_listeners")
-    def test_bulid_stats_message_with_udp_listener(
+    def test_build_stats_message_with_udp_listener(
             self, mock_get_udp_listeners, mock_get_listener_stats,
             mock_get_pool_status):
         udp_listener_id1 = uuidutils.generate_uuid()
@@ -371,20 +371,20 @@ class TestHealthDaemon(base.TestCase):
             'listeners': {
                 udp_listener_id1: {
                     'status': constants.OPEN,
-                    'pools': {
-                        pool_id: {
-                            'status': constants.UP,
-                            'members': {
-                                member_id1: constants.UP,
-                                member_id2: constants.UP}}},
                     'stats': {'conns': 0, 'totconns': 5, 'ereq': 0,
                               'rx': 6387472, 'tx': 7490}},
                 udp_listener_id3: {
                     'status': constants.DOWN,
-                    'pools': {},
                     'stats': {'conns': 0, 'totconns': 0, 'ereq': 0,
-                              'rx': 0, 'tx': 0}}}, 'pools': {}, 'id': None,
-                    'seq': mock.ANY, 'ver': health_daemon.MSG_VER}
+                              'rx': 0, 'tx': 0}}},
+            'pools': {
+                pool_id: {
+                    'status': constants.UP,
+                    'members': {
+                        member_id1: constants.UP,
+                        member_id2: constants.UP}}},
+            'id': None,
+            'seq': mock.ANY, 'ver': health_daemon.MSG_VER}
         msg = health_daemon.build_stats_message()
         self.assertEqual(expected, msg)
 
