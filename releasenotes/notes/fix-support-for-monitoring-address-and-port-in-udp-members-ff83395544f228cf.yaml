@@ -1,0 +1,6 @@
+---
+fixes:
+  - |
+    Add support for monitor_address and monitor_port attributes in UDP members.
+    Previously, monitor_address and monitor_port were ignored and address and
+    protocol_port attributes were used as monitoring address and port.
