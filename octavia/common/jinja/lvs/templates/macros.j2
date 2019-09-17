@@ -44,6 +44,7 @@ MISC_CHECK {
 {% endmacro %}
 
 {% macro realserver_macro(constants, pool, member, listener) %}
+    {% if member.enabled %}
     # Configuration for Member {{ member.id }}
     real_server {{ member.address }} {{ member.protocol_port }} {
         weight {{ member.weight }}
@@ -52,6 +53,9 @@ MISC_CHECK {
         {% endif %}
 {{- health_monitor_rs_macro(constants, pool, member) }}
     }
+    {% else %}
+    # Member {{ member.id }} is disabled
+    {% endif %}
 {% endmacro %}
 
 {% macro health_monitor_vs_macro(default_pool) %}
@@ -71,7 +75,7 @@ MISC_CHECK {
 {% macro virtualserver_macro(constants, listener, lb_vip_address, default_pool) %}
 {% set need_render = [] %}
 {% if default_pool and default_pool.enabled and default_pool.members %}
-    {% for member in default_pool.members if member.enabled %}
+    {% for member in default_pool.members %}
         {% do need_render.append(member.enabled) %}
     {% endfor %}
 {% endif %}
@@ -101,7 +105,7 @@ virtual_server {{ lb_vip_address }} {{ listener.protocol_port }} {
     {% if default_pool.health_monitor and default_pool.health_monitor.enabled %}
     # Configuration for HealthMonitor {{ default_pool.health_monitor.id }}
     {% endif %}
-    {% for member in default_pool.members if member.enabled %}
+    {% for member in default_pool.members %}
         {{- realserver_macro(constants, default_pool, member, listener) }}
     {% endfor %}
 {% endif %}
