@@ -1,0 +1,7 @@
+---
+fixes:
+  - |
+    Adding a member with different IP protocol version than the VIP IP protocol
+    version in a UDP load balancer caused a crash in the amphora. A validation
+    step in the amphora driver now prevents mixing IP protocol versions in UDP
+    load balancers.

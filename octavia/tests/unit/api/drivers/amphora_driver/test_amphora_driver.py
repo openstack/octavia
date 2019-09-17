@@ -201,13 +201,59 @@ class TestAmphoraDriver(base.TestRpc):
         mock_cast.assert_called_with({}, 'update_pool', **payload)
 
     # Member
+    @mock.patch('octavia.db.api.get_session')
+    @mock.patch('octavia.db.repositories.PoolRepository.get')
     @mock.patch('oslo_messaging.RPCClient.cast')
-    def test_member_create(self, mock_cast):
+    def test_member_create(self, mock_cast, mock_pool_get, mock_session):
         provider_member = driver_dm.Member(
             member_id=self.sample_data.member1_id)
         self.amp_driver.member_create(provider_member)
         payload = {consts.MEMBER_ID: self.sample_data.member1_id}
         mock_cast.assert_called_with({}, 'create_member', **payload)
+
+    @mock.patch('octavia.db.api.get_session')
+    @mock.patch('octavia.db.repositories.PoolRepository.get')
+    @mock.patch('oslo_messaging.RPCClient.cast')
+    def test_member_create_udp_ipv4(self, mock_cast, mock_pool_get,
+                                    mock_session):
+        mock_lb = mock.MagicMock()
+        mock_lb.vip = mock.MagicMock()
+        mock_lb.vip.ip_address = "192.0.1.1"
+        mock_listener = mock.MagicMock()
+        mock_listener.load_balancer = mock_lb
+        mock_pool = mock.MagicMock()
+        mock_pool.protocol = consts.PROTOCOL_UDP
+        mock_pool.listeners = [mock_listener]
+        mock_pool_get.return_value = mock_pool
+
+        provider_member = driver_dm.Member(
+            member_id=self.sample_data.member1_id,
+            address="192.0.2.1")
+        self.amp_driver.member_create(provider_member)
+        payload = {consts.MEMBER_ID: self.sample_data.member1_id}
+        mock_cast.assert_called_with({}, 'create_member', **payload)
+
+    @mock.patch('octavia.db.api.get_session')
+    @mock.patch('octavia.db.repositories.PoolRepository.get')
+    @mock.patch('oslo_messaging.RPCClient.cast')
+    def test_member_create_udp_ipv4_ipv6(self, mock_cast, mock_pool_get,
+                                         mock_session):
+        mock_lb = mock.MagicMock()
+        mock_lb.vip = mock.MagicMock()
+        mock_lb.vip.ip_address = "fe80::1"
+        mock_listener = mock.MagicMock()
+        mock_listener.load_balancer = mock_lb
+        mock_pool = mock.MagicMock()
+        mock_pool.protocol = consts.PROTOCOL_UDP
+        mock_pool.listeners = [mock_listener]
+        mock_pool_get.return_value = mock_pool
+
+        provider_member = driver_dm.Member(
+            member_id=self.sample_data.member1_id,
+            address="192.0.2.1")
+        self.assertRaises(exceptions.UnsupportedOptionError,
+                          self.amp_driver.member_create,
+                          provider_member)
 
     @mock.patch('oslo_messaging.RPCClient.cast')
     def test_member_delete(self, mock_cast):
@@ -326,6 +372,83 @@ class TestAmphoraDriver(base.TestRpc):
         self.amp_driver.health_monitor_delete(provider_HM)
         payload = {consts.HEALTH_MONITOR_ID: self.sample_data.hm1_id}
         mock_cast.assert_called_with({}, 'delete_health_monitor', **payload)
+
+    @mock.patch('octavia.db.api.get_session')
+    @mock.patch('octavia.db.repositories.PoolRepository.get')
+    @mock.patch('oslo_messaging.RPCClient.cast')
+    def test_member_batch_update_udp_ipv4(self, mock_cast, mock_pool_get,
+                                          mock_session):
+
+        mock_lb = mock.MagicMock()
+        mock_lb.vip = mock.MagicMock()
+        mock_lb.vip.ip_address = "192.0.1.1"
+        mock_listener = mock.MagicMock()
+        mock_listener.load_balancer = mock_lb
+        mock_pool = mock.MagicMock()
+        mock_pool.protocol = consts.PROTOCOL_UDP
+        mock_pool.listeners = [mock_listener]
+        mock_pool.members = self.sample_data.db_pool1_members
+        mock_pool_get.return_value = mock_pool
+
+        prov_mem_update = driver_dm.Member(
+            member_id=self.sample_data.member2_id,
+            pool_id=self.sample_data.pool1_id, admin_state_up=False,
+            address='192.0.2.17', monitor_address='192.0.2.77',
+            protocol_port=80, name='updated-member2')
+        prov_new_member = driver_dm.Member(
+            member_id=self.sample_data.member3_id,
+            pool_id=self.sample_data.pool1_id,
+            address='192.0.2.18', monitor_address='192.0.2.28',
+            protocol_port=80, name='member3')
+        prov_members = [prov_mem_update, prov_new_member]
+
+        update_mem_dict = {'ip_address': '192.0.2.17',
+                           'name': 'updated-member2',
+                           'monitor_address': '192.0.2.77',
+                           'id': self.sample_data.member2_id,
+                           'enabled': False,
+                           'protocol_port': 80,
+                           'pool_id': self.sample_data.pool1_id}
+
+        self.amp_driver.member_batch_update(prov_members)
+
+        payload = {'old_member_ids': [self.sample_data.member1_id],
+                   'new_member_ids': [self.sample_data.member3_id],
+                   'updated_members': [update_mem_dict]}
+        mock_cast.assert_called_with({}, 'batch_update_members', **payload)
+
+    @mock.patch('octavia.db.api.get_session')
+    @mock.patch('octavia.db.repositories.PoolRepository.get')
+    @mock.patch('oslo_messaging.RPCClient.cast')
+    def test_member_batch_update_udp_ipv4_ipv6(self, mock_cast, mock_pool_get,
+                                               mock_session):
+
+        mock_lb = mock.MagicMock()
+        mock_lb.vip = mock.MagicMock()
+        mock_lb.vip.ip_address = "192.0.1.1"
+        mock_listener = mock.MagicMock()
+        mock_listener.load_balancer = mock_lb
+        mock_pool = mock.MagicMock()
+        mock_pool.protocol = consts.PROTOCOL_UDP
+        mock_pool.listeners = [mock_listener]
+        mock_pool.members = self.sample_data.db_pool1_members
+        mock_pool_get.return_value = mock_pool
+
+        prov_mem_update = driver_dm.Member(
+            member_id=self.sample_data.member2_id,
+            pool_id=self.sample_data.pool1_id, admin_state_up=False,
+            address='fe80::1', monitor_address='fe80::2',
+            protocol_port=80, name='updated-member2')
+        prov_new_member = driver_dm.Member(
+            member_id=self.sample_data.member3_id,
+            pool_id=self.sample_data.pool1_id,
+            address='192.0.2.18', monitor_address='192.0.2.28',
+            protocol_port=80, name='member3')
+        prov_members = [prov_mem_update, prov_new_member]
+
+        self.assertRaises(exceptions.UnsupportedOptionError,
+                          self.amp_driver.member_batch_update,
+                          prov_members)
 
     @mock.patch('oslo_messaging.RPCClient.cast')
     def test_health_monitor_update(self, mock_cast):
