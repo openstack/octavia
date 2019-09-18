@@ -80,6 +80,7 @@ additive-only:
   description: |
     If ``true`` no members will be deleted during the batch operation.
   in: query
+  min_version: 2.11
   required: false
   type: boolean
 cascade-delete:
