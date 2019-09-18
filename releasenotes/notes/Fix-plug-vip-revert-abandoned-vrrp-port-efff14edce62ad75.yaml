@@ -1,0 +1,5 @@
+---
+fixes:
+  - |
+    Fixes an issue where, if we were unable to attach the base (VRRP) port to
+    an amphora instance, the revert would not clean up the port in neutron.
