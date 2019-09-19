@@ -1,0 +1,6 @@
+---
+fixes:
+  - The passphrase for config option 'server_certs_key_passphrase' is used as
+    a Fernet key in Octavia and thus must be 32, base64(url) compatible,
+    characters long. Octavia will now validate the passphrase length and
+    format.
