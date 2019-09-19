@@ -21,12 +21,16 @@ from cryptography.hazmat.primitives import serialization
 from OpenSSL import crypto
 
 from octavia.certificates.common import cert
+from octavia.common import exceptions
 
 
 class PKCS12Cert(cert.Cert):
     """Representation of a Cert for local storage."""
     def __init__(self, certbag):
-        p12 = crypto.load_pkcs12(certbag)
+        try:
+            p12 = crypto.load_pkcs12(certbag)
+        except crypto.Error as e:
+            raise exceptions.UnreadablePKCS12(error=str(e))
         self.certificate = p12.get_certificate()
         self.intermediates = p12.get_ca_certificates()
         self.private_key = p12.get_privatekey()
