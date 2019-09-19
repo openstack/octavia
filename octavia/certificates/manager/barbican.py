@@ -112,6 +112,8 @@ class BarbicanCertManager(cert_mgr.CertManager):
         try:
             cert_secret = connection.secrets.get(secret_ref=cert_ref)
             return pkcs12.PKCS12Cert(cert_secret.payload)
+        except exceptions.UnreadablePKCS12:
+            raise
         except Exception:
             # If our get fails, try with the legacy driver.
             # TODO(rm_work): Remove this code when the deprecation cycle for
