@@ -50,10 +50,11 @@ class TestAmphoraInfo(base.TestCase):
         templater = jinja_cfg.JinjaTemplater(
             base_amp_path=self.BASE_AMP_PATH,
             base_crt_dir=self.BASE_CRT_PATH)
-        tls_tupel = sample_configs_combined.sample_tls_container_tuple(
-            id='tls_container_id',
-            certificate='imaCert1', private_key='imaPrivateKey1',
-            primary_cn='FakeCN')
+        tls_tupel = {'cont_id_1':
+                     sample_configs_combined.sample_tls_container_tuple(
+                         id='tls_container_id',
+                         certificate='imaCert1', private_key='imaPrivateKey1',
+                         primary_cn='FakeCN')}
         self.rendered_haproxy_cfg = templater.render_loadbalancer_obj(
             sample_configs_combined.sample_amphora_tuple(),
             [sample_configs_combined.sample_listener_tuple(

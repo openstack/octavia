@@ -81,7 +81,7 @@ class JinjaTemplater(object):
         self.log_server = log_server
         self.connection_logging = connection_logging
 
-    def build_config(self, host_amphora, listeners, tls_cert,
+    def build_config(self, host_amphora, listeners, tls_certs,
                      haproxy_versions, socket_path=None,
                      client_ca_filename=None, client_crl=None,
                      pool_tls_certs=None):
@@ -89,7 +89,7 @@ class JinjaTemplater(object):
 
         :param host_amphora: The Amphora this configuration is hosted on
         :param listener: The listener configuration
-        :param tls_cert: The TLS certificates for the listener
+        :param tls_certs: Dict of the TLS certificates for the listeners
         :param socket_path: The socket path for Haproxy process
         :return: Rendered configuration
         """
@@ -104,7 +104,7 @@ class JinjaTemplater(object):
             feature_compatibility[constants.HTTP_REUSE] = True
 
         return self.render_loadbalancer_obj(
-            host_amphora, listeners, tls_cert=tls_cert,
+            host_amphora, listeners, tls_certs=tls_certs,
             socket_path=socket_path,
             feature_compatibility=feature_compatibility,
             client_ca_filename=client_ca_filename, client_crl=client_crl,
@@ -144,7 +144,7 @@ class JinjaTemplater(object):
         return log_format
 
     def render_loadbalancer_obj(self, host_amphora, listeners,
-                                tls_cert=None, socket_path=None,
+                                tls_certs=None, socket_path=None,
                                 feature_compatibility=None,
                                 client_ca_filename=None, client_crl=None,
                                 pool_tls_certs=None):
@@ -152,7 +152,7 @@ class JinjaTemplater(object):
 
         :param host_amphora: The Amphora this configuration is hosted on
         :param listener: The listener configuration
-        :param tls_cert: The TLS certificates for the listener
+        :param tls_certs: Dict of the TLS certificates for the listener
         :param client_ca_filename: The CA certificate for client authorization
         :param socket_path: The socket path for Haproxy process
         :return: Rendered configuration
@@ -162,7 +162,7 @@ class JinjaTemplater(object):
             host_amphora,
             listeners[0].load_balancer,
             listeners,
-            tls_cert,
+            tls_certs,
             feature_compatibility,
             client_ca_filename=client_ca_filename,
             client_crl=client_crl,
@@ -182,7 +182,7 @@ class JinjaTemplater(object):
             constants=constants)
 
     def _transform_loadbalancer(self, host_amphora, loadbalancer, listeners,
-                                tls_cert, feature_compatibility,
+                                tls_certs, feature_compatibility,
                                 client_ca_filename=None, client_crl=None,
                                 pool_tls_certs=None):
         """Transforms a load balancer into an object that will
@@ -194,7 +194,7 @@ class JinjaTemplater(object):
             if listener.protocol == constants.PROTOCOL_UDP:
                 continue
             listener_transforms.append(self._transform_listener(
-                listener, tls_cert, feature_compatibility, loadbalancer,
+                listener, tls_certs, feature_compatibility, loadbalancer,
                 client_ca_filename=client_ca_filename, client_crl=client_crl,
                 pool_tls_certs=pool_tls_certs))
 
@@ -246,7 +246,7 @@ class JinjaTemplater(object):
             'vrrp_priority': amphora.vrrp_priority
         }
 
-    def _transform_listener(self, listener, tls_cert, feature_compatibility,
+    def _transform_listener(self, listener, tls_certs, feature_compatibility,
                             loadbalancer, client_ca_filename=None,
                             client_crl=None, pool_tls_certs=None):
         """Transforms a listener into an object that will
@@ -278,11 +278,11 @@ class JinjaTemplater(object):
             ret_value['connection_limit'] = listener.connection_limit
         else:
             ret_value['connection_limit'] = constants.HAPROXY_MAX_MAXCONN
-        if listener.tls_certificate_id:
+        if listener.tls_certificate_id and tls_certs is not None:
             ret_value['default_tls_path'] = '%s.pem' % (
                 os.path.join(self.base_crt_dir,
                              loadbalancer.id,
-                             tls_cert.id))
+                             tls_certs[listener.tls_certificate_id].id))
         if listener.sni_containers:
             ret_value['crt_dir'] = os.path.join(
                 self.base_crt_dir, loadbalancer.id)
