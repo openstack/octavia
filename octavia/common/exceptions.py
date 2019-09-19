@@ -128,6 +128,13 @@ class UnreadableCert(OctaviaException):
     message = _("Could not read X509 from PEM")
 
 
+class UnreadablePKCS12(APIException):
+    msg = _("The PKCS12 bundle is unreadable. Please check the PKCS12 bundle "
+            "validity. In addition, make sure it does not require a pass "
+            "phrase. Error: %(error)s")
+    code = 400
+
+
 class MisMatchedKey(OctaviaException):
     message = _("Key and x509 certificate do not match")
 
