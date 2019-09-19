@@ -16,6 +16,7 @@ import uuid
 
 from barbicanclient.v1 import secrets
 import mock
+from OpenSSL import crypto
 
 import octavia.certificates.common.barbican as barbican_common
 import octavia.certificates.common.cert as cert
@@ -137,6 +138,22 @@ class TestBarbicanManager(base.TestCase):
         self.assertEqual(sorted(sample.X509_IMDS_LIST),
                          sorted(data.get_intermediates()))
         self.assertIsNone(data.get_private_key_passphrase())
+
+    @mock.patch('OpenSSL.crypto.load_pkcs12')
+    def test_get_cert_bad_pkcs12(self, mock_load_pkcs12):
+
+        mock_load_pkcs12.side_effect = [crypto.Error]
+
+        # Mock out the client
+        self.bc.secrets.get.return_value = self.secret_pkcs12
+
+        # Test bad pkcs12 bundle re-raises UnreadablePKCS12
+        self.assertRaises(exceptions.UnreadablePKCS12,
+                          self.cert_manager.get_cert,
+                          context=self.context,
+                          cert_ref=self.secret_ref,
+                          resource_ref=self.secret_ref,
+                          service_name='Octavia')
 
     def test_delete_cert_legacy(self):
         # Attempt to deregister as a consumer
