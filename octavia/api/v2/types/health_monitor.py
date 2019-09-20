@@ -86,7 +86,8 @@ class HealthMonitorPOST(BaseHealthMonitorType):
     timeout = wtypes.wsattr(wtypes.IntegerType(minimum=0), mandatory=True)
     max_retries_down = wtypes.wsattr(
         wtypes.IntegerType(minimum=constants.MIN_HM_RETRIES,
-                           maximum=constants.MAX_HM_RETRIES), default=3)
+                           maximum=constants.MAX_HM_RETRIES),
+        default=constants.DEFAULT_MAX_RETRIES_DOWN)
     max_retries = wtypes.wsattr(
         wtypes.IntegerType(minimum=constants.MIN_HM_RETRIES,
                            maximum=constants.MAX_HM_RETRIES),
@@ -152,7 +153,8 @@ class HealthMonitorSingleCreate(BaseHealthMonitorType):
     timeout = wtypes.wsattr(wtypes.IntegerType(minimum=0), mandatory=True)
     max_retries_down = wtypes.wsattr(
         wtypes.IntegerType(minimum=constants.MIN_HM_RETRIES,
-                           maximum=constants.MAX_HM_RETRIES), default=3)
+                           maximum=constants.MAX_HM_RETRIES),
+        default=constants.DEFAULT_MAX_RETRIES_DOWN)
     max_retries = wtypes.wsattr(
         wtypes.IntegerType(minimum=constants.MIN_HM_RETRIES,
                            maximum=constants.MAX_HM_RETRIES),
