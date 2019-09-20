@@ -1375,6 +1375,7 @@ class TestPool(base.BaseAPITest):
         self.cert_manager_mock().get_secret.side_effect = [
             sample_certs.X509_CA_CERT, sample_certs.X509_CA_CRL,
             sample_certs.X509_CA_CERT, sample_certs.X509_CA_CRL,
+            sample_certs.X509_CA_CERT, sample_certs.X509_CA_CRL,
             sample_certs.X509_CA_CERT, sample_certs.X509_CA_CRL]
         api_pool = self.create_pool(
             self.lb_id,
