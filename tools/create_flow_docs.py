@@ -102,12 +102,20 @@ def generate(flow_list, output_directory):
             current_doc_file.write(doc_tuple[1] + '\n')
             current_doc_file.write('-' * len(doc_tuple[1]) + '\n')
             current_doc_file.write('\n')
-            current_doc_file.write('.. image:: ' + doc_tuple[0] +
+            current_doc_file.write('.. only:: html\n')
+            current_doc_file.write('\n')
+            current_doc_file.write('   .. image:: ' + doc_tuple[0] +
                                    '-' + doc_tuple[1] + '.svg\n')
-            current_doc_file.write('    :width: 660px\n')
-            current_doc_file.write('    :target: ../../../_images/' +
+            current_doc_file.write('       :width: 660px\n')
+            current_doc_file.write('       :target: ../../../_images/' +
                                    doc_tuple[0] +
                                    '-' + doc_tuple[1] + '.svg\n')
+            current_doc_file.write('\n')
+            current_doc_file.write('.. only:: latex\n')
+            current_doc_file.write('\n')
+            current_doc_file.write('   .. image:: ' + doc_tuple[0] +
+                                   '-' + doc_tuple[1] + '.svg\n')
+            current_doc_file.write('       :width: 660px\n')
 
         # First or new class, create the file
         else:
@@ -128,17 +136,27 @@ def generate(flow_list, output_directory):
             current_doc_file.write('   :depth: 2\n')
             current_doc_file.write('   :backlinks: top\n')
             current_doc_file.write('\n')
-            current_doc_file.write('Click on any flow to view full size.\n')
+            current_doc_file.write('.. only:: html\n')
+            current_doc_file.write('\n')
+            current_doc_file.write('   Click on any flow to view full size.\n')
             current_doc_file.write('\n')
             current_doc_file.write(doc_tuple[1] + '\n')
             current_doc_file.write('-' * len(doc_tuple[1]) + '\n')
             current_doc_file.write('\n')
-            current_doc_file.write('.. image:: ' + doc_tuple[0] +
+            current_doc_file.write('.. only:: html\n')
+            current_doc_file.write('\n')
+            current_doc_file.write('   .. image:: ' + doc_tuple[0] +
                                    '-' + doc_tuple[1] + '.svg\n')
-            current_doc_file.write('    :width: 660px\n')
-            current_doc_file.write('    :target: ../../../_images/' +
+            current_doc_file.write('       :width: 660px\n')
+            current_doc_file.write('       :target: ../../../_images/' +
                                    doc_tuple[0] +
                                    '-' + doc_tuple[1] + '.svg\n')
+            current_doc_file.write('\n')
+            current_doc_file.write('.. only:: latex\n')
+            current_doc_file.write('\n')
+            current_doc_file.write('   .. image:: ' + doc_tuple[0] +
+                                   '-' + doc_tuple[1] + '.svg\n')
+            current_doc_file.write('       :width: 660px\n')
 
     current_doc_file.close()
 

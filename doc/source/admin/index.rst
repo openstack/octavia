@@ -41,7 +41,9 @@ Operator Reference
    guides/upgrade.rst
    apache-httpd.rst
 
-Indices and Search
-------------------
+.. only:: html
 
-* :ref:`search`
+   Indices and Search
+   ------------------
+
+   * :ref:`search`

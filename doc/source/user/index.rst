@@ -38,8 +38,10 @@ Videos
 
    Introduction to OpenStack Load Balancing (2017 Boston Summit) <https://youtu.be/BBgP3_qhJ00>
 
-Indices and Search
-------------------
+.. only:: html
 
-* :ref:`genindex`
-* :ref:`search`
+   Indices and Search
+   ------------------
+
+   * :ref:`genindex`
+   * :ref:`search`
