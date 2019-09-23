@@ -1,0 +1,9 @@
+---
+fixes:
+  - |
+    Fix a bug that could interrupt resource creation when performing a graceful
+    shutdown of the controller worker and leave resources in a
+    PENDING_CREATE/PENDING_UPDATE/PENDING_DELETE provisioning status. If the
+    duration of an Octavia flow is greater than the 'graceful_shutdown_timeout'
+    configuration value, stopping the Octavia worker can still interrupt the
+    creation of resources.
