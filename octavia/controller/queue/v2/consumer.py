@@ -47,14 +47,14 @@ class ConsumerService(cotyledon.Service):
         )
         self.message_listener.start()
 
-    def terminate(self, graceful=False):
+    def terminate(self):
         if self.message_listener:
             LOG.info('Stopping V2 consumer...')
             self.message_listener.stop()
-            if graceful:
-                LOG.info('V2 Consumer successfully stopped.  Waiting for '
-                         'final messages to be processed...')
-                self.message_listener.wait()
+
+            LOG.info('V2 Consumer successfully stopped.  Waiting for '
+                     'final messages to be processed...')
+            self.message_listener.wait()
         if self.endpoints:
             LOG.info('Shutting down V2 endpoint worker executors...')
             for e in self.endpoints:
