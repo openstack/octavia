@@ -307,6 +307,10 @@ function octavia_configure {
         fi
     fi
 
+    # set default graceful_shutdown_timeout to 300 sec (5 minutes)
+    # TODO(gthiemonge) update this value after persistant taskflow commits are
+    # merged
+    iniset $OCTAVIA_CONF DEFAULT graceful_shutdown_timeout 300
 }
 
 function create_mgmt_network_interface {
