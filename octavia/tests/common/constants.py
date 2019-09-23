@@ -198,3 +198,19 @@ MOCK_VRRP_PORT2 = {'port': {'network_id': MOCK_VIP_NET_ID,
                             'device_owner': MOCK_DEVICE_OWNER,
                             'id': MOCK_VRRP_PORT_ID2,
                             'fixed_ips': MOCK_VRRP_FIXED_IPS2}}
+
+MOCK_NETWORK_TOTAL_IPS = 254
+MOCK_NETWORK_USED_IPS = 0
+MOCK_SUBNET_TOTAL_IPS = 254
+MOCK_SUBNET_USED_IPS = 0
+MOCK_SUBNET_IP_AVAILABILITY = [{'used_ips': MOCK_SUBNET_USED_IPS,
+                                'subnet_id': MOCK_SUBNET_ID,
+                                'total_ips': MOCK_SUBNET_TOTAL_IPS}]
+
+MOCK_NETWORK_IP_AVAILABILITY = {'network_ip_availability': (
+    {'network_id': MOCK_NETWORK_ID,
+     'tenant_id': MOCK_PROJECT_ID,
+     'network_name': MOCK_NETWORK_NAME,
+     'total_ips': MOCK_NETWORK_TOTAL_IPS,
+     'used_ips': MOCK_NETWORK_USED_IPS,
+     'subnet_ip_availability': MOCK_SUBNET_IP_AVAILABILITY})}
