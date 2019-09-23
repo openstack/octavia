@@ -26,3 +26,4 @@ Octavia Configuration Options
     oslo.db
     oslo.log
     oslo.messaging
+    cotyledon
