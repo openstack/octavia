@@ -385,6 +385,11 @@ function octavia_configure {
         iniset $OCTAVIA_CONF api_settings bind_port ${OCTAVIA_HA_PORT}
         iniset $OCTAVIA_CONF api_settings bind_host 0.0.0.0
     fi
+
+    # set default graceful_shutdown_timeout to 300 sec (5 minutes)
+    # TODO(gthiemonge) update this value after persistant taskflow commits are
+    # merged
+    iniset $OCTAVIA_CONF DEFAULT graceful_shutdown_timeout 300
 }
 
 function create_mgmt_network_interface {

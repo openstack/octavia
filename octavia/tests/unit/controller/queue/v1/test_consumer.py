@@ -58,15 +58,4 @@ class TestConsumer(base.TestRpc):
         cons.run()
         cons.terminate()
         mock_rpc_server_rv.stop.assert_called_once_with()
-        self.assertFalse(mock_rpc_server_rv.wait.called)
-
-    @mock.patch.object(messaging, 'get_rpc_server')
-    def test_consumer_graceful_terminate(self, mock_rpc_server):
-        mock_rpc_server_rv = mock.Mock()
-        mock_rpc_server.return_value = mock_rpc_server_rv
-
-        cons = consumer.ConsumerService(1, self.conf)
-        cons.run()
-        cons.terminate(graceful=True)
-        mock_rpc_server_rv.stop.assert_called_once_with()
         mock_rpc_server_rv.wait.assert_called_once_with()
