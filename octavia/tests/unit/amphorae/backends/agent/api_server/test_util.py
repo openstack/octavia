@@ -204,10 +204,11 @@ class TestUtil(base.TestCase):
 
     def test_parse_haproxy_config(self):
         # template_tls
-        tls_tupe = sample_configs_combined.sample_tls_container_tuple(
-            id='tls_container_id',
-            certificate='imaCert1', private_key='imaPrivateKey1',
-            primary_cn='FakeCN')
+        tls_tupe = {'cont_id_1':
+                    sample_configs_combined.sample_tls_container_tuple(
+                        id='tls_container_id',
+                        certificate='imaCert1', private_key='imaPrivateKey1',
+                        primary_cn='FakeCN')}
         rendered_obj = self.jinja_cfg.render_loadbalancer_obj(
             sample_configs_combined.sample_amphora_tuple(),
             [sample_configs_combined.sample_listener_tuple(
@@ -233,11 +234,12 @@ class TestUtil(base.TestCase):
             sample_configs_combined.sample_amphora_tuple(),
             [sample_configs_combined.sample_listener_tuple(
                 proto='TERMINATED_HTTPS', tls=True)],
-            tls_cert=sample_configs_combined.sample_tls_container_tuple(
-                id='tls_container_id',
-                certificate='ImAalsdkfjCert',
-                private_key='ImAsdlfksdjPrivateKey',
-                primary_cn="FakeCN"))
+            tls_certs={'cont_id_1':
+                       sample_configs_combined.sample_tls_container_tuple(
+                           id='tls_container_id',
+                           certificate='ImAalsdkfjCert',
+                           private_key='ImAsdlfksdjPrivateKey',
+                           primary_cn="FakeCN")})
 
         self.useFixture(test_utils.OpenFixture(path, rendered_obj))
 

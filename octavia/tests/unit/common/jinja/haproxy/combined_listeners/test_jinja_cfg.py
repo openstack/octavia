@@ -67,10 +67,11 @@ class TestHaproxyCfg(base.TestCase):
               "weight 13 check inter 30s fall 3 rise 2 cookie "
               "sample_member_id_2\n\n").format(
             maxconn=constants.HAPROXY_MAX_MAXCONN)
-        tls_tupe = sample_configs_combined.sample_tls_container_tuple(
-            id='tls_container_id',
-            certificate='imaCert1', private_key='imaPrivateKey1',
-            primary_cn='FakeCN')
+        tls_tupe = {'cont_id_1':
+                    sample_configs_combined.sample_tls_container_tuple(
+                        id='tls_container_id',
+                        certificate='imaCert1', private_key='imaPrivateKey1',
+                        primary_cn='FakeCN')}
         rendered_obj = self.jinja_cfg.render_loadbalancer_obj(
             sample_configs_combined.sample_amphora_tuple(),
             [sample_configs_combined.sample_listener_tuple(
@@ -117,11 +118,12 @@ class TestHaproxyCfg(base.TestCase):
             sample_configs_combined.sample_amphora_tuple(),
             [sample_configs_combined.sample_listener_tuple(
                 proto='TERMINATED_HTTPS', tls=True)],
-            tls_cert=sample_configs_combined.sample_tls_container_tuple(
-                id='tls_container_id',
-                certificate='ImAalsdkfjCert',
-                private_key='ImAsdlfksdjPrivateKey',
-                primary_cn="FakeCN"))
+            tls_certs={'cont_id_1':
+                       sample_configs_combined.sample_tls_container_tuple(
+                           id='tls_container_id',
+                           certificate='ImAalsdkfjCert',
+                           private_key='ImAsdlfksdjPrivateKey',
+                           primary_cn="FakeCN")})
         self.assertEqual(
             sample_configs_combined.sample_base_expected_config(
                 frontend=fe, backend=be),
@@ -1050,7 +1052,7 @@ class TestHaproxyCfg(base.TestCase):
         rendered_obj = j_cfg.build_config(
             sample_amphora,
             [sample_proxy_listener],
-            tls_cert=None,
+            tls_certs=None,
             haproxy_versions=("1", "8", "1"))
         self.assertEqual(
             sample_configs_combined.sample_base_expected_config(backend=be),
@@ -1078,7 +1080,7 @@ class TestHaproxyCfg(base.TestCase):
         rendered_obj = j_cfg.build_config(
             sample_amphora,
             [sample_proxy_listener],
-            tls_cert=None,
+            tls_certs=None,
             haproxy_versions=("1", "5", "18"))
         self.assertEqual(
             sample_configs_combined.sample_base_expected_config(backend=be),
@@ -1161,7 +1163,7 @@ class TestHaproxyCfg(base.TestCase):
         rendered_obj = j_cfg.build_config(
             sample_configs_combined.sample_amphora_tuple(),
             [sample_listener],
-            tls_cert=None,
+            tls_certs=None,
             haproxy_versions=("1", "5", "18"))
         self.assertEqual(
             sample_configs_combined.sample_base_expected_config(
