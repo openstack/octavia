@@ -333,11 +333,11 @@ def get_ipvsadm_info(ns_name, is_stats_cmd=False):
         vs_fields.remove('Flags')
     rs_fields = fields[index + 1:]
     for key in list(value_mapping.keys()):
-        value_mapping[key]['Listener'] = [
-            i for i in zip(vs_fields, value_mapping[key]['Listener'])]
+        value_mapping[key]['Listener'] = list(
+            zip(vs_fields, value_mapping[key]['Listener']))
         member_res = []
         for member_value in value_mapping[key]['Members']:
-            member_res.append([i for i in zip(rs_fields, member_value)])
+            member_res.append(list(zip(rs_fields, member_value)))
         value_mapping[key]['Members'] = member_res
 
     return value_mapping

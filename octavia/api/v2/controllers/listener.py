@@ -445,7 +445,7 @@ class ListenersController(base.BaseController):
                 list(listener.insert_headers.keys()), db_listener.protocol)
 
         sni_containers = listener.sni_container_refs or []
-        tls_refs = [sni for sni in sni_containers]
+        tls_refs = list(sni_containers)
         if listener.default_tls_container_ref:
             tls_refs.append(listener.default_tls_container_ref)
         self._validate_tls_refs(tls_refs)

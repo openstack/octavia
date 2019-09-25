@@ -149,10 +149,9 @@ def _split_x509s(xstr):
                 curr_pem_block = []
                 inside_x509 = False
             continue
-        else:
-            if line == X509_BEG.decode('utf-8'):
-                curr_pem_block.append(line)
-                inside_x509 = True
+        if line == X509_BEG.decode('utf-8'):
+            curr_pem_block.append(line)
+            inside_x509 = True
 
 
 def _parse_pkcs7_bundle(pkcs7):

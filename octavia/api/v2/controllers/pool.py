@@ -142,8 +142,7 @@ class PoolsController(base.BaseController):
         for attr in dir(request):
             if attr.startswith('_') or attr in escaped_attrs:
                 continue
-            else:
-                request_attrs.append(attr)
+            request_attrs.append(attr)
 
         for req_attr in request_attrs:
             if (getattr(request, req_attr) and req_attr not in check_attrs):

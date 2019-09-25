@@ -791,9 +791,9 @@ def handle_deprecation_compatibility():
 
 def _enable_pydev(debugger_host, debugger_port):
     try:
-        from pydev import pydevd
+        from pydev import pydevd  # pylint: disable=import-outside-toplevel
     except ImportError:
-        import pydevd
+        import pydevd  # pylint: disable=import-outside-toplevel
 
     pydevd.settrace(debugger_host,
                     port=int(debugger_port),
@@ -802,7 +802,7 @@ def _enable_pydev(debugger_host, debugger_port):
 
 
 def _enable_ptvsd(debuggger_host, debugger_port):
-    import ptvsd
+    import ptvsd  # pylint: disable=import-outside-toplevel
 
     # Allow other computers to attach to ptvsd at this IP address and port.
     ptvsd.enable_attach(address=(debuggger_host, debugger_port),

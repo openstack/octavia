@@ -97,7 +97,7 @@ class HAProxyQuery(object):
                 server_id=server_id))
         list_results = results[2:].split('\n')
         csv_reader = csv.DictReader(list_results)
-        return [row for row in csv_reader]
+        return list(csv_reader)
 
     def get_pool_status(self):
         """Get status for each server and the pool as a whole.

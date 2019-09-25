@@ -490,7 +490,7 @@ class JinjaTemplater(object):
 
             if not code:
                 continue
-            elif '-' in code:
+            if '-' in code:
                 low, hi = code.split('-')[:2]
                 retval.update(
                     str(i) for i in six.moves.xrange(int(low), int(hi) + 1))

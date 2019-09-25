@@ -46,8 +46,7 @@ class BarbicanCert(cert.Cert):
         if self._cert_container.intermediates:
             intermediates = encodeutils.to_utf8(
                 self._cert_container.intermediates.payload)
-            return [imd for imd in cert_parser.get_intermediates_pems(
-                intermediates)]
+            return list(cert_parser.get_intermediates_pems(intermediates))
         return None
 
     def get_private_key(self):
