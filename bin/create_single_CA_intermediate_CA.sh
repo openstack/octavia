@@ -27,6 +27,7 @@ set -x -e
 
 CA_PATH=single_ca
 
+rm -rf $CA_PATH
 mkdir $CA_PATH
 chmod 700 $CA_PATH
 cd $CA_PATH
