@@ -590,6 +590,9 @@ function octavia_cleanup {
         _cleanup_octavia_apache_wsgi
     fi
 
+    sudo rm -rf $OCTAVIA_DIR/bin/dual_ca
+    sudo rm -rf $OCTAVIA_DIR/bin/single_ca
+
     sudo rm -rf $NOVA_STATE_PATH $NOVA_AUTH_CACHE_DIR
 
     sudo rm -f /etc/rsyslog.d/10-octavia-log-offloading.conf
