@@ -336,6 +336,27 @@ elif [[ $platform =~ "SUSE" ]]; then
             exit 1
         fi
     done
+elif [[ $platform =~ "Gentoo" ]]; then
+    # Gentoo
+    # Check /var/db for dev-vcs/git and app-emulation/[qemu|xen-tools] sys-fs/multipath-tools
+    PKG_LIST="dev-vcs/git app-emulation/qemu|xen-tools sys-fs/multipath-tools"
+    for pkg in $PKG_LIST; do
+        if grep -qs '|' <<< "$pkg"; then
+            c=$(cut -d / -f 1 <<<"$pkg")
+            for p in $(cut -d / -f 2 <<<"$pkg" | tr "|" " "); do
+                if [ -d /var/db/pkg/$c/$p-* ]; then
+                    continue 2
+                fi
+            done
+            echo "Required package " ${pkg/\*} " is not installed.  Exiting."
+            echo "Binary dependencies on this platform are: ${PKG_LIST}"
+            exit 1
+        elif [ ! -d /var/db/pkg/$pkg-* ]; then
+            echo "Required package " ${pkg/\*} " is not installed.  Exiting."
+            echo "Binary dependencies on this platform are: ${PKG_LIST}"
+            exit 1
+        fi
+    done
 else
     # fedora/centos/rhel
     # Actual qemu-img name may be qemu-img, qemu-img-ev, qemu-img-rhev, ...
