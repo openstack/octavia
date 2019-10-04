@@ -15,6 +15,7 @@
 # make sure PYTHONPATH includes the home directory if you didn't install
 
 import multiprocessing as multiproc
+import ssl
 import sys
 
 import gunicorn.app.base
@@ -74,7 +75,7 @@ def main():
         'timeout': CONF.amphora_agent.agent_request_read_timeout,
         'certfile': CONF.amphora_agent.agent_server_cert,
         'ca_certs': CONF.amphora_agent.agent_server_ca,
-        'cert_reqs': True,
+        'cert_reqs': ssl.CERT_REQUIRED,
         'preload_app': True,
         'accesslog': '/var/log/amphora-agent.log',
         'errorlog': '/var/log/amphora-agent.log',
