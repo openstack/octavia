@@ -40,7 +40,6 @@ WSME>=0.8.0 # MIT
 Jinja2>=2.10 # BSD License (3 clause)
 taskflow>=2.16.0 # Apache-2.0
 diskimage-builder>=2.24.0 # Apache-2.0
-futures>=3.0.0;python_version=='2.7' or python_version=='2.6' # BSD
 castellan>=0.16.0 # Apache-2.0
 tenacity>=5.0.4  # Apache-2.0
 distro>=1.2.0 # Apache-2.0
@@ -54,8 +53,7 @@ setproctitle>=1.1.10 # BSD
 #for the amphora api
 Flask!=0.11,>=0.10 # BSD
 netifaces>=0.10.4 # MIT
-ipaddress>=1.0.17;python_version<'3.3' # PSF
 cryptography>=2.1 # BSD/Apache-2.0
 pyroute2>=0.4.21;sys_platform!='win32' # Apache-2.0 (+ dual licensed GPL2)
-gunicorn>=19.9.0 # MIT
+gunicorn>=19.9.0;python_version>='3.0' # MIT
 Werkzeug>=0.14.1 # BSD License

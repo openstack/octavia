@@ -6,20 +6,12 @@
       - periodic-stable-jobs-neutron
       - openstack-cover-jobs
       - openstack-lower-constraints-jobs
-      - openstack-python-jobs
       - openstack-python3-ussuri-jobs
       - publish-openstack-docs-pti
       - release-notes-jobs-python3
       - octavia-tox-tips
     check:
       jobs:
-        - openstack-tox-functional:
-            irrelevant-files:
-              - ^.*\.rst$
-              - ^api-ref/.*$
-              - ^doc/.*$
-              - ^etc/.*$
-              - ^releasenotes/.*$
         - openstack-tox-functional-py36:
             irrelevant-files:
               - ^.*\.rst$
@@ -28,14 +20,8 @@
               - ^etc/.*$
               - ^releasenotes/.*$
         - octavia-v2-dsvm-noop-api
-        - octavia-v2-dsvm-noop-py2-api
         - octavia-v2-dsvm-scenario
-        - octavia-v2-dsvm-py2-scenario
-        - octavia-v2-dsvm-py2-scenario-centos-7:
-            voting: false
         - octavia-v2-dsvm-scenario-two-node:
-            voting: false
-        - octavia-v2-dsvm-py2-scenario-two-node:
             voting: false
         # TODO(haleyb): restore to voting once python3 issues fixed
         - octavia-grenade:
@@ -68,21 +54,10 @@
             voting: false
         - octavia-v2-act-stdby-iptables-dsvm-scenario:
             voting: false
-        - octavia-v2-act-stdby-iptables-dsvm-py2-scenario:
-            voting: false
-        - octavia-v2-act-stdby-iptables-dsvm-py2-scenario-centos-7:
-            voting: false
     gate:
       fail-fast: true
       queue: octavia
       jobs:
-        - openstack-tox-functional:
-            irrelevant-files:
-              - ^.*\.rst$
-              - ^api-ref/.*$
-              - ^doc/.*$
-              - ^etc/.*$
-              - ^releasenotes/.*$
         - openstack-tox-functional-py36:
             irrelevant-files:
               - ^.*\.rst$
@@ -91,9 +66,7 @@
               - ^etc/.*$
               - ^releasenotes/.*$
         - octavia-v2-dsvm-noop-api
-        - octavia-v2-dsvm-noop-py2-api
         - octavia-v2-dsvm-scenario
-        - octavia-v2-dsvm-py2-scenario
     periodic:
       jobs:
         - publish-openstack-octavia-amphora-image-xenial:
