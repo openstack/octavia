@@ -352,7 +352,6 @@ RET_LISTENER_TLS = {
 RET_LISTENER_TLS_SNI = {
     'id': 'sample_listener_id_1',
     'protocol_port': '443',
-    'protocol': 'http',
     'protocol': 'TERMINATED_HTTPS',
     'default_pool': RET_POOL_1,
     'connection_limit': constants.HAPROXY_MAX_MAXCONN,
