@@ -1035,21 +1035,22 @@ def sample_l7rule_tuple(id,
         enabled=enabled)
 
 
-def sample_base_expected_config(frontend=None, backend=None,
+def sample_base_expected_config(frontend=None, logging=None, backend=None,
                                 peers=None, global_opts=None, defaults=None):
     if frontend is None:
         frontend = ("frontend sample_listener_id_1\n"
-                    "    log-format 12345\\ sample_loadbalancer_id_1\\ %f\\ "
-                    "%ci\\ %cp\\ %t\\ %{{+Q}}r\\ %ST\\ %B\\ %U\\ "
-                    "%[ssl_c_verify]\\ %{{+Q}}[ssl_c_s_dn]\\ %b\\ %s\\ %Tt\\ "
-                    "%tsc\n"
                     "    maxconn {maxconn}\n"
                     "    bind 10.0.0.2:80\n"
                     "    mode http\n"
                     "    default_backend sample_pool_id_1:sample_listener_id_1"
                     "\n"
-                    "    timeout client 50000\n\n").format(
+                    "    timeout client 50000\n").format(
             maxconn=constants.HAPROXY_MAX_MAXCONN)
+    if logging is None:
+        logging = ("    log-format 12345\\ sample_loadbalancer_id_1\\ %f\\ "
+                   "%ci\\ %cp\\ %t\\ %{+Q}r\\ %ST\\ %B\\ %U\\ "
+                   "%[ssl_c_verify]\\ %{+Q}[ssl_c_s_dn]\\ %b\\ %s\\ %Tt\\ "
+                   "%tsc\n\n")
     if backend is None:
         backend = ("backend sample_pool_id_1:sample_listener_id_1\n"
                    "    mode http\n"
@@ -1089,4 +1090,4 @@ def sample_base_expected_config(frontend=None, backend=None,
             "    log /run/rsyslog/octavia/log local1 notice\n"
             "    stats socket /var/lib/octavia/sample_loadbalancer_id_1.sock"
             " mode 0666 level user\n" +
-            global_opts + defaults + peers + frontend + backend)
+            global_opts + defaults + peers + frontend + logging + backend)

@@ -35,10 +35,6 @@ class TestHaproxyCfg(base.TestCase):
 
     def test_render_template_tls(self):
         fe = ("frontend sample_listener_id_1\n"
-              "    log-format 12345\\ sample_loadbalancer_id_1\\ %f\\ "
-              "%ci\\ %cp\\ %t\\ %{{+Q}}r\\ %ST\\ %B\\ %U\\ "
-              "%[ssl_c_verify]\\ %{{+Q}}[ssl_c_s_dn]\\ %b\\ %s\\ %Tt\\ "
-              "%tsc\n"
               "    maxconn {maxconn}\n"
               "    redirect scheme https if !{{ ssl_fc }}\n"
               "    bind 10.0.0.2:443 "
@@ -50,7 +46,7 @@ class TestHaproxyCfg(base.TestCase):
               "certs/sample_listener_id_1/SHA_ID.pem\n"
               "    mode http\n"
               "    default_backend sample_pool_id_1\n"
-              "    timeout client 50000\n\n").format(
+              "    timeout client 50000\n").format(
             maxconn=constants.HAPROXY_MAX_MAXCONN)
         be = ("backend sample_pool_id_1\n"
               "    mode http\n"
@@ -88,10 +84,6 @@ class TestHaproxyCfg(base.TestCase):
 
     def test_render_template_tls_no_sni(self):
         fe = ("frontend sample_listener_id_1\n"
-              "    log-format 12345\\ sample_loadbalancer_id_1\\ %f\\ "
-              "%ci\\ %cp\\ %t\\ %{{+Q}}r\\ %ST\\ %B\\ %U\\ "
-              "%[ssl_c_verify]\\ %{{+Q}}[ssl_c_s_dn]\\ %b\\ %s\\ %Tt\\ "
-              "%tsc\n"
               "    maxconn {maxconn}\n"
               "    redirect scheme https if !{{ ssl_fc }}\n"
               "    bind 10.0.0.2:443 "
@@ -99,7 +91,7 @@ class TestHaproxyCfg(base.TestCase):
               "sample_listener_id_1/tls_container_id.pem\n"
               "    mode http\n"
               "    default_backend sample_pool_id_1\n"
-              "    timeout client 50000\n\n").format(
+              "    timeout client 50000\n").format(
             maxconn=constants.HAPROXY_MAX_MAXCONN)
         be = ("backend sample_pool_id_1\n"
               "    mode http\n"
@@ -190,15 +182,11 @@ class TestHaproxyCfg(base.TestCase):
 
     def test_render_template_custom_timeouts(self):
         fe = ("frontend sample_listener_id_1\n"
-              "    log-format 12345\\ sample_loadbalancer_id_1\\ %f\\ "
-              "%ci\\ %cp\\ %t\\ %{{+Q}}r\\ %ST\\ %B\\ %U\\ "
-              "%[ssl_c_verify]\\ %{{+Q}}[ssl_c_s_dn]\\ %b\\ %s\\ %Tt\\ "
-              "%tsc\n"
               "    maxconn {maxconn}\n"
               "    bind 10.0.0.2:80\n"
               "    mode http\n"
               "    default_backend sample_pool_id_1\n"
-              "    timeout client 2\n\n").format(
+              "    timeout client 2\n").format(
             maxconn=constants.HAPROXY_MAX_MAXCONN)
         be = ("backend sample_pool_id_1\n"
               "    mode http\n"
@@ -229,15 +217,11 @@ class TestHaproxyCfg(base.TestCase):
 
     def test_render_template_null_timeouts(self):
         fe = ("frontend sample_listener_id_1\n"
-              "    log-format 12345\\ sample_loadbalancer_id_1\\ %f\\ "
-              "%ci\\ %cp\\ %t\\ %{{+Q}}r\\ %ST\\ %B\\ %U\\ "
-              "%[ssl_c_verify]\\ %{{+Q}}[ssl_c_s_dn]\\ %b\\ %s\\ %Tt\\ "
-              "%tsc\n"
               "    maxconn {maxconn}\n"
               "    bind 10.0.0.2:80\n"
               "    mode http\n"
               "    default_backend sample_pool_id_1\n"
-              "    timeout client 50000\n\n").format(
+              "    timeout client 50000\n").format(
             maxconn=constants.HAPROXY_MAX_MAXCONN)
         be = ("backend sample_pool_id_1\n"
               "    mode http\n"
@@ -296,16 +280,16 @@ class TestHaproxyCfg(base.TestCase):
 
     def test_render_template_https_real_monitor(self):
         fe = ("frontend sample_listener_id_1\n"
-              "    log-format 12345\\ sample_loadbalancer_id_1\\ %f\\ "
-              "%ci\\ %cp\\ %t\\ -\\ -\\ %B\\ %U\\ "
-              "%[ssl_c_verify]\\ %{{+Q}}[ssl_c_s_dn]\\ %b\\ %s\\ %Tt\\ "
-              "%tsc\n"
               "    maxconn {maxconn}\n"
               "    bind 10.0.0.2:443\n"
               "    mode tcp\n"
               "    default_backend sample_pool_id_1\n"
-              "    timeout client 50000\n\n").format(
+              "    timeout client 50000\n").format(
             maxconn=constants.HAPROXY_MAX_MAXCONN)
+        lg = ("    log-format 12345\\ sample_loadbalancer_id_1\\ %f\\ "
+              "%ci\\ %cp\\ %t\\ -\\ -\\ %B\\ %U\\ "
+              "%[ssl_c_verify]\\ %{+Q}[ssl_c_s_dn]\\ %b\\ %s\\ %Tt\\ "
+              "%tsc\n\n")
         be = ("backend sample_pool_id_1\n"
               "    mode tcp\n"
               "    balance roundrobin\n"
@@ -328,20 +312,20 @@ class TestHaproxyCfg(base.TestCase):
             sample_configs_split.sample_amphora_tuple(),
             sample_configs_split.sample_listener_tuple(proto='HTTPS'))
         self.assertEqual(sample_configs_split.sample_base_expected_config(
-            frontend=fe, backend=be), rendered_obj)
+            frontend=fe, logging=lg, backend=be), rendered_obj)
 
     def test_render_template_https_hello_monitor(self):
         fe = ("frontend sample_listener_id_1\n"
-              "    log-format 12345\\ sample_loadbalancer_id_1\\ %f\\ "
-              "%ci\\ %cp\\ %t\\ -\\ -\\ %B\\ %U\\ "
-              "%[ssl_c_verify]\\ %{{+Q}}[ssl_c_s_dn]\\ %b\\ %s\\ %Tt\\ "
-              "%tsc\n"
               "    maxconn {maxconn}\n"
               "    bind 10.0.0.2:443\n"
               "    mode tcp\n"
               "    default_backend sample_pool_id_1\n"
-              "    timeout client 50000\n\n").format(
+              "    timeout client 50000\n").format(
             maxconn=constants.HAPROXY_MAX_MAXCONN)
+        lg = ("    log-format 12345\\ sample_loadbalancer_id_1\\ %f\\ "
+              "%ci\\ %cp\\ %t\\ -\\ -\\ %B\\ %U\\ "
+              "%[ssl_c_verify]\\ %{+Q}[ssl_c_s_dn]\\ %b\\ %s\\ %Tt\\ "
+              "%tsc\n\n")
         be = ("backend sample_pool_id_1\n"
               "    mode tcp\n"
               "    balance roundrobin\n"
@@ -364,7 +348,7 @@ class TestHaproxyCfg(base.TestCase):
             sample_configs_split.sample_listener_tuple(
                 proto='HTTPS', monitor_proto='TLS-HELLO'))
         self.assertEqual(sample_configs_split.sample_base_expected_config(
-            frontend=fe, backend=be), rendered_obj)
+            frontend=fe, logging=lg, backend=be), rendered_obj)
 
     def test_render_template_no_monitor_http(self):
         be = ("backend sample_pool_id_1\n"
@@ -438,16 +422,16 @@ class TestHaproxyCfg(base.TestCase):
 
     def test_render_template_no_monitor_https(self):
         fe = ("frontend sample_listener_id_1\n"
-              "    log-format 12345\\ sample_loadbalancer_id_1\\ %f\\ "
-              "%ci\\ %cp\\ %t\\ -\\ -\\ %B\\ %U\\ "
-              "%[ssl_c_verify]\\ %{{+Q}}[ssl_c_s_dn]\\ %b\\ %s\\ %Tt\\ "
-              "%tsc\n"
               "    maxconn {maxconn}\n"
               "    bind 10.0.0.2:443\n"
               "    mode tcp\n"
               "    default_backend sample_pool_id_1\n"
-              "    timeout client 50000\n\n").format(
+              "    timeout client 50000\n").format(
             maxconn=constants.HAPROXY_MAX_MAXCONN)
+        lg = ("    log-format 12345\\ sample_loadbalancer_id_1\\ %f\\ "
+              "%ci\\ %cp\\ %t\\ -\\ -\\ %B\\ %U\\ "
+              "%[ssl_c_verify]\\ %{+Q}[ssl_c_s_dn]\\ %b\\ %s\\ %Tt\\ "
+              "%tsc\n\n")
         be = ("backend sample_pool_id_1\n"
               "    mode tcp\n"
               "    balance roundrobin\n"
@@ -466,7 +450,7 @@ class TestHaproxyCfg(base.TestCase):
             sample_configs_split.sample_listener_tuple(
                 proto='HTTPS', monitor=False))
         self.assertEqual(sample_configs_split.sample_base_expected_config(
-            frontend=fe, backend=be), rendered_obj)
+            frontend=fe, logging=lg, backend=be), rendered_obj)
 
     def test_render_template_health_monitor_http_check(self):
         be = ("backend sample_pool_id_1\n"
@@ -497,16 +481,16 @@ class TestHaproxyCfg(base.TestCase):
 
     def test_render_template_no_persistence_https(self):
         fe = ("frontend sample_listener_id_1\n"
-              "    log-format 12345\\ sample_loadbalancer_id_1\\ %f\\ "
-              "%ci\\ %cp\\ %t\\ -\\ -\\ %B\\ %U\\ "
-              "%[ssl_c_verify]\\ %{{+Q}}[ssl_c_s_dn]\\ %b\\ %s\\ %Tt\\ "
-              "%tsc\n"
               "    maxconn {maxconn}\n"
               "    bind 10.0.0.2:443\n"
               "    mode tcp\n"
               "    default_backend sample_pool_id_1\n"
-              "    timeout client 50000\n\n").format(
+              "    timeout client 50000\n").format(
             maxconn=constants.HAPROXY_MAX_MAXCONN)
+        lg = ("    log-format 12345\\ sample_loadbalancer_id_1\\ %f\\ "
+              "%ci\\ %cp\\ %t\\ -\\ -\\ %B\\ %U\\ "
+              "%[ssl_c_verify]\\ %{+Q}[ssl_c_s_dn]\\ %b\\ %s\\ %Tt\\ "
+              "%tsc\n\n")
         be = ("backend sample_pool_id_1\n"
               "    mode tcp\n"
               "    balance roundrobin\n"
@@ -522,7 +506,7 @@ class TestHaproxyCfg(base.TestCase):
             sample_configs_split.sample_listener_tuple(
                 proto='HTTPS', monitor=False, persistence=False))
         self.assertEqual(sample_configs_split.sample_base_expected_config(
-            frontend=fe, backend=be), rendered_obj)
+            frontend=fe, logging=lg, backend=be), rendered_obj)
 
     def test_render_template_no_persistence_http(self):
         be = ("backend sample_pool_id_1\n"
@@ -598,16 +582,16 @@ class TestHaproxyCfg(base.TestCase):
 
     def test_render_template_unlimited_connections(self):
         fe = ("frontend sample_listener_id_1\n"
-              "    log-format 12345\\ sample_loadbalancer_id_1\\ %f\\ "
-              "%ci\\ %cp\\ %t\\ -\\ -\\ %B\\ %U\\ "
-              "%[ssl_c_verify]\\ %{{+Q}}[ssl_c_s_dn]\\ %b\\ %s\\ %Tt\\ "
-              "%tsc\n"
               "    maxconn {maxconn}\n"
               "    bind 10.0.0.2:443\n"
               "    mode tcp\n"
               "    default_backend sample_pool_id_1\n"
-              "    timeout client 50000\n\n").format(
+              "    timeout client 50000\n").format(
             maxconn=constants.HAPROXY_MAX_MAXCONN)
+        lg = ("    log-format 12345\\ sample_loadbalancer_id_1\\ %f\\ "
+              "%ci\\ %cp\\ %t\\ -\\ -\\ %B\\ %U\\ "
+              "%[ssl_c_verify]\\ %{+Q}[ssl_c_s_dn]\\ %b\\ %s\\ %Tt\\ "
+              "%tsc\n\n")
         be = ("backend sample_pool_id_1\n"
               "    mode tcp\n"
               "    balance roundrobin\n"
@@ -626,19 +610,19 @@ class TestHaproxyCfg(base.TestCase):
             sample_configs_split.sample_listener_tuple(
                 proto='HTTPS', monitor=False))
         self.assertEqual(sample_configs_split.sample_base_expected_config(
-            frontend=fe, backend=be), rendered_obj)
+            frontend=fe, logging=lg, backend=be), rendered_obj)
 
     def test_render_template_limited_connections(self):
         fe = ("frontend sample_listener_id_1\n"
-              "    log-format 12345\\ sample_loadbalancer_id_1\\ %f\\ "
-              "%ci\\ %cp\\ %t\\ -\\ -\\ %B\\ %U\\ "
-              "%[ssl_c_verify]\\ %{+Q}[ssl_c_s_dn]\\ %b\\ %s\\ %Tt\\ "
-              "%tsc\n"
               "    maxconn 2014\n"
               "    bind 10.0.0.2:443\n"
               "    mode tcp\n"
               "    default_backend sample_pool_id_1\n"
-              "    timeout client 50000\n\n")
+              "    timeout client 50000\n")
+        lg = ("    log-format 12345\\ sample_loadbalancer_id_1\\ %f\\ "
+              "%ci\\ %cp\\ %t\\ -\\ -\\ %B\\ %U\\ "
+              "%[ssl_c_verify]\\ %{+Q}[ssl_c_s_dn]\\ %b\\ %s\\ %Tt\\ "
+              "%tsc\n\n")
         be = ("backend sample_pool_id_1\n"
               "    mode tcp\n"
               "    balance roundrobin\n"
@@ -657,14 +641,11 @@ class TestHaproxyCfg(base.TestCase):
             sample_configs_split.sample_listener_tuple(
                 proto='HTTPS', monitor=False, connection_limit=2014))
         self.assertEqual(sample_configs_split.sample_base_expected_config(
-            frontend=fe, backend=be, global_opts=g_opts), rendered_obj)
+            frontend=fe, logging=lg, backend=be, global_opts=g_opts),
+            rendered_obj)
 
     def test_render_template_l7policies(self):
         fe = ("frontend sample_listener_id_1\n"
-              "    log-format 12345\\ sample_loadbalancer_id_1\\ %f\\ "
-              "%ci\\ %cp\\ %t\\ %{{+Q}}r\\ %ST\\ %B\\ %U\\ "
-              "%[ssl_c_verify]\\ %{{+Q}}[ssl_c_s_dn]\\ %b\\ %s\\ %Tt\\ "
-              "%tsc\n"
               "    maxconn {maxconn}\n"
               "    bind 10.0.0.2:80\n"
               "    mode http\n"
@@ -688,7 +669,7 @@ class TestHaproxyCfg(base.TestCase):
               "    redirect code 302 prefix https://example.com if "
               "!sample_l7rule_id_2 sample_l7rule_id_3\n"
               "    default_backend sample_pool_id_1\n"
-              "    timeout client 50000\n\n").format(
+              "    timeout client 50000\n").format(
             maxconn=constants.HAPROXY_MAX_MAXCONN)
         be = ("backend sample_pool_id_1\n"
               "    mode http\n"
@@ -1042,7 +1023,7 @@ class TestHaproxyCfg(base.TestCase):
         )
         self.assertEqual(
             sample_configs_split.sample_base_expected_config(
-                defaults=defaults),
+                defaults=defaults, logging="\n"),
             rendered_obj)
 
     def test_http_reuse(self):
@@ -1108,10 +1089,6 @@ class TestHaproxyCfg(base.TestCase):
             base_amp_path='/var/lib/octavia',
             base_crt_dir='/var/lib/octavia/certs')
         fe = ("frontend sample_listener_id_1\n"
-              "    log-format 12345\\ sample_loadbalancer_id_1\\ %f\\ "
-              "%ci\\ %cp\\ %t\\ %{+Q}r\\ %ST\\ %B\\ %U\\ "
-              "%[ssl_c_verify]\\ %{+Q}[ssl_c_s_dn]\\ %b\\ %s\\ %Tt\\ "
-              "%tsc\n"
               "    maxconn 1000000\n"
               "    redirect scheme https if !{ ssl_fc }\n"
               "    bind 10.0.0.2:443\n"
@@ -1147,7 +1124,7 @@ class TestHaproxyCfg(base.TestCase):
               "if sample_l7rule_id_7 !sample_l7rule_id_8 !sample_l7rule_id_9 "
               "!sample_l7rule_id_10 sample_l7rule_id_11\n"
               "    default_backend sample_pool_id_1\n"
-              "    timeout client 50000\n\n")
+              "    timeout client 50000\n")
         be = ("backend sample_pool_id_1\n"
               "    mode http\n"
               "    balance roundrobin\n"
