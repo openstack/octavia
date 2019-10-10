@@ -136,7 +136,6 @@ bind {{ lb_vip_address }}:{{ listener.protocol_port }} {{
 
 {% macro frontend_macro(constants, listener, lb_vip_address) %}
 frontend {{ listener.id }}
-    log-format {{ listener.user_log_format }}
     {% if listener.connection_limit is defined %}
     maxconn {{ listener.connection_limit }}
     {% endif %}
@@ -154,6 +153,9 @@ frontend {{ listener.id }}
     default_backend {{ listener.default_pool.id }}:{{ listener.id }}
     {% endif %}
     timeout client {{ listener.timeout_client_data }}
+    {% if listener.user_log_format is defined %}
+    log-format {{ listener.user_log_format }}
+    {% endif %}
     {% if listener.timeout_tcp_inspect %}
     tcp-request inspect-delay {{ listener.timeout_tcp_inspect }}
     {% endif %}

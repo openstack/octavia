@@ -260,8 +260,6 @@ class JinjaTemplater(object):
             'protocol': listener.protocol,
             'insert_headers': listener.insert_headers,
             'enabled': listener.enabled,
-            'user_log_format': self._format_log_string(loadbalancer,
-                                                       listener.protocol),
             'timeout_client_data': (
                 listener.timeout_client_data or
                 CONF.haproxy_amphora.timeout_client_data),
@@ -274,6 +272,9 @@ class JinjaTemplater(object):
             'timeout_tcp_inspect': (listener.timeout_tcp_inspect or
                                     CONF.haproxy_amphora.timeout_tcp_inspect),
         }
+        if self.connection_logging:
+            ret_value['user_log_format'] = (
+                self._format_log_string(loadbalancer, listener.protocol))
         if listener.connection_limit and listener.connection_limit > -1:
             ret_value['connection_limit'] = listener.connection_limit
         else:
