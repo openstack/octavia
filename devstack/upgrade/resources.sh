@@ -21,8 +21,7 @@ PRIVATE_SUBNET_NAME=${PRIVATE_SUBNET_NAME:-"private-subnet"}
 # $3..n: command with arguments and parameters
 # TODO(cgoncalves): set timeout
 function _wait_for_status {
-    while :
-    do
+    while true; do
         eval $("${@:3}" -f shell -c provisioning_status -c operating_status)
         [[ $operating_status == "ONLINE" && $provisioning_status == "ACTIVE" ]] && break
         if [ $provisioning_status == "ERROR" ]; then

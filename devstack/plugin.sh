@@ -204,7 +204,7 @@ function create_octavia_accounts {
     # This is imporant for concurrent tempest testing
     openstack quota set --secgroups 100 $SERVICE_PROJECT_NAME
 
-    local octavia_service=$(get_or_create_service "octavia" \
+    octavia_service=$(get_or_create_service "octavia" \
         $OCTAVIA_SERVICE_TYPE "Octavia Load Balancing Service")
 
     if [[ "$WSGI_MODE" == "uwsgi" ]] && [[ "$OCTAVIA_NODE" == "main" ]] ; then
@@ -493,10 +493,10 @@ function configure_octavia_api_haproxy {
     NODES=(${OCTAVIA_NODES//,/ })
 
     for NODE in ${NODES[@]}; do
-       DATA=(${NODE//:/ })
-       NAME=$(echo -e "${DATA[0]}" | tr -d '[[:space:]]')
-       IP=$(echo -e "${DATA[1]}" | tr -d '[[:space:]]')
-       echo "   server octavia-${NAME} ${IP}:80 weight 1" >> ${OCTAVIA_CONF_DIR}/haproxy.cfg
+        DATA=(${NODE//:/ })
+        NAME=$(echo -e "${DATA[0]}" | tr -d '[[:space:]]')
+        IP=$(echo -e "${DATA[1]}" | tr -d '[[:space:]]')
+        echo "   server octavia-${NAME} ${IP}:80 weight 1" >> ${OCTAVIA_CONF_DIR}/haproxy.cfg
     done
 
 }
@@ -564,19 +564,19 @@ function octavia_stop {
 function octavia_cleanup {
 
     if [ ${OCTAVIA_AMP_IMAGE_NAME}x != x ] ; then
-         rm -rf ${OCTAVIA_AMP_IMAGE_NAME}*
+        rm -rf ${OCTAVIA_AMP_IMAGE_NAME}*
     fi
     if [ ${OCTAVIA_AMP_SSH_KEY_NAME}x != x ] ; then
-         rm -f  ${OCTAVIA_AMP_SSH_KEY_NAME}*
+        rm -f  ${OCTAVIA_AMP_SSH_KEY_NAME}*
     fi
     if [ ${OCTAVIA_SSH_DIR}x != x ] ; then
-         rm -rf ${OCTAVIA_SSH_DIR}
+        rm -rf ${OCTAVIA_SSH_DIR}
     fi
     if [ ${OCTAVIA_CONF_DIR}x != x ] ; then
-         sudo rm -rf ${OCTAVIA_CONF_DIR}
+        sudo rm -rf ${OCTAVIA_CONF_DIR}
     fi
     if [ ${OCTAVIA_RUN_DIR}x != x ] ; then
-         sudo rm -rf ${OCTAVIA_RUN_DIR}
+        sudo rm -rf ${OCTAVIA_RUN_DIR}
     fi
     if [ ${OCTAVIA_AMP_SSH_KEY_PATH}x != x ] ; then
         rm -f ${OCTAVIA_AMP_SSH_KEY_PATH} ${OCTAVIA_AMP_SSH_KEY_PATH}.pub
@@ -610,66 +610,66 @@ function add_load-balancer_roles {
 }
 
 function octavia_init {
-   if [ $OCTAVIA_NODE != 'main' ] && [ $OCTAVIA_NODE != 'standalone' ]  && [ $OCTAVIA_NODE != 'api' ]; then
-       # without the other services enabled apparently we don't have
-       # credentials at this point
-#       TOP_DIR=$(cd $(dirname "$0") && pwd)
-       source ${TOP_DIR}/openrc admin admin
-       OCTAVIA_AMP_NETWORK_ID=$(openstack network show lb-mgmt-net -f value -c id)
-       iniset $OCTAVIA_CONF controller_worker amp_boot_network_list ${OCTAVIA_AMP_NETWORK_ID}
-   fi
+    if [ $OCTAVIA_NODE != 'main' ] && [ $OCTAVIA_NODE != 'standalone' ]  && [ $OCTAVIA_NODE != 'api' ]; then
+        # without the other services enabled apparently we don't have
+        # credentials at this point
+#        TOP_DIR=$(cd $(dirname "$0") && pwd)
+        source ${TOP_DIR}/openrc admin admin
+        OCTAVIA_AMP_NETWORK_ID=$(openstack network show lb-mgmt-net -f value -c id)
+        iniset $OCTAVIA_CONF controller_worker amp_boot_network_list ${OCTAVIA_AMP_NETWORK_ID}
+    fi
 
-   if [ $OCTAVIA_NODE == 'main' ] || [ $OCTAVIA_NODE == 'standalone' ] ; then
-       # things that should only happen on the ha main node / or once
-       if ! openstack keypair show ${OCTAVIA_AMP_SSH_KEY_NAME} ; then
-           openstack keypair create --public-key ${OCTAVIA_AMP_SSH_KEY_PATH}.pub ${OCTAVIA_AMP_SSH_KEY_NAME}
-       fi
+    if [ $OCTAVIA_NODE == 'main' ] || [ $OCTAVIA_NODE == 'standalone' ] ; then
+        # things that should only happen on the ha main node / or once
+        if ! openstack keypair show ${OCTAVIA_AMP_SSH_KEY_NAME} ; then
+            openstack keypair create --public-key ${OCTAVIA_AMP_SSH_KEY_PATH}.pub ${OCTAVIA_AMP_SSH_KEY_NAME}
+        fi
 
-       # Check if an amphora image is already loaded
-       AMPHORA_IMAGE_NAME=$(openstack image list --property name=${OCTAVIA_AMP_IMAGE_NAME} -f value -c Name)
-       export AMPHORA_IMAGE_NAME
+        # Check if an amphora image is already loaded
+        AMPHORA_IMAGE_NAME=$(openstack image list --property name=${OCTAVIA_AMP_IMAGE_NAME} -f value -c Name)
+        export AMPHORA_IMAGE_NAME
 
-       if [ "$AMPHORA_IMAGE_NAME" == ${OCTAVIA_AMP_IMAGE_NAME} ]; then
-           echo "Found existing amphora image: $AMPHORA_IMAGE_NAME"
-           echo "Skipping amphora image build"
-           export DISABLE_AMP_IMAGE_BUILD=True
-       fi
+        if [ "$AMPHORA_IMAGE_NAME" == ${OCTAVIA_AMP_IMAGE_NAME} ]; then
+            echo "Found existing amphora image: $AMPHORA_IMAGE_NAME"
+            echo "Skipping amphora image build"
+            export DISABLE_AMP_IMAGE_BUILD=True
+        fi
 
-       if ! [ "$DISABLE_AMP_IMAGE_BUILD" == 'True' ]; then
-           build_octavia_worker_image
-       fi
+        if ! [ "$DISABLE_AMP_IMAGE_BUILD" == 'True' ]; then
+            build_octavia_worker_image
+        fi
 
-       OCTAVIA_AMP_IMAGE_ID=$(openstack image list -f value --property name=${OCTAVIA_AMP_IMAGE_NAME} -c ID)
+        OCTAVIA_AMP_IMAGE_ID=$(openstack image list -f value --property name=${OCTAVIA_AMP_IMAGE_NAME} -c ID)
 
-       if [ -n "$OCTAVIA_AMP_IMAGE_ID" ]; then
-           openstack image set --tag ${OCTAVIA_AMP_IMAGE_TAG} --property hw_architecture='x86_64' --property hw_rng_model=virtio ${OCTAVIA_AMP_IMAGE_ID}
-       fi
+        if [ -n "$OCTAVIA_AMP_IMAGE_ID" ]; then
+            openstack image set --tag ${OCTAVIA_AMP_IMAGE_TAG} --property hw_architecture='x86_64' --property hw_rng_model=virtio ${OCTAVIA_AMP_IMAGE_ID}
+        fi
 
-       # Create a management network.
-       build_mgmt_network
-       OCTAVIA_AMP_NETWORK_ID=$(openstack network show lb-mgmt-net -f value -c id)
-       iniset $OCTAVIA_CONF controller_worker amp_boot_network_list ${OCTAVIA_AMP_NETWORK_ID}
+        # Create a management network.
+        build_mgmt_network
+        OCTAVIA_AMP_NETWORK_ID=$(openstack network show lb-mgmt-net -f value -c id)
+        iniset $OCTAVIA_CONF controller_worker amp_boot_network_list ${OCTAVIA_AMP_NETWORK_ID}
 
-       create_octavia_accounts
+        create_octavia_accounts
 
-       add_load-balancer_roles
+        add_load-balancer_roles
 
-       configure_rsyslog
-   elif [ $OCTAVIA_NODE == 'api' ] ; then
-       create_octavia_accounts
+        configure_rsyslog
+    elif [ $OCTAVIA_NODE == 'api' ] ; then
+        create_octavia_accounts
 
-       add_load-balancer_roles
-   fi
+        add_load-balancer_roles
+    fi
 
-   if [ $OCTAVIA_NODE != 'api' ] ; then
-       create_mgmt_network_interface
-       create_amphora_flavor
-       configure_lb_mgmt_sec_grp
-   fi
+    if [ $OCTAVIA_NODE != 'api' ] ; then
+        create_mgmt_network_interface
+        create_amphora_flavor
+        configure_lb_mgmt_sec_grp
+    fi
 
-   if ! [ "$DISABLE_AMP_IMAGE_BUILD" == 'True' ]; then
-       set_octavia_worker_image_owner_id
-   fi
+    if ! [ "$DISABLE_AMP_IMAGE_BUILD" == 'True' ]; then
+        set_octavia_worker_image_owner_id
+    fi
 }
 
 function _configure_tempest {
