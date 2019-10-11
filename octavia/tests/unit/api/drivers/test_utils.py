@@ -182,6 +182,32 @@ class TestUtils(base.TestCase):
                          provider_listener)
 
     @mock.patch('octavia.common.tls_utils.cert_parser.load_certificates_data')
+    def test_listener_dict_to_provider_dict_load_cert_error(self,
+                                                            mock_load_cert):
+        mock_load_cert.side_effect = [exceptions.OctaviaException,
+                                      Exception]
+
+        # Test load_cert exception for_delete == False path
+        self.assertRaises(exceptions.OctaviaException,
+                          utils.listener_dict_to_provider_dict,
+                          self.sample_data.test_listener1_dict)
+
+    @mock.patch('octavia.common.tls_utils.cert_parser.load_certificates_data')
+    def test_listener_dict_to_provider_dict_load_cert_error_for_delete(
+            self, mock_load_cert):
+        mock_load_cert.side_effect = [Exception]
+
+        # Test load_cert exception for_delete == True path
+        expect_prov = copy.deepcopy(self.sample_data.provider_listener1_dict)
+        expect_pool_prov = copy.deepcopy(self.sample_data.provider_pool1_dict)
+        expect_prov['default_pool'] = expect_pool_prov
+        del expect_prov['default_tls_container_data']
+        del expect_prov['sni_container_data']
+        provider_listener = utils.listener_dict_to_provider_dict(
+            self.sample_data.test_listener1_dict, for_delete=True)
+        self.assertEqual(expect_prov, provider_listener)
+
+    @mock.patch('octavia.common.tls_utils.cert_parser.load_certificates_data')
     def test_listener_dict_to_provider_dict_SNI(self, mock_load_cert):
         cert1 = data_models.TLSContainer(certificate='cert 1')
         cert2 = data_models.TLSContainer(certificate='cert 2')
