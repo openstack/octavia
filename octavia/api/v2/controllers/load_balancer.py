@@ -638,7 +638,8 @@ class LoadBalancersController(base.BaseController):
             LOG.info("Sending delete Load Balancer %s to provider %s",
                      id, driver.name)
             provider_loadbalancer = (
-                driver_utils.db_loadbalancer_to_provider_loadbalancer(db_lb))
+                driver_utils.db_loadbalancer_to_provider_loadbalancer(
+                    db_lb, for_delete=True))
             driver_utils.call_provider(driver.name, driver.loadbalancer_delete,
                                        provider_loadbalancer, cascade)
 
