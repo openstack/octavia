@@ -528,7 +528,8 @@ class ListenersController(base.BaseController):
             LOG.info("Sending delete Listener %s to provider %s", id,
                      driver.name)
             provider_listener = (
-                driver_utils.db_listener_to_provider_listener(db_listener))
+                driver_utils.db_listener_to_provider_listener(
+                    db_listener, for_delete=True))
             driver_utils.call_provider(driver.name, driver.listener_delete,
                                        provider_listener)
 

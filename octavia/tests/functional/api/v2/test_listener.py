@@ -25,6 +25,7 @@ from octavia.common import constants
 import octavia.common.context
 from octavia.common import data_models
 from octavia.common import exceptions
+from octavia.db import api as db_api
 from octavia.tests.functional.api.v2 import base
 from octavia.tests.unit.common.sample_configs import sample_certs
 
@@ -1712,6 +1713,37 @@ class TestListener(base.BaseAPITest):
         listener = self.create_listener(constants.PROTOCOL_HTTP, 80,
                                         self.lb_id)
         self.set_lb_status(self.lb_id)
+        listener_path = self.LISTENER_PATH.format(
+            listener_id=listener['listener']['id'])
+        self.delete(listener_path)
+        response = self.get(listener_path)
+        api_listener = response.json['listener']
+        expected = {'name': None, 'default_pool_id': None,
+                    'description': None, 'admin_state_up': True,
+                    'operating_status': constants.ONLINE,
+                    'provisioning_status': constants.PENDING_DELETE,
+                    'connection_limit': None}
+        listener['listener'].update(expected)
+
+        self.assertIsNone(listener['listener'].pop('updated_at'))
+        self.assertIsNotNone(api_listener.pop('updated_at'))
+        self.assertNotEqual(listener, api_listener)
+        self.assert_correct_lb_status(self.lb_id, constants.ONLINE,
+                                      constants.PENDING_UPDATE)
+        self.assert_final_listener_statuses(self.lb_id, api_listener['id'],
+                                            delete=True)
+
+    # Problems with TLS certs should not block a delete
+    def test_delete_with_bad_tls_ref(self):
+        listener = self.create_listener(constants.PROTOCOL_TCP,
+                                        443, self.lb_id)
+        tls_uuid = uuidutils.generate_uuid()
+        self.set_lb_status(self.lb_id)
+        self.listener_repo.update(db_api.get_session(),
+                                  listener['listener']['id'],
+                                  tls_certificate_id=tls_uuid,
+                                  protocol=constants.PROTOCOL_TERMINATED_HTTPS)
+
         listener_path = self.LISTENER_PATH.format(
             listener_id=listener['listener']['id'])
         self.delete(listener_path)

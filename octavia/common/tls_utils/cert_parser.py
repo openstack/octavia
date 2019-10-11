@@ -27,7 +27,7 @@ from pyasn1_modules import rfc2315
 import six
 
 from octavia.common import data_models
-import octavia.common.exceptions as exceptions
+from octavia.common import exceptions
 
 X509_BEG = b'-----BEGIN CERTIFICATE-----'
 X509_END = b'-----END CERTIFICATE-----'
@@ -347,16 +347,29 @@ def load_certificates_data(cert_mngr, obj, context=None):
         context = oslo_context.RequestContext(project_id=obj.project_id)
 
     if obj.tls_certificate_id:
-        tls_cert = _map_cert_tls_container(
-            cert_mngr.get_cert(context,
-                               obj.tls_certificate_id,
-                               check_only=True))
+        try:
+            tls_cert = _map_cert_tls_container(
+                cert_mngr.get_cert(context,
+                                   obj.tls_certificate_id,
+                                   check_only=True))
+        except Exception as e:
+            LOG.warning('Unable to retrieve certificate: %s due to %s.',
+                        obj.tls_certificate_id, str(e))
+            raise exceptions.CertificateRetrievalException(
+                ref=obj.tls_certificate_id)
+
     if hasattr(obj, 'sni_containers') and obj.sni_containers:
         for sni_cont in obj.sni_containers:
-            cert_container = _map_cert_tls_container(
-                cert_mngr.get_cert(context,
-                                   sni_cont.tls_container_id,
-                                   check_only=True))
+            try:
+                cert_container = _map_cert_tls_container(
+                    cert_mngr.get_cert(context,
+                                       sni_cont.tls_container_id,
+                                       check_only=True))
+            except Exception as e:
+                LOG.warning('Unable to retrieve certificate: %s due to %s.',
+                            sni_cont.tls_container_id, str(e))
+                raise exceptions.CertificateRetrievalException(
+                    ref=sni_cont.tls_container_id)
             sni_certs.append(cert_container)
     return {'tls_cert': tls_cert, 'sni_certs': sni_certs}
 

@@ -202,6 +202,22 @@ class TestUtils(base.TestCase):
         self.assertEqual(self.sample_data.provider_listeners,
                          provider_listeners)
 
+    @mock.patch('oslo_context.context.RequestContext', return_value=None)
+    def test_get_secret_data_errors(self, mock_context):
+        mock_cert_mngr = mock.MagicMock()
+
+        mock_cert_mngr.get_secret.side_effect = [Exception, Exception]
+
+        # Test for_delete == False path
+        self.assertRaises(exceptions.CertificateRetrievalException,
+                          utils._get_secret_data, mock_cert_mngr,
+                          'fake_project_id', 1)
+
+        # Test for_delete == True path
+        self.assertIsNone(
+            utils._get_secret_data(mock_cert_mngr, 'fake_project_id',
+                                   2, for_delete=True))
+
     @mock.patch('octavia.api.drivers.utils._get_secret_data')
     @mock.patch('octavia.common.tls_utils.cert_parser.load_certificates_data')
     def test_listener_dict_to_provider_dict(self, mock_load_cert, mock_secret):
@@ -226,6 +242,41 @@ class TestUtils(base.TestCase):
         expect_prov['default_pool'] = expect_pool_prov
         provider_listener = utils.listener_dict_to_provider_dict(
             self.sample_data.test_listener1_dict)
+        self.assertEqual(expect_prov, provider_listener)
+
+    @mock.patch('octavia.api.drivers.utils._get_secret_data')
+    @mock.patch('octavia.common.tls_utils.cert_parser.load_certificates_data')
+    def test_listener_dict_to_provider_dict_load_cert_error(
+            self, mock_load_cert, mock_secret):
+        mock_secret.side_effect = ['ca cert', 'X509 CRL FILE',
+                                   'X509 POOL CA CERT FILE',
+                                   'X509 POOL CRL FILE']
+        mock_load_cert.side_effect = [exceptions.OctaviaException,
+                                      Exception]
+
+        # Test load_cert exception for_delete == False path
+        self.assertRaises(exceptions.OctaviaException,
+                          utils.listener_dict_to_provider_dict,
+                          self.sample_data.test_listener1_dict)
+
+    @mock.patch('octavia.api.drivers.utils._get_secret_data')
+    @mock.patch('octavia.common.tls_utils.cert_parser.load_certificates_data')
+    def test_listener_dict_to_provider_dict_load_cert_error_for_delete(
+            self, mock_load_cert, mock_secret):
+        mock_secret.side_effect = ['ca cert', 'X509 CRL FILE',
+                                   'X509 POOL CA CERT FILE',
+                                   'X509 POOL CRL FILE']
+        mock_load_cert.side_effect = [Exception]
+
+        # Test load_cert exception for_delete == True path
+        expect_prov = copy.deepcopy(self.sample_data.provider_listener1_dict)
+        expect_pool_prov = copy.deepcopy(self.sample_data.provider_pool1_dict)
+        del expect_pool_prov['tls_container_data']
+        expect_prov['default_pool'] = expect_pool_prov
+        del expect_prov['default_tls_container_data']
+        del expect_prov['sni_container_data']
+        provider_listener = utils.listener_dict_to_provider_dict(
+            self.sample_data.test_listener1_dict, for_delete=True)
         self.assertEqual(expect_prov, provider_listener)
 
     @mock.patch('octavia.api.drivers.utils._get_secret_data')
@@ -299,6 +350,37 @@ class TestUtils(base.TestCase):
         expect_prov.pop('crl_container_ref')
         provider_pool_dict = utils.pool_dict_to_provider_dict(
             self.sample_data.test_pool1_dict)
+        provider_pool_dict.pop('crl_container_ref')
+        self.assertEqual(expect_prov, provider_pool_dict)
+
+    @mock.patch('octavia.api.drivers.utils._get_secret_data')
+    @mock.patch('octavia.common.tls_utils.cert_parser.load_certificates_data')
+    def test_pool_dict_to_provider_dict_load_cert_error(
+            self, mock_load_cert, mock_secret):
+
+        mock_load_cert.side_effect = [exceptions.OctaviaException,
+                                      Exception]
+
+        # Test load_cert exception for_delete == False path
+        self.assertRaises(exceptions.OctaviaException,
+                          utils.pool_dict_to_provider_dict,
+                          self.sample_data.test_pool1_dict)
+
+    @mock.patch('octavia.api.drivers.utils._get_secret_data')
+    @mock.patch('octavia.common.tls_utils.cert_parser.load_certificates_data')
+    def test_pool_dict_to_provider_dict_load_cert_error_for_delete(
+            self, mock_load_cert, mock_secret):
+
+        mock_load_cert.side_effect = [Exception]
+
+        # Test load_cert exception for_delete == True path
+        mock_secret.side_effect = ['X509 POOL CA CERT FILE',
+                                   'X509 POOL CRL FILE']
+        expect_prov = copy.deepcopy(self.sample_data.provider_pool1_dict)
+        expect_prov.pop('crl_container_ref')
+        del expect_prov['tls_container_data']
+        provider_pool_dict = utils.pool_dict_to_provider_dict(
+            self.sample_data.test_pool1_dict, for_delete=True)
         provider_pool_dict.pop('crl_container_ref')
         self.assertEqual(expect_prov, provider_pool_dict)
 

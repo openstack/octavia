@@ -453,7 +453,8 @@ class PoolsController(base.BaseController):
 
             LOG.info("Sending delete Pool %s to provider %s", id, driver.name)
             provider_pool = (
-                driver_utils.db_pool_to_provider_pool(db_pool))
+                driver_utils.db_pool_to_provider_pool(db_pool,
+                                                      for_delete=True))
             driver_utils.call_provider(driver.name, driver.pool_delete,
                                        provider_pool)
 
