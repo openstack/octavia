@@ -18,11 +18,11 @@ source ${TOP_DIR}/stackrc
 DEST=${DEST:-/opt/stack}
 
 # Polling functions
-function wait_for_loadbalancer_active() {
-  lb_name=$1
-  while [ $(openstack loadbalancer show $lb_name -f value -c provisioning_status) != "ACTIVE" ]; do
-    sleep 2
-  done
+function wait_for_loadbalancer_active {
+    lb_name=$1
+    while [ $(openstack loadbalancer show $lb_name -f value -c provisioning_status) != "ACTIVE" ]; do
+        sleep 2
+    done
 }
 
 if is_service_enabled nova; then
