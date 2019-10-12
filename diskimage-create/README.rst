@@ -1,5 +1,6 @@
-Diskimage-builder script for creating Octavia Amphora images
-============================================================
+===============================
+Building Octavia Amphora Images
+===============================
 
 Octavia is an operator-grade reference implementation for Load Balancing as a
 Service (LBaaS) for OpenStack.  The component of Octavia that does the load
@@ -38,8 +39,10 @@ will need ~1.5GB, and your image destination will need ~500MB
 The script will use the version of diskimage-builder installed on your system,
 or it can be overridden by setting the following environment variables:
 
- | DIB_REPO_PATH = /<some directory>/diskimage-builder
- | DIB_ELEMENTS = /<some directory>/diskimage-builder/elements
+.. code-block:: bash
+
+    DIB_REPO_PATH = /<some directory>/diskimage-builder
+    DIB_ELEMENTS = /<some directory>/diskimage-builder/elements
 
 
 The following packages are required on each platform:
@@ -97,7 +100,7 @@ project progresses we may add additional supported configurations.
 Command syntax:
 
 
-.. line-block::
+.. code-block::
 
     $ diskimage-create.sh
             [-a i386 | **amd64** | armhf | ppc64le ]
@@ -152,7 +155,8 @@ DIB_REPOLOCATION_amphora_agent
     - Example: /tmp/octavia
 
 DIB_REPOREF_amphora_agent
-    - The git reference to checkout for the amphora-agent code inside the image.
+    - The git reference to checkout for the amphora-agent code inside the
+      image.
     - Default: master
     - Example: stable/stein
     - Example: refs/changes/40/674140/7
@@ -208,6 +212,7 @@ DIB_CLOUD_IMAGES
     - Default: depends on the distribution
 
 For example to build a CentOS 7 amphora with Pike RPM packages:
+
 .. code:: bash
 
     # Get image
@@ -236,6 +241,7 @@ Building a RHEL-based image requires:
       <DIB_REPO_PATH>/elements/rhel-common
 
 Here is an example with Customer Portal registration and OSP 13 repository:
+
 .. code:: bash
 
     $ export DIB_LOCAL_IMAGE='/tmp/rhel-server-7.6-x86_64-kvm.qcow2'
@@ -246,6 +252,7 @@ Here is an example with Customer Portal registration and OSP 13 repository:
 
 This example uses registration via a Satellite (the activation key must enable
 an OSP repository):
+
 .. code:: bash
 
     $ export DIB_LOCAL_IMAGE='/tmp/rhel-server-7.6-x86_64-kvm.qcow2'
@@ -256,11 +263,13 @@ an OSP repository):
 
 Building in a virtualenv with tox
 ---------------------------------
-To make use of a virtualenv for Python dependencies you may run ``tox``.  Note that
-you may still need to install binary dependencies on the host for the build to succeed.
+To make use of a virtualenv for Python dependencies you may run ``tox``.  Note
+that you may still need to install binary dependencies on the host for the
+build to succeed.
 
 If you wish to customize your build modify ``tox.ini`` to pass on relevant
-environment variables or command line arguments to the ``diskimage-create.sh`` script.
+environment variables or command line arguments to the ``diskimage-create.sh``
+script.
 
 .. code:: bash
 
@@ -284,9 +293,9 @@ This documentation and script(s) leverage prior work by the OpenStack TripleO
 and Sahara teams.  Thank you to everyone that worked on them for providing a
 great foundation for creating Octavia Amphora images.
 
-    | https://github.com/openstack/diskimage-builder
-    | https://github.com/openstack/tripleo-image-elements
-    | https://github.com/openstack/sahara-image-elements
+* https://opendev.org/openstack/diskimage-builder
+* https://opendev.org/openstack/tripleo-image-elements
+* https://opendev.org/openstack/sahara-image-elements
 
 Copyright
 =========
@@ -299,7 +308,7 @@ Licensed under the Apache License, Version 2.0 (the "License"); you may
 not use this file except in compliance with the License. You may obtain
 a copy of the License at
 
-   | http://www.apache.org/licenses/LICENSE-2.0
+* http://www.apache.org/licenses/LICENSE-2.0
 
 Unless required by applicable law or agreed to in writing, software
 distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
