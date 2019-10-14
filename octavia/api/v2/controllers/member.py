@@ -410,4 +410,5 @@ class MembersController(MemberController):
             LOG.info("Sending Pool %s batch member update to provider %s",
                      db_pool.id, driver.name)
             driver_utils.call_provider(
-                driver.name, driver.member_batch_update, provider_members)
+                driver.name, driver.member_batch_update, db_pool.id,
+                provider_members)

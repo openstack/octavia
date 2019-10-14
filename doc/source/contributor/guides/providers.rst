@@ -1084,9 +1084,10 @@ and members in the list that do not already exist should be created.
           """
           raise NotImplementedError()
 
-      def member_batch_update(self, members):
+      def member_batch_update(self, pool_id, members):
           """Creates, updates, or deletes a set of pool members.
 
+          :param pool_id (string): The id of the pool to update.
           :param members (list): List of member objects.
           :return: Nothing if the create request was accepted.
           :raises DriverError: An unexpected error occurred in the driver.
