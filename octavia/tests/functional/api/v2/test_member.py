@@ -643,7 +643,7 @@ class TestMember(base.BaseAPITest):
 
         mock_provider.assert_called_once_with(u'noop_driver',
                                               mock_driver.member_batch_update,
-                                              provider_creates)
+                                              self.pool_id, provider_creates)
 
     @mock.patch('octavia.api.drivers.driver_factory.get_driver')
     @mock.patch('octavia.api.drivers.utils.call_provider')
@@ -686,7 +686,7 @@ class TestMember(base.BaseAPITest):
 
         mock_provider.assert_called_once_with(u'noop_driver',
                                               mock_driver.member_batch_update,
-                                              provider_members)
+                                              self.pool_id, provider_members)
 
     def test_create_batch_members_with_bad_subnet(self):
         subnet_id = uuidutils.generate_uuid()
@@ -788,7 +788,7 @@ class TestMember(base.BaseAPITest):
 
         mock_provider.assert_called_once_with(u'noop_driver',
                                               mock_driver.member_batch_update,
-                                              provider_creates)
+                                              self.pool_id, provider_creates)
 
     @mock.patch('octavia.api.drivers.driver_factory.get_driver')
     @mock.patch('octavia.api.drivers.utils.call_provider')
@@ -839,7 +839,7 @@ class TestMember(base.BaseAPITest):
 
         mock_provider.assert_called_once_with(u'noop_driver',
                                               mock_driver.member_batch_update,
-                                              provider_members)
+                                              self.pool_id, provider_members)
 
     @mock.patch('octavia.api.drivers.driver_factory.get_driver')
     @mock.patch('octavia.api.drivers.utils.call_provider')
@@ -881,7 +881,29 @@ class TestMember(base.BaseAPITest):
 
         mock_provider.assert_called_once_with(u'noop_driver',
                                               mock_driver.member_batch_update,
-                                              provider_members)
+                                              self.pool_id, provider_members)
+
+    @mock.patch('octavia.api.drivers.driver_factory.get_driver')
+    @mock.patch('octavia.api.drivers.utils.call_provider')
+    def test_delete_batch_members_already_empty(self, mock_provider,
+                                                mock_get_driver):
+        mock_driver = mock.MagicMock()
+        mock_driver.name = 'noop_driver'
+        mock_get_driver.return_value = mock_driver
+
+        req_dict = []
+        body = {self.root_tag_list: req_dict}
+        path = self.MEMBERS_PATH.format(pool_id=self.pool_id)
+        self.put(path, body, status=202)
+        returned_members = self.get(
+            self.MEMBERS_PATH.format(pool_id=self.pool_id)
+        ).json.get(self.root_tag_list)
+
+        self.assertEqual([], returned_members)
+
+        mock_provider.assert_called_once_with(u'noop_driver',
+                                              mock_driver.member_batch_update,
+                                              self.pool_id, [])
 
     def test_create_with_attached_listener(self):
         api_member = self.create_member(

@@ -200,9 +200,7 @@ class AmphoraProviderDriver(driver_base.ProviderDriver):
                    consts.MEMBER_UPDATES: member_dict}
         self.client.cast({}, 'update_member', **payload)
 
-    def member_batch_update(self, members):
-        # Get a list of existing members
-        pool_id = members[0].pool_id
+    def member_batch_update(self, pool_id, members):
         # The DB should not have updated yet, so we can still use the pool
         db_pool = self.repositories.pool.get(db_apis.get_session(), id=pool_id)
 
@@ -235,10 +233,13 @@ class AmphoraProviderDriver(driver_base.ProviderDriver):
             if m.id not in new_member_ids:
                 deleted_members.append(m)
 
-        payload = {'old_member_ids': [m.id for m in deleted_members],
-                   'new_member_ids': [m.member_id for m in new_members],
-                   'updated_members': updated_members}
-        self.client.cast({}, 'batch_update_members', **payload)
+        if deleted_members or new_members or updated_members:
+            payload = {'old_member_ids': [m.id for m in deleted_members],
+                       'new_member_ids': [m.member_id for m in new_members],
+                       'updated_members': updated_members}
+            self.client.cast({}, 'batch_update_members', **payload)
+        else:
+            LOG.info("Member batch update is a noop, returning early.")
 
     def _validate_members(self, db_pool, members):
         if db_pool.protocol == consts.PROTOCOL_UDP:
