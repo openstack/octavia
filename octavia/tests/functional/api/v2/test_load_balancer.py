@@ -223,6 +223,89 @@ class TestLoadBalancer(base.BaseAPITest):
         self.assertEqual(subnet.id, api_lb.get('vip_subnet_id'))
         self.assertEqual(network_id, api_lb.get('vip_network_id'))
 
+    def test_create_with_vip_network_picks_subnet_ipv4_avail_ips(self):
+        self.conf.config(
+            group='controller_worker',
+            loadbalancer_topology=constants.TOPOLOGY_ACTIVE_STANDBY)
+        network_id = uuidutils.generate_uuid()
+        subnet1 = network_models.Subnet(id=uuidutils.generate_uuid(),
+                                        network_id=network_id,
+                                        ip_version=4)
+        subnet2 = network_models.Subnet(id=uuidutils.generate_uuid(),
+                                        network_id=network_id,
+                                        ip_version=4)
+        subnet3 = network_models.Subnet(id=uuidutils.generate_uuid(),
+                                        network_id=network_id,
+                                        ip_version=4)
+        network = network_models.Network(id=network_id,
+                                         subnets=[subnet1.id, subnet2.id,
+                                                  subnet3.id])
+        subnet_ip_availability = [{'subnet_id': subnet1.id, 'used_ips': 254,
+                                  'total_ips': 254}, {'subnet_id': subnet2.id,
+                                  'used_ips': 128, 'total_ips': 254},
+                                  {'subnet_id': subnet3.id, 'used_ips': 254,
+                                  'total_ips': 254}]
+        ip_avail = network_models.Network_IP_Availability(
+            network_id=network.id,
+            subnet_ip_availability=subnet_ip_availability)
+        lb_json = {'vip_network_id': network.id,
+                   'project_id': self.project_id}
+        body = self._build_body(lb_json)
+        with mock.patch(
+            "octavia.network.drivers.noop_driver.driver.NoopManager"
+            ".get_network") as mock_get_network, mock.patch(
+            "octavia.network.drivers.noop_driver.driver.NoopManager"
+            ".get_subnet") as mock_get_subnet, mock.patch(
+            "octavia.network.drivers.noop_driver.driver.NoopManager"
+            ".get_network_ip_availability") as (
+                mock_get_network_ip_availability):
+            mock_get_network.return_value = network
+            mock_get_subnet.side_effect = [subnet1, subnet2, subnet3]
+            mock_get_network_ip_availability.return_value = ip_avail
+            response = self.post(self.LBS_PATH, body)
+        api_lb = response.json.get(self.root_tag)
+        self._assert_request_matches_response(lb_json, api_lb)
+        self.assertEqual(subnet2.id, api_lb.get('vip_subnet_id'))
+        self.assertEqual(network_id, api_lb.get('vip_network_id'))
+
+    def test_create_with_vip_network_not_enough_avail_ips(self):
+        self.conf.config(
+            group='controller_worker',
+            loadbalancer_topology=constants.TOPOLOGY_ACTIVE_STANDBY)
+        network_id = uuidutils.generate_uuid()
+        subnet1 = network_models.Subnet(id=uuidutils.generate_uuid(),
+                                        network_id=network_id,
+                                        ip_version=4)
+        subnet2 = network_models.Subnet(id=uuidutils.generate_uuid(),
+                                        network_id=network_id,
+                                        ip_version=4)
+        network = network_models.Network(id=network_id,
+                                         subnets=[subnet1.id, subnet2.id])
+        subnet_ip_availability = [{'subnet_id': subnet1.id, 'used_ips': 254,
+                                  'total_ips': 254}, {'subnet_id': subnet2.id,
+                                  'used_ips': 254, 'total_ips': 254}]
+        ip_avail = network_models.Network_IP_Availability(
+            network_id=network.id,
+            subnet_ip_availability=subnet_ip_availability)
+        lb_json = {'vip_network_id': network.id,
+                   'project_id': self.project_id}
+        body = self._build_body(lb_json)
+        with mock.patch(
+            "octavia.network.drivers.noop_driver.driver.NoopManager"
+            ".get_network") as mock_get_network, mock.patch(
+            "octavia.network.drivers.noop_driver.driver.NoopManager"
+            ".get_subnet") as mock_get_subnet, mock.patch(
+            "octavia.network.drivers.noop_driver.driver.NoopManager"
+            ".get_network_ip_availability") as (
+                mock_get_network_ip_availability):
+            mock_get_network.return_value = network
+            mock_get_subnet.side_effect = [subnet1, subnet2]
+            mock_get_network_ip_availability.return_value = ip_avail
+            response = self.post(self.LBS_PATH, body, status=400)
+        err_msg = ('Validation failure: Subnet(s) in the supplied network do '
+                   'not contain enough available IPs.')
+        self.assertEqual(err_msg, response.json.get('faultstring'))
+
     def test_create_with_vip_network_and_address(self):
         ip_address = '198.51.100.10'
         network_id = uuidutils.generate_uuid()

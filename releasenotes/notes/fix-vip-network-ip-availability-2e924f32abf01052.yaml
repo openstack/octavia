@@ -1,0 +1,7 @@
+---
+fixes:
+  - |
+    Fixes an issue in the selection of vip-subnet-id on multi-subnet networks
+    by checking the IP availability of the subnets, ensuring enough IPs are
+    available for loadbalancer when creating loadbalancer specifying
+    vip-network-id.

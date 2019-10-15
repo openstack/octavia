@@ -94,3 +94,12 @@ def convert_floatingip_dict_to_model(floating_ip_dict):
         fixed_ip_address=floating_ip.get('fixed_ip_address'),
         fixed_port_id=floating_ip.get('fixed_port_id')
     )
+
+
+def convert_network_ip_availability_dict_to_model(
+        network_ip_availability_dict):
+    nw_ip_avail = network_ip_availability_dict.get(
+        'network_ip_availability', network_ip_availability_dict)
+    ip_avail = network_models.Network_IP_Availability.from_dict(nw_ip_avail)
+    ip_avail.subnet_ip_availability = nw_ip_avail.get('subnet_ip_availability')
+    return ip_avail
