@@ -623,6 +623,116 @@ HTTP just get redirected to the HTTPS listener), then please see `the example
     openstack loadbalancer member create --subnet-id private-subnet --address 192.0.2.11 --protocol-port 80 pool1
     openstack loadbalancer listener create --protocol-port 80 --protocol HTTP --name listener2 --default-pool pool1 lb1
 
+Deploy a load balancer with backend re-encryption
+-------------------------------------------------
+This example will demostrate how to enable TLS encryption from the load
+balancer to the backend member servers. Typically this is used with TLS
+termination enabled on the listener, but, to simplify the example, we are going
+to use an unencrypted HTTP listener. For information on setting up a TLS
+terminated listener, see the above section
+:ref:`basic-tls-terminated-listener`.
+
+**Scenario description**:
+
+* Back-end servers 192.0.2.10 and 192.0.2.11 on subnet *private-subnet* have
+  been configured with an HTTPS application on TCP port 443.
+* A Certificate Authority (CA) certificate chain and optional Certificate
+  Revocation List (CRL) have been obtained from an external certificate
+  authority to authenticate member server certificates against.
+* Subnet *public-subnet* is a shared external subnet created by the cloud
+  operator which is reachable from the internet.
+* We want to configure a basic load balancer that is accessible from the
+  internet, which distributes web requests to the back-end servers.
+
+**Solution**:
+
+1. Create a barbican *secret* resource for the member CA certificate. We will
+   call this *member_ca_cert*.
+2. Optionally create a barbican *secret* for the CRL file. We will call this
+   *member_ca_crl*.
+3. Create load balancer *lb1* on subnet *public-subnet*.
+4. Create listener *listener1*.
+5. Create pool *pool1* as *listener1*'s default pool, that is TLS enabled, with
+   a Certificate Authority (CA) certificate chain *member_ca_cert* to validate
+   the member server certificate, and a Certificate Revocation List (CRL)
+   *member_ca_crl* to check the member server certificate against.
+6. Add members 192.0.2.10 and 192.0.2.11 on *private-subnet* to *pool1*.
+
+**CLI commands**:
+
+::
+
+    openstack secret store --name='member_ca_cert' -t 'application/octet-stream' -e 'base64' --payload="$(base64 < member_ca.pem)"
+    openstack secret store --name='member_ca_crl' -t 'application/octet-stream' -e 'base64' --payload="$(base64 < member_ca.crl)"
+    openstack loadbalancer create --name lb1 --vip-subnet-id public-subnet
+    # Re-run the following until lb1 shows ACTIVE and ONLINE statuses:
+    openstack loadbalancer show lb1
+    openstack loadbalancer listener create --name listener1 --protocol HTTP --protocol-port 80 lb1
+    openstack loadbalancer pool create --name pool1 --lb-algorithm ROUND_ROBIN --listener listener1 --protocol HTTP --enable-tls --ca-tls-container-ref $(openstack secret list | awk '/ member_ca_cert / {print $2}') --crl-container-ref $(openstack secret list | awk '/ member_ca_crl / {print $2}')
+    openstack loadbalancer member create --subnet-id private-subnet --address 192.0.2.10 --protocol-port 443 pool1
+    openstack loadbalancer member create --subnet-id private-subnet --address 192.0.2.11 --protocol-port 443 pool1
+
+Deploy a load balancer with backend re-encryption and client authentication
+---------------------------------------------------------------------------
+This example will demostrate how to enable TLS encryption from the load
+balancer to the backend member servers with the load balancer being
+authenticated using TLS client authentication. Typically this is used with TLS
+termination enabled on the listener, but, to simplify the example, we are going
+to use an unencrypted HTTP listener. For information on setting up a TLS
+terminated listener, see the above section
+:ref:`basic-tls-terminated-listener`.
+
+**Scenario description**:
+
+* Back-end servers 192.0.2.10 and 192.0.2.11 on subnet *private-subnet* have
+  been configured with an HTTPS application on TCP port 443.
+* A Certificate Authority (CA) certificate chain and optional Certificate
+  Revocation List (CRL) have been obtained from an external certificate
+  authority to authenticate member server certificates against.
+* A TLS certificate and key have been obtained from an external Certificate
+  Authority (CA). The now exist in the files member.crt and member.key. The
+  key and certificate are PEM-encoded and the key is not encrypted with a
+  passphrase (for this example).
+* Subnet *public-subnet* is a shared external subnet created by the cloud
+  operator which is reachable from the internet.
+* We want to configure a basic load balancer that is accessible from the
+  internet, which distributes web requests to the back-end servers.
+
+**Solution**:
+
+1. Combine the member client authentication certificate and key to a single
+   PKCS12 file.
+2. Create a barbican *secret* resource for the PKCS12 file. We will call
+   this *member_secret1*.
+3. Create a barbican *secret* resource for the member CA certificate. We will
+   call this *member_ca_cert*.
+4. Optionally create a barbican *secret* for the CRL file. We will call this
+   *member_ca_crl*.
+5. Create load balancer *lb1* on subnet *public-subnet*.
+6. Create listener *listener1*.
+7. Create pool *pool1* as *listener1*'s default pool, that is TLS enabled, with
+   a TLS container reference for the member client authentication key and
+   certificate pkcs12, also with a Certificate Authority (CA) certificate chain
+   *member_ca_cert* to validate the member server certificate, and a
+   Certificate Revocation List (CRL) *member_ca_crl* to check the member server
+   certificate against.
+8. Add members 192.0.2.10 and 192.0.2.11 on *private-subnet* to *pool1*.
+
+**CLI commands**:
+
+::
+
+    openssl pkcs12 -export -inkey member.key -in member.crt -passout pass: -out member.p12
+    openstack secret store --name='member_secret1' -t 'application/octet-stream' -e 'base64' --payload="$(base64 < member.p12)"
+    openstack secret store --name='member_ca_cert' -t 'application/octet-stream' -e 'base64' --payload="$(base64 < member_ca.pem)"
+    openstack secret store --name='member_ca_crl' -t 'application/octet-stream' -e 'base64' --payload="$(base64 < member_ca.crl)"
+    openstack loadbalancer create --name lb1 --vip-subnet-id public-subnet
+    # Re-run the following until lb1 shows ACTIVE and ONLINE statuses:
+    openstack loadbalancer show lb1
+    openstack loadbalancer listener create --name listener1 --protocol HTTP --protocol-port 80 lb1
+    openstack loadbalancer pool create --name pool1 --lb-algorithm ROUND_ROBIN --listener listener1 --protocol HTTP --enable-tls --ca-tls-container-ref $(openstack secret list | awk '/ member_ca_cert / {print $2}') --crl-container-ref $(openstack secret list | awk '/ member_ca_crl / {print $2}') --tls-container-ref $(openstack secret list | awk '/ member_secret1 / {print $2}')
+    openstack loadbalancer member create --subnet-id private-subnet --address 192.0.2.10 --protocol-port 443 pool1
+    openstack loadbalancer member create --subnet-id private-subnet --address 192.0.2.11 --protocol-port 443 pool1
 
 .. _heath-monitor-best-practices:
 
