@@ -142,6 +142,8 @@ class ListenersController(base.BaseController):
             try:
                 cert_parser.load_certificate_data(
                     self.cert_manager, ref, context)
+            except exceptions.UnreadablePKCS12:
+                raise
             except Exception:
                 bad_refs.append(ref)
 
