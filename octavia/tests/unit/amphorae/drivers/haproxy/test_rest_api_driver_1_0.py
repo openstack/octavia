@@ -275,7 +275,7 @@ class TestHaproxyAmphoraLoadBalancerDriverTest(base.TestCase):
             'sni_certs': sconts
         }
         self.driver.clients[API_VERSION].get_cert_md5sum.side_effect = [
-            exc.NotFound, 'Fake_MD5', 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa']
+            exc.NotFound, 'Fake_MD5', 'aaaaa', 'aaaaa']
         self.driver._process_tls_certificates(
             sample_listener, self.amp, sample_listener.load_balancer.id)
         gcm_calls = [
@@ -309,7 +309,7 @@ class TestHaproxyAmphoraLoadBalancerDriverTest(base.TestCase):
         self.driver.clients[API_VERSION].upload_cert_pem.assert_has_calls(
             ucp_calls, any_order=True)
         self.assertEqual(
-            3, self.driver.clients[API_VERSION].upload_cert_pem.call_count)
+            4, self.driver.clients[API_VERSION].upload_cert_pem.call_count)
 
     @mock.patch('oslo_context.context.RequestContext')
     @mock.patch('octavia.amphorae.drivers.haproxy.rest_api_driver.'

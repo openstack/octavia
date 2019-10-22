@@ -145,7 +145,6 @@ class HaproxyAmphoraLoadBalancerDriver(
                       'process mode.', amphora.id, loadbalancer.id)
 
         has_tcp = False
-        certs = {}
         for listener in loadbalancer.listeners:
             LOG.debug("%s updating listener %s on amphora %s",
                       self.__class__.__name__, listener.id, amphora.id)
@@ -163,10 +162,8 @@ class HaproxyAmphoraLoadBalancerDriver(
                 else:
                     obj_id = loadbalancer.id
 
-                certs.update({
-                    listener.tls_certificate_id:
-                    self._process_tls_certificates(
-                        listener, amphora, obj_id)['tls_cert']})
+                self._process_tls_certificates(listener, amphora, obj_id)
+
                 client_ca_filename = self._process_secret(
                     listener, listener.client_ca_tls_certificate_id,
                     amphora, obj_id)
@@ -179,7 +176,6 @@ class HaproxyAmphoraLoadBalancerDriver(
                 if split_config:
                     config = self.jinja_split.build_config(
                         host_amphora=amphora, listener=listener,
-                        tls_cert=certs[listener.tls_certificate_id],
                         haproxy_versions=haproxy_versions,
                         client_ca_filename=client_ca_filename,
                         client_crl=crl_filename,
@@ -194,7 +190,6 @@ class HaproxyAmphoraLoadBalancerDriver(
             # Generate HaProxy configuration from listener object
             config = self.jinja_combo.build_config(
                 host_amphora=amphora, listeners=loadbalancer.listeners,
-                tls_certs=certs,
                 haproxy_versions=haproxy_versions,
                 client_ca_filename=client_ca_filename,
                 client_crl=crl_filename,
@@ -414,11 +409,13 @@ class HaproxyAmphoraLoadBalancerDriver(
         tls_cert = None
         sni_certs = []
         certs = []
+        cert_filename_list = []
 
         data = cert_parser.load_certificates_data(
             self.cert_manager, listener)
         if data['tls_cert'] is not None:
             tls_cert = data['tls_cert']
+            # Note, the first cert is the TLS default cert
             certs.append(tls_cert)
         if data['sni_certs']:
             sni_certs = data['sni_certs']
@@ -429,7 +426,17 @@ class HaproxyAmphoraLoadBalancerDriver(
                 pem = cert_parser.build_pem(cert)
                 md5 = hashlib.md5(pem).hexdigest()  # nosec
                 name = '{id}.pem'.format(id=cert.id)
+                cert_filename_list.append(
+                    os.path.join(
+                        CONF.haproxy_amphora.base_cert_dir, obj_id, name))
                 self._upload_cert(amphora, obj_id, pem, md5, name)
+
+            if certs:
+                # Build and upload the crt-list file for haproxy
+                crt_list = "\n".join(cert_filename_list).encode('utf-8')
+                md5 = hashlib.md5(crt_list).hexdigest()  # nosec
+                name = '{id}.pem'.format(id=listener.id)
+                self._upload_cert(amphora, obj_id, crt_list, md5, name)
         return {'tls_cert': tls_cert, 'sni_certs': sni_certs}
 
     def _process_secret(self, listener, secret_ref, amphora=None, obj_id=None):

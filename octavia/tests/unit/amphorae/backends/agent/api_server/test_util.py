@@ -203,44 +203,33 @@ class TestUtil(base.TestCase):
         self.assertIsNone(result)
 
     def test_parse_haproxy_config(self):
-        # template_tls
-        tls_tupe = {'cont_id_1':
-                    sample_configs_combined.sample_tls_container_tuple(
-                        id='tls_container_id',
-                        certificate='imaCert1', private_key='imaPrivateKey1',
-                        primary_cn='FakeCN')}
+        self.CONF.config(group="haproxy_amphora",
+                         base_cert_dir='/fake_cert_dir')
+        FAKE_CRT_LIST_FILENAME = os.path.join(
+            CONF.haproxy_amphora.base_cert_dir,
+            'sample_loadbalancer_id_1/sample_listener_id_1.pem')
         rendered_obj = self.jinja_cfg.render_loadbalancer_obj(
             sample_configs_combined.sample_amphora_tuple(),
             [sample_configs_combined.sample_listener_tuple(
-                proto='TERMINATED_HTTPS', tls=True, sni=True)],
-            tls_tupe)
+                proto='TERMINATED_HTTPS', tls=True, sni=True)])
 
         path = util.config_path(LISTENER_ID1)
         self.useFixture(test_utils.OpenFixture(path, rendered_obj))
 
         res = util.parse_haproxy_file(LISTENER_ID1)
         listener_dict = res[1]['sample_listener_id_1']
+        # NOTE: parse_haproxy_file makes mode TERMINATED_HTTPS even though
+        #       the haproxy.cfg needs mode HTTP
         self.assertEqual('TERMINATED_HTTPS', listener_dict['mode'])
         self.assertEqual('/var/lib/octavia/sample_loadbalancer_id_1.sock',
                          res[0])
-        self.assertEqual(
-            '/var/lib/octavia/certs/sample_loadbalancer_id_1/'
-            'tls_container_id.pem crt /var/lib/octavia/certs/'
-            'sample_loadbalancer_id_1',
-            listener_dict['ssl_crt'])
+        self.assertEqual(FAKE_CRT_LIST_FILENAME, listener_dict['ssl_crt'])
 
         # render_template_tls_no_sni
         rendered_obj = self.jinja_cfg.render_loadbalancer_obj(
             sample_configs_combined.sample_amphora_tuple(),
             [sample_configs_combined.sample_listener_tuple(
-                proto='TERMINATED_HTTPS', tls=True)],
-            tls_certs={'cont_id_1':
-                       sample_configs_combined.sample_tls_container_tuple(
-                           id='tls_container_id',
-                           certificate='ImAalsdkfjCert',
-                           private_key='ImAsdlfksdjPrivateKey',
-                           primary_cn="FakeCN")})
-
+                proto='TERMINATED_HTTPS', tls=True)])
         self.useFixture(test_utils.OpenFixture(path, rendered_obj))
 
         res = util.parse_haproxy_file(LISTENER_ID1)
@@ -248,9 +237,7 @@ class TestUtil(base.TestCase):
         self.assertEqual('TERMINATED_HTTPS', listener_dict['mode'])
         self.assertEqual(BASE_AMP_PATH + '/sample_loadbalancer_id_1.sock',
                          res[0])
-        self.assertEqual(
-            BASE_CRT_PATH + '/sample_loadbalancer_id_1/tls_container_id.pem',
-            listener_dict['ssl_crt'])
+        self.assertEqual(FAKE_CRT_LIST_FILENAME, listener_dict['ssl_crt'])
 
         # render_template_http
         rendered_obj = self.jinja_cfg.render_loadbalancer_obj(
