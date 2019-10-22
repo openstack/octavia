@@ -591,7 +591,7 @@ cinder_opts = [
     cfg.StrOpt('volume_type', default=None,
                help=_('Type of volume for Amphorae volume root disk')),
     cfg.IntOpt('volume_create_retry_interval', default=5,
-               help=_('Interval time to wait volume is created in available'
+               help=_('Interval time to wait volume is created in available '
                       'state')),
     cfg.IntOpt('volume_create_timeout', default=300,
                help=_('Timeout to wait for volume creation success')),
