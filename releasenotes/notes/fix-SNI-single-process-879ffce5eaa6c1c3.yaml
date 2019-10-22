@@ -1,0 +1,6 @@
+---
+fixes:
+  - |
+    Fixes an issue where load balancers with more than one TLS enabled
+    listener, one or more SNI enabled, may load certificates from
+    other TLS enabled listeners for SNI use.
