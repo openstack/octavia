@@ -162,6 +162,13 @@ class TestTLSParseUtils(base.TestCase):
                 ]
                 client.assert_has_calls(calls_cert_mngr)
 
+    def test_load_certificate_data_with_error(self):
+        mock_cert_mngr = mock.MagicMock()
+        mock_cert_mngr.get_cert.side_effect = [Exception]
+        self.assertRaises(exceptions.CertificateRetrievalException,
+                          cert_parser.load_certificate_data,
+                          mock_cert_mngr, 'fake_ref', 'fake_context')
+
     @mock.patch('octavia.certificates.common.cert.Cert')
     def test_map_cert_tls_container(self, cert_mock):
         tls = data_models.TLSContainer(

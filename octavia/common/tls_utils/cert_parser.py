@@ -27,7 +27,7 @@ from pyasn1_modules import rfc2315
 import six
 
 from octavia.common import data_models
-import octavia.common.exceptions as exceptions
+from octavia.common import exceptions
 
 X509_BEG = b'-----BEGIN CERTIFICATE-----'
 X509_END = b'-----END CERTIFICATE-----'
@@ -336,8 +336,14 @@ def build_pem(tls_container):
 
 def load_certificate_data(cert_mngr, cert_ref, context):
     """Load TLS certificate data."""
-    return _map_cert_tls_container(
-        cert_mngr.get_cert(context, cert_ref, check_only=True))
+    try:
+        data = _map_cert_tls_container(
+            cert_mngr.get_cert(context, cert_ref, check_only=True))
+    except Exception as e:
+        LOG.warning('Unable to retrieve certificate: %s due to %s.',
+                    cert_ref, str(e))
+        raise exceptions.CertificateRetrievalException(ref=cert_ref)
+    return data
 
 
 def load_certificates_data(cert_mngr, listener, context=None):
