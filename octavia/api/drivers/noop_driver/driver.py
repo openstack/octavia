@@ -148,10 +148,11 @@ class NoopManager(object):
         self.driverconfig[new_member.member_id] = (
             new_member, 'member_update')
 
-    def member_batch_update(self, members):
+    def member_batch_update(self, pool_id, members):
         for member in members:
-            LOG.debug('Provider %s no-op, member_batch_update member %s',
-                      self.__class__.__name__, member.member_id)
+            LOG.debug('Provider %s no-op, member_batch_update pool_id %s '
+                      'member %s',
+                      self.__class__.__name__, pool_id, member.member_id)
 
             self.driverconfig[member.member_id] = (member,
                                                    'member_batch_update')
@@ -294,8 +295,8 @@ class NoopProviderDriver(driver_base.ProviderDriver):
     def member_update(self, old_member, new_member):
         self.driver.member_update(old_member, new_member)
 
-    def member_batch_update(self, members):
-        self.driver.member_batch_update(members)
+    def member_batch_update(self, pool_id, members):
+        self.driver.member_batch_update(pool_id, members)
 
     # Health Monitor
     def health_monitor_create(self, healthmonitor):

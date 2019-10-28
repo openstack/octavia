@@ -346,7 +346,8 @@ class TestAmphoraDriver(base.TestRpc):
                            'protocol_port': 80,
                            'pool_id': self.sample_data.pool1_id}
 
-        self.amp_driver.member_batch_update(prov_members)
+        self.amp_driver.member_batch_update(
+            self.sample_data.pool1_id, prov_members)
 
         payload = {'old_member_ids': [self.sample_data.member1_id],
                    'new_member_ids': [self.sample_data.member3_id],
@@ -380,12 +381,26 @@ class TestAmphoraDriver(base.TestRpc):
                            'protocol_port': 80,
                            'pool_id': self.sample_data.pool1_id}
 
-        self.amp_driver.member_batch_update(prov_members)
+        self.amp_driver.member_batch_update(
+            self.sample_data.pool1_id, prov_members)
 
         payload = {'old_member_ids': [self.sample_data.member1_id],
                    'new_member_ids': [self.sample_data.member3_id],
                    'updated_members': [update_mem_dict]}
         mock_cast.assert_called_with({}, 'batch_update_members', **payload)
+
+    @mock.patch('octavia.db.api.get_session')
+    @mock.patch('octavia.db.repositories.PoolRepository.get')
+    @mock.patch('oslo_messaging.RPCClient.cast')
+    def test_member_batch_update_clear_already_empty(
+            self, mock_cast, mock_pool_get, mock_session):
+        mock_pool = mock.MagicMock()
+        mock_pool_get.return_value = mock_pool
+
+        self.amp_driver.member_batch_update(
+            self.sample_data.pool1_id, [])
+
+        mock_cast.assert_not_called()
 
     # Health Monitor
     @mock.patch('oslo_messaging.RPCClient.cast')
@@ -441,7 +456,8 @@ class TestAmphoraDriver(base.TestRpc):
                            'protocol_port': 80,
                            'pool_id': self.sample_data.pool1_id}
 
-        self.amp_driver.member_batch_update(prov_members)
+        self.amp_driver.member_batch_update(
+            self.sample_data.pool1_id, prov_members)
 
         payload = {'old_member_ids': [self.sample_data.member1_id],
                    'new_member_ids': [self.sample_data.member3_id],
@@ -479,7 +495,7 @@ class TestAmphoraDriver(base.TestRpc):
 
         self.assertRaises(exceptions.UnsupportedOptionError,
                           self.amp_driver.member_batch_update,
-                          prov_members)
+                          self.sample_data.pool1_id, prov_members)
 
     @mock.patch('oslo_messaging.RPCClient.cast')
     def test_health_monitor_update(self, mock_cast):

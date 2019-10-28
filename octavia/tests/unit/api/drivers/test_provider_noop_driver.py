@@ -230,7 +230,7 @@ class TestNoopProviderDriver(base.TestCase):
                          self.driver.driver.driverconfig[self.member_id])
 
     def test_member_batch_update(self):
-        self.driver.member_batch_update([self.ref_member])
+        self.driver.member_batch_update(self.pool_id, [self.ref_member])
 
         self.assertEqual((self.ref_member, 'member_batch_update'),
                          self.driver.driver.driverconfig[self.member_id])
