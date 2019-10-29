@@ -1443,6 +1443,34 @@ class TestPool(base.BaseAPITest):
             lb_id=self.lb_id, listener_id=self.listener_id,
             pool_id=response.get('id'))
 
+    def test_update_with_bad_tls_ref(self):
+        api_pool = self.create_pool(
+            self.lb_id,
+            constants.PROTOCOL_HTTP,
+            constants.LB_ALGORITHM_ROUND_ROBIN,
+            listener_id=self.listener_id).get(self.root_tag)
+        self.set_lb_status(lb_id=self.lb_id)
+        # Set status to ACTIVE/ONLINE because set_lb_status did it in the db
+        api_pool['provisioning_status'] = constants.ACTIVE
+        api_pool['operating_status'] = constants.ONLINE
+        api_pool.pop('updated_at')
+
+        response = self.get(self.POOL_PATH.format(
+            pool_id=api_pool.get('id'))).json.get(self.root_tag)
+        response.pop('updated_at')
+        self.assertEqual(api_pool, response)
+
+        tls_uuid = uuidutils.generate_uuid()
+        self.pool_repo.update(db_api.get_session(),
+                              api_pool.get('id'),
+                              tls_certificate_id=tls_uuid)
+        update_data = {'name': 'pool2'}
+        self.put(self.POOL_PATH.format(pool_id=api_pool.get('id')),
+                 self._build_body(update_data))
+        response = self.get(self.POOL_PATH.format(
+            pool_id=api_pool.get('id'))).json.get(self.root_tag)
+        self.assertEqual('pool2', response.get('name'))
+
     def test_bad_update(self):
         api_pool = self.create_pool(
             self.lb_id,

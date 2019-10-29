@@ -588,7 +588,8 @@ class LoadBalancersController(base.BaseController):
 
             # Also prepare the baseline object data
             old_provider_lb = (
-                driver_utils.db_loadbalancer_to_provider_loadbalancer(db_lb))
+                driver_utils.db_loadbalancer_to_provider_loadbalancer(
+                    db_lb, for_delete=True))
 
             # Dispatch to the driver
             LOG.info("Sending update Load Balancer %s to provider "
