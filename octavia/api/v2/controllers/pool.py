@@ -404,7 +404,7 @@ class PoolsController(base.BaseController):
 
             # Also prepare the baseline object data
             old_provider_pool = driver_utils.db_pool_to_provider_pool(
-                db_pool)
+                db_pool, for_delete=True)
 
             # Dispatch to the driver
             LOG.info("Sending update Pool %s to provider %s", id, driver.name)
