@@ -2233,15 +2233,16 @@ class TestListenerRepositoryTest(BaseRepositoryTest):
             operating_status=constants.ONLINE, enabled=True,
             server_group_id=self.FAKE_UUID_1)
 
-    def create_listener(self, listener_id, port, default_pool_id=None):
+    def create_listener(self, listener_id, port, default_pool_id=None,
+                        provisioning_status=constants.ACTIVE):
         listener = self.listener_repo.create(
             self.session, id=listener_id, project_id=self.FAKE_UUID_2,
             name="listener_name", description="listener_description",
             protocol=constants.PROTOCOL_HTTP, protocol_port=port,
             connection_limit=1, load_balancer_id=self.load_balancer.id,
             default_pool_id=default_pool_id, operating_status=constants.ONLINE,
-            provisioning_status=constants.ACTIVE, enabled=True, peer_port=1025,
-            tags=['test_tag'])
+            provisioning_status=provisioning_status, enabled=True,
+            peer_port=1025, tags=['test_tag'])
         return listener
 
     def create_amphora(self, amphora_id, loadbalancer_id):
@@ -2467,6 +2468,40 @@ class TestListenerRepositoryTest(BaseRepositoryTest):
         self.pool_repo.delete(self.session, id=pool.id)
         new_listener = self.listener_repo.get(self.session, id=listener.id)
         self.assertIsNone(new_listener.default_pool)
+
+    def test_prov_status_active_if_not_error_active(self):
+        listener = self.create_listener(self.FAKE_UUID_1, 80,
+                                        provisioning_status=constants.ACTIVE)
+        self.listener_repo.prov_status_active_if_not_error(self.session,
+                                                           listener.id)
+        new_listener = self.listener_repo.get(self.session, id=listener.id)
+        self.assertEqual(constants.ACTIVE, new_listener.provisioning_status)
+
+    def test_prov_status_active_if_not_error_error(self):
+        listener = self.create_listener(self.FAKE_UUID_1, 80,
+                                        provisioning_status=constants.ERROR)
+        self.listener_repo.prov_status_active_if_not_error(self.session,
+                                                           listener.id)
+        new_listener = self.listener_repo.get(self.session, id=listener.id)
+        self.assertEqual(constants.ERROR, new_listener.provisioning_status)
+
+    def test_prov_status_active_if_not_error_pending_update(self):
+        listener = self.create_listener(
+            self.FAKE_UUID_1, 80, provisioning_status=constants.PENDING_UPDATE)
+        self.listener_repo.prov_status_active_if_not_error(self.session,
+                                                           listener.id)
+        new_listener = self.listener_repo.get(self.session, id=listener.id)
+        self.assertEqual(constants.ACTIVE, new_listener.provisioning_status)
+
+    def test_prov_status_active_if_not_error_bogus_listener(self):
+        listener = self.create_listener(
+            self.FAKE_UUID_1, 80, provisioning_status=constants.PENDING_UPDATE)
+        # Should not raise an exception nor change any status
+        self.listener_repo.prov_status_active_if_not_error(self.session,
+                                                           'bogus_id')
+        new_listener = self.listener_repo.get(self.session, id=listener.id)
+        self.assertEqual(constants.PENDING_UPDATE,
+                         new_listener.provisioning_status)
 
 
 class ListenerStatisticsRepositoryTest(BaseRepositoryTest):

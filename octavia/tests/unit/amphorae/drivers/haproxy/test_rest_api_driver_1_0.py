@@ -123,16 +123,6 @@ class TestHaproxyAmphoraLoadBalancerDriverTest(base.TestCase):
         mock_amphora = mock.MagicMock()
         mock_amphora.id = 'mock_amphora_id'
         mock_amphora.api_version = API_VERSION
-        # mock_listener = mock.MagicMock()
-        # mock_listener.id = 'mock_listener_id'
-        # mock_listener.protocol = constants.PROTOCOL_HTTP
-        # mock_listener.connection_limit = constants.DEFAULT_CONNECTION_LIMIT
-        # mock_listener.tls_certificate_id = None
-        # mock_loadbalancer = mock.MagicMock()
-        # mock_loadbalancer.id = 'mock_lb_id'
-        # mock_loadbalancer.project_id = 'mock_lb_project'
-        # mock_loadbalancer.listeners = [mock_listener]
-        # mock_listener.load_balancer = mock_loadbalancer
         mock_secret.return_value = 'filename.pem'
         mock_load_cert.return_value = {
             'tls_cert': self.sl.default_tls_container, 'sni_certs': [],
@@ -167,6 +157,27 @@ class TestHaproxyAmphoraLoadBalancerDriverTest(base.TestCase):
         self.driver.jinja_combo.build_config.assert_not_called()
         self.driver.clients[API_VERSION].upload_config.assert_not_called()
         self.driver.clients[API_VERSION].reload_listener.assert_not_called()
+
+    @mock.patch('octavia.db.api.get_session')
+    @mock.patch('octavia.db.repositories.ListenerRepository.update')
+    @mock.patch('octavia.common.tls_utils.cert_parser.load_certificates_data')
+    def test_update_amphora_listeners_bad_cert(
+            self, mock_load_cert, mock_list_update, mock_get_session):
+        mock_amphora = mock.MagicMock()
+        mock_amphora.id = 'mock_amphora_id'
+        mock_amphora.api_version = API_VERSION
+
+        mock_get_session.return_value = 'fake_session'
+        mock_load_cert.side_effect = [Exception]
+        self.driver.update_amphora_listeners(self.lb,
+                                             mock_amphora, self.timeout_dict)
+        mock_list_update.assert_called_once_with(
+            'fake_session', self.lb.listeners[0].id,
+            provisioning_status=constants.ERROR,
+            operating_status=constants.ERROR)
+        self.driver.jinja_combo.build_config.assert_not_called()
+        (self.driver.clients[API_VERSION].delete_listener.
+         assert_called_once_with)(mock_amphora, self.lb.id)
 
     @mock.patch('octavia.amphorae.drivers.haproxy.rest_api_driver.'
                 'HaproxyAmphoraLoadBalancerDriver._process_secret')
