@@ -1224,15 +1224,13 @@ class MarkLBAndListenersActiveInDB(BaseDatabaseTask):
 
         if lb_id:
             LOG.debug("Mark ACTIVE in DB for load balancer id: %s "
-                      "and listener ids: %s", lb_id,
+                      "and updating status for listener ids: %s", lb_id,
                       ', '.join([l[constants.LISTENER_ID] for l in listeners]))
-            self.loadbalancer_repo.update(db_apis.get_session(),
-                                          lb_id,
+            self.loadbalancer_repo.update(db_apis.get_session(), lb_id,
                                           provisioning_status=constants.ACTIVE)
         for listener in listeners:
-            self.listener_repo.update(
-                db_apis.get_session(), listener[constants.LISTENER_ID],
-                provisioning_status=constants.ACTIVE)
+            self.listener_repo.prov_status_active_if_not_error(
+                db_apis.get_session(), listener[constants.LISTENER_ID])
 
     def revert(self, loadbalancer_id, listeners, *args, **kwargs):
         """Mark the load balancer and listeners as broken.
@@ -1258,35 +1256,6 @@ class MarkLBAndListenersActiveInDB(BaseDatabaseTask):
         for listener in listeners:
             self.task_utils.mark_listener_prov_status_error(
                 listener[constants.LISTENER_ID])
-
-
-class MarkListenerActiveInDB(BaseDatabaseTask):
-    """Mark the listener active in the DB.
-
-    Since sqlalchemy will likely retry by itself always revert if it fails
-    """
-
-    def execute(self, listener):
-        """Mark the listener as active in DB
-
-        :param listener: The listener to be marked active
-        :returns: None
-        """
-
-        LOG.debug("Mark ACTIVE in DB for listener id: %s ", listener.id)
-        self.listener_repo.update(db_apis.get_session(), listener.id,
-                                  provisioning_status=constants.ACTIVE)
-
-    def revert(self, listener, *args, **kwargs):
-        """Mark the listener ERROR since the delete couldn't happen
-
-        :param listener: The listener that couldn't be updated
-        :returns: None
-        """
-
-        LOG.warning("Reverting mark listener active in DB "
-                    "for listener id %s", listener.id)
-        self.task_utils.mark_listener_prov_status_error(listener.id)
 
 
 class MarkListenerDeletedInDB(BaseDatabaseTask):

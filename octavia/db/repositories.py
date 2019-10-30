@@ -1107,6 +1107,16 @@ class ListenerRepository(BaseRepository):
             session.add(model)
         return model.to_data_model()
 
+    def prov_status_active_if_not_error(self, session, listener_id):
+        """Update provisioning_status to ACTIVE if not already in ERROR."""
+        with session.begin(subtransactions=True):
+            (session.query(self.model_class).filter_by(id=listener_id).
+             # Don't mark ERROR or already ACTIVE as ACTIVE
+             filter(~self.model_class.provisioning_status.in_(
+                 [consts.ERROR, consts.ACTIVE])).
+             update({self.model_class.provisioning_status: consts.ACTIVE},
+                    synchronize_session='fetch'))
+
 
 class ListenerStatisticsRepository(BaseRepository):
     model_class = models.ListenerStatistics
