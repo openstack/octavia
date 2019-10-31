@@ -21,6 +21,7 @@ from oslo_config import cfg
 from oslo_config import fixture as oslo_fixture
 from oslo_db import exception as db_exception
 from oslo_utils import uuidutils
+from sqlalchemy.orm import defer
 from sqlalchemy.orm import exc as sa_exception
 
 from octavia.common import constants
@@ -4348,7 +4349,8 @@ class FlavorProfileRepositoryTest(BaseRepositoryTest):
     def test_get_all(self):
         fp1 = self.create_flavor_profile(fp_id=self.FAKE_UUID_1)
         fp2 = self.create_flavor_profile(fp_id=self.FAKE_UUID_2)
-        fp_list, _ = self.flavor_profile_repo.get_all(self.session)
+        fp_list, _ = self.flavor_profile_repo.get_all(
+            self.session, query_options=defer('name'))
         self.assertIsInstance(fp_list, list)
         self.assertEqual(2, len(fp_list))
         self.assertEqual(fp1, fp_list[0])
@@ -4395,7 +4397,8 @@ class FlavorRepositoryTest(BaseRepositoryTest):
     def test_get_all(self):
         fl1 = self.create_flavor(flavor_id=self.FAKE_UUID_2, name='flavor1')
         fl2 = self.create_flavor(flavor_id=self.FAKE_UUID_3, name='flavor2')
-        fl_list, _ = self.flavor_repo.get_all(self.session)
+        fl_list, _ = self.flavor_repo.get_all(self.session,
+                                              query_options=defer('enabled'))
         self.assertIsInstance(fl_list, list)
         self.assertEqual(2, len(fl_list))
         self.assertEqual(fl1, fl_list[0])

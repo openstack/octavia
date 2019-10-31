@@ -47,6 +47,9 @@ class FlavorProfileController(base.BaseController):
         context = pecan.request.context.get('octavia_context')
         self._auth_validate_action(context, context.project_id,
                                    constants.RBAC_GET_ONE)
+        if id == constants.NIL_UUID:
+            raise exceptions.NotFound(resource='Flavor profile',
+                                      id=constants.NIL_UUID)
         db_flavor_profile = self._get_db_flavor_profile(context.session, id)
         result = self._convert_db_to_type(db_flavor_profile,
                                           profile_types.FlavorProfileResponse)
@@ -140,6 +143,9 @@ class FlavorProfileController(base.BaseController):
                                    constants.RBAC_PUT)
 
         self._validate_update_fp(context, id, flavorprofile)
+        if id == constants.NIL_UUID:
+            raise exceptions.NotFound(resource='Flavor profile',
+                                      id=constants.NIL_UUID)
 
         if not isinstance(flavorprofile.flavor_data, wtypes.UnsetType):
             # Do a basic JSON validation on the metadata
@@ -189,12 +195,15 @@ class FlavorProfileController(base.BaseController):
         self._auth_validate_action(context, context.project_id,
                                    constants.RBAC_DELETE)
 
+        if flavor_profile_id == constants.NIL_UUID:
+            raise exceptions.NotFound(resource='Flavor profile',
+                                      id=constants.NIL_UUID)
+
         # Don't allow it to be deleted if it is in use by a flavor
         if self.repositories.flavor.count(
                 context.session, flavor_profile_id=flavor_profile_id) > 0:
             raise exceptions.ObjectInUse(object='Flavor profile',
                                          id=flavor_profile_id)
-
         try:
             self.repositories.flavor_profile.delete(context.session,
                                                     id=flavor_profile_id)

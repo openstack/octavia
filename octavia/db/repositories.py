@@ -1809,7 +1809,39 @@ class QuotasRepository(BaseRepository):
             session.flush()
 
 
-class FlavorRepository(BaseRepository):
+class _GetALLExceptDELETEDIdMixin(object):
+
+    def get_all(self, session, pagination_helper=None,
+                query_options=None, **filters):
+
+        """Retrieves a list of entities from the database.
+
+        This filters the "DELETED" placeholder from the list.
+
+        :param session: A Sql Alchemy database session.
+        :param pagination_helper: Helper to apply pagination and sorting.
+        :param query_options: Optional query options to apply.
+        :param filters: Filters to decide which entities should be retrieved.
+        :returns: [octavia.common.data_model]
+        """
+        query = session.query(self.model_class).filter_by(**filters)
+        if query_options:
+            query = query.options(query_options)
+
+        query = query.filter(self.model_class.id != consts.NIL_UUID)
+
+        if pagination_helper:
+            model_list, links = pagination_helper.apply(
+                query, self.model_class)
+        else:
+            links = None
+            model_list = query.all()
+
+        data_model_list = [model.to_data_model() for model in model_list]
+        return data_model_list, links
+
+
+class FlavorRepository(_GetALLExceptDELETEDIdMixin, BaseRepository):
     model_class = models.Flavor
 
     def get_flavor_metadata_dict(self, session, flavor_id):
@@ -1831,8 +1863,26 @@ class FlavorRepository(BaseRepository):
                     .filter(models.Flavor.flavor_profile_id ==
                             models.FlavorProfile.id).one()[0])
 
+    def delete(self, serial_session, **filters):
+        """Sets DELETED LBs flavor_id to NIL_UUID, then removes the flavor
 
-class FlavorProfileRepository(BaseRepository):
+        :param serial_session: A Sql Alchemy database transaction session.
+        :param filters: Filters to decide which entity should be deleted.
+        :returns: None
+        :raises: odb_exceptions.DBReferenceError
+        :raises: sqlalchemy.orm.exc.NoResultFound
+        """
+        (serial_session.query(models.LoadBalancer).
+         filter(models.LoadBalancer.flavor_id == filters['id']).
+         filter(models.LoadBalancer.provisioning_status == consts.DELETED).
+         update({models.LoadBalancer.flavor_id: consts.NIL_UUID},
+                synchronize_session=False))
+        flavor = (serial_session.query(self.model_class).
+                  filter_by(**filters).one())
+        serial_session.delete(flavor)
+
+
+class FlavorProfileRepository(_GetALLExceptDELETEDIdMixin, BaseRepository):
     model_class = models.FlavorProfile
 
 

@@ -13,6 +13,7 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+from oslo_db import api as oslo_db_api
 from oslo_db import exception as odb_exceptions
 from oslo_log import log as logging
 from oslo_utils import excutils
@@ -44,7 +45,8 @@ class FlavorsController(base.BaseController):
         context = pecan.request.context.get('octavia_context')
         self._auth_validate_action(context, context.project_id,
                                    constants.RBAC_GET_ONE)
-
+        if id == constants.NIL_UUID:
+            raise exceptions.NotFound(resource='Flavor', id=constants.NIL_UUID)
         db_flavor = self._get_db_flavor(context.session, id)
         result = self._convert_db_to_type(db_flavor,
                                           flavor_types.FlavorResponse)
@@ -107,6 +109,8 @@ class FlavorsController(base.BaseController):
         context = pecan.request.context.get('octavia_context')
         self._auth_validate_action(context, context.project_id,
                                    constants.RBAC_PUT)
+        if id == constants.NIL_UUID:
+            raise exceptions.NotFound(resource='Flavor', id=constants.NIL_UUID)
         lock_session = db_api.get_session(autocommit=False)
         try:
             flavor_dict = flavor.to_dict(render_unsets=False)
@@ -126,6 +130,7 @@ class FlavorsController(base.BaseController):
                                           flavor_types.FlavorResponse)
         return flavor_types.FlavorRootResponse(flavor=result)
 
+    @oslo_db_api.wrap_db_retry(max_retries=5, retry_on_deadlock=True)
     @wsme_pecan.wsexpose(None, wtypes.text, status_code=204)
     def delete(self, flavor_id):
         """Deletes a Flavor"""
@@ -133,10 +138,24 @@ class FlavorsController(base.BaseController):
 
         self._auth_validate_action(context, context.project_id,
                                    constants.RBAC_DELETE)
+        if flavor_id == constants.NIL_UUID:
+            raise exceptions.NotFound(resource='Flavor', id=constants.NIL_UUID)
+        serial_session = db_api.get_session(autocommit=False)
+        serial_session.connection(
+            execution_options={'isolation_level': 'SERIALIZABLE'})
         try:
-            self.repositories.flavor.delete(context.session, id=flavor_id)
+            self.repositories.flavor.delete(serial_session, id=flavor_id)
+            serial_session.commit()
         # Handle when load balancers still reference this flavor
         except odb_exceptions.DBReferenceError:
+            serial_session.rollback()
             raise exceptions.ObjectInUse(object='Flavor', id=flavor_id)
         except sa_exception.NoResultFound:
+            serial_session.rollback()
             raise exceptions.NotFound(resource='Flavor', id=flavor_id)
+        except Exception as e:
+            with excutils.save_and_reraise_exception():
+                LOG.error('Unknown flavor delete exception: %s', str(e))
+                serial_session.rollback()
+        finally:
+            serial_session.close()

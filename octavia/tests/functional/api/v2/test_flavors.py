@@ -21,6 +21,7 @@ from oslo_config import fixture as oslo_fixture
 
 from octavia.common import constants
 import octavia.common.context
+from octavia.common import exceptions
 from octavia.tests.functional.api.v2 import base
 
 
@@ -187,6 +188,12 @@ class TestFlavors(base.BaseAPITest):
         self.assertNotIn(u'name', response)
         self.assertNotIn(u'description', response)
         self.assertNotIn(u'enabled', response)
+
+    def test_get_one_deleted_id(self):
+        response = self.get(
+            self.FLAVOR_PATH.format(flavor_id=constants.NIL_UUID), status=404)
+        self.assertEqual('Flavor {} not found.'.format(constants.NIL_UUID),
+                         response.json.get('faultstring'))
 
     def test_get_authorized(self):
         flavor = self.create_flavor('name', 'description', self.fp.get('id'),
@@ -357,6 +364,15 @@ class TestFlavors(base.BaseAPITest):
                          updated_flavor.get('flavor_profile_id'))
         self.assertFalse(updated_flavor.get('enabled'))
 
+    def test_update_deleted_id(self):
+        update_json = {'name': 'fake_name'}
+        body = self._build_body(update_json)
+        response = self.put(
+            self.FLAVOR_PATH.format(flavor_id=constants.NIL_UUID), body,
+            status=404)
+        self.assertEqual('Flavor {} not found.'.format(constants.NIL_UUID),
+                         response.json.get('faultstring'))
+
     def test_update_none(self):
         flavor_json = {'name': 'Fancy_Flavor',
                        'description': 'A great flavor. Pick me!',
@@ -478,6 +494,16 @@ class TestFlavors(base.BaseAPITest):
                          updated_flavor.get('flavor_profile_id'))
         self.assertTrue(updated_flavor.get('enabled'))
 
+    @mock.patch('octavia.db.repositories.FlavorRepository.update')
+    def test_update_exception(self, mock_update):
+        mock_update.side_effect = [exceptions.OctaviaException()]
+        update_json = {'name': 'A_Flavor'}
+        body = self._build_body(update_json)
+        response = self.put(self.FLAVOR_PATH.format(flavor_id='bogus'), body,
+                            status=500)
+        self.assertEqual('An unknown exception occurred.',
+                         response.json.get('faultstring'))
+
     def test_delete(self):
         flavor = self.create_flavor('name1', 'description', self.fp.get('id'),
                                     True)
@@ -487,6 +513,18 @@ class TestFlavors(base.BaseAPITest):
             flavor_id=flavor.get('id')), status=404)
         err_msg = "Flavor %s not found." % flavor.get('id')
         self.assertEqual(err_msg, response.json.get('faultstring'))
+
+    def test_delete_nonexistent_id(self):
+        response = self.delete(
+            self.FLAVOR_PATH.format(flavor_id='bogus_id'), status=404)
+        self.assertEqual('Flavor bogus_id not found.',
+                         response.json.get('faultstring'))
+
+    def test_delete_deleted_id(self):
+        response = self.delete(
+            self.FLAVOR_PATH.format(flavor_id=constants.NIL_UUID), status=404)
+        self.assertEqual('Flavor {} not found.'.format(constants.NIL_UUID),
+                         response.json.get('faultstring'))
 
     def test_delete_authorized(self):
         flavor = self.create_flavor('name1', 'description', self.fp.get('id'),
@@ -556,3 +594,11 @@ class TestFlavors(base.BaseAPITest):
         response = self.get(self.FLAVOR_PATH.format(
             flavor_id=flavor.get('id'))).json.get(self.root_tag)
         self.assertEqual('name1', response.get('name'))
+
+    @mock.patch('octavia.db.repositories.FlavorRepository.delete')
+    def test_delete_exception(self, mock_delete):
+        mock_delete.side_effect = [exceptions.OctaviaException()]
+        response = self.delete(self.FLAVOR_PATH.format(flavor_id='bogus'),
+                               status=500)
+        self.assertEqual('An unknown exception occurred.',
+                         response.json.get('faultstring'))
