@@ -280,8 +280,9 @@ def get_udp_listener_pool_status(listener_id):
 
 def get_ipvsadm_info(ns_name, is_stats_cmd=False):
     cmd_list = ['ip', 'netns', 'exec', ns_name, 'ipvsadm', '-Ln']
+    # use --exact to ensure output is integer only
     if is_stats_cmd:
-        cmd_list.append('--stats')
+        cmd_list += ['--stats', '--exact']
     output = subprocess.check_output(cmd_list, stderr=subprocess.STDOUT)
     if isinstance(output, bytes):
         output = output.decode('utf-8')
