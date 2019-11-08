@@ -756,14 +756,16 @@ def sample_pool_tuple(listener_id=None, proto=None, monitor=True,
                       backup_member=False, disabled_member=False,
                       has_http_reuse=True, pool_cert=False, pool_ca_cert=False,
                       pool_crl=False, tls_enabled=False,
-                      hm_host_http_check=False):
+                      hm_host_http_check=False,
+                      provisioning_status=constants.ACTIVE):
     proto = 'HTTP' if proto is None else proto
     monitor_proto = proto if monitor_proto is None else monitor_proto
     in_pool = collections.namedtuple(
         'pool', 'id, protocol, lb_algorithm, members, health_monitor, '
                 'session_persistence, enabled, operating_status, '
                 'tls_certificate_id, ca_tls_certificate_id, '
-                'crl_container_id, tls_enabled, ' + constants.HTTP_REUSE)
+                'crl_container_id, tls_enabled, '
+                'provisioning_status, ' + constants.HTTP_REUSE)
     if (proto == constants.PROTOCOL_UDP and
             persistence_type == constants.SESSION_PERSISTENCE_SOURCE_IP):
         kwargs = {'persistence_type': persistence_type,
@@ -805,7 +807,7 @@ def sample_pool_tuple(listener_id=None, proto=None, monitor=True,
         tls_certificate_id='pool_cont_1' if pool_cert else None,
         ca_tls_certificate_id='pool_ca_1' if pool_ca_cert else None,
         crl_container_id='pool_crl' if pool_crl else None,
-        tls_enabled=tls_enabled)
+        tls_enabled=tls_enabled, provisioning_status=constants.ACTIVE)
 
 
 def sample_member_tuple(id, ip, enabled=True, operating_status='ACTIVE',

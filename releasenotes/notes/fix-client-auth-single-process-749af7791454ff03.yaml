@@ -1,0 +1,6 @@
+---
+fixes:
+  - |
+    Fixes an issue where load balancers with more than one TLS enabled
+    listener, using client authentication and/or backend re-encryption,
+    may load incorrect certificates for the listener.
