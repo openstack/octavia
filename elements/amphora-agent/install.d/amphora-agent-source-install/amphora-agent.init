@@ -1,6 +1,6 @@
 ### BEGIN INIT INFO
 # Provides:          amphora-agent
-# Required-Start:    $remote_fs $syslog $network
+# Required-Start:    $remote_fs $syslog $network certs-ramfs
 # Required-Stop:     $remote_fs $syslog $network
 # Default-Start:     2 3 4 5
 # Default-Stop:      0 1 6
