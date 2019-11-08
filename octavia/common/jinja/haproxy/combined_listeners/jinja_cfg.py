@@ -81,9 +81,8 @@ class JinjaTemplater(object):
         self.log_server = log_server
         self.connection_logging = connection_logging
 
-    def build_config(self, host_amphora, listeners, haproxy_versions,
-                     socket_path=None, client_ca_filename=None,
-                     client_crl=None, pool_tls_certs=None):
+    def build_config(self, host_amphora, listeners, tls_certs,
+                     haproxy_versions, socket_path=None):
         """Convert a logical configuration to the HAProxy version
 
         :param host_amphora: The Amphora this configuration is hosted on
@@ -102,10 +101,9 @@ class JinjaTemplater(object):
             feature_compatibility[constants.HTTP_REUSE] = True
 
         return self.render_loadbalancer_obj(
-            host_amphora, listeners, socket_path=socket_path,
-            feature_compatibility=feature_compatibility,
-            client_ca_filename=client_ca_filename, client_crl=client_crl,
-            pool_tls_certs=pool_tls_certs)
+            host_amphora, listeners, tls_certs=tls_certs,
+            socket_path=socket_path,
+            feature_compatibility=feature_compatibility)
 
     def _get_template(self):
         """Returns the specified Jinja configuration template."""
@@ -141,14 +139,13 @@ class JinjaTemplater(object):
         return log_format
 
     def render_loadbalancer_obj(self, host_amphora, listeners,
-                                socket_path=None, feature_compatibility=None,
-                                client_ca_filename=None, client_crl=None,
-                                pool_tls_certs=None):
+                                tls_certs=None, socket_path=None,
+                                feature_compatibility=None):
         """Renders a templated configuration from a load balancer object
 
         :param host_amphora: The Amphora this configuration is hosted on
         :param listener: The listener configuration
-        :param client_ca_filename: The CA certificate for client authorization
+        :param tls_certs: Dict of the TLS certificates for the listener
         :param socket_path: The socket path for Haproxy process
         :return: Rendered configuration
         """
@@ -157,10 +154,8 @@ class JinjaTemplater(object):
             host_amphora,
             listeners[0].load_balancer,
             listeners,
-            feature_compatibility,
-            client_ca_filename=client_ca_filename,
-            client_crl=client_crl,
-            pool_tls_certs=pool_tls_certs)
+            tls_certs,
+            feature_compatibility,)
         if not socket_path:
             socket_path = '%s/%s.sock' % (self.base_amp_path,
                                           listeners[0].load_balancer.id)
@@ -176,8 +171,7 @@ class JinjaTemplater(object):
             constants=constants)
 
     def _transform_loadbalancer(self, host_amphora, loadbalancer, listeners,
-                                feature_compatibility, client_ca_filename=None,
-                                client_crl=None, pool_tls_certs=None):
+                                tls_certs, feature_compatibility):
         """Transforms a load balancer into an object that will
 
            be processed by the templating system
@@ -187,9 +181,7 @@ class JinjaTemplater(object):
             if listener.protocol == constants.PROTOCOL_UDP:
                 continue
             listener_transforms.append(self._transform_listener(
-                listener, feature_compatibility, loadbalancer,
-                client_ca_filename=client_ca_filename, client_crl=client_crl,
-                pool_tls_certs=pool_tls_certs))
+                listener, tls_certs, feature_compatibility, loadbalancer))
 
         ret_value = {
             'id': loadbalancer.id,
@@ -239,9 +231,8 @@ class JinjaTemplater(object):
             'vrrp_priority': amphora.vrrp_priority
         }
 
-    def _transform_listener(self, listener, feature_compatibility,
-                            loadbalancer, client_ca_filename=None,
-                            client_crl=None, pool_tls_certs=None):
+    def _transform_listener(self, listener, tls_certs, feature_compatibility,
+                            loadbalancer):
         """Transforms a listener into an object that will
 
             be processed by the templating system
@@ -278,25 +269,29 @@ class JinjaTemplater(object):
                 CONF.haproxy_amphora.base_cert_dir,
                 loadbalancer.id, '{}.pem'.format(listener.id))
 
-        if listener.client_ca_tls_certificate_id:
-            ret_value['client_ca_tls_path'] = '%s' % (
-                os.path.join(self.base_crt_dir, loadbalancer.id,
-                             client_ca_filename))
-            ret_value['client_auth'] = CLIENT_AUTH_MAP.get(
-                listener.client_authentication)
-        if listener.client_crl_container_id:
-            ret_value['client_crl_path'] = '%s' % (
-                os.path.join(self.base_crt_dir, loadbalancer.id, client_crl))
+        if tls_certs is not None:
+            if listener.client_ca_tls_certificate_id:
+                ret_value['client_ca_tls_path'] = '%s' % (
+                    os.path.join(
+                        self.base_crt_dir, loadbalancer.id,
+                        tls_certs[listener.client_ca_tls_certificate_id]))
+                ret_value['client_auth'] = CLIENT_AUTH_MAP.get(
+                    listener.client_authentication)
+
+            if listener.client_crl_container_id:
+                ret_value['client_crl_path'] = '%s' % (
+                    os.path.join(self.base_crt_dir, loadbalancer.id,
+                                 tls_certs[listener.client_crl_container_id]))
 
         pools = []
         pool_gen = (pool for pool in listener.pools if
                     pool.provisioning_status != constants.PENDING_DELETE)
-        for x in pool_gen:
+        for pool in pool_gen:
             kwargs = {}
-            if pool_tls_certs and pool_tls_certs.get(x.id):
-                kwargs = {'pool_tls_certs': pool_tls_certs.get(x.id)}
+            if tls_certs is not None and tls_certs.get(pool.id):
+                kwargs = {'pool_tls_certs': tls_certs.get(pool.id)}
             pools.append(self._transform_pool(
-                x, feature_compatibility, **kwargs))
+                pool, feature_compatibility, **kwargs))
         ret_value['pools'] = pools
         policy_gen = (policy for policy in listener.l7policies if
                       policy.provisioning_status != constants.PENDING_DELETE)
@@ -307,7 +302,7 @@ class JinjaTemplater(object):
                     break
 
         l7policies = [self._transform_l7policy(
-                      x, feature_compatibility, pool_tls_certs)
+                      x, feature_compatibility, tls_certs)
                       for x in policy_gen]
         ret_value['l7policies'] = l7policies
         return ret_value
@@ -416,7 +411,7 @@ class JinjaTemplater(object):
         }
 
     def _transform_l7policy(self, l7policy, feature_compatibility,
-                            pool_tls_certs=None):
+                            tls_certs=None):
         """Transforms an L7 policy into an object that will
 
             be processed by the templating system
@@ -432,10 +427,10 @@ class JinjaTemplater(object):
             l7policy.redirect_pool.provisioning_status !=
                 constants.PENDING_DELETE):
             kwargs = {}
-            if pool_tls_certs and pool_tls_certs.get(
+            if tls_certs is not None and tls_certs.get(
                     l7policy.redirect_pool.id):
                 kwargs = {'pool_tls_certs':
-                          pool_tls_certs.get(l7policy.redirect_pool.id)}
+                          tls_certs.get(l7policy.redirect_pool.id)}
             ret_value['redirect_pool'] = self._transform_pool(
                 l7policy.redirect_pool, feature_compatibility, **kwargs)
         else:
