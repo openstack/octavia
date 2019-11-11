@@ -22,6 +22,7 @@ from octavia.common import constants
 import octavia.common.context
 from octavia.common import data_models
 from octavia.common import exceptions
+from octavia.db import api as db_api
 from octavia.tests.functional.api.v2 import base
 from octavia.tests.unit.common.sample_configs import sample_certs
 
@@ -1745,6 +1746,37 @@ class TestPool(base.BaseAPITest):
             pool_id=api_pool.get('id'))).json.get(self.root_tag)
         response.pop('updated_at')
         self.assertEqual(api_pool, response)
+
+        self.delete(self.POOL_PATH.format(pool_id=api_pool.get('id')))
+        self.assert_correct_status(
+            lb_id=self.lb_id, listener_id=self.listener_id,
+            pool_id=api_pool.get('id'),
+            lb_prov_status=constants.PENDING_UPDATE,
+            listener_prov_status=constants.PENDING_UPDATE,
+            pool_prov_status=constants.PENDING_DELETE)
+
+    # Problems with TLS certs should not block a delete
+    def test_delete_with_bad_tls_ref(self):
+        api_pool = self.create_pool(
+            self.lb_id,
+            constants.PROTOCOL_HTTP,
+            constants.LB_ALGORITHM_ROUND_ROBIN,
+            listener_id=self.listener_id).get(self.root_tag)
+        self.set_lb_status(lb_id=self.lb_id)
+        # Set status to ACTIVE/ONLINE because set_lb_status did it in the db
+        api_pool['provisioning_status'] = constants.ACTIVE
+        api_pool['operating_status'] = constants.ONLINE
+        api_pool.pop('updated_at')
+
+        response = self.get(self.POOL_PATH.format(
+            pool_id=api_pool.get('id'))).json.get(self.root_tag)
+        response.pop('updated_at')
+        self.assertEqual(api_pool, response)
+
+        tls_uuid = uuidutils.generate_uuid()
+        self.pool_repo.update(db_api.get_session(),
+                              api_pool.get('id'),
+                              tls_certificate_id=tls_uuid)
 
         self.delete(self.POOL_PATH.format(pool_id=api_pool.get('id')))
         self.assert_correct_status(

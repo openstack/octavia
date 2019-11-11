@@ -177,6 +177,29 @@ class TestTLSParseUtils(base.TestCase):
             self.assertEqual(ref_empty_dict, result)
             mock_oslo.assert_called()
 
+    def test_load_certificates_get_cert_errors(self):
+        mock_cert_mngr = mock.MagicMock()
+        mock_obj = mock.MagicMock()
+        mock_sni_container = mock.MagicMock()
+        mock_sni_container.tls_container_id = 2
+
+        mock_cert_mngr.get_cert.side_effect = [Exception, Exception]
+
+        # Test tls_certificate_id error
+        mock_obj.tls_certificate_id = 1
+
+        self.assertRaises(exceptions.CertificateRetrievalException,
+                          cert_parser.load_certificates_data,
+                          mock_cert_mngr, mock_obj)
+
+        # Test sni_containers error
+        mock_obj.tls_certificate_id = None
+        mock_obj.sni_containers = [mock_sni_container]
+
+        self.assertRaises(exceptions.CertificateRetrievalException,
+                          cert_parser.load_certificates_data,
+                          mock_cert_mngr, mock_obj)
+
     @mock.patch('octavia.certificates.common.cert.Cert')
     def test_map_cert_tls_container(self, cert_mock):
         tls = data_models.TLSContainer(
