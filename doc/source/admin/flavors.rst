@@ -116,7 +116,7 @@ created in the previous step we call:
 
 .. code-block:: bash
 
-    openstack loadbalancer flavor create --name standalone-lb --flavorprofile 72b53ac2-b191-48eb-8f73-ed012caca23a --description "A non-high availability load balancer for testing." --enable
+    openstack loadbalancer flavor create --name standalone-lb --flavorprofile amphora-single-profile --description "A non-high availability load balancer for testing." --enable
 
 This will create a user visible Octavia flavor that will create a load balancer
 that uses one amphora and is not highly available. Users can specify this
