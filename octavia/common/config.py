@@ -106,7 +106,7 @@ amphora_agent_opts = [
     cfg.StrOpt('agent_server_ca', default='/etc/octavia/certs/client_ca.pem',
                help=_("The ca which signed the client certificates")),
     cfg.StrOpt('agent_server_cert', default='/etc/octavia/certs/server.pem',
-               help=_("The server certificate for the agent.py server "
+               help=_("The server certificate for the agent server "
                       "to use")),
     cfg.StrOpt('agent_server_network_dir',
                help=_("The directory where new network interfaces "
