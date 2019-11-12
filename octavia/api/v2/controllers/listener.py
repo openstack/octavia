@@ -140,6 +140,8 @@ class ListenersController(base.BaseController):
             try:
                 self.cert_manager.set_acls(context, ref)
                 self.cert_manager.get_cert(context, ref, check_only=True)
+            except exceptions.UnreadablePKCS12:
+                raise
             except Exception:
                 bad_refs.append(ref)
 
