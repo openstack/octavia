@@ -55,12 +55,13 @@ class AmphoraFlows(object):
 
             create_amphora_flow.add(compute_tasks.CertComputeCreate(
                 requires=(constants.AMPHORA_ID, constants.SERVER_PEM,
-                          constants.BUILD_TYPE_PRIORITY, constants.FLAVOR),
+                          constants.BUILD_TYPE_PRIORITY, constants.FLAVOR,
+                          constants.AVAILABILITY_ZONE),
                 provides=constants.COMPUTE_ID))
         else:
             create_amphora_flow.add(compute_tasks.ComputeCreate(
                 requires=(constants.AMPHORA_ID, constants.BUILD_TYPE_PRIORITY,
-                          constants.FLAVOR),
+                          constants.FLAVOR, constants.AVAILABILITY_ZONE),
                 provides=constants.COMPUTE_ID))
         create_amphora_flow.add(database_tasks.MarkAmphoraBootingInDB(
             requires=(constants.AMPHORA_ID, constants.COMPUTE_ID)))
@@ -145,7 +146,8 @@ class AmphoraFlows(object):
                         constants.SERVER_PEM,
                         constants.BUILD_TYPE_PRIORITY,
                         constants.SERVER_GROUP_ID,
-                        constants.FLAVOR
+                        constants.FLAVOR,
+                        constants.AVAILABILITY_ZONE,
                     ),
                     provides=constants.COMPUTE_ID))
             else:
@@ -155,7 +157,8 @@ class AmphoraFlows(object):
                         constants.AMPHORA_ID,
                         constants.SERVER_PEM,
                         constants.BUILD_TYPE_PRIORITY,
-                        constants.FLAVOR
+                        constants.FLAVOR,
+                        constants.AVAILABILITY_ZONE,
                     ),
                     provides=constants.COMPUTE_ID))
         else:
@@ -166,7 +169,8 @@ class AmphoraFlows(object):
                         constants.AMPHORA_ID,
                         constants.BUILD_TYPE_PRIORITY,
                         constants.SERVER_GROUP_ID,
-                        constants.FLAVOR
+                        constants.FLAVOR,
+                        constants.AVAILABILITY_ZONE,
                     ),
                     provides=constants.COMPUTE_ID))
             else:
@@ -175,7 +179,8 @@ class AmphoraFlows(object):
                     requires=(
                         constants.AMPHORA_ID,
                         constants.BUILD_TYPE_PRIORITY,
-                        constants.FLAVOR
+                        constants.FLAVOR,
+                        constants.AVAILABILITY_ZONE,
                     ),
                     provides=constants.COMPUTE_ID))
 
@@ -256,7 +261,8 @@ class AmphoraFlows(object):
         # Setup the task that maps an amphora to a load balancer
         allocate_and_associate_amp = database_tasks.MapLoadbalancerToAmphora(
             name=sf_name + '-' + constants.MAP_LOADBALANCER_TO_AMPHORA,
-            requires=(constants.LOADBALANCER_ID, constants.FLAVOR),
+            requires=(constants.LOADBALANCER_ID, constants.FLAVOR,
+                      constants.AVAILABILITY_ZONE),
             provides=constants.AMPHORA_ID)
 
         # Define a subflow for if we successfully map an amphora

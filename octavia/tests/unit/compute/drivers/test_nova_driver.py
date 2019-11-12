@@ -219,6 +219,35 @@ class TestNovaClient(base.TestCase):
 
     def test_build_with_availability_zone(self):
         FAKE_AZ = "my_availability_zone"
+
+        amphora_id = self.manager.build(amphora_flavor=1, image_id=1,
+                                        key_name=1,
+                                        sec_groups=1,
+                                        network_ids=[1],
+                                        port_ids=[2],
+                                        user_data='Blah',
+                                        config_drive_files='Files Blah',
+                                        availability_zone=FAKE_AZ)
+
+        self.assertEqual(self.amphora.compute_id, amphora_id)
+
+        self.manager.manager.create.assert_called_with(
+            name="amphora_name",
+            nics=[{'net-id': 1}, {'port-id': 2}],
+            image=1,
+            flavor=1,
+            key_name=1,
+            security_groups=1,
+            files='Files Blah',
+            userdata='Blah',
+            config_drive=True,
+            scheduler_hints=None,
+            availability_zone=FAKE_AZ,
+            block_device_mapping={}
+        )
+
+    def test_build_with_availability_zone_config(self):
+        FAKE_AZ = "my_availability_zone"
         self.conf.config(group="nova", availability_zone=FAKE_AZ)
 
         amphora_id = self.manager.build(amphora_flavor=1, image_id=1,

@@ -168,6 +168,7 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
         del lb_dm_dict['pools']
         del lb_dm_dict['created_at']
         del lb_dm_dict['updated_at']
+        self.assertIsNone(lb_dm_dict.pop('availability_zone'))
         self.assertEqual(lb, lb_dm_dict)
         vip_dm_dict = lb_dm.vip.to_dict()
         vip_dm_dict['load_balancer_id'] = lb_dm.id

@@ -24,7 +24,8 @@ class ComputeBase(object):
     def build(self, name="amphora_name", amphora_flavor=None,
               image_id=None, image_tag=None, image_owner=None,
               key_name=None, sec_groups=None, network_ids=None,
-              config_drive_files=None, user_data=None, server_group_id=None):
+              config_drive_files=None, user_data=None, server_group_id=None,
+              availability_zone=None):
         """Build a new amphora.
 
         :param name: Optional name for Amphora
@@ -46,6 +47,7 @@ class ComputeBase(object):
                           well or a string
         :param server_group_id: Optional server group id(uuid) which is used
                                 for anti_affinity feature
+        :param availability_zone: Name of the compute availability zone.
 
         :raises ComputeBuildException: if compute failed to build amphora
         :returns: UUID of amphora

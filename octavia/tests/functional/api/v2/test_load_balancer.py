@@ -1031,6 +1031,68 @@ class TestLoadBalancer(base.BaseAPITest):
         self.assertEqual('noop_driver', api_lb.get('provider'))
         self.assertEqual(test_flavor_id, api_lb.get('flavor_id'))
 
+    def test_create_with_availability_zone(self, **optionals):
+        zone_name = 'nova'
+        azp = self.create_availability_zone_profile(
+            'test1', 'noop_driver', '{"compute_zone": "%s"}' % zone_name)
+        az = self.create_availability_zone(zone_name, 'description',
+                                           azp.get('id'), True)
+
+        api_lb = self.test_create(availability_zone=az.get('name'))
+        self.assertEqual(zone_name, api_lb.get('availability_zone'))
+
+    def test_create_az_disabled(self, **optionals):
+        zone_name = 'nova'
+        azp = self.create_availability_zone_profile(
+            'test1', 'noop_driver', '{"compute_zone": "%s"}' % zone_name)
+        az = self.create_availability_zone(zone_name, 'description',
+                                           azp.get('id'), False)
+
+        lb_json = {'name': 'test1',
+                   'vip_subnet_id': uuidutils.generate_uuid(),
+                   'project_id': self.project_id,
+                   'availability_zone': az.get('name'),
+                   }
+        lb_json.update(optionals)
+        body = self._build_body(lb_json)
+        response = self.post(self.LBS_PATH, body, status=400)
+        ref_faultstring = ('The selected availability_zone is not allowed in '
+                           'this deployment: {}'.format(zone_name))
+        self.assertEqual(ref_faultstring, response.json.get('faultstring'))
+
+    def test_create_az_missing(self, **optionals):
+        lb_json = {'name': 'test1',
+                   'vip_subnet_id': uuidutils.generate_uuid(),
+                   'project_id': self.project_id,
+                   'availability_zone': 'bogus-az',
+                   }
+        lb_json.update(optionals)
+        body = self._build_body(lb_json)
+        response = self.post(self.LBS_PATH, body, status=400)
+        ref_faultstring = 'Validation failure: Invalid availability zone.'
+        self.assertEqual(ref_faultstring, response.json.get('faultstring'))
+
+    @mock.patch('octavia.api.drivers.utils.call_provider')
+    def test_create_az_unsupported(self, mock_provider):
+        zone_name = 'nova'
+        azp = self.create_availability_zone_profile(
+            'test1', 'noop_driver', '{"compute_zone": "%s"}' % zone_name)
+        az = self.create_availability_zone(zone_name, 'description',
+                                           azp.get('id'), True)
+        mock_provider.side_effect = NotImplementedError
+
+        lb_json = {'name': 'test1',
+                   'vip_subnet_id': uuidutils.generate_uuid(),
+                   'project_id': self.project_id,
+                   'availability_zone': az.get('name'),
+                   }
+        body = self._build_body(lb_json)
+        response = self.post(self.LBS_PATH, body, status=501)
+        ref_faultstring = ("Provider \'noop_driver\' does not support a "
+                           "requested action: This provider does not support "
+                           "availability zones.")
+        self.assertEqual(ref_faultstring, response.json.get('faultstring'))
+
     def test_matching_providers(self, **optionals):
         fp = self.create_flavor_profile('test1', 'noop_driver',
                                         '{"image": "ubuntu"}')
@@ -2504,6 +2566,7 @@ class TestLoadBalancerGraph(base.BaseAPITest):
         expected_lb = {
             'description': '',
             'admin_state_up': True,
+            'availability_zone': None,
             'provisioning_status': constants.PENDING_CREATE,
             'operating_status': constants.OFFLINE,
             # TODO(rm_work): vip_network_id is a weird case, as it will be
@@ -2515,7 +2578,7 @@ class TestLoadBalancerGraph(base.BaseAPITest):
             'vip_qos_policy_id': None,
             'flavor_id': None,
             'provider': 'noop_driver',
-            'tags': []
+            'tags': [],
         }
         expected_lb.update(create_lb)
         expected_lb['listeners'] = expected_listeners

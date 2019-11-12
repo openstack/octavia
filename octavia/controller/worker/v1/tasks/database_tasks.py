@@ -499,7 +499,8 @@ class AssociateFailoverAmphoraWithLBID(BaseDatabaseTask):
 class MapLoadbalancerToAmphora(BaseDatabaseTask):
     """Maps and assigns a load balancer to an amphora in the database."""
 
-    def execute(self, loadbalancer_id, server_group_id=None, flavor=None):
+    def execute(self, loadbalancer_id, server_group_id=None, flavor=None,
+                availability_zone=None):
         """Allocates an Amphora for the load balancer in the database.
 
         :param loadbalancer_id: The load balancer id to map to an amphora
@@ -522,9 +523,15 @@ class MapLoadbalancerToAmphora(BaseDatabaseTask):
                       "allocation.")
             return None
 
+        if availability_zone:
+            amp_az = availability_zone.get(constants.COMPUTE_ZONE)
+        else:
+            amp_az = CONF.nova.availability_zone
+
         amp = self.amphora_repo.allocate_and_associate(
             db_apis.get_session(),
-            loadbalancer_id)
+            loadbalancer_id,
+            amp_az)
         if amp is None:
             LOG.debug("No Amphora available for load balancer with id %s",
                       loadbalancer_id)

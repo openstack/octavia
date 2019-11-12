@@ -555,8 +555,6 @@ class TestAvailabilityZones(base.BaseAPITest):
         self.assertEqual('name1', response.get('name'))
 
     def test_delete_in_use(self):
-        # TODO(sorrison): Enable this test
-        self.skipTest("Enable in next patch when LB can use AZ")
         az = self.create_availability_zone(
             'name1', 'description', self.azp.get('id'), True)
         project_id = uuidutils.generate_uuid()
@@ -564,7 +562,7 @@ class TestAvailabilityZones(base.BaseAPITest):
         self.create_load_balancer(lb_id, name='lb1',
                                   project_id=project_id,
                                   description='desc1',
-                                  availability_zone_name=az.get('name'),
+                                  availability_zone=az.get('name'),
                                   admin_state_up=False)
         self.delete(self.AZ_PATH.format(az_name=az.get('name')),
                     status=409)

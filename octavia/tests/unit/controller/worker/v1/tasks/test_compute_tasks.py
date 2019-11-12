@@ -124,7 +124,8 @@ class TestComputeTasks(base.TestCase):
                                 'amphora-agent.conf': 'test_conf',
                                 '/etc/rsyslog.d/10-rsyslog.conf': 'FAKE CFG'},
             user_data=None,
-            server_group_id=SERVER_GRPOUP_ID)
+            server_group_id=SERVER_GRPOUP_ID,
+            availability_zone=None)
 
         # Make sure it returns the expected compute_id
         self.assertEqual(COMPUTE_ID, compute_id)
@@ -184,7 +185,77 @@ class TestComputeTasks(base.TestCase):
             port_ids=[PORT_ID],
             config_drive_files=None,
             user_data='test_ud_conf',
-            server_group_id=None)
+            server_group_id=None,
+            availability_zone=None)
+
+        # Make sure it returns the expected compute_id
+        self.assertEqual(COMPUTE_ID, compute_id)
+
+        # Test that a build exception is raised
+        createcompute = compute_tasks.ComputeCreate()
+
+        self.assertRaises(TypeError,
+                          createcompute.execute,
+                          _amphora_mock, config_drive_files='test_cert')
+
+        # Test revert()
+
+        _amphora_mock.compute_id = COMPUTE_ID
+
+        createcompute = compute_tasks.ComputeCreate()
+        createcompute.revert(compute_id, _amphora_mock.id)
+
+        # Validate that the delete method was called properly
+        mock_driver.delete.assert_called_once_with(
+            COMPUTE_ID)
+
+        # Test that a delete exception is not raised
+
+        createcompute.revert(COMPUTE_ID, _amphora_mock.id)
+
+    @mock.patch('octavia.common.jinja.logging.logging_jinja_cfg.'
+                'LoggingJinjaTemplater.build_logging_config')
+    @mock.patch('jinja2.Environment.get_template')
+    @mock.patch('octavia.amphorae.backends.agent.'
+                'agent_jinja_cfg.AgentJinjaTemplater.'
+                'build_agent_config', return_value='test_conf')
+    @mock.patch('stevedore.driver.DriverManager.driver')
+    def test_compute_create_availability_zone(self, mock_driver, mock_conf,
+                                              mock_jinja, mock_log_cfg):
+
+        image_owner_id = uuidutils.generate_uuid()
+        compute_zone = uuidutils.generate_uuid()
+        az_dict = {constants.COMPUTE_ZONE: compute_zone}
+
+        self.conf.config(
+            group="controller_worker", amp_image_owner_id=image_owner_id)
+        mock_log_cfg.return_value = 'FAKE CFG'
+
+        createcompute = compute_tasks.ComputeCreate()
+
+        mock_driver.build.return_value = COMPUTE_ID
+        # Test execute()
+        compute_id = createcompute.execute(_amphora_mock.id, ports=[_port],
+                                           server_group_id=SERVER_GRPOUP_ID,
+                                           availability_zone=az_dict)
+
+        # Validate that the build method was called properly
+        mock_driver.build.assert_called_once_with(
+            name="amphora-" + _amphora_mock.id,
+            amphora_flavor=AMP_FLAVOR_ID,
+            image_id=AMP_IMAGE_ID,
+            image_tag=AMP_IMAGE_TAG,
+            image_owner=image_owner_id,
+            key_name=AMP_SSH_KEY_NAME,
+            sec_groups=AMP_SEC_GROUPS,
+            network_ids=AMP_NET,
+            port_ids=[PORT_ID],
+            config_drive_files={'/etc/octavia/'
+                                'amphora-agent.conf': 'test_conf',
+                                '/etc/rsyslog.d/10-rsyslog.conf': 'FAKE CFG'},
+            user_data=None,
+            server_group_id=SERVER_GRPOUP_ID,
+            availability_zone=compute_zone)
 
         # Make sure it returns the expected compute_id
         self.assertEqual(COMPUTE_ID, compute_id)
@@ -249,7 +320,8 @@ class TestComputeTasks(base.TestCase):
                                 'amphora-agent.conf': 'test_conf',
                                 '/etc/rsyslog.d/10-rsyslog.conf': 'FAKE CFG'},
             user_data=None,
-            server_group_id=SERVER_GRPOUP_ID)
+            server_group_id=SERVER_GRPOUP_ID,
+            availability_zone=None)
 
         self.assertEqual(COMPUTE_ID, compute_id)
 
@@ -317,7 +389,8 @@ class TestComputeTasks(base.TestCase):
                 '/etc/octavia/certs/server.pem': fer.decrypt(test_cert),
                 '/etc/octavia/certs/client_ca.pem': 'test',
                 '/etc/octavia/amphora-agent.conf': 'test_conf'},
-            server_group_id=SERVER_GRPOUP_ID)
+            server_group_id=SERVER_GRPOUP_ID,
+            availability_zone=None)
 
         self.assertEqual(COMPUTE_ID, compute_id)
 

@@ -86,8 +86,11 @@ class AmphoraProviderDriver(driver_base.ProviderDriver):
     def loadbalancer_create(self, loadbalancer):
         if loadbalancer.flavor == driver_dm.Unset:
             loadbalancer.flavor = None
+        if loadbalancer.availability_zone == driver_dm.Unset:
+            loadbalancer.availability_zone = None
         payload = {consts.LOAD_BALANCER_ID: loadbalancer.loadbalancer_id,
-                   consts.FLAVOR: loadbalancer.flavor}
+                   consts.FLAVOR: loadbalancer.flavor,
+                   consts.AVAILABILITY_ZONE: loadbalancer.availability_zone}
         self.client.cast({}, 'create_load_balancer', **payload)
 
     def loadbalancer_delete(self, loadbalancer, cascade=False):

@@ -567,7 +567,53 @@ class TestDatabaseTasks(base.TestCase):
 
         repo.AmphoraRepository.allocate_and_associate.assert_called_once_with(
             'TEST',
-            LB_ID)
+            LB_ID,
+            None)
+
+        self.assertEqual(_amphora_mock.id, amp_id)
+
+        amp_id = map_lb_to_amp.execute(self.loadbalancer_mock.id)
+
+        self.assertIsNone(amp_id)
+
+        # Test revert
+        map_lb_to_amp.revert(None, self.loadbalancer_mock.id)
+        repo.LoadBalancerRepository.update.assert_called_once_with(
+            'TEST',
+            id=LB_ID,
+            provisioning_status=constants.ERROR)
+
+        # Test revert with exception
+        repo.LoadBalancerRepository.update.reset_mock()
+        mock_loadbalancer_repo_update.side_effect = Exception('fail')
+        map_lb_to_amp.revert(None, self.loadbalancer_mock.id)
+        repo.LoadBalancerRepository.update.assert_called_once_with(
+            'TEST',
+            id=LB_ID,
+            provisioning_status=constants.ERROR)
+
+    @mock.patch('octavia.db.repositories.AmphoraRepository.'
+                'allocate_and_associate',
+                side_effect=[_amphora_mock, None])
+    def test_map_loadbalancer_to_amphora_with_az(self,
+                                                 mock_allocate_and_associate,
+                                                 mock_generate_uuid,
+                                                 mock_LOG,
+                                                 mock_get_session,
+                                                 mock_loadbalancer_repo_update,
+                                                 mock_listener_repo_update,
+                                                 mock_amphora_repo_update,
+                                                 mock_amphora_repo_delete):
+
+        map_lb_to_amp = database_tasks.MapLoadbalancerToAmphora()
+        amp_id = map_lb_to_amp.execute(
+            self.loadbalancer_mock.id, availability_zone={
+                constants.COMPUTE_ZONE: 'fakeaz'})
+
+        repo.AmphoraRepository.allocate_and_associate.assert_called_once_with(
+            'TEST',
+            LB_ID,
+            'fakeaz')
 
         self.assertEqual(_amphora_mock.id, amp_id)
 

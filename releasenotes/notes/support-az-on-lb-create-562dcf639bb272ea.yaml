@@ -1,0 +1,15 @@
+---
+features:
+  - |
+    The load balancer create command now accepts an availability_zone argument.
+    With the amphora driver this will create a load balancer in the targeted
+    compute availability_zone in nova.
+
+    When using spare pools, it will create spares in each AZ. For the amphora
+    driver, if no ``[nova] availability_zone`` is configured and availability
+    zones are used, results may be slightly unpredictable.
+
+    Note (for the ``amphora`` driver): if it is possible for an amphora to
+    change availability zone after initial creation (not typically possible
+    without outside intervention) this may affect the ability of this feature
+    to function properly.

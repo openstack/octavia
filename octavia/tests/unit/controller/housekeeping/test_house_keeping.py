@@ -48,9 +48,11 @@ class TestSpareCheck(base.TestCase):
         super(TestSpareCheck, self).setUp()
         self.spare_amp = house_keeping.SpareAmphora()
         self.amp_repo = mock.MagicMock()
+        self.az_repo = mock.MagicMock()
         self.cw = mock.MagicMock()
 
         self.spare_amp.amp_repo = self.amp_repo
+        self.spare_amp.az_repo = self.az_repo
         self.spare_amp.cw = self.cw
         self.CONF = self.useFixture(oslo_fixture.Config(cfg.CONF))
 
@@ -62,9 +64,40 @@ class TestSpareCheck(base.TestCase):
                          spare_amphora_pool_size=self.FAKE_CNF_SPAR1)
         self.amp_repo.get_spare_amphora_count.return_value = (
             self.FAKE_CUR_SPAR1)
+        self.az_repo.get_all.return_value = [], None
         self.spare_amp.spare_check()
         self.assertTrue(self.amp_repo.get_spare_amphora_count.called)
         DIFF_CNT = self.FAKE_CNF_SPAR1 - self.FAKE_CUR_SPAR1
+
+        self.assertEqual(DIFF_CNT, self.cw.create_amphora.call_count)
+
+    @mock.patch('octavia.db.api.get_session')
+    def test_spare_check_diff_count_multi_az(self, session):
+        """When spare amphora count does not meet the requirement.
+
+        Tests when multiple availabilty zones active
+        """
+        session.return_value = session
+        self.CONF.config(group="house_keeping",
+                         spare_amphora_pool_size=self.FAKE_CNF_SPAR1)
+        az1 = mock.Mock()
+        az1.name = 'az1'
+        az2 = mock.Mock()
+        az2.name = 'az2'
+        self.az_repo.get_all.return_value = [az1, az2], None
+        self.amp_repo.get_spare_amphora_count.return_value = (
+            self.FAKE_CUR_SPAR1)
+        self.az_repo.get_availability_zone_metadata_dict().get.side_effect = (
+            az1.name, az2.name)
+        self.spare_amp.spare_check()
+
+        calls = [mock.call(session, availability_zone=az1.name),
+                 mock.call(session, availability_zone=az2.name)]
+        self.amp_repo.get_spare_amphora_count.assert_has_calls(calls,
+                                                               any_order=True)
+
+        # 2 AZs so twice as many calls
+        DIFF_CNT = (self.FAKE_CNF_SPAR1 - self.FAKE_CUR_SPAR1) * 2
 
         self.assertEqual(DIFF_CNT, self.cw.create_amphora.call_count)
 
@@ -76,6 +109,7 @@ class TestSpareCheck(base.TestCase):
                          spare_amphora_pool_size=self.FAKE_CNF_SPAR2)
         self.amp_repo.get_spare_amphora_count.return_value = (
             self.FAKE_CUR_SPAR2)
+        self.az_repo.get_all.return_value = [], None
         self.spare_amp.spare_check()
         self.assertTrue(self.amp_repo.get_spare_amphora_count.called)
         DIFF_CNT = self.FAKE_CNF_SPAR2 - self.FAKE_CUR_SPAR2

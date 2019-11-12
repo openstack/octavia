@@ -1185,7 +1185,8 @@ class AmphoraRepository(BaseRepository):
             load_balancer.amphorae.append(amphora)
 
     @oslo_db_api.wrap_db_retry(max_retries=5, retry_on_deadlock=True)
-    def allocate_and_associate(self, session, load_balancer_id):
+    def allocate_and_associate(self, session, load_balancer_id,
+                               availability_zone=None):
         """Allocate an amphora for a load balancer.
 
         For v0.5 this is simple, find a free amp and
@@ -1196,13 +1197,23 @@ class AmphoraRepository(BaseRepository):
         :param load_balancer_id: The load balancer id to associate
         :returns: The amphora ID for the load balancer or None
         """
+        filters = {
+            'status': 'READY',
+            'load_balancer_id': None
+        }
+        if availability_zone:
+            LOG.debug("Filtering amps by zone: %s", availability_zone)
+            filters['cached_zone'] = availability_zone
+
         with session.begin(subtransactions=True):
             amp = session.query(self.model_class).with_for_update().filter_by(
-                status='READY', load_balancer_id=None).first()
+                **filters).first()
 
             if amp is None:
                 return None
 
+            if availability_zone:
+                LOG.debug("Found amp: %s in %s", amp.id, amp.cached_zone)
             amp.status = 'ALLOCATED'
             amp.load_balancer_id = load_balancer_id
 
@@ -1237,14 +1248,21 @@ class AmphoraRepository(BaseRepository):
                 return db_lb.to_data_model()
             return None
 
-    def get_spare_amphora_count(self, session):
+    def get_spare_amphora_count(self, session, availability_zone=None):
         """Get the count of the spare amphora.
 
         :returns: Number of current spare amphora.
         """
+        filters = {
+            'status': consts.AMPHORA_READY,
+            'load_balancer_id': None
+        }
+        if availability_zone is not None:
+            filters['cached_zone'] = availability_zone
+
         with session.begin(subtransactions=True):
             count = session.query(self.model_class).filter_by(
-                status=consts.AMPHORA_READY, load_balancer_id=None).count()
+                **filters).count()
 
         return count
 
@@ -1956,7 +1974,7 @@ class AvailabilityZoneRepository(_GetALLExceptDELETEDIdMixin, BaseRepository):
     def delete(self, serial_session, **filters):
         """Special delete method for availability_zone.
 
-        Sets DELETED LBs availability_zone_id to NIL_UUID, then removes the
+        Sets DELETED LBs availability_zone to NIL_UUID, then removes the
         availability_zone.
 
         :param serial_session: A Sql Alchemy database transaction session.
@@ -1965,12 +1983,11 @@ class AvailabilityZoneRepository(_GetALLExceptDELETEDIdMixin, BaseRepository):
         :raises: odb_exceptions.DBReferenceError
         :raises: sqlalchemy.orm.exc.NoResultFound
         """
-        # TODO(sorrison): Uncomment this
-        # (serial_session.query(models.LoadBalancer).
-        #  filter(models.LoadBalancer.availability_zone_id == filters['id']).
-        #  filter(models.LoadBalancer.provisioning_status == consts.DELETED).
-        #  update({models.LoadBalancer.availability_zone_id: consts.NIL_UUID},
-        #         synchronize_session=False))
+        (serial_session.query(models.LoadBalancer).
+         filter(models.LoadBalancer.availability_zone == filters[consts.NAME]).
+         filter(models.LoadBalancer.provisioning_status == consts.DELETED).
+         update({models.LoadBalancer.availability_zone: consts.NIL_UUID},
+                synchronize_session=False))
         availability_zone = (
             serial_session.query(self.model_class).filter_by(**filters).one())
         serial_session.delete(availability_zone)

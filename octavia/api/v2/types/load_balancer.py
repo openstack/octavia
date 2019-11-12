@@ -55,6 +55,7 @@ class LoadBalancerResponse(BaseLoadBalancerType):
     flavor_id = wtypes.wsattr(wtypes.UuidType())
     vip_qos_policy_id = wtypes.wsattr(wtypes.UuidType())
     tags = wtypes.wsattr(wtypes.ArrayType(wtypes.StringType()))
+    availability_zone = wtypes.wsattr(wtypes.StringType())
 
     @classmethod
     def from_data_model(cls, data_model, children=False):
@@ -122,6 +123,7 @@ class LoadBalancerPOST(BaseLoadBalancerType):
     provider = wtypes.wsattr(wtypes.StringType(max_length=64))
     tags = wtypes.wsattr(wtypes.ArrayType(wtypes.StringType(max_length=255)))
     flavor_id = wtypes.wsattr(wtypes.UuidType())
+    availability_zone = wtypes.wsattr(wtypes.StringType(max_length=255))
 
 
 class LoadBalancerRootPOST(types.BaseType):

@@ -120,8 +120,8 @@ class TestControllerWorker(base.TestCase):
                 'amphora_flows.AmphoraFlows.get_create_amphora_flow',
                 return_value='TEST')
     def test_create_amphora(self,
-                            mock_api_get_session,
                             mock_get_create_amp_flow,
+                            mock_api_get_session,
                             mock_dyn_log_listener,
                             mock_taskflow_load,
                             mock_pool_repo_get,
@@ -143,7 +143,49 @@ class TestControllerWorker(base.TestCase):
                 'TEST',
                 store={constants.BUILD_TYPE_PRIORITY:
                        constants.LB_CREATE_SPARES_POOL_PRIORITY,
-                       constants.FLAVOR: None}))
+                       constants.FLAVOR: None,
+                       constants.AVAILABILITY_ZONE: None}))
+
+        _flow_mock.run.assert_called_once_with()
+
+        _flow_mock.storage.fetch.assert_called_once_with('amphora')
+
+        self.assertEqual(AMP_ID, amp)
+
+    @mock.patch('octavia.db.repositories.AvailabilityZoneRepository.'
+                'get_availability_zone_metadata_dict')
+    @mock.patch('octavia.controller.worker.v1.flows.'
+                'amphora_flows.AmphoraFlows.get_create_amphora_flow',
+                return_value='TEST')
+    def test_create_amphora_with_az(self,
+                                    mock_get_create_amp_flow,
+                                    mock_get_az_metadata,
+                                    mock_api_get_session,
+                                    mock_dyn_log_listener,
+                                    mock_taskflow_load,
+                                    mock_pool_repo_get,
+                                    mock_member_repo_get,
+                                    mock_l7rule_repo_get,
+                                    mock_l7policy_repo_get,
+                                    mock_listener_repo_get,
+                                    mock_lb_repo_get,
+                                    mock_health_mon_repo_get,
+                                    mock_amp_repo_get):
+
+        _flow_mock.reset_mock()
+        az = 'fake_az'
+        az_data = {constants.COMPUTE_ZONE: az}
+        mock_get_az_metadata.return_value = az_data
+        cw = controller_worker.ControllerWorker()
+        amp = cw.create_amphora(availability_zone=az)
+        mock_get_az_metadata.assert_called_once_with(_db_session, az)
+        (base_taskflow.BaseTaskFlowEngine._taskflow_load.
+            assert_called_once_with(
+                'TEST',
+                store={constants.BUILD_TYPE_PRIORITY:
+                       constants.LB_CREATE_SPARES_POOL_PRIORITY,
+                       constants.FLAVOR: None,
+                       constants.AVAILABILITY_ZONE: az_data}))
 
         _flow_mock.run.assert_called_once_with()
 
@@ -423,7 +465,8 @@ class TestControllerWorker(base.TestCase):
             constants.LOADBALANCER_ID: LB_ID,
             'update_dict': {'topology': constants.TOPOLOGY_SINGLE},
             constants.BUILD_TYPE_PRIORITY: constants.LB_CREATE_NORMAL_PRIORITY,
-            constants.FLAVOR: None
+            constants.FLAVOR: None,
+            constants.AVAILABILITY_ZONE: None,
         }
         lb_mock = mock.MagicMock()
         lb_mock.listeners = []
@@ -470,7 +513,8 @@ class TestControllerWorker(base.TestCase):
             constants.LOADBALANCER_ID: LB_ID,
             'update_dict': {'topology': constants.TOPOLOGY_ACTIVE_STANDBY},
             constants.BUILD_TYPE_PRIORITY: constants.LB_CREATE_NORMAL_PRIORITY,
-            constants.FLAVOR: None
+            constants.FLAVOR: None,
+            constants.AVAILABILITY_ZONE: None,
         }
         setattr(mock_lb_repo_get.return_value, 'topology',
                 constants.TOPOLOGY_ACTIVE_STANDBY)
@@ -517,7 +561,8 @@ class TestControllerWorker(base.TestCase):
             constants.LOADBALANCER_ID: LB_ID,
             'update_dict': {'topology': constants.TOPOLOGY_SINGLE},
             constants.BUILD_TYPE_PRIORITY: constants.LB_CREATE_NORMAL_PRIORITY,
-            constants.FLAVOR: None
+            constants.FLAVOR: None,
+            constants.AVAILABILITY_ZONE: None,
         }
 
         cw = controller_worker.ControllerWorker()
@@ -570,7 +615,8 @@ class TestControllerWorker(base.TestCase):
             constants.LOADBALANCER_ID: LB_ID,
             'update_dict': {'topology': constants.TOPOLOGY_ACTIVE_STANDBY},
             constants.BUILD_TYPE_PRIORITY: constants.LB_CREATE_NORMAL_PRIORITY,
-            constants.FLAVOR: None
+            constants.FLAVOR: None,
+            constants.AVAILABILITY_ZONE: None,
         }
 
         cw = controller_worker.ControllerWorker()
@@ -1144,6 +1190,8 @@ class TestControllerWorker(base.TestCase):
 
         _flow_mock.run.assert_called_once_with()
 
+    @mock.patch('octavia.db.repositories.AvailabilityZoneRepository.'
+                'get_availability_zone_metadata_dict', return_value={})
     @mock.patch('octavia.db.repositories.FlavorRepository.'
                 'get_flavor_metadata_dict', return_value={})
     @mock.patch('octavia.controller.worker.v1.flows.'
@@ -1154,6 +1202,7 @@ class TestControllerWorker(base.TestCase):
                               mock_update,
                               mock_get_failover_flow,
                               mock_get_flavor_meta,
+                              mock_get_az_meta,
                               mock_api_get_session,
                               mock_dyn_log_listener,
                               mock_taskflow_load,
@@ -1179,7 +1228,8 @@ class TestControllerWorker(base.TestCase):
                            _amphora_mock.load_balancer_id,
                        constants.BUILD_TYPE_PRIORITY:
                            constants.LB_CREATE_FAILOVER_PRIORITY,
-                       constants.FLAVOR: {}
+                       constants.FLAVOR: {},
+                       constants.AVAILABILITY_ZONE: {}
                        }))
 
         _flow_mock.run.assert_called_once_with()
@@ -1302,7 +1352,8 @@ class TestControllerWorker(base.TestCase):
                        constants.LOADBALANCER_ID: None,
                        constants.BUILD_TYPE_PRIORITY:
                            constants.LB_CREATE_FAILOVER_PRIORITY,
-                       constants.FLAVOR: {}
+                       constants.FLAVOR: {},
+                       constants.AVAILABILITY_ZONE: {}
                        }))
 
         _flow_mock.run.assert_called_once_with()
@@ -1380,6 +1431,8 @@ class TestControllerWorker(base.TestCase):
         mock_update.assert_called_with(_db_session, 123,
                                        provisioning_status=constants.ERROR)
 
+    @mock.patch('octavia.db.repositories.AvailabilityZoneRepository.'
+                'get_availability_zone_metadata_dict', return_value={})
     @mock.patch('octavia.db.repositories.FlavorRepository.'
                 'get_flavor_metadata_dict', return_value={})
     @mock.patch('octavia.controller.worker.v1.flows.'
@@ -1394,6 +1447,7 @@ class TestControllerWorker(base.TestCase):
                                             mock_get_lb_for_amphora,
                                             mock_get_update_listener_flow,
                                             mock_get_flavor_meta,
+                                            mock_get_az_meta,
                                             mock_api_get_session,
                                             mock_dyn_log_listener,
                                             mock_taskflow_load,
@@ -1422,7 +1476,8 @@ class TestControllerWorker(base.TestCase):
                        constants.BUILD_TYPE_PRIORITY:
                            constants.LB_CREATE_FAILOVER_PRIORITY,
                        constants.SERVER_GROUP_ID: "123",
-                       constants.FLAVOR: {}
+                       constants.FLAVOR: {},
+                       constants.AVAILABILITY_ZONE: {}
                        }))
 
         _flow_mock.run.assert_called_once_with()

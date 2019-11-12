@@ -130,35 +130,37 @@ and validated with the following exceptions:
 As of the writing of this specification the create load balancer object may
 contain the following:
 
-+-----------------+--------+-----------------------------------------------+
-| Name            | Type   | Description                                   |
-+=================+========+===============================================+
-| admin_state_up  | bool   | Admin state: True if up, False if down.       |
-+-----------------+--------+-----------------------------------------------+
-| description     | string | A human-readable description for the resource.|
-+-----------------+--------+-----------------------------------------------+
-| flavor          | dict   | The flavor keys and values.                   |
-+-----------------+--------+-----------------------------------------------+
-| listeners       | list   | A list of `Listener objects`_.                |
-+-----------------+--------+-----------------------------------------------+
-| loadbalancer_id | string | ID of load balancer to create.                |
-+-----------------+--------+-----------------------------------------------+
-| name            | string | Human-readable name of the resource.          |
-+-----------------+--------+-----------------------------------------------+
-| pools           | list   | A list of `Pool object`_.                     |
-+-----------------+--------+-----------------------------------------------+
-| project_id      | string | ID of the project owning this resource.       |
-+-----------------+--------+-----------------------------------------------+
-| vip_address     | string | The IP address of the Virtual IP (VIP).       |
-+-----------------+--------+-----------------------------------------------+
-| vip_network_id  | string | The ID of the network for the VIP.            |
-+-----------------+--------+-----------------------------------------------+
-| vip_port_id     | string | The ID of the VIP port.                       |
-+-----------------+--------+-----------------------------------------------+
-|vip_qos_policy_id| string | The ID of the qos policy for the VIP.         |
-+-----------------+--------+-----------------------------------------------+
-| vip_subnet_id   | string | The ID of the subnet for the VIP.             |
-+-----------------+--------+-----------------------------------------------+
++-------------------+--------+-----------------------------------------------+
+| Name              | Type   | Description                                   |
++===================+========+===============================================+
+| admin_state_up    | bool   | Admin state: True if up, False if down.       |
++-------------------+--------+-----------------------------------------------+
+| description       | string | A human-readable description for the resource.|
++-------------------+--------+-----------------------------------------------+
+| flavor            | dict   | The flavor keys and values.                   |
++-------------------+--------+-----------------------------------------------+
+| availability_zone | dict   | The availability zone keys and values.        |
++-------------------+--------+-----------------------------------------------+
+| listeners         | list   | A list of `Listener objects`_.                |
++-------------------+--------+-----------------------------------------------+
+| loadbalancer_id   | string | ID of load balancer to create.                |
++-------------------+--------+-----------------------------------------------+
+| name              | string | Human-readable name of the resource.          |
++-------------------+--------+-----------------------------------------------+
+| pools             | list   | A list of `Pool object`_.                     |
++-------------------+--------+-----------------------------------------------+
+| project_id        | string | ID of the project owning this resource.       |
++-------------------+--------+-----------------------------------------------+
+| vip_address       | string | The IP address of the Virtual IP (VIP).       |
++-------------------+--------+-----------------------------------------------+
+| vip_network_id    | string | The ID of the network for the VIP.            |
++-------------------+--------+-----------------------------------------------+
+| vip_port_id       | string | The ID of the VIP port.                       |
++-------------------+--------+-----------------------------------------------+
+| vip_qos_policy_id | string | The ID of the qos policy for the VIP.         |
++-------------------+--------+-----------------------------------------------+
+| vip_subnet_id     | string | The ID of the subnet for the VIP.             |
++-------------------+--------+-----------------------------------------------+
 
 The driver is expected to validate that the driver supports the request
 and raise an exception if the request cannot be accepted.
@@ -1696,10 +1698,11 @@ flavor is supported. Both functions are synchronous.
 
 .. _flavor specification: ../specs/version1.0/flavors.html
 
-get_supported_flavor_keys
-^^^^^^^^^^^^^^^^^^^^^^^^^
+get_supported_flavor_metadata
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Retrieves a dictionary of supported flavor keys and their description.
+For example:
 
 .. code-block:: python
 
@@ -1746,6 +1749,71 @@ Following are interface definitions for flavor support:
       :raises UnsupportedOptionError: if driver does not
             support one of the configuration options.
       """
+      raise NotImplementedError()
+
+Availability Zone
+-----------------
+
+Octavia availability zones have no explicit spec, but are modeled closely
+after the existing `flavor specification`_.
+Support for availability_zones will be provided through two provider driver
+interfaces, one to query supported availability zone metadata keys and another
+to validate that an availability zone is supported. Both functions are
+synchronous.
+
+get_supported_availability_zone_metadata
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Retrieves a dictionary of supported availability zone keys and their
+description. For example:
+
+.. code-block:: python
+
+    {"compute_zone": "The compute availability zone to use for this loadbalancer.",
+     "management_network": "The management network ID for the loadbalancer."}
+
+validate_availability_zone
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Validates that the driver supports the availability zone metadata dictionary.
+
+The validate_availability_zone method will be passed an availability zone
+metadata dictionary that the driver will validate. This is used when an
+operator uploads a new availability zone that applies to the driver.
+
+The validate_availability_zone method will either return or raise a
+``UnsupportedOptionError`` exception.
+
+Following are interface definitions for availability zone support:
+
+.. code-block:: python
+
+  def get_supported_availability_zone_metadata():
+      """Returns a dict of supported availability zone metadata keys.
+
+        The returned dictionary will include key/value pairs, 'name' and
+        'description.'
+
+        :returns: The availability zone metadata dictionary
+        :raises DriverError: An unexpected error occurred in the driver.
+        :raises NotImplementedError: The driver does not support AZs.
+        """
+      raise NotImplementedError()
+
+.. code-block:: python
+
+  def validate_availability_zone(availability_zone_metadata):
+      """Validates if driver can support the availability zone.
+
+        :param availability_zone_metadata: Dictionary with az metadata.
+        :type availability_zone_metadata: dict
+        :return: Nothing if the availability zone is valid and supported.
+        :raises DriverError: An unexpected error occurred in the driver.
+        :raises NotImplementedError: The driver does not support availability
+          zones.
+        :raises UnsupportedOptionError: if driver does not
+          support one of the configuration options.
+        """
       raise NotImplementedError()
 
 Exception Model

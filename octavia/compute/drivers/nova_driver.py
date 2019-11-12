@@ -100,7 +100,7 @@ class VirtualMachineManager(compute_base.ComputeBase):
               image_id=None, image_tag=None, image_owner=None,
               key_name=None, sec_groups=None, network_ids=None,
               port_ids=None, config_drive_files=None, user_data=None,
-              server_group_id=None):
+              server_group_id=None, availability_zone=None):
         '''Create a new virtual machine.
 
         :param name: optional name for amphora
@@ -123,6 +123,7 @@ class VirtualMachineManager(compute_base.ComputeBase):
                           well or a string
         :param server_group_id: Optional server group id(uuid) which is used
                                 for anti_affinity feature
+        :param availability_zone: Name of the compute availability zone.
 
         :raises ComputeBuildException: if nova failed to build virtual machine
         :returns: UUID of amphora
@@ -141,6 +142,7 @@ class VirtualMachineManager(compute_base.ComputeBase):
 
             server_group = None if server_group_id is None else {
                 "group": server_group_id}
+            az_name = availability_zone or CONF.nova.availability_zone
 
             image_id = _get_image_uuid(
                 self._glance_client, image_id, image_tag, image_owner)
@@ -176,7 +178,7 @@ class VirtualMachineManager(compute_base.ComputeBase):
                 userdata=user_data,
                 config_drive=True,
                 scheduler_hints=server_group,
-                availability_zone=CONF.nova.availability_zone
+                availability_zone=az_name
             )
 
             return amphora.id

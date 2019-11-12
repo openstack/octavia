@@ -401,6 +401,11 @@ class LoadBalancer(base_models.BASE, base_models.IdMixin,
     flavor_id = sa.Column(
         sa.String(36),
         sa.ForeignKey("flavor.id", name="fk_lb_flavor_id"), nullable=True)
+    availability_zone = sa.Column(
+        sa.String(255),
+        sa.ForeignKey("availability_zone.name",
+                      name="fk_load_balancer_availability_zone_name"),
+        nullable=True)
 
 
 class VRRPGroup(base_models.BASE):

@@ -328,6 +328,46 @@ class LoadBalancersController(base.BaseController):
                 raise exceptions.DisabledOption(option='flavor',
                                                 value=load_balancer.flavor_id)
 
+    def _validate_and_return_az_dict(self, lock_session, driver, lb_dict):
+
+        az_dict = {}
+        if 'availability_zone' in lb_dict:
+            try:
+                az = self.repositories.availability_zone.get(
+                    lock_session, name=lb_dict['availability_zone'])
+                az_dict = (
+                    self.repositories.availability_zone
+                    .get_availability_zone_metadata_dict(lock_session, az.name)
+                )
+            except sa_exception.NoResultFound:
+                raise exceptions.ValidationException(
+                    detail=_("Invalid availability_zone."))
+
+        # Make sure the driver will still accept the availability zone metadata
+        if az_dict:
+            try:
+                driver_utils.call_provider(driver.name,
+                                           driver.validate_availability_zone,
+                                           az_dict)
+            except NotImplementedError:
+                raise exceptions.ProviderNotImplementedError(
+                    prov=driver.name, user_msg="This provider does not support"
+                                               " availability zones.")
+
+        return az_dict
+
+    def _validate_availability_zone(self, session, load_balancer):
+        if not isinstance(load_balancer.availability_zone, wtypes.UnsetType):
+            az = self.repositories.availability_zone.get(
+                session, name=load_balancer.availability_zone)
+            if not az:
+                raise exceptions.ValidationException(
+                    detail=_("Invalid availability zone."))
+            if not az.enabled:
+                raise exceptions.DisabledOption(
+                    option='availability_zone',
+                    value=load_balancer.availability_zone)
+
     @wsme_pecan.wsexpose(lb_types.LoadBalancerFullRootResponse,
                          body=lb_types.LoadBalancerRootPOST, status_code=201)
     def post(self, load_balancer):
@@ -350,6 +390,8 @@ class LoadBalancersController(base.BaseController):
         self._validate_vip_request_object(load_balancer)
 
         self._validate_flavor(context.session, load_balancer)
+
+        self._validate_availability_zone(context.session, load_balancer)
 
         provider = self._get_provider(context.session, load_balancer)
 
@@ -383,6 +425,9 @@ class LoadBalancersController(base.BaseController):
             flavor_dict = self._apply_flavor_to_lb_dict(lock_session, driver,
                                                         lb_dict)
 
+            az_dict = self._validate_and_return_az_dict(lock_session, driver,
+                                                        lb_dict)
+
             db_lb = self.repositories.create_load_balancer_and_vip(
                 lock_session, lb_dict, vip_dict)
 
@@ -390,6 +435,9 @@ class LoadBalancersController(base.BaseController):
             # This is a "virtual" lb_dict item that includes the expanded
             # flavor dict instead of just the flavor_id we store in the DB.
             lb_dict['flavor'] = flavor_dict
+
+            # Do the same with the availability_zone dict
+            lb_dict['availability_zone'] = az_dict
 
             # See if the provider driver wants to create the VIP port
             octavia_owned = False

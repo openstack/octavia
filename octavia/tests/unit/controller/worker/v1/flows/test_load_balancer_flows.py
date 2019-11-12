@@ -195,7 +195,7 @@ class TestLoadBalancerFlows(base.TestCase):
         self.assertIn(constants.AMP_DATA, create_flow.provides)
         self.assertIn(constants.AMPHORA_NETWORK_CONFIG, create_flow.provides)
 
-        self.assertEqual(4, len(create_flow.requires))
+        self.assertEqual(5, len(create_flow.requires))
         self.assertEqual(13, len(create_flow.provides),
                          create_flow.provides)
 
@@ -223,6 +223,6 @@ class TestLoadBalancerFlows(base.TestCase):
         self.assertIn(constants.AMPHORAE_NETWORK_CONFIG,
                       create_flow.provides)
 
-        self.assertEqual(4, len(create_flow.requires))
+        self.assertEqual(5, len(create_flow.requires))
         self.assertEqual(14, len(create_flow.provides),
                          create_flow.provides)

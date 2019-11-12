@@ -13,10 +13,9 @@
 #    under the License.
 import mock
 
-from oslo_utils import uuidutils
-
 from octavia_lib.api.drivers import data_models as driver_dm
 from octavia_lib.api.drivers import exceptions
+from oslo_utils import uuidutils
 
 from octavia.api.drivers.amphora_driver.v1 import driver
 from octavia.common import constants as consts
@@ -62,7 +61,8 @@ class TestAmphoraDriver(base.TestRpc):
             loadbalancer_id=self.sample_data.lb_id)
         self.amp_driver.loadbalancer_create(provider_lb)
         payload = {consts.LOAD_BALANCER_ID: self.sample_data.lb_id,
-                   consts.FLAVOR: None}
+                   consts.FLAVOR: None,
+                   consts.AVAILABILITY_ZONE: None}
         mock_cast.assert_called_with({}, 'create_load_balancer', **payload)
 
     @mock.patch('oslo_messaging.RPCClient.cast')

@@ -70,6 +70,7 @@ class ControllerWorker(base_taskflow.BaseTaskFlowEngine):
         self._l7policy_repo = repo.L7PolicyRepository()
         self._l7rule_repo = repo.L7RuleRepository()
         self._flavor_repo = repo.FlavorRepository()
+        self._az_repo = repo.AvailabilityZoneRepository()
 
         super(ControllerWorker, self).__init__()
 
@@ -84,7 +85,7 @@ class ControllerWorker(base_taskflow.BaseTaskFlowEngine):
 
         return repo.get(db_apis.get_session(), id=id)
 
-    def create_amphora(self):
+    def create_amphora(self, availability_zone=None):
         """Creates an Amphora.
 
         This is used to create spare amphora.
@@ -92,12 +93,17 @@ class ControllerWorker(base_taskflow.BaseTaskFlowEngine):
         :returns: amphora_id
         """
         try:
+            store = {constants.BUILD_TYPE_PRIORITY:
+                     constants.LB_CREATE_SPARES_POOL_PRIORITY,
+                     constants.FLAVOR: None,
+                     constants.AVAILABILITY_ZONE: None}
+            if availability_zone:
+                store[constants.AVAILABILITY_ZONE] = (
+                    self._az_repo.get_availability_zone_metadata_dict(
+                        db_apis.get_session(), availability_zone))
             create_amp_tf = self._taskflow_load(
                 self._amphora_flows.get_create_amphora_flow(),
-                store={constants.BUILD_TYPE_PRIORITY:
-                       constants.LB_CREATE_SPARES_POOL_PRIORITY,
-                       constants.FLAVOR: None}
-            )
+                store=store)
             with tf_logging.DynamicLoggingListener(create_amp_tf, log=LOG):
                 create_amp_tf.run()
 
@@ -306,7 +312,8 @@ class ControllerWorker(base_taskflow.BaseTaskFlowEngine):
         wait=tenacity.wait_incrementing(
             RETRY_INITIAL_DELAY, RETRY_BACKOFF, RETRY_MAX),
         stop=tenacity.stop_after_attempt(RETRY_ATTEMPTS))
-    def create_load_balancer(self, load_balancer_id, flavor=None):
+    def create_load_balancer(self, load_balancer_id, flavor=None,
+                             availability_zone=None):
         """Creates a load balancer by allocating Amphorae.
 
         First tries to allocate an existing Amphora in READY state.
@@ -328,7 +335,8 @@ class ControllerWorker(base_taskflow.BaseTaskFlowEngine):
         store = {constants.LOADBALANCER_ID: load_balancer_id,
                  constants.BUILD_TYPE_PRIORITY:
                  constants.LB_CREATE_NORMAL_PRIORITY,
-                 constants.FLAVOR: flavor}
+                 constants.FLAVOR: flavor,
+                 constants.AVAILABILITY_ZONE: availability_zone}
 
         topology = lb.topology
 
@@ -846,6 +854,12 @@ class ControllerWorker(base_taskflow.BaseTaskFlowEngine):
                     db_apis.get_session(), lb.flavor_id))
         else:
             stored_params[constants.FLAVOR] = {}
+        if lb and lb.availability_zone:
+            stored_params[constants.AVAILABILITY_ZONE] = (
+                self._az_repo.get_availability_zone_metadata_dict(
+                    db_apis.get_session(), lb.availability_zone))
+        else:
+            stored_params[constants.AVAILABILITY_ZONE] = {}
 
         failover_amphora_tf = self._taskflow_load(
             self._amphora_flows.get_failover_flow(

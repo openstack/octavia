@@ -41,17 +41,19 @@ class TestEndpoints(base.TestCase):
         self.resource_id = 1234
         self.server_group_id = 3456
         self.flavor_id = uuidutils.generate_uuid()
+        self.availability_zone = uuidutils.generate_uuid()
 
     def test_create_load_balancer(self):
         self.ep.create_load_balancer(self.context, self.resource_id,
-                                     flavor=self.flavor_id)
+                                     flavor=self.flavor_id,
+                                     availability_zone=self.availability_zone)
         self.ep.worker.create_load_balancer.assert_called_once_with(
-            self.resource_id, self.flavor_id)
+            self.resource_id, self.flavor_id, self.availability_zone)
 
-    def test_create_load_balancer_no_flavor(self):
+    def test_create_load_balancer_no_flavor_or_az(self):
         self.ep.create_load_balancer(self.context, self.resource_id)
         self.ep.worker.create_load_balancer.assert_called_once_with(
-            self.resource_id, None)
+            self.resource_id, None, None)
 
     def test_update_load_balancer(self):
         self.ep.update_load_balancer(self.context, self.resource_id,

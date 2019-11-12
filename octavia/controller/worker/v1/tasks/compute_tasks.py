@@ -52,7 +52,8 @@ class ComputeCreate(BaseComputeTask):
 
     def execute(self, amphora_id, config_drive_files=None,
                 build_type_priority=constants.LB_CREATE_NORMAL_PRIORITY,
-                server_group_id=None, ports=None, flavor=None):
+                server_group_id=None, ports=None, flavor=None,
+                availability_zone=None):
         """Create an amphora
 
         :returns: an amphora
@@ -64,12 +65,7 @@ class ComputeCreate(BaseComputeTask):
         LOG.debug("Compute create execute for amphora with id %s", amphora_id)
 
         user_data_config_drive = CONF.controller_worker.user_data_config_drive
-
         key_name = CONF.controller_worker.amp_ssh_key_name
-        # TODO(rm_work): amp_ssh_access_allowed is deprecated in Pike.
-        # Remove the following two lines in the S release.
-        ssh_access = CONF.controller_worker.amp_ssh_access_allowed
-        key_name = None if not ssh_access else key_name
 
         # Apply an Octavia flavor customizations
         if flavor:
@@ -81,6 +77,14 @@ class ComputeCreate(BaseComputeTask):
             topology = CONF.controller_worker.loadbalancer_topology
             amp_compute_flavor = CONF.controller_worker.amp_flavor_id
 
+        if availability_zone:
+            amp_availability_zone = availability_zone.get(
+                constants.COMPUTE_ZONE)
+            amp_network = availability_zone.get(constants.MANAGEMENT_NETWORK)
+            if amp_network:
+                network_ids = [amp_network]
+        else:
+            amp_availability_zone = None
         try:
             if CONF.haproxy_amphora.build_rate_limit != -1:
                 self.rate_limit.add_to_build_request_queue(
@@ -113,7 +117,8 @@ class ComputeCreate(BaseComputeTask):
                 port_ids=[port.id for port in ports],
                 config_drive_files=config_drive_files,
                 user_data=user_data,
-                server_group_id=server_group_id)
+                server_group_id=server_group_id,
+                availability_zone=amp_availability_zone)
 
             LOG.debug("Server created with id: %s for amphora id: %s",
                       compute_id, amphora_id)
@@ -144,7 +149,8 @@ class ComputeCreate(BaseComputeTask):
 class CertComputeCreate(ComputeCreate):
     def execute(self, amphora_id, server_pem,
                 build_type_priority=constants.LB_CREATE_NORMAL_PRIORITY,
-                server_group_id=None, ports=None, flavor=None):
+                server_group_id=None, ports=None, flavor=None,
+                availability_zone=None):
         """Create an amphora
 
         :returns: an amphora
@@ -162,7 +168,8 @@ class CertComputeCreate(ComputeCreate):
         return super(CertComputeCreate, self).execute(
             amphora_id, config_drive_files=config_drive_files,
             build_type_priority=build_type_priority,
-            server_group_id=server_group_id, ports=ports, flavor=flavor)
+            server_group_id=server_group_id, ports=ports, flavor=flavor,
+            availability_zone=availability_zone)
 
 
 class DeleteAmphoraeOnLoadBalancer(BaseComputeTask):
