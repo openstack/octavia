@@ -1,0 +1,4 @@
+---
+fixes:
+  - |
+    Fixes the ability to filter on the provider flavor capabilities API.
