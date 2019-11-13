@@ -648,3 +648,45 @@ class TestAmphoraDriver(base.TestRpc):
                         'SUPPORTED_FLAVOR_SCHEMA', 'bogus'):
             self.assertRaises(exceptions.DriverError,
                               self.amp_driver.validate_flavor, 'bogus')
+
+    # Availability Zone
+    def test_get_supported_availability_zone_metadata(self):
+        test_schema = {
+            "properties": {
+                "test_name": {"description": "Test description"},
+                "test_name2": {"description": "Another description"}}}
+        ref_dict = {"test_name": "Test description",
+                    "test_name2": "Another description"}
+
+        # mock out the supported_availability_zone_metadata
+        with mock.patch('octavia.api.drivers.amphora_driver.'
+                        'availability_zone_schema.'
+                        'SUPPORTED_AVAILABILITY_ZONE_SCHEMA', test_schema):
+            result = self.amp_driver.get_supported_availability_zone_metadata()
+        self.assertEqual(ref_dict, result)
+
+        # Test for bad schema
+        with mock.patch('octavia.api.drivers.amphora_driver.'
+                        'availability_zone_schema.'
+                        'SUPPORTED_AVAILABILITY_ZONE_SCHEMA', 'bogus'):
+            self.assertRaises(
+                exceptions.DriverError,
+                self.amp_driver.get_supported_availability_zone_metadata)
+
+    def test_validate_availability_zone(self):
+        ref_dict = {consts.COMPUTE_ZONE: 'my_compute_zone'}
+        self.amp_driver.validate_availability_zone(ref_dict)
+
+        # Test bad availability zone metadata key
+        ref_dict = {'bogus': 'bogus'}
+        self.assertRaises(exceptions.UnsupportedOptionError,
+                          self.amp_driver.validate_availability_zone,
+                          ref_dict)
+
+        # Test for bad schema
+        with mock.patch('octavia.api.drivers.amphora_driver.'
+                        'availability_zone_schema.'
+                        'SUPPORTED_AVAILABILITY_ZONE_SCHEMA', 'bogus'):
+            self.assertRaises(exceptions.DriverError,
+                              self.amp_driver.validate_availability_zone,
+                              'bogus')

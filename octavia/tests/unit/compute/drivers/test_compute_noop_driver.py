@@ -49,6 +49,8 @@ class TestNoopComputeDriver(base.TestCase):
         self.port_id = 88
         self.network_id = uuidutils.generate_uuid()
         self.ip_address = "192.0.2.2"
+        self.flavor_id = uuidutils.generate_uuid()
+        self.availability_zone = 'my_test_az'
 
     def test_build(self):
         self.driver.build(self.name, self.amphora_flavor,
@@ -120,3 +122,14 @@ class TestNoopComputeDriver(base.TestCase):
                           'detach_port'),
                          self.driver.driver.computeconfig[(
                              self.amphora_id, self.port_id)])
+
+    def test_validate_flavor(self):
+        self.driver.validate_flavor(self.flavor_id)
+        self.assertEqual((self.flavor_id, 'validate_flavor'),
+                         self.driver.driver.computeconfig[self.flavor_id])
+
+    def test_validate_availability_zone(self):
+        self.driver.validate_availability_zone(self.availability_zone)
+        self.assertEqual(
+            (self.availability_zone, 'validate_availability_zone'),
+            self.driver.driver.computeconfig[self.availability_zone])

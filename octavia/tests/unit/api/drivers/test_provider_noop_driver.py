@@ -143,6 +143,9 @@ class TestNoopProviderDriver(base.TestCase):
 
         self.ref_flavor_metadata = {"amp_image_tag": "The glance image tag "
                                     "to use for this load balancer."}
+        self.ref_availability_zone_metadata = {
+            "compute_zone": "The compute availability zone to use for this "
+                            "loadbalancer."}
 
     def test_create_vip_port(self):
         vip_dict = self.driver.create_vip_port(self.loadbalancer_id,
@@ -304,3 +307,17 @@ class TestNoopProviderDriver(base.TestCase):
         flavor_hash = hash(frozenset(self.ref_flavor_metadata))
         self.assertEqual((self.ref_flavor_metadata, 'validate_flavor'),
                          self.driver.driver.driverconfig[flavor_hash])
+
+    def test_get_supported_availability_zone_metadata(self):
+        metadata = self.driver.get_supported_availability_zone_metadata()
+
+        self.assertEqual(self.ref_availability_zone_metadata, metadata)
+
+    def test_validate_availability_zone(self):
+        self.driver.validate_availability_zone(
+            self.ref_availability_zone_metadata)
+
+        az_hash = hash(frozenset(self.ref_availability_zone_metadata))
+        self.assertEqual((self.ref_availability_zone_metadata,
+                          'validate_availability_zone'),
+                         self.driver.driver.driverconfig[az_hash])

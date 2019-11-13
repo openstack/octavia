@@ -1,0 +1,10 @@
+{
+    "availability_zone_profiles": [
+        {
+            "id": "5712097e-0092-45dc-bff0-ab68b61ad51a",
+            "name": "some_az",
+            "provider_name": "amphora",
+            "availability_zone_data": "{\"compute_zone\": \"az1\"}"
+        }
+    ]
+}

@@ -7,6 +7,18 @@ path-amphora-id:
   in: path
   required: true
   type: uuid
+path-availability-zone-name:
+  description: |
+    The name of the availability zone to query.
+  in: path
+  required: true
+  type: string
+path-availability-zone-profile-id:
+  description: |
+    The ID of the availability zone profile to query.
+  in: path
+  required: true
+  type: uuid
 path-flavor-id:
   description: |
     The ID of the flavor to query.
@@ -220,6 +232,66 @@ api_version_status:
   in: body
   required: true
   type: string
+availability-zone:
+  description: |
+    An availability zone object.
+  in: body
+  required: true
+  type: object
+availability-zone-capabilities:
+  description: |
+    The provider availability zone capabilities dictonary object.
+  in: body
+  required: true
+  type: object
+availability-zone-capability-description:
+  description: |
+    The provider availability zone capability description.
+  in: body
+  required: true
+  type: string
+availability-zone-capability-name:
+  description: |
+    The provider availability zone capability name.
+  in: body
+  required: true
+  type: string
+availability-zone-data:
+  description: |
+    The JSON string containing the availability zone metadata.
+  in: body
+  required: true
+  type: string
+availability-zone-data-optional:
+  description: |
+    The JSON string containing the availability zone metadata.
+  in: body
+  required: false
+  type: string
+availability-zone-profile:
+  description: |
+    An ``availability zone profile`` object.
+  in: body
+  required: true
+  type: object
+availability-zone-profile-id:
+  description: |
+    The ID of the availability zone profile.
+  in: body
+  required: true
+  type: uuid
+availability-zone-profiles:
+  description: |
+    A list of ``availability zone profile`` objects.
+  in: body
+  required: true
+  type: array
+availability-zones:
+  description: |
+    A list of ``availability zone`` objects.
+  in: body
+  required: true
+  type: array
 backup:
   description: |
     Is the member a backup? Backup members only receive traffic when all

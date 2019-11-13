@@ -66,6 +66,16 @@ Flavor Profiles
 ---------------
 .. include:: flavorprofile.inc
 
+------------------
+Availability Zones
+------------------
+.. include:: availabilityzone.inc
+
+--------------------------
+Availability Zone Profiles
+--------------------------
+.. include:: availabilityzoneprofile.inc
+
 --------
 Amphorae
 --------

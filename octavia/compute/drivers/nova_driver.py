@@ -89,6 +89,7 @@ class VirtualMachineManager(compute_base.ComputeBase):
         self.manager = self._nova_client.servers
         self.server_groups = self._nova_client.server_groups
         self.flavor_manager = self._nova_client.flavors
+        self.availability_zone_manager = self._nova_client.availability_zones
         self.volume_driver = stevedore_driver.DriverManager(
             namespace='octavia.volume.drivers',
             name=CONF.controller_worker.volume_driver,
@@ -397,4 +398,25 @@ class VirtualMachineManager(compute_base.ComputeBase):
         except Exception as e:
             LOG.exception('Nova reports a failure getting flavor details for '
                           'flavor ID %s: %s', flavor_id, e)
+            raise
+
+    def validate_availability_zone(self, availability_zone):
+        """Validates that an availability zone exists in nova.
+
+        :param availability_zone: Name of the availability zone to lookup.
+        :raises: NotFound
+        :returns: None
+        """
+        try:
+            compute_zones = [
+                a.zoneName for a in self.availability_zone_manager.list(
+                    detailed=False)]
+            if availability_zone not in compute_zones:
+                LOG.info('Availability zone %s was not found in nova. %s',
+                         availability_zone, compute_zones)
+                raise exceptions.InvalidSubresource(
+                    resource='Nova availability zone', id=availability_zone)
+        except Exception as e:
+            LOG.exception('Nova reports a failure getting listing '
+                          'availability zones: %s', e)
             raise

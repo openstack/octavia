@@ -245,11 +245,6 @@ class TestFlavors(base.BaseAPITest):
         self.assertEqual(self.NOT_AUTHORIZED_BODY, response)
 
     def test_get_all(self):
-        ref_flavor_1 = {
-            u'description': u'description', u'enabled': True,
-            u'flavor_profile_id': u'd21bf20d-c323-4004-bf67-f90591ceced9',
-            u'id': u'172ccb10-a3b7-4c73-aee8-bdb77fb51ed5',
-            u'name': u'name1'}
         flavor1 = self.create_flavor('name1', 'description', self.fp.get('id'),
                                      True)
         self.assertTrue(uuidutils.is_uuid_like(flavor1.get('id')))

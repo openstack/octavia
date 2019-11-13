@@ -1,0 +1,6 @@
+{
+    "availability_zone": {
+        "description": "My availability zone.",
+        "enabled": false
+    }
+}

@@ -97,7 +97,7 @@ Request
    - name: name
 
 Request Example
-----------------
+---------------
 
 .. literalinclude:: examples/flavor-create-request.json
    :language: javascript

@@ -171,3 +171,144 @@ class TestFlavorCapabilities(base.BaseAPITest):
         self.assertEqual(1, len(capabilities))
         self.assertEqual(1, len(capabilities[0]))
         self.assertEqual('compute_flavor', capabilities[0][constants.NAME])
+
+
+class TestAvailabilityZoneCapabilities(base.BaseAPITest):
+
+    root_tag = 'availability_zone_capabilities'
+
+    def setUp(self):
+        super(TestAvailabilityZoneCapabilities, self).setUp()
+
+    def test_nonexistent_provider(self):
+        self.get(self.AVAILABILITY_ZONE_CAPABILITIES_PATH.format(
+            provider='bogus'), status=400)
+
+    def test_noop_provider(self):
+        ref_capabilities = [{'description': 'The compute availability zone to '
+                                            'use for this loadbalancer.',
+                             'name': constants.COMPUTE_ZONE}]
+
+        result = self.get(
+            self.AVAILABILITY_ZONE_CAPABILITIES_PATH.format(
+                provider='noop_driver'))
+        self.assertEqual(ref_capabilities, result.json.get(self.root_tag))
+
+    def test_amphora_driver(self):
+        ref_description1 = 'The compute availability zone.'
+        ref_description2 = 'The management network ID for the amphora.'
+        result = self.get(
+            self.AVAILABILITY_ZONE_CAPABILITIES_PATH.format(
+                provider='amphora'))
+        capabilities = result.json.get(self.root_tag)
+        capability_dict = [i for i in capabilities if
+                           i['name'] == constants.COMPUTE_ZONE][0]
+        self.assertEqual(ref_description1,
+                         capability_dict['description'])
+        capability_dict = [i for i in capabilities if
+                           i['name'] == constants.MANAGEMENT_NETWORK][0]
+        self.assertEqual(ref_description2,
+                         capability_dict['description'])
+
+    # Some drivers might not have implemented this yet, test that case
+    @mock.patch('octavia.api.drivers.noop_driver.driver.NoopProviderDriver.'
+                'get_supported_availability_zone_metadata')
+    def test_not_implemented(self, mock_get_metadata):
+        mock_get_metadata.side_effect = exceptions.NotImplementedError()
+        self.get(self.AVAILABILITY_ZONE_CAPABILITIES_PATH.format(
+            provider='noop_driver'), status=501)
+
+    def test_authorized(self):
+        ref_capabilities = [{'description': 'The compute availability zone to '
+                                            'use for this loadbalancer.',
+                             'name': constants.COMPUTE_ZONE}]
+        self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
+        auth_strategy = self.conf.conf.api_settings.get('auth_strategy')
+        self.conf.config(group='api_settings', auth_strategy=constants.TESTING)
+        project_id = uuidutils.generate_uuid()
+        with mock.patch.object(octavia.common.context.Context, 'project_id',
+                               project_id):
+            override_credentials = {
+                'service_user_id': None,
+                'user_domain_id': None,
+                'is_admin_project': True,
+                'service_project_domain_id': None,
+                'service_project_id': None,
+                'roles': ['load-balancer_member'],
+                'user_id': None,
+                'is_admin': True,
+                'service_user_domain_id': None,
+                'project_domain_id': None,
+                'service_roles': [],
+                'project_id': project_id}
+            with mock.patch(
+                    "oslo_context.context.RequestContext.to_policy_values",
+                    return_value=override_credentials):
+                result = self.get(
+                    self.AVAILABILITY_ZONE_CAPABILITIES_PATH.format(
+                        provider='noop_driver'))
+        self.conf.config(group='api_settings', auth_strategy=auth_strategy)
+        self.assertEqual(ref_capabilities, result.json.get(self.root_tag))
+
+    def test_not_authorized(self):
+        self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
+        auth_strategy = self.conf.conf.api_settings.get('auth_strategy')
+        self.conf.config(group='api_settings', auth_strategy=constants.TESTING)
+        self.get(self.AVAILABILITY_ZONE_CAPABILITIES_PATH.format(
+            provider='noop_driver'), status=403)
+        self.conf.config(group='api_settings', auth_strategy=auth_strategy)
+
+    def test_amphora_driver_one_filter(self):
+        ref_description = 'The compute availability zone.'
+        result = self.get(
+            self.AVAILABILITY_ZONE_CAPABILITIES_PATH.format(
+                provider=constants.AMPHORA),
+            params={constants.NAME: constants.COMPUTE_ZONE})
+        capabilities = result.json.get(self.root_tag)
+        self.assertEqual(1, len(capabilities))
+        self.assertEqual(2, len(capabilities[0]))
+        self.assertEqual(ref_description,
+                         capabilities[0][constants.DESCRIPTION])
+
+        ref_description = 'The management network ID for the amphora.'
+        result = self.get(
+            self.AVAILABILITY_ZONE_CAPABILITIES_PATH.format(
+                provider=constants.AMPHORA),
+            params={constants.NAME: constants.MANAGEMENT_NETWORK})
+        capabilities = result.json.get(self.root_tag)
+        self.assertEqual(1, len(capabilities))
+        self.assertEqual(2, len(capabilities[0]))
+        self.assertEqual(ref_description,
+                         capabilities[0][constants.DESCRIPTION])
+
+    def test_amphora_driver_two_filters(self):
+        ref_description = 'The compute availability zone.'
+        result = self.get(
+            self.AVAILABILITY_ZONE_CAPABILITIES_PATH.format(
+                provider=constants.AMPHORA),
+            params={constants.NAME: constants.COMPUTE_ZONE,
+                    constants.DESCRIPTION: ref_description})
+        capabilities = result.json.get(self.root_tag)
+        self.assertEqual(1, len(capabilities))
+        self.assertEqual(ref_description,
+                         capabilities[0][constants.DESCRIPTION])
+
+    def test_amphora_driver_filter_no_match(self):
+        result = self.get(
+            self.AVAILABILITY_ZONE_CAPABILITIES_PATH.format(
+                provider=constants.AMPHORA),
+            params={constants.NAME: 'bogus'})
+        capabilities = result.json.get(self.root_tag)
+        self.assertEqual([], capabilities)
+
+    def test_amphora_driver_one_filter_one_field(self):
+        result = self.get(
+            self.AVAILABILITY_ZONE_CAPABILITIES_PATH.format(
+                provider=constants.AMPHORA),
+            params={constants.NAME: constants.COMPUTE_ZONE,
+                    constants.FIELDS: constants.NAME})
+        capabilities = result.json.get(self.root_tag)
+        self.assertEqual(1, len(capabilities))
+        self.assertEqual(1, len(capabilities[0]))
+        self.assertEqual(constants.COMPUTE_ZONE,
+                         capabilities[0][constants.NAME])

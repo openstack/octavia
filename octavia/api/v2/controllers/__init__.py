@@ -16,6 +16,8 @@ from wsme import types as wtypes
 from wsmeext import pecan as wsme_pecan
 
 from octavia.api.v2.controllers import amphora
+from octavia.api.v2.controllers import availability_zone_profiles
+from octavia.api.v2.controllers import availability_zones
 from octavia.api.v2.controllers import base
 from octavia.api.v2.controllers import flavor_profiles
 from octavia.api.v2.controllers import flavors
@@ -47,6 +49,10 @@ class BaseV2Controller(base.BaseController):
         self.providers = provider.ProviderController()
         self.flavors = flavors.FlavorsController()
         self.flavorprofiles = flavor_profiles.FlavorProfileController()
+        self.availabilityzones = (
+            availability_zones.AvailabilityZonesController())
+        self.availabilityzoneprofiles = (
+            availability_zone_profiles.AvailabilityZoneProfileController())
 
     @wsme_pecan.wsexpose(wtypes.text)
     def get(self):

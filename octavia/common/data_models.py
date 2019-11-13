@@ -781,6 +781,26 @@ class FlavorProfile(BaseDataModel):
         self.flavor_data = flavor_data
 
 
+class AvailabilityZone(BaseDataModel):
+
+    def __init__(self, name=None, description=None, enabled=None,
+                 availability_zone_profile_id=None):
+        self.name = name
+        self.description = description
+        self.enabled = enabled
+        self.availability_zone_profile_id = availability_zone_profile_id
+
+
+class AvailabilityZoneProfile(BaseDataModel):
+
+    def __init__(self, id=None, name=None, provider_name=None,
+                 availability_zone_data=None):
+        self.id = id
+        self.name = name
+        self.provider_name = provider_name
+        self.availability_zone_data = availability_zone_data
+
+
 class ListenerCidr(BaseDataModel):
 
     def __init__(self, listener_id=None, cidr=None):

@@ -99,7 +99,7 @@ Request
    - provider_name: provider-name
 
 Request Example
-----------------
+---------------
 
 .. literalinclude:: examples/flavorprofile-create-request.json
    :language: javascript

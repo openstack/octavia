@@ -108,6 +108,18 @@ class OctaviaDBTestBase(test_base.DbTestCase):
             description='Placeholder for DELETED LBs with DELETED flavors')
         session.add(deleted_flavor)
         session.flush()
+        deleted_az_profile = models.AvailabilityZoneProfile(
+            id=constants.NIL_UUID, name='DELETED-PLACEHOLDER',
+            provider_name=constants.DELETED, availability_zone_data='{}')
+        session.add(deleted_az_profile)
+        session.flush()
+        deleted_az = models.AvailabilityZone(
+            availability_zone_profile_id=constants.NIL_UUID,
+            name=constants.NIL_UUID, enabled=False,
+            description='Placeholder for DELETED LBs with DELETED '
+                        'availability zones')
+        session.add(deleted_az)
+        session.flush()
 
     def _seed_lookup_table(self, session, name_list, model_cls):
         for name in name_list:

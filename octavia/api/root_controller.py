@@ -88,6 +88,9 @@ class RootController(rest.RestController):
         self._add_a_version(versions, 'v2.12', 'v2', 'SUPPORTED',
                             '2019-09-11T00:00:00Z', host_url)
         # SOURCE_IP_PORT algorithm
-        self._add_a_version(versions, 'v2.13', 'v2', 'CURRENT',
+        self._add_a_version(versions, 'v2.13', 'v2', 'SUPPORTED',
                             '2019-09-13T00:00:00Z', host_url)
+        # Availability Zones
+        self._add_a_version(versions, 'v2.14', 'v2', 'CURRENT',
+                            '2019-11-10T00:00:00Z', host_url)
         return {'versions': versions}

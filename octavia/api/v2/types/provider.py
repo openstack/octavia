@@ -28,3 +28,7 @@ class ProvidersRootResponse(types.BaseType):
 
 class FlavorCapabilitiesResponse(types.BaseType):
     flavor_capabilities = wtypes.wsattr([ProviderResponse])
+
+
+class AvailabilityZoneCapabilitiesResponse(types.BaseType):
+    availability_zone_capabilities = wtypes.wsattr([ProviderResponse])

@@ -1,0 +1,6 @@
+---
+features:
+  - |
+    Add an API for allowing administrators to manage Octavia Availability
+    Zones and Availability Zone Profiles, which behave nearly identically
+    to Flavors and Flavor Profiles.

@@ -123,3 +123,13 @@ class ComputeBase(object):
         :raises: NotFound
         :raises: NotImplementedError
         """
+
+    @abc.abstractmethod
+    def validate_availability_zone(self, availability_zone):
+        """Validates that a compute availability zone exists.
+
+        :param availability_zone: Name of the compute availability zone.
+        :return: None
+        :raises: NotFound
+        :raises: NotImplementedError
+        """

@@ -21,21 +21,21 @@ rules = [
         '{rbac_obj}{action}'.format(rbac_obj=constants.RBAC_FLAVOR_PROFILE,
                                     action=constants.RBAC_GET_ALL),
         constants.RULE_API_ADMIN,
-        "List Flavors",
+        "List Flavor Profiles",
         [{'method': 'GET', 'path': '/v2.0/lbaas/flavorprofiles'}]
     ),
     policy.DocumentedRuleDefault(
         '{rbac_obj}{action}'.format(rbac_obj=constants.RBAC_FLAVOR_PROFILE,
                                     action=constants.RBAC_POST),
         constants.RULE_API_ADMIN,
-        "Create a Flavor",
+        "Create a Flavor Profile",
         [{'method': 'POST', 'path': '/v2.0/lbaas/flavorprofiles'}]
     ),
     policy.DocumentedRuleDefault(
         '{rbac_obj}{action}'.format(rbac_obj=constants.RBAC_FLAVOR_PROFILE,
                                     action=constants.RBAC_PUT),
         constants.RULE_API_ADMIN,
-        "Update a Flavor",
+        "Update a Flavor Profile",
         [{'method': 'PUT',
           'path': '/v2.0/lbaas/flavorprofiles/{flavor_profile_id}'}]
     ),
@@ -43,7 +43,7 @@ rules = [
         '{rbac_obj}{action}'.format(rbac_obj=constants.RBAC_FLAVOR_PROFILE,
                                     action=constants.RBAC_GET_ONE),
         constants.RULE_API_ADMIN,
-        "Show Flavor details",
+        "Show Flavor Profile details",
         [{'method': 'GET',
           'path': '/v2.0/lbaas/flavorprofiles/{flavor_profile_id}'}]
     ),
@@ -51,7 +51,7 @@ rules = [
         '{rbac_obj}{action}'.format(rbac_obj=constants.RBAC_FLAVOR_PROFILE,
                                     action=constants.RBAC_DELETE),
         constants.RULE_API_ADMIN,
-        "Remove a flavor",
+        "Remove a Flavor Profile",
         [{'method': 'DELETE',
           'path': '/v2.0/lbaas/flavorprofiles/{flavor_profile_id}'}]
     ),

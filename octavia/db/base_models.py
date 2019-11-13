@@ -31,7 +31,8 @@ class OctaviaBase(models.ModelBase):
         # objects.
         if obj.__class__.__name__ in ['Member', 'Pool', 'LoadBalancer',
                                       'Listener', 'Amphora', 'L7Policy',
-                                      'L7Rule', 'Flavor', 'FlavorProfile']:
+                                      'L7Rule', 'Flavor', 'FlavorProfile',
+                                      'AvailabilityZoneProfile']:
             return obj.__class__.__name__ + obj.id
         if obj.__class__.__name__ in ['SessionPersistence', 'HealthMonitor']:
             return obj.__class__.__name__ + obj.pool_id
@@ -48,6 +49,8 @@ class OctaviaBase(models.ModelBase):
                     obj.listener_id + obj.tls_container_id)
         if obj.__class__.__name__ in ['Quotas']:
             return obj.__class__.__name__ + obj.project_id
+        if obj.__class__.__name__ in ['AvailabilityZone']:
+            return obj.__class__.__name__ + obj.name
         raise NotImplementedError
 
     def to_data_model(self, _graph_nodes=None):
