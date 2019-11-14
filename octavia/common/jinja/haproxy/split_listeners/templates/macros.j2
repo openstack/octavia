@@ -27,16 +27,11 @@ peers {{ "%s_peers"|format(listener.id.replace("-", ""))|trim() }}
 
 
 {% macro bind_macro(constants, listener, lb_vip_address) %}
-    {% if listener.default_tls_path %}
-        {% set def_crt_opt = ("ssl crt %s"|format(
-            listener.default_tls_path)|trim()) %}
+    {% if listener.crt_list_filename is defined %}
+        {% set def_crt_opt = ("ssl crt-list %s"|format(
+            listener.crt_list_filename)|trim()) %}
     {% else %}
         {% set def_crt_opt = "" %}
-    {% endif %}
-    {% if listener.crt_dir %}
-        {% set crt_dir_opt = "crt %s"|format(listener.crt_dir)|trim() %}
-    {% else %}
-        {% set crt_dir_opt = "" %}
     {% endif %}
     {% if listener.client_ca_tls_path and listener.client_auth %}
         {% set client_ca_opt = "ca-file %s verify %s"|format(listener.client_ca_tls_path, listener.client_auth)|trim() %}
@@ -49,7 +44,7 @@ peers {{ "%s_peers"|format(listener.id.replace("-", ""))|trim() }}
         {% set ca_crl_opt = "" %}
     {% endif %}
 bind {{ lb_vip_address }}:{{ listener.protocol_port }} {{
-"%s %s %s %s"|format(def_crt_opt, crt_dir_opt, client_ca_opt, ca_crl_opt)|trim() }}
+"%s %s %s"|format(def_crt_opt, client_ca_opt, ca_crl_opt)|trim() }}
 {% endmacro %}
 
 
