@@ -96,6 +96,18 @@ class OctaviaDBTestBase(test_base.DbTestCase):
                                 models.L7PolicyAction)
         self._seed_lookup_table(session, constants.SUPPORTED_CLIENT_AUTH_MODES,
                                 models.ClientAuthenticationMode)
+        # Add in the id='DELETED' placeholders
+        deleted_flavor_profile = models.FlavorProfile(
+            id=constants.NIL_UUID, name='DELETED-PLACEHOLDER',
+            provider_name=constants.DELETED, flavor_data='{}')
+        session.add(deleted_flavor_profile)
+        session.flush()
+        deleted_flavor = models.Flavor(
+            id=constants.NIL_UUID, flavor_profile_id=constants.NIL_UUID,
+            name='DELETED-PLACEHOLDER', enabled=False,
+            description='Placeholder for DELETED LBs with DELETED flavors')
+        session.add(deleted_flavor)
+        session.flush()
 
     def _seed_lookup_table(self, session, name_list, model_cls):
         for name in name_list:

@@ -171,6 +171,12 @@ class TestFlavorProfiles(base.BaseAPITest):
         self.assertEqual('name', response.get('name'))
         self.assertEqual(fp.get('id'), response.get('id'))
 
+    def test_get_one_deleted_id(self):
+        response = self.get(self.FP_PATH.format(fp_id=constants.NIL_UUID),
+                            status=404)
+        self.assertEqual('Flavor profile {} not found.'.format(
+            constants.NIL_UUID), response.json.get('faultstring'))
+
     def test_get_one_fields_filter(self):
         fp = self.create_flavor_profile('name', 'noop_driver',
                                         '{"x": "y"}')
@@ -328,6 +334,14 @@ class TestFlavorProfiles(base.BaseAPITest):
         self.assertEqual('{"hello": "world"}',
                          response.get(constants.FLAVOR_DATA))
 
+    def test_update_deleted_id(self):
+        update_data = {'name': 'fake_profile'}
+        body = self._build_body(update_data)
+        response = self.put(self.FP_PATH.format(fp_id=constants.NIL_UUID),
+                            body, status=404)
+        self.assertEqual('Flavor profile {} not found.'.format(
+            constants.NIL_UUID), response.json.get('faultstring'))
+
     def test_update_nothing(self):
         fp = self.create_flavor_profile('test_profile', 'noop_driver',
                                         '{"x": "y"}')
@@ -484,6 +498,18 @@ class TestFlavorProfiles(base.BaseAPITest):
             fp_id=fp.get('id')), status=404)
         err_msg = "Flavor Profile %s not found." % fp.get('id')
         self.assertEqual(err_msg, response.json.get('faultstring'))
+
+    def test_delete_deleted_id(self):
+        response = self.delete(self.FP_PATH.format(fp_id=constants.NIL_UUID),
+                               status=404)
+        self.assertEqual('Flavor profile {} not found.'.format(
+            constants.NIL_UUID), response.json.get('faultstring'))
+
+    def test_delete_nonexistent_id(self):
+        response = self.delete(self.FP_PATH.format(fp_id='bogus_id'),
+                               status=404)
+        self.assertEqual('Flavor profile bogus_id not found.',
+                         response.json.get('faultstring'))
 
     def test_delete_authorized(self):
         fp = self.create_flavor_profile('test1', 'noop_driver',
