@@ -1399,6 +1399,17 @@ class TestLoadBalancer(base.BaseAPITest):
 
         lbs = self.get(
             self.LBS_PATH,
+            params={'tags': ['test_tag2,test_tag3']}
+        ).json.get(self.root_tag_list)
+        self.assertIsInstance(lbs, list)
+        self.assertEqual(1, len(lbs))
+        self.assertEqual(
+            [lb2.get('id')],
+            [lb.get('id') for lb in lbs]
+        )
+
+        lbs = self.get(
+            self.LBS_PATH,
             params={'tags-any': 'test_tag2'}
         ).json.get(self.root_tag_list)
         self.assertIsInstance(lbs, list)
@@ -1441,6 +1452,71 @@ class TestLoadBalancer(base.BaseAPITest):
         lbs = self.get(
             self.LBS_PATH,
             params={'tags': 'test_tag2', 'not-tags': 'test_tag2'}
+        ).json.get(self.root_tag_list)
+        self.assertIsInstance(lbs, list)
+        self.assertEqual(0, len(lbs))
+
+    def test_get_all_tags_mixed_filters(self):
+        lb1 = self.create_load_balancer(
+            uuidutils.generate_uuid(),
+            name='lb1',
+            project_id=self.project_id,
+            vip_address='10.0.0.1',
+            tags=['test_tag1', 'test_tag2']
+        ).get(self.root_tag)
+        self.create_load_balancer(
+            uuidutils.generate_uuid(),
+            name='lb2',
+            project_id=self.project_id,
+            tags=['test_tag2', 'test_tag3']
+        ).get(self.root_tag)
+
+        lbs = self.get(
+            self.LBS_PATH,
+            params={'name': 'lb1', 'tags': 'test_tag2',
+                    'vip_address': '10.0.0.1'}
+        ).json.get(self.root_tag_list)
+        self.assertIsInstance(lbs, list)
+        self.assertEqual(1, len(lbs))
+        self.assertEqual(lb1.get('id'), lbs[0].get('id'))
+
+        lbs = self.get(
+            self.LBS_PATH,
+            params={'tags': 'test_tag2', 'vip_address': '10.0.0.1'}
+        ).json.get(self.root_tag_list)
+        self.assertIsInstance(lbs, list)
+        self.assertEqual(1, len(lbs))
+        self.assertEqual(lb1.get('id'), lbs[0].get('id'))
+
+        lbs = self.get(
+            self.LBS_PATH,
+            params={'name': 'lb1', 'tags': 'test_tag2',
+                    'vip_address': '10.0.0.1', 'tags': 'test_tag1'}
+        ).json.get(self.root_tag_list)
+        self.assertIsInstance(lbs, list)
+        self.assertEqual(1, len(lbs))
+        self.assertEqual(lb1.get('id'), lbs[0].get('id'))
+
+        lbs = self.get(
+            self.LBS_PATH,
+            params={'name': 'lb1', 'tags': 'test_tag2',
+                    'vip_address': '10.0.0.1', 'tags': 'test_tag3'}
+        ).json.get(self.root_tag_list)
+        self.assertIsInstance(lbs, list)
+        self.assertEqual(0, len(lbs))
+
+        lbs = self.get(
+            self.LBS_PATH,
+            params={'name': 'lb1', 'tags': 'test_tag3',
+                    'vip_address': '10.0.0.1'}
+        ).json.get(self.root_tag_list)
+        self.assertIsInstance(lbs, list)
+        self.assertEqual(0, len(lbs))
+
+        lbs = self.get(
+            self.LBS_PATH,
+            params={'name': 'bogus-lb', 'tags': 'test_tag2',
+                    'vip_address': '10.0.0.1'}
         ).json.get(self.root_tag_list)
         self.assertIsInstance(lbs, list)
         self.assertEqual(0, len(lbs))

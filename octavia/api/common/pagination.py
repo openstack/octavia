@@ -13,6 +13,7 @@
 #    under the License.
 
 import copy
+import itertools
 
 from oslo_log import log as logging
 from pecan import request
@@ -184,36 +185,27 @@ class PaginationHelper(object):
         if not getattr(model, "_tags", None):
             return query
 
-        tag_alias = aliased(base_models.Tags)
-
         if 'tags' in params:
             tags = params.pop('tags')
-            if not isinstance(tags, list):
-                tags = [tags]
-            first_tag = tags.pop(0)
-            query = query.join(model._tags)
-            query = query.filter(base_models.Tags.tag == first_tag)
 
             for tag in tags:
+                # This requires a multi-join to the tags table,
+                # so me must use aliases for each one.
+                tag_alias = aliased(base_models.Tags)
                 query = query.join(tag_alias, model._tags)
                 query = query.filter(tag_alias.tag == tag)
 
         if 'tags-any' in params:
             tags = params.pop('tags-any')
-            if not isinstance(tags, list):
-                tags = [tags]
+            tag_alias = aliased(base_models.Tags)
             query = query.join(tag_alias, model._tags)
             query = query.filter(tag_alias.tag.in_(tags))
 
         if 'not-tags' in params:
             tags = params.pop('not-tags')
-            if not isinstance(tags, list):
-                tags = [tags]
-            first_tag = tags.pop(0)
-            subq = query.session.query(base_models.Tags.resource_id)
-            subq = subq.join(model._tags)
-            subq = subq.filter(base_models.Tags.tag == first_tag)
+            subq = query.session.query(model.id)
             for tag in tags:
+                tag_alias = aliased(base_models.Tags)
                 subq = subq.join(tag_alias, model._tags)
                 subq = subq.filter(tag_alias.tag == tag)
 
@@ -221,12 +213,18 @@ class PaginationHelper(object):
 
         if 'not-tags-any' in params:
             tags = params.pop('not-tags-any')
-            if not isinstance(tags, list):
-                tags = [tags]
             query = query.filter(
                 ~model._tags.any(base_models.Tags.tag.in_(tags)))
 
         return query
+
+    @staticmethod
+    def _prepare_tags_list(param):
+        """Split comma seperated tags and return a flat list of tags."""
+        if not isinstance(param, list):
+            param = [param]
+        return list(itertools.chain.from_iterable(
+            tag.split(',') for tag in param))
 
     def apply(self, query, model, enforce_valid_params=True):
         """Returns a query with sorting / pagination criteria added.
@@ -270,8 +268,22 @@ class PaginationHelper(object):
                 filter_params['load_balancer_id'] = filter_params.pop(
                     'loadbalancer_id')
 
-            # Apply tags filtering for the models which support tags.
-            query = self._apply_tags_filtering(filter_params, model, query)
+            # Pop the 'tags' related parameters off before handling the
+            # other filters. Then apply the 'tags' filters after the
+            # other filters have been applied.
+            tag_params = {}
+            if 'tags' in filter_params:
+                tag_params['tags'] = self._prepare_tags_list(
+                    filter_params.pop('tags'))
+            if 'tags-any' in filter_params:
+                tag_params['tags-any'] = self._prepare_tags_list(
+                    filter_params.pop('tags-any'))
+            if 'not-tags' in filter_params:
+                tag_params['not-tags'] = self._prepare_tags_list(
+                    filter_params.pop('not-tags'))
+            if 'not-tags-any' in filter_params:
+                tag_params['not-tags-any'] = self._prepare_tags_list(
+                    filter_params.pop('not-tags-any'))
 
             # Drop invalid arguments
             self.filters = {k: v for (k, v) in filter_params.items()
@@ -286,6 +298,9 @@ class PaginationHelper(object):
             if secondary_query_filter is not None:
                 query = query.filter(model.load_balancer.has(
                     project_id=secondary_query_filter))
+
+            # Apply tags filtering for the models which support tags.
+            query = self._apply_tags_filtering(tag_params, model, query)
 
         # Add sorting
         if CONF.api_settings.allow_sorting:
