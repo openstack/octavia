@@ -1,0 +1,5 @@
+---
+fixes:
+  - |
+    Fixed an issue where load balancers would go into ERROR when
+    setting data not visible to providers (e.g. tags).
