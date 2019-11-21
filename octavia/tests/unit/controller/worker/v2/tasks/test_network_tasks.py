@@ -571,6 +571,22 @@ class TestNetworkTasks(base.TestCase):
             t_constants.MOCK_QOS_POLICY_ID1, mock.ANY)
         self.assertEqual(2, mock_driver.apply_qos_on_port.call_count)
 
+        mock_driver.reset_mock()
+        update_dict = {'description': 'fool',
+                       'vip': {
+                           'qos_policy_id': t_constants.MOCK_QOS_POLICY_ID1}}
+        tmp_lb.amphorae = AMPS_DATA
+        tmp_lb.topology = constants.TOPOLOGY_ACTIVE_STANDBY
+        net.execute(tmp_lb, update_dict=update_dict)
+        mock_driver.apply_qos_on_port.assert_called_with(
+            t_constants.MOCK_QOS_POLICY_ID1, mock.ANY)
+        self.assertEqual(2, mock_driver.apply_qos_on_port.call_count)
+
+        mock_driver.reset_mock()
+        update_dict = {}
+        net.execute(null_qos_lb, update_dict=update_dict)
+        self.assertEqual(0, mock_driver.apply_qos_on_port.call_count)
+
         # revert
         mock_driver.reset_mock()
         tmp_lb.amphorae = [AMPS_DATA[0]]
