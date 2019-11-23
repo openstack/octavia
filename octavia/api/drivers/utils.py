@@ -18,6 +18,7 @@ import six
 
 from oslo_config import cfg
 from oslo_log import log as logging
+from oslo_utils import excutils
 from stevedore import driver as stevedore_driver
 
 from octavia.api.drivers import data_models as driver_dm
@@ -91,8 +92,8 @@ def _base_to_provider_dict(current_dict, include_project_id=False):
 
 # Note: The provider dict returned from this method will have provider
 #       data model objects in it.
-def lb_dict_to_provider_dict(lb_dict, vip=None,
-                             db_pools=None, db_listeners=None):
+def lb_dict_to_provider_dict(lb_dict, vip=None, db_pools=None,
+                             db_listeners=None, for_delete=False):
     new_lb_dict = _base_to_provider_dict(lb_dict, include_project_id=True)
     new_lb_dict['loadbalancer_id'] = new_lb_dict.pop('id')
     if vip:
@@ -106,16 +107,17 @@ def lb_dict_to_provider_dict(lb_dict, vip=None,
         new_lb_dict['pools'] = db_pools_to_provider_pools(db_pools)
     if db_listeners:
         new_lb_dict['listeners'] = db_listeners_to_provider_listeners(
-            db_listeners)
+            db_listeners, for_delete=for_delete)
     return new_lb_dict
 
 
-def db_loadbalancer_to_provider_loadbalancer(db_loadbalancer):
+def db_loadbalancer_to_provider_loadbalancer(db_loadbalancer,
+                                             for_delete=False):
     new_loadbalancer_dict = lb_dict_to_provider_dict(
         db_loadbalancer.to_dict(recurse=True),
         vip=db_loadbalancer.vip,
         db_pools=db_loadbalancer.pools,
-        db_listeners=db_loadbalancer.listeners)
+        db_listeners=db_loadbalancer.listeners, for_delete=for_delete)
     for unsupported_field in ['server_group_id', 'amphorae',
                               'vrrp_group', 'topology', 'vip']:
         del new_loadbalancer_dict[unsupported_field]
@@ -124,17 +126,18 @@ def db_loadbalancer_to_provider_loadbalancer(db_loadbalancer):
     return provider_loadbalancer
 
 
-def db_listeners_to_provider_listeners(db_listeners):
+def db_listeners_to_provider_listeners(db_listeners, for_delete=False):
     provider_listeners = []
     for listener in db_listeners:
-        provider_listener = db_listener_to_provider_listener(listener)
+        provider_listener = db_listener_to_provider_listener(
+            listener, for_delete=for_delete)
         provider_listeners.append(provider_listener)
     return provider_listeners
 
 
-def db_listener_to_provider_listener(db_listener):
+def db_listener_to_provider_listener(db_listener, for_delete=False):
     new_listener_dict = listener_dict_to_provider_dict(
-        db_listener.to_dict(recurse=True))
+        db_listener.to_dict(recurse=True), for_delete=for_delete)
     if ('default_pool' in new_listener_dict and
             new_listener_dict['default_pool']):
         provider_pool = db_pool_to_provider_pool(db_listener.default_pool)
@@ -147,7 +150,7 @@ def db_listener_to_provider_listener(db_listener):
     return provider_listener
 
 
-def listener_dict_to_provider_dict(listener_dict):
+def listener_dict_to_provider_dict(listener_dict, for_delete=False):
     new_listener_dict = _base_to_provider_dict(listener_dict)
     new_listener_dict['listener_id'] = new_listener_dict.pop('id')
     if 'load_balancer_id' in new_listener_dict:
@@ -183,8 +186,16 @@ def listener_dict_to_provider_dict(listener_dict):
             name=CONF.certificates.cert_manager,
             invoke_on_load=True,
         ).driver
-        cert_dict = cert_parser.load_certificates_data(cert_manager,
-                                                       listener_obj)
+        try:
+            cert_dict = cert_parser.load_certificates_data(cert_manager,
+                                                           listener_obj)
+        except Exception as e:
+            with excutils.save_and_reraise_exception() as ctxt:
+                LOG.warning('Unable to retrieve certificate(s) due to %s.',
+                            str(e))
+                if for_delete:
+                    ctxt.reraise = False
+                    cert_dict = {}
         if 'tls_cert' in cert_dict:
             new_listener_dict['default_tls_container_data'] = (
                 cert_dict['tls_cert'].to_dict())
