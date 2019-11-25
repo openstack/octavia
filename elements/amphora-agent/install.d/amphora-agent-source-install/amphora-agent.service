@@ -1,6 +1,7 @@
 [Unit]
 Description=OpenStack Octavia Amphora Agent
-After=network.target syslog.service
+After=network.target syslog.service certs-ramfs.service
+Requires=certs-ramfs.service
 Wants=syslog.service
 
 [Service]
