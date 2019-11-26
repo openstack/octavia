@@ -1,5 +1,0 @@
-#!/bin/bash
-
-# Temporary fix until https://review.opendev.org/#/c/695823/ merges and
-# is released.
-echo "" > /root/.pydistutils.cfg
