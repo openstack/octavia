@@ -1,0 +1,14 @@
+---
+upgrade:
+  - |
+    A new amphora image is required to fix the potential certs-ramfs race
+    condition.
+security:
+  - |
+    A race condition between the certs-ramfs and the amphora agent may lead
+    to tenant TLS content being stored on the amphora filesystem instead of
+    in the encrypted RAM filesystem.
+fixes:
+  - |
+    Fixed a potential race condition with the certs-ramfs and amphora agent
+    services.
