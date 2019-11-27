@@ -1,0 +1,8 @@
+#!/bin/bash
+
+set -eu
+set -o xtrace
+
+if [[ "$DISTRO_NAME" == "ubuntu" ]]; then
+    sudo rm -f /etc/network/interfaces.d/*
+fi
