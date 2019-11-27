@@ -105,6 +105,13 @@ def get_six_compatible_server_certs_key_passphrase():
     return base64.urlsafe_b64encode(key)
 
 
+def subnet_ip_availability(nw_ip_avail, subnet_id, req_num_ips):
+    for subnet in nw_ip_avail.subnet_ip_availability:
+        if subnet['subnet_id'] == subnet_id:
+            return subnet['total_ips'] - subnet['used_ips'] >= req_num_ips
+    return None
+
+
 class exception_logger(object):
     """Wrap a function and log raised exception
 

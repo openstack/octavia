@@ -224,6 +224,21 @@ class NoopManager(object):
     def qos_enabled(self):
         return self._qos_extension_enabled
 
+    def get_network_ip_availability(self, network):
+        LOG.debug("Network %s no-op, network_ip_availability network_id %s",
+                  self.__class__.__name__, network.id)
+        self.networkconfigconfig[(network.id, 'ip_availability')] = (
+            network.id, 'get_network_ip_availability')
+        ip_avail = network_models.Network_IP_Availability(
+            network_id=network.id)
+        subnet_ip_availability = []
+        network.subnets = list(network.subnets)
+        for subnet_id in network.subnets:
+            subnet_ip_availability.append({'subnet_id': subnet_id,
+                                          'used_ips': 0, 'total_ips': 254})
+        ip_avail.subnet_ip_availability = subnet_ip_availability
+        return ip_avail
+
 
 class NoopNetworkDriver(driver_base.AbstractNetworkDriver):
     def __init__(self):
@@ -296,3 +311,6 @@ class NoopNetworkDriver(driver_base.AbstractNetworkDriver):
 
     def qos_enabled(self):
         return self.driver.qos_enabled()
+
+    def get_network_ip_availability(self, network):
+        return self.driver.get_network_ip_availability(network)
