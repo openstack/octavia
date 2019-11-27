@@ -89,6 +89,25 @@ class FlavorCapabilitiesController(base.BaseController):
                         'reported: %s', self.provider, e.operator_fault_string)
             raise exceptions.ProviderNotImplementedError(
                 prov=self.provider, user_msg=e.user_fault_string)
+
+        # Apply any valid filters provided as URL parameters
+        name_filter = None
+        description_filter = None
+        pagination_helper = pecan.request.context.get(
+            constants.PAGINATION_HELPER)
+        if pagination_helper:
+            name_filter = pagination_helper.params.get(constants.NAME)
+            description_filter = pagination_helper.params.get(
+                constants.DESCRIPTION)
+        if name_filter:
+            metadata_dict = {
+                key: value for key, value in six.iteritems(metadata_dict) if
+                key == name_filter}
+        if description_filter:
+            metadata_dict = {
+                key: value for key, value in six.iteritems(metadata_dict) if
+                value == description_filter}
+
         response_list = [
             provider_types.ProviderResponse(name=key, description=value) for
             key, value in six.iteritems(metadata_dict)]

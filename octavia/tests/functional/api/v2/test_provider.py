@@ -132,3 +132,42 @@ class TestFlavorCapabilities(base.BaseAPITest):
         self.get(self.FLAVOR_CAPABILITIES_PATH.format(provider='noop_driver'),
                  status=403)
         self.conf.config(group='api_settings', auth_strategy=auth_strategy)
+
+    def test_amphora_driver_one_filter(self):
+        ref_description = ("The compute driver flavor ID.")
+        result = self.get(
+            self.FLAVOR_CAPABILITIES_PATH.format(provider=constants.AMPHORA),
+            params={constants.NAME: 'compute_flavor'})
+        capabilities = result.json.get(self.root_tag)
+        self.assertEqual(1, len(capabilities))
+        self.assertEqual(2, len(capabilities[0]))
+        self.assertEqual(ref_description,
+                         capabilities[0][constants.DESCRIPTION])
+
+    def test_amphora_driver_two_filters(self):
+        ref_description = ("The compute driver flavor ID.")
+        result = self.get(
+            self.FLAVOR_CAPABILITIES_PATH.format(provider=constants.AMPHORA),
+            params={constants.NAME: 'compute_flavor',
+                    constants.DESCRIPTION: ref_description})
+        capabilities = result.json.get(self.root_tag)
+        self.assertEqual(1, len(capabilities))
+        self.assertEqual(ref_description,
+                         capabilities[0][constants.DESCRIPTION])
+
+    def test_amphora_driver_filter_no_match(self):
+        result = self.get(
+            self.FLAVOR_CAPABILITIES_PATH.format(provider=constants.AMPHORA),
+            params={constants.NAME: 'bogus'})
+        capabilities = result.json.get(self.root_tag)
+        self.assertEqual([], capabilities)
+
+    def test_amphora_driver_one_filter_one_field(self):
+        result = self.get(
+            self.FLAVOR_CAPABILITIES_PATH.format(provider=constants.AMPHORA),
+            params={constants.NAME: 'compute_flavor',
+                    constants.FIELDS: constants.NAME})
+        capabilities = result.json.get(self.root_tag)
+        self.assertEqual(1, len(capabilities))
+        self.assertEqual(1, len(capabilities[0]))
+        self.assertEqual('compute_flavor', capabilities[0][constants.NAME])
