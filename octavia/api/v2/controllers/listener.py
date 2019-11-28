@@ -544,15 +544,16 @@ class ListenersController(base.BaseController):
                 driver_utils.listener_dict_to_provider_dict(listener_dict))
 
             # Also prepare the baseline object data
-            old_provider_llistener = (
-                driver_utils.db_listener_to_provider_listener(db_listener))
+            old_provider_listener = (
+                driver_utils.db_listener_to_provider_listener(db_listener,
+                                                              for_delete=True))
 
             # Dispatch to the driver
             LOG.info("Sending update Listener %s to provider %s", id,
                      driver.name)
             driver_utils.call_provider(
                 driver.name, driver.listener_update,
-                old_provider_llistener,
+                old_provider_listener,
                 driver_dm.Listener.from_dict(provider_listener_dict))
 
             # Update the database to reflect what the driver just accepted

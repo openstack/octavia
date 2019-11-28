@@ -1310,6 +1310,26 @@ class TestListener(base.BaseAPITest):
                                             api_listener['id'])
         return ori_listener, api_listener
 
+    def test_update_with_bad_tls_ref(self):
+        listener = self.create_listener(constants.PROTOCOL_TCP,
+                                        443, self.lb_id)
+        tls_uuid = uuidutils.generate_uuid()
+        self.set_lb_status(self.lb_id)
+        self.listener_repo.update(db_api.get_session(),
+                                  listener['listener']['id'],
+                                  tls_certificate_id=tls_uuid,
+                                  protocol=constants.PROTOCOL_TERMINATED_HTTPS)
+
+        listener_path = self.LISTENER_PATH.format(
+            listener_id=listener['listener']['id'])
+        update_data = {'name': 'listener2'}
+        body = self._build_body(update_data)
+        api_listener = self.put(listener_path, body).json.get(self.root_tag)
+        response = self.get(self.listener_path.format(
+            listener_id=listener['listener']['id']))
+        api_listener = response.json.get(self.root_tag)
+        self.assertEqual('listener2', api_listener['name'])
+
     def test_negative_update_udp_case(self):
         api_listener = self.create_listener(constants.PROTOCOL_UDP, 6666,
                                             self.lb_id).get(self.root_tag)
