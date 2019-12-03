@@ -18,7 +18,6 @@ from oslo_config import fixture as oslo_fixture
 from oslo_utils import uuidutils
 
 from octavia.controller.queue.v2 import endpoints
-from octavia.controller.worker.v2 import controller_worker
 from octavia.tests.unit import base
 
 
@@ -30,10 +29,9 @@ class TestEndpoints(base.TestCase):
         conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
         conf.config(octavia_plugins='hot_plug_plugin')
 
-        mock_class = mock.create_autospec(controller_worker.ControllerWorker)
-        self.worker_patcher = mock.patch('octavia.controller.queue.v2.'
-                                         'endpoints.stevedore_driver')
-        self.worker_patcher.start().ControllerWorker = mock_class
+        self.worker_patcher = mock.patch('octavia.controller.worker.v2.'
+                                         'controller_worker.ControllerWorker')
+        self.worker_patcher.start()
 
         self.ep = endpoints.Endpoints()
         self.context = {}

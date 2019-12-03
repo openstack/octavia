@@ -88,7 +88,8 @@ class HaproxyAmphoraLoadBalancerDriver(
 
         return haproxy_version_string.split('.')[:2]
 
-    def _populate_amphora_api_version(self, amphora):
+    def _populate_amphora_api_version(self, amphora,
+                                      raise_retry_exception=False):
         """Populate the amphora object with the api_version
 
         This will query the amphora for version discovery and populate
@@ -99,7 +100,8 @@ class HaproxyAmphoraLoadBalancerDriver(
         if not getattr(amphora, 'api_version', None):
             try:
                 amphora.api_version = self.clients['base'].get_api_version(
-                    amphora)['api_version']
+                    amphora,
+                    raise_retry_exception=raise_retry_exception)['api_version']
             except exc.NotFound:
                 # Amphora is too old for version discovery, default to 0.5
                 amphora.api_version = '0.5'
@@ -334,9 +336,11 @@ class HaproxyAmphoraLoadBalancerDriver(
             self.clients[amphora.api_version].delete_listener(
                 amphora, listener.load_balancer.id)
 
-    def get_info(self, amphora):
-        self._populate_amphora_api_version(amphora)
-        return self.clients[amphora.api_version].get_info(amphora)
+    def get_info(self, amphora, raise_retry_exception=False):
+        self._populate_amphora_api_version(
+            amphora, raise_retry_exception=raise_retry_exception)
+        return self.clients[amphora.api_version].get_info(
+            amphora, raise_retry_exception=raise_retry_exception)
 
     def get_diagnostics(self, amphora):
         pass
@@ -594,7 +598,7 @@ class AmphoraAPIClientBase(object):
             port=CONF.haproxy_amphora.bind_port)
 
     def request(self, method, amp, path='/', timeout_dict=None,
-                retry_404=True, **kwargs):
+                retry_404=True, raise_retry_exception=False, **kwargs):
         cfg_ha_amp = CONF.haproxy_amphora
         if timeout_dict is None:
             timeout_dict = {}
@@ -659,7 +663,13 @@ class AmphoraAPIClientBase(object):
                 exception = e
                 LOG.warning("Could not connect to instance. Retrying.")
                 time.sleep(conn_retry_interval)
-
+                if raise_retry_exception:
+                    # For taskflow persistence cause attribute should
+                    # be serializable to JSON. Pass None, as cause exception
+                    # is described in the expection message.
+                    six.raise_from(
+                        driver_except.AmpConnectionRetry(exception=str(e)),
+                        None)
         LOG.error("Connection retries (currently set to %(max_retries)s) "
                   "exhausted.  The amphora is unavailable. Reason: "
                   "%(exception)s",
@@ -667,9 +677,10 @@ class AmphoraAPIClientBase(object):
                    'exception': exception})
         raise driver_except.TimeOutException()
 
-    def get_api_version(self, amp):
+    def get_api_version(self, amp, raise_retry_exception=False):
         amp.api_version = None
-        r = self.get(amp, retry_404=False)
+        r = self.get(amp, retry_404=False,
+                     raise_retry_exception=raise_retry_exception)
         # Handle 404 special as we don't want to log an ERROR on 404
         exc.check_exception(r, (404,))
         if r.status_code == 404:
@@ -736,8 +747,8 @@ class AmphoraAPIClient0_5(AmphoraAPIClientBase):
             amp, 'listeners/{listener_id}'.format(listener_id=listener_id))
         return exc.check_exception(r, (404,))
 
-    def get_info(self, amp):
-        r = self.get(amp, "info")
+    def get_info(self, amp, raise_retry_exception=False):
+        r = self.get(amp, "info", raise_retry_exception=raise_retry_exception)
         if exc.check_exception(r):
             return r.json()
         return None
@@ -866,8 +877,8 @@ class AmphoraAPIClient1_0(AmphoraAPIClientBase):
             amp, 'listeners/{object_id}'.format(object_id=object_id))
         return exc.check_exception(r, (404,))
 
-    def get_info(self, amp):
-        r = self.get(amp, "info")
+    def get_info(self, amp, raise_retry_exception=False):
+        r = self.get(amp, "info", raise_retry_exception=raise_retry_exception)
         if exc.check_exception(r):
             return r.json()
         return None
