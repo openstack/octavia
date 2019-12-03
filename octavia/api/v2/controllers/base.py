@@ -119,6 +119,23 @@ class BaseController(pecan.rest.RestController):
         return self._get_db_obj(session, self.repositories.flavor_profile,
                                 data_models.FlavorProfile, id)
 
+    def _get_db_availability_zone(self, session, name):
+        """Get an availability zone from the database."""
+        db_obj = self.repositories.availability_zone.get(session, name=name)
+        if not db_obj:
+            LOG.debug('%(obj_name)s %(name)s not found',
+                      {'obj_name': data_models.AvailabilityZone._name(),
+                       'name': name})
+            raise exceptions.NotFound(
+                resource=data_models.AvailabilityZone._name(), id=name)
+        return db_obj
+
+    def _get_db_availability_zone_profile(self, session, id):
+        """Get an availability zone profile from the database."""
+        return self._get_db_obj(session,
+                                self.repositories.availability_zone_profile,
+                                data_models.AvailabilityZoneProfile, id)
+
     def _get_db_l7policy(self, session, id, show_deleted=True):
         """Get a L7 Policy from the database."""
         return self._get_db_obj(session, self.repositories.l7policy,

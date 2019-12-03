@@ -61,8 +61,13 @@ class ProviderController(base.BaseController):
         Currently it checks if this was a flavor capabilities request and
         routes the request to the FlavorCapabilitiesController.
         """
-        if provider and remainder and remainder[0] == 'flavor_capabilities':
-            return (FlavorCapabilitiesController(provider=provider),
+        if provider and remainder:
+            if remainder[0] == 'flavor_capabilities':
+                return (FlavorCapabilitiesController(provider=provider),
+                        remainder[1:])
+            if remainder[0] == 'availability_zone_capabilities':
+                return (
+                    AvailabilityZoneCapabilitiesController(provider=provider),
                     remainder[1:])
         return None
 
@@ -115,3 +120,55 @@ class FlavorCapabilitiesController(base.BaseController):
             response_list = self._filter_fields(response_list, fields)
         return provider_types.FlavorCapabilitiesResponse(
             flavor_capabilities=response_list)
+
+
+class AvailabilityZoneCapabilitiesController(base.BaseController):
+    RBAC_TYPE = constants.RBAC_PROVIDER_AVAILABILITY_ZONE
+
+    def __init__(self, provider):
+        super(AvailabilityZoneCapabilitiesController, self).__init__()
+        self.provider = provider
+
+    @wsme_pecan.wsexpose(provider_types.AvailabilityZoneCapabilitiesResponse,
+                         [wtypes.text], ignore_extra_args=True,
+                         status_code=200)
+    def get_all(self, fields=None):
+        context = pecan.request.context.get('octavia_context')
+        self._auth_validate_action(context, context.project_id,
+                                   constants.RBAC_GET_ALL)
+        self.driver = driver_factory.get_driver(self.provider)
+        try:
+            metadata_dict = (
+                self.driver.get_supported_availability_zone_metadata())
+        except driver_except.NotImplementedError as e:
+            LOG.warning(
+                'Provider %s get_supported_availability_zone_metadata() '
+                'reported: %s', self.provider, e.operator_fault_string)
+            raise exceptions.ProviderNotImplementedError(
+                prov=self.provider, user_msg=e.user_fault_string)
+
+        # Apply any valid filters provided as URL parameters
+        name_filter = None
+        description_filter = None
+        pagination_helper = pecan.request.context.get(
+            constants.PAGINATION_HELPER)
+        if pagination_helper:
+            name_filter = pagination_helper.params.get(constants.NAME)
+            description_filter = pagination_helper.params.get(
+                constants.DESCRIPTION)
+        if name_filter:
+            metadata_dict = {
+                key: value for key, value in six.iteritems(metadata_dict) if
+                key == name_filter}
+        if description_filter:
+            metadata_dict = {
+                key: value for key, value in six.iteritems(metadata_dict) if
+                value == description_filter}
+
+        response_list = [
+            provider_types.ProviderResponse(name=key, description=value) for
+            key, value in six.iteritems(metadata_dict)]
+        if fields is not None:
+            response_list = self._filter_fields(response_list, fields)
+        return provider_types.AvailabilityZoneCapabilitiesResponse(
+            availability_zone_capabilities=response_list)

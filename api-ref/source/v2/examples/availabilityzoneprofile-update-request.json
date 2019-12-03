@@ -1,0 +1,8 @@
+{
+    "availability_zone_profile":
+        {
+            "name": "other_az",
+            "provider_name": "amphora",
+            "availability_zone_data": "{\"compute_zone\": \"az2\"}"
+        }
+}

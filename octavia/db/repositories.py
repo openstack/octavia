@@ -228,6 +228,8 @@ class Repositories(object):
         self.flavor = FlavorRepository()
         self.flavor_profile = FlavorProfileRepository()
         self.spares_pool = SparesPoolRepository()
+        self.availability_zone = AvailabilityZoneRepository()
+        self.availability_zone_profile = AvailabilityZoneProfileRepository()
 
     def create_load_balancer_and_vip(self, session, lb_dict, vip_dict):
         """Inserts load balancer and vip entities into the database.
@@ -1828,7 +1830,10 @@ class _GetALLExceptDELETEDIdMixin(object):
         if query_options:
             query = query.options(query_options)
 
-        query = query.filter(self.model_class.id != consts.NIL_UUID)
+        if hasattr(self.model_class, 'id'):
+            query = query.filter(self.model_class.id != consts.NIL_UUID)
+        else:
+            query = query.filter(self.model_class.name != consts.NIL_UUID)
 
         if pagination_helper:
             model_list, links = pagination_helper.apply(
@@ -1898,3 +1903,69 @@ class SparesPoolRepository(BaseRepository):
         """
         row = lock_session.query(models.SparesPool).with_for_update().one()
         return row
+
+
+class AvailabilityZoneRepository(_GetALLExceptDELETEDIdMixin, BaseRepository):
+    model_class = models.AvailabilityZone
+
+    def get_availability_zone_metadata_dict(self, session,
+                                            availability_zone_name):
+        with session.begin(subtransactions=True):
+            availability_zone_metadata_json = (
+                session.query(
+                    models.AvailabilityZoneProfile.availability_zone_data)
+                .filter(models.AvailabilityZone.name == availability_zone_name)
+                .filter(models.AvailabilityZone.availability_zone_profile_id ==
+                        models.AvailabilityZoneProfile.id)
+                .one()[0])
+            result_dict = (
+                {} if availability_zone_metadata_json is None
+                else jsonutils.loads(availability_zone_metadata_json))
+            return result_dict
+
+    def get_availability_zone_provider(self, session, availability_zone_name):
+        with session.begin(subtransactions=True):
+            return (session.query(models.AvailabilityZoneProfile.provider_name)
+                    .filter(
+                    models.AvailabilityZone.name == availability_zone_name)
+                    .filter(
+                    models.AvailabilityZone.availability_zone_profile_id ==
+                    models.AvailabilityZoneProfile.id).one()[0])
+
+    def update(self, session, name, **model_kwargs):
+        """Updates an entity in the database.
+
+        :param session: A Sql Alchemy database session.
+        :param model_kwargs: Entity attributes that should be updates.
+        :returns: octavia.common.data_model
+        """
+        with session.begin(subtransactions=True):
+            session.query(self.model_class).filter_by(
+                name=name).update(model_kwargs)
+
+    def delete(self, serial_session, **filters):
+        """Special delete method for availability_zone.
+
+        Sets DELETED LBs availability_zone_id to NIL_UUID, then removes the
+        availability_zone.
+
+        :param serial_session: A Sql Alchemy database transaction session.
+        :param filters: Filters to decide which entity should be deleted.
+        :returns: None
+        :raises: odb_exceptions.DBReferenceError
+        :raises: sqlalchemy.orm.exc.NoResultFound
+        """
+        # TODO(sorrison): Uncomment this
+        # (serial_session.query(models.LoadBalancer).
+        #  filter(models.LoadBalancer.availability_zone_id == filters['id']).
+        #  filter(models.LoadBalancer.provisioning_status == consts.DELETED).
+        #  update({models.LoadBalancer.availability_zone_id: consts.NIL_UUID},
+        #         synchronize_session=False))
+        availability_zone = (
+            serial_session.query(self.model_class).filter_by(**filters).one())
+        serial_session.delete(availability_zone)
+
+
+class AvailabilityZoneProfileRepository(_GetALLExceptDELETEDIdMixin,
+                                        BaseRepository):
+    model_class = models.AvailabilityZoneProfile

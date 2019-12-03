@@ -242,6 +242,23 @@ class NoopManager(object):
         flavor_hash = hash(frozenset(flavor_metadata))
         self.driverconfig[flavor_hash] = (flavor_metadata, 'validate_flavor')
 
+    # Availability Zone
+    def get_supported_availability_zone_metadata(self):
+        LOG.debug(
+            'Provider %s no-op, get_supported_availability_zone_metadata',
+            self.__class__.__name__)
+
+        return {"compute_zone": "The compute availability zone to use for "
+                "this loadbalancer."}
+
+    def validate_availability_zone(self, availability_zone_metadata):
+        LOG.debug('Provider %s no-op, validate_availability_zone metadata: %s',
+                  self.__class__.__name__, availability_zone_metadata)
+
+        availability_zone_hash = hash(frozenset(availability_zone_metadata))
+        self.driverconfig[availability_zone_hash] = (
+            availability_zone_metadata, 'validate_availability_zone')
+
 
 class NoopProviderDriver(driver_base.ProviderDriver):
     def __init__(self):
@@ -334,3 +351,10 @@ class NoopProviderDriver(driver_base.ProviderDriver):
 
     def validate_flavor(self, flavor_metadata):
         self.driver.validate_flavor(flavor_metadata)
+
+    # Availability Zone
+    def get_supported_availability_zone_metadata(self):
+        return self.driver.get_supported_availability_zone_metadata()
+
+    def validate_availability_zone(self, availability_zone_metadata):
+        self.driver.validate_availability_zone(availability_zone_metadata)

@@ -302,6 +302,7 @@ CLIENT_CA_TLS_CERTIFICATE_ID = 'client_ca_tls_certificate_id'
 CLIENT_CRL_CONTAINER_ID = 'client_crl_container_id'
 COMPUTE_ID = 'compute_id'
 COMPUTE_OBJ = 'compute_obj'
+COMPUTE_ZONE = 'compute_zone'
 CONN_MAX_RETRIES = 'conn_max_retries'
 CONN_RETRY_INTERVAL = 'conn_retry_interval'
 CREATED_AT = 'created_at'
@@ -333,6 +334,7 @@ LOADBALANCER = 'loadbalancer'
 LOADBALANCER_ID = 'loadbalancer_id'
 LOAD_BALANCER_ID = 'load_balancer_id'
 LOAD_BALANCER_UPDATES = 'load_balancer_updates'
+MANAGEMENT_NETWORK = 'management_network'
 MEMBER = 'member'
 MEMBER_ID = 'member_id'
 MEMBER_PORTS = 'member_ports'
@@ -649,8 +651,13 @@ RBAC_QUOTA = '{}:quota:'.format(LOADBALANCER_API)
 RBAC_AMPHORA = '{}:amphora:'.format(LOADBALANCER_API)
 RBAC_PROVIDER = '{}:provider:'.format(LOADBALANCER_API)
 RBAC_PROVIDER_FLAVOR = '{}:provider-flavor:'.format(LOADBALANCER_API)
+RBAC_PROVIDER_AVAILABILITY_ZONE = '{}:provider-availability-zone:'.format(
+    LOADBALANCER_API)
 RBAC_FLAVOR = '{}:flavor:'.format(LOADBALANCER_API)
 RBAC_FLAVOR_PROFILE = '{}:flavor-profile:'.format(LOADBALANCER_API)
+RBAC_AVAILABILITY_ZONE = '{}:availability-zone:'.format(LOADBALANCER_API)
+RBAC_AVAILABILITY_ZONE_PROFILE = '{}:availability-zone-profile:'.format(
+    LOADBALANCER_API)
 RBAC_POST = 'post'
 RBAC_PUT = 'put'
 RBAC_PUT_CONFIG = 'put_config'
@@ -676,10 +683,12 @@ AMP_NETNS_SVC_PREFIX = 'amphora-netns'
 # Amphora Feature Compatibility
 HTTP_REUSE = 'has_http_reuse'
 
-# TODO(johnsom) convert this to octavia_lib constant flavor
+# TODO(johnsom) convert these to octavia_lib constants
 # once octavia is transitioned to use octavia_lib
 FLAVOR = 'flavor'
 FLAVOR_DATA = 'flavor_data'
+AVAILABILITY_ZONE = 'availability_zone'
+AVAILABILITY_ZONE_DATA = 'availability_zone_data'
 
 # Flavor metadata
 LOADBALANCER_TOPOLOGY = 'loadbalancer_topology'

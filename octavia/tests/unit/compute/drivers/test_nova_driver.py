@@ -128,7 +128,7 @@ class TestNovaClient(base.TestCase):
         self.manager.server_groups = mock.MagicMock()
         self.manager._nova_client = mock.MagicMock()
         self.manager.flavor_manager = mock.MagicMock()
-        self.manager.flavor_manager.get = mock.MagicMock()
+        self.manager.availability_zone_manager = mock.MagicMock()
 
         self.nova_response.interface_list.side_effect = [[self.interface_list]]
         self.manager.manager.get.return_value = self.nova_response
@@ -156,6 +156,7 @@ class TestNovaClient(base.TestCase):
         self.compute_id = uuidutils.generate_uuid()
         self.network_id = uuidutils.generate_uuid()
         self.flavor_id = uuidutils.generate_uuid()
+        self.availability_zone = 'my_test_az'
 
         super(TestNovaClient, self).setUp()
 
@@ -443,4 +444,18 @@ class TestNovaClient(base.TestCase):
                           "bogus")
         self.assertRaises(exceptions.OctaviaException,
                           self.manager.validate_flavor,
+                          "bogus")
+
+    def test_validate_availability_zone(self):
+        mock_az = mock.Mock()
+        mock_az.zoneName = self.availability_zone
+        self.manager.availability_zone_manager.list.return_value = [mock_az]
+        self.manager.validate_availability_zone(self.availability_zone)
+        self.manager.availability_zone_manager.list.assert_called_with(
+            detailed=False)
+
+    def test_validate_availability_zone_with_exception(self):
+        self.manager.availability_zone_manager.list.return_value = []
+        self.assertRaises(exceptions.InvalidSubresource,
+                          self.manager.validate_availability_zone,
                           "bogus")

@@ -50,7 +50,7 @@ rules = [
         '{rbac_obj}{action}'.format(rbac_obj=constants.RBAC_FLAVOR,
                                     action=constants.RBAC_DELETE),
         constants.RULE_API_ADMIN,
-        "Remove a flavor",
+        "Remove a Flavor",
         [{'method': 'DELETE',
           'path': '/v2.0/lbaas/flavors/{flavor_id}'}]
     ),

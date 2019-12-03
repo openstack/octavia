@@ -111,6 +111,12 @@ class NoopManager(object):
                   self.__class__.__name__, flavor_id)
         self.computeconfig[flavor_id] = (flavor_id, 'validate_flavor')
 
+    def validate_availability_zone(self, availability_zone):
+        LOG.debug("Compute %s no-op, validate_availability_zone name %s",
+                  self.__class__.__name__, availability_zone)
+        self.computeconfig[availability_zone] = (
+            availability_zone, 'validate_availability_zone')
+
 
 class NoopComputeDriver(driver_base.ComputeBase):
     def __init__(self):
@@ -155,3 +161,6 @@ class NoopComputeDriver(driver_base.ComputeBase):
 
     def validate_flavor(self, flavor_id):
         self.driver.validate_flavor(flavor_id)
+
+    def validate_availability_zone(self, availability_zone):
+        self.driver.validate_availability_zone(availability_zone)

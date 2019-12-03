@@ -32,8 +32,8 @@ class TestFlavorProfiles(base.BaseAPITest):
     def _assert_request_matches_response(self, req, resp, **optionals):
         self.assertTrue(uuidutils.is_uuid_like(resp.get('id')))
         self.assertEqual(req.get('name'), resp.get('name'))
-        self.assertEqual(req.get('provider_name'),
-                         resp.get('provider_name'))
+        self.assertEqual(req.get(constants.PROVIDER_NAME),
+                         resp.get(constants.PROVIDER_NAME))
         self.assertEqual(req.get(constants.FLAVOR_DATA),
                          resp.get(constants.FLAVOR_DATA))
 
@@ -43,7 +43,7 @@ class TestFlavorProfiles(base.BaseAPITest):
         self.assertEqual([], api_list)
 
     def test_create(self):
-        fp_json = {'name': 'test1', 'provider_name': 'noop_driver',
+        fp_json = {'name': 'test1', constants.PROVIDER_NAME: 'noop_driver',
                    constants.FLAVOR_DATA: '{"hello": "world"}'}
         body = self._build_body(fp_json)
         response = self.post(self.FPS_PATH, body)
@@ -51,7 +51,8 @@ class TestFlavorProfiles(base.BaseAPITest):
         self._assert_request_matches_response(fp_json, api_fp)
 
     def test_create_with_missing_name(self):
-        fp_json = {'provider_name': 'pr1', constants.FLAVOR_DATA: '{"x": "y"}'}
+        fp_json = {constants.PROVIDER_NAME: 'pr1',
+                   constants.FLAVOR_DATA: '{"x": "y"}'}
         body = self._build_body(fp_json)
         response = self.post(self.FPS_PATH, body, status=400)
         err_msg = ("Invalid input for field/attribute name. Value: "
@@ -67,7 +68,7 @@ class TestFlavorProfiles(base.BaseAPITest):
         self.assertEqual(err_msg, response.json.get('faultstring'))
 
     def test_create_with_missing_flavor_data(self):
-        fp_json = {'name': 'xyz', 'provider_name': 'pr1'}
+        fp_json = {'name': 'xyz', constants.PROVIDER_NAME: 'pr1'}
         body = self._build_body(fp_json)
         response = self.post(self.FPS_PATH, body, status=400)
         err_msg = ("Invalid input for field/attribute flavor_data. "
@@ -75,7 +76,7 @@ class TestFlavorProfiles(base.BaseAPITest):
         self.assertEqual(err_msg, response.json.get('faultstring'))
 
     def test_create_with_empty_flavor_data(self):
-        fp_json = {'name': 'test1', 'provider_name': 'noop_driver',
+        fp_json = {'name': 'test1', constants.PROVIDER_NAME: 'noop_driver',
                    constants.FLAVOR_DATA: '{}'}
         body = self._build_body(fp_json)
         response = self.post(self.FPS_PATH, body)
@@ -83,25 +84,25 @@ class TestFlavorProfiles(base.BaseAPITest):
         self._assert_request_matches_response(fp_json, api_fp)
 
     def test_create_with_long_name(self):
-        fp_json = {'name': 'n' * 256, 'provider_name': 'test1',
+        fp_json = {'name': 'n' * 256, constants.PROVIDER_NAME: 'test1',
                    constants.FLAVOR_DATA: '{"hello": "world"}'}
         body = self._build_body(fp_json)
         self.post(self.FPS_PATH, body, status=400)
 
     def test_create_with_long_provider(self):
-        fp_json = {'name': 'name1', 'provider_name': 'n' * 256,
+        fp_json = {'name': 'name1', constants.PROVIDER_NAME: 'n' * 256,
                    constants.FLAVOR_DATA: '{"hello": "world"}'}
         body = self._build_body(fp_json)
         self.post(self.FPS_PATH, body, status=400)
 
     def test_create_with_long_flavor_data(self):
-        fp_json = {'name': 'name1', 'provider_name': 'amp',
+        fp_json = {'name': 'name1', constants.PROVIDER_NAME: 'amp',
                    constants.FLAVOR_DATA: 'n' * 4097}
         body = self._build_body(fp_json)
         self.post(self.FPS_PATH, body, status=400)
 
     def test_create_authorized(self):
-        fp_json = {'name': 'test1', 'provider_name': 'noop_driver',
+        fp_json = {'name': 'test1', constants.PROVIDER_NAME: 'noop_driver',
                    constants.FLAVOR_DATA: '{"hello": "world"}'}
         body = self._build_body(fp_json)
         self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
@@ -136,7 +137,8 @@ class TestFlavorProfiles(base.BaseAPITest):
         auth_strategy = self.conf.conf.api_settings.get('auth_strategy')
         self.conf.config(group='api_settings', auth_strategy=constants.TESTING)
         fp_json = {'name': 'name',
-                   'provider_name': 'xyz', constants.FLAVOR_DATA: '{"x": "y"}'}
+                   constants.PROVIDER_NAME: 'xyz',
+                   constants.FLAVOR_DATA: '{"x": "y"}'}
         body = self._build_body(fp_json)
         response = self.post(self.FPS_PATH, body, status=403)
         api_fp = response.json
@@ -144,7 +146,7 @@ class TestFlavorProfiles(base.BaseAPITest):
         self.assertEqual(self.NOT_AUTHORIZED_BODY, api_fp)
 
     def test_create_db_failure(self):
-        fp_json = {'name': 'test1', 'provider_name': 'noop_driver',
+        fp_json = {'name': 'test1', constants.PROVIDER_NAME: 'noop_driver',
                    constants.FLAVOR_DATA: '{"hello": "world"}'}
         body = self._build_body(fp_json)
         with mock.patch("octavia.db.repositories.FlavorProfileRepository."
@@ -156,7 +158,7 @@ class TestFlavorProfiles(base.BaseAPITest):
             self.post(self.FPS_PATH, body, status=409)
 
     def test_create_with_invalid_json(self):
-        fp_json = {'name': 'test1', 'provider_name': 'noop_driver',
+        fp_json = {'name': 'test1', constants.PROVIDER_NAME: 'noop_driver',
                    constants.FLAVOR_DATA: '{hello: "world"}'}
         body = self._build_body(fp_json)
         self.post(self.FPS_PATH, body, status=400)
@@ -183,10 +185,11 @@ class TestFlavorProfiles(base.BaseAPITest):
         self.assertTrue(uuidutils.is_uuid_like(fp.get('id')))
         response = self.get(
             self.FP_PATH.format(fp_id=fp.get('id')), params={
-                'fields': ['id', 'provider_name']}).json.get(self.root_tag)
+                'fields': ['id', constants.PROVIDER_NAME]}
+        ).json.get(self.root_tag)
         self.assertEqual(fp.get('id'), response.get('id'))
         self.assertIn(u'id', response)
-        self.assertIn(u'provider_name', response)
+        self.assertIn(constants.PROVIDER_NAME, response)
         self.assertNotIn(u'name', response)
         self.assertNotIn(constants.FLAVOR_DATA, response)
 
@@ -238,13 +241,13 @@ class TestFlavorProfiles(base.BaseAPITest):
                                          '{"image": "ubuntu"}')
         ref_fp_1 = {u'flavor_data': u'{"image": "ubuntu"}',
                     u'id': fp1.get('id'), u'name': u'test1',
-                    u'provider_name': u'noop_driver'}
+                    constants.PROVIDER_NAME: u'noop_driver'}
         self.assertTrue(uuidutils.is_uuid_like(fp1.get('id')))
         fp2 = self.create_flavor_profile('test2', 'noop_driver-alt',
                                          '{"image": "ubuntu"}')
         ref_fp_2 = {u'flavor_data': u'{"image": "ubuntu"}',
                     u'id': fp2.get('id'), u'name': u'test2',
-                    u'provider_name': u'noop_driver-alt'}
+                    constants.PROVIDER_NAME: u'noop_driver-alt'}
         self.assertTrue(uuidutils.is_uuid_like(fp2.get('id')))
 
         response = self.get(self.FPS_PATH)
@@ -268,7 +271,7 @@ class TestFlavorProfiles(base.BaseAPITest):
         for profile in api_list:
             self.assertIn(u'id', profile)
             self.assertIn(u'name', profile)
-            self.assertNotIn(u'provider_name', profile)
+            self.assertNotIn(constants.PROVIDER_NAME, profile)
             self.assertNotIn(constants.FLAVOR_DATA, profile)
 
     def test_get_all_authorized(self):
@@ -323,14 +326,15 @@ class TestFlavorProfiles(base.BaseAPITest):
         fp = self.create_flavor_profile('test_profile', 'noop_driver',
                                         '{"x": "y"}')
         update_data = {'name': 'the_profile',
-                       'provider_name': 'noop_driver-alt',
+                       constants.PROVIDER_NAME: 'noop_driver-alt',
                        constants.FLAVOR_DATA: '{"hello": "world"}'}
         body = self._build_body(update_data)
         response = self.put(self.FP_PATH.format(fp_id=fp.get('id')), body)
         response = self.get(
             self.FP_PATH.format(fp_id=fp.get('id'))).json.get(self.root_tag)
         self.assertEqual('the_profile', response.get('name'))
-        self.assertEqual('noop_driver-alt', response.get('provider_name'))
+        self.assertEqual('noop_driver-alt',
+                         response.get(constants.PROVIDER_NAME))
         self.assertEqual('{"hello": "world"}',
                          response.get(constants.FLAVOR_DATA))
 
@@ -350,7 +354,7 @@ class TestFlavorProfiles(base.BaseAPITest):
         response = self.get(
             self.FP_PATH.format(fp_id=fp.get('id'))).json.get(self.root_tag)
         self.assertEqual('test_profile', response.get('name'))
-        self.assertEqual('noop_driver', response.get('provider_name'))
+        self.assertEqual('noop_driver', response.get(constants.PROVIDER_NAME))
         self.assertEqual('{"x": "y"}',
                          response.get(constants.FLAVOR_DATA))
 
@@ -377,20 +381,21 @@ class TestFlavorProfiles(base.BaseAPITest):
         fp = self.create_flavor_profile('test_profile', 'noop_driver',
                                         '{"x": "y"}')
         update_data = {'name': 'the_profile',
-                       'provider_name': 'noop_driver-alt'}
+                       constants.PROVIDER_NAME: 'noop_driver-alt'}
         body = self._build_body(update_data)
         response = self.put(self.FP_PATH.format(fp_id=fp.get('id')), body)
         response = self.get(
             self.FP_PATH.format(fp_id=fp.get('id'))).json.get(self.root_tag)
         self.assertEqual('the_profile', response.get('name'))
-        self.assertEqual('noop_driver-alt', response.get('provider_name'))
+        self.assertEqual('noop_driver-alt',
+                         response.get(constants.PROVIDER_NAME))
         self.assertEqual('{"x": "y"}', response.get(constants.FLAVOR_DATA))
 
     def test_update_authorized(self):
         fp = self.create_flavor_profile('test_profile', 'noop_driver',
                                         '{"x": "y"}')
         update_data = {'name': 'the_profile',
-                       'provider_name': 'noop_driver-alt',
+                       constants.PROVIDER_NAME: 'noop_driver-alt',
                        constants.FLAVOR_DATA: '{"hello": "world"}'}
         body = self._build_body(update_data)
         self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
@@ -421,14 +426,15 @@ class TestFlavorProfiles(base.BaseAPITest):
         response = self.get(
             self.FP_PATH.format(fp_id=fp.get('id'))).json.get(self.root_tag)
         self.assertEqual('the_profile', response.get('name'))
-        self.assertEqual('noop_driver-alt', response.get('provider_name'))
+        self.assertEqual('noop_driver-alt',
+                         response.get(constants.PROVIDER_NAME))
         self.assertEqual('{"hello": "world"}',
                          response.get(constants.FLAVOR_DATA))
 
     def test_update_not_authorized(self):
         fp = self.create_flavor_profile('test_profile', 'noop_driver',
                                         '{"x": "y"}')
-        update_data = {'name': 'the_profile', 'provider_name': 'amp',
+        update_data = {'name': 'the_profile', constants.PROVIDER_NAME: 'amp',
                        constants.FLAVOR_DATA: '{"hello": "world"}'}
         body = self._build_body(update_data)
         self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
@@ -440,7 +446,7 @@ class TestFlavorProfiles(base.BaseAPITest):
         response = self.get(
             self.FP_PATH.format(fp_id=fp.get('id'))).json.get(self.root_tag)
         self.assertEqual('test_profile', response.get('name'))
-        self.assertEqual('noop_driver', response.get('provider_name'))
+        self.assertEqual('noop_driver', response.get(constants.PROVIDER_NAME))
         self.assertEqual('{"x": "y"}',
                          response.get(constants.FLAVOR_DATA))
 
@@ -451,7 +457,7 @@ class TestFlavorProfiles(base.BaseAPITest):
 
         # Test updating provider while in use is not allowed
         update_data = {'name': 'the_profile',
-                       'provider_name': 'noop_driver-alt'}
+                       constants.PROVIDER_NAME: 'noop_driver-alt'}
         body = self._build_body(update_data)
         response = self.put(self.FP_PATH.format(fp_id=fp.get('id')), body,
                             status=409)
@@ -461,7 +467,7 @@ class TestFlavorProfiles(base.BaseAPITest):
         response = self.get(
             self.FP_PATH.format(fp_id=fp.get('id'))).json.get(self.root_tag)
         self.assertEqual('test_profile', response.get('name'))
-        self.assertEqual('noop_driver', response.get('provider_name'))
+        self.assertEqual('noop_driver', response.get(constants.PROVIDER_NAME))
         self.assertEqual('{"x": "y"}', response.get(constants.FLAVOR_DATA))
 
         # Test updating flavor data while in use is not allowed
@@ -476,7 +482,7 @@ class TestFlavorProfiles(base.BaseAPITest):
         response = self.get(
             self.FP_PATH.format(fp_id=fp.get('id'))).json.get(self.root_tag)
         self.assertEqual('test_profile', response.get('name'))
-        self.assertEqual('noop_driver', response.get('provider_name'))
+        self.assertEqual('noop_driver', response.get(constants.PROVIDER_NAME))
         self.assertEqual('{"x": "y"}', response.get(constants.FLAVOR_DATA))
 
         # Test that you can still update the name when in use
@@ -486,7 +492,7 @@ class TestFlavorProfiles(base.BaseAPITest):
         response = self.get(
             self.FP_PATH.format(fp_id=fp.get('id'))).json.get(self.root_tag)
         self.assertEqual('the_profile', response.get('name'))
-        self.assertEqual('noop_driver', response.get('provider_name'))
+        self.assertEqual('noop_driver', response.get(constants.PROVIDER_NAME))
         self.assertEqual('{"x": "y"}', response.get(constants.FLAVOR_DATA))
 
     def test_delete(self):

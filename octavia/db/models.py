@@ -23,6 +23,8 @@ from sqlalchemy.orm import validates
 from sqlalchemy.sql import func
 
 from octavia.api.v2.types import amphora
+from octavia.api.v2.types import availability_zone_profile
+from octavia.api.v2.types import availability_zones
 from octavia.api.v2.types import flavor_profile
 from octavia.api.v2.types import flavors
 from octavia.api.v2.types import health_monitor
@@ -779,6 +781,41 @@ class Flavor(base_models.BASE,
         sa.String(36),
         sa.ForeignKey("flavor_profile.id",
                       name="fk_flavor_flavor_profile_id"),
+        nullable=False)
+
+
+class AvailabilityZoneProfile(base_models.BASE, base_models.IdMixin,
+                              base_models.NameMixin):
+
+    __data_model__ = data_models.AvailabilityZoneProfile
+
+    __tablename__ = "availability_zone_profile"
+
+    __v2_wsme__ = availability_zone_profile.AvailabilityZoneProfileResponse
+
+    provider_name = sa.Column(sa.String(255), nullable=False)
+    availability_zone_data = sa.Column(sa.String(4096), nullable=False)
+
+
+class AvailabilityZone(base_models.BASE,
+                       base_models.NameMixin):
+
+    __data_model__ = data_models.AvailabilityZone
+
+    __tablename__ = "availability_zone"
+
+    __v2_wsme__ = availability_zones.AvailabilityZoneResponse
+
+    __table_args__ = (
+        sa.PrimaryKeyConstraint('name'),
+    )
+
+    description = sa.Column(sa.String(255), nullable=True)
+    enabled = sa.Column(sa.Boolean(), nullable=False)
+    availability_zone_profile_id = sa.Column(
+        sa.String(36),
+        sa.ForeignKey("availability_zone_profile.id",
+                      name="fk_az_az_profile_id"),
         nullable=False)
 
 

@@ -40,6 +40,14 @@ class BaseAPITest(base_db_test.OctaviaDBTestBase):
     FPS_PATH = '/flavorprofiles'
     FP_PATH = FPS_PATH + '/{fp_id}'
 
+    # /lbaas/availabilityzones
+    AZS_PATH = '/availabilityzones'
+    AZ_PATH = AZS_PATH + '/{az_name}'
+
+    # /lbaas/availabilityzoneprofiles
+    AZPS_PATH = '/availabilityzoneprofiles'
+    AZP_PATH = AZPS_PATH + '/{azp_id}'
+
     # /lbaas/loadbalancers
     LBS_PATH = '/lbaas/loadbalancers'
     LB_PATH = LBS_PATH + '/{lb_id}'
@@ -80,8 +88,10 @@ class BaseAPITest(base_db_test.OctaviaDBTestBase):
     AMPHORA_CONFIG_PATH = AMPHORA_PATH + '/config'
 
     PROVIDERS_PATH = '/lbaas/providers'
-    FLAVOR_CAPABILITIES_PATH = (PROVIDERS_PATH +
-                                '/{provider}/flavor_capabilities')
+    FLAVOR_CAPABILITIES_PATH = (
+        PROVIDERS_PATH + '/{provider}/flavor_capabilities')
+    AVAILABILITY_ZONE_CAPABILITIES_PATH = (
+        PROVIDERS_PATH + '/{provider}/availability_zone_capabilities')
 
     NOT_AUTHORIZED_BODY = {
         'debuginfo': None, 'faultcode': 'Client',
@@ -205,12 +215,30 @@ class BaseAPITest(base_db_test.OctaviaDBTestBase):
         response = self.post(self.FLAVORS_PATH, body)
         return response.json.get('flavor')
 
-    def create_flavor_profile(self, name, privider_name, flavor_data):
-        req_dict = {'name': name, 'provider_name': privider_name,
+    def create_flavor_profile(self, name, provider_name, flavor_data):
+        req_dict = {'name': name, 'provider_name': provider_name,
                     constants.FLAVOR_DATA: flavor_data}
         body = {'flavorprofile': req_dict}
         response = self.post(self.FPS_PATH, body)
         return response.json.get('flavorprofile')
+
+    def create_availability_zone(self, name, description,
+                                 availability_zone_profile_id, enabled):
+        req_dict = {
+            'name': name, 'description': description,
+            'availability_zone_profile_id': availability_zone_profile_id,
+            'enabled': enabled}
+        body = {'availability_zone': req_dict}
+        response = self.post(self.AZS_PATH, body)
+        return response.json.get('availability_zone')
+
+    def create_availability_zone_profile(self, name, provider_name,
+                                         availability_zone_data):
+        req_dict = {'name': name, 'provider_name': provider_name,
+                    constants.AVAILABILITY_ZONE_DATA: availability_zone_data}
+        body = {'availability_zone_profile': req_dict}
+        response = self.post(self.AZPS_PATH, body)
+        return response.json.get('availability_zone_profile')
 
     def create_load_balancer(self, vip_subnet_id,
                              **optionals):

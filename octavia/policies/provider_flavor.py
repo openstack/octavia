@@ -22,7 +22,7 @@ rules = [
         constants.RULE_API_ADMIN,
         "List the provider flavor capabilities.",
         [{'method': 'GET',
-          'path': '/v2/lbaas/providers/{provider}/capabilities'}]
+          'path': '/v2/lbaas/providers/{provider}/flavor_capabilities'}]
     ),
 ]
 

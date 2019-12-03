@@ -24,6 +24,7 @@ from octavia_lib.api.drivers import data_models as driver_dm
 from octavia_lib.api.drivers import exceptions
 from octavia_lib.api.drivers import provider_base as driver_base
 
+from octavia.api.drivers.amphora_driver import availability_zone_schema
 from octavia.api.drivers.amphora_driver import flavor_schema
 from octavia.api.drivers import utils as driver_utils
 from octavia.common import constants as consts
@@ -384,3 +385,70 @@ class AmphoraProviderDriver(driver_base.ProviderDriver):
             # TODO(johnsom) Fix this to raise a NotFound error
             # when the octavia-lib supports it.
             compute_driver.validate_flavor(compute_flavor)
+
+    # Availability Zone
+    def get_supported_availability_zone_metadata(self):
+        """Returns the valid availability zone metadata keys and descriptions.
+
+        This extracts the valid availability zone metadata keys and
+        descriptions from the JSON validation schema and returns it as a
+        dictionary.
+
+        :return: Dictionary of availability zone metadata keys and descriptions
+        :raises DriverError: An unexpected error occurred.
+        """
+        try:
+            props = (
+                availability_zone_schema.SUPPORTED_AVAILABILITY_ZONE_SCHEMA[
+                    'properties'])
+            return {k: v.get('description', '') for k, v in props.items()}
+        except Exception as e:
+            raise exceptions.DriverError(
+                user_fault_string='Failed to get the supported availability '
+                                  'zone metadata due to: {}'.format(str(e)),
+                operator_fault_string='Failed to get the supported '
+                                      'availability zone metadata due to: '
+                                      '{}'.format(str(e)))
+
+    def validate_availability_zone(self, availability_zone_dict):
+        """Validates availability zone profile data.
+
+        This will validate an availability zone profile dataset against the
+        availability zone settings the amphora driver supports.
+
+        :param availability_zone_dict: The availability zone dict to validate.
+        :type availability_zone_dict: dict
+        :return: None
+        :raises DriverError: An unexpected error occurred.
+        :raises UnsupportedOptionError: If the driver does not support
+          one of the availability zone settings.
+        """
+        try:
+            validate(
+                availability_zone_dict,
+                availability_zone_schema.SUPPORTED_AVAILABILITY_ZONE_SCHEMA)
+        except js_exceptions.ValidationError as e:
+            error_object = ''
+            if e.relative_path:
+                error_object = '{} '.format(e.relative_path[0])
+            raise exceptions.UnsupportedOptionError(
+                user_fault_string='{0}{1}'.format(error_object, e.message),
+                operator_fault_string=str(e))
+        except Exception as e:
+            raise exceptions.DriverError(
+                user_fault_string='Failed to validate the availability zone '
+                                  'metadata due to: {}'.format(str(e)),
+                operator_fault_string='Failed to validate the availability '
+                                      'zone metadata due to: {}'.format(str(e))
+            )
+        compute_zone = availability_zone_dict.get(consts.COMPUTE_ZONE, None)
+        if compute_zone:
+            compute_driver = stevedore_driver.DriverManager(
+                namespace='octavia.compute.drivers',
+                name=CONF.controller_worker.compute_driver,
+                invoke_on_load=True
+            ).driver
+
+            # TODO(johnsom) Fix this to raise a NotFound error
+            # when the octavia-lib supports it.
+            compute_driver.validate_availability_zone(compute_zone)
