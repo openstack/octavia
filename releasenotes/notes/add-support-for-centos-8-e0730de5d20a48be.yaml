@@ -1,0 +1,4 @@
+---
+features:
+  - |
+    Added support for CentOS 8 amphora images.

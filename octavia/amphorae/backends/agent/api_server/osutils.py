@@ -41,10 +41,9 @@ j2_env = jinja2.Environment(autoescape=True, loader=jinja2.FileSystemLoader(
 
 class BaseOS(object):
 
-    PACKAGE_NAME_MAP = {}
-
     def __init__(self, os_name):
         self.os_name = os_name
+        self.package_name_map = {}
 
     @classmethod
     def _get_subclasses(cls):
@@ -61,9 +60,8 @@ class BaseOS(object):
                 return subclass(os_name)
         raise octavia_exceptions.InvalidAmphoraOperatingSystem(os_name=os_name)
 
-    @classmethod
-    def _map_package_name(cls, package_name):
-        return cls.PACKAGE_NAME_MAP.get(package_name, package_name)
+    def _map_package_name(self, package_name):
+        return self.package_name_map.get(package_name, package_name)
 
     def get_network_interface_file(self, interface):
         if CONF.amphora_agent.agent_server_network_file:
@@ -558,7 +556,10 @@ class RH(BaseOS):
 
 class CentOS(RH):
 
-    PACKAGE_NAME_MAP = {'haproxy': 'haproxy18'}
+    def __init__(self, os_name):
+        super(CentOS, self).__init__(os_name)
+        if distro.version() == '7':
+            self.package_name_map.update({'haproxy': 'haproxy18'})
 
     @classmethod
     def is_os_name(cls, os_name):

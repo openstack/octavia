@@ -75,3 +75,5 @@
             branches: ^(?!stable/.*).*$
         - publish-openstack-octavia-amphora-image-centos7:
             branches: ^(?!stable/.*).*$
+        - publish-openstack-octavia-amphora-image-centos8:
+            branches: ^(?!stable/.*).*$

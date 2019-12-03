@@ -61,6 +61,16 @@
         amphora_os_release: 7
 
 - job:
+    name: publish-openstack-octavia-amphora-image-centos8
+    parent: publish-openstack-octavia-amphora-image
+    description: |
+      Publish CentOS 8 based amphora image to tarballs.o.o.
+    vars:
+        amphora_os: centos
+        amphora_image_size: 3
+        amphora_os_release: 8
+
+- job:
     name: octavia-grenade
     parent: octavia-legacy-dsvm-base
     run: playbooks/legacy/grenade-devstack-octavia/run.yaml

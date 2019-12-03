@@ -8,6 +8,15 @@
         "screen": "",
         "dkms": ""
       }
+    },
+    "centos": {
+      "8": {
+        "isc-dhcp-client": "dhcp-client",
+        "python-dev": "platform-python-devel",
+        "vlan": "",
+        "screen": "",
+        "dkms": ""
+      }
     }
   },
   "family": {
