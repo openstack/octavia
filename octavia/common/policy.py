@@ -12,6 +12,8 @@
 
 """Policy Engine For Octavia."""
 
+import sys
+
 from oslo_config import cfg
 from oslo_log import log as logging
 from oslo_policy import policy as oslo_policy
@@ -151,5 +153,14 @@ class IsAdminCheck(oslo_policy.Check):
 
 # This is used for the oslopolicy-policy-generator tool
 def get_no_context_enforcer():
-    config.init([])
+
+    # oslo.config needs access to the --config-dir and --config-file
+    # command line args
+    filtered_args = ['--config-dir', '--config-file']
+    # Start at 1 because cfg.CONF expects the equivalent of sys.argv[1:]
+    conf_args = [arg for idx, arg in enumerate(sys.argv[1:])
+                 if (arg in filtered_args or
+                     sys.argv[idx] in filtered_args)]
+
+    config.init(conf_args)
     return Policy()
