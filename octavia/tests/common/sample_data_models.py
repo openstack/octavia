@@ -618,6 +618,7 @@ class SampleDriverDataModels(object):
         self.provider_loadbalancer_tree_dict = {
             lib_consts.ADDITIONAL_VIPS: None,
             lib_consts.ADMIN_STATE_UP: True,
+            lib_consts.AVAILABILITY_ZONE: None,
             lib_consts.DESCRIPTION: self.lb_description,
             lib_consts.FLAVOR: {"something": "else"},
             lib_consts.LISTENERS: None,
