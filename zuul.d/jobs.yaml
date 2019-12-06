@@ -32,14 +32,6 @@
         - openstack/diskimage-builder
         - openstack/octavia
         - openstack/octavia-lib
-- job:
-    name: publish-openstack-octavia-amphora-image-xenial
-    parent: publish-openstack-octavia-amphora-image
-    description: |
-      Publish Ubuntu Xenial (16.04) based amphora image to tarballs.o.o.
-    vars:
-        amphora_os: ubuntu
-        amphora_os_release: xenial
 
 - job:
     name: publish-openstack-octavia-amphora-image-bionic
