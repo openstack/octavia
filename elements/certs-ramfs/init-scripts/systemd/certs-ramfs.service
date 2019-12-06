@@ -1,5 +1,6 @@
 [Unit]
 Description=Creates an encrypted ramfs for Octavia certs
+Before=amphora-agent.service
 After=cloud-config.target
 
 [Service]
