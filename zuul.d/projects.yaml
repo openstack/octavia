@@ -21,6 +21,13 @@
               - ^releasenotes/.*$
         - octavia-v2-dsvm-noop-api
         - octavia-v2-dsvm-scenario
+        - octavia-v2-dsvm-tls-barbican:
+            irrelevant-files:
+              - ^.*\.rst$
+              - ^api-ref/.*$
+              - ^doc/.*$
+              - ^octavia/tests/unit/.*$
+              - ^releasenotes/.*$
         - octavia-v2-dsvm-scenario-two-node:
             voting: false
         # TODO(haleyb): restore to voting once python3 issues fixed
@@ -36,14 +43,6 @@
               - ^tools/.*$
               - ^(test-|)requirements.txt$
               - ^tox.ini$
-        - octavia-v2-dsvm-tls-barbican:
-            irrelevant-files:
-              - ^.*\.rst$
-              - ^api-ref/.*$
-              - ^doc/.*$
-              - ^octavia/tests/unit/.*$
-              - ^releasenotes/.*$
-            voting: false
         - octavia-v2-dsvm-scenario-amphora-v2:
             irrelevant-files:
               - ^.*\.rst$
@@ -67,6 +66,7 @@
               - ^releasenotes/.*$
         - octavia-v2-dsvm-noop-api
         - octavia-v2-dsvm-scenario
+        - octavia-v2-dsvm-tls-barbican
     periodic:
       jobs:
         - publish-openstack-octavia-amphora-image-xenial:
