@@ -1,11 +1,4 @@
 {
-    "release": {
-        "ubuntu": {
-            "trusty": {
-                "keepalived": "keepalived/trusty-backports"
-            }
-        }
-    },
     "distro": {
         "ubuntu": {
             "keepalived": "keepalived"

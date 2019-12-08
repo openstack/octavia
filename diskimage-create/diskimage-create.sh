@@ -23,7 +23,7 @@ usage() {
     echo "            [-a i386 | **amd64** | armhf | ppc64le]"
     echo "            [-b **haproxy** ]"
     echo "            [-c **~/.cache/image-create** | <cache directory> ]"
-    echo "            [-d **bionic**/**7** | 8 | <other release id> ]"
+    echo "            [-d **bionic**/**8** | <other release id> ]"
     echo "            [-e]"
     echo "            [-f]"
     echo "            [-h]"
@@ -216,7 +216,7 @@ AMP_BASEOS=${AMP_BASEOS:-"ubuntu-minimal"}
 if [ "$AMP_BASEOS" = "ubuntu-minimal" ]; then
     export DIB_RELEASE=${AMP_DIB_RELEASE:-"bionic"}
 elif [ "${AMP_BASEOS}" = "centos-minimal" ] || [ "${AMP_BASEOS}" = "rhel" ]; then
-    export DIB_RELEASE=${AMP_DIB_RELEASE:-"7"}
+    export DIB_RELEASE=${AMP_DIB_RELEASE:-"8"}
 elif [ "${AMP_BASEOS}" = "fedora" ]; then
     export DIB_RELEASE=${AMP_DIB_RELEASE:-"28"}
 fi
@@ -321,8 +321,8 @@ if [[ "$platform" = 'Ubuntu' || "$platform" =~ 'Debian' ]]; then
         # Also check if we can build the BASEOS on this Ubuntu version
         UBUNTU_VERSION=`lsb_release -r | awk '{print $2}'`
         if [ "$AMP_BASEOS" != "ubuntu-minimal" ] && \
-            [ 1 -eq $(echo "$UBUNTU_VERSION < 14.04" | bc) ]; then
-                echo "Ubuntu minimum version 14.04 required to build $AMP_BASEOS."
+            [ 1 -eq $(echo "$UBUNTU_VERSION < 16.04" | bc) ]; then
+                echo "Ubuntu minimum version 16.04 required to build $AMP_BASEOS."
                 echo "Earlier versions don't support the extended attributes required."
                 exit 1
         fi
