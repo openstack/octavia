@@ -23,7 +23,7 @@ usage() {
     echo "            [-a i386 | **amd64** | armhf | ppc64le]"
     echo "            [-b **haproxy** ]"
     echo "            [-c **~/.cache/image-create** | <cache directory> ]"
-    echo "            [-d **bionic**/**7** | xenial | 8 | <other release id> ]"
+    echo "            [-d **bionic**/**7** | 8 | <other release id> ]"
     echo "            [-e]"
     echo "            [-f]"
     echo "            [-h]"

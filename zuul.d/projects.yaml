@@ -69,8 +69,6 @@
         - octavia-v2-dsvm-scenario
     periodic:
       jobs:
-        - publish-openstack-octavia-amphora-image-xenial:
-            branches: ^(?!stable/.*).*$
         - publish-openstack-octavia-amphora-image-bionic:
             branches: ^(?!stable/.*).*$
         - publish-openstack-octavia-amphora-image-centos7:

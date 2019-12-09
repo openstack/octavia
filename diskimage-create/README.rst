@@ -106,7 +106,7 @@ Command syntax:
             [-a i386 | **amd64** | armhf | ppc64le ]
             [-b **haproxy** ]
             [-c **~/.cache/image-create** | <cache directory> ]
-            [-d **bionic**/**7** | xenial | 8 | <other release id> ]
+            [-d **bionic**/**7** | 8 | <other release id> ]
             [-e]
             [-f]
             [-h]
