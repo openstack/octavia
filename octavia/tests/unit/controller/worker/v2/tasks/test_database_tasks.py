@@ -192,6 +192,7 @@ class TestDatabaseTasks(base.TestCase):
         repo.AmphoraRepository.create.assert_called_once_with(
             'TEST',
             id=AMP_ID,
+            load_balancer_id=None,
             status=constants.PENDING_CREATE,
             cert_busy=False)
 

@@ -90,7 +90,7 @@ class BaseDatabaseTask(task.Task):
 class CreateAmphoraInDB(BaseDatabaseTask):
     """Task to create an initial amphora in the Database."""
 
-    def execute(self, *args, **kwargs):
+    def execute(self, *args, loadbalancer_id=None, **kwargs):
         """Creates an pending create amphora record in the database.
 
         :returns: The created amphora object
@@ -98,6 +98,7 @@ class CreateAmphoraInDB(BaseDatabaseTask):
 
         amphora = self.amphora_repo.create(db_apis.get_session(),
                                            id=uuidutils.generate_uuid(),
+                                           load_balancer_id=loadbalancer_id,
                                            status=constants.PENDING_CREATE,
                                            cert_busy=False)
 
