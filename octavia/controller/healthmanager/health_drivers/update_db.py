@@ -258,20 +258,26 @@ class UpdateHealthDb(update_base.HealthUpdateBase):
         potential_offline_pools = {}
 
         # We got a heartbeat so lb is healthy until proven otherwise
-        if db_lb['enabled'] is False:
+        if db_lb[constants.ENABLED] is False:
             lb_status = constants.OFFLINE
         else:
             lb_status = constants.ONLINE
 
         health_msg_version = health.get('ver', 0)
 
-        for listener_id in db_lb.get('listeners', {}):
-            db_op_status = db_lb['listeners'][listener_id]['operating_status']
+        for listener_id in db_lb.get(constants.LISTENERS, {}):
+            db_listener = db_lb[constants.LISTENERS][listener_id]
+            db_op_status = db_listener[constants.OPERATING_STATUS]
             listener_status = None
             listener = None
 
             if listener_id not in listeners:
-                listener_status = constants.OFFLINE
+                if (db_listener[constants.ENABLED] and
+                    db_lb[constants.PROVISIONING_STATUS] ==
+                        constants.ACTIVE):
+                    listener_status = constants.ERROR
+                else:
+                    listener_status = constants.OFFLINE
             else:
                 listener = listeners[listener_id]
 

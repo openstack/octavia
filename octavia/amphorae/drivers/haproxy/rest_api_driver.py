@@ -37,6 +37,9 @@ import octavia.common.jinja.haproxy.split_listeners.jinja_cfg as jinja_split
 from octavia.common.jinja.lvs import jinja_cfg as jinja_udp_cfg
 from octavia.common.tls_utils import cert_parser
 from octavia.common import utils
+from octavia.db import api as db_apis
+from octavia.db import repositories as repo
+
 
 LOG = logging.getLogger(__name__)
 API_VERSION = consts.API_VERSION
@@ -147,6 +150,11 @@ class HaproxyAmphoraLoadBalancerDriver(
                       'process mode.', amphora.id, loadbalancer.id)
 
         has_tcp = False
+        certs = {}
+        client_ca_filename = None
+        crl_filename = None
+        pool_tls_certs = dict()
+        listeners_to_update = []
         for listener in loadbalancer.listeners:
             LOG.debug("%s updating listener %s on amphora %s",
                       self.__class__.__name__, listener.id, amphora.id)
@@ -164,42 +172,63 @@ class HaproxyAmphoraLoadBalancerDriver(
                 else:
                     obj_id = loadbalancer.id
 
-                self._process_tls_certificates(listener, amphora, obj_id)
+                try:
+                    certs.update({
+                        listener.tls_certificate_id:
+                        self._process_tls_certificates(
+                            listener, amphora, obj_id)['tls_cert']})
+                    client_ca_filename = self._process_secret(
+                        listener, listener.client_ca_tls_certificate_id,
+                        amphora, obj_id)
+                    crl_filename = self._process_secret(
+                        listener, listener.client_crl_container_id,
+                        amphora, obj_id)
+                    pool_tls_certs = self._process_listener_pool_certs(
+                        listener, amphora, obj_id)
 
-                client_ca_filename = self._process_secret(
-                    listener, listener.client_ca_tls_certificate_id,
-                    amphora, obj_id)
-                crl_filename = self._process_secret(
-                    listener, listener.client_crl_container_id,
-                    amphora, obj_id)
-                pool_tls_certs = self._process_listener_pool_certs(
-                    listener, amphora, obj_id)
-
-                if split_config:
-                    config = self.jinja_split.build_config(
-                        host_amphora=amphora, listener=listener,
-                        haproxy_versions=haproxy_versions,
-                        client_ca_filename=client_ca_filename,
-                        client_crl=crl_filename,
-                        pool_tls_certs=pool_tls_certs)
-                    self.clients[amphora.api_version].upload_config(
-                        amphora, listener.id, config,
-                        timeout_dict=timeout_dict)
-                    self.clients[amphora.api_version].reload_listener(
-                        amphora, listener.id, timeout_dict=timeout_dict)
+                    if split_config:
+                        config = self.jinja_split.build_config(
+                            host_amphora=amphora, listener=listener,
+                            haproxy_versions=haproxy_versions,
+                            client_ca_filename=client_ca_filename,
+                            client_crl=crl_filename,
+                            pool_tls_certs=pool_tls_certs)
+                        self.clients[amphora.api_version].upload_config(
+                            amphora, listener.id, config,
+                            timeout_dict=timeout_dict)
+                        self.clients[amphora.api_version].reload_listener(
+                            amphora, listener.id, timeout_dict=timeout_dict)
+                    else:
+                        listeners_to_update.append(listener)
+                except Exception as e:
+                    LOG.error('Unable to update listener {0} due to "{1}". '
+                              'Skipping this listener.'.format(
+                                  listener.id, str(e)))
+                    listener_repo = repo.ListenerRepository()
+                    listener_repo.update(db_apis.get_session(), listener.id,
+                                         provisioning_status=consts.ERROR,
+                                         operating_status=consts.ERROR)
 
         if has_tcp and not split_config:
-            # Generate HaProxy configuration from listener object
-            config = self.jinja_combo.build_config(
-                host_amphora=amphora, listeners=loadbalancer.listeners,
-                haproxy_versions=haproxy_versions,
-                client_ca_filename=client_ca_filename,
-                client_crl=crl_filename,
-                pool_tls_certs=pool_tls_certs)
-            self.clients[amphora.api_version].upload_config(
-                amphora, loadbalancer.id, config, timeout_dict=timeout_dict)
-            self.clients[amphora.api_version].reload_listener(
-                amphora, loadbalancer.id, timeout_dict=timeout_dict)
+            if listeners_to_update:
+                # Generate HaProxy configuration from listener object
+                config = self.jinja_combo.build_config(
+                    host_amphora=amphora, listeners=listeners_to_update,
+                    haproxy_versions=haproxy_versions,
+                    client_ca_filename=client_ca_filename,
+                    client_crl=crl_filename,
+                    pool_tls_certs=pool_tls_certs)
+                self.clients[amphora.api_version].upload_config(
+                    amphora, loadbalancer.id, config,
+                    timeout_dict=timeout_dict)
+                self.clients[amphora.api_version].reload_listener(
+                    amphora, loadbalancer.id, timeout_dict=timeout_dict)
+            else:
+                # If we aren't updating any listeners, make sure there are
+                # no listeners hanging around. For example if this update
+                # was called from a listener delete.
+                self.clients[amphora.api_version].delete_listener(
+                    amphora, loadbalancer.id)
 
     def _udp_update(self, listener, vip):
         LOG.debug("Amphora %s keepalivedlvs, updating "
