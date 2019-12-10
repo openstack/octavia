@@ -296,7 +296,6 @@ class ControllerWorker(base_taskflow.BaseTaskFlowEngine):
             store={constants.LISTENER: listener,
                    constants.UPDATE_DICT: listener_updates,
                    constants.LOADBALANCER_ID: db_lb.id,
-                   constants.LOADBALANCER: db_lb,
                    constants.LISTENERS: [listener]})
         with tf_logging.DynamicLoggingListener(update_listener_tf, log=LOG):
             update_listener_tf.run()
@@ -389,6 +388,7 @@ class ControllerWorker(base_taskflow.BaseTaskFlowEngine):
         update_lb_tf = self._taskflow_load(
             self._lb_flows.get_update_load_balancer_flow(),
             store={constants.LOADBALANCER: lb,
+                   constants.LOADBALANCER_ID: lb.id,
                    constants.UPDATE_DICT: load_balancer_updates})
 
         with tf_logging.DynamicLoggingListener(update_lb_tf,

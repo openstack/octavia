@@ -92,15 +92,22 @@ class AmpListenersUpdate(BaseAmphoraTask):
 class ListenersUpdate(BaseAmphoraTask):
     """Task to update amphora with all specified listeners' configurations."""
 
-    def execute(self, loadbalancer):
+    def execute(self, loadbalancer_id):
         """Execute updates per listener for an amphora."""
-        self.amphora_driver.update(loadbalancer)
+        loadbalancer = self.loadbalancer_repo.get(db_apis.get_session(),
+                                                  id=loadbalancer_id)
+        if loadbalancer:
+            self.amphora_driver.update(loadbalancer)
+        else:
+            LOG.error('Load balancer %s for listeners update not found. '
+                      'Skipping update.', loadbalancer_id)
 
-    def revert(self, loadbalancer, *args, **kwargs):
+    def revert(self, loadbalancer_id, *args, **kwargs):
         """Handle failed listeners updates."""
 
         LOG.warning("Reverting listeners updates.")
-
+        loadbalancer = self.loadbalancer_repo.get(db_apis.get_session(),
+                                                  id=loadbalancer_id)
         for listener in loadbalancer.listeners:
             self.task_utils.mark_listener_prov_status_error(
                 listener.id)

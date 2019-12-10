@@ -36,7 +36,7 @@ class HealthMonitorFlows(object):
         create_hm_flow.add(database_tasks.MarkHealthMonitorPendingCreateInDB(
             requires=constants.HEALTH_MON))
         create_hm_flow.add(amphora_driver_tasks.ListenersUpdate(
-            requires=constants.LOADBALANCER))
+            requires=constants.LOADBALANCER_ID))
         create_hm_flow.add(database_tasks.MarkHealthMonitorActiveInDB(
             requires=constants.HEALTH_MON))
         create_hm_flow.add(database_tasks.MarkPoolActiveInDB(
@@ -59,7 +59,7 @@ class HealthMonitorFlows(object):
         delete_hm_flow.add(database_tasks.MarkHealthMonitorPendingDeleteInDB(
             requires=constants.HEALTH_MON))
         delete_hm_flow.add(amphora_driver_tasks.ListenersUpdate(
-            requires=constants.LOADBALANCER))
+            requires=constants.LOADBALANCER_ID))
         delete_hm_flow.add(database_tasks.DeleteHealthMonitorInDB(
             requires=constants.HEALTH_MON))
         delete_hm_flow.add(database_tasks.DecrementHealthMonitorQuota(
@@ -88,7 +88,7 @@ class HealthMonitorFlows(object):
         update_hm_flow.add(database_tasks.MarkHealthMonitorPendingUpdateInDB(
             requires=constants.HEALTH_MON))
         update_hm_flow.add(amphora_driver_tasks.ListenersUpdate(
-            requires=constants.LOADBALANCER))
+            requires=constants.LOADBALANCER_ID))
         update_hm_flow.add(database_tasks.UpdateHealthMonInDB(
             requires=[constants.HEALTH_MON, constants.UPDATE_DICT]))
         update_hm_flow.add(database_tasks.MarkHealthMonitorActiveInDB(

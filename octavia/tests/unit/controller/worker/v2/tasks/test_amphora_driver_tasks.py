@@ -108,40 +108,6 @@ class TestAmphoraDriverTasks(base.TestCase):
             _session_mock, AMP_ID, status=constants.ERROR)
 
     @mock.patch('octavia.db.repositories.LoadBalancerRepository.get')
-    def test_listener_update(self,
-                             mock_lb_get,
-                             mock_driver,
-                             mock_generate_uuid,
-                             mock_log,
-                             mock_get_session,
-                             mock_listener_repo_get,
-                             mock_listener_repo_update,
-                             mock_amphora_repo_update):
-
-        listener_update_obj = amphora_driver_tasks.ListenersUpdate()
-        listener_update_obj.execute(_load_balancer_mock)
-
-        mock_driver.update.assert_called_once_with(_load_balancer_mock)
-
-        # Test the revert
-        amp = listener_update_obj.revert(_load_balancer_mock)
-        repo.ListenerRepository.update.assert_called_once_with(
-            _session_mock,
-            id=LISTENER_ID,
-            provisioning_status=constants.ERROR)
-        self.assertIsNone(amp)
-
-        # Test the revert with exception
-        repo.ListenerRepository.update.reset_mock()
-        mock_listener_repo_update.side_effect = Exception('fail')
-        amp = listener_update_obj.revert(_load_balancer_mock)
-        repo.ListenerRepository.update.assert_called_once_with(
-            _session_mock,
-            id=LISTENER_ID,
-            provisioning_status=constants.ERROR)
-        self.assertIsNone(amp)
-
-    @mock.patch('octavia.db.repositories.LoadBalancerRepository.get')
     def test_listeners_update(self,
                               mock_lb_get,
                               mock_driver,
@@ -157,15 +123,15 @@ class TestAmphoraDriverTasks(base.TestCase):
                      data_models.Listener(id='listener2')]
         vip = data_models.Vip(ip_address='10.0.0.1')
         lb = data_models.LoadBalancer(id=LB_ID, listeners=listeners, vip=vip)
-        mock_lb_get.return_value = lb
-        listeners_update_obj.execute(lb)
+        mock_lb_get.side_effect = [lb, None, lb]
+        listeners_update_obj.execute(lb.id)
         mock_driver.update.assert_called_once_with(lb)
         self.assertEqual(1, mock_driver.update.call_count)
 
-        mock_lb_get.reset_mock()
+        mock_driver.update.reset_mock()
 
         listeners_update_obj.execute(None)
-        mock_lb_get.assert_not_called()
+        mock_driver.update.assert_not_called()
 
         # Test the revert
         amp = listeners_update_obj.revert(lb)

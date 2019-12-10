@@ -411,8 +411,6 @@ class TestControllerWorker(base.TestCase):
                                            constants.UPDATE_DICT:
                                            LISTENER_UPDATE_DICT,
                                            constants.LOADBALANCER_ID: LB_ID,
-                                           constants.LOADBALANCER:
-                                               _load_balancer_mock,
                                            constants.LISTENERS:
                                            [listener_dict]}))
 
@@ -718,6 +716,8 @@ class TestControllerWorker(base.TestCase):
                                     store={constants.UPDATE_DICT: change,
                                            constants.LOADBALANCER:
                                                _load_balancer_mock,
+                                           constants.LOADBALANCER_ID:
+                                               _load_balancer_mock.id,
                                            }))
 
         _flow_mock.run.assert_called_once_with()

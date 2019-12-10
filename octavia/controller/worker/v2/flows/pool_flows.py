@@ -36,7 +36,7 @@ class PoolFlows(object):
         create_pool_flow.add(database_tasks.MarkPoolPendingCreateInDB(
             requires=constants.POOL_ID))
         create_pool_flow.add(amphora_driver_tasks.ListenersUpdate(
-            requires=constants.LOADBALANCER))
+            requires=constants.LOADBALANCER_ID))
         create_pool_flow.add(database_tasks.MarkPoolActiveInDB(
             requires=constants.POOL_ID))
         create_pool_flow.add(database_tasks.MarkLBAndListenersActiveInDB(
@@ -59,7 +59,7 @@ class PoolFlows(object):
         delete_pool_flow.add(database_tasks.CountPoolChildrenForQuota(
             requires=constants.POOL_ID, provides=constants.POOL_CHILD_COUNT))
         delete_pool_flow.add(amphora_driver_tasks.ListenersUpdate(
-            requires=constants.LOADBALANCER))
+            requires=constants.LOADBALANCER_ID))
         delete_pool_flow.add(database_tasks.DeletePoolInDB(
             requires=constants.POOL_ID))
         delete_pool_flow.add(database_tasks.DecrementPoolQuota(
@@ -109,7 +109,7 @@ class PoolFlows(object):
         update_pool_flow.add(database_tasks.MarkPoolPendingUpdateInDB(
             requires=constants.POOL_ID))
         update_pool_flow.add(amphora_driver_tasks.ListenersUpdate(
-            requires=constants.LOADBALANCER))
+            requires=constants.LOADBALANCER_ID))
         update_pool_flow.add(database_tasks.UpdatePoolInDB(
             requires=[constants.POOL_ID, constants.UPDATE_DICT]))
         update_pool_flow.add(database_tasks.MarkPoolActiveInDB(
