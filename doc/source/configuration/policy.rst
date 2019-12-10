@@ -43,12 +43,12 @@ requirement. Please see the README.rst in that directory for more information.
 Sample File Generation
 ----------------------
 
-To generate a sample policy.yaml file from the Octavia defaults, run the
+To generate a sample policy.json file from the Octavia defaults, run the
 oslo policy generation script::
 
     oslopolicy-sample-generator
     --config-file etc/policy/octavia-policy-generator.conf
-    --output-file policy.yaml.sample
+    --output-file policy.json.sample
 
 Merged File Generation
 ----------------------
