@@ -1,0 +1,6 @@
+---
+fixes:
+  - |
+    Fix a bug that could interrupt resource creation when performing a graceful
+    shutdown of the house keeping service and leave resources such as amphorae
+    in a BOOTING status.
