@@ -17,7 +17,6 @@ import datetime
 import signal
 import sys
 import threading
-import time
 
 from oslo_config import cfg
 from oslo_log import log as logging
@@ -104,28 +103,27 @@ def main():
     timestamp = str(datetime.datetime.utcnow())
     LOG.info("Starting house keeping at %s", timestamp)
 
+    threads = []
+
     # Thread to perform spare amphora check
     spare_amp_thread = threading.Thread(target=spare_amphora_check)
     spare_amp_thread.daemon = True
     spare_amp_thread.start()
+    threads.append(spare_amp_thread)
 
     # Thread to perform db cleanup
     db_cleanup_thread = threading.Thread(target=db_cleanup)
     db_cleanup_thread.daemon = True
     db_cleanup_thread.start()
+    threads.append(db_cleanup_thread)
 
     # Thread to perform certificate rotation
     cert_rotate_thread = threading.Thread(target=cert_rotation)
     cert_rotate_thread.daemon = True
     cert_rotate_thread.start()
+    threads.append(cert_rotate_thread)
 
-    signal.signal(signal.SIGHUP, _mutate_config)
-
-    # Try-Exception block should be at the end to gracefully exit threads
-    try:
-        while True:
-            time.sleep(1)
-    except KeyboardInterrupt:
+    def process_cleanup(*args, **kwargs):
         LOG.info("Attempting to gracefully terminate House-Keeping")
         spare_amp_thread_event.set()
         db_cleanup_thread_event.set()
@@ -134,3 +132,12 @@ def main():
         db_cleanup_thread.join()
         cert_rotate_thread.join()
         LOG.info("House-Keeping process terminated")
+
+    signal.signal(signal.SIGTERM, process_cleanup)
+    signal.signal(signal.SIGHUP, _mutate_config)
+
+    try:
+        for thread in threads:
+            thread.join()
+    except KeyboardInterrupt:
+        process_cleanup()
