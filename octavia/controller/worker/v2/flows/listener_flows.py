@@ -33,7 +33,7 @@ class ListenerFlows(object):
         create_listener_flow.add(lifecycle_tasks.ListenersToErrorOnRevertTask(
             requires=constants.LISTENERS))
         create_listener_flow.add(amphora_driver_tasks.ListenersUpdate(
-            requires=constants.LOADBALANCER))
+            requires=constants.LOADBALANCER_ID))
         create_listener_flow.add(network_tasks.UpdateVIP(
             requires=constants.LISTENERS))
         create_listener_flow.add(database_tasks.
@@ -57,7 +57,7 @@ class ListenerFlows(object):
             requires=constants.LOADBALANCER_ID,
             provides=constants.LOADBALANCER))
         create_all_listeners_flow.add(amphora_driver_tasks.ListenersUpdate(
-            requires=constants.LOADBALANCER))
+            requires=constants.LOADBALANCER_ID))
         create_all_listeners_flow.add(network_tasks.UpdateVIP(
             requires=constants.LISTENERS))
         return create_all_listeners_flow
@@ -114,7 +114,7 @@ class ListenerFlows(object):
         update_listener_flow.add(lifecycle_tasks.ListenerToErrorOnRevertTask(
             requires=constants.LISTENER))
         update_listener_flow.add(amphora_driver_tasks.ListenersUpdate(
-            requires=constants.LOADBALANCER))
+            requires=constants.LOADBALANCER_ID))
         update_listener_flow.add(network_tasks.UpdateVIP(
             requires=constants.LISTENERS))
         update_listener_flow.add(database_tasks.UpdateListenerInDB(

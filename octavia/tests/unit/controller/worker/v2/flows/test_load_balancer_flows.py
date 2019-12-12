@@ -137,7 +137,7 @@ class TestLoadBalancerFlows(base.TestCase):
         self.assertIn(constants.UPDATE_DICT, lb_flow.requires)
 
         self.assertEqual(0, len(lb_flow.provides))
-        self.assertEqual(2, len(lb_flow.requires))
+        self.assertEqual(3, len(lb_flow.requires))
 
     def test_get_post_lb_amp_association_flow(self, mock_get_net_driver):
         amp_flow = self.LBFlow.get_post_lb_amp_association_flow(

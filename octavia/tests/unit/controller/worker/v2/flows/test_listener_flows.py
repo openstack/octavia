@@ -38,9 +38,8 @@ class TestListenerFlows(base.TestCase):
 
         self.assertIn(constants.LISTENERS, listener_flow.requires)
         self.assertIn(constants.LOADBALANCER_ID, listener_flow.requires)
-        self.assertIn(constants.LOADBALANCER, listener_flow.requires)
 
-        self.assertEqual(3, len(listener_flow.requires))
+        self.assertEqual(2, len(listener_flow.requires))
         self.assertEqual(0, len(listener_flow.provides))
 
     def test_get_delete_listener_flow(self, mock_get_net_driver):
@@ -78,9 +77,8 @@ class TestListenerFlows(base.TestCase):
         self.assertIn(constants.UPDATE_DICT, listener_flow.requires)
         self.assertIn(constants.LISTENERS, listener_flow.requires)
         self.assertIn(constants.LOADBALANCER_ID, listener_flow.requires)
-        self.assertIn(constants.LOADBALANCER, listener_flow.requires)
 
-        self.assertEqual(5, len(listener_flow.requires))
+        self.assertEqual(4, len(listener_flow.requires))
         self.assertEqual(0, len(listener_flow.provides))
 
     def test_get_create_all_listeners_flow(self, mock_get_net_driver):
