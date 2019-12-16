@@ -602,9 +602,9 @@ def sample_listener_tuple(proto=None, monitor=True, alloc_default_pool=True,
                           provisioning_status=constants.ACTIVE):
     proto = 'HTTP' if proto is None else proto
     if be_proto is None:
-        be_proto = 'HTTP' if proto is 'TERMINATED_HTTPS' else proto
+        be_proto = 'HTTP' if proto == 'TERMINATED_HTTPS' else proto
     topology = 'SINGLE' if topology is None else topology
-    port = '443' if proto is 'HTTPS' or proto is 'TERMINATED_HTTPS' else '80'
+    port = '443' if proto in ['HTTPS', 'TERMINATED_HTTPS'] else '80'
     peer_port = 1024 if peer_port is None else peer_port
     insert_headers = insert_headers or {}
     in_listener = collections.namedtuple(
@@ -860,7 +860,7 @@ def sample_session_persistence_tuple(persistence_type=None,
 def sample_health_monitor_tuple(proto='HTTP', sample_hm=1,
                                 host_http_check=False,
                                 provisioning_status=constants.ACTIVE):
-    proto = 'HTTP' if proto is 'TERMINATED_HTTPS' else proto
+    proto = 'HTTP' if proto == 'TERMINATED_HTTPS' else proto
     monitor = collections.namedtuple(
         'monitor', 'id, type, delay, timeout, fall_threshold, rise_threshold,'
                    'http_method, url_path, expected_codes, enabled, '

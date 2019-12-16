@@ -460,7 +460,7 @@ class TestUpdateHealthDb(base.TestCase):
                 "pool-id-1:listener-id-1": {
                     "status": constants.UP,
                     "members": {"member-id-1": constants.UP}},
-                "pool-id-1:listener-id-1": {
+                "pool-id-1:listener-id-2": {
                     "status": constants.UP,
                     "members": {"member-id-1": constants.UP}}},
             "recv_time": time.time()
