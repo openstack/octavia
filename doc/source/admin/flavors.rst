@@ -22,14 +22,14 @@ balancing capabilities to their users. An Octavia flavor is a predefined
 set of provider configuration options that are created by the operator.
 When an user requests a load balancer they can request the load balancer
 be built with one of the defined flavors. Flavors are defined per provider
-driver and expose the unique capabilites of each provider.
+driver and expose the unique capabilities of each provider.
 
 This document is intended to explain the flavors capability for operators
 that wish to create flavors for their users.
 
 There are three steps to creating a new Octavia flavor:
 
-#. Decide on the provider flavor capabilites that will be configured in the
+#. Decide on the provider flavor capabilities that will be configured in the
    flavor.
 #. Create the flavor profile with the flavor capabilities.
 #. Create the user facing flavor.
@@ -132,8 +132,8 @@ The output of the command above is::
   | name              | standalone-lb                        |
   | flavor_profile_id | 72b53ac2-b191-48eb-8f73-ed012caca23a |
   | enabled           | True                                 |
-  | description       | A non-high availability load b       |
-  |                   | alancer for testing.                 |
+  | description       | A non-high availability load         |
+  |                   | balancer for testing.                |
   +-------------------+--------------------------------------+
 
 At this point, the flavor is available for use by users creating new load

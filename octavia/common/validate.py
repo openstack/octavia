@@ -376,10 +376,12 @@ def network_exists_optionally_contains_subnet(network_id, subnet_id=None):
     return network
 
 
-def network_allowed_by_config(network_id):
-    if CONF.networking.valid_vip_networks:
-        valid_networks = map(str.lower, CONF.networking.valid_vip_networks)
-        if network_id not in valid_networks:
+def network_allowed_by_config(network_id, valid_networks=None):
+    if CONF.networking.valid_vip_networks and not valid_networks:
+        valid_networks = CONF.networking.valid_vip_networks
+    if valid_networks:
+        valid_networks = map(str.lower, valid_networks)
+        if network_id.lower() not in valid_networks:
             raise exceptions.ValidationException(detail=_(
                 'Supplied VIP network_id is not allowed by the configuration '
                 'of this deployment.'))

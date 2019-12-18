@@ -1,0 +1,5 @@
+---
+features:
+  - |
+    Availability zone profiles can now override the ``valid_vip_networks``
+    configuration option.
