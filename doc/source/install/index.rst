@@ -6,3 +6,4 @@ Octavia Installation
     :maxdepth: 1
 
     Installation overview guide <../contributor/guides/dev-quick-start>
+    install.rst
