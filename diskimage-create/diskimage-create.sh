@@ -286,7 +286,7 @@ fi
 
 # Find out what platform we are on
 if [ -e /etc/os-release ]; then
-    platform=$(head -1 /etc/os-release)
+    platform=$(cat /etc/os-release  | grep ^NAME= | sed -e 's/\(NAME="\)\(.*\)\("\)/\2/g')
 else
     platform=$(head -1 /etc/system-release | grep -e CentOS -e 'Red Hat Enterprise Linux' || :)
     if [ -z "$platform" ]; then
@@ -295,7 +295,7 @@ else
     fi
 fi
 
-if [ "$AMP_ROOTPW" ] && [ "$platform" != 'NAME="Ubuntu"' ]; then
+if [[ "$AMP_ROOTPW" ]] && [[ "$platform" != 'Ubuntu' ]] && ! [[ "$platform" =~ "Debian" ]]; then
     if [ "$(getenforce)" == "Enforcing" ]; then
         echo "A root password cannot be enabled for images built on this platform while SELinux is enabled."
         exit 1
@@ -307,7 +307,7 @@ if [ "$AMP_ROOTPW" ]; then
 fi
 
 # Make sure we have the required packages installed
-if [ "$platform" = 'NAME="Ubuntu"' ]; then
+if [[ "$platform" = 'Ubuntu' || "$platform" =~ 'Debian' ]]; then
     PKG_LIST="qemu-utils git kpartx debootstrap"
     for pkg in $PKG_LIST; do
         if ! dpkg --get-selections 2> /dev/null | grep -q "^$pkg[[:space:]]*install$" >/dev/null; then
@@ -317,13 +317,25 @@ if [ "$platform" = 'NAME="Ubuntu"' ]; then
         fi
     done
 
-    # Also check if we can build the BASEOS on this Ubuntu version
-    UBUNTU_VERSION=`lsb_release -r | awk '{print $2}'`
-    if [ "$AMP_BASEOS" != "ubuntu-minimal" ] && \
-        [ 1 -eq $(echo "$UBUNTU_VERSION < 14.04" | bc) ]; then
-            echo "Ubuntu minimum version 14.04 required to build $AMP_BASEOS."
-            echo "Earlier versions don't support the extended attributes required."
-            exit 1
+    if [[ "$platform" = 'Ubuntu' ]]; then
+        # Also check if we can build the BASEOS on this Ubuntu version
+        UBUNTU_VERSION=`lsb_release -r | awk '{print $2}'`
+        if [ "$AMP_BASEOS" != "ubuntu-minimal" ] && \
+            [ 1 -eq $(echo "$UBUNTU_VERSION < 14.04" | bc) ]; then
+                echo "Ubuntu minimum version 14.04 required to build $AMP_BASEOS."
+                echo "Earlier versions don't support the extended attributes required."
+                exit 1
+        fi
+    else
+        # Check if we can build the BASEOS on this Debian version
+        DEBIAN_VERSION=`lsb_release -r | awk '{print $2}'`
+        # As minimal Ubuntu version is 14.04, for debian it is Debian 8 Jessie
+        if [ "$AMP_BASEOS" != "ubuntu-minimal" ] && \
+            [ 1 -eq $(echo "$DEBIAN_VERSION < 8" | bc) ]; then
+                echo "Debian minimum version 8 required to build $AMP_BASEOS."
+                echo "Earlier versions don't support the extended attributes required."
+                exit 1
+        fi
     fi
 elif [[ $platform =~ "SUSE" ]]; then
     # OpenSUSE
