@@ -1,0 +1,8 @@
+---
+fixes:
+  - |
+    Fixed code that configured the CentOS/Red Hat amphora images to use the
+    correct names for the network 'ifcfg' files for static routes and
+    routing rules. It was using the wrong name for the routes file,
+    and did not support IPv6 in either file. For more information, see
+    https://storyboard.openstack.org/#!/story/2007051
