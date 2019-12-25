@@ -21,6 +21,7 @@ from sqlalchemy.orm import exc as db_exceptions
 from taskflow.listeners import logging as tf_logging
 import tenacity
 
+from octavia.amphorae.driver_exceptions import exceptions
 from octavia.api.drivers import utils as provider_utils
 from octavia.common import base_taskflow
 from octavia.common import constants
@@ -42,6 +43,17 @@ RETRY_ATTEMPTS = 15
 RETRY_INITIAL_DELAY = 1
 RETRY_BACKOFF = 1
 RETRY_MAX = 5
+
+
+# We do not need to log retry exception information. Warning "Could not connect
+#  to instance" will be logged as usual.
+def retryMaskFilter(record):
+    if record.exc_info is not None and isinstance(
+            record.exc_info[1], exceptions.AmpConnectionRetry):
+        return False
+    return True
+
+LOG.logger.addFilter(retryMaskFilter)
 
 
 def _is_provisioning_status_pending_update(lb_obj):
