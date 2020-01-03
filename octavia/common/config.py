@@ -45,6 +45,7 @@ TLS_PROTOCOL_CHOICES = [
 
 core_opts = [
     cfg.HostnameOpt('host', default=utils.get_hostname(),
+                    sample_default='<server-hostname.example.com>',
                     help=_("The hostname Octavia is running on")),
     cfg.StrOpt('octavia_plugins', default='hot_plug_plugin',
                help=_("Name of the controller plugin to use")),
