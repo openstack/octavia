@@ -38,7 +38,6 @@ class OpenFixture(fixtures.Fixture):
                 return self.mock_open(name, *args, **kwargs)
             return self._orig_open(name, *args, **kwargs)
 
-        self._patch = mock.patch('six.moves.builtins.open',
-                                 new=replacement_open)
+        self._patch = mock.patch('builtins.open', new=replacement_open)
         self._patch.start()
         self.addCleanup(self._patch.stop)

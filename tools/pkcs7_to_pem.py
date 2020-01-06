@@ -26,7 +26,6 @@ from cryptography import x509
 from pyasn1.codec.der import decoder as der_decoder
 from pyasn1.codec.der import encoder as der_encoder
 from pyasn1_modules import rfc2315
-import six
 
 
 PKCS7_BEG = """-----BEGIN PKCS7-----"""
@@ -44,8 +43,7 @@ def _read_pem_blocks(data, *markers):
                            enumerate(map(lambda x: x[1], markers))))
     idx = -1
     state = stSpam
-    if six.PY3:
-        data = str(data, encoding="UTF-8")
+    data = data.decode('utf-8')
     for certLine in data.replace('\r', '').split('\n'):
         if not certLine:
             break
@@ -62,12 +60,8 @@ def _read_pem_blocks(data, *markers):
             else:
                 certLines.append(certLine)
         if state == stDump:
-            if six.PY2:
-                yield ''.join([
-                    base64.b64decode(x) for x in certLines])
-            elif six.PY3:
-                yield ''.encode().join([
-                    base64.b64decode(x) for x in certLines])
+            yield ''.encode().join([
+                base64.b64decode(x) for x in certLines])
             state = stSpam
 
 
@@ -87,21 +81,18 @@ def _process_pkcs7_substrate(substrate):
     for blob in content.getComponentByName('certificates'):
         cert = x509.load_der_x509_certificate(der_encoder.encode(blob),
                                               backends.default_backend())
-        six.print_(cert.public_bytes(
+        print(cert.public_bytes(
             encoding=serialization.Encoding.PEM).decode(
             'unicode_escape'), end='')
 
 
 # Main program code
 if len(sys.argv) != 1:
-    six.print_('Usage: cat <pkcs7_bundle.p7b> | %s' % sys.argv[0])
+    print('Usage: cat <pkcs7_bundle.p7b> | %s' % sys.argv[0])
     sys.exit(-1)
 
 # Need to read in binary bytes in case DER encoding of PKCS7 bundle
-if six.PY2:
-    data = sys.stdin.read()
-elif six.PY3:
-    data = sys.stdin.buffer.read()
+data = sys.stdin.buffer.read()
 
 # Look for PEM encoding
 if PKCS7_BEG in str(data):

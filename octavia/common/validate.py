@@ -25,7 +25,6 @@ import re
 import netaddr
 from oslo_config import cfg
 import rfc3986
-import six
 from wsme import types as wtypes
 
 from octavia.common import constants
@@ -419,7 +418,7 @@ def check_session_persistence(SP_dict):
 
 def ip_not_reserved(ip_address):
     ip_address = (
-        ipaddress.ip_address(six.text_type(ip_address)).exploded.upper())
+        ipaddress.ip_address(ip_address).exploded.upper())
     if ip_address in CONF.networking.reserved_ips:
         raise exceptions.InvalidOption(value=ip_address,
                                        option='member address')

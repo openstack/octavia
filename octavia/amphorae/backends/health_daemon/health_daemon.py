@@ -16,22 +16,16 @@
 
 import errno
 import os
+import queue
 import time
 
 from oslo_config import cfg
 from oslo_log import log as logging
-import six
 
 from octavia.amphorae.backends.agent.api_server import util
 from octavia.amphorae.backends.health_daemon import health_sender
 from octavia.amphorae.backends.utils import haproxy_query
 from octavia.amphorae.backends.utils import keepalivedlvs_query
-
-
-if six.PY2:
-    import Queue as queue  # pylint: disable=wrong-import-order
-else:
-    import queue  # pylint: disable=wrong-import-order
 
 
 CONF = cfg.CONF

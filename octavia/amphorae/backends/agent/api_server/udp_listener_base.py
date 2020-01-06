@@ -15,8 +15,6 @@
 
 import abc
 
-import six
-
 from oslo_config import cfg
 from stevedore import driver as stevedore_driver
 
@@ -24,8 +22,7 @@ CONF = cfg.CONF
 UDP_SERVER_NAMESPACE = 'octavia.amphora.udp_api_server'
 
 
-@six.add_metaclass(abc.ABCMeta)
-class UdpListenerApiServerBase(object):
+class UdpListenerApiServerBase(object, metaclass=abc.ABCMeta):
     """Base UDP Listener Server API
 
     """

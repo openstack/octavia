@@ -16,7 +16,6 @@ import os
 import re
 
 import jinja2
-import six
 
 from octavia.common.config import cfg
 from octavia.common import constants
@@ -492,7 +491,7 @@ class JinjaTemplater(object):
             if '-' in code:
                 low, hi = code.split('-')[:2]
                 retval.update(
-                    str(i) for i in six.moves.xrange(int(low), int(hi) + 1))
+                    str(i) for i in range(int(low), int(hi) + 1))
             else:
                 retval.add(code)
         return sorted(retval)

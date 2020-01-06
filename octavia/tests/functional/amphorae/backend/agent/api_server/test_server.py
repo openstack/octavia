@@ -24,7 +24,6 @@ import fixtures
 from oslo_config import fixture as oslo_fixture
 from oslo_serialization import jsonutils
 from oslo_utils import uuidutils
-import six
 
 from octavia.amphorae.backends.agent import api_server
 from octavia.amphorae.backends.agent.api_server import certificate_update
@@ -698,7 +697,7 @@ class TestServerTestCase(base.TestCase):
             rv = self.centos_app.get('/' + api_server.VERSION +
                                      '/loadbalancer/123/haproxy')
         self.assertEqual(200, rv.status_code)
-        self.assertEqual(six.b(CONTENT), rv.data)
+        self.assertEqual(octavia_utils.b(CONTENT), rv.data)
         self.assertEqual('text/plain; charset=utf-8',
                          rv.headers['Content-Type'].lower())
 
@@ -863,7 +862,8 @@ class TestServerTestCase(base.TestCase):
             rv = self.centos_app.get('/' + api_server.VERSION +
                                      '/loadbalancer/123/certificates/test.pem')
         self.assertEqual(200, rv.status_code)
-        self.assertEqual(dict(md5sum=hashlib.md5(six.b(CONTENT)).hexdigest()),
+        self.assertEqual(dict(md5sum=hashlib.md5(octavia_utils.
+                                                 b(CONTENT)).hexdigest()),
                          jsonutils.loads(rv.data.decode('utf-8')))
 
     def test_ubuntu_upload_certificate_md5(self):
@@ -910,7 +910,7 @@ class TestServerTestCase(base.TestCase):
             self.assertEqual(200, rv.status_code)
             self.assertEqual(OK, jsonutils.loads(rv.data.decode('utf-8')))
             handle = m()
-            handle.write.assert_called_once_with(six.b('TestTest'))
+            handle.write.assert_called_once_with(octavia_utils.b('TestTest'))
 
         mock_exists.return_value = False
         m = self.useFixture(test_utils.OpenFixture(path)).mock_open
@@ -927,7 +927,7 @@ class TestServerTestCase(base.TestCase):
             self.assertEqual(200, rv.status_code)
             self.assertEqual(OK, jsonutils.loads(rv.data.decode('utf-8')))
             handle = m()
-            handle.write.assert_called_once_with(six.b('TestTest'))
+            handle.write.assert_called_once_with(octavia_utils.b('TestTest'))
             mock_makedir.assert_called_once_with('/var/lib/octavia/certs/123')
 
     def test_ubuntu_upload_server_certificate(self):
@@ -950,8 +950,8 @@ class TestServerTestCase(base.TestCase):
             self.assertEqual(202, rv.status_code)
             self.assertEqual(OK, jsonutils.loads(rv.data.decode('utf-8')))
             handle = m()
-            handle.write.assert_any_call(six.b('TestT'))
-            handle.write.assert_any_call(six.b('est'))
+            handle.write.assert_any_call(octavia_utils.b('TestT'))
+            handle.write.assert_any_call(octavia_utils.b('est'))
 
     def test_ubuntu_plug_network(self):
         self._test_plug_network(consts.UBUNTU)
@@ -2592,8 +2592,8 @@ class TestServerTestCase(base.TestCase):
             self.assertEqual(202, rv.status_code)
             self.assertEqual(OK, jsonutils.loads(rv.data.decode('utf-8')))
             handle = m()
-            handle.write.assert_any_call(six.b('TestT'))
-            handle.write.assert_any_call(six.b('est'))
+            handle.write.assert_any_call(octavia_utils.b('TestT'))
+            handle.write.assert_any_call(octavia_utils.b('est'))
             mock_mutate.assert_called_once_with()
 
             # Test the exception handling

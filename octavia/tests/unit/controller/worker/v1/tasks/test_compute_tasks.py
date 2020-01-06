@@ -357,7 +357,7 @@ class TestComputeTasks(base.TestCase):
     def test_compute_create_cert(self, mock_driver, mock_conf, mock_jinja,
                                  mock_log_cfg):
         createcompute = compute_tasks.CertComputeCreate()
-        key = utils.get_six_compatible_server_certs_key_passphrase()
+        key = utils.get_compatible_server_certs_key_passphrase()
         fer = fernet.Fernet(key)
         mock_log_cfg.return_value = 'FAKE CFG'
 
@@ -366,7 +366,7 @@ class TestComputeTasks(base.TestCase):
         self.useFixture(test_utils.OpenFixture(path, 'test'))
         # Test execute()
         test_cert = fer.encrypt(
-            utils.get_six_compatible_value('test_cert')
+            utils.get_compatible_value('test_cert')
         )
         compute_id = createcompute.execute(_amphora_mock.id, test_cert,
                                            server_group_id=SERVER_GRPOUP_ID

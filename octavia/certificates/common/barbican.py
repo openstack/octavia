@@ -21,7 +21,6 @@ import abc
 
 from barbicanclient.v1 import containers
 from oslo_utils import encodeutils
-import six
 
 from octavia.certificates.common import cert
 from octavia.common.tls_utils import cert_parser
@@ -62,8 +61,7 @@ class BarbicanCert(cert.Cert):
         return None
 
 
-@six.add_metaclass(abc.ABCMeta)
-class BarbicanAuth(object):
+class BarbicanAuth(object, metaclass=abc.ABCMeta):
     @abc.abstractmethod
     def get_barbican_client(self, project_id):
         """Creates a Barbican client object.

@@ -15,9 +15,9 @@ from unittest import mock
 
 from barbicanclient.v1 import containers
 from barbicanclient.v1 import secrets
-import six
 
 import octavia.certificates.common.barbican as barbican_common
+from octavia.common import utils as octavia_utils
 import octavia.tests.common.sample_certs as sample
 import octavia.tests.unit.base as base
 
@@ -44,9 +44,9 @@ class TestBarbicanCert(base.TestCase):
 
     def test_barbican_cert(self):
         # Certificate data
-        self.certificate = six.binary_type(sample.X509_CERT)
+        self.certificate = bytes(sample.X509_CERT)
         self.intermediates = sample.X509_IMDS_LIST
-        self.private_key = six.binary_type(sample.X509_CERT_KEY_ENCRYPTED)
+        self.private_key = bytes(sample.X509_CERT_KEY_ENCRYPTED)
         self.private_key_passphrase = sample.X509_CERT_KEY_PASSPHRASE
         self._prepare()
 
@@ -68,15 +68,14 @@ class TestBarbicanCert(base.TestCase):
         self.assertEqual(cert.get_private_key(),
                          sample.X509_CERT_KEY_ENCRYPTED)
         self.assertEqual(cert.get_private_key_passphrase(),
-                         six.b(sample.X509_CERT_KEY_PASSPHRASE))
+                         octavia_utils.b(sample.X509_CERT_KEY_PASSPHRASE))
 
     def test_barbican_cert_text(self):
         # Certificate data
-        self.certificate = six.text_type(sample.X509_CERT)
-        self.intermediates = six.text_type(sample.X509_IMDS_LIST)
-        self.private_key = six.text_type(sample.X509_CERT_KEY_ENCRYPTED)
-        self.private_key_passphrase = six.text_type(
-            sample.X509_CERT_KEY_PASSPHRASE)
+        self.certificate = str(sample.X509_CERT)
+        self.intermediates = str(sample.X509_IMDS_LIST)
+        self.private_key = str(sample.X509_CERT_KEY_ENCRYPTED)
+        self.private_key_passphrase = str(sample.X509_CERT_KEY_PASSPHRASE)
         self._prepare()
 
         container = containers.CertificateContainer(
@@ -93,9 +92,9 @@ class TestBarbicanCert(base.TestCase):
 
         # Validate the cert functions
         self.assertEqual(cert.get_certificate(),
-                         six.b(six.text_type(sample.X509_CERT)))
+                         octavia_utils.b(str(sample.X509_CERT)))
         self.assertEqual(cert.get_intermediates(), sample.X509_IMDS_LIST)
-        self.assertEqual(cert.get_private_key(), six.b(six.text_type(
+        self.assertEqual(cert.get_private_key(), octavia_utils.b(str(
             sample.X509_CERT_KEY_ENCRYPTED)))
         self.assertEqual(cert.get_private_key_passphrase(),
-                         six.b(sample.X509_CERT_KEY_PASSPHRASE))
+                         octavia_utils.b(sample.X509_CERT_KEY_PASSPHRASE))

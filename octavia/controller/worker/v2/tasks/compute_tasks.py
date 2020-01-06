@@ -167,7 +167,7 @@ class CertComputeCreate(ComputeCreate):
         with open(CONF.controller_worker.client_ca, 'r') as client_ca:
             ca = client_ca.read()
 
-        key = utils.get_six_compatible_server_certs_key_passphrase()
+        key = utils.get_compatible_server_certs_key_passphrase()
         fer = fernet.Fernet(key)
         config_drive_files = {
             '/etc/octavia/certs/server.pem': fer.decrypt(

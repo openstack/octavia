@@ -29,11 +29,11 @@ class TestCertTasks(base.TestCase):
 
     @mock.patch('stevedore.driver.DriverManager.driver')
     def test_execute(self, mock_driver):
-        key = utils.get_six_compatible_server_certs_key_passphrase()
+        key = utils.get_compatible_server_certs_key_passphrase()
         fer = fernet.Fernet(key)
         dummy_cert = local.LocalCert(
-            utils.get_six_compatible_value('test_cert'),
-            utils.get_six_compatible_value('test_key'))
+            utils.get_compatible_value('test_cert'),
+            utils.get_compatible_value('test_key'))
         mock_driver.generate_cert_key_pair.side_effect = [dummy_cert]
         c = cert_task.GenerateServerPEMTask()
         pem = c.execute('123')

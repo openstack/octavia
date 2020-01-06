@@ -17,7 +17,6 @@ import os
 
 import jinja2
 from oslo_config import cfg
-import six
 
 from octavia.amphorae.backends.agent.api_server import util
 from octavia.common import constants
@@ -72,20 +71,17 @@ class KeepalivedJinjaTemplater(object):
 
         # Validate the VIP address and see if it is IPv6
         vip = loadbalancer.vip.ip_address
-        vip_addr = ipaddress.ip_address(
-            vip if isinstance(vip, six.text_type) else six.u(vip))
+        vip_addr = ipaddress.ip_address(vip)
         vip_ipv6 = vip_addr.version == 6
 
         # Normalize and validate the VIP subnet CIDR
         vip_network_cidr = None
-        vip_cidr = (vip_cidr if isinstance(vip_cidr, six.text_type) else
-                    six.u(vip_cidr))
         if vip_ipv6:
             vip_network_cidr = ipaddress.IPv6Network(vip_cidr).with_prefixlen
         else:
             vip_network_cidr = ipaddress.IPv4Network(vip_cidr).with_prefixlen
 
-        for amp in six.moves.filter(
+        for amp in filter(
             lambda amp: amp.status == constants.AMPHORA_ALLOCATED,
                 loadbalancer.amphorae):
             if amp.vrrp_ip != amphora.vrrp_ip:

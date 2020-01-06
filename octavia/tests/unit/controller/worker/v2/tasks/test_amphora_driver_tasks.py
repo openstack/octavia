@@ -504,11 +504,11 @@ class TestAmphoraDriverTasks(base.TestCase):
                                  mock_listener_repo_update,
                                  mock_amphora_repo_get,
                                  mock_amphora_repo_update):
-        key = utils.get_six_compatible_server_certs_key_passphrase()
+        key = utils.get_compatible_server_certs_key_passphrase()
         mock_amphora_repo_get.return_value = _db_amphora_mock
         fer = fernet.Fernet(key)
         pem_file_mock = fer.encrypt(
-            utils.get_six_compatible_value('test-pem-file')).decode('utf-8')
+            utils.get_compatible_value('test-pem-file')).decode('utf-8')
         amphora_cert_upload_mock = amphora_driver_tasks.AmphoraCertUpload()
         amphora_cert_upload_mock.execute(_amphora_mock, pem_file_mock)
 

@@ -17,8 +17,6 @@
 Octavia base exception handling.
 """
 
-import six
-
 from oslo_utils import excutils
 from webob import exc
 
@@ -52,7 +50,7 @@ class OctaviaException(Exception):
                     super(OctaviaException, self).__init__(self.message)
 
     def __unicode__(self):
-        return six.text_type(self.msg)
+        return self.msg
 
     @staticmethod
     def use_fatal_exceptions():

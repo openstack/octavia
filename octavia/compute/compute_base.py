@@ -14,11 +14,8 @@
 
 import abc
 
-import six
 
-
-@six.add_metaclass(abc.ABCMeta)
-class ComputeBase(object):
+class ComputeBase(object, metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     def build(self, name="amphora_name", amphora_flavor=None,

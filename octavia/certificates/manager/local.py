@@ -18,7 +18,6 @@ import uuid
 
 from oslo_config import cfg
 from oslo_log import log as logging
-import six
 
 from octavia.certificates.common import local as local_common
 from octavia.certificates.manager import cert_mgr
@@ -51,9 +50,9 @@ class LocalCertManager(cert_mgr.CertManager):
         """
         cert_ref = str(uuid.uuid4())
         filename_base = os.path.join(CONF.certificates.storage_path, cert_ref)
-        if type(certificate) == six.binary_type:
+        if type(certificate) == bytes:
             certificate = certificate.decode('utf-8')
-        if type(private_key) == six.binary_type:
+        if type(private_key) == bytes:
             private_key = private_key.decode('utf-8')
 
         LOG.info("Storing certificate data on the local filesystem.")
@@ -72,7 +71,7 @@ class LocalCertManager(cert_mgr.CertManager):
 
             if intermediates:
                 filename_intermediates = "{0}.int".format(filename_base)
-                if type(intermediates) == six.binary_type:
+                if type(intermediates) == bytes:
                     intermediates = intermediates.decode('utf-8')
                 with os.fdopen(os.open(
                         filename_intermediates, flags, mode), 'w') as int_file:
@@ -80,7 +79,7 @@ class LocalCertManager(cert_mgr.CertManager):
 
             if private_key_passphrase:
                 filename_pkp = "{0}.pass".format(filename_base)
-                if type(private_key_passphrase) == six.binary_type:
+                if type(private_key_passphrase) == bytes:
                     private_key_passphrase = private_key_passphrase.decode(
                         'utf-8')
                 with os.fdopen(os.open(

@@ -45,7 +45,7 @@ class GenerateServerPEMTask(BaseCertTask):
         cert = self.cert_generator.generate_cert_key_pair(
             cn=amphora_id,
             validity=CONF.certificates.cert_validity_time)
-        key = utils.get_six_compatible_server_certs_key_passphrase()
+        key = utils.get_compatible_server_certs_key_passphrase()
         fer = fernet.Fernet(key)
 
         # storing in db requires conversion bytes to string

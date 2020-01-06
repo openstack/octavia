@@ -16,11 +16,11 @@ from unittest import mock
 from barbicanclient.v1 import containers
 from barbicanclient.v1 import secrets
 from oslo_utils import uuidutils
-import six
 
 import octavia.certificates.common.barbican as barbican_common
 import octavia.certificates.common.cert as cert
 import octavia.certificates.manager.barbican_legacy as barbican_cert_mgr
+from octavia.common import utils as octavia_utils
 import octavia.tests.common.sample_certs as sample
 import octavia.tests.unit.base as base
 
@@ -209,7 +209,7 @@ class TestBarbicanManager(base.TestCase):
         self.assertEqual(data.get_intermediates(),
                          sample.X509_IMDS_LIST)
         self.assertEqual(data.get_private_key_passphrase(),
-                         six.b(self.private_key_passphrase.payload))
+                         octavia_utils.b(self.private_key_passphrase.payload))
 
     def test_get_cert_no_registration(self):
         self.bc.containers.get.return_value = self.container
@@ -234,7 +234,7 @@ class TestBarbicanManager(base.TestCase):
         self.assertEqual(data.get_intermediates(),
                          sample.X509_IMDS_LIST)
         self.assertEqual(data.get_private_key_passphrase(),
-                         six.b(self.private_key_passphrase.payload))
+                         octavia_utils.b(self.private_key_passphrase.payload))
 
     def test_get_cert_no_registration_raise_on_secret_access_failure(self):
         self.bc.containers.get.return_value = self.container

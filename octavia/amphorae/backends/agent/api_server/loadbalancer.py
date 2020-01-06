@@ -24,7 +24,6 @@ import flask
 import jinja2
 from oslo_config import cfg
 from oslo_log import log as logging
-import six
 import webob
 from werkzeug import exceptions
 
@@ -86,7 +85,8 @@ class Loadbalancer(object):
         with open(util.config_path(lb_id), 'r') as file:
             cfg = file.read()
             resp = webob.Response(cfg, content_type='text/plain')
-            resp.headers['ETag'] = hashlib.md5(six.b(cfg)).hexdigest()  # nosec
+            resp.headers['ETag'] = (
+                hashlib.md5(octavia_utils.b(cfg)).hexdigest())  # nosec
             return resp
 
     def upload_haproxy_config(self, amphora_id, lb_id):
@@ -408,7 +408,7 @@ class Loadbalancer(object):
 
         with open(cert_path, 'r') as crt_file:
             cert = crt_file.read()
-            md5 = hashlib.md5(six.b(cert)).hexdigest()  # nosec
+            md5 = hashlib.md5(octavia_utils.b(cert)).hexdigest()  # nosec
             resp = webob.Response(json=dict(md5sum=md5))
             resp.headers['ETag'] = md5
             return resp

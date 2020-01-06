@@ -22,7 +22,6 @@ import subprocess
 from oslo_config import cfg
 from oslo_log import log as logging
 import pyroute2
-import six
 import webob
 from werkzeug import exceptions
 
@@ -46,28 +45,19 @@ class Plug(object):
         # Validate vip and subnet_cidr, calculate broadcast address and netmask
         try:
             render_host_routes = []
-            ip = ipaddress.ip_address(
-                vip if isinstance(vip, six.text_type) else six.u(vip))
-            network = ipaddress.ip_network(
-                subnet_cidr if isinstance(subnet_cidr, six.text_type)
-                else six.u(subnet_cidr))
+            ip = ipaddress.ip_address(vip)
+            network = ipaddress.ip_network(subnet_cidr)
             vip = ip.exploded
             broadcast = network.broadcast_address.exploded
             netmask = (network.prefixlen if ip.version == 6
                        else network.netmask.exploded)
             vrrp_version = None
             if vrrp_ip:
-                vrrp_ip_obj = ipaddress.ip_address(
-                    vrrp_ip if isinstance(vrrp_ip, six.text_type)
-                    else six.u(vrrp_ip)
-                )
+                vrrp_ip_obj = ipaddress.ip_address(vrrp_ip)
                 vrrp_version = vrrp_ip_obj.version
             if host_routes:
                 for hr in host_routes:
-                    network = ipaddress.ip_network(
-                        hr['destination'] if isinstance(
-                            hr['destination'], six.text_type) else
-                        six.u(hr['destination']))
+                    network = ipaddress.ip_network(hr['destination'])
                     render_host_routes.append({'network': network,
                                                'gw': hr['nexthop']})
         except ValueError:

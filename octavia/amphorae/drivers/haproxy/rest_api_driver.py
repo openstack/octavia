@@ -23,7 +23,6 @@ from oslo_context import context as oslo_context
 from oslo_log import log as logging
 import requests
 import simplejson
-import six
 from stevedore import driver as stevedore_driver
 
 from octavia.amphorae.driver_exceptions import exceptions as driver_except
@@ -664,7 +663,7 @@ class AmphoraAPIClientBase(object):
         self.ssl_adapter.uuid = amp.id
         exception = None
         # Keep retrying
-        for dummy in six.moves.xrange(conn_max_retries):
+        for dummy in range(conn_max_retries):
             try:
                 with warnings.catch_warnings():
                     warnings.filterwarnings(
@@ -705,9 +704,8 @@ class AmphoraAPIClientBase(object):
                     # For taskflow persistence cause attribute should
                     # be serializable to JSON. Pass None, as cause exception
                     # is described in the expection message.
-                    six.raise_from(
-                        driver_except.AmpConnectionRetry(exception=str(e)),
-                        None)
+                    raise driver_except.AmpConnectionRetry(
+                        exception=str(e)) from None
         LOG.error("Connection retries (currently set to %(max_retries)s) "
                   "exhausted.  The amphora is unavailable. Reason: "
                   "%(exception)s",

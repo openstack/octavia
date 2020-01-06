@@ -24,10 +24,10 @@ from oslo_log import log as logging
 from pyasn1.codec.der import decoder as der_decoder
 from pyasn1.codec.der import encoder as der_encoder
 from pyasn1_modules import rfc2315
-import six
 
 from octavia.common import data_models
 from octavia.common import exceptions
+from octavia.common import utils as octavia_utils
 
 X509_BEG = b'-----BEGIN CERTIFICATE-----'
 X509_END = b'-----END CERTIFICATE-----'
@@ -72,9 +72,9 @@ def _read_private_key(private_key_pem, passphrase=None):
     :param passphrase: Optional passphrase needed to decrypt the private key
     :returns: a RSAPrivatekey object
     """
-    if passphrase and type(passphrase) == six.text_type:
+    if passphrase and isinstance(passphrase, str):
         passphrase = passphrase.encode("utf-8")
-    if type(private_key_pem) == six.text_type:
+    if isinstance(private_key_pem, str):
         private_key_pem = private_key_pem.encode('utf-8')
 
     try:
@@ -106,7 +106,7 @@ def get_intermediates_pems(intermediates=None):
               X509 pem block surrounded by BEGIN CERTIFICATE,
               END CERTIFICATE block tags
     """
-    if isinstance(intermediates, six.string_types):
+    if isinstance(intermediates, str):
         try:
             intermediates = intermediates.encode("utf-8")
         except UnicodeDecodeError:
@@ -139,13 +139,13 @@ def _split_x509s(xstr):
     """
     curr_pem_block = []
     inside_x509 = False
-    if type(xstr) == six.binary_type:
+    if isinstance(xstr, bytes):
         xstr = xstr.decode('utf-8')
     for line in xstr.replace("\r", "").split("\n"):
         if inside_x509:
             curr_pem_block.append(line)
             if line == X509_END.decode('utf-8'):
-                yield six.b("\n".join(curr_pem_block))
+                yield octavia_utils.b("\n".join(curr_pem_block))
                 curr_pem_block = []
                 inside_x509 = False
             continue
@@ -193,7 +193,7 @@ def _read_pem_blocks(data):
     stopMarkers = {PKCS7_END.decode('utf-8'): 0}
     idx = -1
     state = stSpam
-    if type(data) == six.binary_type:
+    if isinstance(data, bytes):
         data = data.decode('utf-8')
     for certLine in data.replace('\r', '').split('\n'):
         if not certLine:
@@ -254,7 +254,7 @@ def get_host_names(certificate):
               certificate, and 'dns_names' is a list of dNSNames
               (possibly empty) from the SubjectAltNames of the certificate.
     """
-    if isinstance(certificate, six.string_types):
+    if isinstance(certificate, str):
         certificate = certificate.encode('utf-8')
     try:
         cert = x509.load_pem_x509_certificate(certificate,
@@ -301,7 +301,7 @@ def _get_x509_from_pem_bytes(certificate_pem):
     :param certificate_pem: Certificate in PEM format
     :returns: crypto high-level x509 data from the PEM string
     """
-    if type(certificate_pem) == six.text_type:
+    if isinstance(certificate_pem, str):
         certificate_pem = certificate_pem.encode('utf-8')
     try:
         x509cert = x509.load_pem_x509_certificate(certificate_pem,
@@ -386,15 +386,15 @@ def _map_cert_tls_container(cert):
     private_key = cert.get_private_key()
     private_key_passphrase = cert.get_private_key_passphrase()
     intermediates = cert.get_intermediates()
-    if isinstance(certificate, six.string_types):
+    if isinstance(certificate, str):
         certificate = certificate.encode('utf-8')
-    if isinstance(private_key, six.string_types):
+    if isinstance(private_key, str):
         private_key = private_key.encode('utf-8')
-    if isinstance(private_key_passphrase, six.string_types):
+    if isinstance(private_key_passphrase, str):
         private_key_passphrase = private_key_passphrase.encode('utf-8')
     if intermediates:
         intermediates = [
-            (imd.encode('utf-8') if isinstance(imd, six.string_types) else imd)
+            (imd.encode('utf-8') if isinstance(imd, str) else imd)
             for imd in intermediates
         ]
     else:

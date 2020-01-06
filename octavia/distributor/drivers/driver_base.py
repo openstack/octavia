@@ -15,15 +15,12 @@
 
 import abc
 
-import six
-
 # This class describes the abstraction of a distributor interface.
 # Distributor implementations may be: a noop, a single hardware device,
 # a single amphora, or multiple amphora among other options.
 
 
-@six.add_metaclass(abc.ABCMeta)
-class DistributorDriver(object):
+class DistributorDriver(object, metaclass=abc.ABCMeta):
     @abc.abstractmethod
     def get_create_distributor_subflow(self):
         """Get a subflow to create a distributor

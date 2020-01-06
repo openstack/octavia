@@ -15,12 +15,8 @@
 
 import abc
 
-import six
 
-
-@six.add_metaclass(abc.ABCMeta)
-class AmphoraLoadBalancerDriver(object):
-
+class AmphoraLoadBalancerDriver(object, metaclass=abc.ABCMeta):
     @abc.abstractmethod
     def update_amphora_listeners(self, loadbalancer, amphora,
                                  timeout_dict):
@@ -207,8 +203,7 @@ class AmphoraLoadBalancerDriver(object):
         """
 
 
-@six.add_metaclass(abc.ABCMeta)
-class HealthMixin(object):
+class HealthMixin(object, metaclass=abc.ABCMeta):
     @abc.abstractmethod
     def update_health(self, health):
         """Return ceilometer ready health
@@ -229,8 +224,7 @@ class HealthMixin(object):
         """
 
 
-@six.add_metaclass(abc.ABCMeta)
-class StatsMixin(object):
+class StatsMixin(object, metaclass=abc.ABCMeta):
     @abc.abstractmethod
     def update_stats(self, stats):
         """Return ceilometer ready stats
@@ -250,8 +244,7 @@ class StatsMixin(object):
         """
 
 
-@six.add_metaclass(abc.ABCMeta)
-class VRRPDriverMixin(object):
+class VRRPDriverMixin(object, metaclass=abc.ABCMeta):
     """Abstract mixin class for VRRP support in loadbalancer amphorae
 
     Usage: To plug VRRP support in another service driver XYZ, use:

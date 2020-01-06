@@ -16,7 +16,6 @@
 
 import re
 
-import six
 from sqlalchemy.orm import collections
 
 from octavia.common import constants
@@ -63,8 +62,6 @@ class BaseDataModel(object):
                             recurse=recurse)
                     else:
                         ret[attr] = None
-                elif six.PY2 and isinstance(value, six.text_type):
-                    ret[attr.encode('utf8')] = value.encode('utf8')
                 else:
                     ret[attr] = value
             else:

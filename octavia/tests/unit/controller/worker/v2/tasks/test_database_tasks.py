@@ -1167,10 +1167,10 @@ class TestDatabaseTasks(base.TestCase):
                                         mock_get_cert_exp):
 
         update_amp_cert = database_tasks.UpdateAmphoraDBCertExpiration()
-        key = utils.get_six_compatible_server_certs_key_passphrase()
+        key = utils.get_compatible_server_certs_key_passphrase()
         fer = fernet.Fernet(key)
         _pem_mock = fer.encrypt(
-            utils.get_six_compatible_value('test_cert')
+            utils.get_compatible_value('test_cert')
         ).decode('utf-8')
         update_amp_cert.execute(_db_amphora_mock.id, _pem_mock)
 

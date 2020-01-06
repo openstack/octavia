@@ -15,7 +15,6 @@ import re
 import subprocess
 
 from oslo_log import log as logging
-import six
 
 from octavia.amphorae.backends.agent.api_server import util
 from octavia.common import constants
@@ -70,7 +69,7 @@ def get_listener_realserver_mapping(ns_name, listener_ip_port,
     #   'InActConn': 0
     # }}
     listener_ip, listener_port = listener_ip_port.rsplit(':', 1)
-    ip_obj = ipaddress.ip_address(six.text_type(listener_ip.strip('[]')))
+    ip_obj = ipaddress.ip_address(listener_ip.strip('[]'))
     output = read_kernel_file(ns_name, KERNEL_LVS_PATH).split('\n')
     if ip_obj.version == 4:
         ip_to_hex_format = "0%X" % ip_obj._ip
@@ -195,7 +194,7 @@ def get_udp_listener_resource_ipports_nsname(listener_id):
             rs_ip_port_count = len(rs_ip_port_list)
             for index in range(rs_ip_port_count):
                 if ipaddress.ip_address(
-                        six.text_type(rs_ip_port_list[index][0])).version == 6:
+                        rs_ip_port_list[index][0]).version == 6:
                     rs_ip_port_list[index] = (
                         '[' + rs_ip_port_list[index][0] + ']',
                         rs_ip_port_list[index][1])
@@ -204,7 +203,7 @@ def get_udp_listener_resource_ipports_nsname(listener_id):
                     rs_ip_port_list[index][1])
 
         if ipaddress.ip_address(
-                six.text_type(listener_ip_port[0])).version == 6:
+                listener_ip_port[0]).version == 6:
             listener_ip_port = (
                 '[' + listener_ip_port[0] + ']', listener_ip_port[1])
         resource_ipport_mapping['Listener']['ipport'] = (

@@ -16,7 +16,6 @@
 import base64
 
 import pkg_resources
-import six
 
 
 X509_CERT_CN = 'www.example.com'
@@ -415,13 +414,11 @@ WHMk0DiS1quLYFZK2QhyFY2D1VLweyTQl8Hb/yYbxmd9QZDpDGCaIRkDt5H+rX17
 -----END PKCS7-----
 More spam here, too. Should be ignored."""
 
+
 # Needed because we want PKCS7_DER to be raw bytes, not base64 encoded
-if six.PY2:
-    def b64decode(thing):
-        return base64.decodestring(thing)
-elif six.PY3:
-    def b64decode(thing):
-        return base64.decodebytes(bytes(thing, encoding='UTF-8'))
+def b64decode(thing):
+    return base64.decodebytes(bytes(thing, encoding='UTF-8'))
+
 
 PKCS7_DER = b64decode(
     'MIILZwYJKoZIhvcNAQcCoIILWDCCC1QCAQExADALBgkqhkiG9w0BBwGgggs6MIIF' +

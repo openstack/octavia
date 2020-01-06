@@ -18,11 +18,8 @@ Certificate manager API
 """
 import abc
 
-import six
 
-
-@six.add_metaclass(abc.ABCMeta)
-class CertManager(object):
+class CertManager(object, metaclass=abc.ABCMeta):
     """Base Cert Manager Interface
 
     A Cert Manager is responsible for managing certificates for TLS.

@@ -14,8 +14,6 @@
 
 import copy
 
-import six
-
 from octavia_lib.api.drivers import data_models as driver_dm
 from octavia_lib.api.drivers import exceptions as lib_exceptions
 from oslo_config import cfg
@@ -255,7 +253,7 @@ def listener_dict_to_provider_dict(listener_dict, for_delete=False):
                     del sni['listener']
                 sni_obj = data_models.SNI(**sni)
                 SNI_objs.append(sni_obj)
-            elif isinstance(sni, six.string_types):
+            elif isinstance(sni, str):
                 sni_obj = data_models.SNI(tls_container_id=sni)
                 SNI_objs.append(sni_obj)
             else:

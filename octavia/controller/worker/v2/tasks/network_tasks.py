@@ -15,7 +15,6 @@
 
 from oslo_config import cfg
 from oslo_log import log as logging
-import six
 from taskflow import task
 from taskflow.types import failure
 
@@ -117,7 +116,7 @@ class CalculateDelta(BaseNetworkTask):
         deltas = {}
         db_lb = self.loadbalancer_repo.get(
             db_apis.get_session(), id=loadbalancer[constants.LOADBALANCER_ID])
-        for amphora in six.moves.filter(
+        for amphora in filter(
             lambda amp: amp.status == constants.AMPHORA_ALLOCATED,
                 db_lb.amphorae):
 
@@ -294,7 +293,7 @@ class HandleNetworkDeltas(BaseNetworkTask):
     def execute(self, deltas):
         """Handle network plugging based off deltas."""
         added_ports = {}
-        for amp_id, delta in six.iteritems(deltas):
+        for amp_id, delta in deltas.items():
             added_ports[amp_id] = []
             for nic in delta[constants.ADD_NICS]:
                 interface = self.network_driver.plug_network(
@@ -322,7 +321,7 @@ class HandleNetworkDeltas(BaseNetworkTask):
 
         if isinstance(result, failure.Failure):
             return
-        for amp_id, delta in six.iteritems(deltas):
+        for amp_id, delta in deltas.items():
             LOG.warning("Unable to plug networks for amp id %s",
                         delta[constants.AMPHORA_ID])
             if not delta:
@@ -364,7 +363,7 @@ class PlugVIP(BaseNetworkTask):
         try:
             # Make sure we have the current port IDs for cleanup
             for amp_data in result:
-                for amphora in six.moves.filter(
+                for amphora in filter(
                         # pylint: disable=cell-var-from-loop
                         lambda amp: amp.id == amp_data['id'],
                         db_lb.amphorae):
@@ -549,7 +548,7 @@ class GetAmphoraNetworkConfigs(BaseNetworkTask):
         db_configs = self.network_driver.get_network_configs(
             db_lb, amphora=db_amp)
         provider_dict = {}
-        for amp_id, amp_conf in six.iteritems(db_configs):
+        for amp_id, amp_conf in db_configs.items():
             provider_dict[amp_id] = amp_conf.to_dict(recurse=True)
         return provider_dict
 
@@ -563,7 +562,7 @@ class GetAmphoraeNetworkConfigs(BaseNetworkTask):
             db_apis.get_session(), id=loadbalancer[constants.LOADBALANCER_ID])
         db_configs = self.network_driver.get_network_configs(db_lb)
         provider_dict = {}
-        for amp_id, amp_conf in six.iteritems(db_configs):
+        for amp_id, amp_conf in db_configs.items():
             provider_dict[amp_id] = amp_conf.to_dict(recurse=True)
         return provider_dict
 

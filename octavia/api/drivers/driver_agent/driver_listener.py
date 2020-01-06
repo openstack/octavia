@@ -15,9 +15,8 @@
 
 import errno
 import os
+import socketserver
 import threading
-
-import six.moves.socketserver as socketserver
 
 from oslo_config import cfg
 from oslo_log import log as logging

@@ -15,18 +15,14 @@
 import copy
 
 import netaddr
-import six
 from wsme import types as wtypes
 
 from octavia.common import exceptions
 from octavia.common import validate
 
-if six.PY3:
-    unicode = str
-
 
 class IPAddressType(wtypes.UserType):
-    basetype = unicode
+    basetype = str
     name = 'ipaddress'
 
     @staticmethod
@@ -45,7 +41,7 @@ class IPAddressType(wtypes.UserType):
 
 
 class CidrType(wtypes.UserType):
-    basetype = unicode
+    basetype = str
     name = 'cidr'
 
     @staticmethod
@@ -59,7 +55,7 @@ class CidrType(wtypes.UserType):
 
 
 class URLType(wtypes.UserType):
-    basetype = unicode
+    basetype = str
     name = 'url'
 
     def __init__(self, require_scheme=True):
@@ -76,7 +72,7 @@ class URLType(wtypes.UserType):
 
 
 class URLPathType(wtypes.UserType):
-    basetype = unicode
+    basetype = str
     name = 'url_path'
 
     @staticmethod
@@ -119,8 +115,7 @@ class BaseMeta(wtypes.BaseMeta):
         return super(BaseMeta, cls).__new__(cls, name, bases, dct)
 
 
-@six.add_metaclass(BaseMeta)
-class BaseType(wtypes.Base):
+class BaseType(wtypes.Base, metaclass=BaseMeta):
     @classmethod
     def _full_response(cls):
         return False

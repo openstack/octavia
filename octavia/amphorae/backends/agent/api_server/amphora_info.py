@@ -19,7 +19,6 @@ import socket
 import subprocess
 
 import pyroute2
-import six
 import webob
 
 import netifaces
@@ -178,7 +177,7 @@ class AmphoraInfo(object):
     def get_interface(self, ip_addr):
 
         try:
-            ip_version = ipaddress.ip_address(six.text_type(ip_addr)).version
+            ip_version = ipaddress.ip_address(ip_addr).version
         except Exception:
             return webob.Response(
                 json=dict(message="Invalid IP address"), status=400)

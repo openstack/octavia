@@ -14,10 +14,9 @@
 import socket
 from unittest import mock
 
-import six
-
 from octavia.amphorae.backends.utils import haproxy_query as query
 from octavia.common import constants
+from octavia.common import utils as octavia_utils
 import octavia.tests.unit.base as base
 
 STATS_SOCKET_SAMPLE = (
@@ -87,7 +86,7 @@ class QueryTestCase(base.TestCase):
         self.q._query('test')
 
         sock.connect.assert_called_once_with('')
-        sock.send.assert_called_once_with(six.b('test\n'))
+        sock.send.assert_called_once_with(octavia_utils.b('test\n'))
         sock.recv.assert_called_with(1024)
         self.assertTrue(sock.close.called)
 

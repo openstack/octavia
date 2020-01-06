@@ -13,7 +13,6 @@
 # under the License.
 
 from oslo_log import log as logging
-import six
 
 from octavia.amphorae.drivers import driver_base
 from octavia.amphorae.drivers.keepalived.jinja import jinja_cfg
@@ -41,7 +40,7 @@ class KeepalivedAmphoraDriverMixin(driver_base.VRRPDriverMixin):
         LOG.debug("Update loadbalancer %s amphora VRRP configuration.",
                   loadbalancer.id)
 
-        for amp in six.moves.filter(
+        for amp in filter(
             lambda amp: amp.status == constants.AMPHORA_ALLOCATED,
                 loadbalancer.amphorae):
 
@@ -67,7 +66,7 @@ class KeepalivedAmphoraDriverMixin(driver_base.VRRPDriverMixin):
         LOG.info("Stop loadbalancer %s amphora VRRP Service.",
                  loadbalancer.id)
 
-        for amp in six.moves.filter(
+        for amp in filter(
             lambda amp: amp.status == constants.AMPHORA_ALLOCATED,
                 loadbalancer.amphorae):
 
@@ -82,7 +81,7 @@ class KeepalivedAmphoraDriverMixin(driver_base.VRRPDriverMixin):
         LOG.info("Start loadbalancer %s amphora VRRP Service.",
                  loadbalancer.id)
 
-        for amp in six.moves.filter(
+        for amp in filter(
             lambda amp: amp.status == constants.AMPHORA_ALLOCATED,
                 loadbalancer.amphorae):
 
@@ -98,7 +97,7 @@ class KeepalivedAmphoraDriverMixin(driver_base.VRRPDriverMixin):
         LOG.info("Reload loadbalancer %s amphora VRRP Service.",
                  loadbalancer.id)
 
-        for amp in six.moves.filter(
+        for amp in filter(
             lambda amp: amp.status == constants.AMPHORA_ALLOCATED,
                 loadbalancer.amphorae):
 

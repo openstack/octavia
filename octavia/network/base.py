@@ -14,8 +14,6 @@
 
 import abc
 
-import six
-
 from octavia.common import exceptions
 
 
@@ -79,8 +77,7 @@ class QosPolicyNotFound(NetworkException):
     pass
 
 
-@six.add_metaclass(abc.ABCMeta)
-class AbstractNetworkDriver(object):
+class AbstractNetworkDriver(object, metaclass=abc.ABCMeta):
     """This class defines the methods for a fully functional network driver.
 
     Implementations of this interface can expect a rollback to occur if any of

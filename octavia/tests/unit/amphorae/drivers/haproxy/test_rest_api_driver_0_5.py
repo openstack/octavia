@@ -20,12 +20,12 @@ from oslo_config import fixture as oslo_fixture
 from oslo_utils import uuidutils
 import requests
 import requests_mock
-import six
 
 from octavia.amphorae.driver_exceptions import exceptions as driver_except
 from octavia.amphorae.drivers.haproxy import exceptions as exc
 from octavia.amphorae.drivers.haproxy import rest_api_driver as driver
 from octavia.common import constants
+from octavia.common import utils as octavia_utils
 from octavia.db import models
 from octavia.network import data_models as network_models
 from octavia.tests.common import sample_certs
@@ -267,10 +267,10 @@ class TestHaproxyAmphoraLoadBalancerDriverTest(base.TestCase):
             self.amp, self.sl_udp.id, timeout_dict=None)
 
     def test_upload_cert_amp(self):
-        self.driver.upload_cert_amp(self.amp, six.b('test'))
+        self.driver.upload_cert_amp(self.amp, octavia_utils.b('test'))
         self.driver.clients[
             API_VERSION].update_cert_for_rotation.assert_called_once_with(
-            self.amp, six.b('test'))
+            self.amp, octavia_utils.b('test'))
 
     @mock.patch('octavia.common.tls_utils.cert_parser.load_certificates_data')
     def test__process_tls_certificates_no_ca_cert(self, mock_load_crt):
@@ -660,10 +660,11 @@ class TestHaproxyAmphoraLoadBalancerDriverTest(base.TestCase):
         self.assertEqual(ref_haproxy_version, result)
 
     def test_update_amphora_agent_config(self):
-        self.driver.update_amphora_agent_config(self.amp, six.b('test'))
+        self.driver.update_amphora_agent_config(
+            self.amp, octavia_utils.b('test'))
         self.driver.clients[
             API_VERSION].update_agent_config.assert_called_once_with(
-            self.amp, six.b('test'), timeout_dict=None)
+            self.amp, octavia_utils.b('test'), timeout_dict=None)
 
 
 class TestAmphoraAPIClientTest(base.TestCase):

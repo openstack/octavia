@@ -18,7 +18,6 @@ import stat
 import flask
 from oslo_config import cfg
 from oslo_log import log as logging
-import six
 import webob
 from werkzeug import exceptions
 
@@ -47,7 +46,7 @@ def make_json_error(ex):
 
 
 def register_app_error_handler(app):
-    for code in six.iterkeys(exceptions.default_exceptions):
+    for code in exceptions.default_exceptions:
         app.register_error_handler(code, make_json_error)
 
 

@@ -16,7 +16,6 @@
 from cryptography import fernet
 from oslo_config import cfg
 from oslo_log import log as logging
-import six
 from stevedore import driver as stevedore_driver
 from taskflow import retry
 from taskflow import task
@@ -256,7 +255,7 @@ class AmphoraePostNetworkPlug(BaseAmphoraTask):
         db_lb = self.loadbalancer_repo.get(
             db_apis.get_session(), id=loadbalancer[constants.LOADBALANCER_ID])
         LOG.warning("Reverting post network plug.")
-        for amphora in six.moves.filter(
+        for amphora in filter(
             lambda amp: amp.status == constants.AMPHORA_ALLOCATED,
                 db_lb.amphorae):
 
@@ -325,7 +324,7 @@ class AmphoraCertUpload(BaseAmphoraTask):
     def execute(self, amphora, server_pem):
         """Execute cert_update_amphora routine."""
         LOG.debug("Upload cert in amphora REST driver")
-        key = utils.get_six_compatible_server_certs_key_passphrase()
+        key = utils.get_compatible_server_certs_key_passphrase()
         fer = fernet.Fernet(key)
         db_amp = self.amphora_repo.get(db_apis.get_session(),
                                        id=amphora.get(constants.ID))
@@ -346,7 +345,7 @@ class AmphoraUpdateVRRPInterface(BaseAmphoraTask):
                 CONF.haproxy_amphora.active_connection_max_retries,
             constants.CONN_RETRY_INTERVAL:
                 CONF.haproxy_amphora.active_connection_rety_interval}
-        for amp in six.moves.filter(
+        for amp in filter(
             lambda amp: amp.status == constants.AMPHORA_ALLOCATED,
                 db_lb.amphorae):
 
@@ -377,7 +376,7 @@ class AmphoraUpdateVRRPInterface(BaseAmphoraTask):
         LOG.warning("Reverting Get Amphora VRRP Interface.")
         db_lb = self.loadbalancer_repo.get(
             db_apis.get_session(), id=loadbalancer[constants.LOADBALANCER_ID])
-        for amp in six.moves.filter(
+        for amp in filter(
             lambda amp: amp.status == constants.AMPHORA_ALLOCATED,
                 db_lb.amphorae):
 

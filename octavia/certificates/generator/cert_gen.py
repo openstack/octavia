@@ -18,11 +18,8 @@ Certificate Generator API
 """
 import abc
 
-import six
 
-
-@six.add_metaclass(abc.ABCMeta)
-class CertGenerator(object):
+class CertGenerator(object, metaclass=abc.ABCMeta):
     """Base Cert Generator Interface
 
     A Certificate Generator is responsible for generating private keys,

@@ -18,7 +18,6 @@ from unittest import mock
 
 from oslo_config import cfg
 from oslo_utils import uuidutils
-import six
 import sqlalchemy
 
 from octavia.common import constants
@@ -259,21 +258,19 @@ class TestUpdateHealthDb(base.TestCase):
         self.assertTrue(self.amphora_health_repo.replace.called)
 
         # test listener, member
-        for listener_id, listener in six.iteritems(
-                health.get('listeners', {})):
+        for listener_id, listener in health.get('listeners', {}).items():
 
             self.listener_repo.update.assert_any_call(
                 self.session_mock, listener_id,
                 operating_status=constants.ONLINE)
 
-            for pool_id, pool in six.iteritems(listener.get('pools', {})):
+            for pool_id, pool in listener.get('pools', {}).items():
 
                 self.hm.pool_repo.update.assert_any_call(
                     self.session_mock, pool_id,
                     operating_status=constants.ONLINE)
 
-                for member_id, member in six.iteritems(
-                        pool.get('members', {})):
+                for member_id, member in pool.get('members', {}).items():
                     self.member_repo.update.assert_any_call(
                         self.session_mock, member_id,
                         operating_status=constants.ONLINE)
@@ -310,21 +307,19 @@ class TestUpdateHealthDb(base.TestCase):
         self.assertTrue(self.amphora_health_repo.replace.called)
 
         # test listener, member
-        for listener_id, listener in six.iteritems(
-                health.get('listeners', {})):
+        for listener_id, listener in health.get('listeners', {}).items():
 
             self.listener_repo.update.assert_any_call(
                 self.session_mock, listener_id,
                 operating_status=constants.ONLINE)
 
-            for pool_id, pool in six.iteritems(listener.get('pools', {})):
+            for pool_id, pool in listener.get('pools', {}).items():
 
                 self.hm.pool_repo.update.assert_any_call(
                     self.session_mock, pool_id,
                     operating_status=constants.ONLINE)
 
-                for member_id, member in six.iteritems(
-                        pool.get('members', {})):
+                for member_id, member in pool.get('members', {}).items():
                     self.member_repo.update.assert_any_call(
                         self.session_mock, member_id,
                         operating_status=constants.ONLINE)
@@ -347,8 +342,7 @@ class TestUpdateHealthDb(base.TestCase):
         self.assertTrue(self.amphora_health_repo.replace.called)
 
         # test listener, member
-        for listener_id, listener in six.iteritems(
-                health.get('listeners', {})):
+        for listener_id, listener in health.get('listeners', {}).items():
 
             self.listener_repo.update.assert_any_call(
                 self.session_mock, listener_id,
@@ -391,8 +385,7 @@ class TestUpdateHealthDb(base.TestCase):
         self.assertTrue(self.amphora_health_repo.replace.called)
 
         # test listener, member
-        for listener_id, listener in six.iteritems(
-                health.get('listeners')):
+        for listener_id, listener in health.get('listeners').items():
             self.listener_repo.update.assert_any_call(
                 self.session_mock, listener_id,
                 operating_status=constants.ONLINE)
@@ -428,22 +421,20 @@ class TestUpdateHealthDb(base.TestCase):
         self.assertTrue(self.amphora_health_repo.replace.called)
 
         # test listener, member
-        for listener_id, listener in six.iteritems(
-                health.get('listeners', {})):
+        for listener_id, listener in health.get('listeners', {}).items():
 
             self.listener_repo.update.assert_any_call(
                 self.session_mock, listener_id,
                 operating_status=constants.ONLINE)
 
-            for pool_id, pool in six.iteritems(listener.get('pools', {})):
+            for pool_id, pool in listener.get('pools', {}).items():
 
                 # We should not double process a shared pool
                 self.hm.pool_repo.update.assert_called_once_with(
                     self.session_mock, pool_id,
                     operating_status=constants.ONLINE)
 
-                for member_id, member in six.iteritems(
-                        pool.get('members', {})):
+                for member_id, member in pool.get('members', {}).items():
                     self.member_repo.update.assert_any_call(
                         self.session_mock, member_id,
                         operating_status=constants.ONLINE)
@@ -472,21 +463,19 @@ class TestUpdateHealthDb(base.TestCase):
         self.assertTrue(self.amphora_health_repo.replace.called)
 
         # test listener, member
-        for listener_id, listener in six.iteritems(
-                health.get('listeners', {})):
+        for listener_id, listener in health.get('listeners', {}).items():
 
             self.listener_repo.update.assert_any_call(
                 self.session_mock, listener_id,
                 operating_status=constants.ONLINE)
 
-        for pool_id, pool in six.iteritems(health.get('pools', {})):
+        for pool_id, pool in health.get('pools', {}).items():
             # We should not double process a shared pool
             self.hm.pool_repo.update.assert_called_once_with(
                 self.session_mock, 'pool-id-1',
                 operating_status=constants.ONLINE)
 
-            for member_id, member in six.iteritems(
-                    pool.get('members', {})):
+            for member_id, member in pool.get('members', {}).items():
                 self.member_repo.update.assert_any_call(
                     self.session_mock, member_id,
                     operating_status=constants.ONLINE)
@@ -517,8 +506,7 @@ class TestUpdateHealthDb(base.TestCase):
         self.assertTrue(self.amphora_health_repo.replace.called)
 
         # test listener, member
-        for listener_id, listener in six.iteritems(
-                health.get('listeners', {})):
+        for listener_id, listener in health.get('listeners', {}).items():
 
             self.listener_repo.update.assert_any_call(
                 self.session_mock, listener_id,
@@ -548,21 +536,19 @@ class TestUpdateHealthDb(base.TestCase):
         self.assertTrue(self.amphora_health_repo.replace.called)
 
         # test listener, member
-        for listener_id, listener in six.iteritems(
-                health.get('listeners', {})):
+        for listener_id, listener in health.get('listeners', {}).items():
 
             self.listener_repo.update.assert_any_call(
                 self.session_mock, listener_id,
                 operating_status=constants.ONLINE)
 
-            for pool_id, pool in six.iteritems(listener.get('pools', {})):
+            for pool_id, pool in listener.get('pools', {}).items():
 
                 self.hm.pool_repo.update.assert_any_call(
                     self.session_mock, pool_id,
                     operating_status=constants.ONLINE)
 
-                for member_id, member in six.iteritems(
-                        pool.get('members', {})):
+                for member_id, member in pool.get('members', {}).items():
 
                     self.member_repo.update.assert_any_call(
                         self.session_mock, member_id,
@@ -588,21 +574,19 @@ class TestUpdateHealthDb(base.TestCase):
         self.assertTrue(self.amphora_health_repo.replace.called)
 
         # test listener, member
-        for listener_id, listener in six.iteritems(
-                health.get('listeners', {})):
+        for listener_id, listener in health.get('listeners', {}).items():
 
             self.listener_repo.update.assert_any_call(
                 self.session_mock, listener_id,
                 operating_status=constants.ONLINE)
 
-            for pool_id, pool in six.iteritems(listener.get('pools', {})):
+            for pool_id, pool in listener.get('pools', {}).items():
 
                 self.hm.pool_repo.update.assert_any_call(
                     self.session_mock, pool_id,
                     operating_status=constants.ONLINE)
 
-                for member_id, member in six.iteritems(
-                        pool.get('members', {})):
+                for member_id, member in pool.get('members', {}).items():
 
                     self.member_repo.update.assert_any_call(
                         self.session_mock, member_id,
@@ -628,14 +612,13 @@ class TestUpdateHealthDb(base.TestCase):
         self.assertTrue(self.amphora_health_repo.replace.called)
 
         # test listener, member
-        for listener_id, listener in six.iteritems(
-                health.get('listeners', {})):
+        for listener_id, listener in health.get('listeners', {}).items():
 
             self.listener_repo.update.assert_any_call(
                 self.session_mock, listener_id,
                 operating_status=constants.ONLINE)
 
-            for pool_id, pool in six.iteritems(listener.get('pools', {})):
+            for pool_id, pool in listener.get('pools', {}).items():
 
                 self.hm.pool_repo.update.assert_any_call(
                     self.session_mock, pool_id,
@@ -665,21 +648,19 @@ class TestUpdateHealthDb(base.TestCase):
         self.assertTrue(self.amphora_health_repo.replace.called)
 
         # test listener, member
-        for listener_id, listener in six.iteritems(
-                health.get('listeners', {})):
+        for listener_id, listener in health.get('listeners', {}).items():
 
             self.listener_repo.update.assert_any_call(
                 self.session_mock, listener_id,
                 operating_status=constants.ONLINE)
 
-            for pool_id, pool in six.iteritems(listener.get('pools', {})):
+            for pool_id, pool in listener.get('pools', {}).items():
 
                 self.hm.pool_repo.update.assert_any_call(
                     self.session_mock, pool_id,
                     operating_status=constants.DEGRADED)
 
-                for member_id, member in six.iteritems(
-                        pool.get('members', {})):
+                for member_id, member in pool.get('members', {}).items():
 
                     self.member_repo.update.assert_any_call(
                         self.session_mock, member_id,
@@ -708,14 +689,13 @@ class TestUpdateHealthDb(base.TestCase):
         self.assertTrue(self.amphora_health_repo.replace.called)
 
         # test listener, member
-        for listener_id, listener in six.iteritems(
-                health.get('listeners', {})):
+        for listener_id, listener in health.get('listeners', {}).items():
 
             self.listener_repo.update.assert_any_call(
                 self.session_mock, listener_id,
                 operating_status=constants.ONLINE)
 
-            for pool_id, pool in six.iteritems(listener.get('pools', {})):
+            for pool_id, pool in listener.get('pools', {}).items():
 
                 self.hm.pool_repo.update.assert_any_call(
                     self.session_mock, pool_id,
@@ -749,14 +729,13 @@ class TestUpdateHealthDb(base.TestCase):
         self.assertTrue(self.amphora_health_repo.replace.called)
 
         # test listener, member
-        for listener_id, listener in six.iteritems(
-                health.get('listeners', {})):
+        for listener_id, listener in health.get('listeners', {}).items():
 
             self.listener_repo.update.assert_any_call(
                 self.session_mock, listener_id,
                 operating_status=constants.ONLINE)
 
-            for pool_id, pool in six.iteritems(listener.get('pools', {})):
+            for pool_id, pool in listener.get('pools', {}).items():
 
                 self.hm.pool_repo.update.assert_any_call(
                     self.session_mock, pool_id,
@@ -789,21 +768,19 @@ class TestUpdateHealthDb(base.TestCase):
         self.assertTrue(self.amphora_health_repo.replace.called)
 
         # test listener, member
-        for listener_id, listener in six.iteritems(
-                health.get('listeners', {})):
+        for listener_id, listener in health.get('listeners', {}).items():
 
             self.listener_repo.update.assert_any_call(
                 self.session_mock, listener_id,
                 operating_status=constants.ONLINE)
 
-            for pool_id, pool in six.iteritems(listener.get('pools', {})):
+            for pool_id, pool in listener.get('pools', {}).items():
 
                 self.hm.pool_repo.update.assert_any_call(
                     self.session_mock, pool_id,
                     operating_status=constants.ONLINE)
 
-                for member_id, member in six.iteritems(
-                        pool.get('members', {})):
+                for member_id, member in pool.get('members', {}).items():
 
                     self.member_repo.update.assert_any_call(
                         self.session_mock, member_id,
@@ -832,21 +809,19 @@ class TestUpdateHealthDb(base.TestCase):
         self.assertTrue(self.amphora_repo.get_lb_for_health_update.called)
 
         # test listener, member
-        for listener_id, listener in six.iteritems(
-                health.get('listeners', {})):
+        for listener_id, listener in health.get('listeners', {}).items():
 
             self.listener_repo.update.assert_any_call(
                 self.session_mock, listener_id,
                 operating_status=constants.ONLINE)
 
-            for pool_id, pool in six.iteritems(listener.get('pools', {})):
+            for pool_id, pool in listener.get('pools', {}).items():
 
                 self.hm.pool_repo.update.assert_any_call(
                     self.session_mock, pool_id,
                     operating_status=constants.ONLINE)
 
-                for member_id, member in six.iteritems(
-                        pool.get('members', {})):
+                for member_id, member in pool.get('members', {}).items():
 
                     self.member_repo.update.assert_any_call(
                         self.session_mock, member_id,
@@ -877,21 +852,19 @@ class TestUpdateHealthDb(base.TestCase):
         self.assertTrue(self.amphora_health_repo.replace.called)
 
         # test listener, member
-        for listener_id, listener in six.iteritems(
-                health.get('listeners', {})):
+        for listener_id, listener in health.get('listeners', {}).items():
 
             self.listener_repo.update.assert_any_call(
                 self.session_mock, listener_id,
                 operating_status=constants.DEGRADED)
 
-            for pool_id, pool in six.iteritems(listener.get('pools', {})):
+            for pool_id, pool in listener.get('pools', {}).items():
 
                 self.hm.pool_repo.update.assert_any_call(
                     self.session_mock, pool_id,
                     operating_status=constants.DEGRADED)
 
-                for member_id, member in six.iteritems(
-                        pool.get('members', {})):
+                for member_id, member in pool.get('members', {}).items():
 
                     self.member_repo.update.assert_any_call(
                         self.session_mock, member_id,
@@ -928,21 +901,19 @@ class TestUpdateHealthDb(base.TestCase):
         self.assertTrue(self.amphora_health_repo.replace.called)
 
         # test listener, member
-        for listener_id, listener in six.iteritems(
-                health.get('listeners', {})):
+        for listener_id, listener in health.get('listeners', {}).items():
 
             self.listener_repo.update.assert_any_call(
                 self.session_mock, listener_id,
                 operating_status=constants.ONLINE)
 
-            for pool_id, pool in six.iteritems(listener.get('pools', {})):
+            for pool_id, pool in listener.get('pools', {}).items():
 
                 self.hm.pool_repo.update.assert_any_call(
                     self.session_mock, pool_id,
                     operating_status=constants.ERROR)
 
-                for member_id, member in six.iteritems(
-                        pool.get('members', {})):
+                for member_id, member in pool.get('members', {}).items():
 
                     self.member_repo.update.assert_any_call(
                         self.session_mock, member_id,
@@ -1075,21 +1046,19 @@ class TestUpdateHealthDb(base.TestCase):
         self.assertTrue(self.amphora_health_repo.replace.called)
 
         # test listener, member
-        for listener_id, listener in six.iteritems(
-                health.get('listeners', {})):
+        for listener_id, listener in health.get('listeners', {}).items():
 
             self.listener_repo.update.assert_any_call(
                 self.session_mock, listener_id,
                 operating_status=constants.ONLINE)
 
-            for pool_id, pool in six.iteritems(listener.get('pools', {})):
+            for pool_id, pool in listener.get('pools', {}).items():
 
                 self.hm.pool_repo.update.assert_any_call(
                     self.session_mock, pool_id,
                     operating_status=constants.ONLINE)
 
-                for member_id, member in six.iteritems(
-                        pool.get('members', {})):
+                for member_id, member in pool.get('members', {}).items():
 
                     self.member_repo.update.assert_any_call(
                         self.session_mock, member_id,

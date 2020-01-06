@@ -15,10 +15,4 @@
 
 import gettext
 
-import six
-
-if six.PY2:
-    gettext.install('octavia',  # pylint: disable=unexpected-keyword-arg
-                    unicode=1)
-else:
-    gettext.install('octavia')
+gettext.install('octavia')

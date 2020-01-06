@@ -14,11 +14,8 @@
 
 import abc
 
-import six
 
-
-@six.add_metaclass(abc.ABCMeta)
-class VolumeBase(object):
+class VolumeBase(object, metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     def create_volume_from_image(self, image_id):

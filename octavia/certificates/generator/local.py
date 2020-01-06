@@ -23,7 +23,6 @@ from cryptography.hazmat.primitives import serialization
 from cryptography import x509
 from oslo_config import cfg
 from oslo_log import log as logging
-import six
 
 from octavia.certificates.common import local as local_common
 from octavia.certificates.generator import cert_gen
@@ -186,7 +185,6 @@ class LocalCertGenerator(cert_gen.CertGenerator):
 
     @classmethod
     def _generate_csr(cls, cn, private_key, passphrase=None):
-        cn = six.text_type(cn)
         pk = serialization.load_pem_private_key(
             data=private_key, password=passphrase,
             backend=backends.default_backend())

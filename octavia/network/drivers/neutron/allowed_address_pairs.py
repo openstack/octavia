@@ -19,7 +19,6 @@ from neutronclient.common import exceptions as neutron_client_exceptions
 from novaclient import exceptions as nova_client_exceptions
 from oslo_config import cfg
 from oslo_log import log as logging
-import six
 from stevedore import driver as stevedore_driver
 
 from octavia.common import constants
@@ -143,8 +142,7 @@ class AllowedAddressPairsDriver(neutron_base.BaseNeutronDriver):
         return None
 
     def _get_ethertype_for_ip(self, ip):
-        address = ipaddress.ip_address(
-            ip if isinstance(ip, six.text_type) else six.u(ip))
+        address = ipaddress.ip_address(ip)
         return 'IPv6' if address.version == 6 else 'IPv4'
 
     def _update_security_group_rules(self, load_balancer, sec_grp_id):
@@ -410,7 +408,7 @@ class AllowedAddressPairsDriver(neutron_base.BaseNeutronDriver):
         self.update_vip_sg(load_balancer, vip)
         plugged_amphorae = []
         subnet = self.get_subnet(vip.subnet_id)
-        for amphora in six.moves.filter(
+        for amphora in filter(
             lambda amp: amp.status == constants.AMPHORA_ALLOCATED,
                 load_balancer.amphorae):
             plugged_amphorae.append(self.plug_aap_port(load_balancer, vip,
@@ -508,7 +506,7 @@ class AllowedAddressPairsDriver(neutron_base.BaseNeutronDriver):
                    "found").format(vip.subnet_id)
             LOG.exception(msg)
             raise base.PluggedVIPNotFound(msg)
-        for amphora in six.moves.filter(
+        for amphora in filter(
                 lambda amp: amp.status == constants.AMPHORA_ALLOCATED,
                 load_balancer.amphorae):
             self.unplug_aap_port(vip, amphora, subnet)

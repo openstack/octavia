@@ -23,7 +23,6 @@ import distro
 import jinja2
 from oslo_config import cfg
 from oslo_log import log as logging
-import six
 import webob
 from werkzeug import exceptions
 
@@ -162,11 +161,8 @@ class BaseOS(object):
                 try:
                     ip_addr = fixed_ip['ip_address']
                     cidr = fixed_ip['subnet_cidr']
-                    ip = ipaddress.ip_address(ip_addr if isinstance(
-                        ip_addr, six.text_type) else six.u(ip_addr))
-                    network = ipaddress.ip_network(
-                        cidr if isinstance(
-                            cidr, six.text_type) else six.u(cidr))
+                    ip = ipaddress.ip_address(ip_addr)
+                    network = ipaddress.ip_network(cidr)
                     broadcast = network.broadcast_address.exploded
                     netmask = (network.prefixlen if ip.version == 6
                                else network.netmask.exploded)
@@ -189,10 +185,7 @@ class BaseOS(object):
     def get_host_routes(cls, fixed_ip):
         host_routes = []
         for hr in fixed_ip.get('host_routes', []):
-            network = ipaddress.ip_network(
-                hr['destination'] if isinstance(
-                    hr['destination'], six.text_type) else
-                six.u(hr['destination']))
+            network = ipaddress.ip_network(hr['destination'])
             host_routes.append({'network': network, 'gw': hr['nexthop']})
         return host_routes
 
@@ -502,8 +495,7 @@ class RH(BaseOS):
             host_routes_ipv6 = []
             for fixed_ip in fixed_ips:
                 ip_addr = fixed_ip['ip_address']
-                ip = ipaddress.ip_address(ip_addr if isinstance(
-                    ip_addr, six.text_type) else six.u(ip_addr))
+                ip = ipaddress.ip_address(ip_addr)
                 if ip.version == 6:
                     host_routes_ipv6.extend(self.get_host_routes(fixed_ip))
                 else:

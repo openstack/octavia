@@ -12,21 +12,16 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 #
+import queue
 from unittest import mock
 
 from oslo_config import cfg
 from oslo_config import fixture as oslo_fixture
 from oslo_utils import uuidutils
-import six
 
 from octavia.amphorae.backends.health_daemon import health_daemon
 from octavia.common import constants
 import octavia.tests.unit.base as base
-
-if six.PY2:
-    import Queue as queue
-else:
-    import queue
 
 
 LISTENER_ID1 = uuidutils.generate_uuid()

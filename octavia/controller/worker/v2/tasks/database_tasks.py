@@ -19,7 +19,6 @@ from oslo_db import exception as odb_exceptions
 from oslo_log import log as logging
 from oslo_utils import excutils
 from oslo_utils import uuidutils
-import six
 import sqlalchemy
 from sqlalchemy.orm import exc
 from taskflow import task
@@ -999,7 +998,7 @@ class UpdateAmphoraDBCertExpiration(BaseDatabaseTask):
 
         LOG.debug("Update DB cert expiry date of amphora id: %s", amphora_id)
 
-        key = utils.get_six_compatible_server_certs_key_passphrase()
+        key = utils.get_compatible_server_certs_key_passphrase()
         fer = fernet.Fernet(key)
         cert_expiration = cert_parser.get_cert_expiration(
             fer.decrypt(server_pem.encode("utf-8")))
@@ -2818,7 +2817,7 @@ class DecrementPoolQuota(BaseDatabaseTask):
                 # This is separate calls to maximize the correction
                 # should other factors have increased the in use quota
                 # before this point in the revert flow
-                for i in six.moves.range(pool_child_count['member']):
+                for i in range(pool_child_count['member']):
                     lock_session = db_apis.get_session(autocommit=False)
                     try:
                         self.repos.check_quota_met(session,

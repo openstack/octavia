@@ -15,7 +15,6 @@
 from oslo_config import cfg
 from oslo_log import log as logging
 import pecan
-import six
 from wsme import types as wtypes
 from wsmeext import pecan as wsme_pecan
 
@@ -49,7 +48,7 @@ class ProviderController(base.BaseController):
         enabled_providers = CONF.api_settings.enabled_provider_drivers
         response_list = [
             provider_types.ProviderResponse(name=key, description=value) for
-            key, value in six.iteritems(enabled_providers)]
+            key, value in enabled_providers.items()]
         if fields is not None:
             response_list = self._filter_fields(response_list, fields)
         return provider_types.ProvidersRootResponse(providers=response_list)
@@ -106,16 +105,16 @@ class FlavorCapabilitiesController(base.BaseController):
                 constants.DESCRIPTION)
         if name_filter:
             metadata_dict = {
-                key: value for key, value in six.iteritems(metadata_dict) if
+                key: value for key, value in metadata_dict.items() if
                 key == name_filter}
         if description_filter:
             metadata_dict = {
-                key: value for key, value in six.iteritems(metadata_dict) if
+                key: value for key, value in metadata_dict.items() if
                 value == description_filter}
 
         response_list = [
             provider_types.ProviderResponse(name=key, description=value) for
-            key, value in six.iteritems(metadata_dict)]
+            key, value in metadata_dict.items()]
         if fields is not None:
             response_list = self._filter_fields(response_list, fields)
         return provider_types.FlavorCapabilitiesResponse(
@@ -158,16 +157,16 @@ class AvailabilityZoneCapabilitiesController(base.BaseController):
                 constants.DESCRIPTION)
         if name_filter:
             metadata_dict = {
-                key: value for key, value in six.iteritems(metadata_dict) if
+                key: value for key, value in metadata_dict.items() if
                 key == name_filter}
         if description_filter:
             metadata_dict = {
-                key: value for key, value in six.iteritems(metadata_dict) if
+                key: value for key, value in metadata_dict.items() if
                 value == description_filter}
 
         response_list = [
             provider_types.ProviderResponse(name=key, description=value) for
-            key, value in six.iteritems(metadata_dict)]
+            key, value in metadata_dict.items()]
         if fields is not None:
             response_list = self._filter_fields(response_list, fields)
         return provider_types.AvailabilityZoneCapabilitiesResponse(

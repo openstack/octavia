@@ -53,7 +53,7 @@ class AmphoraProviderDriver(driver_base.ProviderDriver):
             topic=consts.TOPIC_AMPHORA_V2, version="2.0", fanout=False)
         self.client = rpc.get_client(self.target)
         self.repositories = repositories.Repositories()
-        key = utils.get_six_compatible_server_certs_key_passphrase()
+        key = utils.get_compatible_server_certs_key_passphrase()
         self.fernet = fernet.Fernet(key)
 
     def _validate_pool_algorithm(self, pool):
