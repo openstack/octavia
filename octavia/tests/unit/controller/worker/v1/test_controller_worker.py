@@ -1413,7 +1413,6 @@ class TestControllerWorker(base.TestCase):
         mock_update.assert_called_with(_db_session, '123',
                                        provisioning_status=constants.ACTIVE)
 
-        mock_perform.reset_mock()
         _load_balancer_mock.amphorae = [
             _amphora_mock, _amphora_mock2, _amphora_mock3]
         _amphora_mock2.role = constants.ROLE_BACKUP
@@ -1425,7 +1424,6 @@ class TestControllerWorker(base.TestCase):
         mock_update.assert_called_with(_db_session, '123',
                                        provisioning_status=constants.ACTIVE)
 
-        mock_perform.reset_mock()
         mock_perform.side_effect = OverflowError()
         self.assertRaises(OverflowError, cw.failover_loadbalancer, 123)
         mock_update.assert_called_with(_db_session, 123,
