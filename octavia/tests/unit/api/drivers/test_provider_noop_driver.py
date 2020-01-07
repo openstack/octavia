@@ -12,9 +12,9 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+from octavia_lib.api.drivers import data_models
 from oslo_utils import uuidutils
 
-from octavia.api.drivers import data_models
 from octavia.api.drivers.noop_driver import driver
 import octavia.tests.unit.base as base
 
