@@ -12,6 +12,8 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import sys
+
 import keystonemiddleware.audit as audit_middleware
 from oslo_config import cfg
 from oslo_log import log as logging
@@ -45,6 +47,8 @@ def _init_drivers():
 
 def setup_app(pecan_config=None, debug=False, argv=None):
     """Creates and returns a pecan wsgi app."""
+    if argv is None:
+        argv = sys.argv
     octavia_service.prepare_service(argv)
     cfg.CONF.log_opt_values(LOG, logging.DEBUG)
 

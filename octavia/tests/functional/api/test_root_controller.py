@@ -36,8 +36,10 @@ class TestRootController(base_db_test.OctaviaDBTestBase):
         self.conf.config(group='api_settings', auth_strategy=constants.NOAUTH)
 
     def _get_versions_with_config(self):
+        # Note: we need to set argv=() to stop the wsgi setup_app from
+        # pulling in the testing tool sys.argv
         app = pecan.testing.load_test_app({'app': pconfig.app,
-                                           'wsme': pconfig.wsme})
+                                           'wsme': pconfig.wsme}, argv=())
         return self.get(app=app, path='/').json.get('versions', None)
 
     def test_api_versions(self):

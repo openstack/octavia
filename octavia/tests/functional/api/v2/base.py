@@ -144,8 +144,10 @@ class BaseAPITest(base_db_test.OctaviaDBTestBase):
         self.addCleanup(check_quota_met_true_mock.stop)
 
     def _make_app(self):
+        # Note: we need to set argv=() to stop the wsgi setup_app from
+        # pulling in the testing tool sys.argv
         return pecan.testing.load_test_app({'app': pconfig.app,
-                                            'wsme': pconfig.wsme})
+                                            'wsme': pconfig.wsme}, argv=())
 
     def _get_full_path(self, path):
         return ''.join([self.BASE_PATH, path])
