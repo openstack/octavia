@@ -55,5 +55,5 @@ Flask!=0.11,>=0.10 # BSD
 netifaces>=0.10.4 # MIT
 cryptography>=2.1 # BSD/Apache-2.0
 pyroute2>=0.4.21;sys_platform!='win32' # Apache-2.0 (+ dual licensed GPL2)
-gunicorn>=19.9.0;python_version>='3.0' # MIT
+gunicorn>=19.9.0 # MIT
 Werkzeug>=0.14.1 # BSD License
