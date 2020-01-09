@@ -99,6 +99,15 @@ class HAProxyCompatTestCase(base.TestCase):
         self.assertEqual(1, major)
         self.assertEqual(6, minor)
 
+    @mock.patch('subprocess.check_output')
+    def test_get_haproxy_versions_devel(self, mock_process):
+        mock_process.return_value = (
+            b"HA-Proxy version 2.3-dev0 2019/11/25 - https://haproxy.org/\n"
+            b"Some other data here <test@example.com>\n")
+        major, minor = haproxy_compatibility.get_haproxy_versions()
+        self.assertEqual(2, major)
+        self.assertEqual(3, minor)
+
     @mock.patch('octavia.amphorae.backends.agent.api_server.'
                 'haproxy_compatibility.get_haproxy_versions')
     def test_process_cfg_for_version_compat(self, mock_get_version):
