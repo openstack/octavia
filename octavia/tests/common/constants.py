@@ -12,6 +12,8 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+from octavia.common import constants
+
 
 class MockNovaInterface(object):
     net_id = None
@@ -214,3 +216,22 @@ MOCK_NETWORK_IP_AVAILABILITY = {'network_ip_availability': (
      'total_ips': MOCK_NETWORK_TOTAL_IPS,
      'used_ips': MOCK_NETWORK_USED_IPS,
      'subnet_ip_availability': MOCK_SUBNET_IP_AVAILABILITY})}
+
+INVALID_LISTENER_POOL_PROTOCOL_MAP = {
+    constants.PROTOCOL_HTTP: [constants.PROTOCOL_HTTPS,
+                              constants.PROTOCOL_TCP,
+                              constants.PROTOCOL_TERMINATED_HTTPS,
+                              constants.PROTOCOL_UDP],
+    constants.PROTOCOL_HTTPS: [constants.PROTOCOL_HTTP,
+                               constants.PROTOCOL_TERMINATED_HTTPS,
+                               constants.PROTOCOL_UDP],
+    constants.PROTOCOL_TCP: [constants.PROTOCOL_TERMINATED_HTTPS,
+                             constants.PROTOCOL_UDP],
+    constants.PROTOCOL_TERMINATED_HTTPS: [constants.PROTOCOL_HTTPS,
+                                          constants.PROTOCOL_TCP,
+                                          constants.PROTOCOL_UDP],
+    constants.PROTOCOL_UDP: [constants.PROTOCOL_TCP,
+                             constants.PROTOCOL_HTTP,
+                             constants.PROTOCOL_HTTPS,
+                             constants.PROTOCOL_TERMINATED_HTTPS,
+                             constants.PROTOCOL_PROXY]}
