@@ -47,7 +47,12 @@ class KeepalivedAmphoraDriverMixin(driver_base.VRRPDriverMixin):
 
             self._populate_amphora_api_version(amp)
             # Get the VIP subnet prefix for the amphora
-            vip_cidr = amphorae_network_config[amp.id].vip_subnet.cidr
+            # For amphorav2 amphorae_network_config will be list of dicts
+            try:
+                vip_cidr = amphorae_network_config[amp.id].vip_subnet.cidr
+            except AttributeError:
+                vip_cidr = amphorae_network_config[amp.id][
+                    constants.VIP_SUBNET][constants.CIDR]
 
             # Generate Keepalived configuration from loadbalancer object
             config = templater.build_keepalived_config(

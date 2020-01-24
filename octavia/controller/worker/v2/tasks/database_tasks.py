@@ -372,15 +372,17 @@ class DeleteL7RuleInDB(BaseDatabaseTask):
 class ReloadAmphora(BaseDatabaseTask):
     """Get an amphora object from the database."""
 
-    def execute(self, amphora_id):
+    def execute(self, amphora):
         """Get an amphora object from the database.
 
         :param amphora_id: The amphora ID to lookup
         :returns: The amphora object
         """
 
-        LOG.debug("Get amphora from DB for amphora id: %s ", amphora_id)
-        return self.amphora_repo.get(db_apis.get_session(), id=amphora_id)
+        LOG.debug("Get amphora from DB for amphora id: %s ",
+                  amphora[constants.ID])
+        return self.amphora_repo.get(db_apis.get_session(),
+                                     id=amphora[constants.ID]).to_dict()
 
 
 class ReloadLoadBalancer(BaseDatabaseTask):
@@ -427,12 +429,14 @@ class UpdateAmphoraeVIPData(BaseDatabaseTask):
         :returns: None
         """
         for amp_data in amps_data:
-            self.repos.amphora.update(db_apis.get_session(), amp_data.id,
-                                      vrrp_ip=amp_data.vrrp_ip,
-                                      ha_ip=amp_data.ha_ip,
-                                      vrrp_port_id=amp_data.vrrp_port_id,
-                                      ha_port_id=amp_data.ha_port_id,
-                                      vrrp_id=1)
+            self.repos.amphora.update(
+                db_apis.get_session(),
+                amp_data.get(constants.ID),
+                vrrp_ip=amp_data[constants.VRRP_IP],
+                ha_ip=amp_data[constants.HA_IP],
+                vrrp_port_id=amp_data[constants.VRRP_PORT_ID],
+                ha_port_id=amp_data[constants.HA_PORT_ID],
+                vrrp_id=1)
 
 
 class UpdateAmphoraVIPData(BaseDatabaseTask):
@@ -444,12 +448,14 @@ class UpdateAmphoraVIPData(BaseDatabaseTask):
         :param amps_data: Amphorae update dicts.
         :returns: None
         """
-        self.repos.amphora.update(db_apis.get_session(), amp_data.id,
-                                  vrrp_ip=amp_data.vrrp_ip,
-                                  ha_ip=amp_data.ha_ip,
-                                  vrrp_port_id=amp_data.vrrp_port_id,
-                                  ha_port_id=amp_data.ha_port_id,
-                                  vrrp_id=1)
+        self.repos.amphora.update(
+            db_apis.get_session(),
+            amp_data.get(constants.ID),
+            vrrp_ip=amp_data[constants.VRRP_IP],
+            ha_ip=amp_data[constants.HA_IP],
+            vrrp_port_id=amp_data[constants.VRRP_PORT_ID],
+            ha_port_id=amp_data[constants.HA_PORT_ID],
+            vrrp_id=1)
 
 
 class UpdateAmpFailoverDetails(BaseDatabaseTask):
@@ -463,12 +469,14 @@ class UpdateAmpFailoverDetails(BaseDatabaseTask):
         :returns: None
         """
         # role and vrrp_priority will be updated later.
-        self.repos.amphora.update(db_apis.get_session(), amphora.id,
-                                  vrrp_ip=amp_data.vrrp_ip,
-                                  ha_ip=amp_data.ha_ip,
-                                  vrrp_port_id=amp_data.vrrp_port_id,
-                                  ha_port_id=amp_data.ha_port_id,
-                                  vrrp_id=amp_data.vrrp_id)
+        self.repos.amphora.update(
+            db_apis.get_session(),
+            amphora.get(constants.ID),
+            vrrp_ip=amp_data[constants.VRRP_IP],
+            ha_ip=amp_data[constants.HA_IP],
+            vrrp_port_id=amp_data[constants.VRRP_PORT_ID],
+            ha_port_id=amp_data[constants.HA_PORT_ID],
+            vrrp_id=amp_data[constants.VRRP_ID])
 
 
 class AssociateFailoverAmphoraWithLBID(BaseDatabaseTask):
@@ -545,8 +553,9 @@ class MapLoadbalancerToAmphora(BaseDatabaseTask):
 
         LOG.debug("Allocated Amphora with id %(amp)s for load balancer "
                   "with id %(lb)s", {'amp': amp.id, 'lb': loadbalancer_id})
-
-        return amp.id
+        # TODO(ataraday): return AMP here so refactored spit of create amp for
+        # loadbalancer flow can executed properly
+        return amp.to_dict()
 
     def revert(self, result, loadbalancer_id, *args, **kwargs):
         LOG.warning("Reverting Amphora allocation for the load "
@@ -566,8 +575,9 @@ class _MarkAmphoraRoleAndPriorityInDB(BaseDatabaseTask):
         :returns: None
         """
         LOG.debug("Mark %(role)s in DB for amphora: %(amp)s",
-                  {'role': amp_role, 'amp': amphora.id})
-        self.amphora_repo.update(db_apis.get_session(), amphora.id,
+                  {constants.ROLE: amp_role, 'amp': amphora[constants.ID]})
+        self.amphora_repo.update(db_apis.get_session(),
+                                 amphora[constants.ID],
                                  role=amp_role,
                                  vrrp_priority=vrrp_priority)
 
@@ -584,15 +594,17 @@ class _MarkAmphoraRoleAndPriorityInDB(BaseDatabaseTask):
             return
 
         LOG.warning("Reverting amphora role in DB for amp id %(amp)s",
-                    {'amp': amphora.id})
+                    {'amp': amphora[constants.ID]})
         try:
-            self.amphora_repo.update(db_apis.get_session(), amphora.id,
+            self.amphora_repo.update(db_apis.get_session(),
+                                     amphora[constants.ID],
                                      role=None,
                                      vrrp_priority=None)
         except Exception as e:
             LOG.error("Failed to update amphora %(amp)s "
                       "role and vrrp_priority to None due to: "
-                      "%(except)s", {'amp': amphora.id, 'except': e})
+                      "%(except)s", {'amp': amphora[constants.ID],
+                                     'except': e})
 
 
 class MarkAmphoraMasterInDB(_MarkAmphoraRoleAndPriorityInDB):
@@ -677,15 +689,17 @@ class MarkAmphoraAllocatedInDB(BaseDatabaseTask):
         LOG.info('Mark ALLOCATED in DB for amphora: %(amp)s with '
                  'compute id %(comp)s for load balancer: %(lb)s',
                  {
-                     'amp': amphora.id,
-                     'comp': amphora.compute_id,
+                     'amp': amphora.get(constants.ID),
+                     'comp': amphora[constants.COMPUTE_ID],
                      'lb': loadbalancer_id
                  })
-        self.amphora_repo.update(db_apis.get_session(), amphora.id,
-                                 status=constants.AMPHORA_ALLOCATED,
-                                 compute_id=amphora.compute_id,
-                                 lb_network_ip=amphora.lb_network_ip,
-                                 load_balancer_id=loadbalancer_id)
+        self.amphora_repo.update(
+            db_apis.get_session(),
+            amphora.get(constants.ID),
+            status=constants.AMPHORA_ALLOCATED,
+            compute_id=amphora[constants.COMPUTE_ID],
+            lb_network_ip=amphora[constants.LB_NETWORK_IP],
+            load_balancer_id=loadbalancer_id)
 
     def revert(self, result, amphora, loadbalancer_id, *args, **kwargs):
         """Mark the amphora as broken and ready to be cleaned up.
@@ -702,8 +716,10 @@ class MarkAmphoraAllocatedInDB(BaseDatabaseTask):
 
         LOG.warning("Reverting mark amphora ready in DB for amp "
                     "id %(amp)s and compute id %(comp)s",
-                    {'amp': amphora.id, 'comp': amphora.compute_id})
-        self.task_utils.mark_amphora_status_error(amphora.id)
+                    {'amp': amphora.get(constants.ID),
+                     'comp': amphora[constants.COMPUTE_ID]})
+        self.task_utils.mark_amphora_status_error(
+            amphora.get(constants.ID))
 
 
 class MarkAmphoraBootingInDB(BaseDatabaseTask):
@@ -718,7 +734,8 @@ class MarkAmphoraBootingInDB(BaseDatabaseTask):
         """
 
         LOG.debug("Mark BOOTING in DB for amphora: %(amp)s with "
-                  "compute id %(id)s", {'amp': amphora_id, 'id': compute_id})
+                  "compute id %(id)s", {'amp': amphora_id,
+                                        constants.ID: compute_id})
         self.amphora_repo.update(db_apis.get_session(), amphora_id,
                                  status=constants.AMPHORA_BOOTING,
                                  compute_id=compute_id)
@@ -763,8 +780,10 @@ class MarkAmphoraDeletedInDB(BaseDatabaseTask):
 
         LOG.debug("Mark DELETED in DB for amphora: %(amp)s with "
                   "compute id %(comp)s",
-                  {'amp': amphora.id, 'comp': amphora.compute_id})
-        self.amphora_repo.update(db_apis.get_session(), amphora.id,
+                  {'amp': amphora.get(constants.ID),
+                   'comp': amphora[constants.COMPUTE_ID]})
+        self.amphora_repo.update(db_apis.get_session(),
+                                 amphora.get(constants.ID),
                                  status=constants.DELETED)
 
     def revert(self, amphora, *args, **kwargs):
@@ -776,8 +795,10 @@ class MarkAmphoraDeletedInDB(BaseDatabaseTask):
 
         LOG.warning("Reverting mark amphora deleted in DB "
                     "for amp id %(amp)s and compute id %(comp)s",
-                    {'amp': amphora.id, 'comp': amphora.compute_id})
-        self.task_utils.mark_amphora_status_error(amphora.id)
+                    {'amp': amphora.get(constants.ID),
+                     'comp': amphora[constants.COMPUTE_ID]})
+
+        self.task_utils.mark_amphora_status_error(amphora.get(constants.ID))
 
 
 class MarkAmphoraPendingDeleteInDB(BaseDatabaseTask):
@@ -795,8 +816,10 @@ class MarkAmphoraPendingDeleteInDB(BaseDatabaseTask):
 
         LOG.debug("Mark PENDING DELETE in DB for amphora: %(amp)s "
                   "with compute id %(id)s",
-                  {'amp': amphora.id, 'id': amphora.compute_id})
-        self.amphora_repo.update(db_apis.get_session(), amphora.id,
+                  {'amp': amphora.get(constants.ID),
+                   'id': amphora[constants.COMPUTE_ID]})
+        self.amphora_repo.update(db_apis.get_session(),
+                                 amphora.get(constants.ID),
                                  status=constants.PENDING_DELETE)
 
     def revert(self, amphora, *args, **kwargs):
@@ -808,8 +831,9 @@ class MarkAmphoraPendingDeleteInDB(BaseDatabaseTask):
 
         LOG.warning("Reverting mark amphora pending delete in DB "
                     "for amp id %(amp)s and compute id %(comp)s",
-                    {'amp': amphora.id, 'comp': amphora.compute_id})
-        self.task_utils.mark_amphora_status_error(amphora.id)
+                    {'amp': amphora.get(constants.ID),
+                     'comp': amphora[constants.COMPUTE_ID]})
+        self.task_utils.mark_amphora_status_error(amphora.get(constants.ID))
 
 
 class MarkAmphoraPendingUpdateInDB(BaseDatabaseTask):
@@ -827,8 +851,10 @@ class MarkAmphoraPendingUpdateInDB(BaseDatabaseTask):
 
         LOG.debug("Mark PENDING UPDATE in DB for amphora: %(amp)s "
                   "with compute id %(id)s",
-                  {'amp': amphora.id, 'id': amphora.compute_id})
-        self.amphora_repo.update(db_apis.get_session(), amphora.id,
+                  {'amp': amphora.get(constants.ID),
+                   'id': amphora[constants.COMPUTE_ID]})
+        self.amphora_repo.update(db_apis.get_session(),
+                                 amphora.get(constants.ID),
                                  status=constants.PENDING_UPDATE)
 
     def revert(self, amphora, *args, **kwargs):
@@ -840,8 +866,9 @@ class MarkAmphoraPendingUpdateInDB(BaseDatabaseTask):
 
         LOG.warning("Reverting mark amphora pending update in DB "
                     "for amp id %(amp)s and compute id %(comp)s",
-                    {'amp': amphora.id, 'comp': amphora.compute_id})
-        self.task_utils.mark_amphora_status_error(amphora.id)
+                    {'amp': amphora.get(constants.ID),
+                     'comp': amphora[constants.COMPUTE_ID]})
+        self.task_utils.mark_amphora_status_error(amphora.get(constants.ID))
 
 
 class MarkAmphoraReadyInDB(BaseDatabaseTask):
@@ -860,11 +887,14 @@ class MarkAmphoraReadyInDB(BaseDatabaseTask):
 
         LOG.info("Mark READY in DB for amphora: %(amp)s with compute "
                  "id %(comp)s",
-                 {"amp": amphora.id, "comp": amphora.compute_id})
-        self.amphora_repo.update(db_apis.get_session(), amphora.id,
-                                 status=constants.AMPHORA_READY,
-                                 compute_id=amphora.compute_id,
-                                 lb_network_ip=amphora.lb_network_ip)
+                 {"amp": amphora.get(constants.ID),
+                  "comp": amphora[constants.COMPUTE_ID]})
+        self.amphora_repo.update(
+            db_apis.get_session(),
+            amphora.get(constants.ID),
+            status=constants.AMPHORA_READY,
+            compute_id=amphora[constants.COMPUTE_ID],
+            lb_network_ip=amphora[constants.LB_NETWORK_IP])
 
     def revert(self, amphora, *args, **kwargs):
         """Mark the amphora as broken and ready to be cleaned up.
@@ -875,16 +905,20 @@ class MarkAmphoraReadyInDB(BaseDatabaseTask):
 
         LOG.warning("Reverting mark amphora ready in DB for amp "
                     "id %(amp)s and compute id %(comp)s",
-                    {'amp': amphora.id, 'comp': amphora.compute_id})
+                    {'amp': amphora.get(constants.ID),
+                     'comp': amphora[constants.COMPUTE_ID]})
         try:
-            self.amphora_repo.update(db_apis.get_session(), amphora.id,
-                                     status=constants.ERROR,
-                                     compute_id=amphora.compute_id,
-                                     lb_network_ip=amphora.lb_network_ip)
+            self.amphora_repo.update(
+                db_apis.get_session(),
+                amphora.get(constants.ID),
+                status=constants.ERROR,
+                compute_id=amphora[constants.COMPUTE_ID],
+                lb_network_ip=amphora[constants.LB_NETWORK_IP])
         except Exception as e:
             LOG.error("Failed to update amphora %(amp)s "
                       "status to ERROR due to: "
-                      "%(except)s", {'amp': amphora.id, 'except': e})
+                      "%(except)s", {'amp': amphora.get(constants.ID),
+                                     'except': e})
 
 
 class UpdateAmphoraComputeId(BaseDatabaseTask):
@@ -914,11 +948,12 @@ class UpdateAmphoraInfo(BaseDatabaseTask):
         """
         self.amphora_repo.update(
             db_apis.get_session(), amphora_id,
-            lb_network_ip=compute_obj.lb_network_ip,
-            cached_zone=compute_obj.cached_zone,
-            image_id=compute_obj.image_id,
-            compute_flavor=compute_obj.compute_flavor)
-        return self.amphora_repo.get(db_apis.get_session(), id=amphora_id)
+            lb_network_ip=compute_obj[constants.LB_NETWORK_IP],
+            cached_zone=compute_obj[constants.CACHED_ZONE],
+            image_id=compute_obj[constants.IMAGE_ID],
+            compute_flavor=compute_obj[constants.COMPUTE_FLAVOR])
+        return self.amphora_repo.get(db_apis.get_session(),
+                                     id=amphora_id).to_dict()
 
 
 class UpdateAmphoraDBCertExpiration(BaseDatabaseTask):
@@ -937,7 +972,7 @@ class UpdateAmphoraDBCertExpiration(BaseDatabaseTask):
         key = utils.get_six_compatible_server_certs_key_passphrase()
         fer = fernet.Fernet(key)
         cert_expiration = cert_parser.get_cert_expiration(
-            fer.decrypt(server_pem))
+            fer.decrypt(server_pem.encode("utf-8")))
         LOG.debug("Certificate expiration date is %s ", cert_expiration)
         self.amphora_repo.update(db_apis.get_session(), amphora_id,
                                  cert_expiration=cert_expiration)
@@ -946,7 +981,7 @@ class UpdateAmphoraDBCertExpiration(BaseDatabaseTask):
 class UpdateAmphoraCertBusyToFalse(BaseDatabaseTask):
     """Update the amphora cert_busy flag to be false."""
 
-    def execute(self, amphora):
+    def execute(self, amphora_id):
         """Update the amphora cert_busy flag to be false.
 
         :param amphora: Amphora to be updated.
@@ -954,8 +989,8 @@ class UpdateAmphoraCertBusyToFalse(BaseDatabaseTask):
         """
 
         LOG.debug("Update cert_busy flag of amphora id %s to False",
-                  amphora.id)
-        self.amphora_repo.update(db_apis.get_session(), amphora.id,
+                  amphora_id)
+        self.amphora_repo.update(db_apis.get_session(), amphora_id,
                                  cert_busy=False)
 
 
@@ -1584,16 +1619,19 @@ class GetAmphoraDetails(BaseDatabaseTask):
         """Retrieve amphora network details.
 
         :param amphora: Amphora which network details are required
-        :returns: data_models.Amphora object
+        :returns: Amphora data dict
         """
-        return data_models.Amphora(id=amphora.id,
-                                   vrrp_ip=amphora.vrrp_ip,
-                                   ha_ip=amphora.ha_ip,
-                                   vrrp_port_id=amphora.vrrp_port_id,
-                                   ha_port_id=amphora.ha_port_id,
-                                   role=amphora.role,
-                                   vrrp_id=amphora.vrrp_id,
-                                   vrrp_priority=amphora.vrrp_priority)
+        db_amp = self.amphora_repo.get(db_apis.get_session(),
+                                       id=amphora.get(constants.ID))
+        amphora.update({
+            constants.VRRP_IP: db_amp.vrrp_ip,
+            constants.HA_IP: db_amp.ha_ip,
+            constants.HA_PORT_ID: db_amp.ha_port_id,
+            constants.ROLE: db_amp.role,
+            constants.VRRP_ID: db_amp.vrrp_id,
+            constants.VRRP_PRIORITY: db_amp.vrrp_priority
+        })
+        return amphora
 
 
 class GetAmphoraeFromLoadbalancer(BaseDatabaseTask):
@@ -1611,7 +1649,7 @@ class GetAmphoraeFromLoadbalancer(BaseDatabaseTask):
                                       show_deleted=False)
             if a is None:
                 continue
-            amphorae.append(a)
+            amphorae.append(a.to_dict())
         return amphorae
 
 
@@ -1683,7 +1721,7 @@ class DisableAmphoraHealthMonitoring(BaseDatabaseTask):
         :param amphora: The amphora to disable health monitoring for
         :returns: None
         """
-        self._delete_from_amp_health(amphora.id)
+        self._delete_from_amp_health(amphora.get(constants.ID))
 
 
 class DisableLBAmphoraeHealthMonitoring(BaseDatabaseTask):
@@ -1716,7 +1754,7 @@ class MarkAmphoraHealthBusy(BaseDatabaseTask):
         :param amphora: The amphora to mark amphora health busy
         :returns: None
         """
-        self._mark_amp_health_busy(amphora.id)
+        self._mark_amp_health_busy(amphora.get(constants.ID))
 
 
 class MarkLBAmphoraeHealthBusy(BaseDatabaseTask):

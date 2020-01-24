@@ -121,9 +121,9 @@ class ControllerWorker(base_taskflow.BaseTaskFlowEngine):
         """
         amphora = self._amphora_repo.get(db_apis.get_session(),
                                          id=amphora_id)
-        delete_amp_tf = self._taskflow_load(self._amphora_flows.
-                                            get_delete_amphora_flow(),
-                                            store={constants.AMPHORA: amphora})
+        delete_amp_tf = self._taskflow_load(
+            self._amphora_flows.get_delete_amphora_flow(),
+            store={constants.AMPHORA: amphora.to_dict()})
         with tf_logging.DynamicLoggingListener(delete_amp_tf,
                                                log=LOG):
             delete_amp_tf.run()
@@ -833,8 +833,7 @@ class ControllerWorker(base_taskflow.BaseTaskFlowEngine):
         :param priority: The create priority
         :returns: None
         """
-
-        stored_params = {constants.FAILED_AMPHORA: amp,
+        stored_params = {constants.FAILED_AMPHORA: amp.to_dict(),
                          constants.LOADBALANCER_ID: amp.load_balancer_id,
                          constants.BUILD_TYPE_PRIORITY: priority, }
 
@@ -993,8 +992,8 @@ class ControllerWorker(base_taskflow.BaseTaskFlowEngine):
 
         certrotation_amphora_tf = self._taskflow_load(
             self._amphora_flows.cert_rotate_amphora_flow(),
-            store={constants.AMPHORA: amp,
-                   constants.AMPHORA_ID: amp.id})
+            store={constants.AMPHORA: amp.to_dict(),
+                   constants.AMPHORA_ID: amphora_id})
 
         with tf_logging.DynamicLoggingListener(certrotation_amphora_tf,
                                                log=LOG):
@@ -1022,7 +1021,7 @@ class ControllerWorker(base_taskflow.BaseTaskFlowEngine):
 
         update_amphora_tf = self._taskflow_load(
             self._amphora_flows.update_amphora_config_flow(),
-            store={constants.AMPHORA: amp,
+            store={constants.AMPHORA: amp.to_dict(),
                    constants.FLAVOR: flavor})
 
         with tf_logging.DynamicLoggingListener(update_amphora_tf,

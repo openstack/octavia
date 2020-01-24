@@ -50,11 +50,15 @@ class TestException(Exception):
         return repr(self.value)
 
 
-_amphora_mock = mock.MagicMock()
-_amphora_mock.id = AMPHORA_ID
-_amphora_mock.compute_id = COMPUTE_ID
+_db_amphora_mock = mock.MagicMock()
+_db_amphora_mock.id = AMPHORA_ID
+_db_amphora_mock.compute_id = COMPUTE_ID
+_amphora_mock = {
+    constants.ID: AMPHORA_ID,
+    constants.COMPUTE_ID: COMPUTE_ID
+}
 _load_balancer_mock = mock.MagicMock()
-_load_balancer_mock.amphorae = [_amphora_mock]
+_load_balancer_mock.amphorae = [_db_amphora_mock]
 _port = mock.MagicMock()
 _port.id = PORT_ID
 
@@ -79,8 +83,8 @@ class TestComputeTasks(base.TestCase):
             group="controller_worker", amp_secgroup_list=AMP_SEC_GROUPS)
         self.conf.config(group="controller_worker", amp_image_owner_id='')
 
-        _amphora_mock.id = AMPHORA_ID
-        _amphora_mock.status = constants.AMPHORA_ALLOCATED
+        _db_amphora_mock.id = AMPHORA_ID
+        _db_amphora_mock.status = constants.AMPHORA_ALLOCATED
 
         logging_mock = mock.MagicMock()
         compute_tasks.LOG = logging_mock
@@ -106,12 +110,12 @@ class TestComputeTasks(base.TestCase):
 
         mock_driver.build.return_value = COMPUTE_ID
         # Test execute()
-        compute_id = createcompute.execute(_amphora_mock.id, ports=[_port],
+        compute_id = createcompute.execute(_db_amphora_mock.id, ports=[_port],
                                            server_group_id=SERVER_GRPOUP_ID)
 
         # Validate that the build method was called properly
         mock_driver.build.assert_called_once_with(
-            name="amphora-" + _amphora_mock.id,
+            name="amphora-" + _db_amphora_mock.id,
             amphora_flavor=AMP_FLAVOR_ID,
             image_id=AMP_IMAGE_ID,
             image_tag=AMP_IMAGE_TAG,
@@ -136,14 +140,14 @@ class TestComputeTasks(base.TestCase):
 
         self.assertRaises(TypeError,
                           createcompute.execute,
-                          _amphora_mock, config_drive_files='test_cert')
+                          _db_amphora_mock, config_drive_files='test_cert')
 
         # Test revert()
 
-        _amphora_mock.compute_id = COMPUTE_ID
+        _db_amphora_mock.compute_id = COMPUTE_ID
 
         createcompute = compute_tasks.ComputeCreate()
-        createcompute.revert(compute_id, _amphora_mock.id)
+        createcompute.revert(compute_id, _db_amphora_mock.id)
 
         # Validate that the delete method was called properly
         mock_driver.delete.assert_called_once_with(
@@ -151,7 +155,7 @@ class TestComputeTasks(base.TestCase):
 
         # Test that a delete exception is not raised
 
-        createcompute.revert(COMPUTE_ID, _amphora_mock.id)
+        createcompute.revert(COMPUTE_ID, _db_amphora_mock.id)
 
     @mock.patch('jinja2.Environment.get_template')
     @mock.patch('octavia.amphorae.backends.agent.'
@@ -171,11 +175,11 @@ class TestComputeTasks(base.TestCase):
 
         mock_driver.build.return_value = COMPUTE_ID
         # Test execute()
-        compute_id = createcompute.execute(_amphora_mock.id, ports=[_port])
+        compute_id = createcompute.execute(_db_amphora_mock.id, ports=[_port])
 
         # Validate that the build method was called properly
         mock_driver.build.assert_called_once_with(
-            name="amphora-" + _amphora_mock.id,
+            name="amphora-" + _db_amphora_mock.id,
             amphora_flavor=AMP_FLAVOR_ID,
             image_id=AMP_IMAGE_ID,
             image_tag=AMP_IMAGE_TAG,
@@ -197,14 +201,14 @@ class TestComputeTasks(base.TestCase):
 
         self.assertRaises(TypeError,
                           createcompute.execute,
-                          _amphora_mock, config_drive_files='test_cert')
+                          _db_amphora_mock, config_drive_files='test_cert')
 
         # Test revert()
 
-        _amphora_mock.compute_id = COMPUTE_ID
+        _db_amphora_mock.compute_id = COMPUTE_ID
 
         createcompute = compute_tasks.ComputeCreate()
-        createcompute.revert(compute_id, _amphora_mock.id)
+        createcompute.revert(compute_id, _db_amphora_mock.id)
 
         # Validate that the delete method was called properly
         mock_driver.delete.assert_called_once_with(
@@ -212,7 +216,7 @@ class TestComputeTasks(base.TestCase):
 
         # Test that a delete exception is not raised
 
-        createcompute.revert(COMPUTE_ID, _amphora_mock.id)
+        createcompute.revert(COMPUTE_ID, _db_amphora_mock.id)
 
     @mock.patch('octavia.common.jinja.logging.logging_jinja_cfg.'
                 'LoggingJinjaTemplater.build_logging_config')
@@ -236,13 +240,13 @@ class TestComputeTasks(base.TestCase):
 
         mock_driver.build.return_value = COMPUTE_ID
         # Test execute()
-        compute_id = createcompute.execute(_amphora_mock.id, ports=[_port],
+        compute_id = createcompute.execute(_db_amphora_mock.id, ports=[_port],
                                            server_group_id=SERVER_GRPOUP_ID,
                                            availability_zone=az_dict)
 
         # Validate that the build method was called properly
         mock_driver.build.assert_called_once_with(
-            name="amphora-" + _amphora_mock.id,
+            name="amphora-" + _db_amphora_mock.id,
             amphora_flavor=AMP_FLAVOR_ID,
             image_id=AMP_IMAGE_ID,
             image_tag=AMP_IMAGE_TAG,
@@ -266,14 +270,14 @@ class TestComputeTasks(base.TestCase):
 
         self.assertRaises(TypeError,
                           createcompute.execute,
-                          _amphora_mock, config_drive_files='test_cert')
+                          _db_amphora_mock, config_drive_files='test_cert')
 
         # Test revert()
 
-        _amphora_mock.compute_id = COMPUTE_ID
+        _db_amphora_mock.compute_id = COMPUTE_ID
 
         createcompute = compute_tasks.ComputeCreate()
-        createcompute.revert(compute_id, _amphora_mock.id)
+        createcompute.revert(compute_id, _db_amphora_mock.id)
 
         # Validate that the delete method was called properly
         mock_driver.delete.assert_called_once_with(
@@ -281,7 +285,7 @@ class TestComputeTasks(base.TestCase):
 
         # Test that a delete exception is not raised
 
-        createcompute.revert(COMPUTE_ID, _amphora_mock.id)
+        createcompute.revert(COMPUTE_ID, _db_amphora_mock.id)
 
     @mock.patch('octavia.common.jinja.logging.logging_jinja_cfg.'
                 'LoggingJinjaTemplater.build_logging_config')
@@ -303,12 +307,12 @@ class TestComputeTasks(base.TestCase):
         mock_log_cfg.return_value = 'FAKE CFG'
 
         # Test execute()
-        compute_id = createcompute.execute(_amphora_mock.id, ports=[_port],
+        compute_id = createcompute.execute(_db_amphora_mock.id, ports=[_port],
                                            server_group_id=SERVER_GRPOUP_ID)
 
         # Validate that the build method was called properly
         mock_driver.build.assert_called_once_with(
-            name="amphora-" + _amphora_mock.id,
+            name="amphora-" + _db_amphora_mock.id,
             amphora_flavor=AMP_FLAVOR_ID,
             image_id=AMP_IMAGE_ID,
             image_tag=AMP_IMAGE_TAG,
@@ -331,14 +335,14 @@ class TestComputeTasks(base.TestCase):
 
         self.assertRaises(TypeError,
                           createcompute.execute,
-                          _amphora_mock, config_drive_files='test_cert')
+                          _db_amphora_mock, config_drive_files='test_cert')
 
         # Test revert()
 
-        _amphora_mock.compute_id = COMPUTE_ID
+        _db_amphora_mock.compute_id = COMPUTE_ID
 
         createcompute = compute_tasks.ComputeCreate()
-        createcompute.revert(compute_id, _amphora_mock.id)
+        createcompute.revert(compute_id, _db_amphora_mock.id)
 
         # Validate that the delete method was called properly
         mock_driver.delete.assert_called_once_with(
@@ -346,7 +350,7 @@ class TestComputeTasks(base.TestCase):
 
         # Test that a delete exception is not raised
 
-        createcompute.revert(COMPUTE_ID, _amphora_mock.id)
+        createcompute.revert(COMPUTE_ID, _db_amphora_mock.id)
 
     @mock.patch('octavia.common.jinja.logging.logging_jinja_cfg.'
                 'LoggingJinjaTemplater.build_logging_config')
@@ -368,14 +372,14 @@ class TestComputeTasks(base.TestCase):
         # Test execute()
         test_cert = fer.encrypt(
             utils.get_six_compatible_value('test_cert')
-        )
-        compute_id = createcompute.execute(_amphora_mock.id, test_cert,
+        ).decode('utf-8')
+        compute_id = createcompute.execute(_db_amphora_mock.id, test_cert,
                                            server_group_id=SERVER_GRPOUP_ID
                                            )
 
         # Validate that the build method was called properly
         mock_driver.build.assert_called_once_with(
-            name="amphora-" + _amphora_mock.id,
+            name="amphora-" + _db_amphora_mock.id,
             amphora_flavor=AMP_FLAVOR_ID,
             image_id=AMP_IMAGE_ID,
             image_tag=AMP_IMAGE_TAG,
@@ -387,7 +391,8 @@ class TestComputeTasks(base.TestCase):
             user_data=None,
             config_drive_files={
                 '/etc/rsyslog.d/10-rsyslog.conf': 'FAKE CFG',
-                '/etc/octavia/certs/server.pem': fer.decrypt(test_cert),
+                '/etc/octavia/certs/server.pem': fer.decrypt(
+                    test_cert.encode('utf-8')),
                 '/etc/octavia/certs/client_ca.pem': 'test',
                 '/etc/octavia/amphora-agent.conf': 'test_conf'},
             server_group_id=SERVER_GRPOUP_ID,
@@ -401,22 +406,22 @@ class TestComputeTasks(base.TestCase):
         createcompute = compute_tasks.ComputeCreate()
         self.assertRaises(TypeError,
                           createcompute.execute,
-                          _amphora_mock,
+                          _db_amphora_mock,
                           config_drive_files=test_cert)
 
         # Test revert()
 
-        _amphora_mock.compute_id = COMPUTE_ID
+        _db_amphora_mock.compute_id = COMPUTE_ID
 
         createcompute = compute_tasks.ComputeCreate()
-        createcompute.revert(compute_id, _amphora_mock.id)
+        createcompute.revert(compute_id, _db_amphora_mock.id)
 
         # Validate that the delete method was called properly
         mock_driver.delete.assert_called_once_with(COMPUTE_ID)
 
         # Test that a delete exception is not raised
 
-        createcompute.revert(COMPUTE_ID, _amphora_mock.id)
+        createcompute.revert(COMPUTE_ID, _db_amphora_mock.id)
 
     @mock.patch('octavia.controller.worker.amphora_rate_limit'
                 '.AmphoraBuildRateLimit.remove_from_build_req_queue')
@@ -428,22 +433,22 @@ class TestComputeTasks(base.TestCase):
                           mock_remove_from_build_queue):
 
         self.conf.config(group='haproxy_amphora', build_rate_limit=5)
-        _amphora_mock.compute_id = COMPUTE_ID
-        _amphora_mock.status = constants.ACTIVE
-        _amphora_mock.lb_network_ip = LB_NET_IP
+        _db_amphora_mock.compute_id = COMPUTE_ID
+        _db_amphora_mock.status = constants.ACTIVE
+        _db_amphora_mock.lb_network_ip = LB_NET_IP
 
-        mock_driver.get_amphora.return_value = _amphora_mock, None
+        mock_driver.get_amphora.return_value = _db_amphora_mock, None
 
         computewait = compute_tasks.ComputeActiveWait()
         computewait.execute(COMPUTE_ID, AMPHORA_ID)
 
         mock_driver.get_amphora.assert_called_once_with(COMPUTE_ID)
 
-        _amphora_mock.status = constants.DELETED
+        _db_amphora_mock.status = constants.DELETED
 
         self.assertRaises(exceptions.ComputeWaitTimeoutException,
                           computewait.execute,
-                          _amphora_mock, AMPHORA_ID)
+                          _db_amphora_mock, AMPHORA_ID)
 
     @mock.patch('octavia.controller.worker.amphora_rate_limit'
                 '.AmphoraBuildRateLimit.remove_from_build_req_queue')
@@ -455,22 +460,22 @@ class TestComputeTasks(base.TestCase):
                                        mock_remove_from_build_queue):
 
         self.conf.config(group='haproxy_amphora', build_rate_limit=5)
-        _amphora_mock.compute_id = COMPUTE_ID
-        _amphora_mock.status = constants.ACTIVE
-        _amphora_mock.lb_network_ip = LB_NET_IP
+        _db_amphora_mock.compute_id = COMPUTE_ID
+        _db_amphora_mock.status = constants.ACTIVE
+        _db_amphora_mock.lb_network_ip = LB_NET_IP
 
-        mock_driver.get_amphora.return_value = _amphora_mock, None
+        mock_driver.get_amphora.return_value = _db_amphora_mock, None
 
         computewait = compute_tasks.ComputeActiveWait()
         computewait.execute(COMPUTE_ID, AMPHORA_ID)
 
         mock_driver.get_amphora.assert_called_once_with(COMPUTE_ID)
 
-        _amphora_mock.status = constants.ERROR
+        _db_amphora_mock.status = constants.ERROR
 
         self.assertRaises(exceptions.ComputeBuildException,
                           computewait.execute,
-                          _amphora_mock, AMPHORA_ID)
+                          _db_amphora_mock, AMPHORA_ID)
 
     @mock.patch('octavia.controller.worker.amphora_rate_limit'
                 '.AmphoraBuildRateLimit.remove_from_build_req_queue')
@@ -480,11 +485,11 @@ class TestComputeTasks(base.TestCase):
                                   mock_time_sleep,
                                   mock_driver,
                                   mock_remove_from_build_queue):
-        _amphora_mock.compute_id = COMPUTE_ID
-        _amphora_mock.status = constants.ACTIVE
-        _amphora_mock.lb_network_ip = LB_NET_IP
+        _db_amphora_mock.compute_id = COMPUTE_ID
+        _db_amphora_mock.status = constants.ACTIVE
+        _db_amphora_mock.lb_network_ip = LB_NET_IP
 
-        mock_driver.get_amphora.return_value = _amphora_mock, None
+        mock_driver.get_amphora.return_value = _db_amphora_mock, None
 
         computewait = compute_tasks.ComputeActiveWait()
         computewait.execute(COMPUTE_ID, AMPHORA_ID)

@@ -30,10 +30,6 @@ CONF = cfg.CONF
 
 
 class AmphoraFlows(object):
-    def __init__(self):
-        # for some reason only this has the values from the config file
-        self.REST_AMPHORA_DRIVER = (CONF.controller_worker.amphora_driver ==
-                                    'amphora_haproxy_rest_driver')
 
     def get_create_amphora_flow(self):
         """Creates a flow to create an amphora.
@@ -45,7 +41,8 @@ class AmphoraFlows(object):
                                 provides=constants.AMPHORA_ID))
         create_amphora_flow.add(lifecycle_tasks.AmphoraIDToErrorOnRevertTask(
             requires=constants.AMPHORA_ID))
-        if self.REST_AMPHORA_DRIVER:
+        if (CONF.controller_worker.amphora_driver ==
+                'amphora_haproxy_rest_driver'):
             create_amphora_flow.add(cert_task.GenerateServerPEMTask(
                                     provides=constants.SERVER_PEM))
 
@@ -79,7 +76,7 @@ class AmphoraFlows(object):
                 inject={'raise_retry_exception': True}))
         create_amphora_flow.add(retry_subflow)
         create_amphora_flow.add(database_tasks.ReloadAmphora(
-            requires=constants.AMPHORA_ID,
+            requires=constants.AMPHORA,
             provides=constants.AMPHORA))
         create_amphora_flow.add(amphora_driver_tasks.AmphoraFinalize(
             requires=constants.AMPHORA))
@@ -97,7 +94,7 @@ class AmphoraFlows(object):
 
         post_map_amp_to_lb.add(database_tasks.ReloadAmphora(
             name=sf_name + '-' + constants.RELOAD_AMPHORA,
-            requires=constants.AMPHORA_ID,
+            requires=constants.AMPHORA,
             provides=constants.AMPHORA))
 
         post_map_amp_to_lb.add(amphora_driver_tasks.AmphoraConfigUpdate(
@@ -132,7 +129,8 @@ class AmphoraFlows(object):
             role in (constants.ROLE_BACKUP, constants.ROLE_MASTER) and
             CONF.nova.enable_anti_affinity)
 
-        if self.REST_AMPHORA_DRIVER:
+        if (CONF.controller_worker.amphora_driver ==
+                'amphora_haproxy_rest_driver'):
             create_amp_for_lb_subflow.add(cert_task.GenerateServerPEMTask(
                 name=sf_name + '-' + constants.GENERATE_SERVER_PEM,
                 provides=constants.SERVER_PEM))
@@ -202,40 +200,6 @@ class AmphoraFlows(object):
             name=sf_name + '-' + constants.UPDATE_AMPHORA_INFO,
             requires=(constants.AMPHORA_ID, constants.COMPUTE_OBJ),
             provides=constants.AMPHORA))
-        retry_task = sf_name + '-' + constants.AMP_COMPUTE_CONNECTIVITY_WAIT
-        retry_subflow = linear_flow.Flow(
-            constants.CREATE_AMPHORA_RETRY_SUBFLOW,
-            retry=amphora_driver_tasks.AmpRetry())
-        retry_subflow.add(
-            amphora_driver_tasks.AmphoraComputeConnectivityWait(
-                name=retry_task, requires=constants.AMPHORA,
-                inject={'raise_retry_exception': True}))
-        create_amp_for_lb_subflow.add(retry_subflow)
-        create_amp_for_lb_subflow.add(amphora_driver_tasks.AmphoraFinalize(
-            name=sf_name + '-' + constants.AMPHORA_FINALIZE,
-            requires=constants.AMPHORA))
-        create_amp_for_lb_subflow.add(
-            database_tasks.MarkAmphoraAllocatedInDB(
-                name=sf_name + '-' + constants.MARK_AMPHORA_ALLOCATED_INDB,
-                requires=(constants.AMPHORA, constants.LOADBALANCER_ID)))
-        create_amp_for_lb_subflow.add(database_tasks.ReloadAmphora(
-            name=sf_name + '-' + constants.RELOAD_AMPHORA,
-            requires=constants.AMPHORA_ID,
-            provides=constants.AMPHORA))
-
-        if role == constants.ROLE_MASTER:
-            create_amp_for_lb_subflow.add(database_tasks.MarkAmphoraMasterInDB(
-                name=sf_name + '-' + constants.MARK_AMP_MASTER_INDB,
-                requires=constants.AMPHORA))
-        elif role == constants.ROLE_BACKUP:
-            create_amp_for_lb_subflow.add(database_tasks.MarkAmphoraBackupInDB(
-                name=sf_name + '-' + constants.MARK_AMP_BACKUP_INDB,
-                requires=constants.AMPHORA))
-        elif role == constants.ROLE_STANDALONE:
-            create_amp_for_lb_subflow.add(
-                database_tasks.MarkAmphoraStandAloneInDB(
-                    name=sf_name + '-' + constants.MARK_AMP_STANDALONE_INDB,
-                    requires=constants.AMPHORA))
 
         return create_amp_for_lb_subflow
 
@@ -252,8 +216,49 @@ class AmphoraFlows(object):
 
         :return: True if there is no spare amphora
         """
+        values = history.values()
+        return not values or list(values)[0] is None
 
-        return list(history.values())[0] is None
+    def _retry_flow(self, sf_name):
+        retry_task = sf_name + '-' + constants.AMP_COMPUTE_CONNECTIVITY_WAIT
+        retry_subflow = linear_flow.Flow(
+            sf_name + '-' + constants.CREATE_AMPHORA_RETRY_SUBFLOW,
+            retry=amphora_driver_tasks.AmpRetry())
+        retry_subflow.add(
+            amphora_driver_tasks.AmphoraComputeConnectivityWait(
+                name=retry_task, requires=constants.AMPHORA,
+                inject={'raise_retry_exception': True}))
+        return retry_subflow
+
+    def _finalize_flow(self, sf_name, role):
+        sf_name = sf_name + constants.FINALIZE_AMPHORA_FLOW
+        create_amp_for_lb_subflow = linear_flow.Flow(sf_name)
+        create_amp_for_lb_subflow.add(amphora_driver_tasks.AmphoraFinalize(
+            name=sf_name + '-' + constants.AMPHORA_FINALIZE,
+            requires=constants.AMPHORA))
+        create_amp_for_lb_subflow.add(
+            database_tasks.MarkAmphoraAllocatedInDB(
+                name=sf_name + '-' + constants.MARK_AMPHORA_ALLOCATED_INDB,
+                requires=(constants.AMPHORA, constants.LOADBALANCER_ID)))
+        create_amp_for_lb_subflow.add(database_tasks.ReloadAmphora(
+            name=sf_name + '-' + constants.RELOAD_AMPHORA,
+            requires=constants.AMPHORA,
+            provides=constants.AMPHORA))
+
+        if role == constants.ROLE_MASTER:
+            create_amp_for_lb_subflow.add(database_tasks.MarkAmphoraMasterInDB(
+                name=sf_name + '-' + constants.MARK_AMP_MASTER_INDB,
+                requires=constants.AMPHORA))
+        elif role == constants.ROLE_BACKUP:
+            create_amp_for_lb_subflow.add(database_tasks.MarkAmphoraBackupInDB(
+                name=sf_name + '-' + constants.MARK_AMP_BACKUP_INDB,
+                requires=constants.AMPHORA))
+        elif role == constants.ROLE_STANDALONE:
+            create_amp_for_lb_subflow.add(
+                database_tasks.MarkAmphoraStandAloneInDB(
+                    name=sf_name + '-' + constants.MARK_AMP_STANDALONE_INDB,
+                    requires=constants.AMPHORA))
+        return create_amp_for_lb_subflow
 
     def get_amphora_for_lb_subflow(
             self, prefix, role=constants.ROLE_STANDALONE):
@@ -272,16 +277,21 @@ class AmphoraFlows(object):
             name=sf_name + '-' + constants.MAP_LOADBALANCER_TO_AMPHORA,
             requires=(constants.LOADBALANCER_ID, constants.FLAVOR,
                       constants.AVAILABILITY_ZONE),
-            provides=constants.AMPHORA_ID)
+            provides=constants.AMPHORA)
 
         # Define a subflow for if we successfully map an amphora
         map_lb_to_amp = self._get_post_map_lb_subflow(prefix, role)
         # Define a subflow for if we can't map an amphora
         create_amp = self._get_create_amp_for_lb_subflow(prefix, role)
+        # TODO(ataraday): Have to split create flow due lack of functionality
+        # in taskflow: related https://bugs.launchpad.net/taskflow/+bug/1480907
+        retry_flow = self._retry_flow(sf_name)
+        finalize_flow = self._finalize_flow(sf_name, role)
 
         # Add them to the graph flow
         amp_for_lb_flow.add(allocate_and_associate_amp,
-                            map_lb_to_amp, create_amp)
+                            map_lb_to_amp, create_amp,
+                            retry_flow, finalize_flow, resolve_requires=False)
 
         # Setup the decider for the path if we can map an amphora
         amp_for_lb_flow.link(allocate_and_associate_amp, map_lb_to_amp,
@@ -289,6 +299,15 @@ class AmphoraFlows(object):
                              decider_depth='flow')
         # Setup the decider for the path if we can't map an amphora
         amp_for_lb_flow.link(allocate_and_associate_amp, create_amp,
+                             decider=self._create_new_amp_for_lb_decider,
+                             decider_depth='flow')
+        # TODO(ataraday): setup separate deciders as we need retry flow
+        #  properly ignored
+        amp_for_lb_flow.link(create_amp, retry_flow,
+                             decider=self._create_new_amp_for_lb_decider,
+                             decider_depth='flow')
+
+        amp_for_lb_flow.link(retry_flow, finalize_flow,
                              decider=self._create_new_amp_for_lb_decider,
                              decider_depth='flow')
 
@@ -320,7 +339,7 @@ class AmphoraFlows(object):
             requires=constants.AMP_DATA))
         flows.append(database_tasks.ReloadAmphora(
             name=sf_name + '-' + constants.RELOAD_AMP_AFTER_PLUG_VIP,
-            requires=constants.AMPHORA_ID,
+            requires=constants.AMPHORA,
             provides=constants.AMPHORA))
         flows.append(database_tasks.ReloadLoadBalancer(
             name=sf_name + '-' + constants.RELOAD_LB_AFTER_PLUG_VIP,
@@ -444,7 +463,7 @@ class AmphoraFlows(object):
             provides=constants.LOADBALANCER))
 
         failover_amphora_flow.add(database_tasks.ReloadAmphora(
-            requires=constants.AMPHORA_ID,
+            requires=constants.AMPHORA,
             provides=constants.AMPHORA))
 
         # Prepare to reconnect the network interface(s)
@@ -596,7 +615,7 @@ class AmphoraFlows(object):
 
         # update the cert_busy flag to be false after rotation
         rotated_amphora_flow.add(database_tasks.UpdateAmphoraCertBusyToFalse(
-            requires=constants.AMPHORA))
+            requires=constants.AMPHORA_ID))
 
         return rotated_amphora_flow
 

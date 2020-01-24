@@ -29,6 +29,7 @@ from octavia.common import utils
 from octavia.controller.worker import task_utils as task_utilities
 from octavia.db import api as db_apis
 from octavia.db import repositories as repo
+from octavia.network import data_models
 
 CONF = cfg.CONF
 LOG = logging.getLogger(__name__)
@@ -78,10 +79,15 @@ class AmpListenersUpdate(BaseAmphoraTask):
         # in a failover flow with both amps failing. Skip it and let
         # health manager fix it.
         try:
+            db_amphorae = []
+            for amp in amphorae:
+                db_amp = self.amphora_repo.get(db_apis.get_session(),
+                                               id=amp[constants.ID])
+                db_amphorae.append(db_amp)
             self.amphora_driver.update_amphora_listeners(
-                loadbalancer, amphorae[amphora_index], timeout_dict)
+                loadbalancer, db_amphorae[amphora_index], timeout_dict)
         except Exception as e:
-            amphora_id = amphorae[amphora_index].id
+            amphora_id = amphorae[amphora_index].get(constants.ID)
             LOG.error('Failed to update listeners on amphora %s. Skipping '
                       'this amphora as it is failing to update due to: %s',
                       amphora_id, str(e))
@@ -119,7 +125,12 @@ class ListenersStart(BaseAmphoraTask):
     def execute(self, loadbalancer, amphora=None):
         """Execute listener start routines for listeners on an amphora."""
         if loadbalancer.listeners:
-            self.amphora_driver.start(loadbalancer, amphora)
+            if amphora is not None:
+                db_amp = self.amphora_repo.get(db_apis.get_session(),
+                                               id=amphora[constants.ID])
+            else:
+                db_amp = amphora
+            self.amphora_driver.start(loadbalancer, db_amp)
             LOG.debug("Started the listeners on the vip")
 
     def revert(self, loadbalancer, *args, **kwargs):
@@ -154,7 +165,9 @@ class AmphoraGetInfo(BaseAmphoraTask):
 
     def execute(self, amphora):
         """Execute get_info routine for an amphora."""
-        self.amphora_driver.get_info(amphora)
+        db_amp = self.amphora_repo.get(db_apis.get_session(),
+                                       id=amphora[constants.ID])
+        self.amphora_driver.get_info(db_amp)
 
 
 class AmphoraGetDiagnostics(BaseAmphoraTask):
@@ -170,7 +183,9 @@ class AmphoraFinalize(BaseAmphoraTask):
 
     def execute(self, amphora):
         """Execute finalize_amphora routine."""
-        self.amphora_driver.finalize_amphora(amphora)
+        db_amp = self.amphora_repo.get(db_apis.get_session(),
+                                       id=amphora.get(constants.ID))
+        self.amphora_driver.finalize_amphora(db_amp)
         LOG.debug("Finalized the amphora.")
 
     def revert(self, result, amphora, *args, **kwargs):
@@ -178,7 +193,8 @@ class AmphoraFinalize(BaseAmphoraTask):
         if isinstance(result, failure.Failure):
             return
         LOG.warning("Reverting amphora finalize.")
-        self.task_utils.mark_amphora_status_error(amphora.id)
+        self.task_utils.mark_amphora_status_error(
+            amphora.get(constants.ID))
 
 
 class AmphoraPostNetworkPlug(BaseAmphoraTask):
@@ -186,18 +202,30 @@ class AmphoraPostNetworkPlug(BaseAmphoraTask):
 
     def execute(self, amphora, ports):
         """Execute post_network_plug routine."""
+        db_amp = self.amphora_repo.get(db_apis.get_session(),
+                                       id=amphora[constants.ID])
+
         for port in ports:
-            self.amphora_driver.post_network_plug(amphora, port)
+            net = data_models.Network(**port.pop(constants.NETWORK))
+            ips = port.pop(constants.FIXED_IPS)
+            fixed_ips = [data_models.FixedIP(
+                subnet=data_models.Subnet(**ip.pop(constants.SUBNET)), **ip)
+                for ip in ips]
+            self.amphora_driver.post_network_plug(
+                db_amp, data_models.Port(network=net, fixed_ips=fixed_ips,
+                                         **port))
+
             LOG.debug("post_network_plug called on compute instance "
                       "%(compute_id)s for port %(port_id)s",
-                      {"compute_id": amphora.compute_id, "port_id": port.id})
+                      {"compute_id": amphora[constants.COMPUTE_ID],
+                       "port_id": port[constants.ID]})
 
     def revert(self, result, amphora, *args, **kwargs):
         """Handle a failed post network plug."""
         if isinstance(result, failure.Failure):
             return
         LOG.warning("Reverting post network plug.")
-        self.task_utils.mark_amphora_status_error(amphora.id)
+        self.task_utils.mark_amphora_status_error(amphora.get(constants.ID))
 
 
 class AmphoraePostNetworkPlug(BaseAmphoraTask):
@@ -208,7 +236,8 @@ class AmphoraePostNetworkPlug(BaseAmphoraTask):
         amp_post_plug = AmphoraPostNetworkPlug()
         for amphora in loadbalancer.amphorae:
             if amphora.id in added_ports:
-                amp_post_plug.execute(amphora, added_ports[amphora.id])
+                amp_post_plug.execute(amphora.to_dict(),
+                                      added_ports[amphora.id])
 
     def revert(self, result, loadbalancer, added_ports, *args, **kwargs):
         """Handle a failed post network plug."""
@@ -227,8 +256,17 @@ class AmphoraPostVIPPlug(BaseAmphoraTask):
 
     def execute(self, amphora, loadbalancer, amphorae_network_config):
         """Execute post_vip_routine."""
+        db_amp = self.amphora_repo.get(db_apis.get_session(),
+                                       id=amphora.get(constants.ID))
+        vrrp_port = data_models.Port(
+            **amphorae_network_config[
+                amphora.get(constants.ID)][constants.VRRP_PORT])
+        vip_subnet = data_models.Subnet(
+            **amphorae_network_config[
+                amphora.get(constants.ID)][constants.VIP_SUBNET])
         self.amphora_driver.post_vip_plug(
-            amphora, loadbalancer, amphorae_network_config)
+            db_amp, loadbalancer, amphorae_network_config, vrrp_port=vrrp_port,
+            vip_subnet=vip_subnet)
         LOG.debug("Notified amphora of vip plug")
 
     def revert(self, result, amphora, loadbalancer, *args, **kwargs):
@@ -236,7 +274,7 @@ class AmphoraPostVIPPlug(BaseAmphoraTask):
         if isinstance(result, failure.Failure):
             return
         LOG.warning("Reverting post vip plug.")
-        self.task_utils.mark_amphora_status_error(amphora.id)
+        self.task_utils.mark_amphora_status_error(amphora.get(constants.ID))
         self.task_utils.mark_loadbalancer_prov_status_error(loadbalancer.id)
 
 
@@ -267,7 +305,10 @@ class AmphoraCertUpload(BaseAmphoraTask):
         LOG.debug("Upload cert in amphora REST driver")
         key = utils.get_six_compatible_server_certs_key_passphrase()
         fer = fernet.Fernet(key)
-        self.amphora_driver.upload_cert_amp(amphora, fer.decrypt(server_pem))
+        db_amp = self.amphora_repo.get(db_apis.get_session(),
+                                       id=amphora.get(constants.ID))
+        self.amphora_driver.upload_cert_amp(
+            db_amp, fer.decrypt(server_pem.encode('utf-8')))
 
 
 class AmphoraUpdateVRRPInterface(BaseAmphoraTask):
@@ -357,16 +398,19 @@ class AmphoraComputeConnectivityWait(BaseAmphoraTask):
     def execute(self, amphora, raise_retry_exception=False):
         """Execute get_info routine for an amphora until it responds."""
         try:
+            db_amphora = self.amphora_repo.get(
+                db_apis.get_session(), id=amphora.get(constants.ID))
             amp_info = self.amphora_driver.get_info(
-                amphora, raise_retry_exception=raise_retry_exception)
+                db_amphora, raise_retry_exception=raise_retry_exception)
             LOG.debug('Successfuly connected to amphora %s: %s',
-                      amphora.id, amp_info)
+                      amphora.get(constants.ID), amp_info)
         except driver_except.TimeOutException:
             LOG.error("Amphora compute instance failed to become reachable. "
                       "This either means the compute driver failed to fully "
                       "boot the instance inside the timeout interval or the "
                       "instance is not reachable via the lb-mgmt-net.")
-            self.amphora_repo.update(db_apis.get_session(), amphora.id,
+            self.amphora_repo.update(db_apis.get_session(),
+                                     amphora.get(constants.ID),
                                      status=constants.ERROR)
             raise
 
@@ -384,13 +428,16 @@ class AmphoraConfigUpdate(BaseAmphoraTask):
 
         # Build the amphora agent config
         agent_cfg_tmpl = agent_jinja_cfg.AgentJinjaTemplater()
-        agent_config = agent_cfg_tmpl.build_agent_config(amphora.id, topology)
-
+        agent_config = agent_cfg_tmpl.build_agent_config(
+            amphora.get(constants.ID), topology)
+        db_amp = self.amphora_repo.get(db_apis.get_session(),
+                                       id=amphora[constants.ID])
         # Push the new configuration to the amphroa
         try:
-            self.amphora_driver.update_amphora_agent_config(amphora,
+            self.amphora_driver.update_amphora_agent_config(db_amp,
                                                             agent_config)
         except driver_except.AmpDriverNotImplementedError:
             LOG.error('Amphora {} does not support agent configuration '
                       'update. Please update the amphora image for this '
-                      'amphora. Skipping.'.format(amphora.id))
+                      'amphora. Skipping.'.
+                      format(amphora.get(constants.ID)))
