@@ -19,6 +19,7 @@ from oslo_config import fixture as oslo_fixture
 from oslo_utils import uuidutils
 from taskflow.types import failure
 
+from octavia.api.drivers import utils as provider_utils
 from octavia.common import constants
 from octavia.common import data_models as o_data_models
 from octavia.controller.worker.v2.tasks import network_tasks
@@ -72,11 +73,11 @@ class TestNetworkTasks(base.TestCase):
     def setUp(self):
         network_tasks.LOG = mock.MagicMock()
         self.db_amphora_mock = mock.MagicMock()
-        self.load_balancer_mock = mock.MagicMock()
+        self.db_load_balancer_mock = mock.MagicMock()
         self.vip_mock = mock.MagicMock()
         self.vip_mock.subnet_id = SUBNET_ID
-        self.load_balancer_mock.vip = self.vip_mock
-        self.load_balancer_mock.amphorae = []
+        self.db_load_balancer_mock.vip = self.vip_mock
+        self.db_load_balancer_mock.amphorae = []
         self.db_amphora_mock.id = AMPHORA_ID
         self.db_amphora_mock.compute_id = COMPUTE_ID
         self.db_amphora_mock.status = constants.AMPHORA_ALLOCATED
@@ -84,14 +85,25 @@ class TestNetworkTasks(base.TestCase):
                              constants.COMPUTE_ID: COMPUTE_ID,
                              constants.LB_NETWORK_IP: IP_ADDRESS,
                              }
+        self.load_balancer_mock = {
+            constants.LOADBALANCER_ID: uuidutils.generate_uuid(),
+            constants.VIP_SUBNET_ID: VIP.subnet_id,
+            constants.VIP_PORT_ID: VIP.port_id,
+            constants.VIP_ADDRESS: VIP.ip_address,
+            constants.VIP_QOS_POLICY_ID: t_constants.MOCK_QOS_POLICY_ID1
+        }
 
         conf = oslo_fixture.Config(cfg.CONF)
         conf.config(group="controller_worker", amp_boot_network_list=['netid'])
 
         super(TestNetworkTasks, self).setUp()
 
-    def test_calculate_delta(self, mock_get_net_driver):
+    @mock.patch('octavia.db.repositories.LoadBalancerRepository.get')
+    @mock.patch('octavia.db.api.get_session', return_value=_session_mock)
+    def test_calculate_delta(self, mock_get_session, mock_get_lb,
+                             mock_get_net_driver):
         mock_driver = mock.MagicMock()
+        mock_get_lb.return_value = self.db_load_balancer_mock
 
         self.db_amphora_mock.to_dict.return_value = {
             constants.ID: AMPHORA_ID, constants.COMPUTE_ID: COMPUTE_ID,
@@ -116,16 +128,16 @@ class TestNetworkTasks(base.TestCase):
         # Delta should be empty
         mock_driver.reset_mock()
 
-        self.db_amphora_mock.load_balancer = self.load_balancer_mock
-        self.load_balancer_mock.amphorae = [self.db_amphora_mock]
-        self.load_balancer_mock.pools = []
+        self.db_amphora_mock.load_balancer = self.db_load_balancer_mock
+        self.db_load_balancer_mock.amphorae = [self.db_amphora_mock]
+        self.db_load_balancer_mock.pools = []
         self.assertEqual(empty_deltas,
                          calc_delta.execute(self.load_balancer_mock))
         mock_driver.get_plugged_networks.assert_called_once_with(COMPUTE_ID)
 
         # Pool mock should be configured explicitly for each test
         pool_mock = mock.MagicMock()
-        self.load_balancer_mock.pools = [pool_mock]
+        self.db_load_balancer_mock.pools = [pool_mock]
 
         # Test with one amp and one pool but no members, nothing plugged
         # Delta should be empty
@@ -322,7 +334,7 @@ class TestNetworkTasks(base.TestCase):
             return [data_models.Interface(port_id=port_id)]
 
         net_task = network_tasks.GetMemberPorts()
-        net_task.execute(LB, self.amphora_mock)
+        net_task.execute(self.load_balancer_mock, self.amphora_mock)
         mock_driver.get_port.assert_called_once_with(t_constants.MOCK_PORT_ID)
         mock_driver.get_plugged_networks.assert_called_once_with(COMPUTE_ID)
 
@@ -500,47 +512,59 @@ class TestNetworkTasks(base.TestCase):
         net.execute({self.db_amphora_mock.id: delta})
         mock_driver.unplug_network.assert_called_once_with(COMPUTE_ID, 1)
 
-    def test_plug_vip(self, mock_get_net_driver):
+    @mock.patch('octavia.db.repositories.LoadBalancerRepository.get')
+    @mock.patch('octavia.db.api.get_session', return_value=_session_mock)
+    def test_plug_vip(self, mock_get_session, mock_get_lb,
+                      mock_get_net_driver):
         mock_driver = mock.MagicMock()
         mock_get_net_driver.return_value = mock_driver
+        LB.amphorae = AMPS_DATA
+        mock_get_lb.return_value = LB
+        LB.amphorae = AMPS_DATA
         net = network_tasks.PlugVIP()
         amp = mock.MagicMock()
         amp.to_dict.return_value = 'vip'
         mock_driver.plug_vip.return_value = [amp]
 
-        data = net.execute(LB)
+        data = net.execute(self.load_balancer_mock)
         mock_driver.plug_vip.assert_called_once_with(LB, LB.vip)
         self.assertEqual(["vip"], data)
 
         # revert
-        net.revert(["vip"], LB)
+        net.revert([o_data_models.Amphora().to_dict()],
+                   self.load_balancer_mock)
         mock_driver.unplug_vip.assert_called_once_with(LB, LB.vip)
 
         # revert with exception
         mock_driver.reset_mock()
         mock_driver.unplug_vip.side_effect = Exception('UnplugVipException')
-        net.revert(["vip"], LB)
+        net.revert([o_data_models.Amphora().to_dict()],
+                   self.load_balancer_mock)
         mock_driver.unplug_vip.assert_called_once_with(LB, LB.vip)
 
     @mock.patch('octavia.controller.worker.task_utils.TaskUtils.'
                 'get_current_loadbalancer_from_db')
-    def test_apply_qos_on_creation(self, mock_get_lb_db, mock_get_net_driver):
+    @mock.patch('octavia.db.repositories.LoadBalancerRepository.get')
+    @mock.patch('octavia.db.api.get_session', return_value=_session_mock)
+    def test_apply_qos_on_creation(self, mock_get_session, mock_get_lb,
+                                   mock_get_lb_db, mock_get_net_driver):
         mock_driver = mock.MagicMock()
         mock_get_net_driver.return_value = mock_driver
         net = network_tasks.ApplyQos()
         mock_get_lb_db.return_value = LB
+        mock_get_lb.return_value = LB
 
         # execute
         UPDATE_DICT[constants.TOPOLOGY] = constants.TOPOLOGY_SINGLE
         update_dict = UPDATE_DICT
-        net.execute(LB, [AMPS_DATA[0]], update_dict)
+        net.execute(self.load_balancer_mock, [AMPS_DATA[0]], update_dict)
         mock_driver.apply_qos_on_port.assert_called_once_with(
             VIP.qos_policy_id, AMPS_DATA[0].vrrp_port_id)
         self.assertEqual(1, mock_driver.apply_qos_on_port.call_count)
         standby_topology = constants.TOPOLOGY_ACTIVE_STANDBY
         mock_driver.reset_mock()
         update_dict[constants.TOPOLOGY] = standby_topology
-        net.execute(LB, AMPS_DATA, update_dict)
+        net.execute(self.load_balancer_mock, AMPS_DATA, update_dict)
         mock_driver.apply_qos_on_port.assert_called_with(
             t_constants.MOCK_QOS_POLICY_ID1, mock.ANY)
         self.assertEqual(2, mock_driver.apply_qos_on_port.call_count)
@@ -548,16 +572,19 @@ class TestNetworkTasks(base.TestCase):
         # revert
         mock_driver.reset_mock()
         update_dict = UPDATE_DICT
-        net.revert(None, LB, [AMPS_DATA[0]], update_dict)
+        net.revert(None, self.load_balancer_mock, [AMPS_DATA[0]], update_dict)
         self.assertEqual(0, mock_driver.apply_qos_on_port.call_count)
         mock_driver.reset_mock()
         update_dict[constants.TOPOLOGY] = standby_topology
-        net.revert(None, LB, AMPS_DATA, update_dict)
+        net.revert(None, self.load_balancer_mock, AMPS_DATA, update_dict)
         self.assertEqual(0, mock_driver.apply_qos_on_port.call_count)
 
     @mock.patch('octavia.controller.worker.task_utils.TaskUtils.'
                 'get_current_loadbalancer_from_db')
-    def test_apply_qos_on_update(self, mock_get_lb_db, mock_get_net_driver):
+    @mock.patch('octavia.db.repositories.LoadBalancerRepository.get')
+    @mock.patch('octavia.db.api.get_session', return_value=_session_mock)
+    def test_apply_qos_on_update(self, mock_get_session, mock_get_lb,
+                                 mock_get_lb_db, mock_get_net_driver):
         mock_driver = mock.MagicMock()
         mock_get_net_driver.return_value = mock_driver
         net = network_tasks.ApplyQos()
@@ -565,48 +592,58 @@ class TestNetworkTasks(base.TestCase):
         null_qos_lb = o_data_models.LoadBalancer(
             vip=null_qos_vip, topology=constants.TOPOLOGY_SINGLE,
             amphorae=[AMPS_DATA[0]])
+        null_qos_lb_dict = (
+            provider_utils.db_loadbalancer_to_provider_loadbalancer(
+                null_qos_lb).to_dict())
 
         tmp_vip_object = o_data_models.Vip(
             qos_policy_id=t_constants.MOCK_QOS_POLICY_ID1)
         tmp_lb = o_data_models.LoadBalancer(
             vip=tmp_vip_object, topology=constants.TOPOLOGY_SINGLE,
             amphorae=[AMPS_DATA[0]])
-
+        pr_tm_dict = provider_utils.db_loadbalancer_to_provider_loadbalancer(
+            tmp_lb).to_dict()
+        mock_get_lb.return_value = tmp_lb
         # execute
         update_dict = {'description': 'fool'}
-        net.execute(tmp_lb, update_dict=update_dict)
+        net.execute(pr_tm_dict, update_dict=update_dict)
         mock_driver.apply_qos_on_port.assert_called_once_with(
             t_constants.MOCK_QOS_POLICY_ID1, AMPS_DATA[0].vrrp_port_id)
         self.assertEqual(1, mock_driver.apply_qos_on_port.call_count)
 
         mock_driver.reset_mock()
+        mock_get_lb.reset_mock()
+        mock_get_lb.return_value = null_qos_lb
         update_dict = {'vip': {'qos_policy_id': None}}
-        net.execute(null_qos_lb, update_dict=update_dict)
+        net.execute(null_qos_lb_dict, update_dict=update_dict)
         mock_driver.apply_qos_on_port.assert_called_once_with(
             None, AMPS_DATA[0].vrrp_port_id)
         self.assertEqual(1, mock_driver.apply_qos_on_port.call_count)
 
         mock_driver.reset_mock()
         update_dict = {'name': '123'}
-        net.execute(null_qos_lb, update_dict=update_dict)
+        net.execute(null_qos_lb_dict, update_dict=update_dict)
         self.assertEqual(0, mock_driver.apply_qos_on_port.call_count)
 
         mock_driver.reset_mock()
+        mock_get_lb.reset_mock()
         update_dict = {'description': 'fool'}
         tmp_lb.amphorae = AMPS_DATA
         tmp_lb.topology = constants.TOPOLOGY_ACTIVE_STANDBY
-        net.execute(tmp_lb, update_dict=update_dict)
+        mock_get_lb.return_value = tmp_lb
+        net.execute(pr_tm_dict, update_dict=update_dict)
         mock_driver.apply_qos_on_port.assert_called_with(
             t_constants.MOCK_QOS_POLICY_ID1, mock.ANY)
         self.assertEqual(2, mock_driver.apply_qos_on_port.call_count)
 
         # revert
         mock_driver.reset_mock()
+        mock_get_lb.reset_mock()
         tmp_lb.amphorae = [AMPS_DATA[0]]
         tmp_lb.topology = constants.TOPOLOGY_SINGLE
         update_dict = {'description': 'fool'}
         mock_get_lb_db.return_value = tmp_lb
-        net.revert(None, tmp_lb, update_dict=update_dict)
+        net.revert(None, pr_tm_dict, update_dict=update_dict)
         self.assertEqual(0, mock_driver.apply_qos_on_port.call_count)
 
         mock_driver.reset_mock()
@@ -614,12 +651,13 @@ class TestNetworkTasks(base.TestCase):
         ori_lb_db = LB2
         ori_lb_db.amphorae = [AMPS_DATA[0]]
         mock_get_lb_db.return_value = ori_lb_db
-        net.revert(None, null_qos_lb, update_dict=update_dict)
+        net.revert(None, null_qos_lb_dict, update_dict=update_dict)
         mock_driver.apply_qos_on_port.assert_called_once_with(
             t_constants.MOCK_QOS_POLICY_ID2, AMPS_DATA[0].vrrp_port_id)
         self.assertEqual(1, mock_driver.apply_qos_on_port.call_count)
 
         mock_driver.reset_mock()
+        mock_get_lb.reset_mock()
         update_dict = {'vip': {
             'qos_policy_id': t_constants.MOCK_QOS_POLICY_ID2}}
         tmp_lb.amphorae = AMPS_DATA
@@ -627,49 +665,64 @@ class TestNetworkTasks(base.TestCase):
         ori_lb_db = LB2
         ori_lb_db.amphorae = [AMPS_DATA[0]]
         mock_get_lb_db.return_value = ori_lb_db
-        net.revert(None, tmp_lb, update_dict=update_dict)
+        net.revert(None, pr_tm_dict, update_dict=update_dict)
         mock_driver.apply_qos_on_port.assert_called_with(
             t_constants.MOCK_QOS_POLICY_ID2, mock.ANY)
         self.assertEqual(2, mock_driver.apply_qos_on_port.call_count)
 
-    def test_unplug_vip(self, mock_get_net_driver):
+    @mock.patch('octavia.db.repositories.LoadBalancerRepository.get')
+    @mock.patch('octavia.db.api.get_session', return_value=_session_mock)
+    def test_unplug_vip(self, mock_get_session, mock_get_lb,
+                        mock_get_net_driver):
         mock_driver = mock.MagicMock()
+        mock_get_lb.return_value = LB
         mock_get_net_driver.return_value = mock_driver
         net = network_tasks.UnplugVIP()
 
-        net.execute(LB)
+        net.execute(self.load_balancer_mock)
         mock_driver.unplug_vip.assert_called_once_with(LB, LB.vip)
 
-    def test_allocate_vip(self, mock_get_net_driver):
+    @mock.patch('octavia.db.repositories.LoadBalancerRepository.get')
+    @mock.patch('octavia.db.api.get_session', return_value=_session_mock)
+    def test_allocate_vip(self, mock_get_session, mock_get_lb,
+                          mock_get_net_driver):
         mock_driver = mock.MagicMock()
+        mock_get_lb.return_value = LB
         mock_get_net_driver.return_value = mock_driver
         net = network_tasks.AllocateVIP()
 
         mock_driver.allocate_vip.return_value = LB.vip
 
         mock_driver.reset_mock()
-        self.assertEqual(LB.vip, net.execute(LB))
+        self.assertEqual(LB.vip.to_dict(),
+                         net.execute(self.load_balancer_mock))
         mock_driver.allocate_vip.assert_called_once_with(LB)
 
         # revert
-        vip_mock = mock.MagicMock()
-        net.revert(vip_mock, LB)
-        mock_driver.deallocate_vip.assert_called_once_with(vip_mock)
+        vip_mock = VIP.to_dict()
+        net.revert(vip_mock, self.load_balancer_mock)
+        mock_driver.deallocate_vip.assert_called_once_with(
+            o_data_models.Vip(**vip_mock))
 
         # revert exception
         mock_driver.reset_mock()
         mock_driver.deallocate_vip.side_effect = Exception('DeallVipException')
-        vip_mock = mock.MagicMock()
-        net.revert(vip_mock, LB)
-        mock_driver.deallocate_vip.assert_called_once_with(vip_mock)
+        vip_mock = VIP.to_dict()
+        net.revert(vip_mock, self.load_balancer_mock)
+        mock_driver.deallocate_vip.assert_called_once_with(o_data_models.Vip(
+            **vip_mock))
 
-    def test_deallocate_vip(self, mock_get_net_driver):
+    @mock.patch('octavia.db.repositories.LoadBalancerRepository.get')
+    @mock.patch('octavia.db.api.get_session', return_value=_session_mock)
+    def test_deallocate_vip(self, mock_get_session, mock_get_lb,
+                            mock_get_net_driver):
         mock_driver = mock.MagicMock()
         mock_get_net_driver.return_value = mock_driver
         net = network_tasks.DeallocateVIP()
         vip = o_data_models.Vip()
         lb = o_data_models.LoadBalancer(vip=vip)
-        net.execute(lb)
+        mock_get_lb.return_value = lb
+        net.execute(self.load_balancer_mock)
         mock_driver.deallocate_vip.assert_called_once_with(lb.vip)
 
     @mock.patch('octavia.db.repositories.LoadBalancerRepository.get')
@@ -700,12 +753,16 @@ class TestNetworkTasks(base.TestCase):
         net_task.execute(listener)
         mock_driver.update_vip.assert_called_once_with(lb, for_delete=True)
 
-    def test_get_amphorae_network_configs(self, mock_get_net_driver):
+    @mock.patch('octavia.db.repositories.LoadBalancerRepository.get')
+    @mock.patch('octavia.db.api.get_session', return_value=_session_mock)
+    def test_get_amphorae_network_configs(self, mock_session, mock_lb_get,
+                                          mock_get_net_driver):
         mock_driver = mock.MagicMock()
+        mock_lb_get.return_value = LB
         mock_get_net_driver.return_value = mock_driver
         lb = o_data_models.LoadBalancer()
         net_task = network_tasks.GetAmphoraeNetworkConfigs()
-        net_task.execute(lb)
+        net_task.execute(self.load_balancer_mock)
         mock_driver.get_network_configs.assert_called_once_with(lb)
 
     @mock.patch('octavia.db.repositories.AmphoraRepository.get')
@@ -823,12 +880,16 @@ class TestNetworkTasks(base.TestCase):
         mock_driver.wait_for_port_detach.assert_called_once_with(
             self.db_amphora_mock)
 
-    def test_update_vip_sg(self, mock_get_net_driver):
+    @mock.patch('octavia.db.repositories.LoadBalancerRepository.get')
+    @mock.patch('octavia.db.api.get_session', return_value=_session_mock)
+    def test_update_vip_sg(self, mock_session, mock_lb_get,
+                           mock_get_net_driver):
         mock_driver = mock.MagicMock()
+        mock_lb_get.return_value = LB
         mock_get_net_driver.return_value = mock_driver
         net = network_tasks.UpdateVIPSecurityGroup()
 
-        net.execute(LB)
+        net.execute(self.load_balancer_mock)
         mock_driver.update_vip_sg.assert_called_once_with(LB, LB.vip)
 
     def test_get_subnet_from_vip(self, mock_get_net_driver):
@@ -836,35 +897,40 @@ class TestNetworkTasks(base.TestCase):
         mock_get_net_driver.return_value = mock_driver
         net = network_tasks.GetSubnetFromVIP()
 
-        net.execute(LB)
+        net.execute(self.load_balancer_mock)
         mock_driver.get_subnet.assert_called_once_with(LB.vip.subnet_id)
 
     @mock.patch('octavia.db.repositories.AmphoraRepository.get')
-    @mock.patch('octavia.db.api.get_session', return_value=mock.MagicMock())
-    def test_plug_vip_amphora(self, mock_session, mock_get,
+    @mock.patch('octavia.db.repositories.LoadBalancerRepository.get')
+    @mock.patch('octavia.db.api.get_session', return_value=_session_mock)
+    def test_plug_vip_amphora(self, mock_session, mock_lb_get, mock_get,
                               mock_get_net_driver):
         mock_driver = mock.MagicMock()
         amphora = {constants.ID: AMPHORA_ID,
                    constants.LB_NETWORK_IP: IP_ADDRESS}
+        mock_lb_get.return_value = LB
         mock_get.return_value = self.db_amphora_mock
         mock_get_net_driver.return_value = mock_driver
         net = network_tasks.PlugVIPAmpphora()
         mockSubnet = mock_driver.get_subnet()
-        net.execute(LB, amphora, mockSubnet)
+        net.execute(self.load_balancer_mock, amphora, mockSubnet)
         mock_driver.plug_aap_port.assert_called_once_with(
             LB, LB.vip, self.db_amphora_mock, mockSubnet)
 
     @mock.patch('octavia.db.repositories.AmphoraRepository.get')
-    @mock.patch('octavia.db.api.get_session', return_value=mock.MagicMock())
-    def test_revert_plug_vip_amphora(self, mock_session, mock_get,
+    @mock.patch('octavia.db.repositories.LoadBalancerRepository.get')
+    @mock.patch('octavia.db.api.get_session', return_value=_session_mock)
+    def test_revert_plug_vip_amphora(self, mock_session, mock_lb_get, mock_get,
                                      mock_get_net_driver):
         mock_driver = mock.MagicMock()
+        mock_lb_get.return_value = LB
         mock_get.return_value = self.db_amphora_mock
         mock_get_net_driver.return_value = mock_driver
         net = network_tasks.PlugVIPAmpphora()
         mockSubnet = mock.MagicMock()
         amphora = {constants.ID: AMPHORA_ID,
                    constants.LB_NETWORK_IP: IP_ADDRESS}
-        net.revert(AMPS_DATA[0].to_dict(), LB, amphora, mockSubnet)
+        net.revert(AMPS_DATA[0].to_dict(), self.load_balancer_mock,
+                   amphora, mockSubnet)
         mock_driver.unplug_aap_port.assert_called_once_with(
             LB.vip, self.db_amphora_mock, mockSubnet)

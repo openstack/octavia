@@ -88,14 +88,13 @@ class AmphoraProviderDriver(driver_base.ProviderDriver):
             loadbalancer.flavor = None
         if loadbalancer.availability_zone == driver_dm.Unset:
             loadbalancer.availability_zone = None
-        payload = {consts.LOAD_BALANCER_ID: loadbalancer.loadbalancer_id,
+        payload = {consts.LOADBALANCER: loadbalancer.to_dict(),
                    consts.FLAVOR: loadbalancer.flavor,
                    consts.AVAILABILITY_ZONE: loadbalancer.availability_zone}
         self.client.cast({}, 'create_load_balancer', **payload)
 
     def loadbalancer_delete(self, loadbalancer, cascade=False):
-        loadbalancer_id = loadbalancer.loadbalancer_id
-        payload = {consts.LOAD_BALANCER_ID: loadbalancer_id,
+        payload = {consts.LOADBALANCER: loadbalancer.to_dict(),
                    'cascade': cascade}
         self.client.cast({}, 'delete_load_balancer', **payload)
 
@@ -103,20 +102,21 @@ class AmphoraProviderDriver(driver_base.ProviderDriver):
         payload = {consts.LOAD_BALANCER_ID: loadbalancer_id}
         self.client.cast({}, 'failover_load_balancer', **payload)
 
-    def loadbalancer_update(self, old_loadbalancer, new_loadbalancer):
+    def loadbalancer_update(self, original_load_balancer, new_loadbalancer):
         # Adapt the provider data model to the queue schema
         lb_dict = new_loadbalancer.to_dict()
         if 'admin_state_up' in lb_dict:
             lb_dict['enabled'] = lb_dict.pop('admin_state_up')
-        lb_id = lb_dict.pop('loadbalancer_id')
         # Put the qos_policy_id back under the vip element the controller
         # expects
         vip_qos_policy_id = lb_dict.pop('vip_qos_policy_id', None)
+        lb_dict.pop(consts.LOADBALANCER_ID)
         if vip_qos_policy_id:
             vip_dict = {"qos_policy_id": vip_qos_policy_id}
             lb_dict["vip"] = vip_dict
 
-        payload = {consts.LOAD_BALANCER_ID: lb_id,
+        payload = {consts.ORIGINAL_LOADBALANCER:
+                   original_load_balancer.to_dict(),
                    consts.LOAD_BALANCER_UPDATES: lb_dict}
         self.client.cast({}, 'update_load_balancer', **payload)
 

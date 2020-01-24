@@ -87,17 +87,22 @@ class TestLoadBalancerFlows(base.TestCase):
         listener_mock.id = '123'
         lb_mock.listeners = [listener_mock]
 
-        lb_flow, store = self.LBFlow.get_delete_load_balancer_flow(lb_mock)
+        lb_flow = self.LBFlow.get_delete_load_balancer_flow(lb_mock)
 
         self.assertIsInstance(lb_flow, flow.Flow)
 
         self.assertIn(constants.LOADBALANCER, lb_flow.requires)
         self.assertIn(constants.SERVER_GROUP_ID, lb_flow.requires)
+        self.assertIn(constants.PROJECT_ID, lb_flow.requires)
 
         self.assertEqual(0, len(lb_flow.provides))
-        self.assertEqual(2, len(lb_flow.requires))
+        self.assertEqual(3, len(lb_flow.requires))
 
-    def test_get_delete_load_balancer_flow_cascade(self, mock_get_net_driver):
+    @mock.patch('octavia.db.repositories.LoadBalancerRepository.get')
+    @mock.patch('octavia.db.api.get_session', return_value=mock.MagicMock())
+    def test_get_delete_load_balancer_flow_cascade(self, mock_session,
+                                                   mock_get_lb,
+                                                   mock_get_net_driver):
         lb_mock = mock.Mock()
         listener_mock = mock.Mock()
         listener_mock.id = '123'
@@ -112,9 +117,12 @@ class TestLoadBalancerFlows(base.TestCase):
         l7_mock = mock.Mock()
         l7_mock.id = '678'
         listener_mock.l7policies = [l7_mock]
-
-        lb_flow, store = self.LBFlow.get_cascade_delete_load_balancer_flow(
-            lb_mock)
+        mock_get_lb.return_value = lb_mock
+        lb_dict = {constants.LOADBALANCER_ID: lb_mock.id}
+        store = self.LBFlow.get_delete_listeners_store(lb_mock)
+        store.update(self.LBFlow.get_delete_pools_store(lb_mock))
+        lb_flow = self.LBFlow.get_cascade_delete_load_balancer_flow(
+            lb_dict)
 
         self.assertIsInstance(lb_flow, flow.Flow)
         self.assertEqual({'listener_123': listener_dict,

@@ -22,6 +22,7 @@ from oslo_utils import uuidutils
 from sqlalchemy.orm import exc
 from taskflow.types import failure
 
+from octavia.api.drivers import utils as provider_utils
 from octavia.common import constants
 from octavia.common import data_models
 from octavia.common import utils
@@ -66,9 +67,13 @@ _db_amphora_mock.vrrp_port_id = VRRP_PORT_ID
 _db_amphora_mock.role = AMP_ROLE
 _db_amphora_mock.vrrp_id = VRRP_ID
 _db_amphora_mock.vrrp_priority = VRRP_PRIORITY
-_loadbalancer_mock = mock.MagicMock()
-_loadbalancer_mock.id = LB_ID
-_loadbalancer_mock.amphorae = [_db_amphora_mock]
+_db_loadbalancer_mock = mock.MagicMock()
+_db_loadbalancer_mock.id = LB_ID
+_db_loadbalancer_mock.vip_address = VIP_IP
+_db_loadbalancer_mock.amphorae = [_db_amphora_mock]
+_db_loadbalancer_mock.to_dict.return_value = {
+    constants.ID: LB_ID
+}
 _l7policy_mock = mock.MagicMock()
 _l7policy_mock.id = L7POLICY_ID
 _l7rule_mock = mock.MagicMock()
@@ -83,6 +88,11 @@ _vip_mock = mock.MagicMock()
 _vip_mock.port_id = PORT_ID
 _vip_mock.subnet_id = SUBNET_ID
 _vip_mock.ip_address = VIP_IP
+_vip_mock.to_dict.return_value = {
+    constants.PORT_ID: PORT_ID,
+    constants.SUBNET_ID: SUBNET_ID,
+    constants.IP_ADDRESS: VIP_IP,
+}
 _vrrp_group_mock = mock.MagicMock()
 _cert_mock = mock.MagicMock()
 _compute_mock_dict = {
@@ -111,8 +121,9 @@ class TestDatabaseTasks(base.TestCase):
         self.listener_mock = mock.MagicMock()
         self.listener_mock.id = LISTENER_ID
 
-        self.loadbalancer_mock = mock.MagicMock()
-        self.loadbalancer_mock.id = LB_ID
+        self.loadbalancer_mock = (
+            provider_utils.db_loadbalancer_to_provider_loadbalancer(
+                _db_loadbalancer_mock).to_dict())
 
         self.member_mock = mock.MagicMock()
         self.member_mock.id = MEMBER_ID
@@ -419,7 +430,7 @@ class TestDatabaseTasks(base.TestCase):
         self.assertEqual(_db_amphora_mock.to_dict(), amp)
 
     @mock.patch('octavia.db.repositories.LoadBalancerRepository.get',
-                return_value=_loadbalancer_mock)
+                return_value=_db_loadbalancer_mock)
     def test_reload_load_balancer(self,
                                   mock_lb_get,
                                   mock_generate_uuid,
@@ -437,10 +448,10 @@ class TestDatabaseTasks(base.TestCase):
             'TEST',
             id=LB_ID)
 
-        self.assertEqual(_loadbalancer_mock, lb)
+        self.assertEqual(self.loadbalancer_mock, lb)
 
     @mock.patch('octavia.db.repositories.LoadBalancerRepository.get',
-                return_value=_loadbalancer_mock)
+                return_value=_db_loadbalancer_mock)
     @mock.patch('octavia.db.repositories.VipRepository.update')
     def test_update_vip_after_allocation(self,
                                          mock_vip_update,
@@ -454,9 +465,9 @@ class TestDatabaseTasks(base.TestCase):
                                          mock_amphora_repo_delete):
 
         update_vip = database_tasks.UpdateVIPAfterAllocation()
-        loadbalancer = update_vip.execute(LB_ID, _vip_mock)
+        loadbalancer = update_vip.execute(LB_ID, _vip_mock.to_dict())
 
-        self.assertEqual(_loadbalancer_mock, loadbalancer)
+        self.assertEqual(self.loadbalancer_mock, loadbalancer)
         mock_vip_update.assert_called_once_with('TEST',
                                                 LB_ID,
                                                 port_id=PORT_ID,
@@ -577,7 +588,7 @@ class TestDatabaseTasks(base.TestCase):
                                          mock_amphora_repo_delete):
 
         map_lb_to_amp = database_tasks.MapLoadbalancerToAmphora()
-        amp = map_lb_to_amp.execute(self.loadbalancer_mock.id)
+        amp = map_lb_to_amp.execute(LB_ID)
 
         repo.AmphoraRepository.allocate_and_associate.assert_called_once_with(
             'TEST',
@@ -586,12 +597,12 @@ class TestDatabaseTasks(base.TestCase):
 
         self.assertEqual(self.amphora, amp)
 
-        amp_id = map_lb_to_amp.execute(self.loadbalancer_mock.id)
+        amp_id = map_lb_to_amp.execute(LB_ID)
 
         self.assertIsNone(amp_id)
 
         # Test revert
-        map_lb_to_amp.revert(None, self.loadbalancer_mock.id)
+        map_lb_to_amp.revert(None, LB_ID)
         repo.LoadBalancerRepository.update.assert_called_once_with(
             'TEST',
             id=LB_ID,
@@ -600,7 +611,7 @@ class TestDatabaseTasks(base.TestCase):
         # Test revert with exception
         repo.LoadBalancerRepository.update.reset_mock()
         mock_loadbalancer_repo_update.side_effect = Exception('fail')
-        map_lb_to_amp.revert(None, self.loadbalancer_mock.id)
+        map_lb_to_amp.revert(None, LB_ID)
         repo.LoadBalancerRepository.update.assert_called_once_with(
             'TEST',
             id=LB_ID,
@@ -621,7 +632,7 @@ class TestDatabaseTasks(base.TestCase):
 
         map_lb_to_amp = database_tasks.MapLoadbalancerToAmphora()
         amp = map_lb_to_amp.execute(
-            self.loadbalancer_mock.id, availability_zone={
+            _db_loadbalancer_mock.id, availability_zone={
                 constants.COMPUTE_ZONE: 'fakeaz'})
 
         repo.AmphoraRepository.allocate_and_associate.assert_called_once_with(
@@ -631,12 +642,12 @@ class TestDatabaseTasks(base.TestCase):
 
         self.assertEqual(self.amphora, amp)
 
-        amp = map_lb_to_amp.execute(self.loadbalancer_mock.id)
+        amp = map_lb_to_amp.execute(_db_loadbalancer_mock.id)
 
         self.assertIsNone(amp)
 
         # Test revert
-        map_lb_to_amp.revert(None, self.loadbalancer_mock.id)
+        map_lb_to_amp.revert(None, _db_loadbalancer_mock.id)
         repo.LoadBalancerRepository.update.assert_called_once_with(
             'TEST',
             id=LB_ID,
@@ -645,7 +656,7 @@ class TestDatabaseTasks(base.TestCase):
         # Test revert with exception
         repo.LoadBalancerRepository.update.reset_mock()
         mock_loadbalancer_repo_update.side_effect = Exception('fail')
-        map_lb_to_amp.revert(None, self.loadbalancer_mock.id)
+        map_lb_to_amp.revert(None, _db_loadbalancer_mock.id)
         repo.LoadBalancerRepository.update.assert_called_once_with(
             'TEST',
             id=LB_ID,
@@ -654,7 +665,7 @@ class TestDatabaseTasks(base.TestCase):
     @mock.patch('octavia.db.repositories.AmphoraRepository.get',
                 return_value=_db_amphora_mock)
     @mock.patch('octavia.db.repositories.LoadBalancerRepository.get',
-                return_value=_loadbalancer_mock)
+                return_value=_db_loadbalancer_mock)
     def test_mark_lb_amphorae_deleted_in_db(self,
                                             mock_loadbalancer_repo_get,
                                             mock_amphora_repo_get,
@@ -668,7 +679,7 @@ class TestDatabaseTasks(base.TestCase):
 
         mark_amp_deleted_in_db = (database_tasks.
                                   MarkLBAmphoraeDeletedInDB())
-        mark_amp_deleted_in_db.execute(_loadbalancer_mock)
+        mark_amp_deleted_in_db.execute(self.loadbalancer_mock)
 
         repo.AmphoraRepository.update.assert_called_once_with(
             'TEST',
@@ -678,7 +689,7 @@ class TestDatabaseTasks(base.TestCase):
     @mock.patch('octavia.db.repositories.AmphoraRepository.get',
                 return_value=_db_amphora_mock)
     @mock.patch('octavia.db.repositories.LoadBalancerRepository.get',
-                return_value=_loadbalancer_mock)
+                return_value=_db_loadbalancer_mock)
     def test_mark_amphora_allocated_in_db(self,
                                           mock_loadbalancer_repo_get,
                                           mock_amphora_repo_get,
@@ -693,7 +704,7 @@ class TestDatabaseTasks(base.TestCase):
         mark_amp_allocated_in_db = (database_tasks.
                                     MarkAmphoraAllocatedInDB())
         mark_amp_allocated_in_db.execute(self.amphora,
-                                         self.loadbalancer_mock.id)
+                                         LB_ID)
 
         repo.AmphoraRepository.update.assert_called_once_with(
             'TEST',
@@ -707,7 +718,7 @@ class TestDatabaseTasks(base.TestCase):
 
         mock_amphora_repo_update.reset_mock()
         mark_amp_allocated_in_db.revert(None, self.amphora,
-                                        self.loadbalancer_mock.id)
+                                        LB_ID)
 
         repo.AmphoraRepository.update.assert_called_once_with(
             'TEST',
@@ -719,7 +730,7 @@ class TestDatabaseTasks(base.TestCase):
         mock_amphora_repo_update.reset_mock()
         mock_amphora_repo_update.side_effect = Exception('fail')
         mark_amp_allocated_in_db.revert(None, self.amphora,
-                                        self.loadbalancer_mock.id)
+                                        LB_ID)
 
         repo.AmphoraRepository.update.assert_called_once_with(
             'TEST',
@@ -1246,7 +1257,9 @@ class TestDatabaseTasks(base.TestCase):
             provisioning_status=constants.ERROR)
         self.assertEqual(0, repo.ListenerRepository.update.call_count)
 
+    @mock.patch('octavia.db.repositories.LoadBalancerRepository.get')
     def test_mark_LB_active_in_db_and_listeners(self,
+                                                mock_lb_get,
                                                 mock_generate_uuid,
                                                 mock_LOG,
                                                 mock_get_session,
@@ -1257,8 +1270,9 @@ class TestDatabaseTasks(base.TestCase):
         listeners = [data_models.Listener(id='listener1'),
                      data_models.Listener(id='listener2')]
         lb = data_models.LoadBalancer(id=LB_ID, listeners=listeners)
+        mock_lb_get.return_value = lb
         mark_lb_active = database_tasks.MarkLBActiveInDB(mark_subobjects=True)
-        mark_lb_active.execute(lb)
+        mark_lb_active.execute(self.loadbalancer_mock)
 
         repo.LoadBalancerRepository.update.assert_called_once_with(
             'TEST',
@@ -1273,7 +1287,7 @@ class TestDatabaseTasks(base.TestCase):
 
         mock_loadbalancer_repo_update.reset_mock()
         mock_listener_repo_update.reset_mock()
-        mark_lb_active.revert(lb)
+        mark_lb_active.revert(self.loadbalancer_mock)
 
         repo.LoadBalancerRepository.update.assert_called_once_with(
             'TEST',
@@ -1291,7 +1305,9 @@ class TestDatabaseTasks(base.TestCase):
     @mock.patch('octavia.db.repositories.HealthMonitorRepository.update')
     @mock.patch('octavia.db.repositories.L7PolicyRepository.update')
     @mock.patch('octavia.db.repositories.L7RuleRepository.update')
+    @mock.patch('octavia.db.repositories.LoadBalancerRepository.get')
     def test_mark_LB_active_in_db_full_graph(self,
+                                             mock_lb_repo_get,
                                              mock_l7r_repo_update,
                                              mock_l7p_repo_update,
                                              mock_hm_repo_update,
@@ -1331,29 +1347,26 @@ class TestDatabaseTasks(base.TestCase):
         lb = data_models.LoadBalancer(id=LB_ID, listeners=listeners,
                                       pools=pools)
         mark_lb_active = database_tasks.MarkLBActiveInDB(mark_subobjects=True)
-        mark_lb_active.execute(lb)
+        mock_lb_repo_get.return_value = lb
+        mark_lb_active.execute(self.loadbalancer_mock)
 
         repo.LoadBalancerRepository.update.assert_called_once_with(
             'TEST',
             lb.id,
             provisioning_status=constants.ACTIVE)
-        self.assertEqual(2, repo.ListenerRepository.update.call_count)
         repo.ListenerRepository.update.has_calls(
             [mock.call('TEST', listeners[0].id,
                        provisioning_status=constants.ACTIVE),
              mock.call('TEST', listeners[1].id,
                        provisioning_status=constants.ACTIVE)])
-        self.assertEqual(2, repo.PoolRepository.update.call_count)
         repo.PoolRepository.update.has_calls(
             [mock.call('TEST', default_pool.id,
                        provisioning_status=constants.ACTIVE),
              mock.call('TEST', redirect_pool.id,
                        provisioning_status=constants.ACTIVE)])
-        self.assertEqual(1, repo.HealthMonitorRepository.update.call_count)
         repo.HealthMonitorRepository.update.has_calls(
             [mock.call('TEST', health_monitor.id,
                        provisioning_status=constants.ACTIVE)])
-        self.assertEqual(1, repo.L7PolicyRepository.update.call_count)
         repo.L7PolicyRepository.update.has_calls(
             [mock.call('TEST', l7policies[0].id,
                        provisioning_status=constants.ACTIVE)])
@@ -1369,7 +1382,7 @@ class TestDatabaseTasks(base.TestCase):
         mock_hm_repo_update.reset_mock()
         mock_l7p_repo_update.reset_mock()
         mock_l7r_repo_update.reset_mock()
-        mark_lb_active.revert(lb)
+        mark_lb_active.revert(self.loadbalancer_mock)
 
         repo.LoadBalancerRepository.update.assert_called_once_with(
             'TEST',
@@ -1381,7 +1394,6 @@ class TestDatabaseTasks(base.TestCase):
                        provisioning_status=constants.ERROR),
              mock.call('TEST', listeners[1].id,
                        provisioning_status=constants.ERROR)])
-        self.assertEqual(2, repo.PoolRepository.update.call_count)
         repo.PoolRepository.update.has_calls(
             [mock.call('TEST', default_pool.id,
                        provisioning_status=constants.ERROR),
@@ -1560,7 +1572,7 @@ class TestDatabaseTasks(base.TestCase):
                                                          mock_amphora_update,
                                                          mock_amphora_delete):
 
-        self.loadbalancer_mock.vip.load_balancer_id = LB_ID
+        _db_loadbalancer_mock.vip.load_balancer_id = LB_ID
         update_load_balancer = database_tasks.UpdateLoadbalancerInDB()
         update_load_balancer.execute(self.loadbalancer_mock,
                                      {'name': 'test',
@@ -1864,7 +1876,9 @@ class TestDatabaseTasks(base.TestCase):
             'TEST', AMP_ID, role=None, vrrp_priority=None)
 
     @mock.patch('octavia.db.repositories.AmphoraRepository.get')
+    @mock.patch('octavia.db.repositories.LoadBalancerRepository.get')
     def test_get_amphorae_from_loadbalancer(self,
+                                            mock_lb_get,
                                             mock_amphora_get,
                                             mock_generate_uuid,
                                             mock_LOG,
@@ -1881,14 +1895,17 @@ class TestDatabaseTasks(base.TestCase):
         lb.amphorae = [amp1, amp2]
 
         mock_amphora_get.side_effect = [_db_amphora_mock, None]
+        mock_lb_get.return_value = lb
 
         get_amps_from_lb_obj = database_tasks.GetAmphoraeFromLoadbalancer()
-        result = get_amps_from_lb_obj.execute(lb)
+        result = get_amps_from_lb_obj.execute(self.loadbalancer_mock)
         self.assertEqual([_db_amphora_mock.to_dict()], result)
         self.assertEqual([_db_amphora_mock.to_dict()], result)
 
     @mock.patch('octavia.db.repositories.ListenerRepository.get')
+    @mock.patch('octavia.db.repositories.LoadBalancerRepository.get')
     def test_get_listeners_from_loadbalancer(self,
+                                             mock_lb_get,
                                              mock_listener_get,
                                              mock_generate_uuid,
                                              mock_LOG,
@@ -1898,13 +1915,16 @@ class TestDatabaseTasks(base.TestCase):
                                              mock_amphora_repo_update,
                                              mock_amphora_repo_delete):
         mock_listener_get.return_value = _listener_mock
-        _loadbalancer_mock.listeners = [_listener_mock]
+        _db_loadbalancer_mock.listeners = [_listener_mock]
+        mock_lb_get.return_value = _db_loadbalancer_mock
         get_list_from_lb_obj = database_tasks.GetListenersFromLoadbalancer()
-        result = get_list_from_lb_obj.execute(_loadbalancer_mock)
+        result = get_list_from_lb_obj.execute(self.loadbalancer_mock)
         mock_listener_get.assert_called_once_with('TEST', id=_listener_mock.id)
         self.assertEqual([{constants.LISTENER_ID: LISTENER_ID}], result)
 
+    @mock.patch('octavia.db.repositories.LoadBalancerRepository.get')
     def test_get_vip_from_loadbalancer(self,
+                                       mock_lb_get,
                                        mock_generate_uuid,
                                        mock_LOG,
                                        mock_get_session,
@@ -1912,10 +1932,11 @@ class TestDatabaseTasks(base.TestCase):
                                        mock_listener_repo_update,
                                        mock_amphora_repo_update,
                                        mock_amphora_repo_delete):
-        _loadbalancer_mock.vip = _vip_mock
+        _db_loadbalancer_mock.vip = _vip_mock
+        mock_lb_get.return_value = _db_loadbalancer_mock
         get_vip_from_lb_obj = database_tasks.GetVipFromLoadbalancer()
-        result = get_vip_from_lb_obj.execute(_loadbalancer_mock)
-        self.assertEqual(_vip_mock, result)
+        result = get_vip_from_lb_obj.execute(self.loadbalancer_mock)
+        self.assertEqual(_vip_mock.to_dict(), result)
 
     @mock.patch('octavia.db.repositories.VRRPGroupRepository.create')
     def test_create_vrrp_group_for_lb(self,
@@ -1931,7 +1952,7 @@ class TestDatabaseTasks(base.TestCase):
         mock_get_session.side_effect = ['TEST',
                                         odb_exceptions.DBDuplicateEntry]
         create_vrrp_group = database_tasks.CreateVRRPGroupForLB()
-        create_vrrp_group.execute(_loadbalancer_mock)
+        create_vrrp_group.execute(self.loadbalancer_mock)
         mock_vrrp_group_create.assert_called_once_with(
             'TEST', load_balancer_id=LB_ID,
             vrrp_group_name=LB_ID.replace('-', ''),
@@ -1939,7 +1960,7 @@ class TestDatabaseTasks(base.TestCase):
             vrrp_auth_pass=mock_generate_uuid.return_value.replace('-',
                                                                    '')[0:7],
             advert_int=1)
-        create_vrrp_group.execute(_loadbalancer_mock)
+        create_vrrp_group.execute(self.loadbalancer_mock)
 
     @mock.patch('octavia.db.repositories.AmphoraHealthRepository.delete')
     def test_disable_amphora_health_monitoring(self,
@@ -1957,8 +1978,10 @@ class TestDatabaseTasks(base.TestCase):
             'TEST', amphora_id=AMP_ID)
 
     @mock.patch('octavia.db.repositories.AmphoraHealthRepository.delete')
+    @mock.patch('octavia.db.repositories.LoadBalancerRepository.get')
     def test_disable_lb_amphorae_health_monitoring(
             self,
+            mock_lb_get,
             mock_amp_health_repo_delete,
             mock_generate_uuid,
             mock_LOG,
@@ -1969,7 +1992,8 @@ class TestDatabaseTasks(base.TestCase):
             mock_amphora_repo_delete):
         disable_amp_health = (
             database_tasks.DisableLBAmphoraeHealthMonitoring())
-        disable_amp_health.execute(_loadbalancer_mock)
+        mock_lb_get.return_value = _db_loadbalancer_mock
+        disable_amp_health.execute(self.loadbalancer_mock)
         mock_amp_health_repo_delete.assert_called_once_with(
             'TEST', amphora_id=AMP_ID)
 
@@ -1989,8 +2013,10 @@ class TestDatabaseTasks(base.TestCase):
             'TEST', amphora_id=AMP_ID, busy=True)
 
     @mock.patch('octavia.db.repositories.AmphoraHealthRepository.update')
+    @mock.patch('octavia.db.repositories.LoadBalancerRepository.get')
     def test_mark_lb_amphorae_health_monitoring_busy(
             self,
+            mock_lb_get,
             mock_amp_health_repo_update,
             mock_generate_uuid,
             mock_LOG,
@@ -2001,7 +2027,8 @@ class TestDatabaseTasks(base.TestCase):
             mock_amphora_repo_delete):
         mark_busy = (
             database_tasks.MarkLBAmphoraeHealthBusy())
-        mark_busy.execute(_loadbalancer_mock)
+        mock_lb_get.return_value = _db_loadbalancer_mock
+        mark_busy.execute(self.loadbalancer_mock)
         mock_amp_health_repo_update.assert_called_once_with(
             'TEST', amphora_id=AMP_ID, busy=True)
 

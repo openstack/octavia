@@ -56,7 +56,8 @@ class HealthMonitorToErrorOnRevertTask(BaseLifecycleTask):
     def revert(self, health_mon, listeners, loadbalancer, *args, **kwargs):
         self.task_utils.mark_health_mon_prov_status_error(health_mon.pool_id)
         self.task_utils.mark_pool_prov_status_active(health_mon.pool_id)
-        self.task_utils.mark_loadbalancer_prov_status_active(loadbalancer.id)
+        self.task_utils.mark_loadbalancer_prov_status_active(
+            loadbalancer[constants.LOADBALANCER_ID])
         for listener in listeners:
             self.task_utils.mark_listener_prov_status_active(
                 listener[constants.LISTENER_ID])
@@ -70,7 +71,8 @@ class L7PolicyToErrorOnRevertTask(BaseLifecycleTask):
 
     def revert(self, l7policy, listeners, loadbalancer, *args, **kwargs):
         self.task_utils.mark_l7policy_prov_status_error(l7policy.id)
-        self.task_utils.mark_loadbalancer_prov_status_active(loadbalancer.id)
+        self.task_utils.mark_loadbalancer_prov_status_active(
+            loadbalancer[constants.LOADBALANCER_ID])
         for listener in listeners:
             self.task_utils.mark_listener_prov_status_active(
                 listener[constants.LISTENER_ID])
@@ -85,7 +87,8 @@ class L7RuleToErrorOnRevertTask(BaseLifecycleTask):
     def revert(self, l7rule, listeners, loadbalancer, *args, **kwargs):
         self.task_utils.mark_l7rule_prov_status_error(l7rule.id)
         self.task_utils.mark_l7policy_prov_status_active(l7rule.l7policy_id)
-        self.task_utils.mark_loadbalancer_prov_status_active(loadbalancer.id)
+        self.task_utils.mark_loadbalancer_prov_status_active(
+            loadbalancer[constants.LOADBALANCER_ID])
         for listener in listeners:
             self.task_utils.mark_listener_prov_status_active(
                 listener[constants.LISTENER_ID])
@@ -135,7 +138,8 @@ class LoadBalancerToErrorOnRevertTask(LoadBalancerIDToErrorOnRevertTask):
         pass
 
     def revert(self, loadbalancer, *args, **kwargs):
-        super(LoadBalancerToErrorOnRevertTask, self).revert(loadbalancer.id)
+        super(LoadBalancerToErrorOnRevertTask, self).revert(
+            loadbalancer[constants.LOADBALANCER_ID])
 
 
 class MemberToErrorOnRevertTask(BaseLifecycleTask):
@@ -152,7 +156,8 @@ class MemberToErrorOnRevertTask(BaseLifecycleTask):
             self.task_utils.mark_listener_prov_status_active(
                 listener[constants.LISTENER_ID])
         self.task_utils.mark_pool_prov_status_active(pool_id)
-        self.task_utils.mark_loadbalancer_prov_status_active(loadbalancer.id)
+        self.task_utils.mark_loadbalancer_prov_status_active(
+            loadbalancer[constants.LOADBALANCER_ID])
 
 
 class MembersToErrorOnRevertTask(BaseLifecycleTask):
@@ -170,7 +175,8 @@ class MembersToErrorOnRevertTask(BaseLifecycleTask):
             self.task_utils.mark_listener_prov_status_active(
                 listener[constants.LISTENER_ID])
         self.task_utils.mark_pool_prov_status_active(pool_id)
-        self.task_utils.mark_loadbalancer_prov_status_active(loadbalancer.id)
+        self.task_utils.mark_loadbalancer_prov_status_active(
+            loadbalancer[constants.LOADBALANCER_ID])
 
 
 class PoolToErrorOnRevertTask(BaseLifecycleTask):
@@ -181,7 +187,8 @@ class PoolToErrorOnRevertTask(BaseLifecycleTask):
 
     def revert(self, pool_id, listeners, loadbalancer, *args, **kwargs):
         self.task_utils.mark_pool_prov_status_error(pool_id)
-        self.task_utils.mark_loadbalancer_prov_status_active(loadbalancer.id)
+        self.task_utils.mark_loadbalancer_prov_status_active(
+            loadbalancer[constants.LOADBALANCER_ID])
         for listener in listeners:
             self.task_utils.mark_listener_prov_status_active(
                 listener[constants.LISTENER_ID])

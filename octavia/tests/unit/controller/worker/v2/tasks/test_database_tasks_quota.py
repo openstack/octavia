@@ -164,9 +164,10 @@ class TestDatabaseTasksQuota(base.TestCase):
         self._test_decrement_quota(task, data_model, project_id=project_id)
 
     def test_decrement_loadbalancer_quota(self):
+        project_id = uuidutils.generate_uuid()
         task = database_tasks.DecrementLoadBalancerQuota()
         data_model = data_models.LoadBalancer
-        self._test_decrement_quota(task, data_model)
+        self._test_decrement_quota(task, data_model, project_id=project_id)
 
     def test_decrement_pool_quota(self):
         project_id = uuidutils.generate_uuid()

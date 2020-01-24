@@ -36,21 +36,24 @@ class Endpoints(object):
     def __init__(self):
         self.worker = controller_worker.ControllerWorker()
 
-    def create_load_balancer(self, context, load_balancer_id,
+    def create_load_balancer(self, context, loadbalancer,
                              flavor=None, availability_zone=None):
-        LOG.info('Creating load balancer \'%s\'...', load_balancer_id)
-        self.worker.create_load_balancer(load_balancer_id, flavor,
+        LOG.info('Creating load balancer \'%s\'...',
+                 loadbalancer[constants.LOADBALANCER_ID])
+        self.worker.create_load_balancer(loadbalancer, flavor,
                                          availability_zone)
 
-    def update_load_balancer(self, context, load_balancer_id,
+    def update_load_balancer(self, context, original_load_balancer,
                              load_balancer_updates):
-        LOG.info('Updating load balancer \'%s\'...', load_balancer_id)
-        self.worker.update_load_balancer(load_balancer_id,
+        LOG.info('Updating load balancer \'%s\'...',
+                 original_load_balancer.get(constants.LOADBALANCER_ID))
+        self.worker.update_load_balancer(original_load_balancer,
                                          load_balancer_updates)
 
-    def delete_load_balancer(self, context, load_balancer_id, cascade=False):
-        LOG.info('Deleting load balancer \'%s\'...', load_balancer_id)
-        self.worker.delete_load_balancer(load_balancer_id, cascade)
+    def delete_load_balancer(self, context, loadbalancer, cascade=False):
+        LOG.info('Deleting load balancer \'%s\'...',
+                 loadbalancer.get(constants.LOADBALANCER_ID))
+        self.worker.delete_load_balancer(loadbalancer, cascade)
 
     def failover_load_balancer(self, context, load_balancer_id):
         LOG.info('Failing over amphora in load balancer \'%s\'...',

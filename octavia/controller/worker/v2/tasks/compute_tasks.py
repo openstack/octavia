@@ -29,6 +29,8 @@ from octavia.common.jinja.logging import logging_jinja_cfg
 from octavia.common.jinja import user_data_jinja_cfg
 from octavia.common import utils
 from octavia.controller.worker import amphora_rate_limit
+from octavia.db import api as db_apis
+from octavia.db import repositories as repo
 
 CONF = cfg.CONF
 LOG = logging.getLogger(__name__)
@@ -44,6 +46,7 @@ class BaseComputeTask(task.Task):
             name=CONF.controller_worker.compute_driver,
             invoke_on_load=True
         ).driver
+        self.loadbalancer_repo = repo.LoadBalancerRepository()
         self.rate_limit = amphora_rate_limit.AmphoraBuildRateLimit()
 
 
@@ -180,7 +183,9 @@ class DeleteAmphoraeOnLoadBalancer(BaseComputeTask):
     """
 
     def execute(self, loadbalancer):
-        for amp in loadbalancer.amphorae:
+        db_lb = self.loadbalancer_repo.get(
+            db_apis.get_session(), id=loadbalancer[constants.LOADBALANCER_ID])
+        for amp in db_lb.amphorae:
             # The compute driver will already handle NotFound
             try:
                 self.compute.delete(amp.compute_id)

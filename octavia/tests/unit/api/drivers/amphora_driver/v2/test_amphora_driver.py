@@ -60,7 +60,7 @@ class TestAmphoraDriver(base.TestRpc):
         provider_lb = driver_dm.LoadBalancer(
             loadbalancer_id=self.sample_data.lb_id)
         self.amp_driver.loadbalancer_create(provider_lb)
-        payload = {consts.LOAD_BALANCER_ID: self.sample_data.lb_id,
+        payload = {consts.LOADBALANCER: provider_lb.to_dict(),
                    consts.FLAVOR: None,
                    consts.AVAILABILITY_ZONE: None}
         mock_cast.assert_called_with({}, 'create_load_balancer', **payload)
@@ -70,7 +70,7 @@ class TestAmphoraDriver(base.TestRpc):
         provider_lb = driver_dm.LoadBalancer(
             loadbalancer_id=self.sample_data.lb_id)
         self.amp_driver.loadbalancer_delete(provider_lb)
-        payload = {consts.LOAD_BALANCER_ID: self.sample_data.lb_id,
+        payload = {consts.LOADBALANCER: provider_lb.to_dict(),
                    'cascade': False}
         mock_cast.assert_called_with({}, 'delete_load_balancer', **payload)
 
@@ -88,7 +88,7 @@ class TestAmphoraDriver(base.TestRpc):
             loadbalancer_id=self.sample_data.lb_id, admin_state_up=True)
         lb_dict = {'enabled': True}
         self.amp_driver.loadbalancer_update(old_provider_lb, provider_lb)
-        payload = {consts.LOAD_BALANCER_ID: self.sample_data.lb_id,
+        payload = {consts.ORIGINAL_LOADBALANCER: old_provider_lb.to_dict(),
                    consts.LOAD_BALANCER_UPDATES: lb_dict}
         mock_cast.assert_called_with({}, 'update_load_balancer', **payload)
 
@@ -100,7 +100,7 @@ class TestAmphoraDriver(base.TestRpc):
             loadbalancer_id=self.sample_data.lb_id, name='Great LB')
         lb_dict = {'name': 'Great LB'}
         self.amp_driver.loadbalancer_update(old_provider_lb, provider_lb)
-        payload = {consts.LOAD_BALANCER_ID: self.sample_data.lb_id,
+        payload = {consts.ORIGINAL_LOADBALANCER: old_provider_lb.to_dict(),
                    consts.LOAD_BALANCER_UPDATES: lb_dict}
         mock_cast.assert_called_with({}, 'update_load_balancer', **payload)
 
@@ -114,7 +114,7 @@ class TestAmphoraDriver(base.TestRpc):
             vip_qos_policy_id=qos_policy_id)
         lb_dict = {'vip': {'qos_policy_id': qos_policy_id}}
         self.amp_driver.loadbalancer_update(old_provider_lb, provider_lb)
-        payload = {consts.LOAD_BALANCER_ID: self.sample_data.lb_id,
+        payload = {consts.ORIGINAL_LOADBALANCER: old_provider_lb.to_dict(),
                    consts.LOAD_BALANCER_UPDATES: lb_dict}
         mock_cast.assert_called_with({}, 'update_load_balancer', **payload)
 
