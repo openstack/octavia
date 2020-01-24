@@ -3055,7 +3055,7 @@ class TestLoadBalancerGraph(base.BaseAPITest):
             expected_members=[expected_member],
             create_hm=create_hm,
             expected_hm=expected_hm,
-            protocol=constants.PROTOCOL_TCP)
+            protocol=constants.PROTOCOL_HTTP)
         create_sni_containers, expected_sni_containers = (
             self._get_sni_container_bodies())
         create_l7rules, expected_l7rules = self._get_l7rules_bodies()

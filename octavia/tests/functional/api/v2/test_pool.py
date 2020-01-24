@@ -23,6 +23,7 @@ import octavia.common.context
 from octavia.common import data_models
 from octavia.common import exceptions
 from octavia.db import api as db_api
+from octavia.tests.common import constants as c_const
 from octavia.tests.functional.api.v2 import base
 from octavia.tests.unit.common.sample_configs import sample_certs
 
@@ -2327,3 +2328,58 @@ class TestPool(base.BaseAPITest):
         self.set_lb_status(self.lb_id, status=constants.DELETED)
         self.delete(self.POOL_PATH.format(pool_id=api_pool.get('id')),
                     status=404)
+
+    @mock.patch('octavia.common.tls_utils.cert_parser.load_certificates_data')
+    def test_valid_listener_pool_protocol(self, mock_cert_data):
+        cert = data_models.TLSContainer(certificate='cert')
+        lb_pool = {
+            'lb_algorithm': constants.LB_ALGORITHM_ROUND_ROBIN,
+            'project_id': self.project_id}
+        mock_cert_data.return_value = {'sni_certs': [cert]}
+        valid_map = constants.VALID_LISTENER_POOL_PROTOCOL_MAP
+        port = 1
+        for listener_proto in valid_map:
+            for pool_proto in valid_map[listener_proto]:
+                port = port + 1
+                opts = {}
+                if listener_proto == constants.PROTOCOL_TERMINATED_HTTPS:
+                    opts['sni_container_refs'] = [uuidutils.generate_uuid()]
+                listener = self.create_listener(
+                    listener_proto, port, self.lb_id, **opts).get('listener')
+                self.set_object_status(self.lb_repo, self.lb_id)
+                if listener['default_pool_id'] is None:
+                    lb_pool['protocol'] = pool_proto
+                    lb_pool['listener_id'] = listener.get('id')
+                    self.post(self.POOLS_PATH, self._build_body(lb_pool),
+                              status=201)
+                    self.set_object_status(self.lb_repo, self.lb_id)
+
+    @mock.patch('octavia.common.tls_utils.cert_parser.load_certificates_data')
+    def test_invalid_listener_pool_protocol_map(self, mock_cert_data):
+        cert = data_models.TLSContainer(certificate='cert')
+        lb_pool = {
+            'lb_algorithm': constants.LB_ALGORITHM_ROUND_ROBIN,
+            'project_id': self.project_id}
+        mock_cert_data.return_value = {'sni_certs': [cert]}
+        invalid_map = c_const.INVALID_LISTENER_POOL_PROTOCOL_MAP
+        port = 1
+        for listener_proto in invalid_map:
+            opts = {}
+            if listener_proto == constants.PROTOCOL_TERMINATED_HTTPS:
+                opts['sni_container_refs'] = [uuidutils.generate_uuid()]
+            listener = self.create_listener(
+                listener_proto, port, self.lb_id, **opts).get('listener')
+            self.set_object_status(self.lb_repo, self.lb_id)
+            port = port + 1
+            for pool_proto in invalid_map[listener_proto]:
+                expect_error_msg = ("Validation failure: The pool protocol "
+                                    "'%s' is invalid while the listener "
+                                    "protocol is '%s'.") % (pool_proto,
+                                                            listener_proto)
+                if listener['default_pool_id'] is None:
+                    lb_pool['protocol'] = pool_proto
+                    lb_pool['listener_id'] = listener.get('id')
+                    res = self.post(self.POOLS_PATH, self._build_body(lb_pool),
+                                    status=400, expect_errors=True)
+                    self.assertEqual(expect_error_msg, res.json['faultstring'])
+                    self.assert_correct_status(lb_id=self.lb_id)
