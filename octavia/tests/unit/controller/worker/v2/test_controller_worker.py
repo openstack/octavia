@@ -1205,28 +1205,27 @@ class TestControllerWorker(base.TestCase):
                            mock_amp_repo_get):
 
         _flow_mock.reset_mock()
-        mock_l7rule_repo_get.side_effect = [None, _l7rule_mock]
+        mock_l7policy_repo_get.return_value = _l7policy_mock
 
         cw = controller_worker.ControllerWorker()
-        cw.create_l7rule(L7RULE_ID)
-        provider_lb = provider_utils.db_loadbalancer_to_provider_loadbalancer(
-            _db_load_balancer_mock).to_dict()
 
+        cw.create_l7rule(_l7rule_mock.to_dict())
+
+        l7_policy = provider_utils.db_l7policy_to_provider_l7policy(
+            _l7policy_mock)
         (base_taskflow.BaseTaskFlowEngine._taskflow_load.
             assert_called_once_with(_flow_mock,
-                                    store={constants.L7RULE: _l7rule_mock,
-                                           constants.L7POLICY: {
-                                               constants.L7POLICY_ID:
-                                                   L7POLICY_ID},
-                                           constants.LOADBALANCER_ID:
-                                               LB_ID,
+                                    store={constants.L7RULE:
+                                           _l7rule_mock.to_dict(),
+                                           constants.L7POLICY:
+                                           l7_policy.to_dict(),
+                                           constants.L7POLICY_ID: L7POLICY_ID,
+                                           constants.LOADBALANCER_ID: LB_ID,
                                            constants.LISTENERS:
-                                               [self.ref_listener_dict],
-                                           constants.LOADBALANCER:
-                                               provider_lb}))
+                                               [self.ref_listener_dict]
+                                           }))
 
         _flow_mock.run.assert_called_once_with()
-        self.assertEqual(2, mock_l7rule_repo_get.call_count)
 
     @mock.patch('octavia.controller.worker.v2.flows.'
                 'l7rule_flows.L7RuleFlows.get_delete_l7rule_flow',
@@ -1248,22 +1247,22 @@ class TestControllerWorker(base.TestCase):
         _flow_mock.reset_mock()
 
         cw = controller_worker.ControllerWorker()
-        cw.delete_l7rule(L7RULE_ID)
-        provider_lb = provider_utils.db_loadbalancer_to_provider_loadbalancer(
-            _db_load_balancer_mock).to_dict()
+        cw.delete_l7rule(_l7rule_mock.to_dict())
+        l7_policy = provider_utils.db_l7policy_to_provider_l7policy(
+            _l7policy_mock)
 
         (base_taskflow.BaseTaskFlowEngine._taskflow_load.
             assert_called_once_with(_flow_mock,
-                                    store={constants.L7RULE: _l7rule_mock,
-                                           constants.LOADBALANCER_ID:
-                                               LB_ID,
-                                           constants.L7POLICY: {
-                                               constants.L7POLICY_ID:
-                                                   L7POLICY_ID},
-                                           constants.LISTENERS:
-                                               [self.ref_listener_dict],
-                                           constants.LOADBALANCER:
-                                               provider_lb}))
+                                    store={
+                                        constants.L7RULE:
+                                            _l7rule_mock.to_dict(),
+                                        constants.L7POLICY:
+                                            l7_policy.to_dict(),
+                                        constants.L7POLICY_ID: L7POLICY_ID,
+                                        constants.LISTENERS:
+                                            [self.ref_listener_dict],
+                                        constants.LOADBALANCER_ID: LB_ID,
+                                    }))
 
         _flow_mock.run.assert_called_once_with()
 
@@ -1288,24 +1287,23 @@ class TestControllerWorker(base.TestCase):
         _l7rule_mock.provisioning_status = constants.PENDING_UPDATE
 
         cw = controller_worker.ControllerWorker()
-        cw.update_l7rule(L7RULE_ID, L7RULE_UPDATE_DICT)
-        provider_lb = provider_utils.db_loadbalancer_to_provider_loadbalancer(
-            _db_load_balancer_mock).to_dict()
+        cw.update_l7rule(_l7rule_mock.to_dict(), L7RULE_UPDATE_DICT)
+        l7_policy = provider_utils.db_l7policy_to_provider_l7policy(
+            _l7policy_mock)
 
         (base_taskflow.BaseTaskFlowEngine._taskflow_load.
             assert_called_once_with(_flow_mock,
-                                    store={constants.L7RULE: _l7rule_mock,
-                                           constants.L7POLICY: {
-                                               constants.L7POLICY_ID:
-                                                   L7POLICY_ID},
-                                           constants.LOADBALANCER_ID:
-                                               LB_ID,
-                                           constants.LISTENERS:
-                                               [self.ref_listener_dict],
-                                           constants.LOADBALANCER:
-                                               provider_lb,
-                                           constants.UPDATE_DICT:
-                                               L7RULE_UPDATE_DICT}))
+                                    store={
+                                        constants.L7RULE:
+                                            _l7rule_mock.to_dict(),
+                                        constants.L7POLICY:
+                                            l7_policy.to_dict(),
+                                        constants.L7POLICY_ID: L7POLICY_ID,
+                                        constants.LOADBALANCER_ID: LB_ID,
+                                        constants.LISTENERS:
+                                            [self.ref_listener_dict],
+                                        constants.UPDATE_DICT:
+                                            L7RULE_UPDATE_DICT}))
 
         _flow_mock.run.assert_called_once_with()
 

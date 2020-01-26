@@ -83,14 +83,16 @@ class L7PolicyToErrorOnRevertTask(BaseLifecycleTask):
 class L7RuleToErrorOnRevertTask(BaseLifecycleTask):
     """Task to set a l7rule to ERROR on revert."""
 
-    def execute(self, l7rule, listeners, loadbalancer):
+    def execute(self, l7rule, l7policy_id, listeners, loadbalancer_id):
         pass
 
-    def revert(self, l7rule, listeners, loadbalancer, *args, **kwargs):
-        self.task_utils.mark_l7rule_prov_status_error(l7rule.id)
-        self.task_utils.mark_l7policy_prov_status_active(l7rule.l7policy_id)
+    def revert(self, l7rule, l7policy_id, listeners, loadbalancer_id, *args,
+               **kwargs):
+        self.task_utils.mark_l7rule_prov_status_error(
+            l7rule[constants.L7RULE_ID])
+        self.task_utils.mark_l7policy_prov_status_active(l7policy_id)
         self.task_utils.mark_loadbalancer_prov_status_active(
-            loadbalancer[constants.LOADBALANCER_ID])
+            loadbalancer_id)
         for listener in listeners:
             self.task_utils.mark_listener_prov_status_active(
                 listener[constants.LISTENER_ID])

@@ -321,21 +321,20 @@ class AmphoraProviderDriver(driver_base.ProviderDriver):
 
     # L7 Rule
     def l7rule_create(self, l7rule):
-        payload = {consts.L7RULE_ID: l7rule.l7rule_id}
+        payload = {consts.L7RULE: l7rule.to_dict()}
         self.client.cast({}, 'create_l7rule', **payload)
 
     def l7rule_delete(self, l7rule):
-        l7rule_id = l7rule.l7rule_id
-        payload = {consts.L7RULE_ID: l7rule_id}
+        payload = {consts.L7RULE: l7rule.to_dict()}
         self.client.cast({}, 'delete_l7rule', **payload)
 
     def l7rule_update(self, old_l7rule, new_l7rule):
         l7rule_dict = new_l7rule.to_dict()
-        if 'admin_state_up' in l7rule_dict:
-            l7rule_dict['enabled'] = l7rule_dict.pop('admin_state_up')
-        l7rule_id = l7rule_dict.pop('l7rule_id')
+        if consts.ADMIN_STATE_UP in l7rule_dict:
+            l7rule_dict['enabled'] = l7rule_dict.pop(consts.ADMIN_STATE_UP)
+        l7rule_dict.pop(consts.L7RULE_ID)
 
-        payload = {consts.L7RULE_ID: l7rule_id,
+        payload = {consts.ORIGINAL_L7RULE: old_l7rule.to_dict(),
                    consts.L7RULE_UPDATES: l7rule_dict}
         self.client.cast({}, 'update_l7rule', **payload)
 

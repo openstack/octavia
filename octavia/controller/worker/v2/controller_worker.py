@@ -730,116 +730,88 @@ class ControllerWorker(base_taskflow.BaseTaskFlowEngine):
                                                log=LOG):
             update_l7policy_tf.run()
 
-    @tenacity.retry(
-        retry=tenacity.retry_if_exception_type(db_exceptions.NoResultFound),
-        wait=tenacity.wait_incrementing(
-            RETRY_INITIAL_DELAY, RETRY_BACKOFF, RETRY_MAX),
-        stop=tenacity.stop_after_attempt(RETRY_ATTEMPTS))
-    def create_l7rule(self, l7rule_id):
+    def create_l7rule(self, l7rule):
         """Creates an L7 Rule.
 
-        :param l7rule_id: ID of the l7rule to create
+        :param l7rule: Provider dict l7rule
         :returns: None
         :raises NoResultFound: Unable to find the object
         """
-        l7rule = self._l7rule_repo.get(db_apis.get_session(),
-                                       id=l7rule_id)
-        if not l7rule:
-            LOG.warning('Failed to fetch %s %s from DB. Retrying for up to '
-                        '60 seconds.', 'l7rule', l7rule_id)
-            raise db_exceptions.NoResultFound
+        db_l7policy = self._l7policy_repo.get(db_apis.get_session(),
+                                              id=l7rule[constants.L7POLICY_ID])
 
-        l7policy = l7rule.l7policy
-        load_balancer = l7policy.listener.load_balancer
-        provider_lb = provider_utils.db_loadbalancer_to_provider_loadbalancer(
-            load_balancer).to_dict()
+        load_balancer = db_l7policy.listener.load_balancer
 
         listeners_dicts = (
             provider_utils.db_listeners_to_provider_dicts_list_of_dicts(
-                [l7policy.listener]))
+                [db_l7policy.listener]))
         l7policy_dict = provider_utils.db_l7policy_to_provider_l7policy(
-            l7policy)
+            db_l7policy)
 
         create_l7rule_tf = self._taskflow_load(
             self._l7rule_flows.get_create_l7rule_flow(),
             store={constants.L7RULE: l7rule,
                    constants.L7POLICY: l7policy_dict.to_dict(),
                    constants.LISTENERS: listeners_dicts,
-                   constants.LOADBALANCER_ID: load_balancer.id,
-                   constants.LOADBALANCER: provider_lb})
+                   constants.L7POLICY_ID: db_l7policy.id,
+                   constants.LOADBALANCER_ID: load_balancer.id
+                   })
         with tf_logging.DynamicLoggingListener(create_l7rule_tf,
                                                log=LOG):
             create_l7rule_tf.run()
 
-    def delete_l7rule(self, l7rule_id):
+    def delete_l7rule(self, l7rule):
         """Deletes an L7 rule.
 
-        :param l7rule_id: ID of the l7rule to delete
+        :param l7rule: Provider dict of the l7rule to delete
         :returns: None
         :raises L7RuleNotFound: The referenced l7rule was not found
         """
-        l7rule = self._l7rule_repo.get(db_apis.get_session(),
-                                       id=l7rule_id)
-        l7policy = l7rule.l7policy
-        load_balancer = l7policy.listener.load_balancer
+        db_l7policy = self._l7policy_repo.get(db_apis.get_session(),
+                                              id=l7rule[constants.L7POLICY_ID])
+        l7policy = provider_utils.db_l7policy_to_provider_l7policy(db_l7policy)
+        load_balancer = db_l7policy.listener.load_balancer
 
         listeners_dicts = (
             provider_utils.db_listeners_to_provider_dicts_list_of_dicts(
-                [l7policy.listener]))
-
-        provider_lb = provider_utils.db_loadbalancer_to_provider_loadbalancer(
-            load_balancer).to_dict()
-        l7policy_dict = provider_utils.db_l7policy_to_provider_l7policy(
-            l7policy)
+                [db_l7policy.listener]))
 
         delete_l7rule_tf = self._taskflow_load(
             self._l7rule_flows.get_delete_l7rule_flow(),
             store={constants.L7RULE: l7rule,
-                   constants.L7POLICY: l7policy_dict.to_dict(),
+                   constants.L7POLICY: l7policy.to_dict(),
                    constants.LISTENERS: listeners_dicts,
-                   constants.LOADBALANCER_ID: load_balancer.id,
-                   constants.LOADBALANCER: provider_lb})
+                   constants.L7POLICY_ID: db_l7policy.id,
+                   constants.LOADBALANCER_ID: load_balancer.id
+                   })
         with tf_logging.DynamicLoggingListener(delete_l7rule_tf,
                                                log=LOG):
             delete_l7rule_tf.run()
 
-    def update_l7rule(self, l7rule_id, l7rule_updates):
+    def update_l7rule(self, original_l7rule, l7rule_updates):
         """Updates an L7 rule.
 
-        :param l7rule_id: ID of the l7rule to update
+        :param l7rule: Origin dict of the l7rule to update
         :param l7rule_updates: Dict containing updated l7rule attributes
         :returns: None
         :raises L7RuleNotFound: The referenced l7rule was not found
         """
-        l7rule = None
-        try:
-            l7rule = self._get_db_obj_until_pending_update(
-                self._l7rule_repo, l7rule_id)
-        except tenacity.RetryError as e:
-            LOG.warning('L7 rule did not go into %s in 60 seconds. '
-                        'This either due to an in-progress Octavia upgrade '
-                        'or an overloaded and failing database. Assuming '
-                        'an upgrade is in progress and continuing.',
-                        constants.PENDING_UPDATE)
-            l7rule = e.last_attempt.result()
-
-        l7policy = l7rule.l7policy
-        load_balancer = l7policy.listener.load_balancer
-        provider_lb = provider_utils.db_loadbalancer_to_provider_loadbalancer(
-            load_balancer).to_dict()
+        db_l7policy = self._l7policy_repo.get(
+            db_apis.get_session(), id=original_l7rule[constants.L7POLICY_ID])
+        load_balancer = db_l7policy.listener.load_balancer
 
         listeners_dicts = (
             provider_utils.db_listeners_to_provider_dicts_list_of_dicts(
-                [l7policy.listener]))
+                [db_l7policy.listener]))
         l7policy_dict = provider_utils.db_l7policy_to_provider_l7policy(
-            l7policy)
+            db_l7policy)
 
         update_l7rule_tf = self._taskflow_load(
             self._l7rule_flows.get_update_l7rule_flow(),
-            store={constants.L7RULE: l7rule,
+            store={constants.L7RULE: original_l7rule,
                    constants.L7POLICY: l7policy_dict.to_dict(),
                    constants.LISTENERS: listeners_dicts,
-                   constants.LOADBALANCER: provider_lb,
+                   constants.L7POLICY_ID: db_l7policy.id,
                    constants.LOADBALANCER_ID: load_balancer.id,
                    constants.UPDATE_DICT: l7rule_updates})
         with tf_logging.DynamicLoggingListener(update_l7rule_tf,

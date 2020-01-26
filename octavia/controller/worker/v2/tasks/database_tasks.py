@@ -368,8 +368,10 @@ class DeleteL7RuleInDB(BaseDatabaseTask):
         :returns: None
         """
 
-        LOG.debug("Delete in DB for l7rule id: %s ", l7rule.id)
-        self.l7rule_repo.delete(db_apis.get_session(), id=l7rule.id)
+        LOG.debug("Delete in DB for l7rule id: %s",
+                  l7rule[constants.L7RULE_ID])
+        self.l7rule_repo.delete(db_apis.get_session(),
+                                id=l7rule[constants.L7RULE_ID])
 
     def revert(self, l7rule, *args, **kwargs):
         """Mark the l7rule ERROR since the delete couldn't happen
@@ -378,14 +380,16 @@ class DeleteL7RuleInDB(BaseDatabaseTask):
         :returns: None
         """
 
-        LOG.warning("Reverting delete in DB for l7rule id %s", l7rule.id)
+        LOG.warning("Reverting delete in DB for l7rule id %s",
+                    l7rule[constants.L7RULE_ID])
         try:
-            self.l7rule_repo.update(db_apis.get_session(), l7rule.id,
+            self.l7rule_repo.update(db_apis.get_session(),
+                                    l7rule[constants.L7RULE_ID],
                                     provisioning_status=constants.ERROR)
         except Exception as e:
             LOG.error("Failed to update l7rule %(l7rule)s "
                       "provisioning_status to ERROR due to: %(except)s",
-                      {'l7rule': l7rule.id, 'except': e})
+                      {'l7rule': l7rule[constants.L7RULE_ID], 'except': e})
 
 
 class ReloadAmphora(BaseDatabaseTask):
@@ -1638,8 +1642,9 @@ class UpdateL7RuleInDB(BaseDatabaseTask):
         :returns: None
         """
 
-        LOG.debug("Update DB for l7rule id: %s ", l7rule.id)
-        self.l7rule_repo.update(db_apis.get_session(), l7rule.id,
+        LOG.debug("Update DB for l7rule id: %s", l7rule[constants.L7RULE_ID])
+        self.l7rule_repo.update(db_apis.get_session(),
+                                l7rule[constants.L7RULE_ID],
                                 **update_dict)
 
     def revert(self, l7rule, *args, **kwargs):
@@ -1650,15 +1655,15 @@ class UpdateL7RuleInDB(BaseDatabaseTask):
         """
 
         LOG.warning("Reverting update l7rule in DB "
-                    "for l7rule id %s", l7rule.id)
+                    "for l7rule id %s", l7rule[constants.L7RULE_ID])
         try:
             self.l7policy_repo.update(db_apis.get_session(),
-                                      l7rule.l7policy.id,
+                                      l7rule[constants.L7POLICY_ID],
                                       provisioning_status=constants.ERROR)
         except Exception as e:
             LOG.error("Failed to update L7rule %(l7r)s provisioning_status to "
-                      "ERROR due to: %(except)s", {'l7r': l7rule.l7policy.id,
-                                                   'except': e})
+                      "ERROR due to: %(except)s",
+                      {'l7r': l7rule[constants.L7POLICY_ID], 'except': e})
 
 
 class GetAmphoraDetails(BaseDatabaseTask):
@@ -2120,10 +2125,13 @@ class MarkL7RuleActiveInDB(BaseDatabaseTask):
         """
 
         LOG.debug("Mark ACTIVE in DB for l7rule id: %s",
-                  l7rule.id)
-        op_status = constants.ONLINE if l7rule.enabled else constants.OFFLINE
+                  l7rule[constants.L7RULE_ID])
+        db_rule = self.l7rule_repo.get(db_apis.get_session(),
+                                       id=l7rule[constants.L7RULE_ID])
+        op_status = (constants.ONLINE if db_rule.enabled
+                     else constants.OFFLINE)
         self.l7rule_repo.update(db_apis.get_session(),
-                                l7rule.id,
+                                l7rule[constants.L7RULE_ID],
                                 provisioning_status=constants.ACTIVE,
                                 operating_status=op_status)
 
@@ -2135,8 +2143,9 @@ class MarkL7RuleActiveInDB(BaseDatabaseTask):
         """
 
         LOG.warning("Reverting mark l7rule ACTIVE in DB "
-                    "for l7rule id %s", l7rule.id)
-        self.task_utils.mark_l7rule_prov_status_error(l7rule.id)
+                    "for l7rule id %s", l7rule[constants.L7RULE_ID])
+        self.task_utils.mark_l7rule_prov_status_error(
+            l7rule[constants.L7RULE_ID])
 
 
 class MarkL7RulePendingCreateInDB(BaseDatabaseTask):
@@ -2153,9 +2162,9 @@ class MarkL7RulePendingCreateInDB(BaseDatabaseTask):
         """
 
         LOG.debug("Mark PENDING CREATE in DB for l7rule id: %s",
-                  l7rule.id)
+                  l7rule[constants.L7RULE_ID])
         self.l7rule_repo.update(db_apis.get_session(),
-                                l7rule.id,
+                                l7rule[constants.L7RULE_ID],
                                 provisioning_status=constants.PENDING_CREATE)
 
     def revert(self, l7rule, *args, **kwargs):
@@ -2166,8 +2175,9 @@ class MarkL7RulePendingCreateInDB(BaseDatabaseTask):
         """
 
         LOG.warning("Reverting mark l7rule pending create in DB "
-                    "for l7rule id %s", l7rule.id)
-        self.task_utils.mark_l7rule_prov_status_error(l7rule.id)
+                    "for l7rule id %s", l7rule[constants.L7RULE_ID])
+        self.task_utils.mark_l7rule_prov_status_error(
+            l7rule[constants.L7RULE_ID])
 
 
 class MarkL7RulePendingDeleteInDB(BaseDatabaseTask):
@@ -2184,9 +2194,9 @@ class MarkL7RulePendingDeleteInDB(BaseDatabaseTask):
         """
 
         LOG.debug("Mark PENDING DELETE in DB for l7rule id: %s",
-                  l7rule.id)
+                  l7rule[constants.L7RULE_ID])
         self.l7rule_repo.update(db_apis.get_session(),
-                                l7rule.id,
+                                l7rule[constants.L7RULE_ID],
                                 provisioning_status=constants.PENDING_DELETE)
 
     def revert(self, l7rule, *args, **kwargs):
@@ -2197,8 +2207,9 @@ class MarkL7RulePendingDeleteInDB(BaseDatabaseTask):
         """
 
         LOG.warning("Reverting mark l7rule pending delete in DB "
-                    "for l7rule id %s", l7rule.id)
-        self.task_utils.mark_l7rule_prov_status_error(l7rule.id)
+                    "for l7rule id %s", l7rule[constants.L7RULE_ID])
+        self.task_utils.mark_l7rule_prov_status_error(
+            l7rule[constants.L7RULE_ID])
 
 
 class MarkL7RulePendingUpdateInDB(BaseDatabaseTask):
@@ -2215,9 +2226,9 @@ class MarkL7RulePendingUpdateInDB(BaseDatabaseTask):
         """
 
         LOG.debug("Mark PENDING UPDATE in DB for l7rule id: %s",
-                  l7rule.id)
+                  l7rule[constants.L7RULE_ID])
         self.l7rule_repo.update(db_apis.get_session(),
-                                l7rule.id,
+                                l7rule[constants.L7RULE_ID],
                                 provisioning_status=constants.PENDING_UPDATE)
 
     def revert(self, l7rule, *args, **kwargs):
@@ -2228,8 +2239,9 @@ class MarkL7RulePendingUpdateInDB(BaseDatabaseTask):
         """
 
         LOG.warning("Reverting mark l7rule pending update in DB "
-                    "for l7rule id %s", l7rule.id)
-        self.task_utils.mark_l7rule_prov_status_error(l7rule.id)
+                    "for l7rule id %s", l7rule[constants.L7RULE_ID])
+        self.task_utils.mark_l7rule_prov_status_error(
+            l7rule[constants.L7RULE_ID])
 
 
 class MarkMemberActiveInDB(BaseDatabaseTask):

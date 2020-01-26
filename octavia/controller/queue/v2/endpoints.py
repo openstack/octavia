@@ -151,17 +151,18 @@ class Endpoints(object):
             constants.L7POLICY_ID))
         self.worker.delete_l7policy(l7policy)
 
-    def create_l7rule(self, context, l7rule_id):
-        LOG.info('Creating l7rule \'%s\'...', l7rule_id)
-        self.worker.create_l7rule(l7rule_id)
+    def create_l7rule(self, context, l7rule):
+        LOG.info('Creating l7rule \'%s\'...', l7rule.get(constants.L7RULE_ID))
+        self.worker.create_l7rule(l7rule)
 
-    def update_l7rule(self, context, l7rule_id, l7rule_updates):
-        LOG.info('Updating l7rule \'%s\'...', l7rule_id)
-        self.worker.update_l7rule(l7rule_id, l7rule_updates)
+    def update_l7rule(self, context, original_l7rule, l7rule_updates):
+        LOG.info('Updating l7rule \'%s\'...', original_l7rule.get(
+            constants.L7RULE_ID))
+        self.worker.update_l7rule(original_l7rule, l7rule_updates)
 
-    def delete_l7rule(self, context, l7rule_id):
-        LOG.info('Deleting l7rule \'%s\'...', l7rule_id)
-        self.worker.delete_l7rule(l7rule_id)
+    def delete_l7rule(self, context, l7rule):
+        LOG.info('Deleting l7rule \'%s\'...', l7rule.get(constants.L7RULE_ID))
+        self.worker.delete_l7rule(l7rule)
 
     def update_amphora_agent_config(self, context, amphora_id):
         LOG.info('Updating amphora \'%s\' agent configuration...',

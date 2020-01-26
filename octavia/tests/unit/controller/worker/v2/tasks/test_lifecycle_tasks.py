@@ -30,9 +30,10 @@ class TestLifecycleTasks(base.TestCase):
         self.L7POLICY = mock.MagicMock()
         self.L7POLICY_ID = uuidutils.generate_uuid()
         self.L7POLICY.id = self.L7POLICY_ID
-        self.L7RULE = mock.MagicMock()
         self.L7RULE_ID = uuidutils.generate_uuid()
-        self.L7RULE.id = self.L7RULE_ID
+        self.L7RULE = {
+            constants.L7RULE_ID: self.L7RULE_ID
+        }
         self.LISTENER = mock.MagicMock()
         self.LISTENER_ID = uuidutils.generate_uuid()
         self.LISTENER = {constants.LISTENER_ID: self.LISTENER_ID}
@@ -184,15 +185,17 @@ class TestLifecycleTasks(base.TestCase):
 
         # Execute
         l7rule_to_error_on_revert.execute(self.L7RULE,
+                                          self.L7POLICY_ID,
                                           self.LISTENERS,
-                                          self.LOADBALANCER)
+                                          self.LOADBALANCER_ID)
 
         self.assertFalse(mock_l7rule_prov_status_error.called)
 
         # Revert
         l7rule_to_error_on_revert.revert(self.L7RULE,
+                                         self.L7POLICY_ID,
                                          self.LISTENERS,
-                                         self.LOADBALANCER)
+                                         self.LOADBALANCER_ID)
 
         mock_l7rule_prov_status_error.assert_called_once_with(
             self.L7RULE_ID)
