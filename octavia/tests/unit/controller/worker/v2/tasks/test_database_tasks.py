@@ -114,9 +114,15 @@ class TestDatabaseTasks(base.TestCase):
 
     def setUp(self):
 
-        self.health_mon_mock = mock.MagicMock()
-        self.health_mon_mock.id = HM_ID
-        self.health_mon_mock.pool_id = POOL_ID
+        self.db_health_mon_mock = mock.MagicMock()
+        self.db_health_mon_mock.id = HM_ID
+        self.db_health_mon_mock.pool_id = POOL_ID
+
+        self.health_mon_mock = {
+            constants.HEALTHMONITOR_ID: HM_ID,
+            constants.POOL_ID: POOL_ID,
+            'admin_state_up': True,
+        }
 
         self.listener_mock = mock.MagicMock()
         self.listener_mock.id = LISTENER_ID
@@ -130,7 +136,11 @@ class TestDatabaseTasks(base.TestCase):
 
         self.db_pool_mock = mock.MagicMock()
         self.db_pool_mock.id = POOL_ID
-        self.db_pool_mock.health_monitor = self.health_mon_mock
+        self.db_pool_mock.health_monitor = self.db_health_mon_mock
+        self.db_health_mon_mock.to_dict.return_value = {
+            constants.ID: HM_ID,
+            constants.POOL_ID: POOL_ID,
+        }
 
         self.member_mock = {
             constants.MEMBER_ID: MEMBER_ID,
@@ -262,7 +272,9 @@ class TestDatabaseTasks(base.TestCase):
 
     @mock.patch('octavia.db.repositories.HealthMonitorRepository.update')
     @mock.patch('octavia.db.repositories.HealthMonitorRepository.delete')
+    @mock.patch('octavia.db.repositories.PoolRepository.get')
     def test_delete_health_monitor_in_db_by_pool(self,
+                                                 mock_pool_repo_get,
                                                  mock_health_mon_repo_delete,
                                                  mock_health_mon_repo_update,
                                                  mock_generate_uuid,
@@ -272,9 +284,9 @@ class TestDatabaseTasks(base.TestCase):
                                                  mock_listener_repo_update,
                                                  mock_amphora_repo_update,
                                                  mock_amphora_repo_delete):
-
+        mock_pool_repo_get.return_value = self.db_pool_mock
         delete_health_mon = database_tasks.DeleteHealthMonitorInDBByPool()
-        delete_health_mon.execute(self.db_pool_mock)
+        delete_health_mon.execute(POOL_ID)
 
         repo.HealthMonitorRepository.delete.assert_called_once_with(
             'TEST',
@@ -282,7 +294,7 @@ class TestDatabaseTasks(base.TestCase):
 
         # Test the revert
         mock_health_mon_repo_delete.reset_mock()
-        delete_health_mon.revert(self.db_pool_mock)
+        delete_health_mon.revert(POOL_ID)
 
         repo.HealthMonitorRepository.update.assert_called_once_with(
             'TEST', id=HM_ID, provisioning_status=constants.ERROR)
@@ -2059,7 +2071,9 @@ class TestDatabaseTasks(base.TestCase):
         update_server_group_info.revert(LB_ID, SERVER_GROUP_ID)
 
     @mock.patch('octavia.db.repositories.HealthMonitorRepository.update')
+    @mock.patch('octavia.db.repositories.HealthMonitorRepository.get')
     def test_mark_health_mon_active_in_db(self,
+                                          mock_health_mon_repo_get,
                                           mock_health_mon_repo_update,
                                           mock_generate_uuid,
                                           mock_LOG,
@@ -2068,7 +2082,7 @@ class TestDatabaseTasks(base.TestCase):
                                           mock_listener_repo_update,
                                           mock_amphora_repo_update,
                                           mock_amphora_repo_delete):
-
+        mock_health_mon_repo_get.return_value = self.db_health_mon_mock
         mark_health_mon_active = (database_tasks.MarkHealthMonitorActiveInDB())
         mark_health_mon_active.execute(self.health_mon_mock)
 

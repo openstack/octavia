@@ -54,8 +54,10 @@ class HealthMonitorToErrorOnRevertTask(BaseLifecycleTask):
         pass
 
     def revert(self, health_mon, listeners, loadbalancer, *args, **kwargs):
-        self.task_utils.mark_health_mon_prov_status_error(health_mon.pool_id)
-        self.task_utils.mark_pool_prov_status_active(health_mon.pool_id)
+        self.task_utils.mark_health_mon_prov_status_error(
+            health_mon[constants.POOL_ID])
+        self.task_utils.mark_pool_prov_status_active(
+            health_mon[constants.POOL_ID])
         self.task_utils.mark_loadbalancer_prov_status_active(
             loadbalancer[constants.LOADBALANCER_ID])
         for listener in listeners:

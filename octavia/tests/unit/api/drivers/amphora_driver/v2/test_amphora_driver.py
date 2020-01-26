@@ -417,7 +417,7 @@ class TestAmphoraDriver(base.TestRpc):
         provider_HM = driver_dm.HealthMonitor(
             healthmonitor_id=self.sample_data.hm1_id)
         self.amp_driver.health_monitor_create(provider_HM)
-        payload = {consts.HEALTH_MONITOR_ID: self.sample_data.hm1_id}
+        payload = {consts.HEALTH_MONITOR: provider_HM.to_dict()}
         mock_cast.assert_called_with({}, 'create_health_monitor', **payload)
 
     @mock.patch('oslo_messaging.RPCClient.cast')
@@ -425,7 +425,7 @@ class TestAmphoraDriver(base.TestRpc):
         provider_HM = driver_dm.HealthMonitor(
             healthmonitor_id=self.sample_data.hm1_id)
         self.amp_driver.health_monitor_delete(provider_HM)
-        payload = {consts.HEALTH_MONITOR_ID: self.sample_data.hm1_id}
+        payload = {consts.HEALTH_MONITOR: provider_HM.to_dict()}
         mock_cast.assert_called_with({}, 'delete_health_monitor', **payload)
 
     @mock.patch('octavia.db.api.get_session')
@@ -516,7 +516,7 @@ class TestAmphoraDriver(base.TestRpc):
             max_retries=1, max_retries_down=2)
         hm_dict = {'enabled': True, 'rise_threshold': 1, 'fall_threshold': 2}
         self.amp_driver.health_monitor_update(old_provider_hm, provider_hm)
-        payload = {consts.HEALTH_MONITOR_ID: self.sample_data.hm1_id,
+        payload = {consts.ORIGINAL_HEALTH_MONITOR: old_provider_hm.to_dict(),
                    consts.HEALTH_MONITOR_UPDATES: hm_dict}
         mock_cast.assert_called_with({}, 'update_health_monitor', **payload)
 
@@ -528,7 +528,7 @@ class TestAmphoraDriver(base.TestRpc):
             healthmonitor_id=self.sample_data.hm1_id, name='Great HM')
         hm_dict = {'name': 'Great HM'}
         self.amp_driver.health_monitor_update(old_provider_hm, provider_hm)
-        payload = {consts.HEALTH_MONITOR_ID: self.sample_data.hm1_id,
+        payload = {consts.ORIGINAL_HEALTH_MONITOR: old_provider_hm.to_dict(),
                    consts.HEALTH_MONITOR_UPDATES: hm_dict}
         mock_cast.assert_called_with({}, 'update_health_monitor', **payload)
 

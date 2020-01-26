@@ -93,19 +93,22 @@ class Endpoints(object):
         LOG.info('Deleting pool \'%s\'...', pool.get(constants.POOL_ID))
         self.worker.delete_pool(pool)
 
-    def create_health_monitor(self, context, health_monitor_id):
-        LOG.info('Creating health monitor \'%s\'...', health_monitor_id)
-        self.worker.create_health_monitor(health_monitor_id)
+    def create_health_monitor(self, context, health_monitor):
+        LOG.info('Creating health monitor \'%s\'...', health_monitor.get(
+            constants.ID))
+        self.worker.create_health_monitor(health_monitor)
 
-    def update_health_monitor(self, context, health_monitor_id,
+    def update_health_monitor(self, context, original_health_monitor,
                               health_monitor_updates):
-        LOG.info('Updating health monitor \'%s\'...', health_monitor_id)
-        self.worker.update_health_monitor(health_monitor_id,
+        LOG.info('Updating health monitor \'%s\'...',
+                 original_health_monitor.get(constants.ID))
+        self.worker.update_health_monitor(original_health_monitor,
                                           health_monitor_updates)
 
-    def delete_health_monitor(self, context, health_monitor_id):
-        LOG.info('Deleting health monitor \'%s\'...', health_monitor_id)
-        self.worker.delete_health_monitor(health_monitor_id)
+    def delete_health_monitor(self, context, health_monitor):
+        LOG.info('Deleting health monitor \'%s\'...', health_monitor.get(
+            constants.ID))
+        self.worker.delete_health_monitor(health_monitor)
 
     def create_member(self, context, member):
         LOG.info('Creating member \'%s\'...', member.get(constants.MEMBER_ID))

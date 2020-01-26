@@ -277,12 +277,11 @@ class AmphoraProviderDriver(driver_base.ProviderDriver):
 
     # Health Monitor
     def health_monitor_create(self, healthmonitor):
-        payload = {consts.HEALTH_MONITOR_ID: healthmonitor.healthmonitor_id}
+        payload = {consts.HEALTH_MONITOR: healthmonitor.to_dict()}
         self.client.cast({}, 'create_health_monitor', **payload)
 
     def health_monitor_delete(self, healthmonitor):
-        healthmonitor_id = healthmonitor.healthmonitor_id
-        payload = {consts.HEALTH_MONITOR_ID: healthmonitor_id}
+        payload = {consts.HEALTH_MONITOR: healthmonitor.to_dict()}
         self.client.cast({}, 'delete_health_monitor', **payload)
 
     def health_monitor_update(self, old_healthmonitor, new_healthmonitor):
@@ -295,9 +294,9 @@ class AmphoraProviderDriver(driver_base.ProviderDriver):
         if 'max_retries' in healthmon_dict:
             healthmon_dict['rise_threshold'] = healthmon_dict.pop(
                 'max_retries')
-        healthmon_id = healthmon_dict.pop('healthmonitor_id')
+        healthmon_dict.pop('healthmonitor_id')
 
-        payload = {consts.HEALTH_MONITOR_ID: healthmon_id,
+        payload = {consts.ORIGINAL_HEALTH_MONITOR: old_healthmonitor.to_dict(),
                    consts.HEALTH_MONITOR_UPDATES: healthmon_dict}
         self.client.cast({}, 'update_health_monitor', **payload)
 

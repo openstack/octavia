@@ -113,20 +113,20 @@ class TestEndpoints(base.TestCase):
             self.resource)
 
     def test_create_health_monitor(self):
-        self.ep.create_health_monitor(self.context, self.resource_id)
+        self.ep.create_health_monitor(self.context, self.resource)
         self.ep.worker.create_health_monitor.assert_called_once_with(
-            self.resource_id)
+            self.resource)
 
     def test_update_health_monitor(self):
-        self.ep.update_health_monitor(self.context, self.resource_id,
+        self.ep.update_health_monitor(self.context, self.resource,
                                       self.resource_updates)
         self.ep.worker.update_health_monitor.assert_called_once_with(
-            self.resource_id, self.resource_updates)
+            self.resource, self.resource_updates)
 
     def test_delete_health_monitor(self):
-        self.ep.delete_health_monitor(self.context, self.resource_id)
+        self.ep.delete_health_monitor(self.context, self.resource)
         self.ep.worker.delete_health_monitor.assert_called_once_with(
-            self.resource_id)
+            self.resource)
 
     def test_create_member(self):
         self.ep.create_member(self.context, self.resource)

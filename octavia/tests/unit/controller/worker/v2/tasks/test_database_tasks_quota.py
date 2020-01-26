@@ -153,9 +153,10 @@ class TestDatabaseTasksQuota(base.TestCase):
             self.assertFalse(mock_check_quota_met.called)
 
     def test_decrement_health_monitor_quota(self):
+        project_id = uuidutils.generate_uuid()
         task = database_tasks.DecrementHealthMonitorQuota()
         data_model = data_models.HealthMonitor
-        self._test_decrement_quota(task, data_model)
+        self._test_decrement_quota(task, data_model, project_id=project_id)
 
     def test_decrement_listener_quota(self):
         project_id = uuidutils.generate_uuid()

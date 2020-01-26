@@ -27,9 +27,6 @@ class TestLifecycleTasks(base.TestCase):
         self.AMPHORA = mock.MagicMock()
         self.AMPHORA_ID = uuidutils.generate_uuid()
         self.AMPHORA.id = self.AMPHORA_ID
-        self.HEALTH_MON = mock.MagicMock()
-        self.HEALTH_MON_ID = uuidutils.generate_uuid()
-        self.HEALTH_MON.pool_id = self.HEALTH_MON_ID
         self.L7POLICY = mock.MagicMock()
         self.L7POLICY_ID = uuidutils.generate_uuid()
         self.L7POLICY.id = self.L7POLICY_ID
@@ -50,6 +47,11 @@ class TestLifecycleTasks(base.TestCase):
         self.POOL = mock.MagicMock()
         self.POOL_ID = uuidutils.generate_uuid()
         self.POOL.id = self.POOL_ID
+        self.HEALTH_MON_ID = uuidutils.generate_uuid()
+        self.HEALTH_MON = {
+            constants.HEALTHMONITOR_ID: self.HEALTH_MON_ID,
+            constants.POOL_ID: self.POOL_ID,
+        }
 
         super(TestLifecycleTasks, self).setUp()
 
@@ -123,7 +125,7 @@ class TestLifecycleTasks(base.TestCase):
                                              self.LOADBALANCER)
 
         mock_health_mon_prov_status_error.assert_called_once_with(
-            self.HEALTH_MON_ID)
+            self.POOL_ID)
         mock_loadbalancer_prov_status_active.assert_called_once_with(
             self.LOADBALANCER_ID)
         mock_listener_prov_status_active.assert_called_once_with(
