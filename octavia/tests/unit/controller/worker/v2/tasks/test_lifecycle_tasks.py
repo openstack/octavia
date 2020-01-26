@@ -147,16 +147,18 @@ class TestLifecycleTasks(base.TestCase):
                                        L7PolicyToErrorOnRevertTask())
 
         # Execute
-        l7policy_to_error_on_revert.execute(self.L7POLICY,
+        l7policy_to_error_on_revert.execute({constants.L7POLICY_ID:
+                                             self.L7POLICY_ID},
                                             self.LISTENERS,
-                                            self.LOADBALANCER)
+                                            self.LOADBALANCER_ID)
 
         self.assertFalse(mock_l7policy_prov_status_error.called)
 
         # Revert
-        l7policy_to_error_on_revert.revert(self.L7POLICY,
+        l7policy_to_error_on_revert.revert({constants.L7POLICY_ID:
+                                            self.L7POLICY_ID},
                                            self.LISTENERS,
-                                           self.LOADBALANCER)
+                                           self.LOADBALANCER_ID)
 
         mock_l7policy_prov_status_error.assert_called_once_with(
             self.L7POLICY_ID)

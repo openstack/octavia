@@ -68,13 +68,13 @@ class HealthMonitorToErrorOnRevertTask(BaseLifecycleTask):
 class L7PolicyToErrorOnRevertTask(BaseLifecycleTask):
     """Task to set a l7policy to ERROR on revert."""
 
-    def execute(self, l7policy, listeners, loadbalancer):
+    def execute(self, l7policy, listeners, loadbalancer_id):
         pass
 
-    def revert(self, l7policy, listeners, loadbalancer, *args, **kwargs):
-        self.task_utils.mark_l7policy_prov_status_error(l7policy.id)
-        self.task_utils.mark_loadbalancer_prov_status_active(
-            loadbalancer[constants.LOADBALANCER_ID])
+    def revert(self, l7policy, listeners, loadbalancer_id, *args, **kwargs):
+        self.task_utils.mark_l7policy_prov_status_error(
+            l7policy[constants.L7POLICY_ID])
+        self.task_utils.mark_loadbalancer_prov_status_active(loadbalancer_id)
         for listener in listeners:
             self.task_utils.mark_listener_prov_status_active(
                 listener[constants.LISTENER_ID])

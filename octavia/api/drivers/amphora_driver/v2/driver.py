@@ -302,21 +302,20 @@ class AmphoraProviderDriver(driver_base.ProviderDriver):
 
     # L7 Policy
     def l7policy_create(self, l7policy):
-        payload = {consts.L7POLICY_ID: l7policy.l7policy_id}
+        payload = {consts.L7POLICY: l7policy.to_dict()}
         self.client.cast({}, 'create_l7policy', **payload)
 
     def l7policy_delete(self, l7policy):
-        l7policy_id = l7policy.l7policy_id
-        payload = {consts.L7POLICY_ID: l7policy_id}
+        payload = {consts.L7POLICY: l7policy.to_dict()}
         self.client.cast({}, 'delete_l7policy', **payload)
 
     def l7policy_update(self, old_l7policy, new_l7policy):
         l7policy_dict = new_l7policy.to_dict()
         if 'admin_state_up' in l7policy_dict:
-            l7policy_dict['enabled'] = l7policy_dict.pop('admin_state_up')
-        l7policy_id = l7policy_dict.pop('l7policy_id')
+            l7policy_dict['enabled'] = l7policy_dict.pop(consts.ADMIN_STATE_UP)
+        l7policy_dict.pop(consts.L7POLICY_ID)
 
-        payload = {consts.L7POLICY_ID: l7policy_id,
+        payload = {consts.ORIGINAL_L7POLICY: old_l7policy.to_dict(),
                    consts.L7POLICY_UPDATES: l7policy_dict}
         self.client.cast({}, 'update_l7policy', **payload)
 

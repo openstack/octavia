@@ -37,6 +37,7 @@ COMPUTE_ID = uuidutils.generate_uuid()
 L7POLICY_ID = uuidutils.generate_uuid()
 L7RULE_ID = uuidutils.generate_uuid()
 PROJECT_ID = uuidutils.generate_uuid()
+LISTENER_ID = uuidutils.generate_uuid()
 HEALTH_UPDATE_DICT = {'delay': 1, 'timeout': 2}
 LISTENER_UPDATE_DICT = {'name': 'test', 'description': 'test2'}
 MEMBER_UPDATE_DICT = {'weight': 1, 'ip_address': '10.0.0.0'}
@@ -71,6 +72,8 @@ _db_pool_mock = mock.MagicMock()
 _db_pool_mock.load_balancer = _db_load_balancer_mock
 _member_mock.pool = _db_pool_mock
 _l7policy_mock = mock.MagicMock()
+_l7policy_mock.id = L7POLICY_ID
+_l7policy_mock.to_dict.return_value = {constants.ID: L7POLICY_ID}
 _l7rule_mock = mock.MagicMock()
 _create_map_flow_mock = mock.MagicMock()
 _db_amphora_mock.load_balancer_id = LB_ID
@@ -1090,25 +1093,22 @@ class TestControllerWorker(base.TestCase):
                              mock_amp_repo_get):
 
         _flow_mock.reset_mock()
-        mock_l7policy_repo_get.side_effect = [None, _l7policy_mock]
 
         cw = controller_worker.ControllerWorker()
-        cw.create_l7policy(L7POLICY_ID)
-        provider_lb = provider_utils.db_loadbalancer_to_provider_loadbalancer(
-            _db_load_balancer_mock).to_dict()
+        l7policy_mock = {
+            constants.L7POLICY_ID: L7POLICY_ID,
+            constants.LISTENER_ID: LISTENER_ID
+        }
+        cw.create_l7policy(l7policy_mock)
 
         (base_taskflow.BaseTaskFlowEngine._taskflow_load.
             assert_called_once_with(_flow_mock,
-                                    store={constants.L7POLICY: _l7policy_mock,
-                                           constants.LOADBALANCER_ID:
-                                               LB_ID,
+                                    store={constants.L7POLICY: l7policy_mock,
                                            constants.LISTENERS:
                                                [self.ref_listener_dict],
-                                           constants.LOADBALANCER:
-                                               provider_lb}))
+                                           constants.LOADBALANCER_ID: LB_ID}))
 
         _flow_mock.run.assert_called_once_with()
-        self.assertEqual(2, mock_l7policy_repo_get.call_count)
 
     @mock.patch('octavia.controller.worker.v2.flows.'
                 'l7policy_flows.L7PolicyFlows.get_delete_l7policy_flow',
@@ -1130,19 +1130,19 @@ class TestControllerWorker(base.TestCase):
         _flow_mock.reset_mock()
 
         cw = controller_worker.ControllerWorker()
-        cw.delete_l7policy(L7POLICY_ID)
-        provider_lb = provider_utils.db_loadbalancer_to_provider_loadbalancer(
-            _db_load_balancer_mock).to_dict()
+        l7policy_mock = {
+            constants.L7POLICY_ID: L7POLICY_ID,
+            constants.LISTENER_ID: LISTENER_ID
+        }
+        cw.delete_l7policy(l7policy_mock)
 
         (base_taskflow.BaseTaskFlowEngine._taskflow_load.
             assert_called_once_with(_flow_mock,
-                                    store={constants.L7POLICY: _l7policy_mock,
+                                    store={constants.L7POLICY: l7policy_mock,
                                            constants.LISTENERS:
                                                [self.ref_listener_dict],
                                            constants.LOADBALANCER_ID:
-                                               LB_ID,
-                                           constants.LOADBALANCER:
-                                               provider_lb}))
+                                               LB_ID}))
 
         _flow_mock.run.assert_called_once_with()
 
@@ -1164,22 +1164,24 @@ class TestControllerWorker(base.TestCase):
                              mock_amp_repo_get):
 
         _flow_mock.reset_mock()
+        mock_listener_repo_get.return_value = _listener_mock
         _l7policy_mock.provisioning_status = constants.PENDING_UPDATE
 
         cw = controller_worker.ControllerWorker()
-        cw.update_l7policy(L7POLICY_ID, L7POLICY_UPDATE_DICT)
-        provider_lb = provider_utils.db_loadbalancer_to_provider_loadbalancer(
-            _db_load_balancer_mock).to_dict()
+        l7policy_mock = {
+            constants.L7POLICY_ID: L7POLICY_ID,
+            constants.LISTENER_ID: LISTENER_ID
+        }
+
+        cw.update_l7policy(l7policy_mock, L7POLICY_UPDATE_DICT)
 
         (base_taskflow.BaseTaskFlowEngine._taskflow_load.
             assert_called_once_with(_flow_mock,
-                                    store={constants.L7POLICY: _l7policy_mock,
+                                    store={constants.L7POLICY: l7policy_mock,
                                            constants.LISTENERS:
                                                [self.ref_listener_dict],
                                            constants.LOADBALANCER_ID:
                                                LB_ID,
-                                           constants.LOADBALANCER:
-                                               provider_lb,
                                            constants.UPDATE_DICT:
                                                L7POLICY_UPDATE_DICT}))
 
@@ -1213,7 +1215,9 @@ class TestControllerWorker(base.TestCase):
         (base_taskflow.BaseTaskFlowEngine._taskflow_load.
             assert_called_once_with(_flow_mock,
                                     store={constants.L7RULE: _l7rule_mock,
-                                           constants.L7POLICY: _l7policy_mock,
+                                           constants.L7POLICY: {
+                                               constants.L7POLICY_ID:
+                                                   L7POLICY_ID},
                                            constants.LOADBALANCER_ID:
                                                LB_ID,
                                            constants.LISTENERS:
@@ -1253,7 +1257,9 @@ class TestControllerWorker(base.TestCase):
                                     store={constants.L7RULE: _l7rule_mock,
                                            constants.LOADBALANCER_ID:
                                                LB_ID,
-                                           constants.L7POLICY: _l7policy_mock,
+                                           constants.L7POLICY: {
+                                               constants.L7POLICY_ID:
+                                                   L7POLICY_ID},
                                            constants.LISTENERS:
                                                [self.ref_listener_dict],
                                            constants.LOADBALANCER:
@@ -1289,7 +1295,9 @@ class TestControllerWorker(base.TestCase):
         (base_taskflow.BaseTaskFlowEngine._taskflow_load.
             assert_called_once_with(_flow_mock,
                                     store={constants.L7RULE: _l7rule_mock,
-                                           constants.L7POLICY: _l7policy_mock,
+                                           constants.L7POLICY: {
+                                               constants.L7POLICY_ID:
+                                                   L7POLICY_ID},
                                            constants.LOADBALANCER_ID:
                                                LB_ID,
                                            constants.LISTENERS:

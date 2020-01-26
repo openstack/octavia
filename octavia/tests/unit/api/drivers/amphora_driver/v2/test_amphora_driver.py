@@ -538,7 +538,7 @@ class TestAmphoraDriver(base.TestRpc):
         provider_l7policy = driver_dm.L7Policy(
             l7policy_id=self.sample_data.l7policy1_id)
         self.amp_driver.l7policy_create(provider_l7policy)
-        payload = {consts.L7POLICY_ID: self.sample_data.l7policy1_id}
+        payload = {consts.L7POLICY: provider_l7policy.to_dict()}
         mock_cast.assert_called_with({}, 'create_l7policy', **payload)
 
     @mock.patch('oslo_messaging.RPCClient.cast')
@@ -546,7 +546,7 @@ class TestAmphoraDriver(base.TestRpc):
         provider_l7policy = driver_dm.L7Policy(
             l7policy_id=self.sample_data.l7policy1_id)
         self.amp_driver.l7policy_delete(provider_l7policy)
-        payload = {consts.L7POLICY_ID: self.sample_data.l7policy1_id}
+        payload = {consts.L7POLICY: provider_l7policy.to_dict()}
         mock_cast.assert_called_with({}, 'delete_l7policy', **payload)
 
     @mock.patch('oslo_messaging.RPCClient.cast')
@@ -558,7 +558,7 @@ class TestAmphoraDriver(base.TestRpc):
         l7policy_dict = {'enabled': True}
         self.amp_driver.l7policy_update(old_provider_l7policy,
                                         provider_l7policy)
-        payload = {consts.L7POLICY_ID: self.sample_data.l7policy1_id,
+        payload = {consts.ORIGINAL_L7POLICY: old_provider_l7policy.to_dict(),
                    consts.L7POLICY_UPDATES: l7policy_dict}
         mock_cast.assert_called_with({}, 'update_l7policy', **payload)
 
@@ -571,7 +571,7 @@ class TestAmphoraDriver(base.TestRpc):
         l7policy_dict = {'name': 'Great L7Policy'}
         self.amp_driver.l7policy_update(old_provider_l7policy,
                                         provider_l7policy)
-        payload = {consts.L7POLICY_ID: self.sample_data.l7policy1_id,
+        payload = {consts.ORIGINAL_L7POLICY: old_provider_l7policy.to_dict(),
                    consts.L7POLICY_UPDATES: l7policy_dict}
         mock_cast.assert_called_with({}, 'update_l7policy', **payload)
 
