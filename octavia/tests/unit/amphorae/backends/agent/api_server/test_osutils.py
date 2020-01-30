@@ -44,7 +44,8 @@ class TestOSUtils(base.TestCase):
             self.rh_os_util = osutils.BaseOS.get_os_util()
 
         with mock.patch('distro.id', return_value='centos'):
-            self.centos_os_util = osutils.BaseOS.get_os_util()
+            with mock.patch('distro.version', return_value='8'):
+                self.centos_os_util = osutils.BaseOS.get_os_util()
 
         with mock.patch('distro.id', return_value='centos'):
             with mock.patch('distro.version', return_value='7'):
