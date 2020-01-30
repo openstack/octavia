@@ -59,6 +59,8 @@ class ComputeCreate(BaseComputeTask):
                 availability_zone=None):
         """Create an amphora
 
+        :param availability_zone: availability zone metadata dictionary
+
         :returns: an amphora
         """
         ports = ports or []
@@ -156,6 +158,8 @@ class CertComputeCreate(ComputeCreate):
                 availability_zone=None):
         """Create an amphora
 
+        :param availability_zone: availability zone metadata dictionary
+
         :returns: an amphora
         """
 
@@ -211,14 +215,22 @@ class ComputeDelete(BaseComputeTask):
 class ComputeActiveWait(BaseComputeTask):
     """Wait for the compute driver to mark the amphora active."""
 
-    def execute(self, compute_id, amphora_id):
+    def execute(self, compute_id, amphora_id, availability_zone):
         """Wait for the compute driver to mark the amphora active
+
+        :param compute_id: virtual machine UUID
+        :param amphora_id: id of the amphora object
+        :param availability_zone: availability zone metadata dictionary
 
         :raises: Generic exception if the amphora is not active
         :returns: An amphora object
         """
+        if availability_zone:
+            amp_network = availability_zone.get(constants.MANAGEMENT_NETWORK)
+        else:
+            amp_network = None
         for i in range(CONF.controller_worker.amp_active_retries):
-            amp, fault = self.compute.get_amphora(compute_id)
+            amp, fault = self.compute.get_amphora(compute_id, amp_network)
             if amp.status == constants.ACTIVE:
                 if CONF.haproxy_amphora.build_rate_limit != -1:
                     self.rate_limit.remove_from_build_req_queue(amphora_id)

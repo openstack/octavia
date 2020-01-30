@@ -218,10 +218,11 @@ class VirtualMachineManager(compute_base.ComputeBase):
             raise exceptions.ComputeStatusException()
         return constants.DOWN
 
-    def get_amphora(self, compute_id):
+    def get_amphora(self, compute_id, management_network_id=None):
         '''Retrieve the information in nova of a virtual machine.
 
-        :param amphora_id: virtual machine UUID
+        :param compute_id: virtual machine UUID
+        :param management_network_id: ID of the management network
         :returns: an amphora object
         :returns: fault message or None
         '''
@@ -231,12 +232,13 @@ class VirtualMachineManager(compute_base.ComputeBase):
         except Exception:
             LOG.exception("Error retrieving nova virtual machine.")
             raise exceptions.ComputeGetException()
-        return self._translate_amphora(amphora)
+        return self._translate_amphora(amphora, management_network_id)
 
-    def _translate_amphora(self, nova_response):
+    def _translate_amphora(self, nova_response, management_network_id=None):
         '''Convert a nova virtual machine into an amphora object.
 
         :param nova_response: JSON response from nova
+        :param management_network_id: ID of the management network
         :returns: an amphora object
         :returns: fault message or None
         '''
@@ -246,19 +248,19 @@ class VirtualMachineManager(compute_base.ComputeBase):
         lb_network_ip = None
         availability_zone = None
         image_id = None
-        fault = None
+
+        if management_network_id:
+            boot_networks = [management_network_id]
+        else:
+            boot_networks = CONF.controller_worker.amp_boot_network_list
 
         try:
             inf_list = nova_response.interface_list()
-            no_boot_networks = (
-                not CONF.controller_worker.amp_boot_network_list)
             for interface in inf_list:
                 net_id = interface.net_id
-                is_boot_network = (
-                    net_id in CONF.controller_worker.amp_boot_network_list)
                 # Pick the first fixed_ip if this is a boot network or if
                 # there are no boot networks configured (use default network)
-                if is_boot_network or no_boot_networks:
+                if net_id in boot_networks or not boot_networks:
                     lb_network_ip = interface.fixed_ips[0]['ip_address']
                     break
             try:

@@ -54,10 +54,15 @@ class TestAmphoraFlows(base.TestCase):
         self.assertIn(constants.AMPHORA, amp_flow.provides)
         self.assertIn(constants.AMPHORA_ID, amp_flow.provides)
         self.assertIn(constants.COMPUTE_ID, amp_flow.provides)
+        self.assertIn(constants.COMPUTE_OBJ, amp_flow.provides)
         self.assertIn(constants.SERVER_PEM, amp_flow.provides)
 
+        self.assertIn(constants.BUILD_TYPE_PRIORITY, amp_flow.requires)
+        self.assertIn(constants.FLAVOR, amp_flow.requires)
+        self.assertIn(constants.AVAILABILITY_ZONE, amp_flow.requires)
+
         self.assertEqual(5, len(amp_flow.provides))
-        self.assertEqual(2, len(amp_flow.requires))
+        self.assertEqual(3, len(amp_flow.requires))
 
     def test_get_create_amphora_flow_cert(self, mock_get_net_driver):
         self.AmpFlow = amphora_flows.AmphoraFlows()
@@ -69,9 +74,15 @@ class TestAmphoraFlows(base.TestCase):
         self.assertIn(constants.AMPHORA, amp_flow.provides)
         self.assertIn(constants.AMPHORA_ID, amp_flow.provides)
         self.assertIn(constants.COMPUTE_ID, amp_flow.provides)
+        self.assertIn(constants.COMPUTE_OBJ, amp_flow.provides)
+        self.assertIn(constants.SERVER_PEM, amp_flow.provides)
+
+        self.assertIn(constants.BUILD_TYPE_PRIORITY, amp_flow.requires)
+        self.assertIn(constants.FLAVOR, amp_flow.requires)
+        self.assertIn(constants.AVAILABILITY_ZONE, amp_flow.requires)
 
         self.assertEqual(5, len(amp_flow.provides))
-        self.assertEqual(2, len(amp_flow.requires))
+        self.assertEqual(3, len(amp_flow.requires))
 
     def test_get_create_amphora_for_lb_flow(self, mock_get_net_driver):
 

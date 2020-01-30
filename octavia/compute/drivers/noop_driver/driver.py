@@ -63,10 +63,11 @@ class NoopManager(object):
         self.computeconfig[compute_id] = (compute_id, 'status')
         return constants.UP
 
-    def get_amphora(self, compute_id):
-        LOG.debug("Compute %s no-op, compute_id %s",
-                  self.__class__.__name__, compute_id)
-        self.computeconfig[compute_id] = (compute_id, 'get_amphora')
+    def get_amphora(self, compute_id, management_network_id=None):
+        LOG.debug("Compute %s no-op, compute_id %s, management_network_id %s",
+                  self.__class__.__name__, compute_id, management_network_id)
+        self.computeconfig[(compute_id, management_network_id)] = (
+            compute_id, management_network_id, 'get_amphora')
         return data_models.Amphora(
             compute_id=compute_id,
             status=constants.ACTIVE,
@@ -143,8 +144,8 @@ class NoopComputeDriver(driver_base.ComputeBase):
     def status(self, compute_id):
         return self.driver.status(compute_id)
 
-    def get_amphora(self, compute_id):
-        return self.driver.get_amphora(compute_id)
+    def get_amphora(self, compute_id, management_network_id=None):
+        return self.driver.get_amphora(compute_id, management_network_id)
 
     def create_server_group(self, name, policy):
         return self.driver.create_server_group(name, policy)

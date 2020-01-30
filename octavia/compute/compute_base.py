@@ -69,10 +69,11 @@ class ComputeBase(object):
         """
 
     @abc.abstractmethod
-    def get_amphora(self, compute_id):
+    def get_amphora(self, compute_id, management_network_id=None):
         """Retrieve an amphora object
 
-        :param compute_id: the id of the desired amphora
+        :param compute_id: the compute id of the desired amphora
+        :param management_network_id: ID of the management network
         :returns: the amphora object
         :returns: fault message or None
         """

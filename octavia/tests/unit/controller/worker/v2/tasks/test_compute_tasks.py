@@ -447,15 +447,23 @@ class TestComputeTasks(base.TestCase):
         mock_driver.get_amphora.return_value = _db_amphora_mock, None
 
         computewait = compute_tasks.ComputeActiveWait()
-        computewait.execute(COMPUTE_ID, AMPHORA_ID)
 
-        mock_driver.get_amphora.assert_called_once_with(COMPUTE_ID)
+        # Test with no AZ
+        computewait.execute(COMPUTE_ID, AMPHORA_ID, None)
+        mock_driver.get_amphora.assert_called_once_with(COMPUTE_ID, None)
 
+        # Test with AZ
+        mock_driver.reset_mock()
+        az = {constants.MANAGEMENT_NETWORK: uuidutils.generate_uuid()}
+        computewait.execute(COMPUTE_ID, AMPHORA_ID, az)
+        mock_driver.get_amphora.assert_called_once_with(
+            COMPUTE_ID, az[constants.MANAGEMENT_NETWORK])
+
+        # Test with deleted amp
         _db_amphora_mock.status = constants.DELETED
-
         self.assertRaises(exceptions.ComputeWaitTimeoutException,
                           computewait.execute,
-                          _db_amphora_mock, AMPHORA_ID)
+                          _amphora_mock, AMPHORA_ID, None)
 
     @mock.patch('octavia.controller.worker.amphora_rate_limit'
                 '.AmphoraBuildRateLimit.remove_from_build_req_queue')
@@ -474,15 +482,15 @@ class TestComputeTasks(base.TestCase):
         mock_driver.get_amphora.return_value = _db_amphora_mock, None
 
         computewait = compute_tasks.ComputeActiveWait()
-        computewait.execute(COMPUTE_ID, AMPHORA_ID)
+        computewait.execute(COMPUTE_ID, AMPHORA_ID, None)
 
-        mock_driver.get_amphora.assert_called_once_with(COMPUTE_ID)
+        mock_driver.get_amphora.assert_called_once_with(COMPUTE_ID, None)
 
         _db_amphora_mock.status = constants.ERROR
 
         self.assertRaises(exceptions.ComputeBuildException,
                           computewait.execute,
-                          _db_amphora_mock, AMPHORA_ID)
+                          _db_amphora_mock, AMPHORA_ID, None)
 
     @mock.patch('octavia.controller.worker.amphora_rate_limit'
                 '.AmphoraBuildRateLimit.remove_from_build_req_queue')
@@ -499,9 +507,9 @@ class TestComputeTasks(base.TestCase):
         mock_driver.get_amphora.return_value = _db_amphora_mock, None
 
         computewait = compute_tasks.ComputeActiveWait()
-        computewait.execute(COMPUTE_ID, AMPHORA_ID)
+        computewait.execute(COMPUTE_ID, AMPHORA_ID, None)
 
-        mock_driver.get_amphora.assert_called_once_with(COMPUTE_ID)
+        mock_driver.get_amphora.assert_called_once_with(COMPUTE_ID, None)
         mock_remove_from_build_queue.assert_not_called()
 
     @mock.patch('stevedore.driver.DriverManager.driver')

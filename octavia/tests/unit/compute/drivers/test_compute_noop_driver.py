@@ -88,10 +88,12 @@ class TestNoopComputeDriver(base.TestCase):
                              self.amphora_id])
 
     def test_get_amphora(self):
-        self.driver.get_amphora(self.amphora_id)
-        self.assertEqual((self.amphora_id, 'get_amphora'),
-                         self.driver.driver.computeconfig[
-                             self.amphora_id])
+        management_network_id = uuidutils.generate_uuid()
+        self.driver.get_amphora(self.amphora_id, management_network_id)
+        self.assertEqual(
+            (self.amphora_id, management_network_id, 'get_amphora'),
+            self.driver.driver.computeconfig[
+                self.amphora_id, management_network_id])
 
     def test_create_server_group(self):
         self.driver.create_server_group(self.server_group_name,

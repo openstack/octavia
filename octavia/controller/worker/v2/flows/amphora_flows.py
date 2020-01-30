@@ -200,7 +200,8 @@ class AmphoraFlows(object):
             requires=(constants.AMPHORA_ID, constants.COMPUTE_ID)))
         create_amp_for_lb_subflow.add(compute_tasks.ComputeActiveWait(
             name=sf_name + '-' + constants.COMPUTE_WAIT,
-            requires=(constants.COMPUTE_ID, constants.AMPHORA_ID),
+            requires=(constants.COMPUTE_ID, constants.AMPHORA_ID,
+                      constants.AVAILABILITY_ZONE),
             provides=constants.COMPUTE_OBJ))
         create_amp_for_lb_subflow.add(database_tasks.UpdateAmphoraInfo(
             name=sf_name + '-' + constants.UPDATE_AMPHORA_INFO,
