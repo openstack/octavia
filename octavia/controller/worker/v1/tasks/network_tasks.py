@@ -48,14 +48,19 @@ class CalculateAmphoraDelta(BaseNetworkTask):
 
     default_provides = constants.DELTA
 
-    def execute(self, loadbalancer, amphora):
+    def execute(self, loadbalancer, amphora, availability_zone):
         LOG.debug("Calculating network delta for amphora id: %s", amphora.id)
 
         # Figure out what networks we want
         # seed with lb network(s)
         vrrp_port = self.network_driver.get_port(amphora.vrrp_port_id)
-        desired_network_ids = {vrrp_port.network_id}.union(
-            CONF.controller_worker.amp_boot_network_list)
+        if availability_zone:
+            management_nets = (
+                [availability_zone.get(constants.MANAGEMENT_NETWORK)] or
+                CONF.controller_worker.amp_boot_network_list)
+        else:
+            management_nets = CONF.controller_worker.amp_boot_network_list
+        desired_network_ids = {vrrp_port.network_id}.union(management_nets)
 
         for pool in loadbalancer.pools:
             member_networks = [
@@ -92,13 +97,15 @@ class CalculateDelta(BaseNetworkTask):
 
     default_provides = constants.DELTAS
 
-    def execute(self, loadbalancer):
+    def execute(self, loadbalancer, availability_zone):
         """Compute which NICs need to be plugged
 
         for the amphora to become operational.
 
         :param loadbalancer: the loadbalancer to calculate deltas for all
                              amphorae
+        :param availability_zone: availability zone metadata dict
+
         :returns: dict of octavia.network.data_models.Delta keyed off amphora
                   id
         """
@@ -109,7 +116,8 @@ class CalculateDelta(BaseNetworkTask):
             lambda amp: amp.status == constants.AMPHORA_ALLOCATED,
                 loadbalancer.amphorae):
 
-            delta = calculate_amp.execute(loadbalancer, amphora)
+            delta = calculate_amp.execute(loadbalancer, amphora,
+                                          availability_zone)
             deltas[amphora.id] = delta
         return deltas
 

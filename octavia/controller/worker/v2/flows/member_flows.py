@@ -39,7 +39,7 @@ class MemberFlows(object):
         create_member_flow.add(database_tasks.MarkMemberPendingCreateInDB(
             requires=constants.MEMBER))
         create_member_flow.add(network_tasks.CalculateDelta(
-            requires=constants.LOADBALANCER,
+            requires=(constants.LOADBALANCER, constants.AVAILABILITY_ZONE),
             provides=constants.DELTAS))
         create_member_flow.add(network_tasks.HandleNetworkDeltas(
             requires=constants.DELTAS, provides=constants.ADDED_PORTS))
@@ -180,7 +180,7 @@ class MemberFlows(object):
 
         # Done, do real updates
         batch_update_members_flow.add(network_tasks.CalculateDelta(
-            requires=constants.LOADBALANCER,
+            requires=(constants.LOADBALANCER, constants.AVAILABILITY_ZONE),
             provides=constants.DELTAS))
         batch_update_members_flow.add(network_tasks.HandleNetworkDeltas(
             requires=constants.DELTAS, provides=constants.ADDED_PORTS))

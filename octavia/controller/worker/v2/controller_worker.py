@@ -438,13 +438,22 @@ class ControllerWorker(base_taskflow.BaseTaskFlowEngine):
             provider_utils.db_listeners_to_provider_dicts_list_of_dicts(
                 pool.listeners))
 
+        store = {
+            constants.MEMBER: member,
+            constants.LISTENERS: listeners_dicts,
+            constants.LOADBALANCER_ID: load_balancer.id,
+            constants.LOADBALANCER: provider_lb,
+            constants.POOL_ID: pool.id}
+        if load_balancer.availability_zone:
+            store[constants.AVAILABILITY_ZONE] = (
+                self._az_repo.get_availability_zone_metadata_dict(
+                    db_apis.get_session(), load_balancer.availability_zone))
+        else:
+            store[constants.AVAILABILITY_ZONE] = {}
+
         create_member_tf = self._taskflow_load(
             self._member_flows.get_create_member_flow(),
-            store={constants.MEMBER: member,
-                   constants.LISTENERS: listeners_dicts,
-                   constants.LOADBALANCER_ID: load_balancer.id,
-                   constants.LOADBALANCER: provider_lb,
-                   constants.POOL_ID: pool.id})
+            store=store)
         with tf_logging.DynamicLoggingListener(create_member_tf,
                                                log=LOG):
             create_member_tf.run()
@@ -467,16 +476,23 @@ class ControllerWorker(base_taskflow.BaseTaskFlowEngine):
             provider_utils.db_listeners_to_provider_dicts_list_of_dicts(
                 pool.listeners))
 
+        store = {
+            constants.MEMBER: member,
+            constants.LISTENERS: listeners_dicts,
+            constants.LOADBALANCER_ID: load_balancer.id,
+            constants.LOADBALANCER: provider_lb,
+            constants.POOL_ID: pool.id,
+            constants.PROJECT_ID: load_balancer.project_id}
+        if load_balancer.availability_zone:
+            store[constants.AVAILABILITY_ZONE] = (
+                self._az_repo.get_availability_zone_metadata_dict(
+                    db_apis.get_session(), load_balancer.availability_zone))
+        else:
+            store[constants.AVAILABILITY_ZONE] = {}
+
         delete_member_tf = self._taskflow_load(
             self._member_flows.get_delete_member_flow(),
-            store={constants.MEMBER: member,
-                   constants.LISTENERS: listeners_dicts,
-                   constants.LOADBALANCER: provider_lb,
-                   constants.LOADBALANCER_ID: load_balancer.id,
-                   constants.POOL_ID: pool.id,
-                   constants.PROJECT_ID: load_balancer.project_id
-                   }
-
+            store=store
         )
         with tf_logging.DynamicLoggingListener(delete_member_tf,
                                                log=LOG):
@@ -513,14 +529,23 @@ class ControllerWorker(base_taskflow.BaseTaskFlowEngine):
         provider_lb = provider_utils.db_loadbalancer_to_provider_loadbalancer(
             load_balancer).to_dict()
 
+        store = {
+            constants.LISTENERS: listeners_dicts,
+            constants.LOADBALANCER_ID: load_balancer.id,
+            constants.LOADBALANCER: provider_lb,
+            constants.POOL_ID: pool.id,
+            constants.PROJECT_ID: load_balancer.project_id}
+        if load_balancer.availability_zone:
+            store[constants.AVAILABILITY_ZONE] = (
+                self._az_repo.get_availability_zone_metadata_dict(
+                    db_apis.get_session(), load_balancer.availability_zone))
+        else:
+            store[constants.AVAILABILITY_ZONE] = {}
+
         batch_update_members_tf = self._taskflow_load(
             self._member_flows.get_batch_update_members_flow(
                 provider_old_members, new_members, updated_members),
-            store={constants.LISTENERS: listeners_dicts,
-                   constants.LOADBALANCER: provider_lb,
-                   constants.LOADBALANCER_ID: load_balancer.id,
-                   constants.POOL_ID: pool.id,
-                   constants.PROJECT_ID: load_balancer.project_id})
+            store=store)
         with tf_logging.DynamicLoggingListener(batch_update_members_tf,
                                                log=LOG):
             batch_update_members_tf.run()
@@ -544,14 +569,23 @@ class ControllerWorker(base_taskflow.BaseTaskFlowEngine):
             provider_utils.db_listeners_to_provider_dicts_list_of_dicts(
                 pool.listeners))
 
+        store = {
+            constants.MEMBER: member,
+            constants.LISTENERS: listeners_dicts,
+            constants.LOADBALANCER_ID: load_balancer.id,
+            constants.LOADBALANCER: provider_lb,
+            constants.POOL_ID: pool.id,
+            constants.UPDATE_DICT: member_updates}
+        if load_balancer.availability_zone:
+            store[constants.AVAILABILITY_ZONE] = (
+                self._az_repo.get_availability_zone_metadata_dict(
+                    db_apis.get_session(), load_balancer.availability_zone))
+        else:
+            store[constants.AVAILABILITY_ZONE] = {}
+
         update_member_tf = self._taskflow_load(
             self._member_flows.get_update_member_flow(),
-            store={constants.MEMBER: member,
-                   constants.LISTENERS: listeners_dicts,
-                   constants.LOADBALANCER: provider_lb,
-                   constants.LOADBALANCER_ID: load_balancer.id,
-                   constants.POOL_ID: pool.id,
-                   constants.UPDATE_DICT: member_updates})
+            store=store)
         with tf_logging.DynamicLoggingListener(update_member_tf,
                                                log=LOG):
             update_member_tf.run()
