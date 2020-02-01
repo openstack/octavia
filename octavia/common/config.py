@@ -186,6 +186,20 @@ amphora_agent_opts = [
                help='The UDP API backend for amphora agent.'),
 ]
 
+compute_opts = [
+    cfg.IntOpt('max_retries', default=15,
+               help=_('The maximum attempts to retry an action with the '
+                      'compute service.')),
+    cfg.IntOpt('retry_interval', default=1,
+               help=_('Seconds to wait before retrying an action with the '
+                      'compute service.')),
+    cfg.IntOpt('retry_backoff', default=1,
+               help=_('The seconds to backoff retry attempts.')),
+    cfg.IntOpt('retry_max', default=10,
+               help=_('The maximum interval in seconds between retry '
+                      'attempts.')),
+]
+
 networking_opts = [
     cfg.IntOpt('max_retries', default=15,
                help=_('The maximum attempts to retry an action with the '
@@ -193,6 +207,11 @@ networking_opts = [
     cfg.IntOpt('retry_interval', default=1,
                help=_('Seconds to wait before retrying an action with the '
                       'networking service.')),
+    cfg.IntOpt('retry_backoff', default=1,
+               help=_('The seconds to backoff retry attempts.')),
+    cfg.IntOpt('retry_max', default=10,
+               help=_('The maximum interval in seconds between retry '
+                      'attempts.')),
     cfg.IntOpt('port_detach_timeout', default=300,
                help=_('Seconds to wait for a port to detach from an '
                       'amphora.')),
@@ -305,6 +324,14 @@ haproxy_amphora_opts = [
                default=2,
                help=_('Retry timeout between connection attempts in '
                       'seconds for active amphora.')),
+    cfg.IntOpt('failover_connection_max_retries',
+               default=2,
+               help=_('Retry threshold for connecting to an amphora in '
+                      'failover.')),
+    cfg.IntOpt('failover_connection_retry_interval',
+               default=5,
+               help=_('Retry timeout between connection attempts in '
+                      'seconds for amphora in failover.')),
     cfg.IntOpt('build_rate_limit',
                default=-1,
                help=_('Number of amphorae that could be built per controller '
@@ -369,6 +396,16 @@ haproxy_amphora_opts = [
                 deprecated_reason='This is now automatically discovered '
                                   ' and configured.',
                 help=_("If False, use sysvinit.")),
+    cfg.IntOpt('api_db_commit_retry_attempts', default=15,
+               help=_('The number of times the database action will be '
+                      'attempted.')),
+    cfg.IntOpt('api_db_commit_retry_initial_delay', default=1,
+               help=_('The initial delay before a retry attempt.')),
+    cfg.IntOpt('api_db_commit_retry_backoff', default=1,
+               help=_('The time to backoff retry attempts.')),
+    cfg.IntOpt('api_db_commit_retry_max', default=5,
+               help=_('The maximum amount of time to wait between retry '
+                      'attempts.')),
 ]
 
 controller_worker_opts = [
@@ -451,7 +488,11 @@ controller_worker_opts = [
                 help=_('If True, build cloud-init user-data that is passed '
                        'to the config drive on Amphora boot instead of '
                        'personality files. If False, utilize personality '
-                       'files.'))
+                       'files.')),
+    cfg.IntOpt('amphora_delete_retries', default=5,
+               help=_('Number of times an amphora delete should be retried.')),
+    cfg.IntOpt('amphora_delete_retry_interval', default=5,
+               help=_('Time, in seconds, between amphora delete retries.')),
 ]
 
 task_flow_opts = [
@@ -779,6 +820,7 @@ driver_agent_opts = [
 cfg.CONF.register_opts(core_opts)
 cfg.CONF.register_opts(api_opts, group='api_settings')
 cfg.CONF.register_opts(amphora_agent_opts, group='amphora_agent')
+cfg.CONF.register_opts(compute_opts, group='compute')
 cfg.CONF.register_opts(networking_opts, group='networking')
 cfg.CONF.register_opts(oslo_messaging_opts, group='oslo_messaging')
 cfg.CONF.register_opts(haproxy_amphora_opts, group='haproxy_amphora')

@@ -71,18 +71,26 @@ class BaseNeutronDriver(base.AbstractNetworkDriver):
                 self._check_extension_cache[extension_alias] = False
         return self._check_extension_cache[extension_alias]
 
-    def _port_to_vip(self, port, load_balancer):
+    def _port_to_vip(self, port, load_balancer, octavia_owned=False):
         fixed_ip = None
         for port_fixed_ip in port.fixed_ips:
             if port_fixed_ip.subnet_id == load_balancer.vip.subnet_id:
                 fixed_ip = port_fixed_ip
                 break
-        return data_models.Vip(ip_address=fixed_ip.ip_address,
-                               subnet_id=fixed_ip.subnet_id,
+        if fixed_ip:
+            return data_models.Vip(ip_address=fixed_ip.ip_address,
+                                   subnet_id=fixed_ip.subnet_id,
+                                   network_id=port.network_id,
+                                   port_id=port.id,
+                                   load_balancer=load_balancer,
+                                   load_balancer_id=load_balancer.id,
+                                   octavia_owned=octavia_owned)
+        return data_models.Vip(ip_address=None, subnet_id=None,
                                network_id=port.network_id,
                                port_id=port.id,
                                load_balancer=load_balancer,
-                               load_balancer_id=load_balancer.id)
+                               load_balancer_id=load_balancer.id,
+                               octavia_owned=octavia_owned)
 
     def _nova_interface_to_octavia_interface(self, compute_id, nova_interface):
         fixed_ips = [utils.convert_fixed_ip_dict_to_model(fixed_ip)
@@ -112,6 +120,7 @@ class BaseNeutronDriver(base.AbstractNetworkDriver):
 
     def _add_security_group_to_port(self, sec_grp_id, port_id):
         port_update = {'port': {'security_groups': [sec_grp_id]}}
+        # Note: Neutron accepts the SG even if it already exists
         try:
             self.neutron_client.update_port(port_id, port_update)
         except neutron_client_exceptions.PortNotFoundClient as e:

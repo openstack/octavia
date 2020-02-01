@@ -16,6 +16,7 @@ from unittest import mock
 from oslo_utils import uuidutils
 
 from octavia.db import models
+from octavia.network import data_models as network_models
 from octavia.network.drivers.noop_driver import driver
 import octavia.tests.unit.base as base
 
@@ -186,6 +187,14 @@ class TestNoopNetworkDriver(base.TestCase):
                                                     self.device_id)]
         )
 
+    def test_get_security_group(self):
+        FAKE_SG_NAME = 'fake_sg_name'
+        result = self.driver.get_security_group(FAKE_SG_NAME)
+
+        self.assertEqual((FAKE_SG_NAME, 'get_security_group'),
+                         self.driver.driver.networkconfigconfig[FAKE_SG_NAME])
+        self.assertTrue(uuidutils.is_uuid_like(result.id))
+
     def test_plug_port(self):
         self.driver.plug_port(self.amphora1, self.port)
         self.assertEqual(
@@ -237,3 +246,50 @@ class TestNoopNetworkDriver(base.TestCase):
             self.driver.driver.networkconfigconfig[self.amphora1.id,
                                                    self.vip.ip_address]
         )
+
+    def test_delete_port(self):
+        PORT_ID = uuidutils.generate_uuid()
+
+        self.driver.delete_port(PORT_ID)
+
+        self.assertEqual((PORT_ID, 'delete_port'),
+                         self.driver.driver.networkconfigconfig[PORT_ID])
+
+    def test_set_port_admin_state_up(self):
+        PORT_ID = uuidutils.generate_uuid()
+
+        self.driver.set_port_admin_state_up(PORT_ID, False)
+
+        self.assertEqual(
+            (PORT_ID, False, 'admin_down_port'),
+            self.driver.driver.networkconfigconfig[(PORT_ID, False)])
+
+    def test_create_port(self):
+        FAKE_NAME = 'fake_name'
+        IP_ADDRESS = '2001:db8::77'
+        NETWORK_ID = uuidutils.generate_uuid()
+        QOS_POLICY_ID = uuidutils.generate_uuid()
+        SUBNET_ID = uuidutils.generate_uuid()
+        FIXED_IPS = [{'ip_address': IP_ADDRESS, 'subnet_id': SUBNET_ID},
+                     {'subnet_id': SUBNET_ID}]
+
+        # Test minimum
+        result = self.driver.create_port(NETWORK_ID)
+
+        self.assertIsInstance(result, network_models.Port)
+        self.assertEqual(NETWORK_ID, result.network_id)
+
+        # Test full parameters
+        result = self.driver.create_port(
+            NETWORK_ID, name=FAKE_NAME, fixed_ips=FIXED_IPS,
+            admin_state_up=False, qos_policy_id=QOS_POLICY_ID)
+
+        self.assertIsInstance(result, network_models.Port)
+        self.assertEqual(NETWORK_ID, result.network_id)
+        self.assertEqual(FAKE_NAME, result.name)
+        self.assertEqual(IP_ADDRESS, result.fixed_ips[0].ip_address)
+        self.assertEqual(SUBNET_ID, result.fixed_ips[0].subnet_id)
+        self.assertEqual('198.51.100.56', result.fixed_ips[1].ip_address)
+        self.assertEqual(SUBNET_ID, result.fixed_ips[1].subnet_id)
+        self.assertEqual(QOS_POLICY_ID, result.qos_policy_id)
+        self.assertFalse(result.admin_state_up)

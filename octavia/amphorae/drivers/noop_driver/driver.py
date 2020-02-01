@@ -114,6 +114,13 @@ class NoopManager(object):
         self.amphoraconfig[amphora.id, agent_config] = (
             amphora.id, agent_config, 'update_amphora_agent_config')
 
+    def get_interface_from_ip(self, amphora, ip_address, timeout_dict=None):
+        LOG.debug("Amphora %s no-op, get interface from amphora %s for IP %s",
+                  self.__class__.__name__, amphora.id, ip_address)
+        if ip_address == '198.51.100.99':
+            return "noop0"
+        return None
+
 
 class NoopAmphoraLoadBalancerDriver(
     driver_base.AmphoraLoadBalancerDriver,
@@ -170,17 +177,19 @@ class NoopAmphoraLoadBalancerDriver(
     def update_amphora_agent_config(self, amphora, agent_config):
         self.driver.update_amphora_agent_config(amphora, agent_config)
 
-    def update_vrrp_conf(self, loadbalancer):
+    def get_interface_from_ip(self, amphora, ip_address, timeout_dict=None):
+        return self.driver.get_interface_from_ip(amphora, ip_address,
+                                                 timeout_dict)
+
+    def update_vrrp_conf(self, loadbalancer, amphorae_network_config, amphora,
+                         timeout_dict=None):
         pass
 
     def stop_vrrp_service(self, loadbalancer):
         pass
 
-    def start_vrrp_service(self, loadbalancer):
+    def start_vrrp_service(self, amphora, timeout_dict=None):
         pass
 
     def reload_vrrp_service(self, loadbalancer):
-        pass
-
-    def get_vrrp_interface(self, amphora):
         pass

@@ -66,6 +66,7 @@ class TestNeutronUtils(base.TestCase):
             project_id=t_constants.MOCK_PROJECT_ID,
             admin_state_up=t_constants.MOCK_ADMIN_STATE_UP,
             fixed_ips=[],
+            security_group_ids=[],
         )
         self._compare_ignore_value_none(model_obj.to_dict(), assert_dict)
         fixed_ips = t_constants.MOCK_NEUTRON_PORT['port']['fixed_ips']

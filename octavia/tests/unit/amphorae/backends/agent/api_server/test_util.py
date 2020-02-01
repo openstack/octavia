@@ -30,6 +30,7 @@ BASE_AMP_PATH = '/var/lib/octavia'
 BASE_CRT_PATH = BASE_AMP_PATH + '/certs'
 CONF = cfg.CONF
 LISTENER_ID1 = uuidutils.generate_uuid()
+LB_ID1 = uuidutils.generate_uuid()
 
 
 class TestUtil(base.TestCase):
@@ -278,3 +279,130 @@ class TestUtil(base.TestCase):
         self.useFixture(test_utils.OpenFixture(path, fake_cfg))
         self.assertRaises(util.ParsingError, util.parse_haproxy_file,
                           LISTENER_ID1)
+
+    @mock.patch('octavia.amphorae.backends.agent.api_server.util.'
+                'get_udp_listeners')
+    @mock.patch('os.makedirs')
+    @mock.patch('os.path.exists')
+    @mock.patch('os.listdir')
+    @mock.patch('os.path.join')
+    @mock.patch('octavia.amphorae.backends.agent.api_server.util.'
+                'get_loadbalancers')
+    @mock.patch('octavia.amphorae.backends.agent.api_server.util'
+                '.haproxy_sock_path')
+    def test_vrrp_check_script_update(self, mock_sock_path, mock_get_lbs,
+                                      mock_join, mock_listdir, mock_exists,
+                                      mock_makedirs, mock_get_listeners):
+        mock_get_lbs.return_value = ['abc', LB_ID1]
+        mock_sock_path.return_value = 'listener.sock'
+        mock_exists.side_effect = [False, False, True]
+        mock_get_lbs.side_effect = [['abc', LB_ID1], ['abc', LB_ID1], []]
+        mock_get_listeners.return_value = []
+
+        # Test the stop action path
+        cmd = 'haproxy-vrrp-check ' + ' '.join(['listener.sock']) + '; exit $?'
+        path = util.keepalived_dir()
+        m = self.useFixture(test_utils.OpenFixture(path)).mock_open
+
+        util.vrrp_check_script_update(LB_ID1, 'stop')
+
+        handle = m()
+        handle.write.assert_called_once_with(cmd)
+
+        # Test the start action path
+        cmd = ('haproxy-vrrp-check ' + ' '.join(['listener.sock',
+                                                 'listener.sock']) + '; exit '
+                                                                     '$?')
+        m = self.useFixture(test_utils.OpenFixture(path)).mock_open
+        util.vrrp_check_script_update(LB_ID1, 'start')
+        handle = m()
+        handle.write.assert_called_once_with(cmd)
+
+        # Test the path with existing keepalived directory and no LBs
+        mock_makedirs.reset_mock()
+        cmd = 'exit 1'
+        m = self.useFixture(test_utils.OpenFixture(path)).mock_open
+
+        util.vrrp_check_script_update(LB_ID1, 'start')
+
+        handle = m()
+        handle.write.assert_called_once_with(cmd)
+        mock_makedirs.assert_has_calls(
+            [mock.call(util.keepalived_dir(), exist_ok=True),
+             mock.call(util.keepalived_check_scripts_dir(), exist_ok=True)])
+
+    @mock.patch('octavia.amphorae.backends.agent.api_server.util.config_path')
+    def test_get_haproxy_vip_addresses(self, mock_cfg_path):
+        FAKE_PATH = 'fake_path'
+        mock_cfg_path.return_value = FAKE_PATH
+        self.useFixture(
+            test_utils.OpenFixture(FAKE_PATH, 'no match')).mock_open()
+
+        # Test with no matching lines in the config file
+        self.assertEqual([], util.get_haproxy_vip_addresses(LB_ID1))
+        mock_cfg_path.assert_called_once_with(LB_ID1)
+
+        # Test with a matching bind line
+        mock_cfg_path.reset_mock()
+        test_data = 'no match\nbind 203.0.113.43:1\nbogus line'
+        self.useFixture(
+            test_utils.OpenFixture(FAKE_PATH, test_data)).mock_open()
+        expected_result = ['203.0.113.43']
+        self.assertEqual(expected_result,
+                         util.get_haproxy_vip_addresses(LB_ID1))
+        mock_cfg_path.assert_called_once_with(LB_ID1)
+
+        # Test with a matching bind line multiple binds
+        mock_cfg_path.reset_mock()
+        test_data = 'no match\nbind 203.0.113.44:1234, 203.0.113.45:4321'
+        self.useFixture(
+            test_utils.OpenFixture(FAKE_PATH, test_data)).mock_open()
+        expected_result = ['203.0.113.44', '203.0.113.45']
+        self.assertEqual(expected_result,
+                         util.get_haproxy_vip_addresses(LB_ID1))
+        mock_cfg_path.assert_called_once_with(LB_ID1)
+
+        # Test with a bogus bind line
+        mock_cfg_path.reset_mock()
+        test_data = 'no match\nbind\nbogus line'
+        self.useFixture(
+            test_utils.OpenFixture(FAKE_PATH, test_data)).mock_open()
+        self.assertEqual([], util.get_haproxy_vip_addresses(LB_ID1))
+        mock_cfg_path.assert_called_once_with(LB_ID1)
+
+    @mock.patch('octavia.amphorae.backends.utils.ip_advertisement.'
+                'send_ip_advertisement')
+    @mock.patch('octavia.amphorae.backends.utils.network_utils.'
+                'get_interface_name')
+    @mock.patch('octavia.amphorae.backends.agent.api_server.util.'
+                'get_haproxy_vip_addresses')
+    def test_send_vip_advertisements(self, mock_get_vip_addrs,
+                                     mock_get_int_name, mock_send_advert):
+        mock_get_vip_addrs.side_effect = [[], ['203.0.113.46'],
+                                          Exception('boom')]
+        mock_get_int_name.return_value = 'fake0'
+
+        # Test no VIPs
+        util.send_vip_advertisements(LB_ID1)
+        mock_get_vip_addrs.assert_called_once_with(LB_ID1)
+        mock_get_int_name.assert_not_called()
+        mock_send_advert.assert_not_called()
+
+        # Test with a VIP
+        mock_get_vip_addrs.reset_mock()
+        mock_get_int_name.reset_mock()
+        mock_send_advert.reset_mock()
+        util.send_vip_advertisements(LB_ID1)
+        mock_get_vip_addrs.assert_called_once_with(LB_ID1)
+        mock_get_int_name.assert_called_once_with(
+            '203.0.113.46', net_ns=consts.AMPHORA_NAMESPACE)
+        mock_send_advert.assert_called_once_with(
+            'fake0', '203.0.113.46', net_ns=consts.AMPHORA_NAMESPACE)
+
+        # Test with an exception (should not raise)
+        mock_get_vip_addrs.reset_mock()
+        mock_get_int_name.reset_mock()
+        mock_send_advert.reset_mock()
+        util.send_vip_advertisements(LB_ID1)
+        mock_get_int_name.assert_not_called()
+        mock_send_advert.assert_not_called()

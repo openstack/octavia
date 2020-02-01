@@ -535,8 +535,9 @@ class TestAmphoraDriverTasks(base.TestCase):
         amphora_update_vrrp_interface_obj = (
             amphora_driver_tasks.AmphoraUpdateVRRPInterface())
         amphora_update_vrrp_interface_obj.execute(_LB_mock)
-        mock_driver.get_vrrp_interface.assert_called_once_with(
-            _db_amphora_mock, timeout_dict=timeout_dict)
+        mock_driver.get_interface_from_ip.assert_called_once_with(
+            _db_amphora_mock, _db_amphora_mock.vrrp_ip,
+            timeout_dict=timeout_dict)
 
         # Test revert
         mock_driver.reset_mock()

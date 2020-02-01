@@ -12,6 +12,7 @@
 #    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 #    License for the specific language governing permissions and limitations
 #    under the License.
+import ipaddress
 
 from oslo_config import cfg
 from oslo_db import exception as odb_exceptions
@@ -187,26 +188,40 @@ class LoadBalancersController(base.BaseController):
                 isinstance(load_balancer.vip_qos_policy_id, wtypes.UnsetType)):
             load_balancer.vip_qos_policy_id = port_qos_policy_id
 
-        # Identify the subnet for this port
         if load_balancer.vip_subnet_id:
+            # If we were provided a subnet_id, validate it exists and that
+            # there is a fixed_ip on the port that matches the provided subnet
             validate.subnet_exists(subnet_id=load_balancer.vip_subnet_id,
                                    context=context)
-        else:
-            if load_balancer.vip_address:
-                for port_fixed_ip in port.fixed_ips:
-                    if port_fixed_ip.ip_address == load_balancer.vip_address:
-                        load_balancer.vip_subnet_id = port_fixed_ip.subnet_id
-                        break
-                if not load_balancer.vip_subnet_id:
-                    raise exceptions.ValidationException(detail=_(
-                        "Specified VIP address not found on the "
-                        "specified VIP port."))
-            elif len(port.fixed_ips) == 1:
-                load_balancer.vip_subnet_id = port.fixed_ips[0].subnet_id
-            else:
+            for port_fixed_ip in port.fixed_ips:
+                if port_fixed_ip.subnet_id == load_balancer.vip_subnet_id:
+                    load_balancer.vip_address = port_fixed_ip.ip_address
+                    break  # Just pick the first address found in the subnet
+            if not load_balancer.vip_address:
                 raise exceptions.ValidationException(detail=_(
-                    "VIP port's subnet could not be determined. Please "
-                    "specify either a VIP subnet or address."))
+                    "No VIP address found on the specified VIP port within "
+                    "the specified subnet."))
+        elif load_balancer.vip_address:
+            normalized_lb_ip = ipaddress.ip_address(
+                load_balancer.vip_address).compressed
+            for port_fixed_ip in port.fixed_ips:
+                normalized_port_ip = ipaddress.ip_address(
+                    port_fixed_ip.ip_address).compressed
+                if normalized_port_ip == normalized_lb_ip:
+                    load_balancer.vip_subnet_id = port_fixed_ip.subnet_id
+                    break
+            if not load_balancer.vip_subnet_id:
+                raise exceptions.ValidationException(detail=_(
+                    "Specified VIP address not found on the "
+                    "specified VIP port."))
+        elif len(port.fixed_ips) == 1:
+            # User provided only a port, get the subnet and address from it
+            load_balancer.vip_subnet_id = port.fixed_ips[0].subnet_id
+            load_balancer.vip_address = port.fixed_ips[0].ip_address
+        else:
+            raise exceptions.ValidationException(detail=_(
+                "VIP port's subnet could not be determined. Please "
+                "specify either a VIP subnet or address."))
 
     def _validate_vip_request_object(self, load_balancer, context=None):
         allowed_network_objects = []
@@ -450,7 +465,10 @@ class LoadBalancersController(base.BaseController):
             # Do the same with the availability_zone dict
             lb_dict['availability_zone'] = az_dict
 
-            # See if the provider driver wants to create the VIP port
+            # See if the provider driver wants to manage the VIP port
+            # This will still be called if the user provided a port to
+            # allow drivers to collect any required information about the
+            # VIP port.
             octavia_owned = False
             try:
                 provider_vip_dict = driver_utils.vip_dict_to_provider_dict(
@@ -469,6 +487,10 @@ class LoadBalancersController(base.BaseController):
                 # we created the VIP
                 if 'port_id' not in vip_dict or not vip_dict['port_id']:
                     octavia_owned = True
+
+            # Check if the driver claims octavia owns the VIP port.
+            if vip.octavia_owned:
+                octavia_owned = True
 
             self.repositories.vip.update(
                 lock_session, db_lb.id, ip_address=vip.ip_address,

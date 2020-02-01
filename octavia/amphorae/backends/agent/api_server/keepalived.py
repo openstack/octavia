@@ -47,6 +47,7 @@ class Keepalived(object):
 
         if not os.path.exists(util.keepalived_dir()):
             os.makedirs(util.keepalived_dir())
+        if not os.path.exists(util.keepalived_check_scripts_dir()):
             os.makedirs(util.keepalived_check_scripts_dir())
 
         conf_file = util.keepalived_cfg_path()
@@ -111,6 +112,9 @@ class Keepalived(object):
                     check_scripts_dir=util.keepalived_check_scripts_dir()
                 )
                 text_file.write(text)
+
+        # Configure the monitoring of haproxy
+        util.vrrp_check_script_update(None, consts.AMP_ACTION_START)
 
         # Make sure the new service is enabled on boot
         if init_system != consts.INIT_UPSTART:

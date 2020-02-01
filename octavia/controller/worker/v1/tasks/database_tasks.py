@@ -449,20 +449,21 @@ class UpdateAmphoraVIPData(BaseDatabaseTask):
 class UpdateAmpFailoverDetails(BaseDatabaseTask):
     """Update amphora failover details in the database."""
 
-    def execute(self, amphora, amp_data):
+    def execute(self, amphora, vip, base_port):
         """Update amphora failover details in the database.
 
         :param amphora: The amphora to update
-        :param amp_data: data_models.Amphora object with update data
+        :param vip: The VIP object associated with this amphora.
+        :param base_port: The base port object associated with the amphora.
         :returns: None
         """
         # role and vrrp_priority will be updated later.
         self.repos.amphora.update(db_apis.get_session(), amphora.id,
-                                  vrrp_ip=amp_data.vrrp_ip,
-                                  ha_ip=amp_data.ha_ip,
-                                  vrrp_port_id=amp_data.vrrp_port_id,
-                                  ha_port_id=amp_data.ha_port_id,
-                                  vrrp_id=amp_data.vrrp_id)
+                                  vrrp_ip=base_port.fixed_ips[0].ip_address,
+                                  ha_ip=vip.ip_address,
+                                  vrrp_port_id=base_port.id,
+                                  ha_port_id=vip.port_id,
+                                  vrrp_id=1)
 
 
 class AssociateFailoverAmphoraWithLBID(BaseDatabaseTask):
@@ -1544,15 +1545,17 @@ class GetAmphoraDetails(BaseDatabaseTask):
 
 
 class GetAmphoraeFromLoadbalancer(BaseDatabaseTask):
-    """Task to pull the listeners from a loadbalancer."""
+    """Task to pull the amphorae from a loadbalancer."""
 
-    def execute(self, loadbalancer):
+    def execute(self, loadbalancer_id):
         """Pull the amphorae from a loadbalancer.
 
-        :param loadbalancer: Load balancer which listeners are required
+        :param loadbalancer_id: Load balancer ID to get amphorae from
         :returns: A list of Listener objects
         """
         amphorae = []
+        loadbalancer = self.loadbalancer_repo.get(db_apis.get_session(),
+                                                  id=loadbalancer_id)
         for amp in loadbalancer.amphorae:
             a = self.amphora_repo.get(db_apis.get_session(), id=amp.id,
                                       show_deleted=False)
@@ -1579,6 +1582,22 @@ class GetListenersFromLoadbalancer(BaseDatabaseTask):
         return listeners
 
 
+class GetLoadBalancer(BaseDatabaseTask):
+    """Get an load balancer object from the database."""
+
+    def execute(self, loadbalancer_id, *args, **kwargs):
+        """Get an load balancer object from the database.
+
+        :param loadbalancer_id: The load balancer ID to lookup
+        :returns: The load balancer object
+        """
+
+        LOG.debug("Get load balancer from DB for load balancer id: %s",
+                  loadbalancer_id)
+        return self.loadbalancer_repo.get(db_apis.get_session(),
+                                          id=loadbalancer_id)
+
+
 class GetVipFromLoadbalancer(BaseDatabaseTask):
     """Task to pull the vip from a loadbalancer."""
 
@@ -1594,25 +1613,23 @@ class GetVipFromLoadbalancer(BaseDatabaseTask):
 class CreateVRRPGroupForLB(BaseDatabaseTask):
     """Create a VRRP group for a load balancer."""
 
-    def execute(self, loadbalancer):
+    def execute(self, loadbalancer_id):
         """Create a VRRP group for a load balancer.
 
-        :param loadbalancer: Load balancer for which a VRRP group
+        :param loadbalancer_id: Load balancer ID for which a VRRP group
                should be created
-        :returns: Updated load balancer
         """
         try:
-            loadbalancer.vrrp_group = self.repos.vrrpgroup.create(
+            self.repos.vrrpgroup.create(
                 db_apis.get_session(),
-                load_balancer_id=loadbalancer.id,
-                vrrp_group_name=str(loadbalancer.id).replace('-', ''),
+                load_balancer_id=loadbalancer_id,
+                vrrp_group_name=str(loadbalancer_id).replace('-', ''),
                 vrrp_auth_type=constants.VRRP_AUTH_DEFAULT,
                 vrrp_auth_pass=uuidutils.generate_uuid().replace('-', '')[0:7],
                 advert_int=CONF.keepalived_vrrp.vrrp_advert_int)
         except odb_exceptions.DBDuplicateEntry:
             LOG.debug('VRRP_GROUP entry already exists for load balancer, '
                       'skipping create.')
-        return loadbalancer
 
 
 class DisableAmphoraHealthMonitoring(BaseDatabaseTask):

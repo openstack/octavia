@@ -48,7 +48,7 @@ VIP_IP = '192.0.5.2'
 VRRP_IP = '192.0.5.3'
 HA_IP = '192.0.5.4'
 AMP_ROLE = 'FAKE_ROLE'
-VRRP_ID = random.randrange(255)
+VRRP_ID = 1
 VRRP_PRIORITY = random.randrange(100)
 CACHED_ZONE = 'zone1'
 IMAGE_ID = uuidutils.generate_uuid()
@@ -489,9 +489,17 @@ class TestDatabaseTasks(base.TestCase):
                                          mock_listener_repo_update,
                                          mock_amphora_repo_update,
                                          mock_amphora_repo_delete):
+        mock_base_port = mock.MagicMock()
+        mock_base_port.id = VRRP_PORT_ID
+        mock_fixed_ip = mock.MagicMock()
+        mock_fixed_ip.ip_address = VRRP_IP
+        mock_base_port.fixed_ips = [mock_fixed_ip]
+        mock_vip = mock.MagicMock()
+        mock_vip.ip_address = HA_IP
+        mock_vip.port_id = HA_PORT_ID
 
         update_amp_fo_details = database_tasks.UpdateAmpFailoverDetails()
-        update_amp_fo_details.execute(_amphora_mock, _amphora_mock)
+        update_amp_fo_details.execute(_amphora_mock, mock_vip, mock_base_port)
 
         mock_amphora_repo_update.assert_called_once_with(
             'TEST',
@@ -1770,9 +1778,11 @@ class TestDatabaseTasks(base.TestCase):
         repo.AmphoraRepository.update.assert_called_once_with(
             'TEST', AMP_ID, role=None, vrrp_priority=None)
 
+    @mock.patch('octavia.db.repositories.LoadBalancerRepository.get')
     @mock.patch('octavia.db.repositories.AmphoraRepository.get')
     def test_get_amphorae_from_loadbalancer(self,
                                             mock_amphora_get,
+                                            mock_lb_get,
                                             mock_generate_uuid,
                                             mock_LOG,
                                             mock_get_session,
@@ -1786,6 +1796,7 @@ class TestDatabaseTasks(base.TestCase):
         amp2.id = uuidutils.generate_uuid()
         lb = mock.MagicMock()
         lb.amphorae = [amp1, amp2]
+        mock_lb_get.return_value = lb
 
         mock_amphora_get.side_effect = [_amphora_mock, None]
 
@@ -1809,6 +1820,23 @@ class TestDatabaseTasks(base.TestCase):
         result = get_list_from_lb_obj.execute(_loadbalancer_mock)
         mock_listener_get.assert_called_once_with('TEST', id=_listener_mock.id)
         self.assertEqual([_listener_mock], result)
+
+    @mock.patch('octavia.db.repositories.LoadBalancerRepository.get')
+    def test_get_loadbalancer(self, mock_lb_get, mock_generate_uuid, mock_LOG,
+                              mock_get_session, mock_loadbalancer_repo_update,
+                              mock_listener_repo_update,
+                              mock_amphora_repo_update,
+                              mock_amphora_repo_delete):
+        FAKE_LB = 'fake LB'
+        LB_ID = uuidutils.generate_uuid()
+        get_loadbalancer_obj = database_tasks.GetLoadBalancer()
+
+        mock_lb_get.return_value = FAKE_LB
+
+        result = get_loadbalancer_obj.execute(LB_ID)
+
+        self.assertEqual(FAKE_LB, result)
+        mock_lb_get.assert_called_once_with('TEST', id=LB_ID)
 
     def test_get_vip_from_loadbalancer(self,
                                        mock_generate_uuid,
@@ -1837,7 +1865,7 @@ class TestDatabaseTasks(base.TestCase):
         mock_get_session.side_effect = ['TEST',
                                         odb_exceptions.DBDuplicateEntry]
         create_vrrp_group = database_tasks.CreateVRRPGroupForLB()
-        create_vrrp_group.execute(_loadbalancer_mock)
+        create_vrrp_group.execute(_loadbalancer_mock.id)
         mock_vrrp_group_create.assert_called_once_with(
             'TEST', load_balancer_id=LB_ID,
             vrrp_group_name=LB_ID.replace('-', ''),
