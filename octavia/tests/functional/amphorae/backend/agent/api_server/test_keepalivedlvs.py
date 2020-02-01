@@ -19,6 +19,8 @@ import subprocess
 import flask
 import mock
 
+from oslo_config import cfg
+from oslo_config import fixture as oslo_fixture
 from oslo_utils import uuidutils
 
 from octavia.amphorae.backends.agent.api_server import keepalivedlvs
@@ -186,9 +188,13 @@ class KeepalivedLvsTestCase(base.TestCase):
             self, m_check_output, m_os_rm, m_os_mkdir, m_exists, m_os_chmod,
             m_os_sysinit, m_copy2, mock_netns, mock_install_netns,
             mock_systemctl):
-        m_exists.side_effect = [False, False, True, True, True, False, False]
+        m_exists.side_effect = [False, False, True, True, False, False, False]
         cfg_path = util.keepalived_lvs_cfg_path(self.FAKE_ID)
         m = self.useFixture(test_utils.OpenFixture(cfg_path)).mock_open
+
+        conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
+        conf.config(group='controller_worker',
+                    loadbalancer_topology=consts.TOPOLOGY_ACTIVE_STANDBY)
 
         with mock.patch('os.open') as m_open, mock.patch.object(os,
                                                                 'fdopen',
@@ -248,10 +254,10 @@ class KeepalivedLvsTestCase(base.TestCase):
     def test_upload_udp_listener_config_start_service_failure(
             self, m_check_output, m_os_rm, m_os_mkdir, m_exists, m_os_chmod,
             m_os_sysinit, m_copy2, mock_install_netns, mock_systemctl):
-        m_exists.side_effect = [False, False, True, True, True, False]
-        m_check_output.side_effect = subprocess.CalledProcessError(1, 'blah!')
+        m_exists.side_effect = [False, False, True, True, False]
         cfg_path = util.keepalived_lvs_cfg_path(self.FAKE_ID)
         m = self.useFixture(test_utils.OpenFixture(cfg_path)).mock_open
+        mock_systemctl.side_effect = [mock.DEFAULT, Exception('boom')]
 
         with mock.patch('os.open') as m_open, mock.patch.object(os,
                                                                 'fdopen',

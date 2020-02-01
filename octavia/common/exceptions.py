@@ -204,7 +204,8 @@ class ComputeBuildQueueTimeoutException(OctaviaException):
 
 
 class ComputeDeleteException(OctaviaException):
-    message = _('Failed to delete compute instance.')
+    message = _('Failed to delete compute instance. The compute service '
+                'reports: %(compute_msg)s')
 
 
 class ComputeGetException(OctaviaException):
@@ -243,6 +244,14 @@ class GlanceNoTaggedImages(OctaviaException):
 # on the instance
 class ComputeWaitTimeoutException(OctaviaException):
     message = _('Waiting for compute id %(id)s to go active timeout.')
+
+
+class ComputePortInUseException(OctaviaException):
+    message = _('Compute driver reports port %(port)s is already in use.')
+
+
+class ComputeUnknownException(OctaviaException):
+    message = _('Unknown exception from the compute driver: %(exc)s.')
 
 
 class InvalidTopology(OctaviaException):
@@ -398,3 +407,12 @@ class VolumeDeleteException(OctaviaException):
 
 class VolumeGetException(OctaviaException):
     message = _('Failed to retrieve volume instance.')
+
+
+class NetworkServiceError(OctaviaException):
+    message = _('The networking service had a failure: %(net_error)s')
+
+
+class InvalidIPAddress(APIException):
+    msg = _('The IP Address %(ip_addr)s is invalid.')
+    code = 400

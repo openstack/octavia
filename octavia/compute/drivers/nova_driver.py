@@ -196,9 +196,9 @@ class VirtualMachineManager(compute_base.ComputeBase):
         except nova_exceptions.NotFound:
             LOG.warning("Nova instance with id: %s not found. "
                         "Assuming already deleted.", compute_id)
-        except Exception:
+        except Exception as e:
             LOG.exception("Error deleting nova virtual machine.")
-            raise exceptions.ComputeDeleteException()
+            raise exceptions.ComputeDeleteException(compute_msg=str(e))
 
     def status(self, compute_id):
         '''Retrieve the status of a virtual machine.
@@ -334,8 +334,8 @@ class VirtualMachineManager(compute_base.ComputeBase):
             LOG.exception("Error delete server group instance.")
             raise exceptions.ServerGroupObjectDeleteException()
 
-    def attach_network_or_port(self, compute_id, network_id, ip_address=None,
-                               port_id=None):
+    def attach_network_or_port(self, compute_id, network_id=None,
+                               ip_address=None, port_id=None):
         """Attaching a port or a network to an existing amphora
 
         :param compute_id: id of an amphora in the compute service
@@ -343,13 +343,39 @@ class VirtualMachineManager(compute_base.ComputeBase):
         :param ip_address: ip address to attempt to be assigned to interface
         :param port_id: id of the neutron port
         :return: nova interface instance
-        :raises: Exception
+        :raises ComputePortInUseException: The port is in use somewhere else
+        :raises ComputeUnknownException: Unknown nova error
         """
         try:
             interface = self.manager.interface_attach(
                 server=compute_id, net_id=network_id, fixed_ip=ip_address,
                 port_id=port_id)
-        except Exception:
+        except nova_exceptions.Conflict as e:
+            # The port is already in use.
+            if port_id:
+                # Check if the port we want is already attached
+                try:
+                    interfaces = self.manager.interface_list(compute_id)
+                    for interface in interfaces:
+                        if interface.id == port_id:
+                            return interface
+                except Exception as e:
+                    raise exceptions.ComputeUnknownException(exc=str(e))
+
+                raise exceptions.ComputePortInUseException(port=port_id)
+
+            # Nova should have created the port, so something is really
+            # wrong in nova if we get here.
+            raise exceptions.ComputeUnknownException(exc=str(e))
+        except nova_exceptions.NotFound as e:
+            if 'Instance' in str(e):
+                raise exceptions.NotFound(resource='Instance', id=compute_id)
+            if 'Network' in str(e):
+                raise exceptions.NotFound(resource='Network', id=network_id)
+            if 'Port' in str(e):
+                raise exceptions.NotFound(resource='Port', id=port_id)
+            raise exceptions.NotFound(resource=str(e), id=compute_id)
+        except Exception as e:
             LOG.error('Error attaching network %(network_id)s with ip '
                       '%(ip_address)s and port %(port)s to amphora '
                       '(compute_id: %(compute_id)s) ',
@@ -359,7 +385,7 @@ class VirtualMachineManager(compute_base.ComputeBase):
                           'ip_address': ip_address,
                           'port': port_id
                       })
-            raise
+            raise exceptions.ComputeUnknownException(exc=str(e))
         return interface
 
     def detach_port(self, compute_id, port_id):

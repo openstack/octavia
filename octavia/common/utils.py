@@ -30,6 +30,8 @@ from oslo_utils import excutils
 import six
 from stevedore import driver as stevedore_driver
 
+from octavia.common import constants
+
 CONF = cfg.CONF
 
 LOG = logging.getLogger(__name__)
@@ -51,6 +53,15 @@ def base64_sha1_string(string_to_hash):
     return re.sub(r"^-", "x", b64_sha1)
 
 
+def get_amphora_driver():
+    amphora_driver = stevedore_driver.DriverManager(
+        namespace='octavia.amphora.drivers',
+        name=CONF.controller_worker.amphora_driver,
+        invoke_on_load=True
+    ).driver
+    return amphora_driver
+
+
 def get_network_driver():
     CONF.import_group('controller_worker', 'octavia.common.config')
     network_driver = stevedore_driver.DriverManager(
@@ -59,6 +70,12 @@ def get_network_driver():
         invoke_on_load=True
     ).driver
     return network_driver
+
+
+def is_ipv4(ip_address):
+    """Check if ip address is IPv4 address."""
+    ip = netaddr.IPAddress(ip_address)
+    return ip.version == 4
 
 
 def is_ipv6(ip_address):
@@ -98,6 +115,12 @@ def ip_netmask_to_cidr(ip, netmask):
             "{ip}/{netmask}".format(ip=ip, netmask=netmask)
         )
     return "{ip}/{netmask}".format(ip=net.network, netmask=net.prefixlen)
+
+
+def get_vip_security_group_name(loadbalancer_id):
+    if loadbalancer_id:
+        return constants.VIP_SECURITY_GROUP_PREFIX + loadbalancer_id
+    return None
 
 
 def get_six_compatible_value(value, six_type=six.string_types):

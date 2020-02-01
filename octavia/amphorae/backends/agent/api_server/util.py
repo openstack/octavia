@@ -12,7 +12,7 @@
 # License for the specific language governing permissions and limitations
 #    under the License.
 
-
+import errno
 import os
 import re
 import stat
@@ -23,6 +23,8 @@ from oslo_config import cfg
 from oslo_log import log as logging
 
 from octavia.amphorae.backends.agent.api_server import osutils
+from octavia.amphorae.backends.utils import ip_advertisement
+from octavia.amphorae.backends.utils import network_utils
 from octavia.common import constants as consts
 
 CONF = cfg.CONF
@@ -188,7 +190,7 @@ def get_listeners():
 def get_loadbalancers():
     """Get Load balancers
 
-    :returns: An array with the ids of all load balancers,
+    :returns: An array with the uuids of all load balancers,
               e.g. ['123', '456', ...] or [] if no loadbalancers exist
     """
     if os.path.exists(CONF.haproxy_amphora.base_path):
@@ -332,3 +334,75 @@ def parse_haproxy_file(lb_id):
         stats_socket = m.group(1)
 
         return stats_socket, listeners
+
+
+def vrrp_check_script_update(lb_id, action):
+    try:
+        os.makedirs(keepalived_dir())
+        os.makedirs(keepalived_check_scripts_dir())
+    except OSError as e:
+        if e.errno != errno.EEXIST:
+            raise
+
+    lb_ids = get_loadbalancers()
+    udp_ids = get_udp_listeners()
+    # If no LBs are found, so make sure keepalived thinks haproxy is down.
+    if not lb_ids:
+        if not udp_ids:
+            with open(haproxy_check_script_path(), 'w') as text_file:
+                text_file.write('exit 1')
+        return
+    if action == consts.AMP_ACTION_STOP:
+        lb_ids.remove(lb_id)
+    args = []
+    for lbid in lb_ids:
+        args.append(haproxy_sock_path(lbid))
+
+    cmd = 'haproxy-vrrp-check {args}; exit $?'.format(args=' '.join(args))
+    with open(haproxy_check_script_path(), 'w') as text_file:
+        text_file.write(cmd)
+
+
+def get_haproxy_vip_addresses(lb_id):
+    """Get the VIP addresses for a load balancer.
+
+    :param lb_id: The load balancer ID to get VIP addresses from.
+    :returns: List of VIP addresses (IPv4 and IPv6)
+    """
+    vips = []
+    with open(config_path(lb_id), 'r') as file:
+        for line in file:
+            current_line = line.strip()
+            if current_line.startswith('bind'):
+                for section in current_line.split(' '):
+                    # We will always have a port assigned per the template.
+                    if ':' in section:
+                        if ',' in section:
+                            addr_port = section.rstrip(',')
+                            vips.append(addr_port.rpartition(':')[0])
+                        else:
+                            vips.append(section.rpartition(':')[0])
+                            break
+    return vips
+
+
+def send_vip_advertisements(lb_id):
+    """Sends address advertisements for each load balancer VIP.
+
+    This method will send either GARP (IPv4) or neighbor advertisements (IPv6)
+    for the VIP addresses on a load balancer.
+
+    :param lb_id: The load balancer ID to send advertisements for.
+    :returns: None
+    """
+    try:
+        vips = get_haproxy_vip_addresses(lb_id)
+
+        for vip in vips:
+            interface = network_utils.get_interface_name(
+                vip, net_ns=consts.AMPHORA_NAMESPACE)
+            ip_advertisement.send_ip_advertisement(
+                interface, vip, net_ns=consts.AMPHORA_NAMESPACE)
+    except Exception as e:
+        LOG.debug('Send VIP advertisement failed due to :%s. '
+                  'This amphora may not be the MASTER. Ignoring.', str(e))

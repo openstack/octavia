@@ -342,15 +342,65 @@ class TestAllowedAddressPairsDriver(base.TestCase):
         for amp in amps:
             mock_plug_aap.assert_any_call(lb, lb.vip, amp, subnet)
 
-    def test_update_vip_sg(self):
-        lb = dmh.generate_load_balancer_tree()
-        list_security_groups = self.driver.neutron_client.list_security_groups
-        list_security_groups.return_value = {
-            'security_groups': [
-                {'id': 'lb-sec-grp1'}
-            ]
-        }
-        self.driver.update_vip_sg(lb, lb.vip)
+    @mock.patch('octavia.common.utils.get_vip_security_group_name')
+    def test_update_vip_sg(self, mock_get_sg_name):
+        LB_ID = uuidutils.generate_uuid()
+        SG_ID = uuidutils.generate_uuid()
+        VIP_PORT_ID = uuidutils.generate_uuid()
+        TEST_SG_NAME = 'test_SG_name'
+        lb_mock = mock.MagicMock()
+        lb_mock.id = LB_ID
+        vip_mock = mock.MagicMock()
+        vip_mock.port_id = VIP_PORT_ID
+        security_group_dict = {'id': SG_ID}
+        mock_get_sg_name.return_value = TEST_SG_NAME
+
+        test_driver = allowed_address_pairs.AllowedAddressPairsDriver()
+
+        test_driver._add_vip_security_group_to_port = mock.MagicMock()
+        test_driver._create_security_group = mock.MagicMock()
+        test_driver._get_lb_security_group = mock.MagicMock()
+        test_driver._update_security_group_rules = mock.MagicMock()
+        test_driver._get_lb_security_group.side_effect = [security_group_dict,
+                                                          None]
+        test_driver._create_security_group.return_value = security_group_dict
+
+        # Test security groups disabled
+        test_driver.sec_grp_enabled = False
+
+        result = test_driver.update_vip_sg(lb_mock, vip_mock)
+
+        self.assertIsNone(result)
+        test_driver._add_vip_security_group_to_port.assert_not_called()
+        test_driver._get_lb_security_group.assert_not_called()
+        test_driver._update_security_group_rules.assert_not_called()
+
+        # Test by security group ID
+        test_driver.sec_grp_enabled = True
+
+        result = test_driver.update_vip_sg(lb_mock, vip_mock)
+
+        self.assertEqual(SG_ID, result)
+        test_driver._update_security_group_rules.assert_called_once_with(
+            lb_mock, SG_ID)
+        test_driver._add_vip_security_group_to_port.assert_called_once_with(
+            LB_ID, VIP_PORT_ID, SG_ID)
+
+        # Test by security group name
+        test_driver._add_vip_security_group_to_port.reset_mock()
+        test_driver._get_lb_security_group.reset_mock()
+        test_driver._update_security_group_rules.reset_mock()
+
+        result = test_driver.update_vip_sg(lb_mock, vip_mock)
+
+        self.assertEqual(SG_ID, result)
+        mock_get_sg_name.assert_called_once_with(LB_ID)
+        test_driver._create_security_group.assert_called_once_with(
+            TEST_SG_NAME)
+        test_driver._update_security_group_rules.assert_called_once_with(
+            lb_mock, SG_ID)
+        test_driver._add_vip_security_group_to_port.assert_called_once_with(
+            LB_ID, VIP_PORT_ID, SG_ID)
 
     def test_plug_aap_port(self):
         lb = dmh.generate_load_balancer_tree()
@@ -453,12 +503,38 @@ class TestAllowedAddressPairsDriver(base.TestCase):
                                     t_constants.MOCK_VRRP_IP2])
         self.assertEqual(lb.vip.ip_address, amp.ha_ip)
 
+    def test_validate_fixed_ip(self):
+        IP_ADDRESS = '203.0.113.61'
+        OTHER_IP_ADDRESS = '203.0.113.62'
+        SUBNET_ID = uuidutils.generate_uuid()
+        OTHER_SUBNET_ID = uuidutils.generate_uuid()
+        fixed_ip_mock = mock.MagicMock()
+        fixed_ip_mock.subnet_id = SUBNET_ID
+        fixed_ip_mock.ip_address = IP_ADDRESS
+
+        # valid
+        result = self.driver._validate_fixed_ip([fixed_ip_mock], SUBNET_ID,
+                                                IP_ADDRESS)
+        self.assertTrue(result)
+
+        # no subnet match
+        result = self.driver._validate_fixed_ip(
+            [fixed_ip_mock], OTHER_SUBNET_ID, IP_ADDRESS)
+        self.assertFalse(result)
+
+        # no IP match
+        result = self.driver._validate_fixed_ip([fixed_ip_mock], SUBNET_ID,
+                                                OTHER_IP_ADDRESS)
+        self.assertFalse(result)
+
     def test_allocate_vip_when_port_already_provided(self):
         show_port = self.driver.neutron_client.show_port
         show_port.return_value = t_constants.MOCK_NEUTRON_PORT
         fake_lb_vip = data_models.Vip(
             port_id=t_constants.MOCK_PORT_ID,
-            subnet_id=t_constants.MOCK_SUBNET_ID)
+            subnet_id=t_constants.MOCK_SUBNET_ID,
+            network_id=t_constants.MOCK_NETWORK_ID,
+            ip_address=t_constants.MOCK_IP_ADDRESS)
         fake_lb = data_models.LoadBalancer(id='1', vip=fake_lb_vip)
         vip = self.driver.allocate_vip(fake_lb)
         self.assertIsInstance(vip, data_models.Vip)
@@ -466,6 +542,108 @@ class TestAllowedAddressPairsDriver(base.TestCase):
         self.assertEqual(t_constants.MOCK_SUBNET_ID, vip.subnet_id)
         self.assertEqual(t_constants.MOCK_PORT_ID, vip.port_id)
         self.assertEqual(fake_lb.id, vip.load_balancer_id)
+
+    @mock.patch('octavia.network.drivers.neutron.base.BaseNeutronDriver.'
+                '_check_extension_enabled', return_value=True)
+    def test_allocate_vip_with_port_mismatch(self, mock_check_ext):
+        bad_existing_port = mock.MagicMock()
+        bad_existing_port.port_id = uuidutils.generate_uuid()
+        bad_existing_port.network_id = uuidutils.generate_uuid()
+        bad_existing_port.subnet_id = uuidutils.generate_uuid()
+        show_port = self.driver.neutron_client.show_port
+        show_port.return_value = bad_existing_port
+        port_create_dict = copy.deepcopy(t_constants.MOCK_NEUTRON_PORT)
+        port_create_dict['port']['device_owner'] = (
+            allowed_address_pairs.OCTAVIA_OWNER)
+        port_create_dict['port']['device_id'] = 'lb-1'
+        create_port = self.driver.neutron_client.create_port
+        create_port.return_value = port_create_dict
+        show_subnet = self.driver.neutron_client.show_subnet
+        show_subnet.return_value = {'subnet': {
+            'id': t_constants.MOCK_SUBNET_ID,
+            'network_id': t_constants.MOCK_NETWORK_ID
+        }}
+        fake_lb_vip = data_models.Vip(subnet_id=t_constants.MOCK_SUBNET_ID,
+                                      network_id=t_constants.MOCK_NETWORK_ID,
+                                      port_id=t_constants.MOCK_PORT_ID,
+                                      octavia_owned=True)
+        fake_lb = data_models.LoadBalancer(id='1', vip=fake_lb_vip,
+                                           project_id='test-project')
+        vip = self.driver.allocate_vip(fake_lb)
+        exp_create_port_call = {
+            'port': {
+                'name': 'octavia-lb-1',
+                'network_id': t_constants.MOCK_NETWORK_ID,
+                'device_id': 'lb-1',
+                'device_owner': allowed_address_pairs.OCTAVIA_OWNER,
+                'admin_state_up': False,
+                'project_id': 'test-project',
+                'fixed_ips': [{'subnet_id': t_constants.MOCK_SUBNET_ID}]
+            }
+        }
+        self.driver.neutron_client.delete_port.assert_called_once_with(
+            t_constants.MOCK_PORT_ID)
+        create_port.assert_called_once_with(exp_create_port_call)
+        self.assertIsInstance(vip, data_models.Vip)
+        self.assertEqual(t_constants.MOCK_IP_ADDRESS, vip.ip_address)
+        self.assertEqual(t_constants.MOCK_SUBNET_ID, vip.subnet_id)
+        self.assertEqual(t_constants.MOCK_PORT_ID, vip.port_id)
+        self.assertEqual(fake_lb.id, vip.load_balancer_id)
+
+    @mock.patch('octavia.network.drivers.neutron.base.BaseNeutronDriver.'
+                'get_port', side_effect=network_base.PortNotFound)
+    @mock.patch('octavia.network.drivers.neutron.base.BaseNeutronDriver.'
+                '_check_extension_enabled', return_value=True)
+    def test_allocate_vip_when_port_not_found(self, mock_check_ext,
+                                              mock_get_port):
+        port_create_dict = copy.deepcopy(t_constants.MOCK_NEUTRON_PORT)
+        port_create_dict['port']['device_owner'] = (
+            allowed_address_pairs.OCTAVIA_OWNER)
+        port_create_dict['port']['device_id'] = 'lb-1'
+        create_port = self.driver.neutron_client.create_port
+        create_port.return_value = port_create_dict
+        show_subnet = self.driver.neutron_client.show_subnet
+        show_subnet.return_value = {'subnet': {
+            'id': t_constants.MOCK_SUBNET_ID,
+            'network_id': t_constants.MOCK_NETWORK_ID
+        }}
+        fake_lb_vip = data_models.Vip(subnet_id=t_constants.MOCK_SUBNET_ID,
+                                      network_id=t_constants.MOCK_NETWORK_ID,
+                                      port_id=t_constants.MOCK_PORT_ID)
+        fake_lb = data_models.LoadBalancer(id='1', vip=fake_lb_vip,
+                                           project_id='test-project')
+        vip = self.driver.allocate_vip(fake_lb)
+        exp_create_port_call = {
+            'port': {
+                'name': 'octavia-lb-1',
+                'network_id': t_constants.MOCK_NETWORK_ID,
+                'device_id': 'lb-1',
+                'device_owner': allowed_address_pairs.OCTAVIA_OWNER,
+                'admin_state_up': False,
+                'project_id': 'test-project',
+                'fixed_ips': [{'subnet_id': t_constants.MOCK_SUBNET_ID}]
+            }
+        }
+        create_port.assert_called_once_with(exp_create_port_call)
+        self.assertIsInstance(vip, data_models.Vip)
+        self.assertEqual(t_constants.MOCK_IP_ADDRESS, vip.ip_address)
+        self.assertEqual(t_constants.MOCK_SUBNET_ID, vip.subnet_id)
+        self.assertEqual(t_constants.MOCK_PORT_ID, vip.port_id)
+        self.assertEqual(fake_lb.id, vip.load_balancer_id)
+
+    @mock.patch('octavia.network.drivers.neutron.base.BaseNeutronDriver.'
+                'get_port', side_effect=Exception('boom'))
+    @mock.patch('octavia.network.drivers.neutron.base.BaseNeutronDriver.'
+                '_check_extension_enabled', return_value=True)
+    def test_allocate_vip_unkown_exception(self, mock_check_ext,
+                                           mock_get_port):
+        fake_lb_vip = data_models.Vip(subnet_id=t_constants.MOCK_SUBNET_ID,
+                                      network_id=t_constants.MOCK_NETWORK_ID,
+                                      port_id=t_constants.MOCK_PORT_ID)
+        fake_lb = data_models.LoadBalancer(id='1', vip=fake_lb_vip,
+                                           project_id='test-project')
+        self.assertRaises(network_base.AllocateVIPException,
+                          self.driver.allocate_vip, fake_lb)
 
     def test_allocate_vip_when_port_creation_fails(self):
         fake_lb_vip = data_models.Vip(
@@ -510,6 +688,77 @@ class TestAllowedAddressPairsDriver(base.TestCase):
         self.assertIsInstance(vip, data_models.Vip)
         self.assertEqual(t_constants.MOCK_IP_ADDRESS, vip.ip_address)
         self.assertEqual(t_constants.MOCK_SUBNET_ID, vip.subnet_id)
+        self.assertEqual(t_constants.MOCK_PORT_ID, vip.port_id)
+        self.assertEqual(fake_lb.id, vip.load_balancer_id)
+
+    @mock.patch('octavia.network.drivers.neutron.base.BaseNeutronDriver.'
+                '_check_extension_enabled', return_value=True)
+    def test_allocate_vip_when_no_port_fixed_ip(self, mock_check_ext):
+        port_create_dict = copy.deepcopy(t_constants.MOCK_NEUTRON_PORT)
+        port_create_dict['port']['device_owner'] = (
+            allowed_address_pairs.OCTAVIA_OWNER)
+        port_create_dict['port']['device_id'] = 'lb-1'
+        create_port = self.driver.neutron_client.create_port
+        create_port.return_value = port_create_dict
+        show_subnet = self.driver.neutron_client.show_subnet
+        show_subnet.return_value = {'subnet': {
+            'id': t_constants.MOCK_SUBNET_ID,
+            'network_id': t_constants.MOCK_NETWORK_ID
+        }}
+        fake_lb_vip = data_models.Vip(subnet_id=t_constants.MOCK_SUBNET_ID,
+                                      network_id=t_constants.MOCK_NETWORK_ID,
+                                      ip_address=t_constants.MOCK_IP_ADDRESS)
+        fake_lb = data_models.LoadBalancer(id='1', vip=fake_lb_vip,
+                                           project_id='test-project')
+        vip = self.driver.allocate_vip(fake_lb)
+        exp_create_port_call = {
+            'port': {
+                'name': 'octavia-lb-1',
+                'network_id': t_constants.MOCK_NETWORK_ID,
+                'device_id': 'lb-1',
+                'device_owner': allowed_address_pairs.OCTAVIA_OWNER,
+                'admin_state_up': False,
+                'project_id': 'test-project',
+                'fixed_ips': [{'subnet_id': t_constants.MOCK_SUBNET_ID,
+                               'ip_address': t_constants.MOCK_IP_ADDRESS}]
+            }
+        }
+        create_port.assert_called_once_with(exp_create_port_call)
+        self.assertIsInstance(vip, data_models.Vip)
+        self.assertEqual(t_constants.MOCK_IP_ADDRESS, vip.ip_address)
+        self.assertEqual(t_constants.MOCK_SUBNET_ID, vip.subnet_id)
+        self.assertEqual(t_constants.MOCK_PORT_ID, vip.port_id)
+        self.assertEqual(fake_lb.id, vip.load_balancer_id)
+
+    @mock.patch('octavia.network.drivers.neutron.base.BaseNeutronDriver.'
+                '_check_extension_enabled', return_value=True)
+    def test_allocate_vip_when_no_port_no_fixed_ip(self, mock_check_ext):
+        port_create_dict = copy.deepcopy(t_constants.MOCK_NEUTRON_PORT)
+        port_create_dict['port']['device_owner'] = (
+            allowed_address_pairs.OCTAVIA_OWNER)
+        port_create_dict['port']['device_id'] = 'lb-1'
+        create_port = self.driver.neutron_client.create_port
+        create_port.return_value = port_create_dict
+        show_subnet = self.driver.neutron_client.show_subnet
+        show_subnet.return_value = {'subnet': {
+            'id': t_constants.MOCK_SUBNET_ID,
+            'network_id': t_constants.MOCK_NETWORK_ID
+        }}
+        fake_lb_vip = data_models.Vip(network_id=t_constants.MOCK_NETWORK_ID)
+        fake_lb = data_models.LoadBalancer(id='1', vip=fake_lb_vip,
+                                           project_id='test-project')
+        vip = self.driver.allocate_vip(fake_lb)
+        exp_create_port_call = {
+            'port': {
+                'name': 'octavia-lb-1',
+                'network_id': t_constants.MOCK_NETWORK_ID,
+                'device_id': 'lb-1',
+                'device_owner': allowed_address_pairs.OCTAVIA_OWNER,
+                'admin_state_up': False,
+                'project_id': 'test-project'}
+        }
+        create_port.assert_called_once_with(exp_create_port_call)
+        self.assertIsInstance(vip, data_models.Vip)
         self.assertEqual(t_constants.MOCK_PORT_ID, vip.port_id)
         self.assertEqual(fake_lb.id, vip.load_balancer_id)
 
@@ -627,8 +876,8 @@ class TestAllowedAddressPairsDriver(base.TestCase):
     def test_plug_network_when_compute_instance_cant_be_found(self):
         net_id = t_constants.MOCK_NOVA_INTERFACE.net_id
         network_attach = self.driver.compute.attach_network_or_port
-        network_attach.side_effect = nova_exceptions.NotFound(
-            404, message='Instance not found')
+        network_attach.side_effect = exceptions.NotFound(
+            resource='Instance not found', id=1)
         self.assertRaises(network_base.AmphoraNotFound,
                           self.driver.plug_network,
                           t_constants.MOCK_COMPUTE_ID, net_id)
@@ -963,20 +1212,20 @@ class TestAllowedAddressPairsDriver(base.TestCase):
                                                port_id=self.PORT_ID)
 
         # NotFound cases
-        network_attach.side_effect = nova_exceptions.NotFound(
-            1, message='Instance')
+        network_attach.side_effect = exceptions.NotFound(
+            resource='Instance', id=1)
         self.assertRaises(network_base.AmphoraNotFound,
                           self.driver.plug_port,
                           amphora,
                           port)
-        network_attach.side_effect = nova_exceptions.NotFound(
-            1, message='Network')
+        network_attach.side_effect = exceptions.NotFound(
+            resource='Network', id=1)
         self.assertRaises(network_base.NetworkNotFound,
                           self.driver.plug_port,
                           amphora,
                           port)
-        network_attach.side_effect = nova_exceptions.NotFound(
-            1, message='bogus')
+        network_attach.side_effect = exceptions.NotFound(
+            resource='bogus', id=1)
         self.assertRaises(network_base.PlugNetworkException,
                           self.driver.plug_port,
                           amphora,
@@ -1101,3 +1350,157 @@ class TestAllowedAddressPairsDriver(base.TestCase):
         self.assertRaises(network_base.TimeoutException,
                           self.driver.wait_for_port_detach,
                           amphora)
+
+    def test_delete_port(self):
+        PORT_ID = uuidutils.generate_uuid()
+
+        self.driver.neutron_client.delete_port.side_effect = [
+            mock.DEFAULT, neutron_exceptions.NotFound, Exception('boom')]
+
+        # Test successful delete
+        self.driver.delete_port(PORT_ID)
+
+        self.driver.neutron_client.delete_port.assert_called_once_with(PORT_ID)
+
+        # Test port NotFound (does not raise)
+        self.driver.delete_port(PORT_ID)
+
+        # Test unknown exception
+        self.assertRaises(exceptions.NetworkServiceError,
+                          self.driver.delete_port, PORT_ID)
+
+    def test_set_port_admin_state_up(self):
+        PORT_ID = uuidutils.generate_uuid()
+        TEST_STATE = 'test state'
+
+        self.driver.neutron_client.update_port.side_effect = [
+            mock.DEFAULT, neutron_exceptions.NotFound, Exception('boom')]
+
+        # Test successful state set
+        self.driver.set_port_admin_state_up(PORT_ID, TEST_STATE)
+
+        self.driver.neutron_client.update_port.assert_called_once_with(
+            PORT_ID, {'port': {'admin_state_up': TEST_STATE}})
+
+        # Test port NotFound
+        self.assertRaises(network_base.PortNotFound,
+                          self.driver.set_port_admin_state_up,
+                          PORT_ID, {'port': {'admin_state_up': TEST_STATE}})
+
+        # Test unknown exception
+        self.assertRaises(exceptions.NetworkServiceError,
+                          self.driver.set_port_admin_state_up, PORT_ID,
+                          {'port': {'admin_state_up': TEST_STATE}})
+
+    def test_create_port(self):
+        ADMIN_STATE_UP = False
+        FAKE_NAME = 'fake_name'
+        IP_ADDRESS1 = '203.0.113.71'
+        IP_ADDRESS2 = '203.0.113.72'
+        IP_ADDRESS3 = '203.0.113.73'
+        NETWORK_ID = uuidutils.generate_uuid()
+        QOS_POLICY_ID = uuidutils.generate_uuid()
+        SECONDARY_IPS = [IP_ADDRESS2, IP_ADDRESS3]
+        SECURITY_GROUP_ID = uuidutils.generate_uuid()
+        SUBNET1_ID = uuidutils.generate_uuid()
+        FIXED_IPS = [{'subnet_id': SUBNET1_ID, 'ip_address': IP_ADDRESS1}]
+
+        MOCK_NEUTRON_PORT = {'port': {
+            'network_id': NETWORK_ID, 'device_id': t_constants.MOCK_DEVICE_ID,
+            'device_owner': t_constants.MOCK_DEVICE_OWNER,
+            'id': t_constants.MOCK_PORT_ID, 'name': FAKE_NAME,
+            'tenant_id': t_constants.MOCK_PROJECT_ID,
+            'admin_state_up': ADMIN_STATE_UP,
+            'status': t_constants.MOCK_STATUS,
+            'mac_address': t_constants.MOCK_MAC_ADDR,
+            'fixed_ips': [{'ip_address': IP_ADDRESS1,
+                           'subnet_id': SUBNET1_ID}],
+            'security_groups': [],
+            'qos_policy_id': QOS_POLICY_ID}}
+
+        reference_port_dict = {'admin_state_up': ADMIN_STATE_UP,
+                               'device_id': t_constants.MOCK_DEVICE_ID,
+                               'device_owner': t_constants.MOCK_DEVICE_OWNER,
+                               'fixed_ips': [],
+                               'id': t_constants.MOCK_PORT_ID,
+                               'mac_address': t_constants.MOCK_MAC_ADDR,
+                               'name': FAKE_NAME,
+                               'network': None,
+                               'network_id': NETWORK_ID,
+                               'project_id': t_constants.MOCK_PROJECT_ID,
+                               'qos_policy_id': QOS_POLICY_ID,
+                               'security_group_ids': [],
+                               'status': t_constants.MOCK_STATUS}
+
+        self.driver.neutron_client.create_port.side_effect = [
+            MOCK_NEUTRON_PORT, MOCK_NEUTRON_PORT, Exception('boom')]
+
+        # Test successful path
+        result = self.driver.create_port(
+            NETWORK_ID, name=FAKE_NAME, fixed_ips=FIXED_IPS,
+            secondary_ips=SECONDARY_IPS,
+            security_group_ids=[SECURITY_GROUP_ID], admin_state_up=False,
+            qos_policy_id=QOS_POLICY_ID)
+
+        self.assertEqual(reference_port_dict, result.to_dict())
+        self.driver.neutron_client.create_port.assert_called_once_with(
+            {'port': {
+                'network_id': NETWORK_ID, 'admin_state_up': ADMIN_STATE_UP,
+                'device_owner': allowed_address_pairs.OCTAVIA_OWNER,
+                'allowed_address_pairs': [
+                    {'ip_address': IP_ADDRESS2}, {'ip_address': IP_ADDRESS3}],
+                'fixed_ips': [{
+                    'subnet_id': SUBNET1_ID, 'ip_address': IP_ADDRESS1}],
+                'name': FAKE_NAME, 'qos_policy_id': QOS_POLICY_ID,
+                'security_groups': [SECURITY_GROUP_ID]}})
+
+        # Test minimal successful path
+        result = self.driver.create_port(NETWORK_ID)
+
+        self.assertEqual(reference_port_dict, result.to_dict())
+
+        # Test exception
+        self.assertRaises(network_base.CreatePortException,
+                          self.driver.create_port, NETWORK_ID, name=FAKE_NAME,
+                          fixed_ips=FIXED_IPS, secondary_ips=SECONDARY_IPS,
+                          security_group_ids=[SECURITY_GROUP_ID],
+                          admin_state_up=False, qos_policy_id=QOS_POLICY_ID)
+
+    def test_get_security_group(self):
+
+        # Test the case of security groups disabled in neutron
+        FAKE_SG_NAME = 'Fake_SG_name'
+        FAKE_NEUTRON_SECURITY_GROUPS = {'security_groups': [
+            t_constants.MOCK_SECURITY_GROUP]}
+        reference_sg_dict = {'id': t_constants.MOCK_SECURITY_GROUP_ID,
+                             'name': t_constants.MOCK_SECURITY_GROUP_NAME,
+                             'description': '', 'tags': [],
+                             'security_group_rule_ids': [],
+                             'stateful': None,
+                             'project_id': t_constants.MOCK_PROJECT_ID}
+
+        self.driver.neutron_client.list_security_groups.side_effect = [
+            FAKE_NEUTRON_SECURITY_GROUPS, None, Exception('boom')]
+
+        self.driver.sec_grp_enabled = False
+        result = self.driver.get_security_group(FAKE_SG_NAME)
+
+        self.assertIsNone(result)
+        self.driver.neutron_client.list_security_groups.assert_not_called()
+
+        # Test successful get of the security group
+        self.driver.sec_grp_enabled = True
+
+        result = self.driver.get_security_group(FAKE_SG_NAME)
+
+        self.assertEqual(reference_sg_dict, result.to_dict())
+        self.driver.neutron_client.list_security_groups.called_once_with(
+            name=FAKE_SG_NAME)
+
+        # Test no security groups returned
+        self.assertRaises(network_base.SecurityGroupNotFound,
+                          self.driver.get_security_group, FAKE_SG_NAME)
+
+        # Test with an unknown exception
+        self.assertRaises(network_base.NetworkException,
+                          self.driver.get_security_group, FAKE_SG_NAME)

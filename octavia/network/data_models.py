@@ -76,7 +76,7 @@ class Port(data_models.BaseDataModel):
     def __init__(self, id=None, name=None, device_id=None, device_owner=None,
                  mac_address=None, network_id=None, status=None,
                  project_id=None, admin_state_up=None, fixed_ips=None,
-                 network=None, qos_policy_id=None):
+                 network=None, qos_policy_id=None, security_group_ids=None):
         self.id = id
         self.name = name
         self.device_id = device_id
@@ -89,6 +89,7 @@ class Port(data_models.BaseDataModel):
         self.fixed_ips = fixed_ips or []
         self.network = network
         self.qos_policy_id = qos_policy_id
+        self.security_group_ids = security_group_ids or []
 
     def get_subnet_id(self, fixed_ip_address):
         for fixed_ip in self.fixed_ips:
@@ -163,3 +164,16 @@ class Network_IP_Availability(data_models.BaseDataModel):
         self.total_ips = total_ips
         self.used_ips = used_ips
         self.subnet_ip_availability = subnet_ip_availability
+
+
+class SecurityGroup(data_models.BaseDataModel):
+
+    def __init__(self, id=None, project_id=None, name=None, description=None,
+                 security_group_rule_ids=None, tags=None, stateful=None):
+        self.id = id
+        self.project_id = project_id
+        self.name = name
+        self.description = description
+        self.security_group_rule_ids = security_group_rule_ids or []
+        self.tags = tags or []
+        self.stateful = stateful

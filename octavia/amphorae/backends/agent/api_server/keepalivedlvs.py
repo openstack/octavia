@@ -78,7 +78,8 @@ class KeepalivedLvs(udp_listener_base.UdpListenerApiServerBase):
         # Active-Standby topology will create the directory below. So for
         # Single topology, it should not create the directory and the check
         # scripts for status change.
-        if not os.path.exists(util.keepalived_check_scripts_dir()):
+        if (CONF.controller_worker.loadbalancer_topology !=
+                consts.TOPOLOGY_ACTIVE_STANDBY):
             NEED_CHECK = False
 
         conf_file = util.keepalived_lvs_cfg_path(listener_id)
@@ -157,6 +158,9 @@ class KeepalivedLvs(udp_listener_base.UdpListenerApiServerBase):
             script_path = os.path.join(util.keepalived_check_scripts_dir(),
                                        KEEPALIVED_CHECK_SCRIPT_NAME)
             if not os.path.exists(script_path):
+                if not os.path.exists(util.keepalived_check_scripts_dir()):
+                    os.makedirs(util.keepalived_check_scripts_dir())
+
                 with os.fdopen(os.open(script_path, flags, stat.S_IEXEC),
                                'w') as script_file:
                     text = check_script_file_template.render(

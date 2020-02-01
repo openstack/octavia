@@ -52,13 +52,12 @@ def generate(flow_list, output_directory):
             current_instance = current_class()
             get_flow_method = getattr(current_instance, current_tuple[2])
             if (current_tuple[1] == 'AmphoraFlows' and
-                    current_tuple[2] == 'get_failover_flow'):
+                    current_tuple[2] == 'get_failover_amphora_flow'):
                 amp1 = dmh.generate_amphora()
                 amp2 = dmh.generate_amphora()
                 lb = dmh.generate_load_balancer(amphorae=[amp1, amp2])
                 current_engine = engines.load(
-                    get_flow_method(role=constants.ROLE_STANDALONE,
-                                    load_balancer=lb))
+                    get_flow_method(amp1, 2))
             elif (current_tuple[1] == 'LoadBalancerFlows' and
                   current_tuple[2] == 'get_create_load_balancer_flow'):
                 current_engine = engines.load(
@@ -74,6 +73,15 @@ def generate(flow_list, output_directory):
                 lb = dmh.generate_load_balancer()
                 delete_flow, store = get_flow_method(lb)
                 current_engine = engines.load(delete_flow)
+            elif (current_tuple[1] == 'LoadBalancerFlows' and
+                    current_tuple[2] == 'get_failover_LB_flow'):
+                amp1 = dmh.generate_amphora()
+                amp2 = dmh.generate_amphora()
+                lb = dmh.generate_load_balancer(
+                    amphorae=[amp1, amp2],
+                    topology=constants.TOPOLOGY_ACTIVE_STANDBY)
+                current_engine = engines.load(
+                    get_flow_method([amp1, amp2], lb))
             elif (current_tuple[1] == 'MemberFlows' and
                   current_tuple[2] == 'get_batch_update_members_flow'):
                 current_engine = engines.load(

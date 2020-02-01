@@ -28,6 +28,7 @@ def list_opts():
          itertools.chain(octavia.common.config.core_opts)),
         ('api_settings', octavia.common.config.api_opts),
         ('amphora_agent', octavia.common.config.amphora_agent_opts),
+        ('compute', octavia.common.config.compute_opts),
         ('networking', octavia.common.config.networking_opts),
         ('oslo_messaging', octavia.common.config.oslo_messaging_opts),
         ('haproxy_amphora', octavia.common.config.haproxy_amphora_opts),
