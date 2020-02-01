@@ -30,7 +30,7 @@ def get_haproxy_versions():
 
     version = subprocess.check_output(cmd.split(), stderr=subprocess.STDOUT)
 
-    version_re = re.search(r'.*version (.+?)\.(.+?)\..*',
+    version_re = re.search(r'.*version (.+?)\.(.+?)(\.|-dev).*',
                            version.decode('utf-8'))
 
     major_version = int(version_re.group(1))
