@@ -51,7 +51,26 @@ class BaseAmphoraTask(task.Task):
 class AmpListenersUpdate(BaseAmphoraTask):
     """Task to update the listeners on one amphora."""
 
-    def execute(self, loadbalancer, amphora_index, amphorae, timeout_dict=()):
+    def execute(self, loadbalancer, amphora, timeout_dict=None):
+        # Note, we don't want this to cause a revert as it may be used
+        # in a failover flow with both amps failing. Skip it and let
+        # health manager fix it.
+        try:
+            self.amphora_driver.update_amphora_listeners(
+                loadbalancer, amphora, timeout_dict)
+        except Exception as e:
+            LOG.error('Failed to update listeners on amphora %s. Skipping '
+                      'this amphora as it is failing to update due to: %s',
+                      amphora.id, str(e))
+            self.amphora_repo.update(db_apis.get_session(), amphora.id,
+                                     status=constants.ERROR)
+
+
+class AmphoraIndexListenerUpdate(BaseAmphoraTask):
+    """Task to update the listeners on one amphora."""
+
+    def execute(self, loadbalancer, amphora_index, amphorae,
+                timeout_dict=None):
         # Note, we don't want this to cause a revert as it may be used
         # in a failover flow with both amps failing. Skip it and let
         # health manager fix it.
@@ -96,6 +115,24 @@ class ListenersStart(BaseAmphoraTask):
         """Handle failed listeners starts."""
 
         LOG.warning("Reverting listeners starts.")
+        for listener in loadbalancer.listeners:
+            self.task_utils.mark_listener_prov_status_error(listener.id)
+
+
+class AmphoraIndexListenersReload(BaseAmphoraTask):
+    """Task to reload all listeners on an amphora."""
+
+    def execute(self, loadbalancer, amphorae, amphora_index,
+                timeout_dict=None):
+        """Execute listener reload routines for listeners on an amphora."""
+        if loadbalancer.listeners:
+            self.amphora_driver.reload(
+                loadbalancer, amphorae[amphora_index], timeout_dict)
+
+    def revert(self, loadbalancer, *args, **kwargs):
+        """Handle failed listeners reloads."""
+
+        LOG.warning("Reverting listener reload.")
         for listener in loadbalancer.listeners:
             self.task_utils.mark_listener_prov_status_error(listener.id)
 
@@ -174,7 +211,11 @@ class AmphoraePostNetworkPlug(BaseAmphoraTask):
     def execute(self, loadbalancer, added_ports):
         """Execute post_network_plug routine."""
         amp_post_plug = AmphoraPostNetworkPlug()
-        for amphora in loadbalancer.amphorae:
+        # We need to make sure we have the fresh list of amphora
+        amphorae = self.amphora_repo.get_all(
+            db_apis.get_session(), load_balancer_id=loadbalancer.id,
+            status=constants.AMPHORA_ALLOCATED)[0]
+        for amphora in amphorae:
             if amphora.id in added_ports:
                 amp_post_plug.execute(amphora, added_ports[amphora.id])
 
@@ -183,10 +224,11 @@ class AmphoraePostNetworkPlug(BaseAmphoraTask):
         if isinstance(result, failure.Failure):
             return
         LOG.warning("Reverting post network plug.")
-        for amphora in filter(
-            lambda amp: amp.status == constants.AMPHORA_ALLOCATED,
-                loadbalancer.amphorae):
 
+        amphorae = self.amphora_repo.get_all(
+            db_apis.get_session(), load_balancer_id=loadbalancer.id,
+            status=constants.AMPHORA_ALLOCATED)[0]
+        for amphora in amphorae:
             self.task_utils.mark_amphora_status_error(amphora.id)
 
 
@@ -241,64 +283,97 @@ class AmphoraCertUpload(BaseAmphoraTask):
 class AmphoraUpdateVRRPInterface(BaseAmphoraTask):
     """Task to get and update the VRRP interface device name from amphora."""
 
-    def execute(self, loadbalancer):
-        """Execute post_vip_routine."""
-        amps = []
-        timeout_dict = {
-            constants.CONN_MAX_RETRIES:
-                CONF.haproxy_amphora.active_connection_max_retries,
-            constants.CONN_RETRY_INTERVAL:
-                CONF.haproxy_amphora.active_connection_rety_interval}
-        for amp in filter(
-            lambda amp: amp.status == constants.AMPHORA_ALLOCATED,
-                loadbalancer.amphorae):
+    def execute(self, amphora, timeout_dict=None):
+        try:
+            interface = self.amphora_driver.get_interface_from_ip(
+                amphora, amphora.vrrp_ip, timeout_dict=timeout_dict)
+        except Exception as e:
+            # This can occur when an active/standby LB has no listener
+            LOG.error('Failed to get amphora VRRP interface on amphora '
+                      '%s. Skipping this amphora as it is failing due to: '
+                      '%s', amphora.id, str(e))
+            self.amphora_repo.update(db_apis.get_session(), amphora.id,
+                                     status=constants.ERROR)
+            return None
 
-            try:
-                interface = self.amphora_driver.get_vrrp_interface(
-                    amp, timeout_dict=timeout_dict)
-            except Exception as e:
-                # This can occur when an active/standby LB has no listener
-                LOG.error('Failed to get amphora VRRP interface on amphora '
-                          '%s. Skipping this amphora as it is failing due to: '
-                          '%s', amp.id, str(e))
-                self.amphora_repo.update(db_apis.get_session(), amp.id,
-                                         status=constants.ERROR)
-                continue
+        self.amphora_repo.update(db_apis.get_session(), amphora.id,
+                                 vrrp_interface=interface)
+        return interface
 
-            self.amphora_repo.update(db_apis.get_session(), amp.id,
-                                     vrrp_interface=interface)
-            amps.append(self.amphora_repo.get(db_apis.get_session(),
-                                              id=amp.id))
-        loadbalancer.amphorae = amps
-        return loadbalancer
 
-    def revert(self, result, loadbalancer, *args, **kwargs):
-        """Handle a failed amphora vip plug notification."""
-        if isinstance(result, failure.Failure):
-            return
-        LOG.warning("Reverting Get Amphora VRRP Interface.")
-        for amp in filter(
-            lambda amp: amp.status == constants.AMPHORA_ALLOCATED,
-                loadbalancer.amphorae):
+class AmphoraIndexUpdateVRRPInterface(BaseAmphoraTask):
+    """Task to get and update the VRRP interface device name from amphora."""
 
-            try:
-                self.amphora_repo.update(db_apis.get_session(), amp.id,
-                                         vrrp_interface=None)
-            except Exception as e:
-                LOG.error("Failed to update amphora %(amp)s "
-                          "VRRP interface to None due to: %(except)s",
-                          {'amp': amp.id, 'except': e})
+    def execute(self, amphorae, amphora_index, timeout_dict=None):
+        amphora_id = amphorae[amphora_index].id
+        try:
+            interface = self.amphora_driver.get_interface_from_ip(
+                amphorae[amphora_index], amphorae[amphora_index].vrrp_ip,
+                timeout_dict=timeout_dict)
+        except Exception as e:
+            # This can occur when an active/standby LB has no listener
+            LOG.error('Failed to get amphora VRRP interface on amphora '
+                      '%s. Skipping this amphora as it is failing due to: '
+                      '%s', amphora_id, str(e))
+            self.amphora_repo.update(db_apis.get_session(), amphora_id,
+                                     status=constants.ERROR)
+            return None
+
+        self.amphora_repo.update(db_apis.get_session(), amphora_id,
+                                 vrrp_interface=interface)
+        return interface
 
 
 class AmphoraVRRPUpdate(BaseAmphoraTask):
-    """Task to update the VRRP configuration of the loadbalancer amphorae."""
+    """Task to update the VRRP configuration of an amphora."""
 
-    def execute(self, loadbalancer, amphorae_network_config):
+    def execute(self, loadbalancer_id, amphorae_network_config, amphora,
+                amp_vrrp_int, timeout_dict=None):
         """Execute update_vrrp_conf."""
-        self.amphora_driver.update_vrrp_conf(loadbalancer,
-                                             amphorae_network_config)
-        LOG.debug("Uploaded VRRP configuration of loadbalancer %s amphorae",
-                  loadbalancer.id)
+        loadbalancer = self.loadbalancer_repo.get(db_apis.get_session(),
+                                                  id=loadbalancer_id)
+        # Note, we don't want this to cause a revert as it may be used
+        # in a failover flow with both amps failing. Skip it and let
+        # health manager fix it.
+        amphora.vrrp_interface = amp_vrrp_int
+        try:
+            self.amphora_driver.update_vrrp_conf(
+                loadbalancer, amphorae_network_config, amphora, timeout_dict)
+        except Exception as e:
+            LOG.error('Failed to update VRRP configuration amphora %s. '
+                      'Skipping this amphora as it is failing to update due '
+                      'to: %s', amphora.id, str(e))
+            self.amphora_repo.update(db_apis.get_session(), amphora.id,
+                                     status=constants.ERROR)
+
+        LOG.debug("Uploaded VRRP configuration of amphora %s.", amphora.id)
+
+
+class AmphoraIndexVRRPUpdate(BaseAmphoraTask):
+    """Task to update the VRRP configuration of an amphora."""
+
+    def execute(self, loadbalancer_id, amphorae_network_config, amphora_index,
+                amphorae, amp_vrrp_int, timeout_dict=None):
+        """Execute update_vrrp_conf."""
+        loadbalancer = self.loadbalancer_repo.get(db_apis.get_session(),
+                                                  id=loadbalancer_id)
+        # Note, we don't want this to cause a revert as it may be used
+        # in a failover flow with both amps failing. Skip it and let
+        # health manager fix it.
+        amphora_id = amphorae[amphora_index].id
+        amphorae[amphora_index].vrrp_interface = amp_vrrp_int
+        try:
+            self.amphora_driver.update_vrrp_conf(
+                loadbalancer, amphorae_network_config, amphorae[amphora_index],
+                timeout_dict)
+        except Exception as e:
+            LOG.error('Failed to update VRRP configuration amphora %s. '
+                      'Skipping this amphora as it is failing to update due '
+                      'to: %s', amphora_id, str(e))
+            self.amphora_repo.update(db_apis.get_session(), amphora_id,
+                                     status=constants.ERROR)
+
+        LOG.debug("Uploaded VRRP configuration of amphora %s.", amphora_id)
 
 
 class AmphoraVRRPStop(BaseAmphoraTask):
@@ -311,12 +386,26 @@ class AmphoraVRRPStop(BaseAmphoraTask):
 
 
 class AmphoraVRRPStart(BaseAmphoraTask):
-    """Task to start keepalived of all amphorae of a LB."""
+    """Task to start keepalived on an amphora.
 
-    def execute(self, loadbalancer):
-        self.amphora_driver.start_vrrp_service(loadbalancer)
-        LOG.debug("Started VRRP of loadbalancer %s amphorae",
-                  loadbalancer.id)
+    This will reload keepalived if it is already running.
+    """
+
+    def execute(self, amphora, timeout_dict=None):
+        self.amphora_driver.start_vrrp_service(amphora, timeout_dict)
+        LOG.debug("Started VRRP on amphora %s.", amphora.id)
+
+
+class AmphoraIndexVRRPStart(BaseAmphoraTask):
+    """Task to start keepalived on an amphora.
+
+    This will reload keepalived if it is already running.
+    """
+
+    def execute(self, amphora_index, amphorae, timeout_dict=None):
+        self.amphora_driver.start_vrrp_service(amphorae[amphora_index],
+                                               timeout_dict)
+        LOG.debug("Started VRRP on amphora %s.", amphorae[amphora_index].id)
 
 
 class AmphoraComputeConnectivityWait(BaseAmphoraTask):

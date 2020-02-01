@@ -443,10 +443,72 @@ class TestNovaClient(base.TestCase):
             server=self.compute_id, net_id=self.network_id, fixed_ip=None,
             port_id=None)
 
-    def test_attach_network_or_port_exception(self):
+    def test_attach_network_or_port_conflict_exception(self):
+        self.manager.manager.interface_attach.side_effect = (
+            nova_exceptions.Conflict('test_exception'))
+        interface_mock = mock.MagicMock()
+        interface_mock.id = self.port_id
+        bad_interface_mock = mock.MagicMock()
+        bad_interface_mock.id = uuidutils.generate_uuid()
+        self.manager.manager.interface_list.side_effect = [
+            [interface_mock], [bad_interface_mock], [], Exception('boom')]
+
+        # No port specified
+        self.assertRaises(exceptions.ComputeUnknownException,
+                          self.manager.attach_network_or_port,
+                          self.compute_id, self.network_id)
+
+        # Port already attached
+        result = self.manager.attach_network_or_port(self.compute_id,
+                                                     port_id=self.port_id)
+        self.assertEqual(interface_mock, result)
+
+        # Port not found
+        self.assertRaises(exceptions.ComputePortInUseException,
+                          self.manager.attach_network_or_port,
+                          self.compute_id, port_id=self.port_id)
+
+        # No ports attached
+        self.assertRaises(exceptions.ComputePortInUseException,
+                          self.manager.attach_network_or_port,
+                          self.compute_id, port_id=self.port_id)
+
+        # Get attached ports list exception
+        self.assertRaises(exceptions.ComputeUnknownException,
+                          self.manager.attach_network_or_port,
+                          self.compute_id, port_id=self.port_id)
+
+    def test_attach_network_or_port_general_not_found_exception(self):
         self.manager.manager.interface_attach.side_effect = [
             nova_exceptions.NotFound('test_exception')]
-        self.assertRaises(nova_exceptions.NotFound,
+        self.assertRaises(exceptions.NotFound,
+                          self.manager.attach_network_or_port,
+                          self.compute_id, self.network_id)
+
+    def test_attach_network_or_port_instance_not_found_exception(self):
+        self.manager.manager.interface_attach.side_effect = [
+            nova_exceptions.NotFound('Instance disappeared')]
+        self.assertRaises(exceptions.NotFound,
+                          self.manager.attach_network_or_port,
+                          self.compute_id, self.network_id)
+
+    def test_attach_network_or_port_network_not_found_exception(self):
+        self.manager.manager.interface_attach.side_effect = [
+            nova_exceptions.NotFound('Network disappeared')]
+        self.assertRaises(exceptions.NotFound,
+                          self.manager.attach_network_or_port,
+                          self.compute_id, self.network_id)
+
+    def test_attach_network_or_port_port_not_found_exception(self):
+        self.manager.manager.interface_attach.side_effect = [
+            nova_exceptions.NotFound('Port disappeared')]
+        self.assertRaises(exceptions.NotFound,
+                          self.manager.attach_network_or_port,
+                          self.compute_id, self.network_id)
+
+    def test_attach_network_or_port_unknown_exception(self):
+        self.manager.manager.interface_attach.side_effect = [Exception('boom')]
+        self.assertRaises(exceptions.ComputeUnknownException,
                           self.manager.attach_network_or_port,
                           self.compute_id, self.network_id)
 

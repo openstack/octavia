@@ -578,14 +578,16 @@ class SampleDriverDataModels(object):
                               constants.NETWORK_ID: self.network_id,
                               constants.PORT_ID: self.port_id,
                               lib_consts.SUBNET_ID: self.subnet_id,
-                              constants.QOS_POLICY_ID: self.qos_policy_id}
+                              constants.QOS_POLICY_ID: self.qos_policy_id,
+                              constants.OCTAVIA_OWNED: None}
 
         self.provider_vip_dict = {
             lib_consts.VIP_ADDRESS: self.ip_address,
             lib_consts.VIP_NETWORK_ID: self.network_id,
             lib_consts.VIP_PORT_ID: self.port_id,
             lib_consts.VIP_SUBNET_ID: self.subnet_id,
-            lib_consts.VIP_QOS_POLICY_ID: self.qos_policy_id}
+            lib_consts.VIP_QOS_POLICY_ID: self.qos_policy_id,
+            constants.OCTAVIA_OWNED: None}
 
         self.db_vip = data_models.Vip(
             ip_address=self.ip_address,

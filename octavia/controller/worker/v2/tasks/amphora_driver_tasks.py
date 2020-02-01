@@ -350,8 +350,8 @@ class AmphoraUpdateVRRPInterface(BaseAmphoraTask):
                 db_lb.amphorae):
 
             try:
-                interface = self.amphora_driver.get_vrrp_interface(
-                    amp, timeout_dict=timeout_dict)
+                interface = self.amphora_driver.get_interface_from_ip(
+                    amp, amp.vrrp_ip, timeout_dict=timeout_dict)
             except Exception as e:
                 # This can occur when an active/standby LB has no listener
                 LOG.error('Failed to get amphora VRRP interface on amphora '

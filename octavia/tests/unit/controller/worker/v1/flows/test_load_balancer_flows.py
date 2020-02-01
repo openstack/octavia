@@ -16,6 +16,7 @@ from unittest import mock
 
 from oslo_config import cfg
 from oslo_config import fixture as oslo_fixture
+from oslo_utils import uuidutils
 from taskflow.patterns import linear_flow as flow
 
 from octavia.common import constants
@@ -156,7 +157,7 @@ class TestLoadBalancerFlows(base.TestCase):
         self.assertIn(constants.UPDATE_DICT, amp_flow.requires)
         self.assertIn(constants.LOADBALANCER, amp_flow.provides)
 
-        self.assertEqual(2, len(amp_flow.provides))
+        self.assertEqual(4, len(amp_flow.provides))
         self.assertEqual(2, len(amp_flow.requires))
 
         # Test mark_active=False
@@ -169,7 +170,7 @@ class TestLoadBalancerFlows(base.TestCase):
         self.assertIn(constants.UPDATE_DICT, amp_flow.requires)
         self.assertIn(constants.LOADBALANCER, amp_flow.provides)
 
-        self.assertEqual(2, len(amp_flow.provides))
+        self.assertEqual(4, len(amp_flow.provides))
         self.assertEqual(2, len(amp_flow.requires))
 
     def test_get_create_load_balancer_flows_single_listeners(
@@ -195,7 +196,7 @@ class TestLoadBalancerFlows(base.TestCase):
         self.assertIn(constants.AMP_DATA, create_flow.provides)
         self.assertIn(constants.AMPHORA_NETWORK_CONFIG, create_flow.provides)
 
-        self.assertEqual(5, len(create_flow.requires))
+        self.assertEqual(6, len(create_flow.requires))
         self.assertEqual(13, len(create_flow.provides),
                          create_flow.provides)
 
@@ -223,6 +224,231 @@ class TestLoadBalancerFlows(base.TestCase):
         self.assertIn(constants.AMPHORAE_NETWORK_CONFIG,
                       create_flow.provides)
 
-        self.assertEqual(5, len(create_flow.requires))
-        self.assertEqual(14, len(create_flow.provides),
+        self.assertEqual(6, len(create_flow.requires))
+        self.assertEqual(16, len(create_flow.provides),
                          create_flow.provides)
+
+    def _test_get_failover_LB_flow_single(self, amphorae):
+        lb_mock = mock.MagicMock()
+        lb_mock.id = uuidutils.generate_uuid()
+        lb_mock.topology = constants.TOPOLOGY_SINGLE
+
+        failover_flow = self.LBFlow.get_failover_LB_flow(amphorae, lb_mock)
+
+        self.assertIsInstance(failover_flow, flow.Flow)
+
+        self.assertIn(constants.AVAILABILITY_ZONE, failover_flow.requires)
+        self.assertIn(constants.BUILD_TYPE_PRIORITY, failover_flow.requires)
+        self.assertIn(constants.FLAVOR, failover_flow.requires)
+        self.assertIn(constants.LOADBALANCER, failover_flow.requires)
+        self.assertIn(constants.LOADBALANCER_ID, failover_flow.requires)
+
+        self.assertIn(constants.ADDED_PORTS, failover_flow.provides)
+        self.assertIn(constants.AMPHORA, failover_flow.provides)
+        self.assertIn(constants.AMPHORA_ID, failover_flow.provides)
+        self.assertIn(constants.AMPHORAE_NETWORK_CONFIG,
+                      failover_flow.provides)
+        self.assertIn(constants.BASE_PORT, failover_flow.provides)
+        self.assertIn(constants.COMPUTE_ID, failover_flow.provides)
+        self.assertIn(constants.COMPUTE_OBJ, failover_flow.provides)
+        self.assertIn(constants.DELTA, failover_flow.provides)
+        self.assertIn(constants.LOADBALANCER, failover_flow.provides)
+        self.assertIn(constants.SERVER_PEM, failover_flow.provides)
+        self.assertIn(constants.VIP, failover_flow.provides)
+        self.assertIn(constants.VIP_SG_ID, failover_flow.provides)
+
+        self.assertEqual(6, len(failover_flow.requires),
+                         failover_flow.requires)
+        self.assertEqual(12, len(failover_flow.provides),
+                         failover_flow.provides)
+
+    def test_get_failover_LB_flow_no_amps_single(self, mock_get_net_driver):
+        self._test_get_failover_LB_flow_single([])
+
+    def test_get_failover_LB_flow_one_amp_single(self, mock_get_net_driver):
+        amphora_mock = mock.MagicMock()
+        amphora_mock.role = constants.ROLE_STANDALONE
+        amphora_mock.lb_network_id = uuidutils.generate_uuid()
+        amphora_mock.compute_id = uuidutils.generate_uuid()
+        amphora_mock.vrrp_port_id = None
+        amphora_mock.vrrp_ip = None
+
+        self._test_get_failover_LB_flow_single([amphora_mock])
+
+    def test_get_failover_LB_flow_one_spare_amp_single(self,
+                                                       mock_get_net_driver):
+        amphora_mock = mock.MagicMock()
+        amphora_mock.role = None
+        amphora_mock.lb_network_id = uuidutils.generate_uuid()
+        amphora_mock.compute_id = uuidutils.generate_uuid()
+        amphora_mock.vrrp_port_id = None
+        amphora_mock.vrrp_ip = None
+
+        self._test_get_failover_LB_flow_single([amphora_mock])
+
+    def test_get_failover_LB_flow_one_bogus_amp_single(self,
+                                                       mock_get_net_driver):
+        amphora_mock = mock.MagicMock()
+        amphora_mock.role = 'bogus'
+        amphora_mock.lb_network_id = uuidutils.generate_uuid()
+        amphora_mock.compute_id = uuidutils.generate_uuid()
+        amphora_mock.vrrp_port_id = None
+        amphora_mock.vrrp_ip = None
+
+        self._test_get_failover_LB_flow_single([amphora_mock])
+
+    def test_get_failover_LB_flow_two_amp_single(self, mock_get_net_driver):
+        amphora_mock = mock.MagicMock()
+        amphora2_mock = mock.MagicMock()
+        amphora2_mock.role = constants.ROLE_STANDALONE
+        amphora2_mock.lb_network_id = uuidutils.generate_uuid()
+        amphora2_mock.compute_id = uuidutils.generate_uuid()
+        amphora2_mock.vrrp_port_id = None
+        amphora2_mock.vrrp_ip = None
+
+        self._test_get_failover_LB_flow_single([amphora_mock, amphora2_mock])
+
+    def _test_get_failover_LB_flow_no_amps_act_stdby(self, amphorae):
+        lb_mock = mock.MagicMock()
+        lb_mock.id = uuidutils.generate_uuid()
+        lb_mock.topology = constants.TOPOLOGY_ACTIVE_STANDBY
+
+        failover_flow = self.LBFlow.get_failover_LB_flow(amphorae, lb_mock)
+
+        self.assertIsInstance(failover_flow, flow.Flow)
+
+        self.assertIn(constants.AVAILABILITY_ZONE, failover_flow.requires)
+        self.assertIn(constants.BUILD_TYPE_PRIORITY, failover_flow.requires)
+        self.assertIn(constants.FLAVOR, failover_flow.requires)
+        self.assertIn(constants.LOADBALANCER, failover_flow.requires)
+        self.assertIn(constants.LOADBALANCER_ID, failover_flow.requires)
+
+        self.assertIn(constants.ADDED_PORTS, failover_flow.provides)
+        self.assertIn(constants.AMP_VRRP_INT, failover_flow.provides)
+        self.assertIn(constants.AMPHORA, failover_flow.provides)
+        self.assertIn(constants.AMPHORA_ID, failover_flow.provides)
+        self.assertIn(constants.AMPHORAE, failover_flow.provides)
+        self.assertIn(constants.AMPHORAE_NETWORK_CONFIG,
+                      failover_flow.provides)
+        self.assertIn(constants.BASE_PORT, failover_flow.provides)
+        self.assertIn(constants.COMPUTE_ID, failover_flow.provides)
+        self.assertIn(constants.COMPUTE_OBJ, failover_flow.provides)
+        self.assertIn(constants.DELTA, failover_flow.provides)
+        self.assertIn(constants.FIRST_AMP_NETWORK_CONFIGS,
+                      failover_flow.provides)
+        self.assertIn(constants.FIRST_AMP_VRRP_INTERFACE,
+                      failover_flow.provides)
+        self.assertIn(constants.LOADBALANCER, failover_flow.provides)
+        self.assertIn(constants.SERVER_PEM, failover_flow.provides)
+        self.assertIn(constants.VIP, failover_flow.provides)
+        self.assertIn(constants.VIP_SG_ID, failover_flow.provides)
+
+        self.assertEqual(6, len(failover_flow.requires),
+                         failover_flow.requires)
+        self.assertEqual(16, len(failover_flow.provides),
+                         failover_flow.provides)
+
+    def test_get_failover_LB_flow_no_amps_act_stdby(self, mock_get_net_driver):
+        self._test_get_failover_LB_flow_no_amps_act_stdby([])
+
+    def test_get_failover_LB_flow_one_amps_act_stdby(self, amphorae):
+        amphora_mock = mock.MagicMock()
+        amphora_mock.role = constants.ROLE_MASTER
+        amphora_mock.lb_network_id = uuidutils.generate_uuid()
+        amphora_mock.compute_id = uuidutils.generate_uuid()
+        amphora_mock.vrrp_port_id = None
+        amphora_mock.vrrp_ip = None
+
+        self._test_get_failover_LB_flow_no_amps_act_stdby([amphora_mock])
+
+    def test_get_failover_LB_flow_two_amps_act_stdby(self,
+                                                     mock_get_net_driver):
+        amphora_mock = mock.MagicMock()
+        amphora_mock.role = constants.ROLE_MASTER
+        amphora_mock.lb_network_id = uuidutils.generate_uuid()
+        amphora_mock.compute_id = uuidutils.generate_uuid()
+        amphora_mock.vrrp_port_id = uuidutils.generate_uuid()
+        amphora_mock.vrrp_ip = '192.0.2.46'
+        amphora2_mock = mock.MagicMock()
+        amphora2_mock.role = constants.ROLE_BACKUP
+        amphora2_mock.lb_network_id = uuidutils.generate_uuid()
+        amphora2_mock.compute_id = uuidutils.generate_uuid()
+        amphora2_mock.vrrp_port_id = uuidutils.generate_uuid()
+        amphora2_mock.vrrp_ip = '2001:db8::46'
+
+        self._test_get_failover_LB_flow_no_amps_act_stdby([amphora_mock,
+                                                           amphora2_mock])
+
+    def test_get_failover_LB_flow_three_amps_act_stdby(self,
+                                                       mock_get_net_driver):
+        amphora_mock = mock.MagicMock()
+        amphora_mock.role = constants.ROLE_MASTER
+        amphora_mock.lb_network_id = uuidutils.generate_uuid()
+        amphora_mock.compute_id = uuidutils.generate_uuid()
+        amphora_mock.vrrp_port_id = uuidutils.generate_uuid()
+        amphora_mock.vrrp_ip = '192.0.2.46'
+        amphora2_mock = mock.MagicMock()
+        amphora2_mock.role = constants.ROLE_BACKUP
+        amphora2_mock.lb_network_id = uuidutils.generate_uuid()
+        amphora2_mock.compute_id = uuidutils.generate_uuid()
+        amphora2_mock.vrrp_port_id = uuidutils.generate_uuid()
+        amphora2_mock.vrrp_ip = '2001:db8::46'
+        amphora3_mock = mock.MagicMock()
+        amphora3_mock.vrrp_ip = None
+
+        self._test_get_failover_LB_flow_no_amps_act_stdby(
+            [amphora_mock, amphora2_mock, amphora3_mock])
+
+    def test_get_failover_LB_flow_two_amps_bogus_act_stdby(
+            self, mock_get_net_driver):
+        amphora_mock = mock.MagicMock()
+        amphora_mock.role = 'bogus'
+        amphora_mock.lb_network_id = uuidutils.generate_uuid()
+        amphora_mock.compute_id = uuidutils.generate_uuid()
+        amphora_mock.vrrp_port_id = uuidutils.generate_uuid()
+        amphora_mock.vrrp_ip = '192.0.2.46'
+        amphora2_mock = mock.MagicMock()
+        amphora2_mock.role = constants.ROLE_MASTER
+        amphora2_mock.lb_network_id = uuidutils.generate_uuid()
+        amphora2_mock.compute_id = uuidutils.generate_uuid()
+        amphora2_mock.vrrp_port_id = uuidutils.generate_uuid()
+        amphora2_mock.vrrp_ip = '2001:db8::46'
+
+        self._test_get_failover_LB_flow_no_amps_act_stdby([amphora_mock,
+                                                           amphora2_mock])
+
+    def test_get_failover_LB_flow_two_amps_spare_act_stdby(
+            self, mock_get_net_driver):
+        amphora_mock = mock.MagicMock()
+        amphora_mock.role = None
+        amphora_mock.lb_network_id = uuidutils.generate_uuid()
+        amphora_mock.compute_id = uuidutils.generate_uuid()
+        amphora_mock.vrrp_port_id = uuidutils.generate_uuid()
+        amphora_mock.vrrp_ip = '192.0.2.46'
+        amphora2_mock = mock.MagicMock()
+        amphora2_mock.role = constants.ROLE_MASTER
+        amphora2_mock.lb_network_id = uuidutils.generate_uuid()
+        amphora2_mock.compute_id = uuidutils.generate_uuid()
+        amphora2_mock.vrrp_port_id = uuidutils.generate_uuid()
+        amphora2_mock.vrrp_ip = '2001:db8::46'
+
+        self._test_get_failover_LB_flow_no_amps_act_stdby([amphora_mock,
+                                                           amphora2_mock])
+
+    def test_get_failover_LB_flow_two_amps_standalone_act_stdby(
+            self, mock_get_net_driver):
+        amphora_mock = mock.MagicMock()
+        amphora_mock.role = constants.ROLE_STANDALONE
+        amphora_mock.lb_network_id = uuidutils.generate_uuid()
+        amphora_mock.compute_id = uuidutils.generate_uuid()
+        amphora_mock.vrrp_port_id = uuidutils.generate_uuid()
+        amphora_mock.vrrp_ip = '192.0.2.46'
+        amphora2_mock = mock.MagicMock()
+        amphora2_mock.role = constants.ROLE_MASTER
+        amphora2_mock.lb_network_id = uuidutils.generate_uuid()
+        amphora2_mock.compute_id = uuidutils.generate_uuid()
+        amphora2_mock.vrrp_port_id = uuidutils.generate_uuid()
+        amphora2_mock.vrrp_ip = '2001:db8::46'
+
+        self._test_get_failover_LB_flow_no_amps_act_stdby([amphora_mock,
+                                                           amphora2_mock])

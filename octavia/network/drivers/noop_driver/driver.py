@@ -204,6 +204,12 @@ class NoopManager(object):
             network_id, device_id, 'get_port_by_net_id_device_id')
         return network_models.Port(id=uuidutils.generate_uuid())
 
+    def get_security_group(self, sg_name):
+        LOG.debug("Network %s no-op, get_security_group name %s",
+                  self.__class__.__name__, sg_name)
+        self.networkconfigconfig[(sg_name)] = (sg_name, 'get_security_group')
+        return network_models.SecurityGroup(id=uuidutils.generate_uuid())
+
     def failover_preparation(self, amphora):
         LOG.debug("failover %s no-op, failover_preparation, amphora id %s",
                   self.__class__.__name__, amphora.id)
@@ -282,6 +288,53 @@ class NoopManager(object):
         ip_avail.subnet_ip_availability = subnet_ip_availability
         return ip_avail
 
+    def delete_port(self, port_id):
+        LOG.debug("Network %s no-op, delete_port port_id %s",
+                  self.__class__.__name__, port_id)
+        self.networkconfigconfig[port_id] = (port_id, 'delete_port')
+
+    def set_port_admin_state_up(self, port_id, state):
+        LOG.debug("Network %s no-op, set_port_admin_state_up port_id %s, "
+                  "state %s", self.__class__.__name__, port_id, state)
+        self.networkconfigconfig[(port_id, state)] = (port_id, state,
+                                                      'admin_down_port')
+
+    def create_port(self, network_id, name=None, fixed_ips=(),
+                    secondary_ips=(), security_group_ids=(),
+                    admin_state_up=True, qos_policy_id=None):
+        LOG.debug("Network %s no-op, create_port network_id %s",
+                  self.__class__.__name__, network_id)
+        if not name:
+            name = 'no-op-port'
+        port_id = uuidutils.generate_uuid()
+        project_id = uuidutils.generate_uuid()
+
+        fixed_ip_obj_list = []
+        for fixed_ip in fixed_ips:
+            if fixed_ip and not fixed_ip.get('ip_address'):
+                fixed_ip_obj_list.append(
+                    network_models.FixedIP(subnet_id=fixed_ip.get('subnet_id'),
+                                           ip_address='198.51.100.56'))
+            else:
+                fixed_ip_obj_list.append(
+                    network_models.FixedIP(
+                        subnet_id=fixed_ip.get('subnet_id'),
+                        ip_address=fixed_ip.get('ip_address')))
+        if not fixed_ip_obj_list:
+            fixed_ip_obj_list = [network_models.FixedIP(
+                subnet_id=uuidutils.generate_uuid(),
+                ip_address='198.51.100.56')]
+
+        self.networkconfigconfig[(network_id, 'create_port')] = (
+            network_id, name, fixed_ip_obj_list, secondary_ips,
+            security_group_ids, admin_state_up, qos_policy_id)
+        return network_models.Port(
+            id=port_id, name=name, device_id='no-op-device-id',
+            device_owner='Octavia', mac_address='00:00:5E:00:53:05',
+            network_id=network_id, status='UP', project_id=project_id,
+            admin_state_up=admin_state_up, fixed_ips=fixed_ip_obj_list,
+            qos_policy_id=qos_policy_id, security_group_ids=security_group_ids)
+
 
 class NoopNetworkDriver(driver_base.AbstractNetworkDriver):
     def __init__(self):
@@ -337,6 +390,9 @@ class NoopNetworkDriver(driver_base.AbstractNetworkDriver):
     def get_port_by_net_id_device_id(self, network_id, device_id):
         return self.driver.get_port_by_net_id_device_id(network_id, device_id)
 
+    def get_security_group(self, sg_name):
+        return self.driver.get_security_group(sg_name)
+
     def failover_preparation(self, amphora):
         self.driver.failover_preparation(amphora)
 
@@ -366,3 +422,16 @@ class NoopNetworkDriver(driver_base.AbstractNetworkDriver):
 
     def get_network_ip_availability(self, network):
         return self.driver.get_network_ip_availability(network)
+
+    def delete_port(self, port_id):
+        self.driver.delete_port(port_id)
+
+    def set_port_admin_state_up(self, port_id, state):
+        self.driver.set_port_admin_state_up(port_id, state)
+
+    def create_port(self, network_id, name=None, fixed_ips=(),
+                    secondary_ips=(), security_group_ids=(),
+                    admin_state_up=True, qos_policy_id=None):
+        return self.driver.create_port(
+            network_id, name, fixed_ips, secondary_ips, security_group_ids,
+            admin_state_up, qos_policy_id)

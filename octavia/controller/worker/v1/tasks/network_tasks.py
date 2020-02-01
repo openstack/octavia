@@ -12,15 +12,20 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 #
+import time
 
 from oslo_config import cfg
 from oslo_log import log as logging
+from oslo_utils import excutils
 from taskflow import task
 from taskflow.types import failure
+import tenacity
 
 from octavia.common import constants
 from octavia.common import utils
 from octavia.controller.worker import task_utils
+from octavia.db import api as db_apis
+from octavia.db import repositories
 from octavia.network import base
 from octavia.network import data_models as n_data_models
 
@@ -35,6 +40,7 @@ class BaseNetworkTask(task.Task):
         super(BaseNetworkTask, self).__init__(**kwargs)
         self._network_driver = None
         self.task_utils = task_utils.TaskUtils()
+        self.lb_repo = repositories.LoadBalancerRepository()
 
     @property
     def network_driver(self):
@@ -47,12 +53,12 @@ class CalculateAmphoraDelta(BaseNetworkTask):
 
     default_provides = constants.DELTA
 
-    def execute(self, loadbalancer, amphora, availability_zone):
+    def execute(self, loadbalancer, amphora, availability_zone,
+                vrrp_port=None):
         LOG.debug("Calculating network delta for amphora id: %s", amphora.id)
 
-        # Figure out what networks we want
-        # seed with lb network(s)
-        vrrp_port = self.network_driver.get_port(amphora.vrrp_port_id)
+        if vrrp_port is None:
+            vrrp_port = self.network_driver.get_port(amphora.vrrp_port_id)
         if availability_zone:
             management_nets = (
                 [availability_zone.get(constants.MANAGEMENT_NETWORK)] or
@@ -361,12 +367,19 @@ class PlugVIP(BaseNetworkTask):
 class UpdateVIPSecurityGroup(BaseNetworkTask):
     """Task to setup SG for LB."""
 
-    def execute(self, loadbalancer):
-        """Task to setup SG for LB."""
+    def execute(self, loadbalancer_id):
+        """Task to setup SG for LB.
 
-        LOG.debug("Setup SG for loadbalancer id: %s", loadbalancer.id)
+        Task is idempotent and safe to retry.
+        """
 
-        self.network_driver.update_vip_sg(loadbalancer, loadbalancer.vip)
+        LOG.debug("Setup SG for loadbalancer id: %s", loadbalancer_id)
+
+        loadbalancer = self.lb_repo.get(db_apis.get_session(),
+                                        id=loadbalancer_id)
+
+        return self.network_driver.update_vip_sg(loadbalancer,
+                                                 loadbalancer.vip)
 
 
 class GetSubnetFromVIP(BaseNetworkTask):
@@ -500,11 +513,26 @@ class GetAmphoraNetworkConfigs(BaseNetworkTask):
                                                        amphora=amphora)
 
 
+class GetAmphoraNetworkConfigsByID(BaseNetworkTask):
+    """Task to retrieve amphora network details."""
+
+    def execute(self, loadbalancer_id, amphora_id=None):
+        LOG.debug("Retrieving vip network details.")
+        amp_repo = repositories.AmphoraRepository()
+        loadbalancer = self.lb_repo.get(db_apis.get_session(),
+                                        id=loadbalancer_id)
+        amphora = amp_repo.get(db_apis.get_session(), id=amphora_id)
+        return self.network_driver.get_network_configs(loadbalancer,
+                                                       amphora=amphora)
+
+
 class GetAmphoraeNetworkConfigs(BaseNetworkTask):
     """Task to retrieve amphorae network details."""
 
-    def execute(self, loadbalancer):
+    def execute(self, loadbalancer_id):
         LOG.debug("Retrieving vip network details.")
+        loadbalancer = self.lb_repo.get(db_apis.get_session(),
+                                        id=loadbalancer_id)
         return self.network_driver.get_network_configs(loadbalancer)
 
 
@@ -551,36 +579,6 @@ class PlugPorts(BaseNetworkTask):
                       '%(compute_id)s.',
                       {'port_id': port.id, 'compute_id': amphora.compute_id})
             self.network_driver.plug_port(amphora, port)
-
-
-class PlugVIPPort(BaseNetworkTask):
-    """Task to plug a VIP into a compute instance."""
-
-    def execute(self, amphora, amphorae_network_config):
-        vrrp_port = amphorae_network_config.get(amphora.id).vrrp_port
-        LOG.debug('Plugging VIP VRRP port ID: %(port_id)s into compute '
-                  'instance: %(compute_id)s.',
-                  {'port_id': vrrp_port.id, 'compute_id': amphora.compute_id})
-        self.network_driver.plug_port(amphora, vrrp_port)
-
-    def revert(self, result, amphora, amphorae_network_config,
-               *args, **kwargs):
-        vrrp_port = None
-        try:
-            vrrp_port = amphorae_network_config.get(amphora.id).vrrp_port
-            self.network_driver.unplug_port(amphora, vrrp_port)
-        except Exception:
-            LOG.warning('Failed to unplug vrrp port: %(port)s from amphora: '
-                        '%(amp)s', {'port': vrrp_port.id, 'amp': amphora.id})
-
-
-class WaitForPortDetach(BaseNetworkTask):
-    """Task to wait for the neutron ports to detach from an amphora."""
-
-    def execute(self, amphora):
-        LOG.debug('Waiting for ports to detach from amphora: %(amp_id)s.',
-                  {'amp_id': amphora.id})
-        self.network_driver.wait_for_port_detach(amphora)
 
 
 class ApplyQos(BaseNetworkTask):
@@ -664,3 +662,146 @@ class ApplyQosAmphora(BaseNetworkTask):
         except Exception as e:
             LOG.error('Failed to remove QoS policy: %s from port: %s due '
                       'to error: %s', orig_qos_id, amp_data.vrrp_port_id, e)
+
+
+class DeletePort(BaseNetworkTask):
+    """Task to delete a network port."""
+
+    @tenacity.retry(retry=tenacity.retry_if_exception_type(),
+                    stop=tenacity.stop_after_attempt(
+                        CONF.networking.max_retries),
+                    wait=tenacity.wait_exponential(
+                        multiplier=CONF.networking.retry_backoff,
+                        min=CONF.networking.retry_interval,
+                        max=CONF.networking.retry_max), reraise=True)
+    def execute(self, port_id, passive_failure=False):
+        """Delete the network port."""
+        if port_id is None:
+            return
+        if self.execute.retry.statistics.get(constants.ATTEMPT_NUMBER, 1) == 1:
+            LOG.debug("Deleting network port %s", port_id)
+        else:
+            LOG.warning('Retrying network port %s delete attempt %s of %s.',
+                        port_id,
+                        self.execute.retry.statistics[
+                            constants.ATTEMPT_NUMBER],
+                        self.execute.retry.stop.max_attempt_number)
+        # Let the Taskflow engine know we are working and alive
+        # Don't use get with a default for 'attempt_number', we need to fail
+        # if that number is missing.
+        self.update_progress(
+            self.execute.retry.statistics[constants.ATTEMPT_NUMBER] /
+            self.execute.retry.stop.max_attempt_number)
+        try:
+            self.network_driver.delete_port(port_id)
+        except Exception:
+            if (self.execute.retry.statistics[constants.ATTEMPT_NUMBER] !=
+                    self.execute.retry.stop.max_attempt_number):
+                LOG.warning('Network port delete for port id: %s failed. '
+                            'Retrying.', port_id)
+                raise
+            if passive_failure:
+                LOG.exception('Network port delete for port ID: %s failed. '
+                              'This resource will be abandoned and should '
+                              'manually be cleaned up once the '
+                              'network service is functional.', port_id)
+                # Let's at least attempt to disable it so if the instance
+                # comes back from the dead it doesn't conflict with anything.
+                try:
+                    self.network_driver.admin_down_port(port_id)
+                    LOG.info('Successfully disabled (admin down) network port '
+                             '%s that failed to delete.', port_id)
+                except Exception:
+                    LOG.warning('Attempt to disable (admin down) network port '
+                                '%s failed. The network service has failed. '
+                                'Continuing.', port_id)
+            else:
+                LOG.exception('Network port delete for port ID: %s failed. '
+                              'The network service has failed. '
+                              'Aborting and reverting.', port_id)
+                raise
+
+
+class CreateVIPBasePort(BaseNetworkTask):
+    """Task to create the VIP base port for an amphora."""
+
+    @tenacity.retry(retry=tenacity.retry_if_exception_type(),
+                    stop=tenacity.stop_after_attempt(
+                        CONF.networking.max_retries),
+                    wait=tenacity.wait_exponential(
+                        multiplier=CONF.networking.retry_backoff,
+                        min=CONF.networking.retry_interval,
+                        max=CONF.networking.retry_max), reraise=True)
+    def execute(self, vip, vip_sg_id, amphora_id):
+        port_name = constants.AMP_BASE_PORT_PREFIX + amphora_id
+        fixed_ips = [{constants.SUBNET_ID: vip.subnet_id}]
+        sg_id = []
+        if vip_sg_id:
+            sg_id = [vip_sg_id]
+        port = self.network_driver.create_port(
+            vip.network_id, name=port_name, fixed_ips=fixed_ips,
+            secondary_ips=[vip.ip_address], security_group_ids=sg_id,
+            qos_policy_id=vip.qos_policy_id)
+        LOG.info('Created port %s with ID %s for amphora %s',
+                 port_name, port.id, amphora_id)
+        return port
+
+    def revert(self, result, vip, vip_sg_id, amphora_id, *args, **kwargs):
+        if isinstance(result, failure.Failure):
+            return
+        try:
+            port_name = constants.AMP_BASE_PORT_PREFIX + amphora_id
+            for port in result:
+                self.network_driver.delete_port(port.id)
+                LOG.info('Deleted port %s with ID %s for amphora %s due to a '
+                         'revert.', port_name, port.id, amphora_id)
+        except Exception as e:
+            LOG.error('Failed to delete port %s. Resources may still be in '
+                      'use for a port intended for amphora %s due to error '
+                      '%s. Search for a port named %s',
+                      result, amphora_id, str(e), port_name)
+
+
+class AdminDownPort(BaseNetworkTask):
+
+    def execute(self, port_id):
+        try:
+            self.network_driver.set_port_admin_state_up(port_id, False)
+        except base.PortNotFound:
+            return
+        for i in range(CONF.networking.max_retries):
+            port = self.network_driver.get_port(port_id)
+            if port.status == constants.DOWN:
+                LOG.debug('Disabled port: %s', port_id)
+                return
+            LOG.debug('Port %s is %s instead of DOWN, waiting.',
+                      port_id, port.status)
+            time.sleep(CONF.networking.retry_interval)
+        LOG.error('Port %s failed to go DOWN. Port status is still %s. '
+                  'Ignoring and continuing.', port_id, port.status)
+
+    def revert(self, result, port_id, *args, **kwargs):
+        if isinstance(result, failure.Failure):
+            return
+        try:
+            self.network_driver.set_port_admin_state_up(port_id, True)
+        except Exception as e:
+            LOG.error('Failed to bring port %s admin up on revert due to: %s.',
+                      port_id, str(e))
+
+
+class GetVIPSecurityGroupID(BaseNetworkTask):
+
+    def execute(self, loadbalancer_id):
+        sg_name = utils.get_vip_security_group_name(loadbalancer_id)
+        try:
+            security_group = self.network_driver.get_security_group(sg_name)
+            if security_group:
+                return security_group.id
+        except base.SecurityGroupNotFound:
+            with excutils.save_and_reraise_exception() as ctxt:
+                if self.network_driver.sec_grp_enabled:
+                    LOG.error('VIP security group %s was not found.', sg_name)
+                else:
+                    ctxt.reraise = False
+        return None

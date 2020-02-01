@@ -23,6 +23,8 @@ import tenacity
 
 from octavia.common import base_taskflow
 from octavia.common import constants
+from octavia.common import exceptions
+from octavia.common import utils
 from octavia.controller.worker.v1.flows import amphora_flows
 from octavia.controller.worker.v1.flows import health_monitor_flows
 from octavia.controller.worker.v1.flows import l7policy_flows
@@ -36,11 +38,6 @@ from octavia.db import repositories as repo
 
 CONF = cfg.CONF
 LOG = logging.getLogger(__name__)
-
-RETRY_ATTEMPTS = 15
-RETRY_INITIAL_DELAY = 1
-RETRY_BACKOFF = 1
-RETRY_MAX = 5
 
 
 def _is_provisioning_status_pending_update(lb_obj):
@@ -79,8 +76,11 @@ class ControllerWorker(base_taskflow.BaseTaskFlowEngine):
             tenacity.retry_if_result(_is_provisioning_status_pending_update) |
             tenacity.retry_if_exception_type()),
         wait=tenacity.wait_incrementing(
-            RETRY_INITIAL_DELAY, RETRY_BACKOFF, RETRY_MAX),
-        stop=tenacity.stop_after_attempt(RETRY_ATTEMPTS))
+            CONF.haproxy_amphora.api_db_commit_retry_initial_delay,
+            CONF.haproxy_amphora.api_db_commit_retry_backoff,
+            CONF.haproxy_amphora.api_db_commit_retry_max),
+        stop=tenacity.stop_after_attempt(
+            CONF.haproxy_amphora.api_db_commit_retry_attempts))
     def _get_db_obj_until_pending_update(self, repo, id):
 
         return repo.get(db_apis.get_session(), id=id)
@@ -96,6 +96,7 @@ class ControllerWorker(base_taskflow.BaseTaskFlowEngine):
             store = {constants.BUILD_TYPE_PRIORITY:
                      constants.LB_CREATE_SPARES_POOL_PRIORITY,
                      constants.FLAVOR: None,
+                     constants.SERVER_GROUP_ID: None,
                      constants.AVAILABILITY_ZONE: None}
             if availability_zone:
                 store[constants.AVAILABILITY_ZONE] = (
@@ -111,27 +112,14 @@ class ControllerWorker(base_taskflow.BaseTaskFlowEngine):
         except Exception as e:
             LOG.error('Failed to create an amphora due to: {}'.format(str(e)))
 
-    def delete_amphora(self, amphora_id):
-        """Deletes an existing Amphora.
-
-        :param amphora_id: ID of the amphora to delete
-        :returns: None
-        :raises AmphoraNotFound: The referenced Amphora was not found
-        """
-        amphora = self._amphora_repo.get(db_apis.get_session(),
-                                         id=amphora_id)
-        delete_amp_tf = self._taskflow_load(self._amphora_flows.
-                                            get_delete_amphora_flow(),
-                                            store={constants.AMPHORA: amphora})
-        with tf_logging.DynamicLoggingListener(delete_amp_tf,
-                                               log=LOG):
-            delete_amp_tf.run()
-
     @tenacity.retry(
         retry=tenacity.retry_if_exception_type(db_exceptions.NoResultFound),
         wait=tenacity.wait_incrementing(
-            RETRY_INITIAL_DELAY, RETRY_BACKOFF, RETRY_MAX),
-        stop=tenacity.stop_after_attempt(RETRY_ATTEMPTS))
+            CONF.haproxy_amphora.api_db_commit_retry_initial_delay,
+            CONF.haproxy_amphora.api_db_commit_retry_backoff,
+            CONF.haproxy_amphora.api_db_commit_retry_max),
+        stop=tenacity.stop_after_attempt(
+            CONF.haproxy_amphora.api_db_commit_retry_attempts))
     def create_health_monitor(self, health_monitor_id):
         """Creates a health monitor.
 
@@ -224,8 +212,11 @@ class ControllerWorker(base_taskflow.BaseTaskFlowEngine):
     @tenacity.retry(
         retry=tenacity.retry_if_exception_type(db_exceptions.NoResultFound),
         wait=tenacity.wait_incrementing(
-            RETRY_INITIAL_DELAY, RETRY_BACKOFF, RETRY_MAX),
-        stop=tenacity.stop_after_attempt(RETRY_ATTEMPTS))
+            CONF.haproxy_amphora.api_db_commit_retry_initial_delay,
+            CONF.haproxy_amphora.api_db_commit_retry_backoff,
+            CONF.haproxy_amphora.api_db_commit_retry_max),
+        stop=tenacity.stop_after_attempt(
+            CONF.haproxy_amphora.api_db_commit_retry_attempts))
     def create_listener(self, listener_id):
         """Creates a listener.
 
@@ -310,8 +301,11 @@ class ControllerWorker(base_taskflow.BaseTaskFlowEngine):
     @tenacity.retry(
         retry=tenacity.retry_if_exception_type(db_exceptions.NoResultFound),
         wait=tenacity.wait_incrementing(
-            RETRY_INITIAL_DELAY, RETRY_BACKOFF, RETRY_MAX),
-        stop=tenacity.stop_after_attempt(RETRY_ATTEMPTS))
+            CONF.haproxy_amphora.api_db_commit_retry_initial_delay,
+            CONF.haproxy_amphora.api_db_commit_retry_backoff,
+            CONF.haproxy_amphora.api_db_commit_retry_max),
+        stop=tenacity.stop_after_attempt(
+            CONF.haproxy_amphora.api_db_commit_retry_attempts))
     def create_load_balancer(self, load_balancer_id, flavor=None,
                              availability_zone=None):
         """Creates a load balancer by allocating Amphorae.
@@ -337,6 +331,9 @@ class ControllerWorker(base_taskflow.BaseTaskFlowEngine):
                  constants.LB_CREATE_NORMAL_PRIORITY,
                  constants.FLAVOR: flavor,
                  constants.AVAILABILITY_ZONE: availability_zone}
+
+        if not CONF.nova.enable_anti_affinity:
+            store[constants.SERVER_GROUP_ID] = None
 
         topology = lb.topology
 
@@ -411,8 +408,11 @@ class ControllerWorker(base_taskflow.BaseTaskFlowEngine):
     @tenacity.retry(
         retry=tenacity.retry_if_exception_type(db_exceptions.NoResultFound),
         wait=tenacity.wait_incrementing(
-            RETRY_INITIAL_DELAY, RETRY_BACKOFF, RETRY_MAX),
-        stop=tenacity.stop_after_attempt(RETRY_ATTEMPTS))
+            CONF.haproxy_amphora.api_db_commit_retry_initial_delay,
+            CONF.haproxy_amphora.api_db_commit_retry_backoff,
+            CONF.haproxy_amphora.api_db_commit_retry_max),
+        stop=tenacity.stop_after_attempt(
+            CONF.haproxy_amphora.api_db_commit_retry_attempts))
     def create_member(self, member_id):
         """Creates a pool member.
 
@@ -486,8 +486,11 @@ class ControllerWorker(base_taskflow.BaseTaskFlowEngine):
     @tenacity.retry(
         retry=tenacity.retry_if_exception_type(db_exceptions.NoResultFound),
         wait=tenacity.wait_incrementing(
-            RETRY_INITIAL_DELAY, RETRY_BACKOFF, RETRY_MAX),
-        stop=tenacity.stop_after_attempt(RETRY_ATTEMPTS))
+            CONF.haproxy_amphora.api_db_commit_retry_initial_delay,
+            CONF.haproxy_amphora.api_db_commit_retry_backoff,
+            CONF.haproxy_amphora.api_db_commit_retry_max),
+        stop=tenacity.stop_after_attempt(
+            CONF.haproxy_amphora.api_db_commit_retry_attempts))
     def batch_update_members(self, old_member_ids, new_member_ids,
                              updated_members):
         new_members = [self._member_repo.get(db_apis.get_session(), id=mid)
@@ -577,8 +580,11 @@ class ControllerWorker(base_taskflow.BaseTaskFlowEngine):
     @tenacity.retry(
         retry=tenacity.retry_if_exception_type(db_exceptions.NoResultFound),
         wait=tenacity.wait_incrementing(
-            RETRY_INITIAL_DELAY, RETRY_BACKOFF, RETRY_MAX),
-        stop=tenacity.stop_after_attempt(RETRY_ATTEMPTS))
+            CONF.haproxy_amphora.api_db_commit_retry_initial_delay,
+            CONF.haproxy_amphora.api_db_commit_retry_backoff,
+            CONF.haproxy_amphora.api_db_commit_retry_max),
+        stop=tenacity.stop_after_attempt(
+            CONF.haproxy_amphora.api_db_commit_retry_attempts))
     def create_pool(self, pool_id):
         """Creates a node pool.
 
@@ -667,8 +673,11 @@ class ControllerWorker(base_taskflow.BaseTaskFlowEngine):
     @tenacity.retry(
         retry=tenacity.retry_if_exception_type(db_exceptions.NoResultFound),
         wait=tenacity.wait_incrementing(
-            RETRY_INITIAL_DELAY, RETRY_BACKOFF, RETRY_MAX),
-        stop=tenacity.stop_after_attempt(RETRY_ATTEMPTS))
+            CONF.haproxy_amphora.api_db_commit_retry_initial_delay,
+            CONF.haproxy_amphora.api_db_commit_retry_backoff,
+            CONF.haproxy_amphora.api_db_commit_retry_max),
+        stop=tenacity.stop_after_attempt(
+            CONF.haproxy_amphora.api_db_commit_retry_attempts))
     def create_l7policy(self, l7policy_id):
         """Creates an L7 Policy.
 
@@ -753,8 +762,11 @@ class ControllerWorker(base_taskflow.BaseTaskFlowEngine):
     @tenacity.retry(
         retry=tenacity.retry_if_exception_type(db_exceptions.NoResultFound),
         wait=tenacity.wait_incrementing(
-            RETRY_INITIAL_DELAY, RETRY_BACKOFF, RETRY_MAX),
-        stop=tenacity.stop_after_attempt(RETRY_ATTEMPTS))
+            CONF.haproxy_amphora.api_db_commit_retry_initial_delay,
+            CONF.haproxy_amphora.api_db_commit_retry_backoff,
+            CONF.haproxy_amphora.api_db_commit_retry_max),
+        stop=tenacity.stop_after_attempt(
+            CONF.haproxy_amphora.api_db_commit_retry_attempts))
     def create_l7rule(self, l7rule_id):
         """Creates an L7 Rule.
 
@@ -841,155 +853,248 @@ class ControllerWorker(base_taskflow.BaseTaskFlowEngine):
                                                log=LOG):
             update_l7rule_tf.run()
 
-    def _perform_amphora_failover(self, amp, priority):
-        """Internal method to perform failover operations for an amphora.
-
-        :param amp: The amphora to failover
-        :param priority: The create priority
-        :returns: None
-        """
-
-        stored_params = {constants.FAILED_AMPHORA: amp,
-                         constants.LOADBALANCER_ID: amp.load_balancer_id,
-                         constants.BUILD_TYPE_PRIORITY: priority, }
-
-        if amp.role in (constants.ROLE_MASTER, constants.ROLE_BACKUP):
-            amp_role = 'master_or_backup'
-        elif amp.role == constants.ROLE_STANDALONE:
-            amp_role = 'standalone'
-        elif amp.role is None:
-            amp_role = 'spare'
-        else:
-            amp_role = 'undefined'
-
-        LOG.info("Perform failover for an amphora: %s",
-                 {"id": amp.id,
-                  "load_balancer_id": amp.load_balancer_id,
-                  "lb_network_ip": amp.lb_network_ip,
-                  "compute_id": amp.compute_id,
-                  "role": amp_role})
-
-        if amp.status == constants.DELETED:
-            LOG.warning('Amphora %s is marked DELETED in the database but '
-                        'was submitted for failover. Deleting it from the '
-                        'amphora health table to exclude it from health '
-                        'checks and skipping the failover.', amp.id)
-            self._amphora_health_repo.delete(db_apis.get_session(),
-                                             amphora_id=amp.id)
-            return
-
-        if (CONF.house_keeping.spare_amphora_pool_size == 0) and (
-                CONF.nova.enable_anti_affinity is False):
-            LOG.warning("Failing over amphora with no spares pool may "
-                        "cause delays in failover times while a new "
-                        "amphora instance boots.")
-
-        # if we run with anti-affinity we need to set the server group
-        # as well
-        lb = self._amphora_repo.get_lb_for_amphora(
-            db_apis.get_session(), amp.id)
-        if CONF.nova.enable_anti_affinity and lb:
-            stored_params[constants.SERVER_GROUP_ID] = lb.server_group_id
-        if lb and lb.flavor_id:
-            stored_params[constants.FLAVOR] = (
-                self._flavor_repo.get_flavor_metadata_dict(
-                    db_apis.get_session(), lb.flavor_id))
-        else:
-            stored_params[constants.FLAVOR] = {}
-        if lb and lb.availability_zone:
-            stored_params[constants.AVAILABILITY_ZONE] = (
-                self._az_repo.get_availability_zone_metadata_dict(
-                    db_apis.get_session(), lb.availability_zone))
-        else:
-            stored_params[constants.AVAILABILITY_ZONE] = {}
-
-        failover_amphora_tf = self._taskflow_load(
-            self._amphora_flows.get_failover_flow(
-                role=amp.role, load_balancer=lb),
-            store=stored_params)
-
-        with tf_logging.DynamicLoggingListener(failover_amphora_tf, log=LOG):
-            failover_amphora_tf.run()
-
-        LOG.info("Successfully completed the failover for an amphora: %s",
-                 {"id": amp.id,
-                  "load_balancer_id": amp.load_balancer_id,
-                  "lb_network_ip": amp.lb_network_ip,
-                  "compute_id": amp.compute_id,
-                  "role": amp_role})
-
     def failover_amphora(self, amphora_id):
         """Perform failover operations for an amphora.
 
+        Note: This expects the load balancer to already be in
+        provisioning_status=PENDING_UPDATE state.
+
         :param amphora_id: ID for amphora to failover
         :returns: None
-        :raises AmphoraNotFound: The referenced amphora was not found
+        :raises octavia.common.exceptions.NotFound: The referenced amphora was
+                                                    not found
         """
+        amphora = None
         try:
-            amp = self._amphora_repo.get(db_apis.get_session(),
-                                         id=amphora_id)
-            if not amp:
-                LOG.warning("Could not fetch Amphora %s from DB, ignoring "
-                            "failover request.", amphora_id)
+            amphora = self._amphora_repo.get(db_apis.get_session(),
+                                             id=amphora_id)
+            if amphora is None:
+                LOG.error('Amphora failover for amphora %s failed because '
+                          'there is no record of this amphora in the '
+                          'database. Check that the [house_keeping] '
+                          'amphora_expiry_age configuration setting is not '
+                          'too short. Skipping failover.', amphora_id)
+                raise exceptions.NotFound(resource=constants.AMPHORA,
+                                          id=amphora_id)
+
+            if amphora.status == constants.DELETED:
+                LOG.warning('Amphora %s is marked DELETED in the database but '
+                            'was submitted for failover. Deleting it from the '
+                            'amphora health table to exclude it from health '
+                            'checks and skipping the failover.', amphora.id)
+                self._amphora_health_repo.delete(db_apis.get_session(),
+                                                 amphora_id=amphora.id)
                 return
-            self._perform_amphora_failover(
-                amp, constants.LB_CREATE_FAILOVER_PRIORITY)
-            if amp.load_balancer_id:
-                LOG.info("Mark ACTIVE in DB for load balancer id: %s",
-                         amp.load_balancer_id)
-                self._lb_repo.update(
-                    db_apis.get_session(), amp.load_balancer_id,
-                    provisioning_status=constants.ACTIVE)
+
+            loadbalancer = None
+            if amphora.load_balancer_id:
+                loadbalancer = self._lb_repo.get(db_apis.get_session(),
+                                                 id=amphora.load_balancer_id)
+            lb_amp_count = None
+            if loadbalancer:
+                if loadbalancer.topology == constants.TOPOLOGY_ACTIVE_STANDBY:
+                    lb_amp_count = 2
+                elif loadbalancer.topology == constants.TOPOLOGY_SINGLE:
+                    lb_amp_count = 1
+
+            amp_failover_flow = self._amphora_flows.get_failover_amphora_flow(
+                amphora, lb_amp_count)
+
+            az_metadata = {}
+            flavor = {}
+            lb_id = None
+            vip = None
+            server_group_id = None
+            if loadbalancer:
+                lb_id = loadbalancer.id
+                if loadbalancer.flavor_id:
+                    flavor = self._flavor_repo.get_flavor_metadata_dict(
+                        db_apis.get_session(), loadbalancer.flavor_id)
+                    flavor[constants.LOADBALANCER_TOPOLOGY] = (
+                        loadbalancer.topology)
+                else:
+                    flavor = {constants.LOADBALANCER_TOPOLOGY:
+                              loadbalancer.topology}
+                if loadbalancer.availability_zone:
+                    az_metadata = (
+                        self._az_repo.get_availability_zone_metadata_dict(
+                            db_apis.get_session(),
+                            loadbalancer.availability_zone))
+                vip = loadbalancer.vip
+                server_group_id = loadbalancer.server_group_id
+
+            stored_params = {constants.AVAILABILITY_ZONE: az_metadata,
+                             constants.BUILD_TYPE_PRIORITY:
+                                 constants.LB_CREATE_FAILOVER_PRIORITY,
+                             constants.FLAVOR: flavor,
+                             constants.LOADBALANCER: loadbalancer,
+                             constants.SERVER_GROUP_ID: server_group_id,
+                             constants.LOADBALANCER_ID: lb_id,
+                             constants.VIP: vip}
+
+            failover_amphora_tf = self._taskflow_load(amp_failover_flow,
+                                                      store=stored_params)
+
+            with tf_logging.DynamicLoggingListener(failover_amphora_tf,
+                                                   log=LOG):
+                failover_amphora_tf.run()
+
+            LOG.info("Successfully completed the failover for an amphora: %s",
+                     {"id": amphora_id,
+                      "load_balancer_id": lb_id,
+                      "lb_network_ip": amphora.lb_network_ip,
+                      "compute_id": amphora.compute_id,
+                      "role": amphora.role})
+
         except Exception as e:
-            try:
-                self._lb_repo.update(
-                    db_apis.get_session(), amp.load_balancer_id,
-                    provisioning_status=constants.ERROR)
-            except Exception:
-                LOG.error("Unable to revert LB status to ERROR.")
-            with excutils.save_and_reraise_exception():
-                LOG.error("Amphora %(id)s failover exception: %(exc)s",
-                          {'id': amphora_id, 'exc': e})
+            with excutils.save_and_reraise_exception(reraise=False):
+                LOG.exception("Amphora %s failover exception: %s",
+                              amphora_id, str(e))
+                self._amphora_repo.update(db_apis.get_session(),
+                                          amphora_id, status=constants.ERROR)
+                if amphora and amphora.load_balancer_id:
+                    self._lb_repo.update(
+                        db_apis.get_session(), amphora.load_balancer_id,
+                        provisioning_status=constants.ERROR)
+
+    @staticmethod
+    def _get_amphorae_for_failover(load_balancer):
+        """Returns an ordered list of amphora to failover.
+
+        :param load_balancer: The load balancer being failed over.
+        :returns: An ordered list of amphora to failover,
+                  first amp to failover is last in the list
+        :raises octavia.common.exceptions.InvalidTopology: LB has an unknown
+                                                           topology.
+        """
+        if load_balancer.topology == constants.TOPOLOGY_SINGLE:
+            # In SINGLE topology, amp failover order does not matter
+            return [a for a in load_balancer.amphorae
+                    if a.status != constants.DELETED]
+
+        if load_balancer.topology == constants.TOPOLOGY_ACTIVE_STANDBY:
+            # In Active/Standby we should preference the standby amp
+            # for failover first in case the Active is still able to pass
+            # traffic.
+            # Note: The active amp can switch at any time and in less than a
+            #       second, so this is "best effort".
+            amphora_driver = utils.get_amphora_driver()
+            timeout_dict = {
+                constants.CONN_MAX_RETRIES:
+                    CONF.haproxy_amphora.failover_connection_max_retries,
+                constants.CONN_RETRY_INTERVAL:
+                    CONF.haproxy_amphora.failover_connection_retry_interval}
+            amps = []
+            selected_amp = None
+            for amp in load_balancer.amphorae:
+                if amp.status == constants.DELETED:
+                    continue
+                if selected_amp is None:
+                    try:
+                        if amphora_driver.get_interface_from_ip(
+                                amp, load_balancer.vip.ip_address,
+                                timeout_dict):
+                            # This is a potential ACTIVE, add it to the list
+                            amps.append(amp)
+                        else:
+                            # This one doesn't have the VIP IP, so start
+                            # failovers here.
+                            selected_amp = amp
+                            LOG.debug("Selected amphora %s as the initial "
+                                      "failover amphora.", amp.id)
+                    except Exception:
+                        # This amphora is broken, so start failovers here.
+                        selected_amp = amp
+                else:
+                    # We have already found a STANDBY, so add the rest to the
+                    # list without querying them.
+                    amps.append(amp)
+            # Put the selected amphora at the end of the list so it is
+            # first to failover.
+            if selected_amp:
+                amps.append(selected_amp)
+            return amps
+
+        LOG.error('Unknown load balancer topology found: %s, aborting '
+                  'failover.', load_balancer.topology)
+        raise exceptions.InvalidTopology(topology=load_balancer.topology)
 
     def failover_loadbalancer(self, load_balancer_id):
         """Perform failover operations for a load balancer.
 
+        Note: This expects the load balancer to already be in
+        provisioning_status=PENDING_UPDATE state.
+
         :param load_balancer_id: ID for load balancer to failover
         :returns: None
-        :raises LBNotFound: The referenced load balancer was not found
+        :raises octavia.commom.exceptions.NotFound: The load balancer was not
+                                                    found.
         """
-
-        # Note: This expects that the load balancer is already in
-        #       provisioning_status=PENDING_UPDATE state
         try:
             lb = self._lb_repo.get(db_apis.get_session(),
                                    id=load_balancer_id)
+            if lb is None:
+                raise exceptions.NotFound(resource=constants.LOADBALANCER,
+                                          id=load_balancer_id)
 
-            # Exclude amphora already deleted
-            amps = [a for a in lb.amphorae if a.status != constants.DELETED]
-            for amp in amps:
-                # failover amphora in backup role
-                # Note: this amp may not currently be the backup
-                # TODO(johnsom) Change this to query the amp state
-                #               once the amp API supports it.
-                if amp.role == constants.ROLE_BACKUP:
-                    self._perform_amphora_failover(
-                        amp, constants.LB_CREATE_ADMIN_FAILOVER_PRIORITY)
+            # Get the ordered list of amphorae to failover for this LB.
+            amps = self._get_amphorae_for_failover(lb)
 
-            for amp in amps:
-                # failover everyhting else
-                if amp.role != constants.ROLE_BACKUP:
-                    self._perform_amphora_failover(
-                        amp, constants.LB_CREATE_ADMIN_FAILOVER_PRIORITY)
+            if lb.topology == constants.TOPOLOGY_SINGLE:
+                if len(amps) != 1:
+                    LOG.warning('%d amphorae found on load balancer %s where '
+                                'one should exist. Repairing.', len(amps),
+                                load_balancer_id)
+            elif lb.topology == constants.TOPOLOGY_ACTIVE_STANDBY:
 
-            self._lb_repo.update(
-                db_apis.get_session(), load_balancer_id,
-                provisioning_status=constants.ACTIVE)
+                if len(amps) != 2:
+                    LOG.warning('%d amphorae found on load balancer %s where '
+                                'two should exist. Repairing.', len(amps),
+                                load_balancer_id)
+            else:
+                LOG.error('Unknown load balancer topology found: %s, aborting '
+                          'failover!', lb.topology)
+                raise exceptions.InvalidTopology(topology=lb.topology)
+
+            # Build our failover flow.
+            lb_failover_flow = self._lb_flows.get_failover_LB_flow(amps, lb)
+
+            # We must provide a topology in the flavor definition
+            # here for the amphora to be created with the correct
+            # configuration.
+            if lb.flavor_id:
+                flavor = self._flavor_repo.get_flavor_metadata_dict(
+                    db_apis.get_session(), lb.flavor_id)
+                flavor[constants.LOADBALANCER_TOPOLOGY] = lb.topology
+            else:
+                flavor = {constants.LOADBALANCER_TOPOLOGY: lb.topology}
+
+            stored_params = {constants.LOADBALANCER: lb,
+                             constants.BUILD_TYPE_PRIORITY:
+                                 constants.LB_CREATE_FAILOVER_PRIORITY,
+                             constants.SERVER_GROUP_ID: lb.server_group_id,
+                             constants.LOADBALANCER_ID: lb.id,
+                             constants.FLAVOR: flavor}
+
+            if lb.availability_zone:
+                stored_params[constants.AVAILABILITY_ZONE] = (
+                    self._az_repo.get_availability_zone_metadata_dict(
+                        db_apis.get_session(), lb.availability_zone))
+            else:
+                stored_params[constants.AVAILABILITY_ZONE] = {}
+
+            failover_lb_tf = self._taskflow_load(lb_failover_flow,
+                                                 store=stored_params)
+
+            with tf_logging.DynamicLoggingListener(failover_lb_tf, log=LOG):
+                failover_lb_tf.run()
+            LOG.info('Failover of load balancer %s completed successfully.',
+                     lb.id)
 
         except Exception as e:
-            with excutils.save_and_reraise_exception():
-                LOG.error("LB %(lbid)s failover exception: %(exc)s",
-                          {'lbid': load_balancer_id, 'exc': e})
+            with excutils.save_and_reraise_exception(reraise=False):
+                LOG.exception("LB %(lbid)s failover exception: %(exc)s",
+                              {'lbid': load_balancer_id, 'exc': e})
                 self._lb_repo.update(
                     db_apis.get_session(), load_balancer_id,
                     provisioning_status=constants.ERROR)

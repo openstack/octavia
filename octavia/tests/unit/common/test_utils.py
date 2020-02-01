@@ -11,7 +11,11 @@
 #    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 #    License for the specific language governing permissions and limitations
 #    under the License.
+from unittest import mock
 
+from oslo_utils import uuidutils
+
+from octavia.common import constants
 import octavia.common.utils as utils
 import octavia.tests.unit.base as base
 
@@ -20,6 +24,14 @@ class TestConfig(base.TestCase):
 
     def test_get_hostname(self):
         self.assertNotEqual(utils.get_hostname(), '')
+
+    def test_is_ipv4(self):
+        self.assertTrue(utils.is_ipv4('192.0.2.10'))
+        self.assertTrue(utils.is_ipv4('169.254.0.10'))
+        self.assertTrue(utils.is_ipv4('0.0.0.0'))
+        self.assertFalse(utils.is_ipv4('::'))
+        self.assertFalse(utils.is_ipv4('2001:db8::1'))
+        self.assertFalse(utils.is_ipv4('fe80::225:90ff:fefb:53ad'))
 
     def test_is_ipv6(self):
         self.assertFalse(utils.is_ipv6('192.0.2.10'))
@@ -104,3 +116,22 @@ class TestConfig(base.TestCase):
         ]
         for str, sha1 in str_to_sha1:
             self.assertEqual(sha1, utils.base64_sha1_string(str))
+
+    @mock.patch('stevedore.driver.DriverManager')
+    def test_get_amphora_driver(self, mock_stevedore_driver):
+        FAKE_AMP_DRIVER = 'fake_amp_drvr'
+        driver_mock = mock.MagicMock()
+        driver_mock.driver = FAKE_AMP_DRIVER
+        mock_stevedore_driver.return_value = driver_mock
+
+        result = utils.get_amphora_driver()
+
+        self.assertEqual(FAKE_AMP_DRIVER, result)
+
+    def test_get_vip_secuirty_group_name(self):
+        FAKE_LB_ID = uuidutils.generate_uuid()
+        self.assertIsNone(utils.get_vip_security_group_name(None))
+
+        expected_sg_name = constants.VIP_SECURITY_GROUP_PREFIX + FAKE_LB_ID
+        self.assertEqual(expected_sg_name,
+                         utils.get_vip_security_group_name(FAKE_LB_ID))

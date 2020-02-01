@@ -22,6 +22,7 @@ from oslo_log import log as logging
 from oslo_utils import excutils
 from stevedore import driver as stevedore_driver
 
+from octavia.common import constants
 from octavia.common import data_models
 from octavia.common import exceptions
 from octavia.common.tls_utils import cert_parser
@@ -544,6 +545,9 @@ def vip_dict_to_provider_dict(vip_dict):
         new_vip_dict['vip_subnet_id'] = vip_dict['subnet_id']
     if 'qos_policy_id' in vip_dict:
         new_vip_dict['vip_qos_policy_id'] = vip_dict['qos_policy_id']
+    if constants.OCTAVIA_OWNED in vip_dict:
+        new_vip_dict[constants.OCTAVIA_OWNED] = vip_dict[
+            constants.OCTAVIA_OWNED]
     return new_vip_dict
 
 
@@ -559,4 +563,6 @@ def provider_vip_dict_to_vip_obj(vip_dictionary):
         vip_obj.subnet_id = vip_dictionary['vip_subnet_id']
     if 'vip_qos_policy_id' in vip_dictionary:
         vip_obj.qos_policy_id = vip_dictionary['vip_qos_policy_id']
+    if constants.OCTAVIA_OWNED in vip_dictionary:
+        vip_obj.octavia_owned = vip_dictionary[constants.OCTAVIA_OWNED]
     return vip_obj
