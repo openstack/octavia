@@ -43,16 +43,6 @@
         amphora_os_release: bionic
 
 - job:
-    name: publish-openstack-octavia-amphora-image-centos7
-    parent: publish-openstack-octavia-amphora-image
-    description: |
-      Publish CentOS 7 based amphora image to tarballs.o.o.
-    vars:
-        amphora_os: centos
-        amphora_image_size: 3
-        amphora_os_release: 7
-
-- job:
     name: publish-openstack-octavia-amphora-image-centos8
     parent: publish-openstack-octavia-amphora-image
     description: |

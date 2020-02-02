@@ -12,13 +12,10 @@ future release.
 Prerequisites
 =============
 
-This script assumes a typical Linux environment and was developed on
-Ubuntu 12.04.5 LTS.
-
 Python pip should be installed as well as the python modules found in the
 requirements.txt file.
 
-To do so, you can use the following command on ubuntu:
+To do so, you can use the following command on Ubuntu:
 
 .. code:: bash
 
@@ -57,7 +54,7 @@ Fedora, CentOS and Red Hat Enterprise Linux
 
 .. code:: bash
 
-   $ sudo yum install qemu-img git e2fsprogs policycoreutils-python
+   $ sudo dnf install qemu-img git e2fsprogs policycoreutils-python-utils
 
 Test Prerequisites
 ------------------
@@ -69,8 +66,6 @@ running the tests:
 .. code:: bash
 
     $ sudo chmod 0644 /boot/vmlinuz*
-
-Tests were run on Ubuntu 14.04.1 LTS during development.
 
 Usage
 =====
@@ -106,7 +101,7 @@ Command syntax:
             [-a i386 | **amd64** | armhf | ppc64le ]
             [-b **haproxy** ]
             [-c **~/.cache/image-create** | <cache directory> ]
-            [-d **bionic**/**7** | 8 | <other release id> ]
+            [-d **bionic**/**8** | <other release id> ]
             [-e]
             [-f]
             [-h]
@@ -211,20 +206,6 @@ DIB_CLOUD_IMAGES
     - Directory base URL to download the image from
     - Default: depends on the distribution
 
-For example to build a CentOS 7 amphora with Pike RPM packages:
-
-.. code:: bash
-
-    # Get image
-    $ wget https://cloud.centos.org/centos/7/images/CentOS-7-x86_64-GenericCloud.qcow2
-
-    # Add repository
-    $ virt-customize -a CentOS-7-x86_64-GenericCloud.qcow2  --selinux-relabel --run-command 'yum install -y centos-release-openstack-pike'
-
-    # Point to modified image and run script
-    $ export DIB_LOCAL_IMAGE=/home/stack/CentOS-7-x86_64-GenericCloud.qcow2
-    $ ./diskimage-create.sh -p -i centos-minimal
-
 RHEL specific variables
 ------------------------
 Building a RHEL-based image requires:
@@ -240,13 +221,13 @@ Building a RHEL-based image requires:
       More details at:
       <DIB_REPO_PATH>/elements/rhel-common
 
-Here is an example with Customer Portal registration and OSP 13 repository:
+Here is an example with Customer Portal registration and OSP 15 repository:
 
 .. code:: bash
 
-    $ export DIB_LOCAL_IMAGE='/tmp/rhel-server-7.6-x86_64-kvm.qcow2'
+    $ export DIB_LOCAL_IMAGE='/tmp/rhel-server-8.0-x86_64-kvm.qcow2'
 
-    $ export REG_METHOD='portal' REG_REPOS='rhel-7-server-openstack-13-rpms'
+    $ export REG_METHOD='portal' REG_REPOS='rhel-8-server-openstack-15-rpms'
 
     $ export REG_USER='<user>' REG_PASSWORD='<password>' REG_AUTO_ATTACH=true
 
@@ -255,7 +236,7 @@ an OSP repository):
 
 .. code:: bash
 
-    $ export DIB_LOCAL_IMAGE='/tmp/rhel-server-7.6-x86_64-kvm.qcow2'
+    $ export DIB_LOCAL_IMAGE='/tmp/rhel-server-8.1-x86_64-kvm.qcow2'
 
     $ export REG_METHOD='satellite' REG_ACTIVATION_KEY="<activation key>"
 

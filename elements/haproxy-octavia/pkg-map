@@ -1,16 +1,4 @@
 {
-    "release": {
-        "ubuntu": {
-            "trusty": {
-                "haproxy": "haproxy/trusty-backports"
-            }
-        },
-        "centos": {
-            "7": {
-                "haproxy": "haproxy18"
-            }
-        }
-    },
     "distro": {
         "ubuntu": {
             "haproxy": "haproxy"
