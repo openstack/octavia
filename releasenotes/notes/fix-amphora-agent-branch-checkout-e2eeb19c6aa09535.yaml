@@ -1,0 +1,5 @@
+---
+fixes:
+  - |
+    Fixed an issue where the the amphora image create tool would checkout the
+    master amphora-agent code and master upper constraints.
