@@ -113,3 +113,4 @@
             branches: ^(?!stable/.*).*$
         - publish-openstack-octavia-amphora-image-fedora28:
             branches: ^(?!stable/.*).*$
+        - octavia-amphora-image-build

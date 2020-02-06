@@ -129,3 +129,17 @@
     required-projects:
       - openstack/octavia-lib
       - openstack/octavia
+
+- job:
+    name: octavia-amphora-image-build
+    parent: base
+    description: |
+      Builds the amphora image using the released diskimage-builder version,
+      not Git master. This job does not publish the image.
+    run: playbooks/image-build/run.yaml
+    required-projects:
+        - openstack/octavia
+        - openstack/octavia-lib
+    vars:
+        amphora_os: ubuntu
+        amphora_os_release: bionic
