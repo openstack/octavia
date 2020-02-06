@@ -37,7 +37,7 @@ fasteners==0.14.1
 fixtures==3.0.0
 flake8==2.5.5
 flake8-import-order==0.12
-Flask==0.10
+Flask==1.0
 future==0.16.0
 futurist==1.2.0
 futures==3.0.0
