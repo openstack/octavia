@@ -1,0 +1,9 @@
+---
+other:
+  - |
+    Amphorae that are booting for a specific loadbalancer will now be linked to
+    that loadbalancer immediately upon creation. Previously this would not
+    happen until near the end of the process, leaving a gap during booting
+    during which is was difficult to understand which booting amphora belonged
+    to which loadbalancer. This was especially problematic when attempting to
+    troubleshoot loadbalancers that entered ERROR status due to boot issues.

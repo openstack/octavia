@@ -121,6 +121,7 @@ class AmphoraFlows(object):
         create_amp_for_lb_subflow = linear_flow.Flow(sf_name)
         create_amp_for_lb_subflow.add(database_tasks.CreateAmphoraInDB(
             name=sf_name + '-' + constants.CREATE_AMPHORA_INDB,
+            requires=constants.LOADBALANCER_ID,
             provides=constants.AMPHORA_ID))
 
         require_server_group_id_condition = (

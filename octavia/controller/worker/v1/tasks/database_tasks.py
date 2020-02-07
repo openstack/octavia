@@ -95,8 +95,10 @@ class CreateAmphoraInDB(BaseDatabaseTask):
         :returns: The created amphora object
         """
 
+        loadbalancer_id = kwargs.get("loadbalancer_id", None)
         amphora = self.amphora_repo.create(db_apis.get_session(),
                                            id=uuidutils.generate_uuid(),
+                                           load_balancer_id=loadbalancer_id,
                                            status=constants.PENDING_CREATE,
                                            cert_busy=False)
 
