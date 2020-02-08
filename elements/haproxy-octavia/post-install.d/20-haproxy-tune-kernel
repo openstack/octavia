@@ -7,7 +7,6 @@ sysctl-write-value net.ipv4.tcp_max_tw_buckets 5800000
 sysctl-write-value net.ipv4.tcp_max_orphans 5800000
 sysctl-write-value net.ipv4.tcp_max_syn_backlog 100000
 sysctl-write-value net.ipv4.tcp_keepalive_time 300
-sysctl-write-value net.ipv4.tcp_tw_recycle 0
 sysctl-write-value net.ipv4.tcp_tw_reuse 1
 sysctl-write-value net.core.somaxconn 65534
 sysctl-write-value net.ipv4.tcp_synack_retries 3
@@ -18,8 +17,8 @@ sysctl-write-value fs.nr_open 2097152
 
 # It's ok for these to fail if conntrack module isn't loaded
 sysctl-write-value net.netfilter.nf_conntrack_buckets 125000 || true
-sysctl-write-value net.ipv4.netfilter.ip_conntrack_tcp_timeout_time_wait 5 || true
-sysctl-write-value net.ipv4.netfilter.ip_conntrack_tcp_timeout_fin_wait 5 || true
+sysctl-write-value net.netfilter.nf_conntrack_tcp_timeout_time_wait 5 || true
+sysctl-write-value net.netfilter.nf_conntrack_tcp_timeout_fin_wait 5 || true
 
 sysctl-write-value net.ipv4.tcp_fin_timeout 5
 sysctl-write-value net.ipv4.ip_nonlocal_bind 1
