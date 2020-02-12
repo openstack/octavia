@@ -822,6 +822,14 @@ and ``UDP-CONNECT``.
 servers. Obviously, your back-end servers must be configured to allow PINGs in
 order for these health checks to pass.
 
+.. warning::
+
+   Health monitors of type ``PING`` only check if the member is reachable and
+   responds to ICMP echo requests. It will not detect if your application
+   running on that instance is healthy or not. Most pools should use one of
+   the other health monitor options. ``PING`` should only be used in specific
+   cases where an ICMP echo request is a valid health check.
+
 ``TCP`` health monitors open a TCP connection to the back-end server's protocol
 port. Your custom TCP application should be written to respond OK to the load
 balancer connecting, opening a TCP connection, and closing it again after the
