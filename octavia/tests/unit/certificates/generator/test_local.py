@@ -81,7 +81,7 @@ class TestLocalGenerator(local_csr.BaseLocalCSRTestCase):
         should_expire = (datetime.datetime.utcnow() +
                          datetime.timedelta(seconds=2 * 365 * 24 * 60 * 60))
         diff = should_expire - cert.not_valid_after
-        self.assertTrue(diff < datetime.timedelta(seconds=10))
+        self.assertLess(diff, datetime.timedelta(seconds=10))
 
         # Make sure this is a version 3 X509.
         self.assertEqual('v3', cert.version.name)
@@ -126,7 +126,7 @@ class TestLocalGenerator(local_csr.BaseLocalCSRTestCase):
         should_expire = (datetime.datetime.utcnow() +
                          datetime.timedelta(seconds=2 * 365 * 24 * 60 * 60))
         diff = should_expire - cert.not_valid_after
-        self.assertTrue(diff < datetime.timedelta(seconds=10))
+        self.assertLess(diff, datetime.timedelta(seconds=10))
 
         # Make sure this is a version 3 X509.
         self.assertEqual('v3', cert.version.name)

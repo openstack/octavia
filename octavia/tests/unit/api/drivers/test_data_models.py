@@ -115,24 +115,24 @@ class TestProviderDataModels(base.TestCase):
     def test_equality(self):
         second_ref_lb = deepcopy(self.ref_lb)
 
-        self.assertTrue(self.ref_lb == second_ref_lb)
+        self.assertEqual(self.ref_lb, second_ref_lb)
 
         second_ref_lb.admin_state_up = True
 
-        self.assertFalse(self.ref_lb == second_ref_lb)
+        self.assertNotEqual(self.ref_lb, second_ref_lb)
 
-        self.assertFalse(self.ref_lb == self.loadbalancer_id)
+        self.assertNotEqual(self.ref_lb, self.loadbalancer_id)
 
     def test_inequality(self):
         second_ref_lb = deepcopy(self.ref_lb)
 
-        self.assertFalse(self.ref_lb != second_ref_lb)
+        self.assertEqual(self.ref_lb, second_ref_lb)
 
         second_ref_lb.admin_state_up = True
 
-        self.assertTrue(self.ref_lb != second_ref_lb)
+        self.assertNotEqual(self.ref_lb, second_ref_lb)
 
-        self.assertTrue(self.ref_lb != self.loadbalancer_id)
+        self.assertNotEqual(self.ref_lb, self.loadbalancer_id)
 
     def test_to_dict(self):
         ref_lb_converted_to_dict = self.ref_lb.to_dict()
