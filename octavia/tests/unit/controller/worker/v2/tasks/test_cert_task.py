@@ -12,10 +12,9 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 #
+from unittest import mock
 
 from cryptography import fernet
-import mock
-
 from oslo_config import cfg
 
 from octavia.certificates.common import local

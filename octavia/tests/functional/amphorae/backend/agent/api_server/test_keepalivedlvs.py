@@ -15,9 +15,9 @@
 import os
 import stat
 import subprocess
+from unittest import mock
 
 import flask
-import mock
 
 from oslo_utils import uuidutils
 

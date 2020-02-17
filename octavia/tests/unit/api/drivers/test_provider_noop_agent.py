@@ -12,7 +12,7 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-import mock
+from unittest import mock
 
 from octavia.api.drivers.noop_driver import agent
 import octavia.tests.unit.base as base

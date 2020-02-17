@@ -11,10 +11,9 @@
 #    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 #    License for the specific language governing permissions and limitations
 #    under the License.
-
 import copy
+from unittest import mock
 
-import mock
 from neutronclient.common import exceptions as neutron_exceptions
 from novaclient.client import exceptions as nova_exceptions
 from oslo_config import cfg

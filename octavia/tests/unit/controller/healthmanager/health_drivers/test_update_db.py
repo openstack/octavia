@@ -14,8 +14,8 @@
 
 import random
 import time
+from unittest import mock
 
-import mock
 from oslo_config import cfg
 from oslo_utils import uuidutils
 import six

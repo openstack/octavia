@@ -12,11 +12,10 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 #
-
 import random
+from unittest import mock
 
 from cryptography import fernet
-import mock
 from oslo_db import exception as odb_exceptions
 from oslo_utils import uuidutils
 from sqlalchemy.orm import exc

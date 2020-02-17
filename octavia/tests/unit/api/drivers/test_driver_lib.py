@@ -26,7 +26,7 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-import mock
+from unittest import mock
 
 import octavia_lib.api.drivers.driver_lib as lib_driver_lib
 

@@ -12,8 +12,8 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 #
+from unittest import mock
 
-import mock
 from taskflow.patterns import linear_flow as flow
 
 from octavia.common import constants

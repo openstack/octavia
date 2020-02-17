@@ -9,10 +9,10 @@
 #    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 #    License for the specific language governing permissions and limitations
 #    under the License.
+from unittest import mock
 
 import cinderclient.v3
 import glanceclient.v2
-import mock
 import neutronclient.v2_0
 import novaclient.v2
 from oslo_config import cfg

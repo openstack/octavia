@@ -11,10 +11,9 @@
 #    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 #    License for the specific language governing permissions and limitations
 #    under the License.
-
 import copy
+from unittest import mock
 
-import mock
 from mock import call
 
 from octavia.api.drivers.driver_agent import driver_updater

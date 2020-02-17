@@ -13,7 +13,7 @@
 #    under the License.
 
 
-import mock
+from unittest import mock
 
 from oslo_config import cfg
 from oslo_config import fixture as oslo_fixture

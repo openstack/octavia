@@ -13,9 +13,9 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 import datetime
+from unittest import mock
 
 from cryptography import x509
-import mock
 
 from octavia.common import data_models
 import octavia.common.exceptions as exceptions

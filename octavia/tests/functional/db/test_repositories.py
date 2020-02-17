@@ -15,8 +15,8 @@
 import copy
 import datetime
 import random
+from unittest import mock
 
-import mock
 from oslo_config import cfg
 from oslo_config import fixture as oslo_fixture
 from oslo_db import exception as db_exception

@@ -18,9 +18,9 @@ import random
 import socket
 import stat
 import subprocess
+from unittest import mock
 
 import fixtures
-import mock
 from oslo_config import fixture as oslo_fixture
 from oslo_serialization import jsonutils
 from oslo_utils import uuidutils

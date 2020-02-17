@@ -13,7 +13,7 @@
 # under the License.
 #
 
-import mock
+from unittest import mock
 
 from octavia.controller.worker.v1.tasks import model_tasks
 import octavia.tests.unit.base as base

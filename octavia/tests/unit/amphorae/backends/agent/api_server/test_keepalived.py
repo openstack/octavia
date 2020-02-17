@@ -11,11 +11,10 @@
 #    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 #    License for the specific language governing permissions and limitations
 #    under the License.
-
 import subprocess
+from unittest import mock
 
 import flask
-import mock
 
 from octavia.amphorae.backends.agent.api_server import keepalived
 import octavia.tests.unit.base as base

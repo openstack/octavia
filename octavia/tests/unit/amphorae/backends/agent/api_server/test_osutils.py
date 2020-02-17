@@ -11,12 +11,11 @@
 #    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 #    License for the specific language governing permissions and limitations
 #    under the License.
-
 import ipaddress
 import os
 import shutil
+from unittest import mock
 
-import mock
 from oslo_config import fixture as oslo_fixture
 
 from octavia.amphorae.backends.agent.api_server import osutils

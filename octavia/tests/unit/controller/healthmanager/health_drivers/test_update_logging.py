@@ -13,7 +13,7 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
-import mock
+from unittest import mock
 
 from octavia.controller.healthmanager.health_drivers import update_logging
 from octavia.tests.unit import base

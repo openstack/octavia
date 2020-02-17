@@ -11,11 +11,10 @@
 #    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 #    License for the specific language governing permissions and limitations
 #    under the License.
-
+from unittest import mock
 import uuid
 
 from barbicanclient.v1 import secrets
-import mock
 from OpenSSL import crypto
 
 import octavia.certificates.common.barbican as barbican_common

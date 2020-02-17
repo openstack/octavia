@@ -10,8 +10,7 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 import ssl
-
-import mock
+from unittest import mock
 
 from octavia.cmd import agent
 from octavia.tests.unit import base
