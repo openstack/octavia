@@ -522,9 +522,16 @@ class MapLoadbalancerToAmphora(BaseDatabaseTask):
                       "allocation.")
             return None
 
-        amp = self.amphora_repo.allocate_and_associate(
-            db_apis.get_session(),
-            loadbalancer_id)
+        try:
+            amp = self.amphora_repo.allocate_and_associate(
+                db_apis.get_session(),
+                loadbalancer_id)
+        except Exception as e:
+            LOG.error("Failed to get a spare amphora for "
+                      "loadbalancer {} due to: {}".format(
+                          loadbalancer_id, e))
+            return None
+
         if amp is None:
             LOG.debug("No Amphora available for load balancer with id %s",
                       loadbalancer_id)
