@@ -529,10 +529,17 @@ class MapLoadbalancerToAmphora(BaseDatabaseTask):
         else:
             amp_az = CONF.nova.availability_zone
 
-        amp = self.amphora_repo.allocate_and_associate(
-            db_apis.get_session(),
-            loadbalancer_id,
-            amp_az)
+        try:
+            amp = self.amphora_repo.allocate_and_associate(
+                db_apis.get_session(),
+                loadbalancer_id,
+                amp_az)
+        except Exception as e:
+            LOG.error("Failed to get a spare amphora (AZ: {}) for "
+                      "loadbalancer {} due to: {}".format(
+                          amp_az, loadbalancer_id, e))
+            return None
+
         if amp is None:
             LOG.debug("No Amphora available for load balancer with id %s",
                       loadbalancer_id)
