@@ -104,6 +104,7 @@ Command syntax:
             [-d **bionic**/**8** | <other release id> ]
             [-e]
             [-f]
+            [-g **repository branch** | stable/train | stable/stein | ... ]
             [-h]
             [-i **ubuntu-minimal** | fedora | centos-minimal | rhel ]
             [-k <kernel package name> ]
@@ -124,6 +125,7 @@ Command syntax:
         '-d' distribution release id (default on ubuntu: bionic)
         '-e' enable complete mandatory access control systems when available (default: permissive)
         '-f' disable tmpfs for build
+        '-g' build the image for a specific OpenStack Git branch (default: current repository branch)
         '-h' display help message
         '-i' is the base OS (default: ubuntu-minimal)
         '-k' is the kernel meta package name, currently only for ubuntu-minimal base OS (default: linux-image-virtual)
@@ -139,6 +141,66 @@ Command syntax:
         '-x' enable tracing for diskimage-builder
 
 
+Building Images for Alternate Branches
+======================================
+
+By default, the diskimage-create.sh script will build an amphora image using
+the Octavia Git branch of the repository. If you need an image for a specific
+branch, such as "stable/train", you need to specify the "-g" option with the
+branch name. An example for "stable/train" would be:
+
+.. code-block:: bash
+
+   diskimage-create.sh -g stable/train
+
+Advanced Git Branch/Reference Based Images
+------------------------------------------
+
+If you need to build an image from a local repository or with a specific Git
+reference or branch, you will need to set some environment variables for
+diskimage-builder.
+
+.. note::
+
+    These advanced settings will override the "-g" diskimage-create.sh setting.
+
+Building From a Local Octavia Repository
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Set the DIB_REPOLOCATION_amphora_agent variable to the location of the Git
+repository containing the amphora agent:
+
+.. code-block:: bash
+
+   export DIB_REPOLOCATION_amphora_agent=/opt/stack/octavia
+
+Building With a Specific Git Reference
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Set the DIB_REPOREF_amphora_agent variable to point to the Git branch or
+reference of the amphora agent:
+
+.. code-block:: bash
+
+   export DIB_REPOREF_amphora_agent=refs/changes/40/674140/7
+
+See the `Environment Variables`_ section below for additional information and
+examples.
+
+Amphora Agent Upper Constraints
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+You may also need to specify which version of the OpenStack
+upper-constraints.txt file will be used to build the image. For example, to
+specify the "stable/train" upper constraints Git branch, set the following
+environment variable:
+
+.. code-block:: bash
+
+   export DIB_REPOLOCATION_upper_constraints=https://opendev.org/openstack/requirements/raw/branch/stable/train/upper-constraints.txt
+
+See `Dependency Management for OpenStack Projects <https://docs.openstack.org/project-team-guide/dependency-management.html>`_ for more information.
+
 Environment Variables
 =====================
 These are optional environment variables that can be set to override the script
@@ -150,11 +212,17 @@ DIB_REPOLOCATION_amphora_agent
     - Example: /tmp/octavia
 
 DIB_REPOREF_amphora_agent
-    - The git reference to checkout for the amphora-agent code inside the
+    - The Git reference to checkout for the amphora-agent code inside the
       image.
-    - Default: master
+    - Default: The current branch
     - Example: stable/stein
     - Example: refs/changes/40/674140/7
+
+DIB_REPOLOCATION_upper_constraints
+    - Location of the upper-constraints.txt file used for the image.
+    - Default: The upper-constraints.txt for the current branch
+    - Example: https://opendev.org/openstack/requirements/raw/branch/master/upper-constraints.txt
+    - Example: https://opendev.org/openstack/requirements/raw/branch/stable/train/upper-constraints.txt
 
 CLOUD_INIT_DATASOURCES
     - Comma separated list of cloud-int datasources

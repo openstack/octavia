@@ -26,6 +26,7 @@ usage() {
     echo "            [-d **bionic**/**8** | <other release id> ]"
     echo "            [-e]"
     echo "            [-f]"
+    echo "            [-g **repository branch** | stable/train | stable/stein | ... ]"
     echo "            [-h]"
     echo "            [-i **ubuntu-minimal** | fedora | centos-minimal | rhel ]"
     echo "            [-k <kernel package name> ]"
@@ -46,6 +47,7 @@ usage() {
     echo "        '-d' distribution release id (default on ubuntu: bionic)"
     echo "        '-e' enable complete mandatory access control systems when available (default: permissive)"
     echo "        '-f' disable tmpfs for build"
+    echo "        '-g' build the image for a specific OpenStack Git branch (default: current repository branch)"
     echo "        '-h' display this help message"
     echo "        '-i' is the base OS (default: ubuntu-minimal)"
     echo "        '-k' is the kernel meta package name, currently only for ubuntu-minimal base OS (default: linux-image-virtual)"
@@ -89,7 +91,7 @@ dib_enable_tracing=
 
 AMP_LOGFILE=""
 
-while getopts "a:b:c:d:efhi:k:l:no:pt:r:s:vw:x" opt; do
+while getopts "a:b:c:d:efg:hi:k:l:no:pt:r:s:vw:x" opt; do
     case $opt in
         a)
             AMP_ARCH=$OPTARG
@@ -120,6 +122,20 @@ while getopts "a:b:c:d:efhi:k:l:no:pt:r:s:vw:x" opt; do
         ;;
         f)
             AMP_DISABLE_TMP_FS='--no-tmpfs'
+        ;;
+        g)
+            if [ -z "$DIB_REPOREF_amphora_agent" ]; then
+                echo "Building image with amphora agent from $OPTARG."
+                export DIB_REPOREF_amphora_agent=$OPTARG
+            else
+                echo "Environment variable DIB_REPOREF_amphora_agent is set. Building the image with amphora agent $DIB_REPOREF_amphora_agent."
+            fi
+            if [ -z "$DIB_REPOLOCATION_upper_constraints" ]; then
+                echo "Using upper constraints from https://opendev.org/openstack/requirements/raw/branch/$OPTARG/upper-constraints.txt."
+                export DIB_REPOLOCATION_upper_constraints="https://opendev.org/openstack/requirements/raw/branch/$OPTARG/upper-constraints.txt"
+            else
+                echo "Environment variable DIB_REPOLOCATION_upper_constraints is set. Building the image with upper-constraints.txt from $DIB_REPOLOCATION_upper_constraints."
+            fi
         ;;
         h)
             usage

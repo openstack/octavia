@@ -1,0 +1,5 @@
+---
+features:
+  - |
+    Added an option to the diskimage-create.sh script to specify the Octavia
+    Git branch to build the image from.
