@@ -109,7 +109,6 @@ class TestHouseKeepingCMD(base.TestCase):
         mock_CertRotation.assert_called_once_with()
         self.assertEqual(1, cert_rotate_mock.rotate.call_count)
 
-    @mock.patch('time.sleep')
     @mock.patch('octavia.cmd.house_keeping.cert_rotate_thread_event')
     @mock.patch('octavia.cmd.house_keeping.db_cleanup_thread_event')
     @mock.patch('octavia.cmd.house_keeping.spare_amp_thread_event')
@@ -118,7 +117,7 @@ class TestHouseKeepingCMD(base.TestCase):
     def test_main(self, mock_service, mock_thread,
                   spare_amp_thread_event_mock,
                   db_cleanup_thread_event_mock,
-                  cert_rotate_thread_event_mock, sleep_time):
+                  cert_rotate_thread_event_mock):
 
         spare_amp_thread_mock = mock.MagicMock()
         db_cleanup_thread_mock = mock.MagicMock()
@@ -132,9 +131,7 @@ class TestHouseKeepingCMD(base.TestCase):
         db_cleanup_thread_mock.daemon.return_value = True
         cert_rotate_thread_mock.daemon.return_value = True
 
-        # mock the time.sleep() in the while loop
-        sleep_time.side_effect = [True, Exception('break')]
-        self.assertRaisesRegex(Exception, 'break', house_keeping.main)
+        house_keeping.main()
 
         spare_amp_thread_mock.start.assert_called_once_with()
         db_cleanup_thread_mock.start.assert_called_once_with()
@@ -144,7 +141,6 @@ class TestHouseKeepingCMD(base.TestCase):
         self.assertTrue(db_cleanup_thread_mock.daemon)
         self.assertTrue(cert_rotate_thread_mock.daemon)
 
-    @mock.patch('time.sleep')
     @mock.patch('octavia.cmd.house_keeping.cert_rotate_thread_event')
     @mock.patch('octavia.cmd.house_keeping.db_cleanup_thread_event')
     @mock.patch('octavia.cmd.house_keeping.spare_amp_thread_event')
@@ -153,8 +149,7 @@ class TestHouseKeepingCMD(base.TestCase):
     def test_main_keyboard_interrupt(self, mock_service, mock_thread,
                                      spare_amp_thread_event_mock,
                                      db_cleanup_thread_event_mock,
-                                     cert_rotate_thread_event_mock,
-                                     sleep_time):
+                                     cert_rotate_thread_event_mock):
         spare_amp_thread_mock = mock.MagicMock()
         db_cleanup_thread_mock = mock.MagicMock()
         cert_rotate_thread_mock = mock.MagicMock()
@@ -167,8 +162,10 @@ class TestHouseKeepingCMD(base.TestCase):
         db_cleanup_thread_mock.daemon.return_value = True
         cert_rotate_thread_mock.daemon.return_value = True
 
-        # mock the time.sleep() in the while loop
-        sleep_time.side_effect = [True, KeyboardInterrupt]
+        mock_join = mock.MagicMock()
+        mock_join.side_effect = [KeyboardInterrupt, None]
+        spare_amp_thread_mock.join = mock_join
+
         house_keeping.main()
 
         spare_amp_thread_event_mock.set.assert_called_once_with()
@@ -184,7 +181,6 @@ class TestHouseKeepingCMD(base.TestCase):
         self.assertTrue(spare_amp_thread_mock.daemon)
         self.assertTrue(db_cleanup_thread_mock.daemon)
         self.assertTrue(cert_rotate_thread_mock.daemon)
-
-        spare_amp_thread_mock.join.assert_called_once_with()
+        self.assertEqual(2, spare_amp_thread_mock.join.call_count)
         db_cleanup_thread_mock.join.assert_called_once_with()
         cert_rotate_thread_mock.join.assert_called_once_with()
