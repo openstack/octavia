@@ -275,9 +275,13 @@ class AmphoraPostVIPPlug(BaseAmphoraTask):
         vrrp_port = data_models.Port(
             **amphorae_network_config[
                 amphora.get(constants.ID)][constants.VRRP_PORT])
-        vip_subnet = data_models.Subnet(
-            **amphorae_network_config[
-                amphora.get(constants.ID)][constants.VIP_SUBNET])
+        # Required for noop-case
+        vip_arg = amphorae_network_config[amphora.get(
+            constants.ID)][constants.VIP_SUBNET]
+        if vip_arg:
+            vip_subnet = data_models.Subnet(**vip_arg)
+        else:
+            vip_subnet = data_models.Subnet()
         self.amphora_driver.post_vip_plug(
             db_amp, db_lb, amphorae_network_config, vrrp_port=vrrp_port,
             vip_subnet=vip_subnet)

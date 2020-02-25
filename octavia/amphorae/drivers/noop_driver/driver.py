@@ -94,7 +94,8 @@ class NoopManager(object):
         self.amphoraconfig[amphora.id, port.id] = (amphora.id, port.id,
                                                    'post_network_plug')
 
-    def post_vip_plug(self, amphora, load_balancer, amphorae_network_config):
+    def post_vip_plug(self, amphora, load_balancer, amphorae_network_config,
+                      vrrp_port=None, vip_subnet=None):
         LOG.debug("Amphora %s no-op, post vip plug load balancer %s",
                   self.__class__.__name__, load_balancer.id)
         self.amphoraconfig[(load_balancer.id, id(amphorae_network_config))] = (
@@ -155,10 +156,12 @@ class NoopAmphoraLoadBalancerDriver(
 
         self.driver.post_network_plug(amphora, port)
 
-    def post_vip_plug(self, amphora, load_balancer, amphorae_network_config):
+    def post_vip_plug(self, amphora, load_balancer, amphorae_network_config,
+                      vrrp_port=None, vip_subnet=None):
 
         self.driver.post_vip_plug(amphora,
-                                  load_balancer, amphorae_network_config)
+                                  load_balancer, amphorae_network_config,
+                                  vrrp_port=vrrp_port, vip_subnet=vip_subnet)
 
     def upload_cert_amp(self, amphora, pem_file):
 
