@@ -17,7 +17,8 @@ from oslo_config import cfg
 from oslo_db import exception as odb_exceptions
 from oslo_log import log as logging
 from oslo_utils import excutils
-import pecan
+from pecan import expose as pecan_expose
+from pecan import request as pecan_request
 from wsme import types as wtypes
 from wsmeext import pecan as wsme_pecan
 
@@ -51,7 +52,7 @@ class PoolsController(base.BaseController):
                          [wtypes.text], ignore_extra_args=True)
     def get(self, id, fields=None):
         """Gets a pool's details."""
-        context = pecan.request.context.get('octavia_context')
+        context = pecan_request.context.get('octavia_context')
         db_pool = self._get_db_pool(context.session, id, show_deleted=False)
 
         self._auth_validate_action(context, db_pool.project_id,
@@ -66,7 +67,7 @@ class PoolsController(base.BaseController):
                          [wtypes.text], ignore_extra_args=True)
     def get_all(self, project_id=None, fields=None):
         """Lists all pools."""
-        pcontext = pecan.request.context
+        pcontext = pecan_request.context
         context = pcontext.get('octavia_context')
 
         query_filter = self._auth_get_all(context, project_id)
@@ -188,7 +189,7 @@ class PoolsController(base.BaseController):
         # For some API requests the listener_id will be passed in the
         # pool_dict:
         pool = pool_.pool
-        context = pecan.request.context.get('octavia_context')
+        context = pecan_request.context.get('octavia_context')
         if pool.protocol == constants.PROTOCOL_UDP:
             self._validate_pool_request_for_udp(pool)
         else:
@@ -372,7 +373,7 @@ class PoolsController(base.BaseController):
     def put(self, id, pool_):
         """Updates a pool on a load balancer."""
         pool = pool_.pool
-        context = pecan.request.context.get('octavia_context')
+        context = pecan_request.context.get('octavia_context')
         db_pool = self._get_db_pool(context.session, id, show_deleted=False)
 
         project_id, provider = self._get_lb_project_id_provider(
@@ -429,7 +430,7 @@ class PoolsController(base.BaseController):
     @wsme_pecan.wsexpose(None, wtypes.text, status_code=204)
     def delete(self, id):
         """Deletes a pool from a load balancer."""
-        context = pecan.request.context.get('octavia_context')
+        context = pecan_request.context.get('octavia_context')
         db_pool = self._get_db_pool(context.session, id, show_deleted=False)
         if db_pool.l7policies:
             raise exceptions.PoolInUseByL7Policy(
@@ -458,14 +459,14 @@ class PoolsController(base.BaseController):
             driver_utils.call_provider(driver.name, driver.pool_delete,
                                        provider_pool)
 
-    @pecan.expose()
+    @pecan_expose()
     def _lookup(self, pool_id, *remainder):
         """Overridden pecan _lookup method for custom routing.
 
         Verifies that the pool passed in the url exists, and if so decides
         which controller, if any, should control be passed.
         """
-        context = pecan.request.context.get('octavia_context')
+        context = pecan_request.context.get('octavia_context')
         if pool_id and remainder and remainder[0] == 'members':
             remainder = remainder[1:]
             db_pool = self.repositories.pool.get(context.session, id=pool_id)

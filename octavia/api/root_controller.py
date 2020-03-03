@@ -12,25 +12,41 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+from oslo_config import cfg
 from oslo_log import log as logging
+from oslo_middleware import healthcheck
+from pecan import abort as pecan_abort
+from pecan import expose as pecan_expose
 from pecan import request as pecan_request
-from pecan import rest
 from wsme import types as wtypes
 from wsmeext import pecan as wsme_pecan
 
 from octavia.api.v2 import controllers as v2_controller
 
-
+CONF = cfg.CONF
 LOG = logging.getLogger(__name__)
 
 
-class RootController(rest.RestController):
+class RootController(object):
     """The controller with which the pecan wsgi app should be created."""
 
     def __init__(self):
         super(RootController, self).__init__()
         setattr(self, 'v2.0', v2_controller.V2Controller())
         setattr(self, 'v2', v2_controller.V2Controller())
+        if CONF.api_settings.healthcheck_enabled:
+            self.healthcheck_obj = healthcheck.Healthcheck.app_factory(None)
+
+    # Run the oslo middleware healthcheck for /healthcheck
+    @pecan_expose('json')
+    @pecan_expose(content_type='plain/text')
+    @pecan_expose(content_type='text/html')
+    def healthcheck(self):  # pylint: disable=inconsistent-return-statements
+        if CONF.api_settings.healthcheck_enabled:
+            if pecan_request.method not in ['GET', 'HEAD']:
+                pecan_abort(405)
+            return self.healthcheck_obj.process_request(pecan_request)
+        pecan_abort(404)
 
     def _add_a_version(self, versions, version, url_version, status,
                        timestamp, base_url):
@@ -45,7 +61,7 @@ class RootController(rest.RestController):
         })
 
     @wsme_pecan.wsexpose(wtypes.text)
-    def get(self):
+    def index(self):
         host_url = pecan_request.path_url
 
         if not host_url.endswith('/'):

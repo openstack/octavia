@@ -17,7 +17,7 @@ from oslo_config import cfg
 from oslo_db import exception as odb_exceptions
 from oslo_log import log as logging
 from oslo_utils import excutils
-import pecan
+from pecan import request as pecan_request
 from wsme import types as wtypes
 from wsmeext import pecan as wsme_pecan
 
@@ -48,7 +48,7 @@ class HealthMonitorController(base.BaseController):
                          [wtypes.text], ignore_extra_args=True)
     def get_one(self, id, fields=None):
         """Gets a single healthmonitor's details."""
-        context = pecan.request.context.get('octavia_context')
+        context = pecan_request.context.get('octavia_context')
         db_hm = self._get_db_hm(context.session, id, show_deleted=False)
 
         self._auth_validate_action(context, db_hm.project_id,
@@ -64,7 +64,7 @@ class HealthMonitorController(base.BaseController):
                          [wtypes.text], ignore_extra_args=True)
     def get_all(self, project_id=None, fields=None):
         """Gets all health monitors."""
-        pcontext = pecan.request.context
+        pcontext = pecan_request.context
         context = pcontext.get('octavia_context')
 
         query_filter = self._auth_get_all(context, project_id)
@@ -196,7 +196,7 @@ class HealthMonitorController(base.BaseController):
                          body=hm_types.HealthMonitorRootPOST, status_code=201)
     def post(self, health_monitor_):
         """Creates a health monitor on a pool."""
-        context = pecan.request.context.get('octavia_context')
+        context = pecan_request.context.get('octavia_context')
         health_monitor = health_monitor_.healthmonitor
 
         if (not CONF.api_settings.allow_ping_health_monitors and
@@ -334,7 +334,7 @@ class HealthMonitorController(base.BaseController):
                          body=hm_types.HealthMonitorRootPUT, status_code=200)
     def put(self, id, health_monitor_):
         """Updates a health monitor."""
-        context = pecan.request.context.get('octavia_context')
+        context = pecan_request.context.get('octavia_context')
         health_monitor = health_monitor_.healthmonitor
         db_hm = self._get_db_hm(context.session, id, show_deleted=False)
 
@@ -393,7 +393,7 @@ class HealthMonitorController(base.BaseController):
     @wsme_pecan.wsexpose(None, wtypes.text, status_code=204)
     def delete(self, id):
         """Deletes a health monitor."""
-        context = pecan.request.context.get('octavia_context')
+        context = pecan_request.context.get('octavia_context')
         db_hm = self._get_db_hm(context.session, id, show_deleted=False)
 
         pool = self._get_db_pool(context.session, db_hm.pool_id)

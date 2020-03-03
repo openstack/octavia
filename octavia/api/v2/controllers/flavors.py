@@ -18,7 +18,7 @@ from oslo_db import exception as odb_exceptions
 from oslo_log import log as logging
 from oslo_utils import excutils
 from oslo_utils import uuidutils
-import pecan
+from pecan import request as pecan_request
 from sqlalchemy.orm import exc as sa_exception
 from wsme import types as wtypes
 from wsmeext import pecan as wsme_pecan
@@ -42,7 +42,7 @@ class FlavorsController(base.BaseController):
                          [wtypes.text], ignore_extra_args=True)
     def get_one(self, id, fields=None):
         """Gets a flavor's detail."""
-        context = pecan.request.context.get('octavia_context')
+        context = pecan_request.context.get('octavia_context')
         self._auth_validate_action(context, context.project_id,
                                    constants.RBAC_GET_ONE)
         if id == constants.NIL_UUID:
@@ -58,7 +58,7 @@ class FlavorsController(base.BaseController):
                          [wtypes.text], ignore_extra_args=True)
     def get_all(self, fields=None):
         """Lists all flavors."""
-        pcontext = pecan.request.context
+        pcontext = pecan_request.context
         context = pcontext.get('octavia_context')
         self._auth_validate_action(context, context.project_id,
                                    constants.RBAC_GET_ALL)
@@ -77,7 +77,7 @@ class FlavorsController(base.BaseController):
     def post(self, flavor_):
         """Creates a flavor."""
         flavor = flavor_.flavor
-        context = pecan.request.context.get('octavia_context')
+        context = pecan_request.context.get('octavia_context')
         self._auth_validate_action(context, context.project_id,
                                    constants.RBAC_POST)
 
@@ -106,7 +106,7 @@ class FlavorsController(base.BaseController):
                          body=flavor_types.FlavorRootPUT)
     def put(self, id, flavor_):
         flavor = flavor_.flavor
-        context = pecan.request.context.get('octavia_context')
+        context = pecan_request.context.get('octavia_context')
         self._auth_validate_action(context, context.project_id,
                                    constants.RBAC_PUT)
         if id == constants.NIL_UUID:
@@ -134,7 +134,7 @@ class FlavorsController(base.BaseController):
     @wsme_pecan.wsexpose(None, wtypes.text, status_code=204)
     def delete(self, flavor_id):
         """Deletes a Flavor"""
-        context = pecan.request.context.get('octavia_context')
+        context = pecan_request.context.get('octavia_context')
 
         self._auth_validate_action(context, context.project_id,
                                    constants.RBAC_DELETE)

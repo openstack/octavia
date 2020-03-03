@@ -17,7 +17,7 @@ from oslo_db import exception as odb_exceptions
 from oslo_log import log as logging
 from oslo_utils import excutils
 from oslo_utils import strutils
-import pecan
+from pecan import request as pecan_request
 from wsme import types as wtypes
 from wsmeext import pecan as wsme_pecan
 
@@ -48,7 +48,7 @@ class MemberController(base.BaseController):
                          [wtypes.text], ignore_extra_args=True)
     def get(self, id, fields=None):
         """Gets a single pool member's details."""
-        context = pecan.request.context.get('octavia_context')
+        context = pecan_request.context.get('octavia_context')
         db_member = self._get_db_member(context.session, id,
                                         show_deleted=False)
 
@@ -67,7 +67,7 @@ class MemberController(base.BaseController):
                          ignore_extra_args=True)
     def get_all(self, fields=None):
         """Lists all pool members of a pool."""
-        pcontext = pecan.request.context
+        pcontext = pecan_request.context
         context = pcontext.get('octavia_context')
 
         pool = self._get_db_pool(context.session, self.pool_id,
@@ -144,7 +144,7 @@ class MemberController(base.BaseController):
     def post(self, member_):
         """Creates a pool member on a pool."""
         member = member_.member
-        context = pecan.request.context.get('octavia_context')
+        context = pecan_request.context.get('octavia_context')
 
         validate.ip_not_reserved(member.address)
 
@@ -229,7 +229,7 @@ class MemberController(base.BaseController):
     def put(self, id, member_):
         """Updates a pool member."""
         member = member_.member
-        context = pecan.request.context.get('octavia_context')
+        context = pecan_request.context.get('octavia_context')
         db_member = self._get_db_member(context.session, id,
                                         show_deleted=False)
 
@@ -285,7 +285,7 @@ class MemberController(base.BaseController):
     @wsme_pecan.wsexpose(None, wtypes.text, status_code=204)
     def delete(self, id):
         """Deletes a pool member."""
-        context = pecan.request.context.get('octavia_context')
+        context = pecan_request.context.get('octavia_context')
         db_member = self._get_db_member(context.session, id,
                                         show_deleted=False)
 
@@ -327,7 +327,7 @@ class MembersController(MemberController):
         """Updates all members."""
         members = members_.members
         additive_only = strutils.bool_from_string(additive_only)
-        context = pecan.request.context.get('octavia_context')
+        context = pecan_request.context.get('octavia_context')
 
         db_pool = self._get_db_pool(context.session, self.pool_id)
         old_members = db_pool.members

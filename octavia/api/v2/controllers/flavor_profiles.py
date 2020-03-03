@@ -18,7 +18,7 @@ from oslo_log import log as logging
 from oslo_serialization import jsonutils
 from oslo_utils import excutils
 from oslo_utils import uuidutils
-import pecan
+from pecan import request as pecan_request
 from sqlalchemy.orm import exc as sa_exception
 from wsme import types as wtypes
 from wsmeext import pecan as wsme_pecan
@@ -44,7 +44,7 @@ class FlavorProfileController(base.BaseController):
                          [wtypes.text], ignore_extra_args=True)
     def get_one(self, id, fields=None):
         """Gets a flavor profile's detail."""
-        context = pecan.request.context.get('octavia_context')
+        context = pecan_request.context.get('octavia_context')
         self._auth_validate_action(context, context.project_id,
                                    constants.RBAC_GET_ONE)
         if id == constants.NIL_UUID:
@@ -61,7 +61,7 @@ class FlavorProfileController(base.BaseController):
                          [wtypes.text], ignore_extra_args=True)
     def get_all(self, fields=None):
         """Lists all flavor profiles."""
-        pcontext = pecan.request.context
+        pcontext = pecan_request.context
         context = pcontext.get('octavia_context')
         self._auth_validate_action(context, context.project_id,
                                    constants.RBAC_GET_ALL)
@@ -81,7 +81,7 @@ class FlavorProfileController(base.BaseController):
     def post(self, flavor_profile_):
         """Creates a flavor Profile."""
         flavorprofile = flavor_profile_.flavorprofile
-        context = pecan.request.context.get('octavia_context')
+        context = pecan_request.context.get('octavia_context')
         self._auth_validate_action(context, context.project_id,
                                    constants.RBAC_POST)
         # Do a basic JSON validation on the metadata
@@ -138,7 +138,7 @@ class FlavorProfileController(base.BaseController):
     def put(self, id, flavor_profile_):
         """Updates a flavor Profile."""
         flavorprofile = flavor_profile_.flavorprofile
-        context = pecan.request.context.get('octavia_context')
+        context = pecan_request.context.get('octavia_context')
         self._auth_validate_action(context, context.project_id,
                                    constants.RBAC_PUT)
 
@@ -190,7 +190,7 @@ class FlavorProfileController(base.BaseController):
     @wsme_pecan.wsexpose(None, wtypes.text, status_code=204)
     def delete(self, flavor_profile_id):
         """Deletes a Flavor Profile"""
-        context = pecan.request.context.get('octavia_context')
+        context = pecan_request.context.get('octavia_context')
 
         self._auth_validate_action(context, context.project_id,
                                    constants.RBAC_DELETE)

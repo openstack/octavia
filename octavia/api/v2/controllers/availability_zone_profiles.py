@@ -17,7 +17,7 @@ from oslo_log import log as logging
 from oslo_serialization import jsonutils
 from oslo_utils import excutils
 from oslo_utils import uuidutils
-import pecan
+from pecan import request as pecan_request
 from sqlalchemy.orm import exc as sa_exception
 from wsme import types as wtypes
 from wsmeext import pecan as wsme_pecan
@@ -43,7 +43,7 @@ class AvailabilityZoneProfileController(base.BaseController):
                          wtypes.text, [wtypes.text], ignore_extra_args=True)
     def get_one(self, id, fields=None):
         """Gets an Availability Zone Profile's detail."""
-        context = pecan.request.context.get('octavia_context')
+        context = pecan_request.context.get('octavia_context')
         self._auth_validate_action(context, context.project_id,
                                    constants.RBAC_GET_ONE)
         if id == constants.NIL_UUID:
@@ -63,7 +63,7 @@ class AvailabilityZoneProfileController(base.BaseController):
                          [wtypes.text], ignore_extra_args=True)
     def get_all(self, fields=None):
         """Lists all Availability Zone Profiles."""
-        pcontext = pecan.request.context
+        pcontext = pecan_request.context
         context = pcontext.get('octavia_context')
         self._auth_validate_action(context, context.project_id,
                                    constants.RBAC_GET_ALL)
@@ -87,7 +87,7 @@ class AvailabilityZoneProfileController(base.BaseController):
         """Creates an Availability Zone Profile."""
         availability_zone_profile = (
             availability_zone_profile_.availability_zone_profile)
-        context = pecan.request.context.get('octavia_context')
+        context = pecan_request.context.get('octavia_context')
         self._auth_validate_action(context, context.project_id,
                                    constants.RBAC_POST)
         # Do a basic JSON validation on the metadata
@@ -155,7 +155,7 @@ class AvailabilityZoneProfileController(base.BaseController):
         """Updates an Availability Zone Profile."""
         availability_zone_profile = (
             availability_zone_profile_.availability_zone_profile)
-        context = pecan.request.context.get('octavia_context')
+        context = pecan_request.context.get('octavia_context')
         self._auth_validate_action(context, context.project_id,
                                    constants.RBAC_PUT)
 
@@ -216,7 +216,7 @@ class AvailabilityZoneProfileController(base.BaseController):
     @wsme_pecan.wsexpose(None, wtypes.text, status_code=204)
     def delete(self, availability_zone_profile_id):
         """Deletes an Availability Zone Profile"""
-        context = pecan.request.context.get('octavia_context')
+        context = pecan_request.context.get('octavia_context')
 
         self._auth_validate_action(context, context.project_id,
                                    constants.RBAC_DELETE)

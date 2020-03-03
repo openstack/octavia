@@ -17,7 +17,8 @@ from oslo_config import cfg
 from oslo_db import exception as odb_exceptions
 from oslo_log import log as logging
 from oslo_utils import excutils
-import pecan
+from pecan import expose as pecan_expose
+from pecan import request as pecan_request
 from wsme import types as wtypes
 from wsmeext import pecan as wsme_pecan
 
@@ -51,7 +52,7 @@ class ListenersController(base.BaseController):
                          [wtypes.text], ignore_extra_args=True)
     def get_one(self, id, fields=None):
         """Gets a single listener's details."""
-        context = pecan.request.context.get('octavia_context')
+        context = pecan_request.context.get('octavia_context')
         db_listener = self._get_db_listener(context.session, id,
                                             show_deleted=False)
 
@@ -72,7 +73,7 @@ class ListenersController(base.BaseController):
                          [wtypes.text], ignore_extra_args=True)
     def get_all(self, project_id=None, fields=None):
         """Lists all listeners."""
-        pcontext = pecan.request.context
+        pcontext = pecan_request.context
         context = pcontext.get('octavia_context')
 
         query_filter = self._auth_get_all(context, project_id)
@@ -237,7 +238,7 @@ class ListenersController(base.BaseController):
 
         # Validate that the L4 protocol (UDP or TCP) is not already used for
         # the specified protocol_port in this load balancer
-        pcontext = pecan.request.context
+        pcontext = pecan_request.context
         query_filter = {
             'project_id': listener_dict['project_id'],
             'load_balancer_id': listener_dict['load_balancer_id'],
@@ -310,7 +311,7 @@ class ListenersController(base.BaseController):
     def post(self, listener_):
         """Creates a listener on a load balancer."""
         listener = listener_.listener
-        context = pecan.request.context.get('octavia_context')
+        context = pecan_request.context.get('octavia_context')
 
         load_balancer_id = listener.loadbalancer_id
         listener.project_id, provider = self._get_lb_project_id_provider(
@@ -507,7 +508,7 @@ class ListenersController(base.BaseController):
     def put(self, id, listener_):
         """Updates a listener on a load balancer."""
         listener = listener_.listener
-        context = pecan.request.context.get('octavia_context')
+        context = pecan_request.context.get('octavia_context')
         db_listener = self._get_db_listener(context.session, id,
                                             show_deleted=False)
         load_balancer_id = db_listener.load_balancer_id
@@ -567,7 +568,7 @@ class ListenersController(base.BaseController):
     @wsme_pecan.wsexpose(None, wtypes.text, status_code=204)
     def delete(self, id):
         """Deletes a listener from a load balancer."""
-        context = pecan.request.context.get('octavia_context')
+        context = pecan_request.context.get('octavia_context')
         db_listener = self._get_db_listener(context.session, id,
                                             show_deleted=False)
         load_balancer_id = db_listener.load_balancer_id
@@ -594,7 +595,7 @@ class ListenersController(base.BaseController):
             driver_utils.call_provider(driver.name, driver.listener_delete,
                                        provider_listener)
 
-    @pecan.expose()
+    @pecan_expose()
     def _lookup(self, id, *remainder):
         """Overridden pecan _lookup method for custom routing.
 
@@ -616,7 +617,7 @@ class StatisticsController(base.BaseController, stats.StatsMixin):
     @wsme_pecan.wsexpose(listener_types.StatisticsRootResponse, wtypes.text,
                          status_code=200)
     def get(self):
-        context = pecan.request.context.get('octavia_context')
+        context = pecan_request.context.get('octavia_context')
         db_listener = self._get_db_listener(context.session, self.id,
                                             show_deleted=False)
         if not db_listener:

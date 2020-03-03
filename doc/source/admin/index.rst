@@ -33,6 +33,7 @@ Optional Installation and Configuration Guides
    providers/index.rst
    log-offloading.rst
    api-audit.rst
+   healthcheck.rst
    flavors.rst
    apache-httpd.rst
 

@@ -1,0 +1,6 @@
+---
+features:
+  - |
+    Added the oslo-middleware healthcheck app to the Octavia API.
+    Hitting /healthcheck will return a 200. This is enabled via the
+    [api_settings]healthcheck_enabled setting and is disabled by default.

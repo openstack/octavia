@@ -16,7 +16,8 @@ from oslo_config import cfg
 from oslo_db import exception as odb_exceptions
 from oslo_log import log as logging
 from oslo_utils import excutils
-import pecan
+from pecan import expose as pecan_expose
+from pecan import request as pecan_request
 from wsme import types as wtypes
 from wsmeext import pecan as wsme_pecan
 
@@ -48,7 +49,7 @@ class L7PolicyController(base.BaseController):
                          [wtypes.text], ignore_extra_args=True)
     def get(self, id, fields=None):
         """Gets a single l7policy's details."""
-        context = pecan.request.context.get('octavia_context')
+        context = pecan_request.context.get('octavia_context')
         db_l7policy = self._get_db_l7policy(context.session, id,
                                             show_deleted=False)
 
@@ -65,7 +66,7 @@ class L7PolicyController(base.BaseController):
                          [wtypes.text], ignore_extra_args=True)
     def get_all(self, project_id=None, fields=None):
         """Lists all l7policies of a listener."""
-        pcontext = pecan.request.context
+        pcontext = pecan_request.context
         context = pcontext.get('octavia_context')
 
         query_filter = self._auth_get_all(context, project_id)
@@ -115,7 +116,7 @@ class L7PolicyController(base.BaseController):
     def post(self, l7policy_):
         """Creates a l7policy on a listener."""
         l7policy = l7policy_.l7policy
-        context = pecan.request.context.get('octavia_context')
+        context = pecan_request.context.get('octavia_context')
         # Verify the parent listener exists
         listener_id = l7policy.listener_id
         listener = self._get_db_listener(
@@ -206,7 +207,7 @@ class L7PolicyController(base.BaseController):
             if val in l7policy_dict:
                 l7policy_dict[attr] = l7policy_dict.pop(val)
         sanitized_l7policy = l7policy_types.L7PolicyPUT(**l7policy_dict)
-        context = pecan.request.context.get('octavia_context')
+        context = pecan_request.context.get('octavia_context')
 
         db_l7policy = self._get_db_l7policy(context.session, id,
                                             show_deleted=False)
@@ -268,7 +269,7 @@ class L7PolicyController(base.BaseController):
     @wsme_pecan.wsexpose(None, wtypes.text, status_code=204)
     def delete(self, id):
         """Deletes a l7policy."""
-        context = pecan.request.context.get('octavia_context')
+        context = pecan_request.context.get('octavia_context')
         db_l7policy = self._get_db_l7policy(context.session, id,
                                             show_deleted=False)
         load_balancer_id, listener_id = self._get_listener_and_loadbalancer_id(
@@ -300,14 +301,14 @@ class L7PolicyController(base.BaseController):
             driver_utils.call_provider(driver.name, driver.l7policy_delete,
                                        provider_l7policy)
 
-    @pecan.expose()
+    @pecan_expose()
     def _lookup(self, l7policy_id, *remainder):
         """Overridden pecan _lookup method for custom routing.
 
         Verifies that the l7policy passed in the url exists, and if so decides
         which controller, if any, should control be passed.
         """
-        context = pecan.request.context.get('octavia_context')
+        context = pecan_request.context.get('octavia_context')
         if l7policy_id and remainder and remainder[0] == 'rules':
             remainder = remainder[1:]
             db_l7policy = self.repositories.l7policy.get(

@@ -17,7 +17,8 @@ from oslo_config import cfg
 from oslo_log import log as logging
 import oslo_messaging as messaging
 from oslo_utils import excutils
-import pecan
+from pecan import expose as pecan_expose
+from pecan import request as pecan_request
 from wsme import types as wtypes
 from wsmeext import pecan as wsme_pecan
 
@@ -41,7 +42,7 @@ class AmphoraController(base.BaseController):
                          [wtypes.text], ignore_extra_args=True)
     def get_one(self, id, fields=None):
         """Gets a single amphora's details."""
-        context = pecan.request.context.get('octavia_context')
+        context = pecan_request.context.get('octavia_context')
         db_amp = self._get_db_amp(context.session, id, show_deleted=False)
 
         self._auth_validate_action(context, context.project_id,
@@ -57,7 +58,7 @@ class AmphoraController(base.BaseController):
                          ignore_extra_args=True)
     def get_all(self, fields=None):
         """Gets all health monitors."""
-        pcontext = pecan.request.context
+        pcontext = pecan_request.context
         context = pcontext.get('octavia_context')
 
         self._auth_validate_action(context, context.project_id,
@@ -73,7 +74,7 @@ class AmphoraController(base.BaseController):
         return amp_types.AmphoraeRootResponse(
             amphorae=result, amphorae_links=links)
 
-    @pecan.expose()
+    @pecan_expose()
     def _lookup(self, amphora_id, *remainder):
         """Overridden pecan _lookup method for custom routing.
 
@@ -107,7 +108,7 @@ class FailoverController(base.BaseController):
     @wsme_pecan.wsexpose(None, wtypes.text, status_code=202)
     def put(self):
         """Fails over an amphora"""
-        pcontext = pecan.request.context
+        pcontext = pecan_request.context
         context = pcontext.get('octavia_context')
         db_amp = self._get_db_amp(context.session, self.amp_id,
                                   show_deleted=False)
@@ -153,7 +154,7 @@ class AmphoraUpdateController(base.BaseController):
     @wsme_pecan.wsexpose(None, wtypes.text, status_code=202)
     def put(self):
         """Update amphora agent configuration"""
-        pcontext = pecan.request.context
+        pcontext = pecan_request.context
         context = pcontext.get('octavia_context')
         db_amp = self._get_db_amp(context.session, self.amp_id,
                                   show_deleted=False)
@@ -188,7 +189,7 @@ class AmphoraStatsController(base.BaseController):
     @wsme_pecan.wsexpose(amp_types.StatisticsRootResponse, wtypes.text,
                          status_code=200)
     def get(self):
-        context = pecan.request.context.get('octavia_context')
+        context = pecan_request.context.get('octavia_context')
 
         self._auth_validate_action(context, context.project_id,
                                    constants.RBAC_GET_STATS)

@@ -18,7 +18,8 @@ from oslo_db import exception as odb_exceptions
 from oslo_log import log as logging
 from oslo_utils import excutils
 from oslo_utils import strutils
-import pecan
+from pecan import expose as pecan_expose
+from pecan import request as pecan_request
 from sqlalchemy.orm import exc as sa_exception
 from wsme import types as wtypes
 from wsmeext import pecan as wsme_pecan
@@ -56,7 +57,7 @@ class LoadBalancersController(base.BaseController):
                          [wtypes.text], ignore_extra_args=True)
     def get_one(self, id, fields=None):
         """Gets a single load balancer's details."""
-        context = pecan.request.context.get('octavia_context')
+        context = pecan_request.context.get('octavia_context')
         load_balancer = self._get_db_lb(context.session, id,
                                         show_deleted=False)
 
@@ -78,7 +79,7 @@ class LoadBalancersController(base.BaseController):
                          [wtypes.text], ignore_extra_args=True)
     def get_all(self, project_id=None, fields=None):
         """Lists all load balancers."""
-        pcontext = pecan.request.context
+        pcontext = pecan_request.context
         context = pcontext.get('octavia_context')
 
         query_filter = self._auth_get_all(context, project_id)
@@ -373,7 +374,7 @@ class LoadBalancersController(base.BaseController):
     def post(self, load_balancer):
         """Creates a load balancer."""
         load_balancer = load_balancer.loadbalancer
-        context = pecan.request.context.get('octavia_context')
+        context = pecan_request.context.get('octavia_context')
 
         if not load_balancer.project_id and context.project_id:
             load_balancer.project_id = context.project_id
@@ -607,7 +608,7 @@ class LoadBalancersController(base.BaseController):
     def put(self, id, load_balancer):
         """Updates a load balancer."""
         load_balancer = load_balancer.loadbalancer
-        context = pecan.request.context.get('octavia_context')
+        context = pecan_request.context.get('octavia_context')
         db_lb = self._get_db_lb(context.session, id, show_deleted=False)
 
         self._auth_validate_action(context, db_lb.project_id,
@@ -665,7 +666,7 @@ class LoadBalancersController(base.BaseController):
     @wsme_pecan.wsexpose(None, wtypes.text, wtypes.text, status_code=204)
     def delete(self, id, cascade=False):
         """Deletes a load balancer."""
-        context = pecan.request.context.get('octavia_context')
+        context = pecan_request.context.get('octavia_context')
         cascade = strutils.bool_from_string(cascade)
         db_lb = self._get_db_lb(context.session, id, show_deleted=False)
 
@@ -692,7 +693,7 @@ class LoadBalancersController(base.BaseController):
             driver_utils.call_provider(driver.name, driver.loadbalancer_delete,
                                        provider_loadbalancer, cascade)
 
-    @pecan.expose()
+    @pecan_expose()
     def _lookup(self, id, *remainder):
         """Overridden pecan _lookup method for custom routing.
 
@@ -731,7 +732,7 @@ class StatusController(base.BaseController):
     @wsme_pecan.wsexpose(lb_types.StatusRootResponse, wtypes.text,
                          status_code=200)
     def get(self):
-        context = pecan.request.context.get('octavia_context')
+        context = pecan_request.context.get('octavia_context')
         load_balancer = self._get_db_lb(context.session, self.id,
                                         show_deleted=False)
         if not load_balancer:
@@ -759,7 +760,7 @@ class StatisticsController(base.BaseController, stats.StatsMixin):
     @wsme_pecan.wsexpose(lb_types.StatisticsRootResponse, wtypes.text,
                          status_code=200)
     def get(self):
-        context = pecan.request.context.get('octavia_context')
+        context = pecan_request.context.get('octavia_context')
         load_balancer = self._get_db_lb(context.session, self.id,
                                         show_deleted=False)
         if not load_balancer:
@@ -787,7 +788,7 @@ class FailoverController(LoadBalancersController):
     @wsme_pecan.wsexpose(None, wtypes.text, status_code=202)
     def put(self, **kwargs):
         """Fails over a loadbalancer"""
-        context = pecan.request.context.get('octavia_context')
+        context = pecan_request.context.get('octavia_context')
         db_lb = self._get_db_lb(context.session, self.lb_id,
                                 show_deleted=False)
 
