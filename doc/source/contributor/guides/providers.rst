@@ -2164,7 +2164,7 @@ drivers and their features.
 Available Provider Drivers
 --------------------------
 
-The :doc:`../../admin/providers` document provides administrators with a
+The :doc:`../../admin/providers/index` document provides administrators with a
 guide to the available Octavia provider drivers. Since provider drivers are
 not included in the Octavia source repositories, this guide is an important
 tool for administrators to find your provider driver.

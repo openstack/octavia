@@ -23,13 +23,13 @@ repository and are not maintained by the Octavia team. This list is intended
 to provide a place for operators to discover and find available load balancing
 provider drivers.
 
-This list is a "best effort" to keep updated, so please check with your
+This list is a **"best effort"** to keep updated, so please check with your
 favorite load balancer provider to see if they support OpenStack load
 balancing. If they don't, make a request for support!
 
 .. Note:: The provider drivers listed here may not be maintained by the
-          OpenStack LBaaS team. Please submit bugs for these projects through
-          their respective bug tracking systems.
+          OpenStack LBaaS (Octavia) team. Please submit bugs for these
+          projects through their respective bug tracking systems.
 
 Drivers are installed on all of your Octavia API instances using pip and
 automatically integrated with Octavia using `setuptools entry points`_. Once
@@ -41,19 +41,12 @@ your Octavia API instances.
 .. _setuptools entry points: http://setuptools.readthedocs.io/en/latest/pkg_resources.html?#entry-points
 .. _enabled_provider_drivers: https://docs.openstack.org/octavia/latest/configuration/configref.html#api_settings.enabled_provider_drivers
 
-Amphora
-=======
+.. include:: a10.rst
 
-This is the reference driver for Octavia, meaning it is used for testing the
-Octavia code base. It is an open source, scalable, and highly available load
-balancing provider.
+.. include:: amphora.rst
 
-Default provider name: **amphora**
+.. include:: ovn.rst
 
-The driver package: https://pypi.org/project/octavia/
+.. include:: radware.rst
 
-The driver source: https://opendev.org/openstack/octavia/
-
-The documentation: https://docs.openstack.org/octavia/latest/
-
-Where to report issues with the driver: https://storyboard.openstack.org/#!/project/908
+.. include:: vmware-nsx.rst

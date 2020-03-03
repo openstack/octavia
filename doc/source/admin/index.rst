@@ -30,10 +30,10 @@ Optional Installation and Configuration Guides
 .. toctree::
    :maxdepth: 1
 
+   providers/index.rst
    log-offloading.rst
    api-audit.rst
    flavors.rst
-   providers.rst
    apache-httpd.rst
 
 Maintanence and Operations
