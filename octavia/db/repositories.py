@@ -30,6 +30,7 @@ from oslo_utils import uuidutils
 from sqlalchemy.orm import joinedload
 from sqlalchemy.orm import noload
 from sqlalchemy.orm import subqueryload
+from sqlalchemy.sql import func
 
 from octavia.common import constants as consts
 from octavia.common import data_models
@@ -1521,7 +1522,8 @@ class AmphoraHealthRepository(BaseRepository):
 
         amp = session.query(self.model_class).with_for_update().filter_by(
             busy=False).filter(
-            self.model_class.last_update < expired_time).first()
+            self.model_class.last_update < expired_time).order_by(
+            func.random()).first()
 
         if amp is None:
             return None
