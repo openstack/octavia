@@ -286,13 +286,19 @@ class UpdateHealthDb(update_base.HealthUpdateBase):
 
         health_msg_version = health.get('ver', 0)
 
-        for listener_id in db_lb.get('listeners', {}):
-            db_op_status = db_lb['listeners'][listener_id]['operating_status']
+        for listener_id in db_lb.get(constants.LISTENERS, {}):
+            db_listener = db_lb[constants.LISTENERS][listener_id]
+            db_op_status = db_listener[constants.OPERATING_STATUS]
             listener_status = None
             listener = None
 
             if listener_id not in listeners:
-                listener_status = constants.OFFLINE
+                if (db_listener['enabled'] and
+                    db_lb[constants.PROVISIONING_STATUS] ==
+                        constants.ACTIVE):
+                    listener_status = constants.ERROR
+                else:
+                    listener_status = constants.OFFLINE
             else:
                 listener = listeners[listener_id]
 
