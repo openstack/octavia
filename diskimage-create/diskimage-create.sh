@@ -394,6 +394,11 @@ if [ "$AMP_ENABLE_FULL_MAC_SECURITY" -ne 1 ]; then
     fi
 fi
 
+# Disable the dnf makecache timer
+if [ "${AMP_BASEOS}" = "centos-minimal" ] || [ "${AMP_BASEOS}" = "fedora" ] || [ "${AMP_BASEOS}" = "rhel" ]; then
+    AMP_element_sequence="$AMP_element_sequence disable-makecache"
+fi
+
 if [ "${AMP_BASEOS}" = "centos-minimal" ]; then
     export DIB_YUM_MINIMAL_CREATE_INTERFACES=0
 fi
