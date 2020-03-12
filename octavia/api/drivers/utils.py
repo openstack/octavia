@@ -201,12 +201,6 @@ def listener_dict_to_provider_dict(listener_dict, for_delete=False):
     if 'tls_certificate_id' in new_listener_dict:
         new_listener_dict['default_tls_container_ref'] = new_listener_dict.pop(
             'tls_certificate_id')
-    if 'sni_containers' in new_listener_dict:
-        new_listener_dict['sni_container_refs'] = new_listener_dict.pop(
-            'sni_containers')
-    if 'sni_container_refs' in listener_dict:
-        listener_dict['sni_containers'] = listener_dict.pop(
-            'sni_container_refs')
     if 'client_ca_tls_certificate_id' in new_listener_dict:
         new_listener_dict['client_ca_tls_container_ref'] = (
             new_listener_dict.pop('client_ca_tls_certificate_id'))
@@ -260,6 +254,20 @@ def listener_dict_to_provider_dict(listener_dict, for_delete=False):
             crl_file = _get_secret_data(cert_manager, listener_obj.project_id,
                                         listener_obj.client_crl_container_id)
             new_listener_dict['client_crl_container_data'] = crl_file
+
+    # Format the sni_containers -> sni_container_refs
+    sni_containers = new_listener_dict.pop('sni_containers', None)
+    if sni_containers:
+        new_listener_dict['sni_container_refs'] = []
+        for sni in sni_containers:
+            if isinstance(sni, dict):
+                new_listener_dict['sni_container_refs'].append(
+                    sni['tls_container_id'])
+            elif isinstance(sni, str):
+                new_listener_dict['sni_container_refs'].append(sni)
+            else:
+                raise exceptions.ValidationException(
+                    detail=_('Invalid SNI container on listener'))
 
     # Remove the DB back references
     if 'load_balancer' in new_listener_dict:

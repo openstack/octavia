@@ -2363,6 +2363,16 @@ class TestListenerRepositoryTest(BaseRepositoryTest):
         new_listener = self.listener_repo.get(self.session, id=listener.id)
         self.assertEqual(name_change, new_listener.name)
 
+    def test_update_with_sni(self):
+        listener = self.create_listener(self.FAKE_UUID_1, 80)
+        container1 = {'listener_id': listener.id,
+                      'tls_container_id': self.FAKE_UUID_2}
+        container1_dm = models.SNI(**container1)
+        self.listener_repo.update(self.session, listener.id,
+                                  sni_containers=[self.FAKE_UUID_2])
+        new_listener = self.listener_repo.get(self.session, id=listener.id)
+        self.assertIn(container1_dm, new_listener.sni_containers)
+
     def test_delete(self):
         listener = self.create_listener(self.FAKE_UUID_1, 80)
         self.listener_repo.delete(self.session, id=listener.id)
