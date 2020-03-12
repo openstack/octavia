@@ -1,0 +1,8 @@
+---
+fixes:
+  - |
+    Fixed an issue where setting of SNI containers were not being applied on
+    listener update API calls.
+  - |
+    Fixed an Octavia API validation on listener update where SNI containers
+    could be set on non-TERMINATED_HTTPS listeners.
