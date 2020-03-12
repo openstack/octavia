@@ -533,6 +533,14 @@ class SNI(BaseDataModel):
         self.listener = listener
         self.tls_container_id = tls_container_id
 
+    # SQLAlchemy kindly attaches the whole listener object so
+    # let's keep this simple by overriding the to_dict for this
+    # object. Otherwise we recurse down the "ghost" listener object.
+    def to_dict(self, **kwargs):
+        return {'tls_container_id': self.tls_container_id,
+                'listener_id': self.listener_id,
+                'position': self.position}
+
 
 class TLSContainer(BaseDataModel):
 

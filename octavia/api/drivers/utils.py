@@ -219,19 +219,6 @@ def listener_dict_to_provider_dict(listener_dict, for_delete=False):
     if 'tls_certificate_id' in new_listener_dict:
         new_listener_dict['default_tls_container_ref'] = new_listener_dict.pop(
             'tls_certificate_id')
-    if 'sni_containers' in new_listener_dict:
-        sni_refs = []
-        sni_containers = new_listener_dict.pop('sni_containers')
-        for sni in sni_containers:
-            if 'tls_container_id' in sni:
-                sni_refs.append(sni['tls_container_id'])
-            else:
-                raise exceptions.ValidationException(
-                    detail=_('Invalid SNI container on listener'))
-        new_listener_dict['sni_container_refs'] = sni_refs
-    if 'sni_container_refs' in listener_dict:
-        listener_dict['sni_containers'] = listener_dict.pop(
-            'sni_container_refs')
     if 'client_ca_tls_certificate_id' in new_listener_dict:
         new_listener_dict['client_ca_tls_container_ref'] = (
             new_listener_dict.pop('client_ca_tls_certificate_id'))
@@ -244,8 +231,6 @@ def listener_dict_to_provider_dict(listener_dict, for_delete=False):
         SNI_objs = []
         for sni in listener_obj.sni_containers:
             if isinstance(sni, dict):
-                if 'listener' in sni:
-                    del sni['listener']
                 sni_obj = data_models.SNI(**sni)
                 SNI_objs.append(sni_obj)
             elif isinstance(sni, six.string_types):
@@ -295,6 +280,20 @@ def listener_dict_to_provider_dict(listener_dict, for_delete=False):
         cidrs_dict_list = new_listener_dict.pop('allowed_cidrs')
         new_listener_dict['allowed_cidrs'] = [cidr_dict['cidr'] for
                                               cidr_dict in cidrs_dict_list]
+
+    # Format the sni_containers -> sni_container_refs
+    sni_containers = new_listener_dict.pop('sni_containers', None)
+    if sni_containers:
+        new_listener_dict['sni_container_refs'] = []
+        for sni in sni_containers:
+            if isinstance(sni, dict):
+                new_listener_dict['sni_container_refs'].append(
+                    sni['tls_container_id'])
+            elif isinstance(sni, str):
+                new_listener_dict['sni_container_refs'].append(sni)
+            else:
+                raise exceptions.ValidationException(
+                    detail=_('Invalid SNI container on listener'))
 
     # Remove the DB back references
     if 'load_balancer' in new_listener_dict:

@@ -1071,11 +1071,16 @@ class ListenerRepository(BaseRepository):
             default_pool_id = model_kwargs.get('default_pool_id')
             if default_pool_id:
                 self._pool_check(session, default_pool_id, listener_id=id)
-            sni_containers = model_kwargs.pop('sni_containers', [])
-            for container_ref in sni_containers:
-                sni = models.SNI(listener_id=id,
-                                 tls_certificate_id=container_ref)
-                listener_db.sni_containers.append(sni)
+            if 'sni_containers' in model_kwargs:
+                # sni_container_refs is being updated. It is either being set
+                # or unset/cleared. We need to update in DB side.
+                containers = model_kwargs.pop('sni_containers', []) or []
+                listener_db.sni_containers = []
+                if containers:
+                    listener_db.sni_containers = [
+                        models.SNI(listener_id=id,
+                                   tls_container_id=container_ref)
+                        for container_ref in containers]
             if 'allowed_cidrs' in model_kwargs:
                 # allowed_cidrs is being updated. It is either being set or
                 # unset/cleared. We need to update in DB side.

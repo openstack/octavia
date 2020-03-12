@@ -304,7 +304,7 @@ class TestUtils(base.TestCase):
                                        'sni_certs': [cert2, cert3]}
         # Test with bad SNI content
         test_listener = copy.deepcopy(self.sample_data.test_listener1_dict)
-        test_listener['sni_containers'] = [{}]
+        test_listener['sni_containers'] = [()]
         self.assertRaises(exceptions.ValidationException,
                           utils.listener_dict_to_provider_dict,
                           test_listener)
