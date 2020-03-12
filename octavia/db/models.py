@@ -502,8 +502,8 @@ class Listener(base_models.BASE, base_models.IdMixin,
     default_pool = orm.relationship("Pool", uselist=False,
                                     back_populates="_default_listeners")
     sni_containers = orm.relationship(
-        'SNI', cascade='delete', uselist=True,
-        backref=orm.backref('listener', uselist=False))
+        'SNI', cascade='all,delete-orphan',
+        uselist=True, backref=orm.backref('listener', uselist=False))
 
     l7policies = orm.relationship(
         'L7Policy', uselist=True, order_by='L7Policy.position',
