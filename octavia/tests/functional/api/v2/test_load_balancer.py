@@ -1552,8 +1552,8 @@ class TestLoadBalancer(base.BaseAPITest):
 
         lbs = self.get(
             self.LBS_PATH,
-            params={'name': 'lb1', 'tags': 'test_tag2',
-                    'vip_address': '10.0.0.1', 'tags': 'test_tag1'}
+            params={'name': 'lb1', 'tags': 'test_tag1',
+                    'vip_address': '10.0.0.1'}
         ).json.get(self.root_tag_list)
         self.assertIsInstance(lbs, list)
         self.assertEqual(1, len(lbs))
@@ -1561,8 +1561,8 @@ class TestLoadBalancer(base.BaseAPITest):
 
         lbs = self.get(
             self.LBS_PATH,
-            params={'name': 'lb1', 'tags': 'test_tag2',
-                    'vip_address': '10.0.0.1', 'tags': 'test_tag3'}
+            params={'name': 'lb1', 'tags': 'test_tag3',
+                    'vip_address': '10.0.0.1'}
         ).json.get(self.root_tag_list)
         self.assertIsInstance(lbs, list)
         self.assertEqual(0, len(lbs))

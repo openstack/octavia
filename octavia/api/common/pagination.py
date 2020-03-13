@@ -345,7 +345,8 @@ class PaginationHelper(object):
                         default = PaginationHelper._get_default_column_value(
                             model_attr.property.columns[0].type)
                         attr = sa_sql.expression.case(
-                            [(model_attr != None,  # noqa: E711 # pylint: disable=singleton-comparison
+                            # pylint: disable=singleton-comparison
+                            [(model_attr != None,  # noqa E711
                               model_attr), ], else_=default)
                         crit_attrs.append((attr == marker_values[j]))
 
@@ -353,7 +354,8 @@ class PaginationHelper(object):
                     default = PaginationHelper._get_default_column_value(
                         model_attr.property.columns[0].type)
                     attr = sa_sql.expression.case(
-                        [(model_attr != None,  # noqa: E711 # pylint: disable=singleton-comparison
+                        # pylint: disable=singleton-comparison
+                        [(model_attr != None,  # noqa E711
                           model_attr), ], else_=default)
                     this_sort_dir = self.sort_keys[i][1]
                     if this_sort_dir == constants.DESC:

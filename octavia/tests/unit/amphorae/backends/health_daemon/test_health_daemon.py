@@ -33,11 +33,15 @@ LISTENER_ID1 = uuidutils.generate_uuid()
 LISTENER_ID2 = uuidutils.generate_uuid()
 LISTENER_IDS = [LISTENER_ID1, LISTENER_ID2]
 BASE_PATH = '/tmp/test'
-SAMPLE_POOL_STATUS = {'432fc8b3-d446-48d4-bb64-13beb90e22bc': {
-                      'status': 'UP',
-                      'uuid': '432fc8b3-d446-48d4-bb64-13beb90e22bc',
-                      'members': {
-                          '302e33d9-dee1-4de9-98d5-36329a06fb58': 'DOWN'}}}
+SAMPLE_POOL_STATUS = {
+    '432fc8b3-d446-48d4-bb64-13beb90e22bc': {
+        'status': 'UP',
+        'uuid': '432fc8b3-d446-48d4-bb64-13beb90e22bc',
+        'members': {'302e33d9-dee1-4de9-98d5-36329a06fb58': 'DOWN'}},
+    '3661ed10-99db-4d2c-bffb-99b60eb876ff': {
+        'status': 'UP',
+        'uuid': '3661ed10-99db-4d2c-bffb-99b60eb876ff',
+        'members': {'e657f950-a6a2-4d28-bffa-0c8a8c05f815': 'DOWN'}}}
 
 SAMPLE_BOGUS_POOL_STATUS = {LISTENER_ID1: {
                             'status': 'UP',
@@ -112,11 +116,13 @@ SAMPLE_STATS_MSG = {
                 'tx': 0, 'rx': 0, 'ereq': 0},
             'status': 'OPEN'},
     },
-    'pools': {'432fc8b3-d446-48d4-bb64-13beb90e22bc': {
-        'members': {'302e33d9-dee1-4de9-98d5-36329a06fb58': 'DOWN'},
-        'status': 'UP'}, '432fc8b3-d446-48d4-bb64-13beb90e22bc': {
-        'members': {'302e33d9-dee1-4de9-98d5-36329a06fb58': 'DOWN'},
-        'status': 'UP'},
+    'pools': {
+        '432fc8b3-d446-48d4-bb64-13beb90e22bc': {
+            'members': {'302e33d9-dee1-4de9-98d5-36329a06fb58': 'DOWN'},
+            'status': 'UP'},
+        '3661ed10-99db-4d2c-bffb-99b60eb876ff': {
+            'members': {'e657f950-a6a2-4d28-bffa-0c8a8c05f815': 'DOWN'},
+            'status': 'UP'},
     },
     'id': None,
     'seq': 0,
