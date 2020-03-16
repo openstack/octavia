@@ -1503,6 +1503,22 @@ timeout_tcp_inspect-optional:
   min_version: 2.1
   required: false
   type: integer
+tls_ciphers:
+  description: |
+    List of ciphers in OpenSSL format (colon-separated).
+    See https://www.openssl.org/docs/man1.1.1/man1/ciphers.html
+  in: body
+  min_version: 2.15
+  required: true
+  type: string
+tls_ciphers-optional:
+  description: |
+    List of ciphers in OpenSSL format (colon-separated).
+    See https://www.openssl.org/docs/man1.1.1/man1/ciphers.html
+  in: body
+  min_version: 2.15
+  required: false
+  type: string
 tls_container_ref:
   description: |
     The reference to the `key manager service

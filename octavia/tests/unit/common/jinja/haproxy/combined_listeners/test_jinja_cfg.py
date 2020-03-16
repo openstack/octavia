@@ -51,12 +51,13 @@ class TestHaproxyCfg(base.TestCase):
               "ssl crt-list {crt_list} "
               "ca-file /var/lib/octavia/certs/sample_loadbalancer_id_1/"
               "client_ca.pem verify required crl-file /var/lib/octavia/"
-              "certs/sample_loadbalancer_id_1/SHA_ID.pem\n"
+              "certs/sample_loadbalancer_id_1/SHA_ID.pem ciphers {ciphers}\n"
               "    mode http\n"
               "    default_backend sample_pool_id_1:sample_listener_id_1\n"
               "    timeout client 50000\n").format(
             maxconn=constants.HAPROXY_MAX_MAXCONN,
-            crt_list=FAKE_CRT_LIST_FILENAME)
+            crt_list=FAKE_CRT_LIST_FILENAME,
+            ciphers=constants.CIPHERS_OWASP_SUITE_B)
         be = ("backend sample_pool_id_1:sample_listener_id_1\n"
               "    mode http\n"
               "    balance roundrobin\n"
@@ -102,6 +103,56 @@ class TestHaproxyCfg(base.TestCase):
         fe = ("frontend sample_listener_id_1\n"
               "    maxconn {maxconn}\n"
               "    redirect scheme https if !{{ ssl_fc }}\n"
+              "    bind 10.0.0.2:443 ssl crt-list {crt_list}"
+              "   ciphers {ciphers}\n"
+              "    mode http\n"
+              "    default_backend sample_pool_id_1:sample_listener_id_1\n"
+              "    timeout client 50000\n").format(
+            maxconn=constants.HAPROXY_MAX_MAXCONN,
+            crt_list=FAKE_CRT_LIST_FILENAME,
+            ciphers=constants.CIPHERS_OWASP_SUITE_B)
+        be = ("backend sample_pool_id_1:sample_listener_id_1\n"
+              "    mode http\n"
+              "    balance roundrobin\n"
+              "    cookie SRV insert indirect nocache\n"
+              "    timeout check 31s\n"
+              "    option httpchk GET /index.html HTTP/1.0\\r\\n\n"
+              "    http-check expect rstatus 418\n"
+              "    fullconn {maxconn}\n"
+              "    option allbackups\n"
+              "    timeout connect 5000\n"
+              "    timeout server 50000\n"
+              "    server sample_member_id_1 10.0.0.99:82 "
+              "weight 13 check inter 30s fall 3 rise 2 "
+              "cookie sample_member_id_1\n"
+              "    server sample_member_id_2 10.0.0.98:82 "
+              "weight 13 check inter 30s fall 3 rise 2 "
+              "cookie sample_member_id_2\n\n").format(
+            maxconn=constants.HAPROXY_MAX_MAXCONN)
+        rendered_obj = self.jinja_cfg.render_loadbalancer_obj(
+            sample_configs_combined.sample_amphora_tuple(),
+            [sample_configs_combined.sample_listener_tuple(
+                proto='TERMINATED_HTTPS', tls=True)],
+            tls_certs={'cont_id_1':
+                       sample_configs_combined.sample_tls_container_tuple(
+                           id='tls_container_id',
+                           certificate='ImAalsdkfjCert',
+                           private_key='ImAsdlfksdjPrivateKey',
+                           primary_cn="FakeCN")})
+        self.assertEqual(
+            sample_configs_combined.sample_base_expected_config(
+                frontend=fe, backend=be),
+            rendered_obj)
+
+    def test_render_template_tls_no_ciphers(self):
+        conf = oslo_fixture.Config(cfg.CONF)
+        conf.config(group="haproxy_amphora", base_cert_dir='/fake_cert_dir')
+        FAKE_CRT_LIST_FILENAME = os.path.join(
+            CONF.haproxy_amphora.base_cert_dir,
+            'sample_loadbalancer_id_1/sample_listener_id_1.pem')
+        fe = ("frontend sample_listener_id_1\n"
+              "    maxconn {maxconn}\n"
+              "    redirect scheme https if !{{ ssl_fc }}\n"
               "    bind 10.0.0.2:443 ssl crt-list {crt_list}\n"
               "    mode http\n"
               "    default_backend sample_pool_id_1:sample_listener_id_1\n"
@@ -129,7 +180,7 @@ class TestHaproxyCfg(base.TestCase):
         rendered_obj = self.jinja_cfg.render_loadbalancer_obj(
             sample_configs_combined.sample_amphora_tuple(),
             [sample_configs_combined.sample_listener_tuple(
-                proto='TERMINATED_HTTPS', tls=True)],
+                proto='TERMINATED_HTTPS', tls=True, tls_ciphers=None)],
             tls_certs={'cont_id_1':
                        sample_configs_combined.sample_tls_container_tuple(
                            id='tls_container_id',
@@ -1121,7 +1172,8 @@ class TestHaproxyCfg(base.TestCase):
         fe = ("frontend sample_listener_id_1\n"
               "    maxconn 1000000\n"
               "    redirect scheme https if !{ ssl_fc }\n"
-              "    bind 10.0.0.2:443\n"
+              "    bind 10.0.0.2:443 ciphers " +
+              constants.CIPHERS_OWASP_SUITE_B + "\n"
               "    mode http\n"
               "        acl sample_l7rule_id_1 path -m beg /api\n"
               "    use_backend sample_pool_id_2:sample_listener_id_1"

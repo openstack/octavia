@@ -103,6 +103,12 @@ def create_listener(listener_dict, lb_id):
 
     if 'client_authentication' not in listener_dict:
         listener_dict['client_authentication'] = constants.CLIENT_AUTH_NONE
+
+    if (listener_dict['protocol'] == constants.PROTOCOL_TERMINATED_HTTPS and
+            ('tls_ciphers' not in listener_dict or
+             listener_dict['tls_ciphers'] is None)):
+        listener_dict['tls_ciphers'] = (
+            CONF.api_settings.default_listener_ciphers)
     return listener_dict
 
 
