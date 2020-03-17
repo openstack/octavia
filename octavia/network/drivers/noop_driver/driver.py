@@ -151,7 +151,10 @@ class NoopManager(object):
         self.networkconfigconfig[network_id] = (network_id, 'get_network')
         network = network_models.Network(id=uuidutils.generate_uuid())
 
-        class ItIsInsideMe(object):
+        class ItIsInsideMe(network_models.Subnet):
+            def to_dict(self, **kwargs):
+                return [{}]
+
             def __contains__(self, item):
                 return True
 

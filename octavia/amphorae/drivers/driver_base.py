@@ -130,7 +130,8 @@ class AmphoraLoadBalancerDriver(object):
         an offline pool after this call.
         """
 
-    def post_vip_plug(self, amphora, load_balancer, amphorae_network_config):
+    def post_vip_plug(self, amphora, load_balancer, amphorae_network_config,
+                      vrrp_port=None, vip_subnet=None):
         """Called after network driver has allocated and plugged the VIP
 
         :param amphora:
@@ -141,6 +142,12 @@ class AmphoraLoadBalancerDriver(object):
         :param amphorae_network_config: A data model containing information
                                         about the subnets and ports that an
                                         amphorae owns.
+        :param vrrp_port: VRRP port associated with the load balancer
+        :type vrrp_port: octavia.network.data_models.Port
+
+        :param vip_subnet: VIP subnet associated with the load balancer
+        :type vip_subnet: octavia.network.data_models.Subnet
+
         :type vip_network: octavia.network.data_models.AmphoraNetworkConfig
         :returns: None
 
