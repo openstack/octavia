@@ -599,13 +599,12 @@ HTTP just get redirected to the HTTPS listener), then please see `the example
 1. Combine the individual cert/key/intermediates to a single PKCS12 file.
 2. Create a barbican *secret* resource for the PKCS12 file. We will call
    this *tls_secret1*.
-3. Grant the *admin* user access to the *tls_secret1* barbican resource.
-4. Create load balancer *lb1* on subnet *public-subnet*.
-5. Create listener *listener1* as a TERMINATED_HTTPS listener referencing
+3. Create load balancer *lb1* on subnet *public-subnet*.
+4. Create listener *listener1* as a TERMINATED_HTTPS listener referencing
    *tls_secret1* as its default TLS container.
-6. Create pool *pool1* as *listener1*'s default pool.
-7. Add members 192.0.2.10 and 192.0.2.11 on *private-subnet* to *pool1*.
-8. Create listener *listener2* as an HTTP listener with *pool1* as its
+5. Create pool *pool1* as *listener1*'s default pool.
+6. Add members 192.0.2.10 and 192.0.2.11 on *private-subnet* to *pool1*.
+7. Create listener *listener2* as an HTTP listener with *pool1* as its
    default pool.
 
 **CLI commands**:
