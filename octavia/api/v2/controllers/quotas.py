@@ -13,7 +13,8 @@
 #    under the License.
 
 from oslo_config import cfg
-import pecan
+from pecan import expose as pecan_expose
+from pecan import request as pecan_request
 from wsme import types as wtypes
 from wsmeext import pecan as wsme_pecan
 
@@ -35,7 +36,7 @@ class QuotasController(base.BaseController):
     @wsme_pecan.wsexpose(quota_types.QuotaResponse, wtypes.text)
     def get(self, project_id):
         """Get a single project's quota details."""
-        context = pecan.request.context.get('octavia_context')
+        context = pecan_request.context.get('octavia_context')
 
         self._auth_validate_action(context, project_id, constants.RBAC_GET_ONE)
 
@@ -46,7 +47,7 @@ class QuotasController(base.BaseController):
                          ignore_extra_args=True)
     def get_all(self, project_id=None):
         """List all non-default quotas."""
-        pcontext = pecan.request.context
+        pcontext = pecan_request.context
         context = pcontext.get('octavia_context')
 
         query_filter = self._auth_get_all(context, project_id)
@@ -63,7 +64,7 @@ class QuotasController(base.BaseController):
                          body=quota_types.QuotaPUT, status_code=202)
     def put(self, project_id, quotas):
         """Update any or all quotas for a project."""
-        context = pecan.request.context.get('octavia_context')
+        context = pecan_request.context.get('octavia_context')
 
         if not project_id:
             raise exceptions.MissingAPIProjectID()
@@ -79,7 +80,7 @@ class QuotasController(base.BaseController):
     @wsme_pecan.wsexpose(None, wtypes.text, status_code=202)
     def delete(self, project_id):
         """Reset a project's quotas to the default values."""
-        context = pecan.request.context.get('octavia_context')
+        context = pecan_request.context.get('octavia_context')
 
         if not project_id:
             raise exceptions.MissingAPIProjectID()
@@ -90,7 +91,7 @@ class QuotasController(base.BaseController):
         db_quotas = self._get_db_quotas(context.session, project_id)
         return self._convert_db_to_type(db_quotas, quota_types.QuotaResponse)
 
-    @pecan.expose()
+    @pecan_expose()
     def _lookup(self, project_id, *remainder):
         """Overridden pecan _lookup method for routing default endpoint."""
         if project_id and remainder and remainder[0] == 'default':
@@ -108,7 +109,7 @@ class QuotasDefaultController(base.BaseController):
     @wsme_pecan.wsexpose(quota_types.QuotaResponse, wtypes.text)
     def get(self):
         """Get a project's default quota details."""
-        context = pecan.request.context.get('octavia_context')
+        context = pecan_request.context.get('octavia_context')
 
         if not self.project_id:
             raise exceptions.MissingAPIProjectID()

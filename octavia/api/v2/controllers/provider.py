@@ -14,7 +14,8 @@
 
 from oslo_config import cfg
 from oslo_log import log as logging
-import pecan
+from pecan import expose as pecan_expose
+from pecan import request as pecan_request
 from wsme import types as wtypes
 from wsmeext import pecan as wsme_pecan
 
@@ -39,7 +40,7 @@ class ProviderController(base.BaseController):
                          ignore_extra_args=True)
     def get_all(self, fields=None):
         """List enabled provider drivers and their descriptions."""
-        pcontext = pecan.request.context
+        pcontext = pecan_request.context
         context = pcontext.get('octavia_context')
 
         self._auth_validate_action(context, context.project_id,
@@ -53,7 +54,7 @@ class ProviderController(base.BaseController):
             response_list = self._filter_fields(response_list, fields)
         return provider_types.ProvidersRootResponse(providers=response_list)
 
-    @pecan.expose()
+    @pecan_expose()
     def _lookup(self, provider, *remainder):
         """Overridden pecan _lookup method for custom routing.
 
@@ -82,7 +83,7 @@ class FlavorCapabilitiesController(base.BaseController):
                          [wtypes.text], ignore_extra_args=True,
                          status_code=200)
     def get_all(self, fields=None):
-        context = pecan.request.context.get('octavia_context')
+        context = pecan_request.context.get('octavia_context')
         self._auth_validate_action(context, context.project_id,
                                    constants.RBAC_GET_ALL)
         self.driver = driver_factory.get_driver(self.provider)
@@ -97,7 +98,7 @@ class FlavorCapabilitiesController(base.BaseController):
         # Apply any valid filters provided as URL parameters
         name_filter = None
         description_filter = None
-        pagination_helper = pecan.request.context.get(
+        pagination_helper = pecan_request.context.get(
             constants.PAGINATION_HELPER)
         if pagination_helper:
             name_filter = pagination_helper.params.get(constants.NAME)
@@ -132,7 +133,7 @@ class AvailabilityZoneCapabilitiesController(base.BaseController):
                          [wtypes.text], ignore_extra_args=True,
                          status_code=200)
     def get_all(self, fields=None):
-        context = pecan.request.context.get('octavia_context')
+        context = pecan_request.context.get('octavia_context')
         self._auth_validate_action(context, context.project_id,
                                    constants.RBAC_GET_ALL)
         self.driver = driver_factory.get_driver(self.provider)
@@ -149,7 +150,7 @@ class AvailabilityZoneCapabilitiesController(base.BaseController):
         # Apply any valid filters provided as URL parameters
         name_filter = None
         description_filter = None
-        pagination_helper = pecan.request.context.get(
+        pagination_helper = pecan_request.context.get(
             constants.PAGINATION_HELPER)
         if pagination_helper:
             name_filter = pagination_helper.params.get(constants.NAME)

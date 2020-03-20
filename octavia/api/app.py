@@ -20,7 +20,8 @@ from oslo_log import log as logging
 from oslo_middleware import cors
 from oslo_middleware import http_proxy_to_wsgi
 from oslo_middleware import request_id
-import pecan
+from pecan import configuration as pecan_configuration
+from pecan import make_app as pecan_make_app
 
 from octavia.api import config as app_config
 from octavia.api.drivers import driver_factory
@@ -36,7 +37,7 @@ CONF = cfg.CONF
 def get_pecan_config():
     """Returns the pecan config."""
     filename = app_config.__file__.replace('.pyc', '.py')
-    return pecan.configuration.conf_from_file(filename)
+    return pecan_configuration.conf_from_file(filename)
 
 
 def _init_drivers():
@@ -56,9 +57,9 @@ def setup_app(pecan_config=None, debug=False, argv=None):
 
     if not pecan_config:
         pecan_config = get_pecan_config()
-    pecan.configuration.set_config(dict(pecan_config), overwrite=True)
+    pecan_configuration.set_config(dict(pecan_config), overwrite=True)
 
-    return pecan.make_app(
+    return pecan_make_app(
         pecan_config.app.root,
         wrap_app=_wrap_app,
         debug=debug,

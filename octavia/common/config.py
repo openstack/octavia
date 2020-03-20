@@ -100,6 +100,9 @@ api_opts = [
                help=_("The minimum health monitor delay interval for the "
                       "UDP-CONNECT Health Monitor type. A negative integer "
                       "value means 'no limit'.")),
+    cfg.BoolOpt('healthcheck_enabled', default=False,
+                help=_("When True, the oslo middleware healthcheck endpoint "
+                       "is enabled in the Octavia API.")),
 ]
 
 # Options only used by the amphora agent

@@ -15,7 +15,7 @@
 from oslo_db import exception as odb_exceptions
 from oslo_log import log as logging
 from oslo_utils import excutils
-import pecan
+from pecan import request as pecan_request
 from wsme import types as wtypes
 from wsmeext import pecan as wsme_pecan
 
@@ -46,7 +46,7 @@ class L7RuleController(base.BaseController):
                          [wtypes.text], ignore_extra_args=True)
     def get(self, id, fields=None):
         """Gets a single l7rule's details."""
-        context = pecan.request.context.get('octavia_context')
+        context = pecan_request.context.get('octavia_context')
         db_l7rule = self._get_db_l7rule(context.session, id,
                                         show_deleted=False)
 
@@ -63,7 +63,7 @@ class L7RuleController(base.BaseController):
                          ignore_extra_args=True)
     def get_all(self, fields=None):
         """Lists all l7rules of a l7policy."""
-        pcontext = pecan.request.context
+        pcontext = pecan_request.context
         context = pcontext.get('octavia_context')
 
         l7policy = self._get_db_l7policy(context.session, self.l7policy_id,
@@ -127,7 +127,7 @@ class L7RuleController(base.BaseController):
             validate.l7rule_data(l7rule)
         except Exception as e:
             raise exceptions.L7RuleValidation(error=e)
-        context = pecan.request.context.get('octavia_context')
+        context = pecan_request.context.get('octavia_context')
 
         db_l7policy = self._get_db_l7policy(context.session, self.l7policy_id,
                                             show_deleted=False)
@@ -189,7 +189,7 @@ class L7RuleController(base.BaseController):
     def put(self, id, l7rule_):
         """Updates a l7rule."""
         l7rule = l7rule_.rule
-        context = pecan.request.context.get('octavia_context')
+        context = pecan_request.context.get('octavia_context')
         db_l7rule = self._get_db_l7rule(context.session, id,
                                         show_deleted=False)
 
@@ -256,7 +256,7 @@ class L7RuleController(base.BaseController):
     @wsme_pecan.wsexpose(None, wtypes.text, status_code=204)
     def delete(self, id):
         """Deletes a l7rule."""
-        context = pecan.request.context.get('octavia_context')
+        context = pecan_request.context.get('octavia_context')
         db_l7rule = self._get_db_l7rule(context.session, id,
                                         show_deleted=False)
 

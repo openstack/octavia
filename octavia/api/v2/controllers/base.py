@@ -16,7 +16,8 @@ from cryptography.hazmat.backends import default_backend
 from cryptography import x509
 from oslo_config import cfg
 from oslo_log import log as logging
-import pecan
+from pecan import request as pecan_request
+from pecan import rest as pecan_rest
 from stevedore import driver as stevedore_driver
 from wsme import types as wtypes
 
@@ -31,7 +32,7 @@ CONF = cfg.CONF
 LOG = logging.getLogger(__name__)
 
 
-class BaseController(pecan.rest.RestController):
+class BaseController(pecan_rest.RestController):
     RBAC_TYPE = None
 
     def __init__(self):
@@ -257,7 +258,7 @@ class BaseController(pecan.rest.RestController):
         return attrs
 
     def _validate_tls_refs(self, tls_refs):
-        context = pecan.request.context.get('octavia_context')
+        context = pecan_request.context.get('octavia_context')
         bad_refs = []
         for ref in tls_refs:
             try:
@@ -272,7 +273,7 @@ class BaseController(pecan.rest.RestController):
             raise exceptions.CertificateRetrievalException(ref=bad_refs)
 
     def _validate_client_ca_and_crl_refs(self, client_ca_ref, crl_ref):
-        context = pecan.request.context.get('octavia_context')
+        context = pecan_request.context.get('octavia_context')
         bad_refs = []
         try:
             self.cert_manager.set_acls(context, client_ca_ref)
