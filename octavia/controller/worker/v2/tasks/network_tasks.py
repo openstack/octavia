@@ -682,7 +682,7 @@ class ApplyQos(BaseNetworkTask):
         """Apply qos policy on the vrrp ports which are related with vip."""
         qos_policy_id = loadbalancer['vip_qos_policy_id']
         if not qos_policy_id and (
-            update_dict and (
+            not update_dict or (
                 'vip' not in update_dict or
                 'qos_policy_id' not in update_dict[constants.VIP])):
             return
