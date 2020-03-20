@@ -73,7 +73,7 @@ def get_listener_realserver_mapping(ns_name, listener_ip_port,
     ip_obj = ipaddress.ip_address(six.text_type(listener_ip.strip('[]')))
     output = read_kernel_file(ns_name, KERNEL_LVS_PATH).split('\n')
     if ip_obj.version == 4:
-        ip_to_hex_format = "0%X" % ip_obj._ip
+        ip_to_hex_format = "%.8X" % ip_obj._ip
     else:
         ip_to_hex_format = '\[' + ip_obj.exploded + '\]'
     port_hex_format = "%.4X" % int(listener_port)
