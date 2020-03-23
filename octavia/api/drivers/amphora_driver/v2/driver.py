@@ -464,3 +464,16 @@ class AmphoraProviderDriver(driver_base.ProviderDriver):
             # TODO(johnsom) Fix this to raise a NotFound error
             # when the octavia-lib supports it.
             compute_driver.validate_availability_zone(compute_zone)
+
+        check_nets = availability_zone_dict.get(
+            consts.VALID_VIP_NETWORKS, [])
+        management_net = availability_zone_dict.get(
+            consts.MANAGEMENT_NETWORK, None)
+        if management_net:
+            check_nets.append(management_net)
+        for check_net in check_nets:
+            network_driver = utils.get_network_driver()
+
+            # TODO(johnsom) Fix this to raise a NotFound error
+            # when the octavia-lib supports it.
+            network_driver.get_network(check_net)

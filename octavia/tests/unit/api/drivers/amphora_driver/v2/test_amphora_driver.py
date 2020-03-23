@@ -685,7 +685,16 @@ class TestAmphoraDriver(base.TestRpc):
                 self.amp_driver.get_supported_availability_zone_metadata)
 
     def test_validate_availability_zone(self):
+        # Test compute zone
         ref_dict = {consts.COMPUTE_ZONE: 'my_compute_zone'}
+        self.amp_driver.validate_availability_zone(ref_dict)
+
+        # Test vip networks
+        ref_dict = {consts.VALID_VIP_NETWORKS: ['my_vip_net']}
+        self.amp_driver.validate_availability_zone(ref_dict)
+
+        # Test management network
+        ref_dict = {consts.MANAGEMENT_NETWORK: 'my_management_net'}
         self.amp_driver.validate_availability_zone(ref_dict)
 
         # Test bad availability zone metadata key

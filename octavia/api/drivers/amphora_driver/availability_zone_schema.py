@@ -42,6 +42,12 @@ SUPPORTED_AVAILABILITY_ZONE_SCHEMA = {
         consts.MANAGEMENT_NETWORK: {
             "type": "string",
             "description": "The management network ID for the amphora."
+        },
+        consts.VALID_VIP_NETWORKS: {
+            "type": "array",
+            "description": "List of network IDs that are allowed for VIP use. "
+                           "This overrides/replaces the list of allowed "
+                           "networks configured in `octavia.conf`."
         }
     }
 }
