@@ -10,7 +10,12 @@ python-dev:
   installtype: source
 
 acl:
+# Note: Red Hat family does not currently ship acpid for ppc64le.
+# This sets up a pkg-map to exclude it for Red Hat family ppc64le arch
+acpid-ppc64le:
+  arch: ppc64le, ppc64el
 acpid:
+  arch: i386, amd64, arm64, s390x
 apparmor:
 apt-transport-https:
 at:
