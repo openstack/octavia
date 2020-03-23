@@ -807,7 +807,10 @@ class TestControllerWorker(base.TestCase):
     @mock.patch('octavia.controller.worker.v2.flows.'
                 'member_flows.MemberFlows.get_create_member_flow',
                 return_value=_flow_mock)
+    @mock.patch('octavia.db.repositories.AvailabilityZoneRepository.'
+                'get_availability_zone_metadata_dict')
     def test_create_member(self,
+                           mock_get_az_metadata_dict,
                            mock_get_create_member_flow,
                            mock_api_get_session,
                            mock_dyn_log_listener,
@@ -822,6 +825,7 @@ class TestControllerWorker(base.TestCase):
                            mock_amp_repo_get):
 
         _flow_mock.reset_mock()
+        mock_get_az_metadata_dict.return_value = {}
         mock_member_repo_get.side_effect = [None, _member_mock]
         _member = _member_mock.to_dict()
         cw = controller_worker.ControllerWorker()
@@ -830,23 +834,24 @@ class TestControllerWorker(base.TestCase):
         provider_lb = provider_utils.db_loadbalancer_to_provider_loadbalancer(
             _db_load_balancer_mock).to_dict()
         (base_taskflow.BaseTaskFlowEngine._taskflow_load.
-            assert_called_once_with(_flow_mock,
-                                    store={constants.MEMBER: _member,
-                                           constants.LISTENERS:
-                                               [self.ref_listener_dict],
-                                           constants.LOADBALANCER_ID:
-                                               LB_ID,
-                                           constants.LOADBALANCER:
-                                               provider_lb,
-                                           constants.POOL_ID:
-                                               POOL_ID}))
+            assert_called_once_with(
+                _flow_mock,
+                store={constants.MEMBER: _member,
+                       constants.LISTENERS: [self.ref_listener_dict],
+                       constants.LOADBALANCER_ID: LB_ID,
+                       constants.LOADBALANCER: provider_lb,
+                       constants.POOL_ID: POOL_ID,
+                       constants.AVAILABILITY_ZONE: {}}))
 
         _flow_mock.run.assert_called_once_with()
 
     @mock.patch('octavia.controller.worker.v2.flows.'
                 'member_flows.MemberFlows.get_delete_member_flow',
                 return_value=_flow_mock)
+    @mock.patch('octavia.db.repositories.AvailabilityZoneRepository.'
+                'get_availability_zone_metadata_dict')
     def test_delete_member(self,
+                           mock_get_az_metadata_dict,
                            mock_get_delete_member_flow,
                            mock_api_get_session,
                            mock_dyn_log_listener,
@@ -862,6 +867,7 @@ class TestControllerWorker(base.TestCase):
 
         _flow_mock.reset_mock()
         _member = _member_mock.to_dict()
+        mock_get_az_metadata_dict.return_value = {}
         cw = controller_worker.ControllerWorker()
         cw.delete_member(_member)
         provider_lb = provider_utils.db_loadbalancer_to_provider_loadbalancer(
@@ -878,14 +884,18 @@ class TestControllerWorker(base.TestCase):
                                        provider_lb,
                                    constants.POOL_ID:
                                        POOL_ID,
-                                   constants.PROJECT_ID: PROJECT_ID}))
+                                   constants.PROJECT_ID: PROJECT_ID,
+                                   constants.AVAILABILITY_ZONE: {}}))
 
         _flow_mock.run.assert_called_once_with()
 
     @mock.patch('octavia.controller.worker.v2.flows.'
                 'member_flows.MemberFlows.get_update_member_flow',
                 return_value=_flow_mock)
+    @mock.patch('octavia.db.repositories.AvailabilityZoneRepository.'
+                'get_availability_zone_metadata_dict')
     def test_update_member(self,
+                           mock_get_az_metadata_dict,
                            mock_get_update_member_flow,
                            mock_api_get_session,
                            mock_dyn_log_listener,
@@ -902,7 +912,7 @@ class TestControllerWorker(base.TestCase):
         _flow_mock.reset_mock()
         _member = _member_mock.to_dict()
         _member[constants.PROVISIONING_STATUS] = constants.PENDING_UPDATE
-
+        mock_get_az_metadata_dict.return_value = {}
         cw = controller_worker.ControllerWorker()
         cw.update_member(_member, MEMBER_UPDATE_DICT)
         provider_lb = provider_utils.db_loadbalancer_to_provider_loadbalancer(
@@ -920,14 +930,18 @@ class TestControllerWorker(base.TestCase):
                                            constants.LOADBALANCER_ID:
                                                LB_ID,
                                            constants.UPDATE_DICT:
-                                               MEMBER_UPDATE_DICT}))
+                                               MEMBER_UPDATE_DICT,
+                                           constants.AVAILABILITY_ZONE: {}}))
 
         _flow_mock.run.assert_called_once_with()
 
     @mock.patch('octavia.controller.worker.v2.flows.'
                 'member_flows.MemberFlows.get_batch_update_members_flow',
                 return_value=_flow_mock)
+    @mock.patch('octavia.db.repositories.AvailabilityZoneRepository.'
+                'get_availability_zone_metadata_dict')
     def test_batch_update_members(self,
+                                  mock_get_az_metadata_dict,
                                   mock_get_batch_update_members_flow,
                                   mock_api_get_session,
                                   mock_dyn_log_listener,
@@ -942,7 +956,7 @@ class TestControllerWorker(base.TestCase):
                                   mock_amp_repo_get):
 
         _flow_mock.reset_mock()
-
+        mock_get_az_metadata_dict.return_value = {}
         cw = controller_worker.ControllerWorker()
         cw.batch_update_members([{constants.MEMBER_ID: 9,
                                   constants.POOL_ID: 'testtest'}],
@@ -957,7 +971,8 @@ class TestControllerWorker(base.TestCase):
                        constants.LOADBALANCER_ID: LB_ID,
                        constants.LOADBALANCER: provider_lb,
                        constants.POOL_ID: POOL_ID,
-                       constants.PROJECT_ID: PROJECT_ID}))
+                       constants.PROJECT_ID: PROJECT_ID,
+                       constants.AVAILABILITY_ZONE: {}}))
 
         _flow_mock.run.assert_called_once_with()
 

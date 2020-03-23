@@ -526,7 +526,8 @@ class AmphoraFlows(object):
 
         # Plug the member networks into the new amphora
         failover_amphora_flow.add(network_tasks.CalculateAmphoraDelta(
-            requires=(constants.LOADBALANCER, constants.AMPHORA),
+            requires=(constants.LOADBALANCER, constants.AMPHORA,
+                      constants.AVAILABILITY_ZONE),
             provides=constants.DELTA))
 
         failover_amphora_flow.add(network_tasks.HandleNetworkDelta(

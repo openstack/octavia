@@ -145,7 +145,8 @@ class LoadBalancerFlows(object):
         )
         flows.append(
             network_tasks.CalculateDelta(
-                requires=constants.LOADBALANCER, provides=constants.DELTAS
+                requires=(constants.LOADBALANCER, constants.AVAILABILITY_ZONE),
+                provides=constants.DELTAS
             )
         )
         flows.append(

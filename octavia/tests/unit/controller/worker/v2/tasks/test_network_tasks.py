@@ -122,7 +122,8 @@ class TestNetworkTasks(base.TestCase):
 
         calc_delta = network_tasks.CalculateDelta()
 
-        self.assertEqual(EMPTY, calc_delta.execute(self.load_balancer_mock))
+        self.assertEqual(EMPTY,
+                         calc_delta.execute(self.load_balancer_mock, {}))
 
         # Test with one amp and no pools, nothing plugged
         # Delta should be empty
@@ -132,7 +133,7 @@ class TestNetworkTasks(base.TestCase):
         self.db_load_balancer_mock.amphorae = [self.db_amphora_mock]
         self.db_load_balancer_mock.pools = []
         self.assertEqual(empty_deltas,
-                         calc_delta.execute(self.load_balancer_mock))
+                         calc_delta.execute(self.load_balancer_mock, {}))
         mock_driver.get_plugged_networks.assert_called_once_with(COMPUTE_ID)
 
         # Pool mock should be configured explicitly for each test
@@ -143,7 +144,7 @@ class TestNetworkTasks(base.TestCase):
         # Delta should be empty
         pool_mock.members = []
         self.assertEqual(empty_deltas,
-                         calc_delta.execute(self.load_balancer_mock))
+                         calc_delta.execute(self.load_balancer_mock, {}))
 
         # Test with one amp and one pool and one member, nothing plugged
         # Delta should be one additional subnet to plug
@@ -160,7 +161,7 @@ class TestNetworkTasks(base.TestCase):
                                     data_models.Interface(network_id=3)],
                                 delete_nics=[]).to_dict(recurse=True)
         self.assertEqual({self.db_amphora_mock.id: ndm},
-                         calc_delta.execute(self.load_balancer_mock))
+                         calc_delta.execute(self.load_balancer_mock, {}))
 
         vrrp_port_call = mock.call(PORT_ID)
         mock_driver.get_port.assert_has_calls([vrrp_port_call])
@@ -181,7 +182,7 @@ class TestNetworkTasks(base.TestCase):
             data_models.Interface(network_id='netid')]
 
         self.assertEqual(empty_deltas,
-                         calc_delta.execute(self.load_balancer_mock))
+                         calc_delta.execute(self.load_balancer_mock, {}))
 
         # Test with one amp and one pool and one member, wrong network plugged
         # Delta should be one network to add and one to remove
@@ -201,7 +202,7 @@ class TestNetworkTasks(base.TestCase):
                                     data_models.Interface(network_id=2)]
                                 ).to_dict(recurse=True)
         self.assertEqual({self.db_amphora_mock.id: ndm},
-                         calc_delta.execute(self.load_balancer_mock))
+                         calc_delta.execute(self.load_balancer_mock, {}))
 
         # Test with one amp and one pool and no members, one network plugged
         # Delta should be one network to remove
@@ -219,7 +220,7 @@ class TestNetworkTasks(base.TestCase):
                                     data_models.Interface(network_id=2)]
                                 ).to_dict(recurse=True)
         self.assertEqual({self.db_amphora_mock.id: ndm},
-                         calc_delta.execute(self.load_balancer_mock))
+                         calc_delta.execute(self.load_balancer_mock, {}))
 
     def test_get_plumbed_networks(self, mock_get_net_driver):
         mock_driver = mock.MagicMock()
