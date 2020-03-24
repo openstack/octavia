@@ -15,7 +15,7 @@
         - uuid-runtime
         - curl
         - kpartx
-        - python-yaml
+        - python3-yaml
         - debootstrap
         - qemu
         - bc
