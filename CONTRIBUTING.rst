@@ -1,16 +1,19 @@
-If you would like to contribute to the development of OpenStack,
-you must follow the steps in this page:
+The source repository for this project can be found at:
 
-   https://docs.openstack.org/infra/manual/developers.html
+   https://opendev.org/openstack/octavia
 
-Once those steps have been completed, changes to OpenStack
-should be submitted for review via the Gerrit tool, following
-the workflow documented at:
+Pull requests submitted through GitHub are not monitored.
 
-   https://docs.openstack.org/infra/manual/developers.html#development-workflow
+To start contributing to OpenStack, follow the steps in the contribution guide
+to set up and use Gerrit:
 
-Pull requests submitted through GitHub will be ignored.
+   https://docs.openstack.org/contributors/code-and-documentation/quick-start.html
 
-Bugs should be filed on StoryBoard, not GitHub:
+Bugs should be filed on Storyboard:
 
-   https://storyboard.openstack.org/#!/project/908
+   https://storyboard.openstack.org/#!/project/openstack/octavia
+
+For more specific information about contributing to this repository, see the
+Octavia contributor guide:
+
+   https://docs.openstack.org/octavia/latest/contributor/contributing.html

@@ -8,6 +8,7 @@ Contributor Guidelines
    :glob:
    :maxdepth: 1
 
+   contributing.rst
    CONSTITUTION.rst
    HACKING.rst
 
