@@ -22,6 +22,7 @@
   "family": {
     "redhat": {
       "amphora-agent": "openstack-octavia-amphora-agent",
+      "acpid-ppc64le": "",
       "netcat-openbsd": "nmap-ncat",
       "netbase": "",
       "cron": "",
@@ -43,6 +44,7 @@
   },
   "default": {
     "amphora-agent": "amphora-agent",
+    "acpid-ppc64le": "acpid",
     "network-scripts": ""
   }
 }
