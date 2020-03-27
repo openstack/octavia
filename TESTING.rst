@@ -53,13 +53,13 @@ To run a specific functional test:
 
 .. code-block:: bash
 
-    $ tox -e functional octavia.tests.functional.api.v1.test_load_balancer
+    $ tox -e functional octavia.tests.functional.api.v2.test_load_balancer
 
-Tests can also be run using partial matching, to run all API tests for v1:
+Tests can also be run using partial matching, to run all API tests for v2:
 
 .. code-block:: bash
 
-    $ tox -e functional api.v1
+    $ tox -e functional api.v2
 
 Additional options can be used while running tests. Two useful options that can
 be used when running tests are ``-- --until-failure`` which will run the tests
