@@ -1,3 +1,5 @@
+.. _octavia-style-commandments:
+
 Octavia Style Commandments
 ==========================
 This project was ultimately spawned from work done on the Neutron project.
