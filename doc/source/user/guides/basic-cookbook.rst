@@ -94,7 +94,7 @@ a floating IP. See :ref:`basic-lb-with-hm-and-fip` below.
 * Back-end servers 192.0.2.10 and 192.0.2.11 on subnet *private-subnet* have
   been configured with an HTTP application on TCP port 80.
 * These back-end servers have been configured with a health check at the URL
-  path "/healthcheck". See :ref:`http-heath-monitors` below.
+  path "/healthcheck". See :ref:`http-health-monitors` below.
 * Subnet *public-subnet* is a shared external subnet created by the cloud
   operator which is reachable from the internet.
 * We want to configure a basic load balancer that is accessible from the
@@ -140,7 +140,7 @@ do not work with IPv6.
 * Back-end servers 192.0.2.10 and 192.0.2.11 on subnet *private-subnet* have
   been configured with an HTTP application on TCP port 80.
 * These back-end servers have been configured with a health check at the URL
-  path "/healthcheck". See :ref:`http-heath-monitors` below.
+  path "/healthcheck". See :ref:`http-health-monitors` below.
 * Neutron network *public* is a shared external network created by the cloud
   operator which is reachable from the internet.
 * We want to configure a basic load balancer that is accessible from the
@@ -185,7 +185,7 @@ Deploy a basic HTTP load balancer with session persistence
   the same back-end server throughout their web session, based on an
   application cookie inserted by the web application named 'PHPSESSIONID'.
 * These back-end servers have been configured with a health check at the URL
-  path "/healthcheck". See :ref:`http-heath-monitors` below.
+  path "/healthcheck". See :ref:`http-health-monitors` below.
 * Subnet *public-subnet* is a shared external subnet created by the cloud
   operator which is reachable from the internet.
 * We want to configure a basic load balancer that is accessible from the
@@ -733,10 +733,50 @@ terminated listener, see the above section
     openstack loadbalancer member create --subnet-id private-subnet --address 192.0.2.10 --protocol-port 443 pool1
     openstack loadbalancer member create --subnet-id private-subnet --address 192.0.2.11 --protocol-port 443 pool1
 
-.. _heath-monitor-best-practices:
+Deploy a UDP load balancer with a health monitor
+------------------------------------------------
 
-Heath Monitor Best Practices
-============================
+This is a load balancer solution suitable for UDP-based services.
+
+**Scenario description**:
+
+* Back-end servers 192.0.2.10 and 192.0.2.11 on subnet *private-subnet* have
+  been configured with an application on UDP port 1234.
+* Subnet *public-subnet* is a shared external subnet created by the cloud
+  operator which is reachable from the internet.
+* We want to configure a basic load balancer that is accessible from the
+  internet, which distributes requests to the back-end servers.
+* We want to employ a UDP health check to ensure that the back-end servers are
+  available. UDP health checks may not work correctly if ICMP Destination
+  Unreachable (ICMP type 3) messages are blocked by a security rule (see
+  :ref:`other-health-monitors`).
+
+**Solution**:
+
+1. Create load balancer *lb1* on subnet *private-subnet*.
+2. Create listener *listener1*.
+3. Create pool *pool1* as *listener1*'s default pool.
+4. Create a health monitor on *pool1* which connects to the back-end servers.
+5. Add members 192.0.2.10 and 192.0.2.11 on *private-subnet* to *pool1*.
+
+**CLI commands**:
+
+::
+
+    openstack loadbalancer create --name lb1 --vip-subnet-id public-subnet
+    # Re-run the following until lb1 shows ACTIVE and ONLINE statuses:
+    openstack loadbalancer show lb1
+    openstack loadbalancer listener create --name listener1 --protocol UDP --protocol-port 1234 lb1
+    openstack loadbalancer pool create --name pool1 --lb-algorithm ROUND_ROBIN --listener listener1 --protocol UDP
+    openstack loadbalancer healthmonitor create --delay 3 --max-retries 2 --timeout 2 --type UDP-CONNECT pool1
+    openstack loadbalancer member create --subnet-id private-subnet --address 192.0.2.10 --protocol-port 1234 pool1
+    openstack loadbalancer member create --subnet-id private-subnet --address 192.0.2.11 --protocol-port 1234 pool1
+
+
+.. _health-monitor-best-practices:
+
+Health Monitor Best Practices
+=============================
 While it is possible to set up a listener without a health monitor, if a
 back-end pool member goes down, Octavia will not remove the failed server from
 the pool until a considerable time has passed. This can lead to service
@@ -752,8 +792,8 @@ configuration, some additional discussion of best practices is warranted here.
 See also: `Octavia API Reference <https://docs.openstack.org/api-ref/load-balancer/>`_
 
 
-Heath monitor options
----------------------
+Health monitor options
+----------------------
 All of the health monitors Octavia supports have the following configurable
 options:
 
@@ -765,7 +805,7 @@ options:
   server must pass to be considered *up* again.
 
 
-.. _http-heath-monitors:
+.. _http-health-monitors:
 
 HTTP health monitors
 --------------------
@@ -812,8 +852,10 @@ generates the health check in your web application:
   "OPTIONS" HTTP methods to cut down on unnecessary processing of a whole page.
 
 
-Other heath monitors
---------------------
+.. _other-health-monitors:
+
+Other health monitors
+---------------------
 Other health monitor types include ``PING``, ``TCP``, ``HTTPS``, ``TLS-HELLO``,
 and ``UDP-CONNECT``.
 
