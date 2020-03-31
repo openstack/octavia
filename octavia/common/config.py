@@ -735,9 +735,7 @@ cfg.CONF.register_opts(controller_worker_opts, group='controller_worker')
 cfg.CONF.register_opts(keepalived_vrrp_opts, group='keepalived_vrrp')
 cfg.CONF.register_opts(task_flow_opts, group='task_flow')
 cfg.CONF.register_opts(house_keeping_opts, group='house_keeping')
-cfg.CONF.register_cli_opts(core_cli_opts)
 cfg.CONF.register_opts(certificate_opts, group='certificates')
-cfg.CONF.register_cli_opts(healthmanager_opts, group='health_manager')
 cfg.CONF.register_opts(nova_opts, group='nova')
 cfg.CONF.register_opts(cinder_opts, group='cinder')
 cfg.CONF.register_opts(glance_opts, group='glance')
@@ -757,13 +755,18 @@ _SQL_CONNECTION_DEFAULT = 'sqlite://'
 db_options.set_defaults(cfg.CONF, connection=_SQL_CONNECTION_DEFAULT,
                         max_pool_size=10, max_overflow=20, pool_timeout=10)
 
-logging.register_options(cfg.CONF)
-
 ks_loading.register_auth_conf_options(cfg.CONF, constants.SERVICE_AUTH)
 ks_loading.register_session_conf_options(cfg.CONF, constants.SERVICE_AUTH)
 
 
+def register_cli_opts():
+    cfg.CONF.register_cli_opts(core_cli_opts)
+    cfg.CONF.register_cli_opts(healthmanager_opts, group='health_manager')
+    logging.register_options(cfg.CONF)
+
+
 def init(args, **kwargs):
+    register_cli_opts()
     cfg.CONF(args=args, project='octavia',
              version='%%prog %s' % version.version_info.release_string(),
              **kwargs)
