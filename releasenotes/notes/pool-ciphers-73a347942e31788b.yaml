@@ -1,0 +1,7 @@
+---
+features:
+  - |
+    TLS-enabled pools can now be individually configured with an OpenSSL cipher string.
+    The default cipher for new pools can be specified with ``default_pools_ciphers``
+    in ``octavia.conf``. The built-in default is OWASP's "Suite B" recommendation. (https://cheatsheetseries.owasp.org/cheatsheets/TLS_Cipher_String_Cheat_Sheet.html)
+    Existing pools will be unaffected.

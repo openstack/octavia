@@ -146,7 +146,6 @@ class TestUtils(base.TestCase):
         expect_pools = copy.deepcopy(self.sample_data.provider_pools,)
         for pool in expect_pools:
             delattr(pool, lib_constants.TLS_VERSIONS)
-            delattr(pool, lib_constants.TLS_CIPHERS)
         ref_prov_lb_dict = {
             'vip_address': self.sample_data.ip_address,
             'admin_state_up': True,
@@ -263,7 +262,6 @@ class TestUtils(base.TestCase):
         expect_pool_prov = copy.deepcopy(self.sample_data.provider_pool1_dict)
         # TODO(johnsom) Remove when versions and ciphers are implemented
         expect_pool_prov.pop(lib_constants.TLS_VERSIONS)
-        expect_pool_prov.pop(lib_constants.TLS_CIPHERS)
         expect_prov.pop(lib_constants.TLS_VERSIONS)
         expect_prov['default_pool'] = expect_pool_prov
         provider_listener = utils.listener_dict_to_provider_dict(
@@ -300,7 +298,6 @@ class TestUtils(base.TestCase):
         del expect_pool_prov['tls_container_data']
         # TODO(johnsom) Remove when versions and ciphers are implemented
         expect_pool_prov.pop(lib_constants.TLS_VERSIONS)
-        expect_pool_prov.pop(lib_constants.TLS_CIPHERS)
         expect_prov.pop(lib_constants.TLS_VERSIONS)
         expect_prov['default_pool'] = expect_pool_prov
         del expect_prov['default_tls_container_data']
@@ -340,7 +337,6 @@ class TestUtils(base.TestCase):
         # TODO(johnsom) Remove when versions and ciphers are implemented
         expect_prov_pool = copy.deepcopy(self.sample_data.provider_pool1)
         delattr(expect_prov_pool, lib_constants.TLS_VERSIONS)
-        delattr(expect_prov_pool, lib_constants.TLS_CIPHERS)
         self.assertEqual(expect_prov_pool, provider_pool)
 
     @mock.patch('octavia.api.drivers.utils._get_secret_data')
@@ -359,7 +355,6 @@ class TestUtils(base.TestCase):
         # TODO(johnsom) Remove when versions and ciphers are implemented
         expect_prov_pool = copy.deepcopy(self.sample_data.provider_pool1)
         delattr(expect_prov_pool, lib_constants.TLS_VERSIONS)
-        delattr(expect_prov_pool, lib_constants.TLS_CIPHERS)
         self.assertEqual(expect_prov_pool, provider_pool)
 
     @mock.patch('octavia.api.drivers.utils._get_secret_data')
@@ -377,7 +372,6 @@ class TestUtils(base.TestCase):
         expect_prov_pools = copy.deepcopy(self.sample_data.provider_pools)
         for prov_pool in expect_prov_pools:
             delattr(prov_pool, lib_constants.TLS_VERSIONS)
-            delattr(prov_pool, lib_constants.TLS_CIPHERS)
         self.assertEqual(expect_prov_pools, provider_pools)
 
     @mock.patch('octavia.api.drivers.utils._get_secret_data')
@@ -396,7 +390,6 @@ class TestUtils(base.TestCase):
         provider_pool_dict.pop('crl_container_ref')
         # TODO(johnsom) Remove when versions and ciphers are implemented
         expect_prov.pop(lib_constants.TLS_VERSIONS)
-        expect_prov.pop(lib_constants.TLS_CIPHERS)
         self.assertEqual(expect_prov, provider_pool_dict)
 
     @mock.patch('octavia.api.drivers.utils._get_secret_data')
@@ -430,7 +423,6 @@ class TestUtils(base.TestCase):
         provider_pool_dict.pop('crl_container_ref')
         # TODO(johnsom) Remove when versions and ciphers are implemented
         expect_prov.pop(lib_constants.TLS_VERSIONS)
-        expect_prov.pop(lib_constants.TLS_CIPHERS)
         self.assertEqual(expect_prov, provider_pool_dict)
 
     def test_db_HM_to_provider_HM(self):

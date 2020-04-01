@@ -31,6 +31,7 @@
         "tls_container_ref": "http://198.51.100.10:9311/v1/containers/c1cd501d-3cf9-4873-a11b-a74bebcde929",
         "ca_tls_container_ref": null,
         "crl_container_ref": null,
-        "tls_enabled": false
+        "tls_enabled": false,
+        "tls_ciphers": "ECDHE-RSA-AES256-GCM-SHA384:ECDHE-RSA-AES128-GCM-SHA256"
     }
 }

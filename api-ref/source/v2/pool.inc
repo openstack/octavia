@@ -63,6 +63,7 @@ Response Parameters
    - provisioning_status: provisioning_status
    - session_persistence: session_persistence
    - tags: tags
+   - tls_ciphers: tls_ciphers
    - tls_container_ref: tls_container_ref
    - tls_enabled: tls_enabled
    - updated_at: updated_at
@@ -179,6 +180,7 @@ Request
    - session_persistence: session_persistence-optional
    - tags: tags-optional
    - tls_enabled: tls_enabled-optional
+   - tls_ciphers: tls_ciphers-optional
    - tls_container_ref: tls_container_ref-optional
 
 .. _session_persistence:
@@ -260,6 +262,7 @@ Response Parameters
    - session_persistence: session_persistence
    - tags: tags
    - tls_enabled: tls_enabled
+   - tls_ciphers: tls_ciphers
    - tls_container_ref: tls_container_ref
    - updated_at: updated_at
 
@@ -331,6 +334,7 @@ Response Parameters
    - session_persistence: session_persistence
    - tags: tags
    - tls_enabled: tls_enabled
+   - tls_ciphers: tls_ciphers
    - tls_container_ref: tls_container_ref
    - updated_at: updated_at
 
@@ -383,6 +387,7 @@ Request
    - session_persistence: session_persistence-optional
    - tags: tags-optional
    - tls_enabled: tls_enabled-optional
+   - tls_ciphers: tls_ciphers-optional
    - tls_container_ref: tls_container_ref-optional
 
 Request Example
@@ -421,6 +426,7 @@ Response Parameters
    - session_persistence: session_persistence
    - tags: tags
    - tls_enabled: tls_enabled
+   - tls_ciphers: tls_ciphers
    - tls_container_ref: tls_container_ref
    - updated_at: updated_at
 

@@ -231,11 +231,16 @@ frontend {{ listener.id }}
     {% elif pool.tls_enabled %}
         {% set def_verify_opt = " verify none" %}
     {% endif %}
-    {{ "server %s %s:%d weight %s%s%s%s%s%s%s%s%s%s%s%s"|e|format(
+    {% if pool.tls_ciphers is defined %}
+        {% set ciphers_opt = " ciphers %s"|format(pool.tls_ciphers) %}
+    {% else %}
+        {% set ciphers_opt = "" %}
+    {% endif %}
+    {{ "server %s %s:%d weight %s%s%s%s%s%s%s%s%s%s%s%s%s"|e|format(
         member.id, member.address, member.protocol_port, member.weight,
         hm_opt, persistence_opt, proxy_protocol_opt, member_backup_opt,
         member_enabled_opt, def_opt_prefix, def_crt_opt, ca_opt, crl_opt,
-        def_verify_opt, def_sni_opt)|trim() }}
+        def_verify_opt, def_sni_opt, ciphers_opt)|trim() }}
 {% endmacro %}
 
 

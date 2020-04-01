@@ -83,6 +83,7 @@ class PoolResponse(BasePoolType):
     ca_tls_container_ref = wtypes.wsattr(wtypes.StringType())
     crl_container_ref = wtypes.wsattr(wtypes.StringType())
     tls_enabled = wtypes.wsattr(bool)
+    tls_ciphers = wtypes.StringType()
 
     @classmethod
     def from_data_model(cls, data_model, children=False):
@@ -158,6 +159,7 @@ class PoolPOST(BasePoolType):
     ca_tls_container_ref = wtypes.wsattr(wtypes.StringType(max_length=255))
     crl_container_ref = wtypes.wsattr(wtypes.StringType(max_length=255))
     tls_enabled = wtypes.wsattr(bool, default=False)
+    tls_ciphers = wtypes.StringType(max_length=2048)
 
 
 class PoolRootPOST(types.BaseType):
@@ -177,6 +179,7 @@ class PoolPUT(BasePoolType):
     ca_tls_container_ref = wtypes.wsattr(wtypes.StringType(max_length=255))
     crl_container_ref = wtypes.wsattr(wtypes.StringType(max_length=255))
     tls_enabled = wtypes.wsattr(bool)
+    tls_ciphers = wtypes.StringType(max_length=2048)
 
 
 class PoolRootPut(types.BaseType):
@@ -199,6 +202,7 @@ class PoolSingleCreate(BasePoolType):
     ca_tls_container_ref = wtypes.wsattr(wtypes.StringType(max_length=255))
     crl_container_ref = wtypes.wsattr(wtypes.StringType(max_length=255))
     tls_enabled = wtypes.wsattr(bool, default=False)
+    tls_ciphers = wtypes.StringType(max_length=2048)
 
 
 class PoolStatusResponse(BasePoolType):

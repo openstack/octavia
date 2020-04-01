@@ -107,6 +107,10 @@ api_opts = [
                default=constants.CIPHERS_OWASP_SUITE_B,
                help=_("Default OpenSSL cipher string (colon-separated) for "
                       "new TLS-enabled listeners.")),
+    cfg.StrOpt('default_pool_ciphers',
+               default=constants.CIPHERS_OWASP_SUITE_B,
+               help=_("Default OpenSSL cipher string (colon-separated) for "
+                      "new TLS-enabled pools.")),
 ]
 
 # Options only used by the amphora agent
