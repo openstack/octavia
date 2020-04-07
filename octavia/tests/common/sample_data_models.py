@@ -294,7 +294,9 @@ class SampleDriverDataModels(object):
             lib_consts.CA_TLS_CONTAINER_DATA: pool_ca_file_content,
             lib_consts.CRL_CONTAINER_REF: self.pool_crl_container_ref,
             lib_consts.CRL_CONTAINER_DATA: pool_crl_file_content,
-            lib_consts.TLS_ENABLED: True
+            lib_consts.TLS_ENABLED: True,
+            lib_consts.TLS_CIPHERS: None,
+            lib_consts.TLS_VERSIONS: None,
         }
 
         self.provider_pool2_dict = copy.deepcopy(self.provider_pool1_dict)
@@ -463,7 +465,8 @@ class SampleDriverDataModels(object):
                 self.client_ca_tls_certificate_ref,
             lib_consts.CLIENT_AUTHENTICATION: constants.CLIENT_AUTH_NONE,
             constants.CLIENT_CRL_CONTAINER_ID: self.client_crl_container_ref,
-            lib_consts.ALLOWED_CIDRS: ['192.0.2.0/24', '198.51.100.0/24']
+            lib_consts.ALLOWED_CIDRS: ['192.0.2.0/24', '198.51.100.0/24'],
+            lib_consts.TLS_CIPHERS: constants.CIPHERS_OWASP_SUITE_B
         }
 
         self.test_listener1_dict.update(self._common_test_dict)
@@ -530,7 +533,9 @@ class SampleDriverDataModels(object):
             lib_consts.CLIENT_CA_TLS_CONTAINER_DATA: ca_cert,
             lib_consts.CLIENT_AUTHENTICATION: constants.CLIENT_AUTH_NONE,
             lib_consts.CLIENT_CRL_CONTAINER_REF: self.client_crl_container_ref,
-            lib_consts.CLIENT_CRL_CONTAINER_DATA: crl_file_content
+            lib_consts.CLIENT_CRL_CONTAINER_DATA: crl_file_content,
+            lib_consts.TLS_CIPHERS: constants.CIPHERS_OWASP_SUITE_B,
+            lib_consts.TLS_VERSIONS: None
         }
 
         self.provider_listener2_dict = copy.deepcopy(

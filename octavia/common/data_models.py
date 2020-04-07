@@ -384,7 +384,7 @@ class Listener(BaseDataModel):
                  timeout_member_data=None, timeout_tcp_inspect=None,
                  tags=None, client_ca_tls_certificate_id=None,
                  client_authentication=None, client_crl_container_id=None,
-                 allowed_cidrs=None):
+                 allowed_cidrs=None, tls_ciphers=None):
         self.id = id
         self.project_id = project_id
         self.name = name
@@ -417,6 +417,7 @@ class Listener(BaseDataModel):
         self.client_authentication = client_authentication
         self.client_crl_container_id = client_crl_container_id
         self.allowed_cidrs = allowed_cidrs or []
+        self.tls_ciphers = tls_ciphers
 
     def update(self, update_dict):
         for key, value in update_dict.items():

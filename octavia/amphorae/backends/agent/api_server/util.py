@@ -30,7 +30,7 @@ LOG = logging.getLogger(__name__)
 
 FRONTEND_BACKEND_PATTERN = re.compile(r'\n(frontend|backend)\s+(\S+)\n')
 LISTENER_MODE_PATTERN = re.compile(r'^\s+mode\s+(.*)$', re.MULTILINE)
-TLS_CERT_PATTERN = re.compile(r'^\s+bind\s+\S+\s+ssl crt-list\s+(.*)$',
+TLS_CERT_PATTERN = re.compile(r'^\s+bind\s+\S+\s+ssl crt-list\s+(\S*)',
                               re.MULTILINE)
 STATS_SOCKET_PATTERN = re.compile(r'stats socket\s+(\S+)')
 

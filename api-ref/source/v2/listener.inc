@@ -72,6 +72,7 @@ Response Parameters
    - timeout_member_connect: timeout_member_connect
    - timeout_member_data: timeout_member_data
    - timeout_tcp_inspect: timeout_tcp_inspect
+   - tls_ciphers: tls_ciphers
    - updated_at: updated_at
 
 Response Example
@@ -163,6 +164,7 @@ Request
    - timeout_member_connect: timeout_member_connect-optional
    - timeout_member_data: timeout_member_data-optional
    - timeout_tcp_inspect: timeout_tcp_inspect-optional
+   - tls_ciphers: tls_ciphers-optional
 
 .. _header_insertions:
 
@@ -287,6 +289,7 @@ Response Parameters
    - timeout_member_connect: timeout_member_connect
    - timeout_member_data: timeout_member_data
    - timeout_tcp_inspect: timeout_tcp_inspect
+   - tls_ciphers: tls_ciphers
    - updated_at: updated_at
 
 Response Example
@@ -365,6 +368,7 @@ Response Parameters
    - timeout_member_connect: timeout_member_connect
    - timeout_member_data: timeout_member_data
    - timeout_tcp_inspect: timeout_tcp_inspect
+   - tls_ciphers: tls_ciphers
    - updated_at: updated_at
 
 Response Example
@@ -424,6 +428,7 @@ Request
    - timeout_member_connect: timeout_member_connect-optional
    - timeout_member_data: timeout_member_data-optional
    - timeout_tcp_inspect: timeout_tcp_inspect-optional
+   - tls_ciphers: tls_ciphers-optional
 
 Request Example
 ---------------
@@ -469,6 +474,7 @@ Response Parameters
    - timeout_member_connect: timeout_member_connect
    - timeout_member_data: timeout_member_data
    - timeout_tcp_inspect: timeout_tcp_inspect
+   - tls_ciphers: tls_ciphers
    - updated_at: updated_at
 
 Response Example

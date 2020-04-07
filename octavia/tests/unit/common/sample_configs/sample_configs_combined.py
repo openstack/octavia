@@ -599,10 +599,13 @@ def sample_listener_tuple(proto=None, monitor=True, alloc_default_pool=True,
                           pool_ca_cert=False, pool_crl=False,
                           tls_enabled=False, hm_host_http_check=False,
                           id='sample_listener_id_1', recursive_nest=False,
-                          provisioning_status=constants.ACTIVE):
+                          provisioning_status=constants.ACTIVE,
+                          tls_ciphers=constants.CIPHERS_OWASP_SUITE_B):
     proto = 'HTTP' if proto is None else proto
     if be_proto is None:
         be_proto = 'HTTP' if proto == 'TERMINATED_HTTPS' else proto
+    if proto != constants.PROTOCOL_TERMINATED_HTTPS:
+        tls_ciphers = None
     topology = 'SINGLE' if topology is None else topology
     port = '443' if proto in ['HTTPS', 'TERMINATED_HTTPS'] else '80'
     peer_port = 1024 if peer_port is None else peer_port
@@ -616,7 +619,8 @@ def sample_listener_tuple(proto=None, monitor=True, alloc_default_pool=True,
                     'timeout_member_connect, timeout_member_data, '
                     'timeout_tcp_inspect, client_ca_tls_certificate_id, '
                     'client_ca_tls_certificate, client_authentication, '
-                    'client_crl_container_id, provisioning_status')
+                    'client_crl_container_id, provisioning_status, '
+                    'tls_ciphers')
     if l7:
         pools = [
             sample_pool_tuple(
@@ -727,6 +731,7 @@ def sample_listener_tuple(proto=None, monitor=True, alloc_default_pool=True,
             constants.CLIENT_AUTH_NONE),
         client_crl_container_id='cont_id_crl' if client_crl_cert else '',
         provisioning_status=provisioning_status,
+        tls_ciphers=tls_ciphers
     )
     if recursive_nest:
         listener.load_balancer.listeners.append(listener)

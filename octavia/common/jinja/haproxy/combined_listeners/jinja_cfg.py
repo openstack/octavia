@@ -282,6 +282,10 @@ class JinjaTemplater(object):
                     os.path.join(self.base_crt_dir, loadbalancer.id,
                                  tls_certs[listener.client_crl_container_id]))
 
+        if (listener.protocol == constants.PROTOCOL_TERMINATED_HTTPS and
+                listener.tls_ciphers is not None):
+            ret_value['tls_ciphers'] = listener.tls_ciphers
+
         pools = []
         pool_gen = (pool for pool in listener.pools if
                     pool.provisioning_status != constants.PENDING_DELETE)
