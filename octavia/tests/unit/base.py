@@ -30,6 +30,7 @@ class TestCase(testtools.TestCase):
 
     def setUp(self):
         super(TestCase, self).setUp()
+        config.register_cli_opts()
         self.addCleanup(mock.patch.stopall)
         self.addCleanup(self.clean_caches)
 
