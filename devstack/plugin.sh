@@ -455,16 +455,6 @@ function create_mgmt_network_interface {
 
     if function_exists octavia_create_network_interface_device ; then
         octavia_create_network_interface_device o-hm0 $MGMT_PORT_ID $MGMT_PORT_MAC
-    elif [[ $NEUTRON_AGENT == "openvswitch" || $Q_AGENT == "openvswitch" ]]; then
-        sudo ovs-vsctl -- --may-exist add-port ${OVS_BRIDGE:-br-int} o-hm0 -- set Interface o-hm0 type=internal -- set Interface o-hm0 external-ids:iface-status=active -- set Interface o-hm0 external-ids:attached-mac=$MGMT_PORT_MAC -- set Interface o-hm0 external-ids:iface-id=$MGMT_PORT_ID -- set Interface o-hm0 external-ids:skip_cleanup=true
-    elif [[ $NEUTRON_AGENT == "linuxbridge" || $Q_AGENT == "linuxbridge" ]]; then
-        if ! ip link show o-hm0 ; then
-            sudo ip link add o-hm0 type veth peer name o-bhm0
-            NETID=$(openstack network show lb-mgmt-net -c id -f value)
-            BRNAME=brq$(echo $NETID|cut -c 1-11)
-            sudo brctl addif $BRNAME o-bhm0
-            sudo ip link set o-bhm0 up
-        fi
     else
         die "Unknown network controller. Please define octavia_create_network_interface_device"
     fi
@@ -627,8 +617,10 @@ function octavia_stop {
     if function_exists octavia_delete_network_interface_device ; then
         octavia_delete_network_interface_device o-hm0
     elif [[ $NEUTRON_AGENT == "openvswitch" || $Q_AGENT == "openvswitch" ]]; then
+        # This elif can go away in the X cycle, needed for grenade old/new logic
         :  # Do nothing
     elif [[ $NEUTRON_AGENT == "linuxbridge" || $Q_AGENT == "linuxbridge" ]]; then
+        # This elif can go away in the X cycle, needed for grenade old/new logic
         if ip link show o-hm0 ; then
             sudo ip link del o-hm0
         fi

@@ -43,6 +43,7 @@
         LIBVIRT_TYPE: kvm
         LIBVIRT_CPU_MODE: host-passthrough
       devstack_plugins:
+        neutron: https://opendev.org/openstack/neutron.git
         octavia: https://opendev.org/openstack/octavia.git
       devstack_services:
         s-account: false
