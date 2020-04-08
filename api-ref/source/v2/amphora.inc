@@ -302,3 +302,46 @@ Response
 --------
 
 There is no body content for the response of a successful PUT request.
+
+Remove an Amphora
+=================
+
+.. rest_method:: DELETE /v2/octavia/amphorae/{amphora_id}
+
+Removes an amphora and its associated configuration.
+
+The API immediately purges any and all configuration data, depending on the
+configuration settings. You cannot recover it.
+
+**New in version 2.20**
+
+.. rest_status_code:: success ../http-status.yaml
+
+   - 204
+
+.. rest_status_code:: error ../http-status.yaml
+
+   - 400
+   - 401
+   - 403
+   - 404
+   - 409
+   - 500
+
+Request
+-------
+
+.. rest_parameters:: ../parameters.yaml
+
+   - amphora_id: path-amphora-id
+
+Curl Example
+------------
+
+.. literalinclude:: examples/amphora-delete-curl
+   :language: bash
+
+Response
+--------
+
+There is no body content for the response of a successful DELETE request.

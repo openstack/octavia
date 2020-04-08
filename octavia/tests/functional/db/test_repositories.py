@@ -4022,6 +4022,29 @@ class AmphoraRepositoryTest(BaseRepositoryTest):
                                                         self.FAKE_UUID_1)
         self.assertEqual(lb_ref, lb)
 
+    def test_and_set_status_for_delete(self):
+        # Normal path
+        amphora = self.create_amphora(self.FAKE_UUID_1,
+                                      status=constants.AMPHORA_READY)
+        self.amphora_repo.test_and_set_status_for_delete(self.session,
+                                                         amphora.id)
+        new_amphora = self.amphora_repo.get(self.session, id=amphora.id)
+        self.assertEqual(constants.PENDING_DELETE, new_amphora.status)
+
+        # Test deleted path
+        amphora = self.create_amphora(self.FAKE_UUID_2,
+                                      status=constants.DELETED)
+        self.assertRaises(sa_exception.NoResultFound,
+                          self.amphora_repo.test_and_set_status_for_delete,
+                          self.session, amphora.id)
+
+        # Test in use path
+        amphora = self.create_amphora(self.FAKE_UUID_3,
+                                      status=constants.AMPHORA_ALLOCATED)
+        self.assertRaises(exceptions.ImmutableObject,
+                          self.amphora_repo.test_and_set_status_for_delete,
+                          self.session, amphora.id)
+
 
 class AmphoraHealthRepositoryTest(BaseRepositoryTest):
     def setUp(self):

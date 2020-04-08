@@ -157,6 +157,34 @@ class TestControllerWorker(base.TestCase):
 
         self.assertEqual(AMP_ID, amp)
 
+    @mock.patch('octavia.controller.worker.v1.flows.'
+                'amphora_flows.AmphoraFlows.get_delete_amphora_flow',
+                return_value='TEST')
+    def test_delete_amphora(self,
+                            mock_get_delete_amp_flow,
+                            mock_api_get_session,
+                            mock_dyn_log_listener,
+                            mock_taskflow_load,
+                            mock_pool_repo_get,
+                            mock_member_repo_get,
+                            mock_l7rule_repo_get,
+                            mock_l7policy_repo_get,
+                            mock_listener_repo_get,
+                            mock_lb_repo_get,
+                            mock_health_mon_repo_get,
+                            mock_amp_repo_get):
+
+        _flow_mock.reset_mock()
+
+        cw = controller_worker.ControllerWorker()
+        cw.delete_amphora(_amphora_mock.id)
+
+        (base_taskflow.BaseTaskFlowEngine.taskflow_load.
+            assert_called_once_with('TEST'))
+
+        mock_get_delete_amp_flow.assert_called_once_with(_amphora_mock)
+        _flow_mock.run.assert_called_once_with()
+
     @mock.patch('octavia.db.repositories.AvailabilityZoneRepository.'
                 'get_availability_zone_metadata_dict')
     @mock.patch('octavia.controller.worker.v1.flows.'

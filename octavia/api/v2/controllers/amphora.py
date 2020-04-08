@@ -19,6 +19,7 @@ import oslo_messaging as messaging
 from oslo_utils import excutils
 from pecan import expose as pecan_expose
 from pecan import request as pecan_request
+from sqlalchemy.orm import exc as sa_exception
 from wsme import types as wtypes
 from wsmeext import pecan as wsme_pecan
 
@@ -27,6 +28,7 @@ from octavia.api.v2.types import amphora as amp_types
 from octavia.common import constants
 from octavia.common import exceptions
 from octavia.common import rpc
+from octavia.db import api as db_api
 
 CONF = cfg.CONF
 LOG = logging.getLogger(__name__)
@@ -37,6 +39,11 @@ class AmphoraController(base.BaseController):
 
     def __init__(self):
         super().__init__()
+        topic = cfg.CONF.oslo_messaging.topic
+        self.target = messaging.Target(
+            namespace=constants.RPC_NAMESPACE_CONTROLLER_AGENT,
+            topic=topic, version="1.0", fanout=False)
+        self.client = rpc.get_client(self.target)
 
     @wsme_pecan.wsexpose(amp_types.AmphoraRootResponse, wtypes.text,
                          [wtypes.text], ignore_extra_args=True)
@@ -57,7 +64,7 @@ class AmphoraController(base.BaseController):
     @wsme_pecan.wsexpose(amp_types.AmphoraeRootResponse, [wtypes.text],
                          ignore_extra_args=True)
     def get_all(self, fields=None):
-        """Gets all health monitors."""
+        """Gets all amphorae."""
         pcontext = pecan_request.context
         context = pcontext.get('octavia_context')
 
@@ -73,6 +80,25 @@ class AmphoraController(base.BaseController):
             result = self._filter_fields(result, fields)
         return amp_types.AmphoraeRootResponse(
             amphorae=result, amphorae_links=links)
+
+    @wsme_pecan.wsexpose(None, wtypes.text, status_code=204)
+    def delete(self, id):
+        """Deletes an amphora."""
+        context = pecan_request.context.get('octavia_context')
+
+        self._auth_validate_action(context, context.project_id,
+                                   constants.RBAC_DELETE)
+
+        with db_api.get_lock_session() as lock_session:
+            try:
+                self.repositories.amphora.test_and_set_status_for_delete(
+                    lock_session, id)
+            except sa_exception.NoResultFound as e:
+                raise exceptions.NotFound(resource='Amphora', id=id) from e
+
+            LOG.info("Sending delete amphora %s to the queue.", id)
+            payload = {constants.AMPHORA_ID: id}
+            self.client.cast({}, 'delete_amphora', **payload)
 
     @pecan_expose()
     def _lookup(self, amphora_id, *remainder):

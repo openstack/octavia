@@ -1492,6 +1492,27 @@ class AmphoraRepository(BaseRepository):
 
         return lb
 
+    def test_and_set_status_for_delete(self, lock_session, id):
+        """Tests and sets an amphora status.
+
+        Puts a lock on the amphora table to check the status of the
+        amphora. The status must be either AMPHORA_READY or ERROR to
+        successfuly update the amphora status.
+
+        :param lock_session: A Sql Alchemy database session.
+        :param id: id of Load Balancer
+        :raises ImmutableObject: The amphora is not in a state that can be
+                                 deleted.
+        :raises NoResultFound: The amphora was not found or already deleted.
+        :returns: None
+        """
+        amp = lock_session.query(self.model_class).with_for_update().filter_by(
+            id=id).filter(self.model_class.status != consts.DELETED).one()
+        if amp.status not in [consts.AMPHORA_READY, consts.ERROR]:
+            raise exceptions.ImmutableObject(resource=consts.AMPHORA, id=id)
+        amp.status = consts.PENDING_DELETE
+        lock_session.flush()
+
 
 class AmphoraBuildReqRepository(BaseRepository):
     model_class = models.AmphoraBuildRequest

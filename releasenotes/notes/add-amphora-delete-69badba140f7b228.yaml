@@ -1,0 +1,4 @@
+---
+features:
+  - |
+    Added the ability to delete amphora that are not in use.
