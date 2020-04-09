@@ -14,6 +14,7 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import datetime
 import re
 
 from sqlalchemy.orm import collections
@@ -34,7 +35,11 @@ class BaseDataModel(object):
                 # tags is a list, it doesn't need recurse
                 ret[attr] = value
                 continue
-
+            # We need to have json convertible data for storing it in
+            # persistence jobboard backend.
+            if isinstance(value, datetime.datetime):
+                ret[attr] = value.isoformat()
+                continue
             if recurse:
                 if isinstance(getattr(self, attr), list):
                     ret[attr] = []

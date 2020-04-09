@@ -15,12 +15,36 @@
 
 import concurrent.futures
 import datetime
+import functools
 
 from oslo_config import cfg
-from taskflow import engines as tf_engines
+from oslo_log import log
+from oslo_utils import uuidutils
+from taskflow.conductors.backends import impl_blocking
+from taskflow import engines
+from taskflow import exceptions as taskflow_exc
+from taskflow.listeners import base
+from taskflow.listeners import logging
+from taskflow.persistence import models
+from taskflow import states
 
+from octavia.amphorae.driver_exceptions import exceptions
+
+LOG = log.getLogger(__name__)
 
 CONF = cfg.CONF
+
+
+# We do not need to log retry exception information. Warning "Could not connect
+#  to instance" will be logged as usual.
+def retryMaskFilter(record):
+    if record.exc_info is not None and isinstance(
+            record.exc_info[1], exceptions.AmpConnectionRetry):
+        return False
+    return True
+
+
+LOG.logger.addFilter(retryMaskFilter)
 
 
 class BaseTaskFlowEngine(object):
@@ -37,7 +61,7 @@ class BaseTaskFlowEngine(object):
             max_workers=CONF.task_flow.max_workers)
 
     def _taskflow_load(self, flow, **kwargs):
-        eng = tf_engines.load(
+        eng = engines.load(
             flow,
             engine=CONF.task_flow.engine,
             executor=self.executor,
@@ -47,3 +71,108 @@ class BaseTaskFlowEngine(object):
         eng.prepare()
 
         return eng
+
+
+class ExtendExpiryListener(base.Listener):
+
+    def __init__(self, engine, job):
+        super(ExtendExpiryListener, self).__init__(engine)
+        self.job = job
+
+    def _task_receiver(self, state, details):
+        self.job.extend_expiry(cfg.CONF.task_flow.jobboard_expiration_time)
+
+    def _flow_receiver(self, state, details):
+        self.job.extend_expiry(cfg.CONF.task_flow.jobboard_expiration_time)
+
+    def _retry_receiver(self, state, details):
+        self.job.extend_expiry(cfg.CONF.task_flow.jobboard_expiration_time)
+
+
+class DynamicLoggingConductor(impl_blocking.BlockingConductor):
+
+    def _listeners_from_job(self, job, engine):
+        listeners = super(DynamicLoggingConductor, self)._listeners_from_job(
+            job, engine)
+        listeners.append(logging.DynamicLoggingListener(engine, log=LOG))
+
+        return listeners
+
+    def _on_job_done(self, job, fut):
+        super(DynamicLoggingConductor, self)._on_job_done(job, fut)
+        # Double check that job is complete.
+        if (not CONF.task_flow.jobboard_save_logbook and
+                job.state == states.COMPLETE):
+            LOG.debug("Job %s is complete. Cleaning up job logbook.", job.name)
+            try:
+                self._persistence.get_connection().destroy_logbook(
+                    job.book.uuid)
+            except taskflow_exc.NotFound:
+                LOG.debug("Logbook for job %s has been already cleaned up",
+                          job.name)
+
+
+class RedisDynamicLoggingConductor(DynamicLoggingConductor):
+
+    def _listeners_from_job(self, job, engine):
+        listeners = super(RedisDynamicLoggingConductor,
+                          self)._listeners_from_job(job, engine)
+        listeners.append(ExtendExpiryListener(engine, job))
+        return listeners
+
+
+class TaskFlowServiceController(object):
+
+    def __init__(self, driver):
+        self.driver = driver
+
+    def run_poster(self, flow_factory, *args, wait=False, **kwargs):
+        with self.driver.persistence_driver.get_persistence() as persistence:
+            with self.driver.job_board(persistence) as job_board:
+                job_id = uuidutils.generate_uuid()
+                job_name = '-'.join([flow_factory.__name__, job_id])
+                job_logbook = models.LogBook(job_name)
+                flow_detail = models.FlowDetail(
+                    job_name, job_id)
+                job_details = {
+                    'store': kwargs.pop('store')
+                }
+                job_logbook.add(flow_detail)
+                persistence.get_connection().save_logbook(job_logbook)
+                engines.save_factory_details(flow_detail, flow_factory,
+                                             args, kwargs,
+                                             backend=persistence)
+
+                job_board.post(job_name, book=job_logbook,
+                               details=job_details)
+                if wait:
+                    self._wait_for_job(job_board)
+
+                return job_id
+
+    def _wait_for_job(self, job_board):
+        # Wait for job to its complete state
+        for job in job_board.iterjobs():
+            LOG.debug("Waiting for job %s to finish", job.name)
+            job.wait()
+
+    def run_conductor(self, name):
+        with self.driver.persistence_driver.get_persistence() as persistence:
+            with self.driver.job_board(persistence) as board:
+                # Redis do not expire jobs by default, so jobs won't be resumed
+                # with restart of controller. Add expiry for board and use
+                # special listener.
+                if (CONF.task_flow.jobboard_backend_driver ==
+                        'redis_taskflow_driver'):
+                    conductor = RedisDynamicLoggingConductor(
+                        name, board, persistence=persistence,
+                        engine=CONF.task_flow.engine)
+                    board.claim = functools.partial(
+                        board.claim,
+                        expiry=CONF.task_flow.jobboard_expiration_time)
+                else:
+                    conductor = DynamicLoggingConductor(
+                        name, board, persistence=persistence,
+                        engine=CONF.task_flow.engine)
+
+                conductor.run()

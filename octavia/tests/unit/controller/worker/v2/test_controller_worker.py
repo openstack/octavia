@@ -19,10 +19,10 @@ from oslo_config import fixture as oslo_fixture
 from oslo_utils import uuidutils
 
 from octavia.api.drivers import utils as provider_utils
-from octavia.common import base_taskflow
 from octavia.common import constants
 from octavia.common import data_models
 from octavia.controller.worker.v2 import controller_worker
+from octavia.controller.worker.v2.flows import flow_utils
 import octavia.tests.unit.base as base
 
 
@@ -107,7 +107,7 @@ class TestException(Exception):
             return_value=_member_mock)
 @mock.patch('octavia.db.repositories.PoolRepository.get',
             return_value=_db_pool_mock)
-@mock.patch('octavia.common.base_taskflow.BaseTaskFlowEngine._taskflow_load',
+@mock.patch('octavia.common.base_taskflow.TaskFlowServiceController',
             return_value=_flow_mock)
 @mock.patch('taskflow.listeners.logging.DynamicLoggingListener')
 @mock.patch('octavia.db.api.get_session', return_value=_db_session)
@@ -137,8 +137,8 @@ class TestControllerWorker(base.TestCase):
         _db_load_balancer_mock.listeners = [_listener_mock]
         _db_load_balancer_mock.to_dict.return_value = {'id': LB_ID}
 
-        fetch_mock = mock.MagicMock(return_value=AMP_ID)
-        _flow_mock.storage.fetch = fetch_mock
+        fetch_mock = mock.MagicMock()
+        _flow_mock.driver.persistence = fetch_mock
 
         _db_pool_mock.id = POOL_ID
         _db_health_mon_mock.pool_id = POOL_ID
@@ -170,21 +170,16 @@ class TestControllerWorker(base.TestCase):
         _flow_mock.reset_mock()
 
         cw = controller_worker.ControllerWorker()
-        amp = cw.create_amphora()
+        cw.create_amphora()
 
-        (base_taskflow.BaseTaskFlowEngine._taskflow_load.
+        (cw.services_controller.run_poster.
             assert_called_once_with(
-                'TEST',
+                flow_utils.get_create_amphora_flow,
+                wait=True,
                 store={constants.BUILD_TYPE_PRIORITY:
                        constants.LB_CREATE_SPARES_POOL_PRIORITY,
                        constants.FLAVOR: None,
                        constants.AVAILABILITY_ZONE: None}))
-
-        _flow_mock.run.assert_called_once_with()
-
-        _flow_mock.storage.fetch.assert_called_once_with('amphora')
-
-        self.assertEqual(AMP_ID, amp)
 
     @mock.patch('octavia.db.repositories.AvailabilityZoneRepository.'
                 'get_availability_zone_metadata_dict')
@@ -211,21 +206,16 @@ class TestControllerWorker(base.TestCase):
         az_data = {constants.COMPUTE_ZONE: az}
         mock_get_az_metadata.return_value = az_data
         cw = controller_worker.ControllerWorker()
-        amp = cw.create_amphora(availability_zone=az)
+        cw.create_amphora(availability_zone=az)
         mock_get_az_metadata.assert_called_once_with(_db_session, az)
-        (base_taskflow.BaseTaskFlowEngine._taskflow_load.
+        (cw.services_controller.run_poster.
             assert_called_once_with(
-                'TEST',
+                flow_utils.get_create_amphora_flow,
+                wait=True,
                 store={constants.BUILD_TYPE_PRIORITY:
                        constants.LB_CREATE_SPARES_POOL_PRIORITY,
                        constants.FLAVOR: None,
                        constants.AVAILABILITY_ZONE: az_data}))
-
-        _flow_mock.run.assert_called_once_with()
-
-        _flow_mock.storage.fetch.assert_called_once_with('amphora')
-
-        self.assertEqual(AMP_ID, amp)
 
     @mock.patch('octavia.controller.worker.v2.flows.'
                 'amphora_flows.AmphoraFlows.get_delete_amphora_flow',
@@ -254,11 +244,10 @@ class TestControllerWorker(base.TestCase):
             id=AMP_ID)
         mock_amp_repo_get.return_value = _db_amphora_mock
 
-        (base_taskflow.BaseTaskFlowEngine._taskflow_load.
+        (cw.services_controller.run_poster.
             assert_called_once_with(
-                'TEST', store={constants.AMPHORA: _db_amphora_mock.to_dict()}))
-
-        _flow_mock.run.assert_called_once_with()
+                flow_utils.get_delete_amphora_flow,
+                store={constants.AMPHORA: _db_amphora_mock.to_dict()}))
 
     @mock.patch('octavia.controller.worker.v2.flows.'
                 'health_monitor_flows.HealthMonitorFlows.'
@@ -285,8 +274,9 @@ class TestControllerWorker(base.TestCase):
         provider_lb = provider_utils.db_loadbalancer_to_provider_loadbalancer(
             _db_load_balancer_mock).to_dict()
         mock_health_mon_repo_get.return_value = _db_health_mon_mock
-        (base_taskflow.BaseTaskFlowEngine._taskflow_load.
-            assert_called_once_with(_flow_mock,
+
+        (cw.services_controller.run_poster.
+            assert_called_once_with(flow_utils.get_create_health_monitor_flow,
                                     store={constants.HEALTH_MON:
                                            _health_mon_mock,
                                            constants.LISTENERS:
@@ -298,14 +288,7 @@ class TestControllerWorker(base.TestCase):
                                            constants.POOL_ID:
                                                POOL_ID}))
 
-        _flow_mock.run.assert_called_once_with()
-
-    @mock.patch('octavia.controller.worker.v2.flows.'
-                'health_monitor_flows.HealthMonitorFlows.'
-                'get_delete_health_monitor_flow',
-                return_value=_flow_mock)
     def test_delete_health_monitor(self,
-                                   mock_get_delete_hm_flow,
                                    mock_api_get_session,
                                    mock_dyn_log_listener,
                                    mock_taskflow_load,
@@ -326,8 +309,8 @@ class TestControllerWorker(base.TestCase):
 
         cw.delete_health_monitor(_health_mon_mock)
         mock_health_mon_repo_get.return_value = _db_health_mon_mock
-        (base_taskflow.BaseTaskFlowEngine._taskflow_load.
-            assert_called_once_with(_flow_mock,
+        (cw.services_controller.run_poster.
+            assert_called_once_with(flow_utils.get_delete_health_monitor_flow,
                                     store={constants.HEALTH_MON:
                                            _health_mon_mock,
                                            constants.LISTENERS:
@@ -340,14 +323,7 @@ class TestControllerWorker(base.TestCase):
                                                POOL_ID,
                                            constants.PROJECT_ID: PROJECT_ID}))
 
-        _flow_mock.run.assert_called_once_with()
-
-    @mock.patch('octavia.controller.worker.v2.flows.'
-                'health_monitor_flows.HealthMonitorFlows.'
-                'get_update_health_monitor_flow',
-                return_value=_flow_mock)
     def test_update_health_monitor(self,
-                                   mock_get_update_hm_flow,
                                    mock_api_get_session,
                                    mock_dyn_log_listener,
                                    mock_taskflow_load,
@@ -370,8 +346,8 @@ class TestControllerWorker(base.TestCase):
         provider_lb = provider_utils.db_loadbalancer_to_provider_loadbalancer(
             _db_load_balancer_mock).to_dict()
 
-        (base_taskflow.BaseTaskFlowEngine._taskflow_load.
-            assert_called_once_with(_flow_mock,
+        (cw.services_controller.run_poster.
+            assert_called_once_with(flow_utils.get_update_health_monitor_flow,
                                     store={constants.HEALTH_MON:
                                            _health_mon_mock,
                                            constants.POOL_ID: POOL_ID,
@@ -384,13 +360,7 @@ class TestControllerWorker(base.TestCase):
                                            constants.UPDATE_DICT:
                                            HEALTH_UPDATE_DICT}))
 
-        _flow_mock.run.assert_called_once_with()
-
-    @mock.patch('octavia.controller.worker.v2.flows.'
-                'listener_flows.ListenerFlows.get_create_listener_flow',
-                return_value=_flow_mock)
     def test_create_listener(self,
-                             mock_get_create_listener_flow,
                              mock_api_get_session,
                              mock_dyn_log_listener,
                              mock_taskflow_load,
@@ -413,20 +383,14 @@ class TestControllerWorker(base.TestCase):
         provider_lb = provider_utils.db_loadbalancer_to_provider_loadbalancer(
             _db_load_balancer_mock).to_dict()
 
-        (base_taskflow.BaseTaskFlowEngine._taskflow_load.
+        (cw.services_controller.run_poster.
             assert_called_once_with(
-                _flow_mock, store={
+                flow_utils.get_create_listener_flow, store={
                     constants.LOADBALANCER: provider_lb,
                     constants.LOADBALANCER_ID: LB_ID,
                     constants.LISTENERS: [listener_dict]}))
 
-        _flow_mock.run.assert_called_once_with()
-
-    @mock.patch('octavia.controller.worker.v2.flows.'
-                'listener_flows.ListenerFlows.get_delete_listener_flow',
-                return_value=_flow_mock)
     def test_delete_listener(self,
-                             mock_get_delete_listener_flow,
                              mock_api_get_session,
                              mock_dyn_log_listener,
                              mock_taskflow_load,
@@ -446,19 +410,14 @@ class TestControllerWorker(base.TestCase):
         cw = controller_worker.ControllerWorker()
         cw.delete_listener(listener_dict)
 
-        (base_taskflow.BaseTaskFlowEngine._taskflow_load.
+        (cw.services_controller.run_poster.
          assert_called_once_with(
-             _flow_mock, store={constants.LISTENER: self.ref_listener_dict,
-                                constants.LOADBALANCER_ID: LB_ID,
-                                constants.PROJECT_ID: PROJECT_ID}))
+             flow_utils.get_delete_listener_flow,
+             store={constants.LISTENER: self.ref_listener_dict,
+                    constants.LOADBALANCER_ID: LB_ID,
+                    constants.PROJECT_ID: PROJECT_ID}))
 
-        _flow_mock.run.assert_called_once_with()
-
-    @mock.patch('octavia.controller.worker.v2.flows.'
-                'listener_flows.ListenerFlows.get_update_listener_flow',
-                return_value=_flow_mock)
     def test_update_listener(self,
-                             mock_get_update_listener_flow,
                              mock_api_get_session,
                              mock_dyn_log_listener,
                              mock_taskflow_load,
@@ -479,8 +438,8 @@ class TestControllerWorker(base.TestCase):
         cw = controller_worker.ControllerWorker()
         cw.update_listener(listener_dict, LISTENER_UPDATE_DICT)
 
-        (base_taskflow.BaseTaskFlowEngine._taskflow_load.
-            assert_called_once_with(_flow_mock,
+        (cw.services_controller.run_poster.
+            assert_called_once_with(flow_utils.get_update_listener_flow,
                                     store={constants.LISTENER: listener_dict,
                                            constants.UPDATE_DICT:
                                            LISTENER_UPDATE_DICT,
@@ -488,14 +447,8 @@ class TestControllerWorker(base.TestCase):
                                            constants.LISTENERS:
                                            [listener_dict]}))
 
-        _flow_mock.run.assert_called_once_with()
-
-    @mock.patch('octavia.controller.worker.v2.flows.load_balancer_flows.'
-                'LoadBalancerFlows.get_create_load_balancer_flow',
-                return_value=_flow_mock)
     def test_create_load_balancer_single(
             self,
-            mock_get_create_load_balancer_flow,
             mock_api_get_session,
             mock_dyn_log_listener,
             mock_taskflow_load,
@@ -512,9 +465,7 @@ class TestControllerWorker(base.TestCase):
         self.conf.config(group="controller_worker",
                          loadbalancer_topology=constants.TOPOLOGY_SINGLE)
         _flow_mock.reset_mock()
-        mock_taskflow_load.reset_mock()
-        mock_eng = mock.Mock()
-        mock_taskflow_load.return_value = mock_eng
+
         store = {
             constants.LOADBALANCER_ID: LB_ID,
             'update_dict': {'topology': constants.TOPOLOGY_SINGLE},
@@ -530,19 +481,13 @@ class TestControllerWorker(base.TestCase):
         cw = controller_worker.ControllerWorker()
         cw.create_load_balancer(_load_balancer_mock)
 
-        mock_get_create_load_balancer_flow.assert_called_with(
-            topology=constants.TOPOLOGY_SINGLE, listeners=[])
-        mock_taskflow_load.assert_called_with(
-            mock_get_create_load_balancer_flow.return_value, store=store)
-        mock_eng.run.assert_any_call()
+        cw.services_controller.run_poster.assert_called_with(
+            flow_utils.get_create_load_balancer_flow,
+            constants.TOPOLOGY_SINGLE, listeners=[], store=store)
         self.assertEqual(4, mock_lb_repo_get.call_count)
 
-    @mock.patch('octavia.controller.worker.v2.flows.load_balancer_flows.'
-                'LoadBalancerFlows.get_create_load_balancer_flow',
-                return_value=_flow_mock)
     def test_create_load_balancer_active_standby(
             self,
-            mock_get_create_load_balancer_flow,
             mock_api_get_session,
             mock_dyn_log_listener,
             mock_taskflow_load,
@@ -560,9 +505,6 @@ class TestControllerWorker(base.TestCase):
             loadbalancer_topology=constants.TOPOLOGY_ACTIVE_STANDBY)
 
         _flow_mock.reset_mock()
-        mock_taskflow_load.reset_mock()
-        mock_eng = mock.Mock()
-        mock_taskflow_load.return_value = mock_eng
         store = {
             constants.LOADBALANCER_ID: LB_ID,
             'update_dict': {'topology': constants.TOPOLOGY_ACTIVE_STANDBY},
@@ -577,17 +519,12 @@ class TestControllerWorker(base.TestCase):
         cw = controller_worker.ControllerWorker()
         cw.create_load_balancer(_load_balancer_mock)
 
-        mock_get_create_load_balancer_flow.assert_called_with(
-            topology=constants.TOPOLOGY_ACTIVE_STANDBY, listeners=[])
-        mock_taskflow_load.assert_called_with(
-            mock_get_create_load_balancer_flow.return_value, store=store)
-        mock_eng.run.assert_any_call()
+        cw.services_controller.run_poster.assert_called_with(
+            flow_utils.get_create_load_balancer_flow,
+            constants.TOPOLOGY_ACTIVE_STANDBY, listeners=[], store=store)
 
-    @mock.patch('octavia.controller.worker.v2.flows.load_balancer_flows.'
-                'LoadBalancerFlows.get_create_load_balancer_flow')
     def test_create_load_balancer_full_graph_single(
             self,
-            mock_get_create_load_balancer_flow,
             mock_api_get_session,
             mock_dyn_log_listener,
             mock_taskflow_load,
@@ -612,8 +549,6 @@ class TestControllerWorker(base.TestCase):
         lb = data_models.LoadBalancer(id=LB_ID, listeners=listeners,
                                       topology=constants.TOPOLOGY_SINGLE)
         mock_lb_repo_get.return_value = lb
-        mock_eng = mock.Mock()
-        mock_taskflow_load.return_value = mock_eng
         store = {
             constants.LOADBALANCER_ID: LB_ID,
             'update_dict': {'topology': constants.TOPOLOGY_SINGLE},
@@ -625,25 +560,12 @@ class TestControllerWorker(base.TestCase):
         cw = controller_worker.ControllerWorker()
         cw.create_load_balancer(_load_balancer_mock)
 
-        # mock_create_single_topology.assert_called_once()
-        # mock_create_active_standby_topology.assert_not_called()
-        mock_get_create_load_balancer_flow.assert_called_with(
-            topology=constants.TOPOLOGY_SINGLE, listeners=dict_listeners)
-        mock_taskflow_load.assert_called_with(
-            mock_get_create_load_balancer_flow.return_value, store=store)
-        mock_eng.run.assert_any_call()
+        cw.services_controller.run_poster.assert_called_with(
+            flow_utils.get_create_load_balancer_flow,
+            constants.TOPOLOGY_SINGLE, listeners=dict_listeners, store=store)
 
-    @mock.patch('octavia.controller.worker.v2.flows.load_balancer_flows.'
-                'LoadBalancerFlows.get_create_load_balancer_flow')
-    @mock.patch('octavia.controller.worker.v2.flows.load_balancer_flows.'
-                'LoadBalancerFlows._create_single_topology')
-    @mock.patch('octavia.controller.worker.v2.flows.load_balancer_flows.'
-                'LoadBalancerFlows._create_active_standby_topology')
     def test_create_load_balancer_full_graph_active_standby(
             self,
-            mock_create_active_standby_topology,
-            mock_create_single_topology,
-            mock_get_create_load_balancer_flow,
             mock_api_get_session,
             mock_dyn_log_listener,
             mock_taskflow_load,
@@ -668,9 +590,10 @@ class TestControllerWorker(base.TestCase):
         lb = data_models.LoadBalancer(
             id=LB_ID, listeners=listeners,
             topology=constants.TOPOLOGY_ACTIVE_STANDBY)
+        dict_listeners = [listener.to_dict() for listener in
+                          provider_utils.db_listeners_to_provider_listeners(
+                              listeners)]
         mock_lb_repo_get.return_value = lb
-        mock_eng = mock.Mock()
-        mock_taskflow_load.return_value = mock_eng
         store = {
             constants.LOADBALANCER_ID: LB_ID,
             'update_dict': {'topology': constants.TOPOLOGY_ACTIVE_STANDBY},
@@ -682,18 +605,12 @@ class TestControllerWorker(base.TestCase):
         cw = controller_worker.ControllerWorker()
         cw.create_load_balancer(_load_balancer_mock)
 
-        mock_get_create_load_balancer_flow.assert_called_with(
-            topology=constants.TOPOLOGY_ACTIVE_STANDBY,
-            listeners=dict_listeners)
-        mock_taskflow_load.assert_called_with(
-            mock_get_create_load_balancer_flow.return_value, store=store)
-        mock_eng.run.assert_any_call()
+        cw.services_controller.run_poster.assert_called_with(
+            flow_utils.get_create_load_balancer_flow,
+            constants.TOPOLOGY_ACTIVE_STANDBY, listeners=dict_listeners,
+            store=store)
 
-    @mock.patch('octavia.controller.worker.v2.flows.load_balancer_flows.'
-                'LoadBalancerFlows.get_delete_load_balancer_flow',
-                return_value=_flow_mock)
     def test_delete_load_balancer_without_cascade(self,
-                                                  mock_get_delete_lb_flow,
                                                   mock_api_get_session,
                                                   mock_dyn_log_listener,
                                                   mock_taskflow_load,
@@ -715,22 +632,18 @@ class TestControllerWorker(base.TestCase):
             _db_session,
             id=LB_ID)
 
-        (base_taskflow.BaseTaskFlowEngine._taskflow_load.
+        (cw.services_controller.run_poster.
             assert_called_once_with(
-                _flow_mock,
+                flow_utils.get_delete_load_balancer_flow,
+                _load_balancer_mock,
                 store={constants.LOADBALANCER: _load_balancer_mock,
                        constants.SERVER_GROUP_ID:
                            _db_load_balancer_mock.server_group_id,
                        constants.PROJECT_ID: _db_load_balancer_mock.project_id,
 
                        }))
-        _flow_mock.run.assert_called_once_with()
 
-    @mock.patch('octavia.controller.worker.v2.flows.load_balancer_flows.'
-                'LoadBalancerFlows.get_cascade_delete_load_balancer_flow',
-                return_value=_flow_mock)
     def test_delete_load_balancer_with_cascade(self,
-                                               mock_get_delete_lb_flow,
                                                mock_api_get_session,
                                                mock_dyn_log_listener,
                                                mock_taskflow_load,
@@ -753,9 +666,10 @@ class TestControllerWorker(base.TestCase):
             id=LB_ID)
         list_name = 'listener_%s' % _listener_mock.id
 
-        (base_taskflow.BaseTaskFlowEngine._taskflow_load.
+        (cw.services_controller.run_poster.
             assert_called_once_with(
-                _flow_mock,
+                flow_utils.get_cascade_delete_load_balancer_flow,
+                _load_balancer_mock,
                 store={constants.LOADBALANCER: _load_balancer_mock,
                        list_name: self.ref_listener_dict,
                        constants.LOADBALANCER_ID: LB_ID,
@@ -764,16 +678,11 @@ class TestControllerWorker(base.TestCase):
                        constants.PROJECT_ID: _db_load_balancer_mock.project_id,
                        })
          )
-        _flow_mock.run.assert_called_once_with()
 
-    @mock.patch('octavia.controller.worker.v2.flows.load_balancer_flows.'
-                'LoadBalancerFlows.get_update_load_balancer_flow',
-                return_value=_flow_mock)
     @mock.patch('octavia.db.repositories.ListenerRepository.get_all',
                 return_value=([_listener_mock], None))
     def test_update_load_balancer(self,
                                   mock_listener_repo_get_all,
-                                  mock_get_update_lb_flow,
                                   mock_api_get_session,
                                   mock_dyn_log_listener,
                                   mock_taskflow_load,
@@ -793,16 +702,14 @@ class TestControllerWorker(base.TestCase):
         change = 'TEST2'
         cw.update_load_balancer(_load_balancer_mock, change)
 
-        (base_taskflow.BaseTaskFlowEngine._taskflow_load.
-            assert_called_once_with(_flow_mock,
+        (cw.services_controller.run_poster.
+            assert_called_once_with(flow_utils.get_update_load_balancer_flow,
                                     store={constants.UPDATE_DICT: change,
                                            constants.LOADBALANCER:
                                                _load_balancer_mock,
                                            constants.LOADBALANCER_ID:
                                                _db_load_balancer_mock.id,
                                            }))
-
-        _flow_mock.run.assert_called_once_with()
 
     @mock.patch('octavia.controller.worker.v2.flows.'
                 'member_flows.MemberFlows.get_create_member_flow',
@@ -833,17 +740,18 @@ class TestControllerWorker(base.TestCase):
 
         provider_lb = provider_utils.db_loadbalancer_to_provider_loadbalancer(
             _db_load_balancer_mock).to_dict()
-        (base_taskflow.BaseTaskFlowEngine._taskflow_load.
-            assert_called_once_with(
-                _flow_mock,
-                store={constants.MEMBER: _member,
-                       constants.LISTENERS: [self.ref_listener_dict],
-                       constants.LOADBALANCER_ID: LB_ID,
-                       constants.LOADBALANCER: provider_lb,
-                       constants.POOL_ID: POOL_ID,
-                       constants.AVAILABILITY_ZONE: {}}))
-
-        _flow_mock.run.assert_called_once_with()
+        (cw.services_controller.run_poster.
+         assert_called_once_with(flow_utils.get_create_member_flow,
+                                 store={constants.MEMBER: _member,
+                                        constants.LISTENERS:
+                                            [self.ref_listener_dict],
+                                        constants.LOADBALANCER_ID:
+                                            LB_ID,
+                                        constants.LOADBALANCER:
+                                            provider_lb,
+                                        constants.POOL_ID:
+                                            POOL_ID,
+                                        constants.AVAILABILITY_ZONE: {}}))
 
     @mock.patch('octavia.controller.worker.v2.flows.'
                 'member_flows.MemberFlows.get_delete_member_flow',
@@ -873,21 +781,16 @@ class TestControllerWorker(base.TestCase):
         provider_lb = provider_utils.db_loadbalancer_to_provider_loadbalancer(
             _db_load_balancer_mock).to_dict()
 
-        (base_taskflow.BaseTaskFlowEngine._taskflow_load.
+        (cw.services_controller.run_poster.
             assert_called_once_with(
-                _flow_mock, store={constants.MEMBER: _member,
-                                   constants.LISTENERS:
-                                       [self.ref_listener_dict],
-                                   constants.LOADBALANCER_ID:
-                                       LB_ID,
-                                   constants.LOADBALANCER:
-                                       provider_lb,
-                                   constants.POOL_ID:
-                                       POOL_ID,
-                                   constants.PROJECT_ID: PROJECT_ID,
-                                   constants.AVAILABILITY_ZONE: {}}))
-
-        _flow_mock.run.assert_called_once_with()
+                flow_utils.get_delete_member_flow,
+                store={constants.MEMBER: _member,
+                       constants.LISTENERS: [self.ref_listener_dict],
+                       constants.LOADBALANCER_ID: LB_ID,
+                       constants.LOADBALANCER: provider_lb,
+                       constants.POOL_ID: POOL_ID,
+                       constants.PROJECT_ID: PROJECT_ID,
+                       constants.AVAILABILITY_ZONE: {}}))
 
     @mock.patch('octavia.controller.worker.v2.flows.'
                 'member_flows.MemberFlows.get_update_member_flow',
@@ -917,9 +820,8 @@ class TestControllerWorker(base.TestCase):
         cw.update_member(_member, MEMBER_UPDATE_DICT)
         provider_lb = provider_utils.db_loadbalancer_to_provider_loadbalancer(
             _db_load_balancer_mock).to_dict()
-
-        (base_taskflow.BaseTaskFlowEngine._taskflow_load.
-            assert_called_once_with(_flow_mock,
+        (cw.services_controller.run_poster.
+            assert_called_once_with(flow_utils.get_update_member_flow,
                                     store={constants.MEMBER: _member,
                                            constants.LISTENERS:
                                                [self.ref_listener_dict],
@@ -932,8 +834,6 @@ class TestControllerWorker(base.TestCase):
                                            constants.UPDATE_DICT:
                                                MEMBER_UPDATE_DICT,
                                            constants.AVAILABILITY_ZONE: {}}))
-
-        _flow_mock.run.assert_called_once_with()
 
     @mock.patch('octavia.controller.worker.v2.flows.'
                 'member_flows.MemberFlows.get_batch_update_members_flow',
@@ -958,15 +858,25 @@ class TestControllerWorker(base.TestCase):
         _flow_mock.reset_mock()
         mock_get_az_metadata_dict.return_value = {}
         cw = controller_worker.ControllerWorker()
+        old_member = mock.MagicMock()
+        old_member.to_dict.return_value = {'id': 9,
+                                           constants.POOL_ID: 'testtest'}
+        mock_member_repo_get.side_effect = [_member_mock, old_member]
         cw.batch_update_members([{constants.MEMBER_ID: 9,
                                   constants.POOL_ID: 'testtest'}],
                                 [{constants.MEMBER_ID: 11}],
                                 [MEMBER_UPDATE_DICT])
+        provider_m = provider_utils.db_member_to_provider_member(_member_mock)
+        old_provider_m = provider_utils.db_member_to_provider_member(
+            old_member).to_dict()
         provider_lb = provider_utils.db_loadbalancer_to_provider_loadbalancer(
             _db_load_balancer_mock).to_dict()
-        (base_taskflow.BaseTaskFlowEngine._taskflow_load.
+        (cw.services_controller.run_poster.
             assert_called_once_with(
-                _flow_mock,
+                flow_utils.get_batch_update_members_flow,
+                [old_provider_m],
+                [{'member_id': 11}],
+                [(provider_m.to_dict(), MEMBER_UPDATE_DICT)],
                 store={constants.LISTENERS: [self.ref_listener_dict],
                        constants.LOADBALANCER_ID: LB_ID,
                        constants.LOADBALANCER: provider_lb,
@@ -974,13 +884,7 @@ class TestControllerWorker(base.TestCase):
                        constants.PROJECT_ID: PROJECT_ID,
                        constants.AVAILABILITY_ZONE: {}}))
 
-        _flow_mock.run.assert_called_once_with()
-
-    @mock.patch('octavia.controller.worker.v2.flows.'
-                'pool_flows.PoolFlows.get_create_pool_flow',
-                return_value=_flow_mock)
     def test_create_pool(self,
-                         mock_get_create_listener_flow,
                          mock_api_get_session,
                          mock_dyn_log_listener,
                          mock_taskflow_load,
@@ -1001,8 +905,8 @@ class TestControllerWorker(base.TestCase):
         provider_lb = provider_utils.db_loadbalancer_to_provider_loadbalancer(
             _db_load_balancer_mock).to_dict()
 
-        (base_taskflow.BaseTaskFlowEngine._taskflow_load.
-            assert_called_once_with(_flow_mock,
+        (cw.services_controller.run_poster.
+            assert_called_once_with(flow_utils.get_create_pool_flow,
                                     store={constants.POOL_ID: POOL_ID,
                                            constants.LOADBALANCER_ID:
                                                LB_ID,
@@ -1011,14 +915,9 @@ class TestControllerWorker(base.TestCase):
                                            constants.LOADBALANCER:
                                                provider_lb}))
 
-        _flow_mock.run.assert_called_once_with()
         self.assertEqual(1, mock_pool_repo_get.call_count)
 
-    @mock.patch('octavia.controller.worker.v2.flows.'
-                'pool_flows.PoolFlows.get_delete_pool_flow',
-                return_value=_flow_mock)
     def test_delete_pool(self,
-                         mock_get_delete_listener_flow,
                          mock_api_get_session,
                          mock_dyn_log_listener,
                          mock_taskflow_load,
@@ -1038,8 +937,8 @@ class TestControllerWorker(base.TestCase):
         cw.delete_pool(_pool_mock)
         provider_lb = provider_utils.db_loadbalancer_to_provider_loadbalancer(
             _db_load_balancer_mock).to_dict()
-        (base_taskflow.BaseTaskFlowEngine._taskflow_load.
-            assert_called_once_with(_flow_mock,
+        (cw.services_controller.run_poster.
+            assert_called_once_with(flow_utils.get_delete_pool_flow,
                                     store={constants.POOL_ID: POOL_ID,
                                            constants.LOADBALANCER_ID:
                                                LB_ID,
@@ -1049,13 +948,7 @@ class TestControllerWorker(base.TestCase):
                                                provider_lb,
                                            constants.PROJECT_ID: PROJECT_ID}))
 
-        _flow_mock.run.assert_called_once_with()
-
-    @mock.patch('octavia.controller.worker.v2.flows.'
-                'pool_flows.PoolFlows.get_update_pool_flow',
-                return_value=_flow_mock)
     def test_update_pool(self,
-                         mock_get_update_listener_flow,
                          mock_api_get_session,
                          mock_dyn_log_listener,
                          mock_taskflow_load,
@@ -1076,8 +969,8 @@ class TestControllerWorker(base.TestCase):
         cw.update_pool(_pool_mock, POOL_UPDATE_DICT)
         provider_lb = provider_utils.db_loadbalancer_to_provider_loadbalancer(
             _db_load_balancer_mock).to_dict()
-        (base_taskflow.BaseTaskFlowEngine._taskflow_load.
-            assert_called_once_with(_flow_mock,
+        (cw.services_controller.run_poster.
+            assert_called_once_with(flow_utils.get_update_pool_flow,
                                     store={constants.POOL_ID: POOL_ID,
                                            constants.LISTENERS:
                                                [self.ref_listener_dict],
@@ -1088,13 +981,7 @@ class TestControllerWorker(base.TestCase):
                                            constants.UPDATE_DICT:
                                                POOL_UPDATE_DICT}))
 
-        _flow_mock.run.assert_called_once_with()
-
-    @mock.patch('octavia.controller.worker.v2.flows.'
-                'l7policy_flows.L7PolicyFlows.get_create_l7policy_flow',
-                return_value=_flow_mock)
     def test_create_l7policy(self,
-                             mock_get_create_listener_flow,
                              mock_api_get_session,
                              mock_dyn_log_listener,
                              mock_taskflow_load,
@@ -1116,20 +1003,14 @@ class TestControllerWorker(base.TestCase):
         }
         cw.create_l7policy(l7policy_mock)
 
-        (base_taskflow.BaseTaskFlowEngine._taskflow_load.
-            assert_called_once_with(_flow_mock,
+        (cw.services_controller.run_poster.
+            assert_called_once_with(flow_utils.get_create_l7policy_flow,
                                     store={constants.L7POLICY: l7policy_mock,
                                            constants.LISTENERS:
                                                [self.ref_listener_dict],
                                            constants.LOADBALANCER_ID: LB_ID}))
 
-        _flow_mock.run.assert_called_once_with()
-
-    @mock.patch('octavia.controller.worker.v2.flows.'
-                'l7policy_flows.L7PolicyFlows.get_delete_l7policy_flow',
-                return_value=_flow_mock)
     def test_delete_l7policy(self,
-                             mock_get_delete_listener_flow,
                              mock_api_get_session,
                              mock_dyn_log_listener,
                              mock_taskflow_load,
@@ -1151,21 +1032,15 @@ class TestControllerWorker(base.TestCase):
         }
         cw.delete_l7policy(l7policy_mock)
 
-        (base_taskflow.BaseTaskFlowEngine._taskflow_load.
-            assert_called_once_with(_flow_mock,
+        (cw.services_controller.run_poster.
+            assert_called_once_with(flow_utils.get_delete_l7policy_flow,
                                     store={constants.L7POLICY: l7policy_mock,
                                            constants.LISTENERS:
                                                [self.ref_listener_dict],
                                            constants.LOADBALANCER_ID:
                                                LB_ID}))
 
-        _flow_mock.run.assert_called_once_with()
-
-    @mock.patch('octavia.controller.worker.v2.flows.'
-                'l7policy_flows.L7PolicyFlows.get_update_l7policy_flow',
-                return_value=_flow_mock)
     def test_update_l7policy(self,
-                             mock_get_update_listener_flow,
                              mock_api_get_session,
                              mock_dyn_log_listener,
                              mock_taskflow_load,
@@ -1190,8 +1065,8 @@ class TestControllerWorker(base.TestCase):
 
         cw.update_l7policy(l7policy_mock, L7POLICY_UPDATE_DICT)
 
-        (base_taskflow.BaseTaskFlowEngine._taskflow_load.
-            assert_called_once_with(_flow_mock,
+        (cw.services_controller.run_poster.
+            assert_called_once_with(flow_utils.get_update_l7policy_flow,
                                     store={constants.L7POLICY: l7policy_mock,
                                            constants.LISTENERS:
                                                [self.ref_listener_dict],
@@ -1200,13 +1075,7 @@ class TestControllerWorker(base.TestCase):
                                            constants.UPDATE_DICT:
                                                L7POLICY_UPDATE_DICT}))
 
-        _flow_mock.run.assert_called_once_with()
-
-    @mock.patch('octavia.controller.worker.v2.flows.'
-                'l7rule_flows.L7RuleFlows.get_create_l7rule_flow',
-                return_value=_flow_mock)
     def test_create_l7rule(self,
-                           mock_get_create_listener_flow,
                            mock_api_get_session,
                            mock_dyn_log_listener,
                            mock_taskflow_load,
@@ -1228,8 +1097,9 @@ class TestControllerWorker(base.TestCase):
 
         l7_policy = provider_utils.db_l7policy_to_provider_l7policy(
             _l7policy_mock)
-        (base_taskflow.BaseTaskFlowEngine._taskflow_load.
-            assert_called_once_with(_flow_mock,
+
+        (cw.services_controller.run_poster.
+            assert_called_once_with(flow_utils.get_create_l7rule_flow,
                                     store={constants.L7RULE:
                                            _l7rule_mock.to_dict(),
                                            constants.L7POLICY:
@@ -1240,13 +1110,7 @@ class TestControllerWorker(base.TestCase):
                                                [self.ref_listener_dict]
                                            }))
 
-        _flow_mock.run.assert_called_once_with()
-
-    @mock.patch('octavia.controller.worker.v2.flows.'
-                'l7rule_flows.L7RuleFlows.get_delete_l7rule_flow',
-                return_value=_flow_mock)
     def test_delete_l7rule(self,
-                           mock_get_delete_listener_flow,
                            mock_api_get_session,
                            mock_dyn_log_listener,
                            mock_taskflow_load,
@@ -1266,8 +1130,8 @@ class TestControllerWorker(base.TestCase):
         l7_policy = provider_utils.db_l7policy_to_provider_l7policy(
             _l7policy_mock)
 
-        (base_taskflow.BaseTaskFlowEngine._taskflow_load.
-            assert_called_once_with(_flow_mock,
+        (cw.services_controller.run_poster.
+            assert_called_once_with(flow_utils.get_delete_l7rule_flow,
                                     store={
                                         constants.L7RULE:
                                             _l7rule_mock.to_dict(),
@@ -1279,13 +1143,7 @@ class TestControllerWorker(base.TestCase):
                                         constants.LOADBALANCER_ID: LB_ID,
                                     }))
 
-        _flow_mock.run.assert_called_once_with()
-
-    @mock.patch('octavia.controller.worker.v2.flows.'
-                'l7rule_flows.L7RuleFlows.get_update_l7rule_flow',
-                return_value=_flow_mock)
     def test_update_l7rule(self,
-                           mock_get_update_listener_flow,
                            mock_api_get_session,
                            mock_dyn_log_listener,
                            mock_taskflow_load,
@@ -1306,8 +1164,8 @@ class TestControllerWorker(base.TestCase):
         l7_policy = provider_utils.db_l7policy_to_provider_l7policy(
             _l7policy_mock)
 
-        (base_taskflow.BaseTaskFlowEngine._taskflow_load.
-            assert_called_once_with(_flow_mock,
+        (cw.services_controller.run_poster.
+            assert_called_once_with(flow_utils.get_update_l7rule_flow,
                                     store={
                                         constants.L7RULE:
                                             _l7rule_mock.to_dict(),
@@ -1320,19 +1178,13 @@ class TestControllerWorker(base.TestCase):
                                         constants.UPDATE_DICT:
                                             L7RULE_UPDATE_DICT}))
 
-        _flow_mock.run.assert_called_once_with()
-
     @mock.patch('octavia.db.repositories.AvailabilityZoneRepository.'
                 'get_availability_zone_metadata_dict', return_value={})
     @mock.patch('octavia.db.repositories.FlavorRepository.'
                 'get_flavor_metadata_dict', return_value={})
-    @mock.patch('octavia.controller.worker.v2.flows.'
-                'amphora_flows.AmphoraFlows.get_failover_flow',
-                return_value=_flow_mock)
     @mock.patch('octavia.db.repositories.LoadBalancerRepository.update')
     def test_failover_amphora(self,
                               mock_update,
-                              mock_get_failover_flow,
                               mock_get_flavor_meta,
                               mock_get_az_meta,
                               mock_api_get_session,
@@ -1348,13 +1200,17 @@ class TestControllerWorker(base.TestCase):
                               mock_amp_repo_get):
 
         _flow_mock.reset_mock()
-
+        _db_amphora_mock.reset_mock()
+        mock_amp_repo_get.return_value = _db_amphora_mock
         cw = controller_worker.ControllerWorker()
         cw.failover_amphora(AMP_ID)
-        mock_amp_repo_get.return_value = _db_amphora_mock
-        (base_taskflow.BaseTaskFlowEngine._taskflow_load.
+        mock_lb_repo_get.return_value = _db_load_balancer_mock
+        (cw.services_controller.run_poster.
             assert_called_once_with(
-                _flow_mock,
+                flow_utils.get_failover_flow,
+                role=_db_amphora_mock.role,
+                load_balancer={},
+                wait=True,
                 store={constants.FAILED_AMPHORA: _db_amphora_mock.to_dict(),
                        constants.LOADBALANCER_ID:
                            _db_amphora_mock.load_balancer_id,
@@ -1364,7 +1220,6 @@ class TestControllerWorker(base.TestCase):
                        constants.AVAILABILITY_ZONE: {}
                        }))
 
-        _flow_mock.run.assert_called_once_with()
         mock_update.assert_called_with(_db_session, LB_ID,
                                        provisioning_status=constants.ACTIVE)
 
@@ -1447,11 +1302,7 @@ class TestControllerWorker(base.TestCase):
     @mock.patch(
         'octavia.db.repositories.AmphoraRepository.get_lb_for_amphora',
         return_value=None)
-    @mock.patch('octavia.controller.worker.v2.flows.'
-                'amphora_flows.AmphoraFlows.get_failover_flow',
-                return_value=_flow_mock)
     def test_failover_spare_amphora(self,
-                                    mock_get_failover_flow,
                                     mock_get_lb_for_amphora,
                                     mock_api_get_session,
                                     mock_dyn_log_listener,
@@ -1472,14 +1323,17 @@ class TestControllerWorker(base.TestCase):
         mock_amphora.id = AMP_ID
         mock_amphora.status = constants.AMPHORA_READY
         mock_amphora.load_balancer_id = None
+        mock_amphora.role = constants.ROLE_STANDALONE
 
         cw = controller_worker.ControllerWorker()
         cw._perform_amphora_failover(mock_amphora,
                                      constants.LB_CREATE_FAILOVER_PRIORITY)
 
-        (base_taskflow.BaseTaskFlowEngine._taskflow_load.
+        (cw.services_controller.run_poster.
             assert_called_once_with(
-                _flow_mock,
+                flow_utils.get_failover_flow,
+                role=constants.ROLE_STANDALONE, load_balancer=None,
+                wait=True,
                 store={constants.FAILED_AMPHORA: mock_amphora.to_dict(),
                        constants.LOADBALANCER_ID: None,
                        constants.BUILD_TYPE_PRIORITY:
@@ -1487,8 +1341,6 @@ class TestControllerWorker(base.TestCase):
                        constants.FLAVOR: {},
                        constants.AVAILABILITY_ZONE: {}
                        }))
-
-        _flow_mock.run.assert_called_once_with()
 
     @mock.patch('octavia.db.repositories.AmphoraHealthRepository.delete')
     def test_failover_deleted_amphora(self,
@@ -1567,9 +1419,6 @@ class TestControllerWorker(base.TestCase):
                 'get_availability_zone_metadata_dict', return_value={})
     @mock.patch('octavia.db.repositories.FlavorRepository.'
                 'get_flavor_metadata_dict', return_value={})
-    @mock.patch('octavia.controller.worker.v2.flows.'
-                'amphora_flows.AmphoraFlows.get_failover_flow',
-                return_value=_flow_mock)
     @mock.patch(
         'octavia.db.repositories.AmphoraRepository.get_lb_for_amphora',
         return_value=_db_load_balancer_mock)
@@ -1577,7 +1426,6 @@ class TestControllerWorker(base.TestCase):
     def test_failover_amphora_anti_affinity(self,
                                             mock_update,
                                             mock_get_lb_for_amphora,
-                                            mock_get_update_listener_flow,
                                             mock_get_flavor_meta,
                                             mock_get_az_meta,
                                             mock_api_get_session,
@@ -1598,10 +1446,15 @@ class TestControllerWorker(base.TestCase):
 
         cw = controller_worker.ControllerWorker()
         cw.failover_amphora(AMP_ID)
+        provider_lb = provider_utils.db_loadbalancer_to_provider_loadbalancer(
+            _db_load_balancer_mock).to_dict()
 
-        (base_taskflow.BaseTaskFlowEngine._taskflow_load.
+        (cw.services_controller.run_poster.
             assert_called_once_with(
-                _flow_mock,
+                flow_utils.get_failover_flow,
+                role=_db_amphora_mock.role,
+                load_balancer=provider_lb,
+                wait=True,
                 store={constants.FAILED_AMPHORA: _db_amphora_mock.to_dict(),
                        constants.LOADBALANCER_ID:
                            _db_amphora_mock.load_balancer_id,
@@ -1612,15 +1465,10 @@ class TestControllerWorker(base.TestCase):
                        constants.AVAILABILITY_ZONE: {}
                        }))
 
-        _flow_mock.run.assert_called_once_with()
         mock_update.assert_called_with(_db_session, LB_ID,
                                        provisioning_status=constants.ACTIVE)
 
-    @mock.patch('octavia.controller.worker.v2.flows.'
-                'amphora_flows.AmphoraFlows.cert_rotate_amphora_flow',
-                return_value=_flow_mock)
     def test_amphora_cert_rotation(self,
-                                   mock_get_update_listener_flow,
                                    mock_api_get_session,
                                    mock_dyn_log_listener,
                                    mock_taskflow_load,
@@ -1636,22 +1484,17 @@ class TestControllerWorker(base.TestCase):
         cw = controller_worker.ControllerWorker()
         cw.amphora_cert_rotation(AMP_ID)
         mock_amp_repo_get.return_value = _db_amphora_mock
-        (base_taskflow.BaseTaskFlowEngine._taskflow_load.
-         assert_called_once_with(_flow_mock,
+        (cw.services_controller.run_poster.
+         assert_called_once_with(flow_utils.cert_rotate_amphora_flow,
                                  store={constants.AMPHORA:
                                         _db_amphora_mock.to_dict(),
                                         constants.AMPHORA_ID:
                                         _amphora_mock[constants.ID]}))
-        _flow_mock.run.assert_called_once_with()
 
     @mock.patch('octavia.db.repositories.FlavorRepository.'
                 'get_flavor_metadata_dict')
     @mock.patch('octavia.db.repositories.AmphoraRepository.get_lb_for_amphora')
-    @mock.patch('octavia.controller.worker.v2.flows.'
-                'amphora_flows.AmphoraFlows.update_amphora_config_flow',
-                return_value=_flow_mock)
     def test_update_amphora_agent_config(self,
-                                         mock_update_flow,
                                          mock_get_lb_for_amp,
                                          mock_flavor_meta,
                                          mock_api_get_session,
@@ -1676,27 +1519,24 @@ class TestControllerWorker(base.TestCase):
         mock_amp_repo_get.assert_called_once_with(_db_session, id=AMP_ID)
         mock_get_lb_for_amp.assert_called_once_with(_db_session, AMP_ID)
         mock_flavor_meta.assert_called_once_with(_db_session, 'vanilla')
-        (base_taskflow.BaseTaskFlowEngine._taskflow_load.
-         assert_called_once_with(_flow_mock,
+        (cw.services_controller.run_poster.
+         assert_called_once_with(flow_utils.update_amphora_config_flow,
                                  store={constants.AMPHORA:
                                         _db_amphora_mock.to_dict(),
                                         constants.FLAVOR: {'test': 'dict'}}))
-        _flow_mock.run.assert_called_once_with()
 
         # Test with no flavor
         _flow_mock.reset_mock()
         mock_amp_repo_get.reset_mock()
         mock_get_lb_for_amp.reset_mock()
         mock_flavor_meta.reset_mock()
-        base_taskflow.BaseTaskFlowEngine._taskflow_load.reset_mock()
         mock_lb.flavor_id = None
         cw.update_amphora_agent_config(AMP_ID)
         mock_amp_repo_get.assert_called_once_with(_db_session, id=AMP_ID)
         mock_get_lb_for_amp.assert_called_once_with(_db_session, AMP_ID)
         mock_flavor_meta.assert_not_called()
-        (base_taskflow.BaseTaskFlowEngine._taskflow_load.
-         assert_called_once_with(_flow_mock,
+        (cw.services_controller.run_poster.
+         assert_called_once_with(flow_utils.update_amphora_config_flow,
                                  store={constants.AMPHORA:
                                         _db_amphora_mock.to_dict(),
                                         constants.FLAVOR: {}}))
-        _flow_mock.run.assert_called_once_with()

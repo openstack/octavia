@@ -14,6 +14,7 @@
 
 import copy
 
+from dateutil import parser
 import netaddr
 from wsme import types as wtypes
 
@@ -127,12 +128,19 @@ class BaseType(wtypes.Base, metaclass=BaseMeta):
         :param data_model: data model to convert from
         :param children: convert child data models
         """
+        type_dict = data_model.to_dict()
+        # We need to have json convertible data for storing it in persistence
+        # jobboard backend.
+        for k, v in type_dict.items():
+            if ('_at' in k or 'expiration' in k) and v is not None:
+                type_dict[k] = parser.parse(v)
+
         if not hasattr(cls, '_type_to_model_map'):
-            return cls(**data_model.to_dict())
+            return cls(**type_dict)
 
         dm_to_type_map = {value: key
                           for key, value in cls._type_to_model_map.items()}
-        type_dict = data_model.to_dict()
+
         new_dict = copy.deepcopy(type_dict)
         for key, value in type_dict.items():
             if isinstance(value, dict):

@@ -17,3 +17,4 @@ Note that installation and configuration vary by distribution.
    :maxdepth: 2
 
    install-ubuntu.rst
+   install-amphorav2.rst

@@ -45,6 +45,8 @@ your Octavia API instances.
 
 .. include:: amphora.rst
 
+.. include:: amphorav2.rst
+
 .. include:: f5.rst
 
 .. include:: ovn.rst

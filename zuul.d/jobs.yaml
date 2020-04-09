@@ -69,12 +69,16 @@
     name: octavia-v2-dsvm-scenario-amphora-v2
     parent: octavia-v2-dsvm-scenario
     vars:
+      devstack_localrc:
+        OCTAVIA_ENABLE_AMPHORAV2_PROVIDER: True
       devstack_local_conf:
         post-config:
           $OCTAVIA_CONF:
             api_settings:
               default_provider_driver: amphorav2
               enabled_provider_drivers: amphorav2:The v2 amphora driver.
+            task_flow:
+              jobboard_expiration_time: 100
         test-config:
           "$TEMPEST_CONFIG":
             load_balancer:

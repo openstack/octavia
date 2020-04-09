@@ -22,10 +22,15 @@ from oslo_config import cfg
 from oslo_db import options
 from oslo_log import log
 
+from octavia.controller.worker.v2 import taskflow_jobboard_driver
 from octavia.i18n import _
 
 CONF = cfg.CONF
 options.set_defaults(CONF)
+# Setting explicitly here needed for taskflow persistence successful
+# initialization
+options.set_defaults(CONF, max_pool_size=10, max_overflow=20,
+                     pool_timeout=10)
 log.set_defaults()
 log.register_options(CONF)
 log.setup(CONF, 'octavia-db-manage')
@@ -85,6 +90,14 @@ def do_revision(config, cmd):
                        sql=CONF.command.sql)
 
 
+def do_persistence_upgrade(config, cmd):
+    opt = cfg.StrOpt('persistence_connection',
+                     default='sqlite://')
+    cfg.CONF.register_opts([opt], group='task_flow')
+    persistence = taskflow_jobboard_driver.MysqlPersistenceDriver()
+    persistence.initialize()
+
+
 def add_command_parsers(subparsers):
     for name in ['current', 'history', 'branches']:
         parser = add_alembic_subparser(subparsers, name)
@@ -100,6 +113,11 @@ def add_command_parsers(subparsers):
     parser.add_argument('--sql', action='store_true')
     parser.add_argument('revision', nargs='?')
     parser.set_defaults(func=do_upgrade)
+
+    parser = subparsers.add_parser(
+        "upgrade_persistence",
+        help="Run migrations for persistence backend")
+    parser.set_defaults(func=do_persistence_upgrade)
 
     parser = subparsers.add_parser('downgrade', help="(No longer supported)")
     parser.add_argument('None', nargs='?', help="Downgrade not supported")

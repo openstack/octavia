@@ -50,7 +50,8 @@ class TestConsumer(base.TestRpc):
         mock_endpoint.assert_called_once_with()
 
     @mock.patch.object(messaging, 'get_rpc_server')
-    def test_consumer_terminate(self, mock_rpc_server):
+    @mock.patch.object(endpoints, 'Endpoints')
+    def test_consumer_terminate(self, mock_endpoint, mock_rpc_server):
         mock_rpc_server_rv = mock.Mock()
         mock_rpc_server.return_value = mock_rpc_server_rv
 

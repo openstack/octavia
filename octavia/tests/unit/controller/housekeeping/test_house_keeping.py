@@ -45,6 +45,9 @@ class TestSpareCheck(base.TestCase):
 
     def setUp(self):
         super(TestSpareCheck, self).setUp()
+        self.CONF = self.useFixture(oslo_fixture.Config(cfg.CONF))
+        self.CONF.config(group="api_settings",
+                         default_provider_driver='amphora')
         self.spare_amp = house_keeping.SpareAmphora()
         self.amp_repo = mock.MagicMock()
         self.az_repo = mock.MagicMock()
@@ -53,7 +56,6 @@ class TestSpareCheck(base.TestCase):
         self.spare_amp.amp_repo = self.amp_repo
         self.spare_amp.az_repo = self.az_repo
         self.spare_amp.cw = self.cw
-        self.CONF = self.useFixture(oslo_fixture.Config(cfg.CONF))
 
     @mock.patch('octavia.db.api.get_session')
     def test_spare_check_diff_count(self, session):
@@ -90,8 +92,10 @@ class TestSpareCheck(base.TestCase):
             az1.name, az2.name)
         self.spare_amp.spare_check()
 
-        calls = [mock.call(session, availability_zone=az1.name),
-                 mock.call(session, availability_zone=az2.name)]
+        calls = [mock.call(session, availability_zone=az1.name,
+                           check_booting_amphora=False),
+                 mock.call(session, availability_zone=az2.name,
+                           check_booting_amphora=False)]
         self.amp_repo.get_spare_amphora_count.assert_has_calls(calls,
                                                                any_order=True)
 
@@ -251,6 +255,7 @@ class TestDatabaseCleanup(base.TestCase):
 class TestCertRotation(base.TestCase):
     def setUp(self):
         super(TestCertRotation, self).setUp()
+        self.CONF = self.useFixture(oslo_fixture.Config(cfg.CONF))
 
     @mock.patch('octavia.controller.worker.v1.controller_worker.'
                 'ControllerWorker.amphora_cert_rotation')
@@ -261,6 +266,8 @@ class TestCertRotation(base.TestCase):
                                                           cert_exp_amp_mock,
                                                           amp_cert_mock
                                                           ):
+        self.CONF.config(group="api_settings",
+                         default_provider_driver='amphora')
         amphora = mock.MagicMock()
         amphora.id = AMPHORA_ID
 
@@ -281,6 +288,8 @@ class TestCertRotation(base.TestCase):
                                                              cert_exp_amp_mock,
                                                              amp_cert_mock
                                                              ):
+        self.CONF.config(group="api_settings",
+                         default_provider_driver='amphora')
         amphora = mock.MagicMock()
         amphora.id = AMPHORA_ID
 
@@ -300,7 +309,65 @@ class TestCertRotation(base.TestCase):
     def test_cert_rotation_non_expired_amphora(self, session,
                                                cert_exp_amp_mock,
                                                amp_cert_mock):
+        self.CONF.config(group="api_settings",
+                         default_provider_driver='amphora')
 
+        session.return_value = session
+        cert_exp_amp_mock.return_value = None
+        cr = house_keeping.CertRotation()
+        cr.rotate()
+        self.assertFalse(amp_cert_mock.called)
+
+    @mock.patch('octavia.controller.worker.v2.controller_worker.'
+                'ControllerWorker.amphora_cert_rotation')
+    @mock.patch('octavia.db.repositories.AmphoraRepository.'
+                'get_cert_expiring_amphora')
+    @mock.patch('octavia.db.api.get_session')
+    def test_cert_rotation_expired_amphora_with_exception_amphorav2(
+            self, session, cert_exp_amp_mock, amp_cert_mock):
+        self.CONF.config(group="api_settings",
+                         default_provider_driver='amphorav2')
+
+        amphora = mock.MagicMock()
+        amphora.id = AMPHORA_ID
+
+        session.return_value = session
+        cert_exp_amp_mock.side_effect = [amphora, TestException(
+            'break_while')]
+
+        cr = house_keeping.CertRotation()
+        self.assertRaises(TestException, cr.rotate)
+        amp_cert_mock.assert_called_once_with(AMPHORA_ID)
+
+    @mock.patch('octavia.controller.worker.v2.controller_worker.'
+                'ControllerWorker.amphora_cert_rotation')
+    @mock.patch('octavia.db.repositories.AmphoraRepository.'
+                'get_cert_expiring_amphora')
+    @mock.patch('octavia.db.api.get_session')
+    def test_cert_rotation_expired_amphora_without_exception_amphorav2(
+            self, session, cert_exp_amp_mock, amp_cert_mock):
+        self.CONF.config(group="api_settings",
+                         default_provider_driver='amphorav2')
+        amphora = mock.MagicMock()
+        amphora.id = AMPHORA_ID
+
+        session.return_value = session
+        cert_exp_amp_mock.side_effect = [amphora, None]
+
+        cr = house_keeping.CertRotation()
+
+        self.assertIsNone(cr.rotate())
+        amp_cert_mock.assert_called_once_with(AMPHORA_ID)
+
+    @mock.patch('octavia.controller.worker.v2.controller_worker.'
+                'ControllerWorker.amphora_cert_rotation')
+    @mock.patch('octavia.db.repositories.AmphoraRepository.'
+                'get_cert_expiring_amphora')
+    @mock.patch('octavia.db.api.get_session')
+    def test_cert_rotation_non_expired_amphora_amphorav2(
+            self, session, cert_exp_amp_mock, amp_cert_mock):
+        self.CONF.config(group="api_settings",
+                         default_provider_driver='amphorav2')
         session.return_value = session
         cert_exp_amp_mock.return_value = None
         cr = house_keeping.CertRotation()
