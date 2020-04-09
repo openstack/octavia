@@ -14,6 +14,8 @@
 
 import mock
 from neutronclient.common import exceptions as neutron_client_exceptions
+from oslo_config import cfg
+from oslo_config import fixture as oslo_fixture
 
 from octavia.common import clients
 from octavia.common import data_models
@@ -198,6 +200,9 @@ class TestBaseNeutronNetworkDriver(base.TestCase):
                                port2['fixed_ips'][0]['ip_address']])
 
     def test_get_network(self):
+        config = self.useFixture(oslo_fixture.Config(cfg.CONF))
+        config.config(group="networking", allow_invisible_resource_usage=True)
+
         show_network = self.driver.neutron_client.show_network
         show_network.return_value = {'network': {
             'id': t_constants.MOCK_NETWORK_ID,
@@ -208,7 +213,25 @@ class TestBaseNeutronNetworkDriver(base.TestCase):
         self.assertEqual(1, len(network.subnets))
         self.assertEqual(t_constants.MOCK_SUBNET_ID, network.subnets[0])
 
+    @mock.patch("octavia.common.clients.NeutronAuth.get_user_neutron_client")
+    def test_get_user_network(self, neutron_client_mock):
+        show_network = neutron_client_mock.return_value.show_network
+        show_network.return_value = {'network': {
+            'id': t_constants.MOCK_NETWORK_ID,
+            'subnets': [t_constants.MOCK_SUBNET_ID]}}
+
+        network = self.driver.get_network(t_constants.MOCK_NETWORK_ID,
+                                          context=mock.ANY)
+
+        self.assertIsInstance(network, network_models.Network)
+        self.assertEqual(t_constants.MOCK_NETWORK_ID, network.id)
+        self.assertEqual(1, len(network.subnets))
+        self.assertEqual(t_constants.MOCK_SUBNET_ID, network.subnets[0])
+
     def test_get_subnet(self):
+        config = self.useFixture(oslo_fixture.Config(cfg.CONF))
+        config.config(group="networking", allow_invisible_resource_usage=True)
+
         show_subnet = self.driver.neutron_client.show_subnet
         show_subnet.return_value = {'subnet': {
             'id': t_constants.MOCK_SUBNET_ID,
@@ -220,7 +243,26 @@ class TestBaseNeutronNetworkDriver(base.TestCase):
         self.assertEqual(t_constants.MOCK_IP_ADDRESS, subnet.gateway_ip)
         self.assertEqual(t_constants.MOCK_CIDR, subnet.cidr)
 
+    @mock.patch("octavia.common.clients.NeutronAuth.get_user_neutron_client")
+    def test_get_user_subnet(self, neutron_client_mock):
+        show_subnet = neutron_client_mock.return_value.show_subnet
+        show_subnet.return_value = {'subnet': {
+            'id': t_constants.MOCK_SUBNET_ID,
+            'gateway_ip': t_constants.MOCK_IP_ADDRESS,
+            'cidr': t_constants.MOCK_CIDR}}
+
+        subnet = self.driver.get_subnet(t_constants.MOCK_SUBNET_ID,
+                                        context=mock.ANY)
+
+        self.assertIsInstance(subnet, network_models.Subnet)
+        self.assertEqual(t_constants.MOCK_SUBNET_ID, subnet.id)
+        self.assertEqual(t_constants.MOCK_IP_ADDRESS, subnet.gateway_ip)
+        self.assertEqual(t_constants.MOCK_CIDR, subnet.cidr)
+
     def test_get_port(self):
+        config = self.useFixture(oslo_fixture.Config(cfg.CONF))
+        config.config(group="networking", allow_invisible_resource_usage=True)
+
         show_port = self.driver.neutron_client.show_port
         show_port.return_value = {'port': {
             'id': t_constants.MOCK_PORT_ID,
@@ -231,6 +273,31 @@ class TestBaseNeutronNetworkDriver(base.TestCase):
                 'ip_address': t_constants.MOCK_IP_ADDRESS
             }]}}
         port = self.driver.get_port(t_constants.MOCK_PORT_ID)
+        self.assertIsInstance(port, network_models.Port)
+        self.assertEqual(t_constants.MOCK_PORT_ID, port.id)
+        self.assertEqual(t_constants.MOCK_MAC_ADDR, port.mac_address)
+        self.assertEqual(t_constants.MOCK_NETWORK_ID, port.network_id)
+        self.assertEqual(1, len(port.fixed_ips))
+        self.assertIsInstance(port.fixed_ips[0], network_models.FixedIP)
+        self.assertEqual(t_constants.MOCK_SUBNET_ID,
+                         port.fixed_ips[0].subnet_id)
+        self.assertEqual(t_constants.MOCK_IP_ADDRESS,
+                         port.fixed_ips[0].ip_address)
+
+    @mock.patch("octavia.common.clients.NeutronAuth.get_user_neutron_client")
+    def test_get_user_port(self, neutron_client_mock):
+        show_port = neutron_client_mock.return_value.show_port
+        show_port.return_value = {'port': {
+            'id': t_constants.MOCK_PORT_ID,
+            'mac_address': t_constants.MOCK_MAC_ADDR,
+            'network_id': t_constants.MOCK_NETWORK_ID,
+            'fixed_ips': [{
+                'subnet_id': t_constants.MOCK_SUBNET_ID,
+                'ip_address': t_constants.MOCK_IP_ADDRESS
+            }]}}
+
+        port = self.driver.get_port(t_constants.MOCK_PORT_ID, context=mock.ANY)
+
         self.assertIsInstance(port, network_models.Port)
         self.assertEqual(t_constants.MOCK_PORT_ID, port.id)
         self.assertEqual(t_constants.MOCK_MAC_ADDR, port.mac_address)

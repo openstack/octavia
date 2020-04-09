@@ -117,10 +117,12 @@ class LoadBalancersController(base.BaseController):
                 state=prov_status, id=id)
 
     @staticmethod
-    def _validate_network_and_fill_or_validate_subnet(load_balancer):
+    def _validate_network_and_fill_or_validate_subnet(load_balancer,
+                                                      context=None):
         network = validate.network_exists_optionally_contains_subnet(
             network_id=load_balancer.vip_network_id,
-            subnet_id=load_balancer.vip_subnet_id)
+            subnet_id=load_balancer.vip_subnet_id,
+            context=context)
         if not load_balancer.vip_subnet_id:
             network_driver = utils.get_network_driver()
             if load_balancer.vip_address:
@@ -168,8 +170,10 @@ class LoadBalancersController(base.BaseController):
                         break
 
     @staticmethod
-    def _validate_port_and_fill_or_validate_subnet(load_balancer):
-        port = validate.port_exists(port_id=load_balancer.vip_port_id)
+    def _validate_port_and_fill_or_validate_subnet(load_balancer,
+                                                   context=None):
+        port = validate.port_exists(port_id=load_balancer.vip_port_id,
+                                    context=context)
         validate.check_port_in_use(port)
         load_balancer.vip_network_id = port.network_id
 
@@ -184,7 +188,8 @@ class LoadBalancersController(base.BaseController):
 
         # Identify the subnet for this port
         if load_balancer.vip_subnet_id:
-            validate.subnet_exists(subnet_id=load_balancer.vip_subnet_id)
+            validate.subnet_exists(subnet_id=load_balancer.vip_subnet_id,
+                                   context=context)
         else:
             if load_balancer.vip_address:
                 for port_fixed_ip in port.fixed_ips:
@@ -202,7 +207,7 @@ class LoadBalancersController(base.BaseController):
                     "VIP port's subnet could not be determined. Please "
                     "specify either a VIP subnet or address."))
 
-    def _validate_vip_request_object(self, load_balancer):
+    def _validate_vip_request_object(self, load_balancer, context=None):
         allowed_network_objects = []
         if CONF.networking.allow_vip_port_id:
             allowed_network_objects.append('vip_port_id')
@@ -234,10 +239,12 @@ class LoadBalancersController(base.BaseController):
 
         # Validate the port id
         if load_balancer.vip_port_id:
-            self._validate_port_and_fill_or_validate_subnet(load_balancer)
+            self._validate_port_and_fill_or_validate_subnet(load_balancer,
+                                                            context=context)
         # If no port id, validate the network id (and subnet if provided)
         elif load_balancer.vip_network_id:
-            self._validate_network_and_fill_or_validate_subnet(load_balancer)
+            self._validate_network_and_fill_or_validate_subnet(load_balancer,
+                                                               context=context)
         # Validate just the subnet id
         elif load_balancer.vip_subnet_id:
             subnet = validate.subnet_exists(
@@ -347,7 +354,7 @@ class LoadBalancersController(base.BaseController):
         self._auth_validate_action(context, load_balancer.project_id,
                                    constants.RBAC_POST)
 
-        self._validate_vip_request_object(load_balancer)
+        self._validate_vip_request_object(load_balancer, context=context)
 
         self._validate_flavor(context.session, load_balancer)
 
