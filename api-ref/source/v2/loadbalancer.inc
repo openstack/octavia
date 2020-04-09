@@ -46,6 +46,7 @@ Response Parameters
 .. rest_parameters:: ../parameters.yaml
 
    - admin_state_up: admin_state_up
+   - availability_zone: availability-zone-name
    - created_at: created_at
    - description: description
    - flavor_id: flavor-id
@@ -162,6 +163,7 @@ Request
 .. rest_parameters:: ../parameters.yaml
 
    - admin_state_up: admin_state_up-default-optional
+   - availability_zone: availability-zone-name-optional
    - description: description-optional
    - flavor_id: flavor-id-optional
    - listeners: listeners-optional
@@ -194,6 +196,7 @@ Response Parameters
 .. rest_parameters:: ../parameters.yaml
 
    - admin_state_up: admin_state_up
+   - availability_zone: availability-zone-name
    - created_at: created_at
    - description: description
    - flavor_id: flavor-id
@@ -287,6 +290,7 @@ Response Parameters
 .. rest_parameters:: ../parameters.yaml
 
    - admin_state_up: admin_state_up
+   - availability_zone: availability-zone-name
    - created_at: created_at
    - description: description
    - flavor_id: flavor-id

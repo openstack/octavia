@@ -91,7 +91,7 @@ Request
 
    - description: description-optional
    - enabled: enabled-optional
-   - availability_zone: availability-zone
+   - availability_zone: availability_zone
    - availability_zone_profile_id: availability-zone-profile-id
    - name: name
 
@@ -115,7 +115,7 @@ Response Parameters
    - description: description
    - enabled: enabled
    - availability_zone_profile_id: availability-zone-profile-id
-   - availability_zone: availability-zone
+   - availability_zone: availability_zone
    - name: name
 
 Response Example
@@ -172,7 +172,7 @@ Response Parameters
    - description: description
    - enabled: enabled
    - availability_zone_profile_id: availability-zone-profile-id
-   - availability_zone: availability-zone
+   - availability_zone: availability_zone
    - name: name
 
 Response Example
@@ -212,7 +212,7 @@ Request
 
    - description: description-optional
    - enabled: enabled-optional
-   - availability_zone: availability-zone
+   - availability_zone: availability_zone
    - availability_zone_name: path-availability-zone-name
 
 Request Example
@@ -235,7 +235,7 @@ Response Parameters
    - description: description
    - enabled: enabled
    - availability_zone_profile_id: availability-zone-profile-id
-   - availability_zone: availability-zone
+   - availability_zone: availability_zone
    - name: name
 
 Response Example
