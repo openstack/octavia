@@ -312,11 +312,11 @@ def sanitize_l7policy_api_args(l7policy, create=False):
     return l7policy
 
 
-def port_exists(port_id):
+def port_exists(port_id, context=None):
     """Raises an exception when a port does not exist."""
     network_driver = utils.get_network_driver()
     try:
-        port = network_driver.get_port(port_id)
+        port = network_driver.get_port(port_id, context=context)
     except Exception:
         raise exceptions.InvalidSubresource(resource='Port', id=port_id)
     return port
@@ -331,11 +331,11 @@ def check_port_in_use(port):
     return False
 
 
-def subnet_exists(subnet_id):
+def subnet_exists(subnet_id, context=None):
     """Raises an exception when a subnet does not exist."""
     network_driver = utils.get_network_driver()
     try:
-        subnet = network_driver.get_subnet(subnet_id)
+        subnet = network_driver.get_subnet(subnet_id, context=context)
     except Exception:
         raise exceptions.InvalidSubresource(resource='Subnet', id=subnet_id)
     return subnet
@@ -358,14 +358,15 @@ def qos_extension_enabled(network_driver):
             "VIP QoS policy is not allowed in this deployment."))
 
 
-def network_exists_optionally_contains_subnet(network_id, subnet_id=None):
+def network_exists_optionally_contains_subnet(network_id, subnet_id=None,
+                                              context=None):
     """Raises an exception when a network does not exist.
 
     If a subnet is provided, also validate the network contains that subnet.
     """
     network_driver = utils.get_network_driver()
     try:
-        network = network_driver.get_network(network_id)
+        network = network_driver.get_network(network_id, context=context)
     except Exception:
         raise exceptions.InvalidSubresource(resource='Network', id=network_id)
     if subnet_id:

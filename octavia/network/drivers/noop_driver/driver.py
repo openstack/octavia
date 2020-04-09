@@ -313,13 +313,13 @@ class NoopNetworkDriver(driver_base.AbstractNetworkDriver):
     def update_vip(self, loadbalancer, for_delete=False):
         self.driver.update_vip(loadbalancer, for_delete)
 
-    def get_network(self, network_id):
+    def get_network(self, network_id, context=None):
         return self.driver.get_network(network_id)
 
-    def get_subnet(self, subnet_id):
+    def get_subnet(self, subnet_id, context=None):
         return self.driver.get_subnet(subnet_id)
 
-    def get_port(self, port_id):
+    def get_port(self, port_id, context=None):
         return self.driver.get_port(port_id)
 
     def get_qos_policy(self, qos_policy_id):
