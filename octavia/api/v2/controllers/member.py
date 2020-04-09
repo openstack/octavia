@@ -149,9 +149,9 @@ class MemberController(base.BaseController):
         validate.ip_not_reserved(member.address)
 
         # Validate member subnet
-        if member.subnet_id and not validate.subnet_exists(member.subnet_id):
-            raise exceptions.NotFound(resource='Subnet',
-                                      id=member.subnet_id)
+        if (member.subnet_id and
+                not validate.subnet_exists(member.subnet_id, context=context)):
+            raise exceptions.NotFound(resource='Subnet', id=member.subnet_id)
         pool = self.repositories.pool.get(context.session, id=self.pool_id)
         member.project_id, provider = self._get_lb_project_id_provider(
             context.session, pool.load_balancer_id)
@@ -345,7 +345,7 @@ class MembersController(MemberController):
         # Validate member subnets
         for member in members:
             if member.subnet_id and not validate.subnet_exists(
-                    member.subnet_id):
+                    member.subnet_id, context=context):
                 raise exceptions.NotFound(resource='Subnet',
                                           id=member.subnet_id)
 

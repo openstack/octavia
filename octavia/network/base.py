@@ -186,28 +186,31 @@ class AbstractNetworkDriver(object):
         """
 
     @abc.abstractmethod
-    def get_network(self, network_id):
+    def get_network(self, network_id, context=None):
         """Retrieves network from network id.
 
         :param network_id: id of an network to retrieve
+        :param context: A request context
         :return: octavia.network.data_models.Network
         :raises: NetworkException, NetworkNotFound
         """
 
     @abc.abstractmethod
-    def get_subnet(self, subnet_id):
+    def get_subnet(self, subnet_id, context=None):
         """Retrieves subnet from subnet id.
 
         :param subnet_id: id of a subnet to retrieve
+        :param context: A request context
         :return: octavia.network.data_models.Subnet
         :raises: NetworkException, SubnetNotFound
         """
 
     @abc.abstractmethod
-    def get_port(self, port_id):
+    def get_port(self, port_id, context=None):
         """Retrieves port from port id.
 
         :param port_id: id of a port to retrieve
+        :param context: A request context
         :return: octavia.network.data_models.Port
         :raises: NetworkException, PortNotFound
         """
