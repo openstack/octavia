@@ -1,0 +1,5 @@
+---
+fixes:
+  - |
+    Delay between checks on UDP healthmonitors was using the incorrect config
+    value ``timeout``, when it should have been ``delay``.

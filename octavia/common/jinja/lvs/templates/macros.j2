@@ -25,18 +25,12 @@ misc_path "{{ health_monitor.check_script_path }} {{ member.monitor_address|defa
 {%- macro misc_check_macro(pool, member, health_monitor) -%}
 MISC_CHECK {
             {{ misc_path_macro(member, health_monitor) }}
-            misc_timeout {{ pool.health_monitor.delay }}
+            misc_timeout {{ pool.health_monitor.timeout }}
         }
 {%- endmacro -%}
 
 {% macro health_monitor_rs_macro(constants, pool, member) %}
         {% if pool.health_monitor and pool.health_monitor.enabled %}
-        {% if pool.health_monitor.timeout %}
-        delay_before_retry {{ pool.health_monitor.timeout }}
-        {% endif %}
-        {% if pool.health_monitor.fall_threshold %}
-        retry {{ pool.health_monitor.fall_threshold }}
-        {% endif %}
         {% if pool.health_monitor.type == constants.HEALTH_MONITOR_UDP_CONNECT %}
         {{ misc_check_macro(pool, member, pool.health_monitor) -}}
         {% endif %}
@@ -62,9 +56,7 @@ MISC_CHECK {
 {% if default_pool and default_pool.health_monitor and default_pool.health_monitor.enabled %}
     {% if default_pool.health_monitor.delay %}
     delay_loop {{ default_pool.health_monitor.delay }}
-    {% endif %}
-    {% if default_pool.health_monitor.timeout %}
-    delay_before_retry {{ default_pool.health_monitor.timeout }}
+    delay_before_retry {{ default_pool.health_monitor.delay }}
     {% endif %}
     {% if default_pool.health_monitor.fall_threshold %}
     retry {{ default_pool.health_monitor.fall_threshold }}
