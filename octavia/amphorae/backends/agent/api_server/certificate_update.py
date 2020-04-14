@@ -30,7 +30,7 @@ def upload_server_cert():
     flags = os.O_WRONLY | os.O_CREAT | os.O_TRUNC
     # mode 00600
     mode = stat.S_IRUSR | stat.S_IWUSR
-    with os.fdopen(os.open(file_path, flags, mode), 'w') as crt_file:
+    with os.fdopen(os.open(file_path, flags, mode), 'wb') as crt_file:
         b = stream.read(BUFFER)
         while b:
             crt_file.write(b)
