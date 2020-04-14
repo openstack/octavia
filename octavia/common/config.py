@@ -780,6 +780,7 @@ cfg.CONF.register_opts(keepalived_vrrp_opts, group='keepalived_vrrp')
 cfg.CONF.register_opts(task_flow_opts, group='task_flow')
 cfg.CONF.register_opts(house_keeping_opts, group='house_keeping')
 cfg.CONF.register_opts(certificate_opts, group='certificates')
+cfg.CONF.register_opts(healthmanager_opts, group='health_manager')
 cfg.CONF.register_opts(nova_opts, group='nova')
 cfg.CONF.register_opts(cinder_opts, group='cinder')
 cfg.CONF.register_opts(glance_opts, group='glance')
@@ -805,7 +806,6 @@ ks_loading.register_session_conf_options(cfg.CONF, constants.SERVICE_AUTH)
 
 def register_cli_opts():
     cfg.CONF.register_cli_opts(core_cli_opts)
-    cfg.CONF.register_cli_opts(healthmanager_opts, group='health_manager')
     logging.register_options(cfg.CONF)
 
 
