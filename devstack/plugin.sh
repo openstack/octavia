@@ -280,7 +280,7 @@ function octavia_configure {
     iniset $OCTAVIA_CONF api_settings api_handler queue_producer
 
     iniset $OCTAVIA_CONF database connection "mysql+pymysql://${DATABASE_USER}:${DATABASE_PASSWORD}@${DATABASE_HOST}:3306/octavia"
-    if [[ ${OCTAVIA_ENABLE_AMPHORAV2_PROVIDER} = True ]]; then
+    if [[ ${OCTAVIA_ENABLE_AMPHORAV2_PROVIDER} == True ]]; then
         iniset $OCTAVIA_CONF task_flow persistence_connection "mysql+pymysql://${DATABASE_USER}:${DATABASE_PASSWORD}@${DATABASE_HOST}:3306/octavia_persistence"
     fi
     # Configure keystone auth_token for all users
@@ -357,7 +357,7 @@ function octavia_configure {
         recreate_database_mysql octavia
         octavia-db-manage upgrade head
 
-        if [[ ${OCTAVIA_ENABLE_AMPHORAV2_PROVIDER} = True ]]; then
+        if [[ ${OCTAVIA_ENABLE_AMPHORAV2_PROVIDER} == True ]]; then
             recreate_database_mysql octavia_persistence
             octavia-db-manage upgrade_persistence
         fi
@@ -368,7 +368,7 @@ function octavia_configure {
     fi
 
     # amphorav2 required redis installation
-    if [[ ${OCTAVIA_ENABLE_AMPHORAV2_PROVIDER} = True ]]; then
+    if [[ ${OCTAVIA_ENABLE_AMPHORAV2_PROVIDER} == True ]]; then
         install_redis
     fi
 
@@ -657,7 +657,7 @@ function octavia_cleanup {
 
     sudo rm -rf $NOVA_STATE_PATH $NOVA_AUTH_CACHE_DIR
 
-    if [[ ${OCTAVIA_ENABLE_AMPHORAV2_PROVIDER} = True ]]; then
+    if [[ ${OCTAVIA_ENABLE_AMPHORAV2_PROVIDER} == True ]]; then
         uninstall_redis
     fi
 

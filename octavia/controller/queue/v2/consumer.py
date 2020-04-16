@@ -13,6 +13,7 @@
 #    under the License.
 
 import cotyledon
+from oslo_config import cfg
 from oslo_log import log as logging
 import oslo_messaging as messaging
 from oslo_messaging.rpc import dispatcher
@@ -23,6 +24,8 @@ from octavia.common import rpc
 from octavia.controller.queue.v2 import endpoints
 
 LOG = logging.getLogger(__name__)
+
+CONF = cfg.CONF
 
 
 class ConsumerService(cotyledon.Service):
@@ -47,9 +50,11 @@ class ConsumerService(cotyledon.Service):
             access_policy=self.access_policy
         )
         self.message_listener.start()
-        for e in self.endpoints:
-            e.worker.services_controller.run_conductor(
-                'octavia-task-flow-conductor-%s' % uuidutils.generate_uuid())
+        if constants.AMPHORAV2 in CONF.api_settings.enabled_provider_drivers:
+            for e in self.endpoints:
+                e.worker.services_controller.run_conductor(
+                    'octavia-task-flow-conductor-%s' %
+                    uuidutils.generate_uuid())
 
     def terminate(self):
         if self.message_listener:
