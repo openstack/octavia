@@ -460,3 +460,13 @@ class TestValidations(base.TestCase):
         self.assertTrue(validate.is_flavor_spares_compatible(compat_flavor))
         self.assertFalse(
             validate.is_flavor_spares_compatible(not_compat_flavor))
+
+    def test_check_default_ciphers_blacklist_conflict(self):
+        self.conf.config(group='api_settings',
+                         tls_cipher_blacklist='PSK-AES128-CBC-SHA')
+        self.conf.config(group='api_settings',
+                         default_listener_ciphers='ECDHE-ECDSA-AES256-SHA:'
+                         'PSK-AES128-CBC-SHA:TLS_AES_256_GCM_SHA384')
+
+        self.assertRaises(exceptions.ValidationException,
+                          validate.check_default_ciphers_blacklist_conflict)

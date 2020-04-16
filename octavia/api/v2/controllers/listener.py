@@ -33,6 +33,7 @@ from octavia.common import data_models
 from octavia.common import exceptions
 from octavia.common import stats
 from octavia.common import utils as common_utils
+from octavia.common import validate
 from octavia.db import api as db_api
 from octavia.db import prepare as db_prepare
 from octavia.i18n import _
@@ -222,6 +223,15 @@ class ListenersController(base.BaseController):
             raise exceptions.ValidationException(detail=_(
                 "A client authentication CA reference is required to "
                 "specify a client authentication revocation list."))
+
+        # Check TLS cipher blacklist
+        if 'tls_ciphers' in listener_dict and listener_dict['tls_ciphers']:
+            rejected_ciphers = validate.check_cipher_blacklist(
+                listener_dict['tls_ciphers'])
+            if rejected_ciphers:
+                raise exceptions.ValidationException(detail=_(
+                    'The following ciphers have been blacklisted by an '
+                    'administrator: ' + ', '.join(rejected_ciphers)))
 
         # Validate the TLS containers
         sni_containers = listener_dict.pop('sni_containers', [])
@@ -474,6 +484,15 @@ class ListenersController(base.BaseController):
             vip_address = db_listener.load_balancer.vip.ip_address
             self._validate_cidr_compatible_with_vip(
                 vip_address, listener.allowed_cidrs)
+
+        # Check TLS cipher blacklist
+        if listener.tls_ciphers:
+            rejected_ciphers = validate.check_cipher_blacklist(
+                listener.tls_ciphers)
+            if rejected_ciphers:
+                raise exceptions.ValidationException(detail=_(
+                    'The following ciphers have been blacklisted by an '
+                    'administrator: ' + ', '.join(rejected_ciphers)))
 
     def _set_default_on_none(self, listener):
         """Reset settings to their default values if None/null was passed in

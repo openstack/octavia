@@ -432,3 +432,29 @@ def is_flavor_spares_compatible(flavor):
         if flavor.get(constants.COMPUTE_FLAVOR, None):
             return False
     return True
+
+
+def check_cipher_blacklist(cipherstring):
+    ciphers = cipherstring.split(':')
+    blacklist = CONF.api_settings.tls_cipher_blacklist.split(':')
+    rejected = []
+    for cipher in ciphers:
+        if cipher in blacklist:
+            rejected.append(cipher)
+    return rejected
+
+
+def check_default_ciphers_blacklist_conflict():
+    listener_rejected = check_cipher_blacklist(
+        CONF.api_settings.default_listener_ciphers)
+    if listener_rejected:
+        raise exceptions.ValidationException(
+            detail=_('Default listener ciphers conflict with blacklist. '
+                     'Conflicting ciphers: ' + ', '.join(listener_rejected)))
+
+    pool_rejected = check_cipher_blacklist(
+        CONF.api_settings.default_pool_ciphers)
+    if pool_rejected:
+        raise exceptions.ValidationException(
+            detail=_('Default pool ciphers conflict with blacklist. '
+                     'Conflicting ciphers: ' + ', '.join(pool_rejected)))

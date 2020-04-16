@@ -31,6 +31,7 @@ import oslo_messaging as messaging
 from octavia.certificates.common import local
 from octavia.common import constants
 from octavia.common import utils
+from octavia.common import validate
 from octavia.i18n import _
 from octavia import version
 
@@ -112,6 +113,9 @@ api_opts = [
                default=constants.CIPHERS_OWASP_SUITE_B,
                help=_("Default OpenSSL cipher string (colon-separated) for "
                       "new TLS-enabled pools.")),
+    cfg.StrOpt('tls_cipher_blacklist', default='',
+               help=_("Colon separated list of OpenSSL ciphers. "
+                      "Usage of these ciphers will be blocked."))
 ]
 
 # Options only used by the amphora agent
@@ -816,6 +820,7 @@ def init(args, **kwargs):
              **kwargs)
     handle_deprecation_compatibility()
     setup_remote_debugger()
+    validate.check_default_ciphers_blacklist_conflict()
 
 
 def setup_logging(conf):

@@ -122,6 +122,15 @@ class PoolsController(base.BaseController):
                 pool_dict.get('ca_tls_certificate_id'),
                 pool_dict.get('crl_container_id', None))
 
+        # Check TLS cipher blacklist
+        if 'tls_ciphers' in pool_dict and pool_dict['tls_ciphers']:
+            rejected_ciphers = validate.check_cipher_blacklist(
+                pool_dict['tls_ciphers'])
+            if rejected_ciphers:
+                raise exceptions.ValidationException(detail=_(
+                    'The following ciphers have been blacklisted by an '
+                    'administrator: ' + ', '.join(rejected_ciphers)))
+
         try:
             return self.repositories.create_pool_on_load_balancer(
                 lock_session, pool_dict,
@@ -367,6 +376,15 @@ class PoolsController(base.BaseController):
         # Validate the client CA cert and optional client CRL
         if ca_ref:
             self._validate_client_ca_and_crl_refs(ca_ref, crl_ref)
+
+        # Check TLS cipher blacklist
+        if pool.tls_ciphers:
+            rejected_ciphers = validate.check_cipher_blacklist(
+                pool.tls_ciphers)
+            if rejected_ciphers:
+                raise exceptions.ValidationException(detail=_(
+                    "The following ciphers have been blacklisted by an "
+                    "administrator: " + ', '.join(rejected_ciphers)))
 
     @wsme_pecan.wsexpose(pool_types.PoolRootResponse, wtypes.text,
                          body=pool_types.PoolRootPut, status_code=200)
