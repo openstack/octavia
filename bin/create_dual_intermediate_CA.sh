@@ -146,6 +146,9 @@ echo "################# Verifying the Octavia files ###########################"
 openssl verify -CAfile etc/octavia/certs/client_ca.cert.pem etc/octavia/certs/client.cert-and-key.pem
 openssl verify -CAfile etc/octavia/certs/server_ca-chain.cert.pem etc/octavia/certs/server_ca.cert.pem
 
+# We are done, stop enforcing shell errexit
+set +e
+
 echo "!!!!!!!!!!!!!!!Do not use this script for deployments!!!!!!!!!!!!!"
 echo "Please use the Octavia Certificate Configuration guide:"
 echo "https://docs.openstack.org/octavia/latest/admin/guides/certificates.html"
