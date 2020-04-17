@@ -20,6 +20,7 @@
 
 import base64
 import hashlib
+import re
 import socket
 
 import netaddr
@@ -118,6 +119,26 @@ def subnet_ip_availability(nw_ip_avail, subnet_id, req_num_ips):
 
 def b(s):
     return s.encode('utf-8')
+
+
+def expand_expected_codes(codes):
+    """Expand the expected code string in set of codes.
+
+    200-204 -> 200, 201, 202, 204
+    200, 203 -> 200, 203
+    """
+    retval = set()
+    codes = re.split(', *', codes)
+    for code in codes:
+        if not code:
+            continue
+        if '-' in code:
+            low, hi = code.split('-')[:2]
+            retval.update(
+                str(i) for i in range(int(low), int(hi) + 1))
+        else:
+            retval.add(code)
+    return retval
 
 
 class exception_logger(object):

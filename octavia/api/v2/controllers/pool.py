@@ -287,12 +287,21 @@ class PoolsController(base.BaseController):
                 resource=data_models.HealthMonitor._name())
 
         # Now possibly create a healthmonitor
-        new_hm = None
         if hm:
-            hm['pool_id'] = db_pool.id
-            hm['project_id'] = db_pool.project_id
+            hm[constants.POOL_ID] = db_pool.id
+            hm[constants.PROJECT_ID] = db_pool.project_id
             new_hm = health_monitor.HealthMonitorController()._graph_create(
                 lock_session, hm)
+            if db_pool.protocol == constants.PROTOCOL_UDP:
+                health_monitor.HealthMonitorController(
+                )._validate_healthmonitor_request_for_udp(new_hm)
+            else:
+                if new_hm.type == constants.HEALTH_MONITOR_UDP_CONNECT:
+                    raise exceptions.ValidationException(detail=_(
+                        "The %(type)s type is only supported for pools of "
+                        "type %(protocol)s.") % {
+                            'type': new_hm.type,
+                            'protocol': constants.PROTOCOL_UDP})
             db_pool.health_monitor = new_hm
 
         # Now check quotas for members

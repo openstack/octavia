@@ -2724,24 +2724,56 @@ class TestLoadBalancerGraph(base.BaseAPITest):
         expected_member.update(create_member)
         return create_member, expected_member
 
-    def _get_hm_bodies(self):
-        create_hm = {
-            'type': constants.HEALTH_MONITOR_PING,
-            'delay': 1,
-            'timeout': 1,
-            'max_retries_down': 1,
-            'max_retries': 1
-        }
-        expected_hm = {
-            'http_method': 'GET',
-            'url_path': '/',
-            'expected_codes': '200',
-            'admin_state_up': True,
-            'project_id': self._project_id,
-            'provisioning_status': constants.PENDING_CREATE,
-            'operating_status': constants.OFFLINE,
-            'tags': []
-        }
+    def _get_hm_bodies(self, hm_type=constants.HEALTH_MONITOR_PING,
+                       delay=1):
+        if hm_type == constants.HEALTH_MONITOR_UDP_CONNECT:
+            create_hm = {
+                'type': constants.HEALTH_MONITOR_UDP_CONNECT,
+                'delay': delay,
+                'timeout': 1,
+                'max_retries_down': 1,
+                'max_retries': 1
+            }
+            expected_hm = {
+                'admin_state_up': True,
+                'project_id': self._project_id,
+                'provisioning_status': constants.PENDING_CREATE,
+                'operating_status': constants.OFFLINE,
+                'tags': []
+            }
+        elif hm_type == constants.HEALTH_MONITOR_HTTP:
+            create_hm = {
+                'type': constants.HEALTH_MONITOR_HTTP,
+                'delay': delay,
+                'timeout': 1,
+                'max_retries_down': 1,
+                'max_retries': 1
+            }
+            expected_hm = {
+                'http_method': 'GET',
+                'url_path': '/',
+                'expected_codes': '200',
+                'admin_state_up': True,
+                'project_id': self._project_id,
+                'provisioning_status': constants.PENDING_CREATE,
+                'operating_status': constants.OFFLINE,
+                'tags': []
+            }
+        else:
+            create_hm = {
+                'type': constants.HEALTH_MONITOR_PING,
+                'delay': delay,
+                'timeout': 1,
+                'max_retries_down': 1,
+                'max_retries': 1
+            }
+            expected_hm = {
+                'admin_state_up': True,
+                'project_id': self._project_id,
+                'provisioning_status': constants.PENDING_CREATE,
+                'operating_status': constants.OFFLINE,
+                'tags': []
+            }
         expected_hm.update(create_hm)
         return create_hm, expected_hm
 
@@ -2898,6 +2930,47 @@ class TestLoadBalancerGraph(base.BaseAPITest):
         response = self.post(self.LBS_PATH, body)
         api_lb = response.json.get(self.root_tag)
         self._assert_graphs_equal(expected_lb, api_lb)
+
+    def test_with_one_listener_one_hm_udp(self):
+        create_hm, expected_hm = self._get_hm_bodies(
+            hm_type=constants.HEALTH_MONITOR_UDP_CONNECT,
+            delay=3)
+        create_pool, expected_pool = self._get_pool_bodies(
+            create_hm=create_hm,
+            expected_hm=expected_hm,
+            protocol=constants.PROTOCOL_UDP)
+        create_listener, expected_listener = self._get_listener_bodies(
+            create_default_pool_name=create_pool['name'],
+            create_protocol=constants.PROTOCOL_UDP)
+        create_lb, expected_lb = self._get_lb_bodies(
+            create_listeners=[create_listener],
+            expected_listeners=[expected_listener],
+            create_pools=[create_pool])
+        body = self._build_body(create_lb)
+        response = self.post(self.LBS_PATH, body)
+        api_lb = response.json.get(self.root_tag)
+        self._assert_graphs_equal(expected_lb, api_lb)
+
+    def test_with_one_listener_one_hm_udp_validation_failure(self):
+        create_hm, expected_hm = self._get_hm_bodies(
+            hm_type=constants.HEALTH_MONITOR_UDP_CONNECT,
+            delay=1)
+        create_pool, expected_pool = self._get_pool_bodies(
+            create_hm=create_hm,
+            expected_hm=expected_hm,
+            protocol=constants.PROTOCOL_UDP)
+        create_listener, expected_listener = self._get_listener_bodies(
+            create_default_pool_name=create_pool['name'],
+            create_protocol=constants.PROTOCOL_UDP)
+        create_lb, expected_lb = self._get_lb_bodies(
+            create_listeners=[create_listener],
+            expected_listeners=[expected_listener],
+            create_pools=[create_pool])
+        body = self._build_body(create_lb)
+        response = self.post(self.LBS_PATH, body, status=400,
+                             expect_errors=True)
+        error_text = response.json.get('faultstring')
+        self.assertIn('request delay value 1 should be larger', error_text)
 
     def test_with_one_listener_allowed_cidrs(self):
         allowed_cidrs = ['10.0.1.0/24', '172.16.0.0/16']

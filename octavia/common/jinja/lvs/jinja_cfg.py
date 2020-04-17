@@ -18,6 +18,7 @@ import jinja2
 
 from octavia.common.config import cfg
 from octavia.common import constants
+from octavia.common import utils as octavia_utils
 
 
 CONF = cfg.CONF
@@ -194,7 +195,7 @@ class LvsJinjaTemplater(object):
 
             be processed by the templating system
         """
-        return {
+        return_val = {
             'id': monitor.id,
             'type': monitor.type,
             'delay': monitor.delay,
@@ -206,3 +207,16 @@ class LvsJinjaTemplater(object):
                                   constants.HEALTH_MONITOR_UDP_CONNECT else
                                   None)
         }
+        if monitor.type == constants.HEALTH_MONITOR_HTTP:
+            return_val.update({
+                'rise_threshold': monitor.rise_threshold,
+                'url_path': monitor.url_path,
+                'http_method': (monitor.http_method
+                                if monitor.http_method ==
+                                constants.HEALTH_MONITOR_HTTP_METHOD_GET else
+                                None),
+                'expected_codes': (sorted(list(
+                                   octavia_utils.expand_expected_codes(
+                                       monitor.expected_codes)))
+                                   if monitor.expected_codes else [])})
+        return return_val

@@ -981,35 +981,6 @@ class TestHaproxyCfg(base.TestCase):
         self.assertEqual(self.jinja_cfg._escape_haproxy_config_string(
             'string\\ with\\ all'), 'string\\\\\\ with\\\\\\ all')
 
-    def test_expand_expected_codes(self):
-        exp_codes = ''
-        self.assertEqual(self.jinja_cfg._expand_expected_codes(exp_codes),
-                         [])
-        exp_codes = '200'
-        self.assertEqual(
-            self.jinja_cfg._expand_expected_codes(exp_codes), ['200'])
-        exp_codes = '200, 201'
-        self.assertEqual(self.jinja_cfg._expand_expected_codes(exp_codes),
-                         ['200', '201'])
-        exp_codes = '200, 201,202'
-        self.assertEqual(self.jinja_cfg._expand_expected_codes(exp_codes),
-                         ['200', '201', '202'])
-        exp_codes = '200-202'
-        self.assertEqual(self.jinja_cfg._expand_expected_codes(exp_codes),
-                         ['200', '201', '202'])
-        exp_codes = '200-202, 205'
-        self.assertEqual(self.jinja_cfg._expand_expected_codes(exp_codes),
-                         ['200', '201', '202', '205'])
-        exp_codes = '200, 201-203'
-        self.assertEqual(self.jinja_cfg._expand_expected_codes(exp_codes),
-                         ['200', '201', '202', '203'])
-        exp_codes = '200, 201-203, 205'
-        self.assertEqual(self.jinja_cfg._expand_expected_codes(exp_codes),
-                         ['200', '201', '202', '203', '205'])
-        exp_codes = '201-200, 205'
-        self.assertEqual(
-            self.jinja_cfg._expand_expected_codes(exp_codes), ['205'])
-
     def test_render_template_no_log(self):
         j_cfg = jinja_cfg.JinjaTemplater(
             base_amp_path='/var/lib/octavia',

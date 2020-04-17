@@ -37,7 +37,7 @@ CONFIG_COMMENT_REGEX = re.compile(
 DISABLED_MEMBER_COMMENT_REGEX = re.compile(
     r"#\sMember\s(\w{8}-\w{4}-\w{4}-\w{4}-\w{12}) is disabled")
 
-CHECKER_REGEX = re.compile(r"MISC_CHECK")
+CHECKER_REGEX = re.compile(r"(MISC_CHECK|HTTP_GET|TCP_CHECK)")
 
 
 def read_kernel_file(ns_name, file_path):

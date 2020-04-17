@@ -573,13 +573,13 @@ recreated.
 
 .. _valid_protocol:
 
-Protocol Combinations
-=====================
+Protocol Combinations (Listener/Pool)
+=====================================
 
 The listener and pool can be associated through the listener's
 ``default_pool_id`` or l7policy's ``redirect_pool_id``. Both listener and pool
-must set the protocol parameter. But the association between the listener and
-the pool isn't arbitrarily and has some constraints at the protocol aspect.
+must set the protocol parameter, but the association between the listener and
+the pool isn't arbitrary and has some constraints on the protocol aspect.
 
 Valid protocol combinations
 ---------------------------
@@ -621,3 +621,44 @@ The pool protocol of PROXY will use the listener protocol as the pool protocol
 but will wrap that protocol in the proxy protocol. In the case of listener
 protocol TERMINATED_HTTPS, a pool protocol of PROXY will be HTTP wrapped in the
 proxy protocol.
+
+Protocol Combinations (Pool/Health Monitor)
+===========================================
+
+Pools and health monitors are also related with regard to protocol. Pools set
+the protocol parameter for the real member connections, and the health monitor
+sets a type for health checks. Health check types are limited based on the
+protocol of the pool.
+
+Valid protocol combinations
+---------------------------
+
+.. |Health Monitor| replace:: |2| |2| Health Monitor
+.. |UDPCONNECT| replace:: UDP-CONNECT
+.. |4Y| replace:: |2| |2| Y
+.. |4N| replace:: |2| |2| N
+.. |5Y| replace:: |2| |2| |1| Y
+.. |5N| replace:: |2| |2| |1| N
+
++-------------------+-------+--------+-------+------+------------+---------------+
+|| |Health Monitor| || HTTP || HTTPS || PING || TCP || TLS-HELLO || |UDPCONNECT| |
+|| Pool             ||      ||       ||      ||     ||           ||              |
++===================+=======+========+=======+======+============+===============+
+| HTTP              | |2Y|  | |2Y|   | |1Y|  | |1Y| | |4Y|       | |5N|          |
++-------------------+-------+--------+-------+------+------------+---------------+
+| HTTPS             | |2Y|  | |2Y|   | |1Y|  | |1Y| | |4Y|       | |5N|          |
++-------------------+-------+--------+-------+------+------------+---------------+
+| PROXY             | |2Y|  | |2Y|   | |1Y|  | |1Y| | |4Y|       | |5N|          |
++-------------------+-------+--------+-------+------+------------+---------------+
+| TCP               | |2Y|  | |2Y|   | |1Y|  | |1Y| | |4Y|       | |5N|          |
++-------------------+-------+--------+-------+------+------------+---------------+
+| UDP               | |2Y|  | |2N|   | |1N|  | |1Y| | |4N|       | |5Y|          |
++-------------------+-------+--------+-------+------+------------+---------------+
+
+"Y" means the combination is valid and "N" means invalid.
+
+These combinations are mostly as you'd expect for all non-UDP pool protocols:
+non-UDP pools can have health monitors with any check type besides UDP-CONNECT.
+For UDP pools however, things are a little more complicated. UDP Pools support
+UDP-CONNECT but also HTTP and TCP checks. HTTPS checks are technically feasible
+but have not yet been implemented.

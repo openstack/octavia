@@ -165,31 +165,28 @@ class HealthMonitorController(base.BaseController):
             raise exceptions.InvalidOption(value='', option='')
 
     def _validate_healthmonitor_request_for_udp(self, request):
-        invalid_fields = (request.http_method or request.url_path or
-                          request.expected_codes)
-        is_invalid = (hasattr(request, 'type') and
-                      (request.type != consts.HEALTH_MONITOR_UDP_CONNECT or
-                       invalid_fields))
-        if is_invalid:
+        if request.type not in (
+                consts.HEALTH_MONITOR_UDP_CONNECT,
+                consts.HEALTH_MONITOR_TCP,
+                consts.HEALTH_MONITOR_HTTP):
             raise exceptions.ValidationException(detail=_(
                 "The associated pool protocol is %(pool_protocol)s, so only "
-                "a %(type)s health monitor is supported.") % {
-                'pool_protocol': consts.PROTOCOL_UDP,
-                'type': consts.HEALTH_MONITOR_UDP_CONNECT})
-        # if the logic arrives here, that means the validation of request above
-        # is OK. type is UDP-CONNECT, then here we check the healthmonitor
-        # delay value is matched.
-        if request.delay:
-            conf_set = (CONF.api_settings.
-                        udp_connect_min_interval_health_monitor)
-            if conf_set < 0:
-                return
-            if request.delay < conf_set:
-                raise exceptions.ValidationException(detail=_(
-                    "The request delay value %(delay)s should be larger than "
-                    "%(conf_set)s for %(type)s health monitor type.") % {
+                "a %(types)s health monitor is supported.") % {
+                    'pool_protocol': consts.PROTOCOL_UDP,
+                    'types': '/'.join((consts.HEALTH_MONITOR_UDP_CONNECT,
+                                       consts.HEALTH_MONITOR_TCP,
+                                       consts.HEALTH_MONITOR_HTTP))})
+        # check the delay value if the HM type is UDP-CONNECT
+        hm_is_type_udp = (
+            request.type == consts.HEALTH_MONITOR_UDP_CONNECT)
+        conf_min_delay = (
+            CONF.api_settings.udp_connect_min_interval_health_monitor)
+        if hm_is_type_udp and request.delay < conf_min_delay:
+            raise exceptions.ValidationException(detail=_(
+                "The request delay value %(delay)s should be larger than "
+                "%(conf_min_delay)s for %(type)s health monitor type.") % {
                     'delay': request.delay,
-                    'conf_set': conf_set,
+                    'conf_min_delay': conf_min_delay,
                     'type': consts.HEALTH_MONITOR_UDP_CONNECT})
 
     @wsme_pecan.wsexpose(hm_types.HealthMonitorRootResponse,
@@ -348,6 +345,7 @@ class HealthMonitorController(base.BaseController):
         # Validate health monitor update options for UDP-CONNECT type.
         if (pool.protocol == consts.PROTOCOL_UDP and
                 db_hm.type == consts.HEALTH_MONITOR_UDP_CONNECT):
+            health_monitor.type = db_hm.type
             self._validate_healthmonitor_request_for_udp(health_monitor)
 
         self._set_default_on_none(health_monitor)
