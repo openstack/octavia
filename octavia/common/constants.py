@@ -785,3 +785,14 @@ CIPHERS_OWASP_SUITE_B = ('TLS_AES_256_GCM_SHA384:TLS_CHACHA20_POLY1305_SHA256:'
                          'ECDHE-RSA-AES128-GCM-SHA256:DHE-RSA-AES256-SHA256:'
                          'DHE-RSA-AES128-SHA256:ECDHE-RSA-AES256-SHA384:'
                          'ECDHE-RSA-AES128-SHA256')
+TLS_VERSIONS_OWASP_SUITE_B = [lib_consts.TLS_VERSION_1_2,
+                              lib_consts.TLS_VERSION_1_3]
+
+# All supported TLS versions in ascending order (oldest to newest)
+TLS_ALL_VERSIONS = [
+    lib_consts.SSL_VERSION_3,
+    lib_consts.TLS_VERSION_1,
+    lib_consts.TLS_VERSION_1_1,
+    lib_consts.TLS_VERSION_1_2,
+    lib_consts.TLS_VERSION_1_3
+]

@@ -470,3 +470,17 @@ class TestValidations(base.TestCase):
 
         self.assertRaises(exceptions.ValidationException,
                           validate.check_default_ciphers_blacklist_conflict)
+
+    def test_check_tls_version_list(self):
+        # Test valid list
+        validate.check_tls_version_list(['TLSv1.1', 'TLSv1.2', 'TLSv1.3'])
+        # Test invalid list
+        self.assertRaises(
+            exceptions.ValidationException,
+            validate.check_tls_version_list,
+            ['SSLv3', 'TLSv1.0'])
+        # Test empty list
+        self.assertRaises(
+            exceptions.ValidationException,
+            validate.check_tls_version_list,
+            [])

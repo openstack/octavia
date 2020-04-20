@@ -26,7 +26,7 @@ peers {{ "%s_peers"|format(loadbalancer.id.replace("-", ""))|trim() }}
 {% endmacro %}
 
 
-{% macro bind_macro(constants, listener, lb_vip_address) %}
+{% macro bind_macro(constants, lib_consts, listener, lb_vip_address) %}
     {% if listener.crt_list_filename is defined %}
         {% set def_crt_opt = ("ssl crt-list %s"|format(
             listener.crt_list_filename)|trim()) %}
@@ -48,8 +48,26 @@ peers {{ "%s_peers"|format(loadbalancer.id.replace("-", ""))|trim() }}
     {% else %}
         {% set ciphers_opt = "" %}
     {% endif %}
+    {% set tls_versions_opt = "" %}
+    {% if listener.tls_versions is defined %}
+        {% if lib_consts.SSL_VERSION_3 not in listener.tls_versions %}
+            {% set tls_versions_opt = tls_versions_opt + " no-sslv3" %}
+        {% endif %}
+        {% if lib_consts.TLS_VERSION_1 not in listener.tls_versions %}
+            {% set tls_versions_opt = tls_versions_opt + " no-tlsv10" %}
+        {% endif %}
+        {% if lib_consts.TLS_VERSION_1_1 not in listener.tls_versions %}
+            {% set tls_versions_opt = tls_versions_opt + " no-tlsv11" %}
+        {% endif %}
+        {% if lib_consts.TLS_VERSION_1_2 not in listener.tls_versions %}
+            {% set tls_versions_opt = tls_versions_opt + " no-tlsv12" %}
+        {% endif %}
+        {% if lib_consts.TLS_VERSION_1_3 not in listener.tls_versions %}
+            {% set tls_versions_opt = tls_versions_opt + " no-tlsv13" %}
+        {% endif %}
+    {% endif %}
 bind {{ lb_vip_address }}:{{ listener.protocol_port }} {{
-"%s %s %s %s"|format(def_crt_opt, client_ca_opt, ca_crl_opt, ciphers_opt)|trim() }}
+"%s %s %s %s%s"|format(def_crt_opt, client_ca_opt, ca_crl_opt, ciphers_opt, tls_versions_opt)|trim() }}
 {% endmacro %}
 
 
@@ -134,7 +152,7 @@ bind {{ lb_vip_address }}:{{ listener.protocol_port }} {{
 {% endmacro %}
 
 
-{% macro frontend_macro(constants, listener, lb_vip_address) %}
+{% macro frontend_macro(constants, lib_consts, listener, lb_vip_address) %}
 frontend {{ listener.id }}
     {% if listener.connection_limit is defined %}
     maxconn {{ listener.connection_limit }}
@@ -143,7 +161,7 @@ frontend {{ listener.id }}
        constants.PROTOCOL_TERMINATED_HTTPS.lower()) %}
     redirect scheme https if !{ ssl_fc }
     {% endif %}
-    {{ bind_macro(constants, listener, lb_vip_address)|trim() }}
+    {{ bind_macro(constants, lib_consts, listener, lb_vip_address)|trim() }}
     mode {{ listener.protocol_mode }}
     {% for l7policy in listener.l7policies if (l7policy.enabled and
                                                l7policy.l7rules|length > 0) %}
