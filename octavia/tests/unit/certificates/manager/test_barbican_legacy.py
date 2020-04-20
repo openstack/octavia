@@ -78,10 +78,10 @@ class TestBarbicanManager(base.TestCase):
 
         self.empty_container = mock.Mock(spec=containers.CertificateContainer)
 
-        self.secret1 = mock.Mock(spec=secrets.Secret)
-        self.secret2 = mock.Mock(spec=secrets.Secret)
-        self.secret3 = mock.Mock(spec=secrets.Secret)
-        self.secret4 = mock.Mock(spec=secrets.Secret)
+        self.secret1 = mock.Mock()
+        self.secret2 = mock.Mock()
+        self.secret3 = mock.Mock()
+        self.secret4 = mock.Mock()
 
         # Mock out the client
         self.bc = mock.Mock()
