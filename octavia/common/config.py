@@ -123,7 +123,11 @@ api_opts = [
     cfg.ListOpt('default_pool_tls_versions',
                 default=constants.TLS_VERSIONS_OWASP_SUITE_B,
                 help=_('List of TLS versions to use for new TLS-enabled '
-                       'pools.'))
+                       'pools.')),
+    cfg.StrOpt('minimum_tls_version',
+               default=None,
+               choices=constants.TLS_ALL_VERSIONS + [None],
+               help=_('Minimum allowed TLS version for listeners and pools.'))
 ]
 
 # Options only used by the amphora agent
@@ -833,6 +837,7 @@ def init(args, **kwargs):
              version='%%prog %s' % version.version_info.release_string(),
              **kwargs)
     handle_deprecation_compatibility()
+    validate.check_default_tls_versions_min_conflict()
     setup_remote_debugger()
     validate.check_default_ciphers_blacklist_conflict()
 

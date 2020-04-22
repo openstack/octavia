@@ -1,0 +1,6 @@
+---
+features:
+  - |
+    Added ``minimum_tls_version`` to ``octavia.conf``.  Listeners, pools, and
+    the defaults for either will be blocked from using any lower TLS versions.
+    By default, there is no minumum version.

@@ -131,9 +131,11 @@ class PoolsController(base.BaseController):
                     'The following ciphers have been blacklisted by an '
                     'administrator: ' + ', '.join(rejected_ciphers)))
 
-        # Validate TLS version list
         if pool_dict['tls_enabled']:
+            # Validate TLS version list
             validate.check_tls_version_list(pool_dict['tls_versions'])
+            # Validate TLS versions against minimum
+            validate.check_tls_version_min(pool_dict['tls_versions'])
 
         try:
             return self.repositories.create_pool_on_load_balancer(
@@ -399,9 +401,11 @@ class PoolsController(base.BaseController):
                     "The following ciphers have been blacklisted by an "
                     "administrator: " + ', '.join(rejected_ciphers)))
 
-        # Validate TLS version list
         if pool.tls_versions is not wtypes.Unset:
+            # Validate TLS version list
             validate.check_tls_version_list(pool.tls_versions)
+            # Validate TLS version against minimum
+            validate.check_tls_version_min(pool.tls_versions)
 
     @wsme_pecan.wsexpose(pool_types.PoolRootResponse, wtypes.text,
                          body=pool_types.PoolRootPut, status_code=200)
