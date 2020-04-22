@@ -241,7 +241,7 @@ Install and configure components
       $ openstack security group create lb-health-mgr-sec-grp
       $ openstack security group rule create --protocol udp --dst-port 5555 lb-health-mgr-sec-grp
 
-5. Create a key pair for logining to the amphora instance
+5. Create a key pair for logging in to the amphora instance
 
    .. code-block:: console
 
@@ -250,7 +250,7 @@ Install and configure components
    .. note::
 
       Check whether " ~/.ssh/id_rsa.pub" file exists or not in advance.
-      If the file is not exist, run ssh-keygen command to create it.
+      If the file does not exist, run the ssh-keygen command to create it.
 
 6. Create dhclient.conf file for dhclient
 
