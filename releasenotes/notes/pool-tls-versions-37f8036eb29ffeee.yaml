@@ -1,0 +1,7 @@
+---
+features:
+  - |
+    TLS-enabled pools can now be configured to use only specified versions of
+    TLS.  Default TLS versions for new pools can be set with
+    ``default_pool_tls_versions`` in ``octavia.conf``.  Existing pools
+    will continue to use the old defaults.

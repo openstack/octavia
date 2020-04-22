@@ -32,6 +32,7 @@
         "ca_tls_container_ref": null,
         "crl_container_ref": null,
         "tls_enabled": false,
-        "tls_ciphers": "ECDHE-RSA-AES256-GCM-SHA384:ECDHE-RSA-AES128-GCM-SHA256"
+        "tls_ciphers": "ECDHE-RSA-AES256-GCM-SHA384:ECDHE-RSA-AES128-GCM-SHA256",
+        "tls_versions": ["TLSv1.2", "TLSv1.3"]
     }
 }

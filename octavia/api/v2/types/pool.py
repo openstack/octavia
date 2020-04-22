@@ -84,6 +84,7 @@ class PoolResponse(BasePoolType):
     crl_container_ref = wtypes.wsattr(wtypes.StringType())
     tls_enabled = wtypes.wsattr(bool)
     tls_ciphers = wtypes.StringType()
+    tls_versions = wtypes.wsattr(wtypes.ArrayType(wtypes.StringType()))
 
     @classmethod
     def from_data_model(cls, data_model, children=False):
@@ -114,6 +115,8 @@ class PoolResponse(BasePoolType):
             types.IdOnlyType.from_data_model(i) for i in data_model.listeners]
         pool.members = [
             member_model.from_data_model(i) for i in data_model.members]
+
+        pool.tls_versions = data_model.tls_versions
 
         return pool
 
@@ -160,6 +163,8 @@ class PoolPOST(BasePoolType):
     crl_container_ref = wtypes.wsattr(wtypes.StringType(max_length=255))
     tls_enabled = wtypes.wsattr(bool, default=False)
     tls_ciphers = wtypes.StringType(max_length=2048)
+    tls_versions = wtypes.wsattr(wtypes.ArrayType(wtypes.StringType(
+        max_length=32)))
 
 
 class PoolRootPOST(types.BaseType):
@@ -180,6 +185,8 @@ class PoolPUT(BasePoolType):
     crl_container_ref = wtypes.wsattr(wtypes.StringType(max_length=255))
     tls_enabled = wtypes.wsattr(bool)
     tls_ciphers = wtypes.StringType(max_length=2048)
+    tls_versions = wtypes.wsattr(wtypes.ArrayType(wtypes.StringType(
+        max_length=32)))
 
 
 class PoolRootPut(types.BaseType):
@@ -203,6 +210,8 @@ class PoolSingleCreate(BasePoolType):
     crl_container_ref = wtypes.wsattr(wtypes.StringType(max_length=255))
     tls_enabled = wtypes.wsattr(bool, default=False)
     tls_ciphers = wtypes.StringType(max_length=2048)
+    tls_versions = wtypes.wsattr(wtypes.ArrayType(wtypes.StringType(
+        max_length=32)))
 
 
 class PoolStatusResponse(BasePoolType):

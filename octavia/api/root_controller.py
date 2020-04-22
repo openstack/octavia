@@ -116,6 +116,9 @@ class RootController(object):
         self._add_a_version(versions, 'v2.16', 'v2', 'SUPPORTED',
                             '2020-03-15T00:00:00Z', host_url)
         # Listener TLS versions
-        self._add_a_version(versions, 'v2.17', 'v2', 'CURRENT',
+        self._add_a_version(versions, 'v2.17', 'v2', 'SUPPORTED',
                             '2020-04-29T00:00:00Z', host_url)
+        # Pool TLS versions
+        self._add_a_version(versions, 'v2.18', 'v2', 'CURRENT',
+                            '2020-04-29T01:00:00Z', host_url)
         return {'versions': versions}

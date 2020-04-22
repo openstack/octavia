@@ -119,7 +119,11 @@ api_opts = [
     cfg.ListOpt('default_listener_tls_versions',
                 default=constants.TLS_VERSIONS_OWASP_SUITE_B,
                 help=_('List of TLS versions to use for new TLS-enabled '
-                       'listeners.'))
+                       'listeners.')),
+    cfg.ListOpt('default_pool_tls_versions',
+                default=constants.TLS_VERSIONS_OWASP_SUITE_B,
+                help=_('List of TLS versions to use for new TLS-enabled '
+                       'pools.'))
 ]
 
 # Options only used by the amphora agent
