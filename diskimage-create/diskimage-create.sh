@@ -420,10 +420,8 @@ AMP_element_sequence="$AMP_element_sequence ${AMP_BASEOS}"
 
 if [ "$AMP_PACKAGE_INSTALL" -eq 1 ]; then
     export DIB_INSTALLTYPE_amphora_agent=package
-else
-    # We will need pip for amphora-agent
-    AMP_element_sequence="$AMP_element_sequence pip-and-virtualenv"
 fi
+
 # Add our backend element (haproxy, etc.)
 AMP_element_sequence="$AMP_element_sequence $AMP_BACKEND"
 
