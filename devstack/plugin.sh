@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
 
+saveenv=$-
+set -e
+
 # devstack plugin for octavia
 
 GET_PIP_CACHE_LOCATION=/opt/stack/cache/files/get-pip.py
@@ -110,6 +113,12 @@ function build_octavia_worker_image {
         sudo chown $STACK_USER ${dib_logs}
         $OCTAVIA_DIR/diskimage-create/diskimage-create.sh -l ${dib_logs}/$(basename $OCTAVIA_AMP_IMAGE_FILE).log $octavia_dib_tracing_arg -o $OCTAVIA_AMP_IMAGE_FILE ${PARAM_OCTAVIA_AMP_BASE_OS:-} ${PARAM_OCTAVIA_AMP_DISTRIBUTION_RELEASE_ID:-} ${PARAM_OCTAVIA_AMP_IMAGE_SIZE:-}
     fi
+
+    if ! [ -f $OCTAVIA_AMP_IMAGE_FILE ]; then
+        echo "Diskimage-builder failed to create the amphora image. Aborting."
+        exit 1
+    fi
+
     upload_image file://${OCTAVIA_AMP_IMAGE_FILE} $TOKEN
 
 }
@@ -798,4 +807,10 @@ if [[ "$1" == "clean" ]]; then
         echo_summary "Cleaning up octavia"
         octavia_cleanup
     fi
+fi
+
+if [[ $saveenv =~ e ]]; then
+    set -e
+else
+    set +e
 fi
