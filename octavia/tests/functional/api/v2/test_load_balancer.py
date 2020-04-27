@@ -16,12 +16,12 @@ import copy
 import random
 from unittest import mock
 
+from octavia_lib.api.drivers import exceptions as lib_exceptions
 from oslo_config import cfg
 from oslo_config import fixture as oslo_fixture
 from oslo_utils import uuidutils
 from sqlalchemy.orm import exc as sa_exception
 
-from octavia.api.drivers import exceptions as provider_exceptions
 from octavia.common import constants
 import octavia.common.context
 from octavia.common import data_models
@@ -459,8 +459,7 @@ class TestLoadBalancer(base.BaseAPITest):
                 "create_vip_port") as mock_provider:
             mock_get_network.return_value = network
             mock_get_port.return_value = port
-            mock_provider.side_effect = (provider_exceptions.
-                                         NotImplementedError())
+            mock_provider.side_effect = lib_exceptions.NotImplementedError()
             response = self.post(self.LBS_PATH, body)
         api_lb = response.json.get(self.root_tag)
         self._assert_request_matches_response(lb_json, api_lb)
@@ -621,8 +620,7 @@ class TestLoadBalancer(base.BaseAPITest):
             mock_get_port.return_value = port
             mock_allocate_vip.side_effect = TestNeutronException(
                 "octavia_msg", "neutron_msg", 409)
-            mock_provider.side_effect = (provider_exceptions.
-                                         NotImplementedError())
+            mock_provider.side_effect = lib_exceptions.NotImplementedError()
             response = self.post(self.LBS_PATH, body, status=409)
         # Make sure the faultstring contains the neutron error and not
         # the octavia error message

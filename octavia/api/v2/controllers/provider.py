@@ -12,6 +12,7 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+from octavia_lib.api.drivers import exceptions as lib_exceptions
 from oslo_config import cfg
 from oslo_log import log as logging
 from pecan import expose as pecan_expose
@@ -20,7 +21,6 @@ from wsme import types as wtypes
 from wsmeext import pecan as wsme_pecan
 
 from octavia.api.drivers import driver_factory
-from octavia.api.drivers import exceptions as driver_except
 from octavia.api.v2.controllers import base
 from octavia.api.v2.types import provider as provider_types
 from octavia.common import constants
@@ -89,7 +89,7 @@ class FlavorCapabilitiesController(base.BaseController):
         self.driver = driver_factory.get_driver(self.provider)
         try:
             metadata_dict = self.driver.get_supported_flavor_metadata()
-        except driver_except.NotImplementedError as e:
+        except lib_exceptions.NotImplementedError as e:
             LOG.warning('Provider %s get_supported_flavor_metadata() '
                         'reported: %s', self.provider, e.operator_fault_string)
             raise exceptions.ProviderNotImplementedError(
@@ -140,7 +140,7 @@ class AvailabilityZoneCapabilitiesController(base.BaseController):
         try:
             metadata_dict = (
                 self.driver.get_supported_availability_zone_metadata())
-        except driver_except.NotImplementedError as e:
+        except lib_exceptions.NotImplementedError as e:
             LOG.warning(
                 'Provider %s get_supported_availability_zone_metadata() '
                 'reported: %s', self.provider, e.operator_fault_string)

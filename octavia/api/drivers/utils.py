@@ -22,7 +22,6 @@ from oslo_log import log as logging
 from oslo_utils import excutils
 from stevedore import driver as stevedore_driver
 
-from octavia.api.drivers import exceptions as driver_exceptions
 from octavia.common import data_models
 from octavia.common import exceptions
 from octavia.common.tls_utils import cert_parser
@@ -50,14 +49,12 @@ def call_provider(provider, driver_method, *args, **kwargs):
 
     try:
         return driver_method(*args, **kwargs)
-    except (driver_exceptions.DriverError, lib_exceptions.DriverError) as e:
+    except lib_exceptions.DriverError as e:
         LOG.exception("Provider '%s' raised a driver error: %s",
                       provider, e.operator_fault_string)
         raise exceptions.ProviderDriverError(prov=provider,
                                              user_msg=e.user_fault_string)
-    except (driver_exceptions.NotImplementedError,
-            lib_exceptions.NotImplementedError,
-            NotImplementedError) as e:
+    except (lib_exceptions.NotImplementedError, NotImplementedError) as e:
         op_fault_string = (
             e.operator_fault_string
             if hasattr(e, "operator_fault_string")
@@ -70,8 +67,7 @@ def call_provider(provider, driver_method, *args, **kwargs):
                  provider, op_fault_string)
         raise exceptions.ProviderNotImplementedError(
             prov=provider, user_msg=usr_fault_string)
-    except (driver_exceptions.UnsupportedOptionError,
-            lib_exceptions.UnsupportedOptionError) as e:
+    except lib_exceptions.UnsupportedOptionError as e:
         LOG.info("Provider '%s' raised an unsupported option error: "
                  "%s", provider, e.operator_fault_string)
         raise exceptions.ProviderUnsupportedOptionError(

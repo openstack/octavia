@@ -18,7 +18,6 @@ from octavia_lib.api.drivers import data_models as driver_dm
 from octavia_lib.api.drivers import exceptions as lib_exceptions
 from octavia_lib.common import constants as lib_constants
 
-from octavia.api.drivers import exceptions as driver_exceptions
 from octavia.api.drivers import utils
 from octavia.common import constants
 from octavia.common import data_models
@@ -40,21 +39,13 @@ class TestUtils(base.TestCase):
                             "arg1", foo="arg2")
         mock_driver_method.assert_called_with("arg1", foo="arg2")
 
-        # Test driver raising different types of DriverError
-        mock_driver_method.side_effect = driver_exceptions.DriverError
-        self.assertRaises(exceptions.ProviderDriverError,
-                          utils.call_provider, "provider_name",
-                          mock_driver_method)
+        # Test driver raising DriverError
         mock_driver_method.side_effect = lib_exceptions.DriverError
         self.assertRaises(exceptions.ProviderDriverError,
                           utils.call_provider, "provider_name",
                           mock_driver_method)
 
         # Test driver raising different types of NotImplementedError
-        mock_driver_method.side_effect = driver_exceptions.NotImplementedError
-        self.assertRaises(exceptions.ProviderNotImplementedError,
-                          utils.call_provider, "provider_name",
-                          mock_driver_method)
         mock_driver_method.side_effect = NotImplementedError
         self.assertRaises(exceptions.ProviderNotImplementedError,
                           utils.call_provider, "provider_name",
@@ -64,19 +55,14 @@ class TestUtils(base.TestCase):
                           utils.call_provider, "provider_name",
                           mock_driver_method)
 
-        # Test driver raising different types of UnsupportedOptionError
-        mock_driver_method.side_effect = (
-            driver_exceptions.UnsupportedOptionError)
-        self.assertRaises(exceptions.ProviderUnsupportedOptionError,
-                          utils.call_provider, "provider_name",
-                          mock_driver_method)
+        # Test driver raising UnsupportedOptionError
         mock_driver_method.side_effect = (
             lib_exceptions.UnsupportedOptionError)
         self.assertRaises(exceptions.ProviderUnsupportedOptionError,
                           utils.call_provider, "provider_name",
                           mock_driver_method)
 
-        # Test driver raising DriverError
+        # Test driver raising ProviderDriverError
         mock_driver_method.side_effect = Exception
         self.assertRaises(exceptions.ProviderDriverError,
                           utils.call_provider, "provider_name",
