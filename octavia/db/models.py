@@ -346,13 +346,13 @@ class Pool(base_models.BASE, base_models.IdMixin, base_models.ProjectMixin,
     @property
     def listeners(self):
         _listeners = self._default_listeners[:]
-        _l_ids = [l.id for l in _listeners]
+        _l_ids = [li.id for li in _listeners]
         l7_listeners = [p.listener for p in self.l7policies
                         if len(p.l7rules) > 0 and p.enabled is True]
-        for l in l7_listeners:
-            if l.id not in _l_ids:
-                _listeners.append(l)
-                _l_ids.append(l.id)
+        for li in l7_listeners:
+            if li.id not in _l_ids:
+                _listeners.append(li)
+                _l_ids.append(li.id)
         return _listeners
 
 

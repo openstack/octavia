@@ -265,7 +265,7 @@ class PoolModelTest(base.OctaviaDBTestBase, ModelTestMixin):
         self.assertIsNotNone(new_pool.listeners)
         self.assertIsInstance(new_pool.listeners, list)
         self.assertIsInstance(new_pool.listeners[0], models.Listener)
-        self.assertIn(listener.id, [l.id for l in new_pool.listeners])
+        self.assertIn(listener.id, [li.id for li in new_pool.listeners])
 
 
 class MemberModelTest(base.OctaviaDBTestBase, ModelTestMixin):
@@ -787,7 +787,7 @@ class L7PolicyModelTest(base.OctaviaDBTestBase, ModelTestMixin):
         new_listener = self.session.query(models.Listener).filter_by(
             id=self.listener.id).first()
         self.assertIsInstance(new_pool.listeners, list)
-        self.assertIn(new_listener.id, [l.id for l in new_pool.listeners])
+        self.assertIn(new_listener.id, [li.id for li in new_pool.listeners])
         self.assertIsInstance(new_listener.pools, list)
         self.assertIn(new_pool.id, [p.id for p in new_listener.pools])
 
@@ -802,7 +802,7 @@ class L7PolicyModelTest(base.OctaviaDBTestBase, ModelTestMixin):
         new_listener = self.session.query(models.Listener).filter_by(
             id=self.listener.id).first()
         self.assertIsInstance(new_pool.listeners, list)
-        self.assertNotIn(new_listener.id, [l.id for l in new_pool.listeners])
+        self.assertNotIn(new_listener.id, [li.id for li in new_pool.listeners])
         self.assertIsInstance(new_listener.pools, list)
         self.assertNotIn(new_pool.id, [p.id for p in new_listener.pools])
 
@@ -818,7 +818,7 @@ class L7PolicyModelTest(base.OctaviaDBTestBase, ModelTestMixin):
         new_listener = self.session.query(models.Listener).filter_by(
             id=self.listener.id).first()
         self.assertIsInstance(new_pool.listeners, list)
-        self.assertNotIn(new_listener.id, [l.id for l in new_pool.listeners])
+        self.assertNotIn(new_listener.id, [li.id for li in new_pool.listeners])
         self.assertIsInstance(new_listener.pools, list)
         self.assertNotIn(new_pool.id, [p.id for p in new_listener.pools])
 

@@ -83,7 +83,7 @@ class HealthMonitorController(base.BaseController):
     def _get_affected_listener_ids(self, session, hm):
         """Gets a list of all listeners this request potentially affects."""
         pool = self.repositories.pool.get(session, id=hm.pool_id)
-        listener_ids = [l.id for l in pool.listeners]
+        listener_ids = [li.id for li in pool.listeners]
         return listener_ids
 
     def _test_lb_and_listener_and_pool_statuses(self, session, hm):

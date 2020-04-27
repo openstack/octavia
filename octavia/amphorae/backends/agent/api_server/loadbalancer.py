@@ -58,8 +58,8 @@ class Wrapped(object):
         self.stream = stream_
         self.hash = hashlib.md5()  # nosec
 
-    def read(self, l):
-        block = self.stream.read(l)
+    def read(self, line):
+        block = self.stream.read(line)
         if block:
             self.hash.update(block)
         return block

@@ -90,10 +90,10 @@ class MemberController(base.BaseController):
     def _get_affected_listener_ids(self, session, member=None):
         """Gets a list of all listeners this request potentially affects."""
         if member:
-            listener_ids = [l.id for l in member.pool.listeners]
+            listener_ids = [li.id for li in member.pool.listeners]
         else:
             pool = self._get_db_pool(session, self.pool_id)
-            listener_ids = [l.id for l in pool.listeners]
+            listener_ids = [li.id for li in pool.listeners]
         return listener_ids
 
     def _test_lb_and_listener_and_pool_statuses(self, session, member=None):

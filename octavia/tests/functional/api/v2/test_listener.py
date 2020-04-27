@@ -70,9 +70,9 @@ class TestListener(base.BaseAPITest):
         self.set_lb_status(lb1_id)
         listeners = self.get(self.LISTENERS_PATH).json.get(self.root_tag_list)
         self.assertEqual(3, len(listeners))
-        listener_id_ports = [(l.get('id'), l.get('protocol_port'),
-                              l.get('tags'))
-                             for l in listeners]
+        listener_id_ports = [(li.get('id'), li.get('protocol_port'),
+                              li.get('tags'))
+                             for li in listeners]
         self.assertIn((listener1.get('id'), listener1.get('protocol_port'),
                        listener1.get('tags')),
                       listener_id_ports)
@@ -125,8 +125,8 @@ class TestListener(base.BaseAPITest):
         self.conf.config(group='api_settings', auth_strategy=auth_strategy)
 
         self.assertEqual(1, len(listeners))
-        listener_id_ports = [(l.get('id'), l.get('protocol_port'))
-                             for l in listeners]
+        listener_id_ports = [(li.get('id'), li.get('protocol_port'))
+                             for li in listeners]
         self.assertIn((listener3.get('id'), listener3.get('protocol_port')),
                       listener_id_ports)
 
@@ -172,8 +172,8 @@ class TestListener(base.BaseAPITest):
         self.conf.config(group='api_settings', auth_strategy=auth_strategy)
 
         self.assertEqual(3, len(listeners))
-        listener_id_ports = [(l.get('id'), l.get('protocol_port'))
-                             for l in listeners]
+        listener_id_ports = [(li.get('id'), li.get('protocol_port'))
+                             for li in listeners]
         self.assertIn((listener1.get('id'), listener1.get('protocol_port')),
                       listener_id_ports)
         self.assertIn((listener2.get('id'), listener2.get('protocol_port')),
@@ -232,8 +232,8 @@ class TestListener(base.BaseAPITest):
             params={'project_id': project1_id}).json.get(self.root_tag_list)
 
         self.assertEqual(2, len(listeners))
-        listener_id_ports = [(l.get('id'), l.get('protocol_port'))
-                             for l in listeners]
+        listener_id_ports = [(li.get('id'), li.get('protocol_port'))
+                             for li in listeners]
         self.assertIn((listener1.get('id'), listener1.get('protocol_port')),
                       listener_id_ports)
         self.assertIn((listener2.get('id'), listener2.get('protocol_port')),
@@ -241,8 +241,8 @@ class TestListener(base.BaseAPITest):
         listeners = self.get(
             self.LISTENERS_PATH,
             params={'project_id': project2_id}).json.get(self.root_tag_list)
-        listener_id_ports = [(l.get('id'), l.get('protocol_port'))
-                             for l in listeners]
+        listener_id_ports = [(li.get('id'), li.get('protocol_port'))
+                             for li in listeners]
         self.assertEqual(1, len(listeners))
         self.assertIn((listener3.get('id'), listener3.get('protocol_port')),
                       listener_id_ports)
@@ -317,7 +317,8 @@ class TestListener(base.BaseAPITest):
         links = middle[self.root_tag_links]
         self.assertEqual(1, len(objs))
         self.assertEqual(2, len(links))
-        self.assertItemsEqual(['previous', 'next'], [l['rel'] for l in links])
+        self.assertItemsEqual(['previous', 'next'],
+                              [link['rel'] for link in links])
 
     def test_get_all_fields_filter(self):
         self.create_listener(constants.PROTOCOL_HTTP, 80,

@@ -509,8 +509,8 @@ class LoadBalancersController(base.BaseController):
         pools_required = set()
         # Look through listeners and find any extra pools, and move them to the
         # top level so they are created first.
-        for l in listeners:
-            default_pool = l.get('default_pool')
+        for li in listeners:
+            default_pool = li.get('default_pool')
             pool_name = (
                 default_pool.get('name') if default_pool else None)
             # All pools need to have a name so they can be referenced
@@ -523,12 +523,12 @@ class LoadBalancersController(base.BaseController):
             # as default)
             if default_pool and len(default_pool) > 3:
                 pools.append(default_pool)
-                l['default_pool'] = {'name': pool_name}
+                li['default_pool'] = {'name': pool_name}
             # Otherwise, it's a reference and we record it and move on
             elif default_pool:
                 pools_required.add(pool_name)
             # We also need to check policy redirects
-            for policy in l.get('l7policies'):
+            for policy in li.get('l7policies'):
                 redirect_pool = policy.get('redirect_pool')
                 pool_name = (
                     redirect_pool.get('name') if redirect_pool else None)
@@ -595,8 +595,8 @@ class LoadBalancersController(base.BaseController):
 
         # Now create all of the listeners
         new_lists = []
-        for l in listeners:
-            default_pool = l.pop('default_pool', None)
+        for li in listeners:
+            default_pool = li.pop('default_pool', None)
             # If there's a default pool, replace it with the ID
             if default_pool:
                 pool_name = default_pool['name']
@@ -604,11 +604,11 @@ class LoadBalancersController(base.BaseController):
                 if not pool_id:
                     raise exceptions.SingleCreateDetailsMissing(
                         type='Pool', name=pool_name)
-                l['default_pool_id'] = pool_id
-            l['load_balancer_id'] = db_lb.id
-            l['project_id'] = db_lb.project_id
+                li['default_pool_id'] = pool_id
+            li['load_balancer_id'] = db_lb.id
+            li['project_id'] = db_lb.project_id
             new_lists.append(listener.ListenersController()._graph_create(
-                lock_session, l, pool_name_ids=pool_name_ids))
+                lock_session, li, pool_name_ids=pool_name_ids))
 
         return new_pools, new_lists
 

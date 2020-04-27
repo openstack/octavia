@@ -15,11 +15,11 @@
 
 from unittest import mock
 
+from octavia_lib.api.drivers import exceptions as lib_exceptions
 from oslo_config import cfg
 from oslo_config import fixture as oslo_fixture
 from oslo_utils import uuidutils
 
-from octavia.api.drivers import exceptions
 from octavia.common import constants
 import octavia.common.context
 from octavia.tests.functional.api.v2 import base
@@ -90,7 +90,7 @@ class TestFlavorCapabilities(base.BaseAPITest):
     @mock.patch('octavia.api.drivers.noop_driver.driver.NoopProviderDriver.'
                 'get_supported_flavor_metadata')
     def test_not_implemented(self, mock_get_metadata):
-        mock_get_metadata.side_effect = exceptions.NotImplementedError()
+        mock_get_metadata.side_effect = lib_exceptions.NotImplementedError()
         self.get(self.FLAVOR_CAPABILITIES_PATH.format(provider='noop_driver'),
                  status=501)
 
@@ -214,7 +214,7 @@ class TestAvailabilityZoneCapabilities(base.BaseAPITest):
     @mock.patch('octavia.api.drivers.noop_driver.driver.NoopProviderDriver.'
                 'get_supported_availability_zone_metadata')
     def test_not_implemented(self, mock_get_metadata):
-        mock_get_metadata.side_effect = exceptions.NotImplementedError()
+        mock_get_metadata.side_effect = lib_exceptions.NotImplementedError()
         self.get(self.AVAILABILITY_ZONE_CAPABILITIES_PATH.format(
             provider='noop_driver'), status=501)
 
