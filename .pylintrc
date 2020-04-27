@@ -15,6 +15,7 @@ disable=
  import-error,
  not-callable,
  no-member,
+ catching-non-exception,
 # "W" Warnings for stylistic problems or minor programming issues
  abstract-method,
  anomalous-backslash-in-string,
