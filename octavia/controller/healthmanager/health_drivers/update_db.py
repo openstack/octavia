@@ -162,7 +162,8 @@ class UpdateHealthDb(update_base.HealthUpdateBase):
 
         if db_lb:
             expected_listener_count = 0
-            if 'PENDING' in db_lb['provisioning_status']:
+            if ('PENDING' in db_lb['provisioning_status'] or
+               not db_lb['enabled']):
                 ignore_listener_count = True
             else:
                 for key, listener in db_lb.get('listeners', {}).items():

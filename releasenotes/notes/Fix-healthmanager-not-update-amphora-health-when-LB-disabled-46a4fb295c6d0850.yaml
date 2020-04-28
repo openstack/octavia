@@ -1,0 +1,6 @@
+---
+fixes:
+  - |
+    Fixed an issue when a loadbalancer is disabled, Octavia Health Manager
+    keeps failovering the amphorae
+
