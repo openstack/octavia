@@ -265,14 +265,6 @@ healthmanager_opts = [
     cfg.IntOpt('failover_threads',
                default=10,
                help=_('Number of threads performing amphora failovers.')),
-    # TODO(tatsuma) Remove in or after "T" release
-    cfg.IntOpt('status_update_threads',
-               default=None,
-               help=_('Number of processes for amphora status update.'),
-               deprecated_for_removal=True,
-               deprecated_reason=_('This option is replaced as '
-                                   'health_update_threads and '
-                                   'stats_update_threads')),
     cfg.IntOpt('health_update_threads',
                default=None,
                help=_('Number of processes for amphora health update.')),
@@ -878,7 +870,6 @@ def init(args, **kwargs):
     cfg.CONF(args=args, project='octavia',
              version='%%prog %s' % version.version_info.release_string(),
              **kwargs)
-    handle_deprecation_compatibility()
     validate.check_default_tls_versions_min_conflict()
     setup_remote_debugger()
     validate.check_default_ciphers_blacklist_conflict()
@@ -898,21 +889,6 @@ def setup_logging(conf):
              {'prog': sys.argv[0],
               'version': version.version_info.release_string()})
     LOG.debug("command line: %s", " ".join(sys.argv))
-
-
-# Use cfg.CONF.set_default to override the new configuration setting
-# default value.  This allows a value set, at the new location, to override
-# a value set in the previous location while allowing settings that have
-# not yet been moved to be utilized.
-def handle_deprecation_compatibility():
-    # TODO(tatsuma) Remove in or after "T" release
-    if cfg.CONF.health_manager.status_update_threads is not None:
-        cfg.CONF.set_default('health_update_threads',
-                             cfg.CONF.health_manager.status_update_threads,
-                             group='health_manager')
-        cfg.CONF.set_default('stats_update_threads',
-                             cfg.CONF.health_manager.status_update_threads,
-                             group='health_manager')
 
 
 def _enable_pydev(debugger_host, debugger_port):

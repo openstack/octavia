@@ -1,0 +1,6 @@
+---
+deprecations:
+  - |
+    The deprecated option ``status_update_threads`` has been removed,
+    ``health_update_threads`` and ``stats_update_threads`` should be used
+    instead.
