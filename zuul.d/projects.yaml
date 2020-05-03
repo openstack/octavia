@@ -35,15 +35,7 @@
             irrelevant-files: *irrelevant-files
         - octavia-v2-act-stdby-dsvm-scenario:
             irrelevant-files: *irrelevant-files
-        - octavia-v2-dsvm-cinder-amphora:
-            irrelevant-files: *irrelevant-files
-            voting: false
-        - octavia-v2-dsvm-scenario-two-node:
-            irrelevant-files: *irrelevant-files
-            voting: false
-        # TODO(haleyb): restore to voting once python3 issues fixed
         - octavia-grenade:
-            voting: false
             irrelevant-files:
               - ^.*\.rst$
               - ^api-ref/.*$
@@ -54,6 +46,12 @@
               - ^tools/.*$
               - ^(test-|)requirements.txt$
               - ^tox.ini$
+        - octavia-v2-dsvm-cinder-amphora:
+            irrelevant-files: *irrelevant-files
+            voting: false
+        - octavia-v2-dsvm-scenario-two-node:
+            irrelevant-files: *irrelevant-files
+            voting: false
         - octavia-v2-dsvm-scenario-amphora-v2:
             irrelevant-files: *irrelevant-files
             voting: false
@@ -74,6 +72,7 @@
         - octavia-v2-dsvm-tls-barbican
         - octavia-v2-dsvm-spare-pool
         - octavia-v2-act-stdby-dsvm-scenario
+        - octavia-grenade
     periodic:
       jobs:
         - publish-openstack-octavia-amphora-image-bionic:
