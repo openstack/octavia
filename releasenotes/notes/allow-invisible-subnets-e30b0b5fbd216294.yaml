@@ -1,0 +1,16 @@
+---
+upgrade:
+  - |
+    After this upgrade, users will no longer be able use network resources they
+    cannot see or "show" on load balancers. Operators can revert this behavior
+    by setting the "allow_invisible_reourece_usage" configuration file setting
+    to ``True``.
+security:
+  - |
+    Previously, if a user knew or could guess the UUID for a network resource,
+    they could use that UUID to create load balancer resources using that UUID.
+    Now the user must have permission to see or "show" the resource before it
+    can be used with a load balancer. This will be the new default, but
+    operators can disable this behavior via the setting the configuration file
+    setting "allow_invisible_resource_usage" to ``True``. This issue falls
+    under the "Class C1" security issue as the user would require a valid UUID.

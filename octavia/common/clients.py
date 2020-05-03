@@ -12,6 +12,8 @@
 
 from cinderclient import client as cinder_client
 from glanceclient import client as glance_client
+from keystoneauth1.identity.generic import token
+from keystoneauth1 import session
 from neutronclient.neutron import client as neutron_client
 from novaclient import api_versions
 from novaclient import client as nova_client
@@ -106,6 +108,32 @@ class NeutronAuth(object):
                 with excutils.save_and_reraise_exception():
                     LOG.exception("Error creating Neutron client.")
         return cls.neutron_client
+
+    @classmethod
+    def get_user_neutron_client(cls, context):
+        # get a normal session
+        ksession = keystone.KeystoneSession()
+        service_auth = ksession.get_auth()
+
+        # make user auth and swap it in session
+        user_auth = token.Token(auth_url=service_auth.auth_url,
+                                token=context.auth_token,
+                                project_id=context.project_id)
+        user_session = session.Session(auth=user_auth)
+
+        kwargs = {
+            'session': user_session,
+            'region_name': CONF.neutron.region_name,
+            'endpoint_type': CONF.neutron.endpoint_type,
+            'service_name': CONF.neutron.service_name,
+            'insecure': CONF.neutron.insecure,
+            'ca_cert': CONF.neutron.ca_certificates_file
+        }
+        if CONF.neutron.endpoint:
+            kwargs['endpoint_override'] = CONF.neutron.endpoint
+
+        # create neutron client using user's session
+        return neutron_client.Client(NEUTRON_VERSION, **kwargs)
 
 
 class GlanceAuth(object):
