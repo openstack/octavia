@@ -32,28 +32,19 @@
           export PROJECTS="openstack/grenade $PROJECTS"
           export PROJECTS="openstack/octavia $PROJECTS"
           export PROJECTS="openstack/octavia-lib $PROJECTS"
-          export PROJECTS="openstack/octavia-tempest-plugin $PROJECTS"
           export PROJECTS="openstack/python-octaviaclient $PROJECTS"
           export DEVSTACK_PROJECT_FROM_GIT="python-octaviaclient $DEVSTACK_PROJECT_FROM_GIT"
 
           export GRENADE_PLUGINRC="enable_grenade_plugin octavia https://opendev.org/openstack/octavia"
-          export DEVSTACK_LOCAL_CONFIG+=$'\n'"export TEMPEST_PLUGINS='/opt/stack/new/octavia-tempest-plugin'"
           export DEVSTACK_LOCAL_CONFIG+=$'\n'"[[post-config|/etc/octavia/octavia.conf]]"$'\n'"[DEFAULT]"$'\n'"debug = True"
 
-          export DEVSTACK_GATE_TEMPEST=1
+          export DEVSTACK_GATE_TEMPEST=0
           export DEVSTACK_GATE_GRENADE=pullup
 
           export BRANCH_OVERRIDE=default
           if [ "$BRANCH_OVERRIDE" != "default" ] ; then
               export OVERRIDE_ZUUL_BRANCH=$BRANCH_OVERRIDE
           fi
-          # Add configuration values for enabling security features in local.conf
-          function pre_test_hook {
-              if [ -f /opt/stack/old/octavia-tempest-plugin/tools/pre_test_hook.sh ] ; then
-                  . /opt/stack/old/octavia-tempest-plugin/tools/pre_test_hook.sh
-              fi
-          }
-          export -f pre_test_hook
 
           cp devstack-gate/devstack-vm-gate-wrap.sh ./safe-devstack-vm-gate-wrap.sh
           ./safe-devstack-vm-gate-wrap.sh

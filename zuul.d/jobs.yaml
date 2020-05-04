@@ -90,5 +90,4 @@
       - openstack/devstack-gate
       - openstack/octavia
       - openstack/octavia-lib
-      - openstack/octavia-tempest-plugin
       - openstack/python-octaviaclient
