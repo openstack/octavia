@@ -47,10 +47,22 @@
             voting: false
         - octavia-v1-dsvm-scenario-kvm-centos.7:
             voting: false
-        - octavia-v2-dsvm-noop-api
-        - octavia-v2-dsvm-noop-py35-api
-        - octavia-v2-dsvm-scenario
-        - octavia-v2-dsvm-py35-scenario
+        - octavia-v2-dsvm-noop-api:
+            required-projects:
+              - name: openstack/octavia-tempest-plugin
+                override-checkout: 1.4.0
+        - octavia-v2-dsvm-noop-py35-api:
+            required-projects:
+              - name: openstack/octavia-tempest-plugin
+                override-checkout: 1.4.0
+        - octavia-v2-dsvm-scenario:
+            required-projects:
+              - name: openstack/octavia-tempest-plugin
+                override-checkout: 1.4.0
+        - octavia-v2-dsvm-py35-scenario:
+            required-projects:
+              - name: openstack/octavia-tempest-plugin
+                override-checkout: 1.4.0
         - octavia-grenade:
             irrelevant-files:
               - ^.*\.rst$
@@ -90,10 +102,22 @@
         - octavia-v1-dsvm-scenario
         - octavia-v1-dsvm-py3x-scenario
         - neutron-lbaasv2-dsvm-py3x-api
-        - octavia-v2-dsvm-noop-api
-        - octavia-v2-dsvm-noop-py35-api
-        - octavia-v2-dsvm-scenario
-        - octavia-v2-dsvm-py35-scenario
+        - octavia-v2-dsvm-noop-api:
+            required-projects:
+              - name: openstack/octavia-tempest-plugin
+                override-checkout: 1.4.0
+        - octavia-v2-dsvm-noop-py35-api:
+            required-projects:
+              - name: openstack/octavia-tempest-plugin
+                override-checkout: 1.4.0
+        - octavia-v2-dsvm-scenario:
+            required-projects:
+              - name: openstack/octavia-tempest-plugin
+                override-checkout: 1.4.0
+        - octavia-v2-dsvm-py35-scenario:
+            required-projects:
+              - name: openstack/octavia-tempest-plugin
+                override-checkout: 1.4.0
         - octavia-grenade:
             irrelevant-files:
               - ^.*\.rst$

@@ -86,5 +86,4 @@
       - openstack/grenade
       - openstack/devstack-gate
       - openstack/octavia
-      - openstack/octavia-tempest-plugin
       - openstack/python-octaviaclient
