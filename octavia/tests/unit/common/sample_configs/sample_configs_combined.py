@@ -788,7 +788,8 @@ def sample_pool_tuple(listener_id=None, proto=None, monitor=True,
                       hm_host_http_check=False,
                       provisioning_status=constants.ACTIVE,
                       tls_ciphers=constants.CIPHERS_OWASP_SUITE_B,
-                      tls_versions=constants.TLS_VERSIONS_OWASP_SUITE_B):
+                      tls_versions=constants.TLS_VERSIONS_OWASP_SUITE_B,
+                      lb_algorithm=constants.LB_ALGORITHM_ROUND_ROBIN):
     proto = 'HTTP' if proto is None else proto
     if not tls_enabled:
         tls_ciphers = None
@@ -836,7 +837,7 @@ def sample_pool_tuple(listener_id=None, proto=None, monitor=True,
     return in_pool(
         id=id,
         protocol=proto,
-        lb_algorithm='ROUND_ROBIN',
+        lb_algorithm=lb_algorithm,
         members=members,
         health_monitor=mon,
         session_persistence=persis if persistence is True else None,
