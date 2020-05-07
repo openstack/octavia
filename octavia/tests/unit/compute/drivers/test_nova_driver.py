@@ -298,6 +298,13 @@ class TestNovaClient(base.TestCase):
         self.assertRaises(exceptions.ComputeGetException,
                           self.manager.get_amphora, self.amphora.id)
 
+    def test_get_amphora_retried(self):
+        self.manager.manager.get.side_effect = [Exception, self.nova_response]
+        amphora, fault = self.manager.get_amphora(self.amphora.compute_id)
+        self.assertEqual(self.amphora, amphora)
+        self.assertEqual(self.nova_response.fault, fault)
+        self.manager.manager.get.called_with(server=amphora.id)
+
     def test_translate_amphora(self):
         amphora, fault = self.manager._translate_amphora(self.nova_response)
         self.assertEqual(self.amphora, amphora)
