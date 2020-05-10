@@ -1,0 +1,5 @@
+---
+fixes:
+  - |
+    Fix an issue when the barbican service enable TLS, we create the listerner
+    failed.
