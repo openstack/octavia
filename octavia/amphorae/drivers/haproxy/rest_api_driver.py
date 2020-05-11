@@ -352,8 +352,8 @@ class HaproxyAmphoraLoadBalancerDriver(
 
         # See how many non-UDP listeners we have left
         non_udp_listener_count = len([
-            1 for l in listener.load_balancer.listeners
-            if l.protocol != consts.PROTOCOL_UDP])
+            1 for li in listener.load_balancer.listeners
+            if li.protocol != consts.PROTOCOL_UDP])
         if non_udp_listener_count > 0:
             # We have other listeners, so just update is fine.
             # TODO(rm_work): This is a little inefficient since this duplicates

@@ -83,7 +83,7 @@ class PoolsController(base.BaseController):
 
     def _get_affected_listener_ids(self, pool):
         """Gets a list of all listeners this request potentially affects."""
-        listener_ids = [l.id for l in pool.listeners]
+        listener_ids = [li.id for li in pool.listeners]
         return listener_ids
 
     def _test_lb_and_listener_statuses(self, session, lb_id, listener_ids):

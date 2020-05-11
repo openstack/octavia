@@ -1191,7 +1191,7 @@ class MarkLBAndListenersActiveInDB(BaseDatabaseTask):
 
         LOG.debug("Mark ACTIVE in DB for load balancer id: %s "
                   "and updating status for listener ids: %s", loadbalancer.id,
-                  ', '.join([l.id for l in listeners]))
+                  ', '.join([listener.id for listener in listeners]))
         self.loadbalancer_repo.update(db_apis.get_session(),
                                       loadbalancer.id,
                                       provisioning_status=constants.ACTIVE)
@@ -1210,7 +1210,8 @@ class MarkLBAndListenersActiveInDB(BaseDatabaseTask):
         LOG.warning("Reverting mark load balancer and listeners active in DB "
                     "for load balancer id %(LB)s and listener ids: %(list)s",
                     {'LB': loadbalancer.id,
-                     'list': ', '.join([l.id for l in listeners])})
+                     'list': ', '.join([listener.id
+                                        for listener in listeners])})
         self.task_utils.mark_loadbalancer_prov_status_error(loadbalancer.id)
         for listener in listeners:
             self.task_utils.mark_listener_prov_status_error(listener.id)

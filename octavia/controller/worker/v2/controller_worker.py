@@ -247,9 +247,9 @@ class ControllerWorker(object):
         load_balancer = db_listener.load_balancer
         listeners = load_balancer.listeners
         dict_listeners = []
-        for l in listeners:
+        for li in listeners:
             dict_listeners.append(
-                provider_utils.db_listener_to_provider_listener(l).to_dict())
+                provider_utils.db_listener_to_provider_listener(li).to_dict())
         provider_lb = provider_utils.db_loadbalancer_to_provider_loadbalancer(
             load_balancer).to_dict()
 

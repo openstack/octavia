@@ -241,8 +241,8 @@ class TestQuotas(base.BaseAPITest):
         ).get(self.root_tag)
         quotas = self.get(self.QUOTAS_PATH).json.get(self.root_tag_list)
         self.assertEqual(3, len(quotas))
-        quota_lb_member_quotas = [(l.get('load_balancer'), l.get('member'))
-                                  for l in quotas]
+        quota_lb_member_quotas = [(lb.get('load_balancer'), lb.get('member'))
+                                  for lb in quotas]
         self.assertIn((quota1.get('load_balancer'), quota1.get('member')),
                       quota_lb_member_quotas)
         self.assertIn((quota2.get('load_balancer'), quota2.get('member')),
@@ -287,8 +287,8 @@ class TestQuotas(base.BaseAPITest):
                 quotas = quotas.json.get(self.root_tag_list)
         self.conf.config(group='api_settings', auth_strategy=auth_strategy)
         self.assertEqual(3, len(quotas))
-        quota_lb_member_quotas = [(l.get('load_balancer'), l.get('member'))
-                                  for l in quotas]
+        quota_lb_member_quotas = [(lb.get('load_balancer'), lb.get('member'))
+                                  for lb in quotas]
         self.assertIn((quota1.get('load_balancer'), quota1.get('member')),
                       quota_lb_member_quotas)
         self.assertIn((quota2.get('load_balancer'), quota2.get('member')),
@@ -333,8 +333,8 @@ class TestQuotas(base.BaseAPITest):
                 quotas = quotas.json.get(self.root_tag_list)
         self.conf.config(group='api_settings', auth_strategy=auth_strategy)
         self.assertEqual(3, len(quotas))
-        quota_lb_member_quotas = [(l.get('load_balancer'), l.get('member'))
-                                  for l in quotas]
+        quota_lb_member_quotas = [(lb.get('load_balancer'), lb.get('member'))
+                                  for lb in quotas]
         self.assertIn((quota1.get('load_balancer'), quota1.get('member')),
                       quota_lb_member_quotas)
         self.assertIn((quota2.get('load_balancer'), quota2.get('member')),
@@ -382,8 +382,8 @@ class TestQuotas(base.BaseAPITest):
         self.conf.config(group='api_settings', auth_strategy=auth_strategy)
 
         self.assertEqual(1, len(quotas))
-        quota_lb_member_quotas = [(l.get('load_balancer'), l.get('member'))
-                                  for l in quotas]
+        quota_lb_member_quotas = [(lb.get('load_balancer'), lb.get('member'))
+                                  for lb in quotas]
         self.assertIn((quota3.get('load_balancer'), quota3.get('member')),
                       quota_lb_member_quotas)
 
@@ -427,8 +427,8 @@ class TestQuotas(base.BaseAPITest):
         self.conf.config(group='api_settings', auth_strategy=auth_strategy)
 
         self.assertEqual(1, len(quotas))
-        quota_lb_member_quotas = [(l.get('load_balancer'), l.get('member'))
-                                  for l in quotas]
+        quota_lb_member_quotas = [(lb.get('load_balancer'), lb.get('member'))
+                                  for lb in quotas]
         self.assertIn((quota3.get('load_balancer'), quota3.get('member')),
                       quota_lb_member_quotas)
 
@@ -601,10 +601,10 @@ class TestQuotas(base.BaseAPITest):
         self.assertEqual(3, len(quotas_desc))
         self.assertEqual(3, len(quotas_asc))
 
-        quota_lb_member_desc = [(l.get('load_balancer'), l.get('member'))
-                                for l in quotas_desc]
-        quota_lb_member_asc = [(l.get('load_balancer'), l.get('member'))
-                               for l in quotas_asc]
+        quota_lb_member_desc = [(lb.get('load_balancer'), lb.get('member'))
+                                for lb in quotas_desc]
+        quota_lb_member_asc = [(lb.get('load_balancer'), lb.get('member'))
+                               for lb in quotas_asc]
         self.assertEqual(quota_lb_member_asc,
                          list(reversed(quota_lb_member_desc)))
 
@@ -650,7 +650,8 @@ class TestQuotas(base.BaseAPITest):
         links = middle[self.root_tag_links]
         self.assertEqual(1, len(objs))
         self.assertEqual(2, len(links))
-        self.assertItemsEqual(['previous', 'next'], [l['rel'] for l in links])
+        self.assertItemsEqual(['previous', 'next'],
+                              [link['rel'] for link in links])
 
     def test_get_default_quotas(self):
         response = self.get(self.QUOTA_DEFAULT_PATH.format(

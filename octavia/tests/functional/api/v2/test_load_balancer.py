@@ -1347,7 +1347,8 @@ class TestLoadBalancer(base.BaseAPITest):
         links = middle[self.root_tag_links]
         self.assertEqual(1, len(objs))
         self.assertEqual(2, len(links))
-        self.assertItemsEqual(['previous', 'next'], [l['rel'] for l in links])
+        self.assertItemsEqual(['previous', 'next'],
+                              [link['rel'] for link in links])
 
     def test_get_all_fields_filter(self):
         self.create_load_balancer(uuidutils.generate_uuid(),

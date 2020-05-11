@@ -49,10 +49,10 @@ class NoopManager(object):
     def update(self, loadbalancer):
         LOG.debug("Amphora %s no-op, update listener %s, vip %s",
                   self.__class__.__name__,
-                  tuple(l.protocol_port for l in loadbalancer.listeners),
+                  tuple(li.protocol_port for li in loadbalancer.listeners),
                   loadbalancer.vip.ip_address)
         self.amphoraconfig[
-            (tuple(l.protocol_port for l in loadbalancer.listeners),
+            (tuple(li.protocol_port for li in loadbalancer.listeners),
              loadbalancer.vip.ip_address)] = (loadbalancer.listeners,
                                               loadbalancer.vip,
                                               'active')
