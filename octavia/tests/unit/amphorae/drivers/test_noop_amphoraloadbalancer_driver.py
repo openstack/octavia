@@ -69,7 +69,8 @@ class TestNoopAmphoraLoadBalancerDriver(base.TestCase):
                              constants.CONN_RETRY_INTERVAL: 4}
 
     def test_update_amphora_listeners(self):
-        self.driver.update_amphora_listeners([self.listener], self.amphora.id,
+        amphorae = [self.amphora]
+        self.driver.update_amphora_listeners([self.listener], 0, amphorae,
                                              self.timeout_dict)
         self.assertEqual((self.listener, self.amphora.id, self.timeout_dict,
                           'update_amp'),
