@@ -41,6 +41,10 @@ def main():
                     'not set to "keystone". This is not a normal '
                     'configuration and you may get "Missing project ID" '
                     'errors from API calls."')
+    LOG.warning('You are running the Octavia API wsgi application using '
+                'simple_server. We do not recommend this outside of simple '
+                'testing. We recommend you run the Octavia API wsgi with '
+                'a more full function server such as gunicorn or uWSGI.')
     srv = simple_server.make_server(host, port, app)
 
     srv.serve_forever()
