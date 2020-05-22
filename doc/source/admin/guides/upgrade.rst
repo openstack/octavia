@@ -58,7 +58,10 @@ listeners, pools and members).
 
 #. Optional: Make a backup of the database.
 
-#. Upgrade all Octavia control plane nodes to the next release.
+#. Upgrade all Octavia control plane nodes to the next release. Remember to
+   also upgrade library dependencies (e.g. octavia-lib). If upgrading Octavia
+   from distribution packages, your system package manager is expected to
+   handle this automatically.
 
 #. Verify that all configuration option names are up-to-date with latest
    Octavia version. For example, pay special attention to deprecated

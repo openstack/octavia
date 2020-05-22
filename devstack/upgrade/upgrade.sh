@@ -51,6 +51,7 @@ set -o xtrace
 [[ -d $SAVE_DIR/etc.octavia ]] || cp -pr $OCTAVIA_CONF_DIR $SAVE_DIR/etc.octavia
 
 # Install the target octavia
+octavia_lib_install
 octavia_install
 
 # calls upgrade-octavia for specific release
