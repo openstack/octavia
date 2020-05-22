@@ -83,7 +83,7 @@ class PoolResponse(BasePoolType):
     ca_tls_container_ref = wtypes.wsattr(wtypes.StringType())
     crl_container_ref = wtypes.wsattr(wtypes.StringType())
     tls_enabled = wtypes.wsattr(bool)
-    tls_ciphers = wtypes.StringType()
+    tls_ciphers = wtypes.wsattr(wtypes.StringType())
     tls_versions = wtypes.wsattr(wtypes.ArrayType(wtypes.StringType()))
 
     @classmethod
@@ -162,7 +162,7 @@ class PoolPOST(BasePoolType):
     ca_tls_container_ref = wtypes.wsattr(wtypes.StringType(max_length=255))
     crl_container_ref = wtypes.wsattr(wtypes.StringType(max_length=255))
     tls_enabled = wtypes.wsattr(bool, default=False)
-    tls_ciphers = wtypes.StringType(max_length=2048)
+    tls_ciphers = wtypes.wsattr(wtypes.StringType(max_length=2048))
     tls_versions = wtypes.wsattr(wtypes.ArrayType(wtypes.StringType(
         max_length=32)))
 
@@ -184,7 +184,7 @@ class PoolPUT(BasePoolType):
     ca_tls_container_ref = wtypes.wsattr(wtypes.StringType(max_length=255))
     crl_container_ref = wtypes.wsattr(wtypes.StringType(max_length=255))
     tls_enabled = wtypes.wsattr(bool)
-    tls_ciphers = wtypes.StringType(max_length=2048)
+    tls_ciphers = wtypes.wsattr(wtypes.StringType(max_length=2048))
     tls_versions = wtypes.wsattr(wtypes.ArrayType(wtypes.StringType(
         max_length=32)))
 
@@ -209,7 +209,7 @@ class PoolSingleCreate(BasePoolType):
     ca_tls_container_ref = wtypes.wsattr(wtypes.StringType(max_length=255))
     crl_container_ref = wtypes.wsattr(wtypes.StringType(max_length=255))
     tls_enabled = wtypes.wsattr(bool, default=False)
-    tls_ciphers = wtypes.StringType(max_length=2048)
+    tls_ciphers = wtypes.wsattr(wtypes.StringType(max_length=2048))
     tls_versions = wtypes.wsattr(wtypes.ArrayType(wtypes.StringType(
         max_length=32)))
 
