@@ -3,7 +3,7 @@ upgrade:
   - |
     After this upgrade, users will no longer be able use network resources they
     cannot see or "show" on load balancers. Operators can revert this behavior
-    by setting the "allow_invisible_reourece_usage" configuration file setting
+    by setting the "allow_invisible_resource_usage" configuration file setting
     to ``True``.
 security:
   - |
