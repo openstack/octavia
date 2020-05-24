@@ -43,9 +43,9 @@ extensions = [
 ]
 
 # openstackdocstheme options
-repository_name = 'openstack/octavia'
-bug_project = '908'
-bug_tag = 'doc'
+openstackdocs_repo_name = 'openstack/octavia'
+openstackdocs_bug_project = '908'
+openstackdocs_bug_tag = 'doc'
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
@@ -95,7 +95,7 @@ exclude_patterns = []
 # show_authors = False
 
 # The name of the Pygments (syntax highlighting) style to use.
-pygments_style = 'sphinx'
+pygments_style = 'native'
 
 # A list of ignored prefixes for module index sorting.
 # modindex_common_prefix = []
