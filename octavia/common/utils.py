@@ -20,6 +20,7 @@
 
 import base64
 import hashlib
+import re
 import socket
 
 import netaddr
@@ -45,7 +46,9 @@ def base64_sha1_string(string_to_hash):
     # break backwards compatibility with existing loadbalancers.
     hash_str = hashlib.sha1(string_to_hash.encode('utf-8')).digest()  # nosec
     b64_str = base64.b64encode(hash_str, str.encode('_-', 'ascii'))
-    return b64_str.decode('UTF-8')
+    b64_sha1 = b64_str.decode('UTF-8')
+    # https://github.com/haproxy/haproxy/issues/644
+    return re.sub(r"^-", "x", b64_sha1)
 
 
 def get_network_driver():
