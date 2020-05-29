@@ -199,7 +199,7 @@ class CinderAuth(object):
                 kwargs['service_name'] = service_name
             if endpoint:
                 kwargs['endpoint'] = endpoint
-                if endpoint.startwith("https"):
+                if endpoint.startswith("https"):
                     kwargs['insecure'] = insecure
                     kwargs['cacert'] = cacert
             try:
