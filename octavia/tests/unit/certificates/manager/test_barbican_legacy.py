@@ -238,20 +238,21 @@ class TestBarbicanManager(base.TestCase):
 
     def test_get_cert_no_registration_raise_on_secret_access_failure(self):
         self.bc.containers.get.return_value = self.container
-        type(self.certificate).payload = mock.PropertyMock(
-            side_effect=ValueError)
+        with mock.patch('barbicanclient.v1.secrets.Secret.payload',
+                        new_callable=mock.PropertyMock) as mock_payload:
+            mock_payload.side_effect = ValueError
 
-        # Get the container data
-        self.assertRaises(
-            ValueError, self.cert_manager.get_cert,
-            context=self.context,
-            cert_ref=self.container_ref, check_only=True
-        )
+            # Get the container data
+            self.assertRaises(
+                ValueError, self.cert_manager.get_cert,
+                context=self.context,
+                cert_ref=self.container_ref, check_only=True
+            )
 
-        # 'get' should be called once with the container_ref
-        self.bc.containers.get.assert_called_once_with(
-            container_ref=self.container_ref
-        )
+            # 'get' should be called once with the container_ref
+            self.bc.containers.get.assert_called_once_with(
+                container_ref=self.container_ref
+            )
 
     def test_delete_cert(self):
         # Attempt to deregister as a consumer
