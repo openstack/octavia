@@ -277,7 +277,7 @@ Neutron's attribute map facility should have the following:
 
 * Discuss any API policy changes, and discuss what things a deployer needs to
   think about when defining their API policy. This is in reference to the
-  policy.json file.
+  policy.yaml file.
 
 Note that the schema should be defined as restrictively as
 possible. Parameters which are required should be marked as such and

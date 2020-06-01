@@ -1,0 +1,18 @@
+# This policy.yaml will revert the Octavia API to follow the legacy
+# admin-or-owner RBAC policies.
+# It provides a similar policy to legacy OpenStack policies where any
+# user or admin has access to load-balancer resources that they own.
+# Users with the admin role has access to all load-balancer resources,
+# whether they own them or not.
+
+# Role Rules
+"context_is_admin": "role:admin or role:load-balancer_admin"
+"admin_or_owner": "is_admin:True or project_id:%(project_id)s"
+
+# Rules
+"load-balancer:read": "rule:admin_or_owner"
+"load-balancer:read-global": "is_admin:True"
+"load-balancer:write": "rule:admin_or_owner"
+"load-balancer:read-quota": "rule:admin_or_owner"
+"load-balancer:read-quota-global": "is_admin:True"
+"load-balancer:write-quota": "is_admin:True"

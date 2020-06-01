@@ -2,10 +2,10 @@
 Octavia Sample Policy Files
 ===========================
 
-The sample policy.json files described here can be copied into
-/etc/octavia/policy.json to override the default RBAC policy for Octavia.
+The sample policy.yaml files described here can be copied into
+/etc/octavia/policy.yaml to override the default RBAC policy for Octavia.
 
-admin_or_owner-policy.json
+admin_or_owner-policy.yaml
 --------------------------
 This policy file disables the requirement for load-balancer service users to
 have one of the load-balancer:* roles.  It provides a similar policy to

@@ -33,13 +33,13 @@ check_pot_files_errors () {
 }
 
 check_identical_policy_files () {
-    # For unit tests, we maintain their own policy.json file to make test suite
+    # For unit tests, we maintain their own policy.yaml file to make test suite
     # independent of whether it's executed from the octavia source tree or from
     # site-packages installation path. We don't want two copies of the same
     # file to diverge, so checking that they are identical
-    diff etc/policy.json octavia/tests/etc/policy.json 2>&1 > /dev/null
+    diff etc/policy.yaml octavia/tests/etc/policy.yaml 2>&1 > /dev/null
     if [ "$?" -ne 0 ]; then
-        echo "policy.json files must be identical!" >>$FAILURES
+        echo "policy.yaml files must be identical!" >>$FAILURES
     fi
 }
 
