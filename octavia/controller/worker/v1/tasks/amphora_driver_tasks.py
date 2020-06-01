@@ -339,7 +339,7 @@ class AmphoraComputeConnectivityWait(BaseAmphoraTask):
 
 
 class AmphoraConfigUpdate(BaseAmphoraTask):
-    """Task to push a new amphora agent configuration to the amphroa."""
+    """Task to push a new amphora agent configuration to the amphora."""
 
     def execute(self, amphora, flavor):
         # Extract any flavor based settings
@@ -353,7 +353,7 @@ class AmphoraConfigUpdate(BaseAmphoraTask):
         agent_cfg_tmpl = agent_jinja_cfg.AgentJinjaTemplater()
         agent_config = agent_cfg_tmpl.build_agent_config(amphora.id, topology)
 
-        # Push the new configuration to the amphroa
+        # Push the new configuration to the amphora
         try:
             self.amphora_driver.update_amphora_agent_config(amphora,
                                                             agent_config)
