@@ -67,6 +67,12 @@
         '/var/log/octavia-amphora.log': 'logs'
 
 - job:
+    name: octavia-grenade-ffu
+    parent: octavia-grenade
+    vars:
+      grenade_from_branch: stable/stein
+
+- job:
     name: octavia-v2-dsvm-scenario-amphora-v2
     parent: octavia-v2-dsvm-scenario
     vars:
