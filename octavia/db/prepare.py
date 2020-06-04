@@ -174,8 +174,12 @@ def create_pool(pool_dict, lb_id=None):
         prepped_members = []
         for member_dict in pool_dict.get('members'):
             prepped_members.append(create_member(member_dict, pool_dict['id']))
-    if pool_dict['tls_enabled'] is True and pool_dict['tls_ciphers'] is None:
-        pool_dict['tls_ciphers'] = CONF.api_settings.default_pool_ciphers
+    if pool_dict['tls_enabled'] is True:
+        if pool_dict['tls_ciphers'] is None:
+            pool_dict['tls_ciphers'] = CONF.api_settings.default_pool_ciphers
+        if pool_dict['tls_versions'] is None:
+            pool_dict['tls_versions'] = (
+                CONF.api_settings.default_pool_tls_versions)
     pool_dict[constants.PROVISIONING_STATUS] = constants.PENDING_CREATE
     pool_dict[constants.OPERATING_STATUS] = constants.OFFLINE
     return pool_dict

@@ -353,8 +353,11 @@ class JinjaTemplater(object):
         if (pool.tls_certificate_id and pool_tls_certs and
                 pool_tls_certs.get('client_cert')):
             ret_value['client_cert'] = pool_tls_certs.get('client_cert')
-        if pool.tls_enabled is True and pool.tls_ciphers is not None:
-            ret_value['tls_ciphers'] = pool.tls_ciphers
+        if pool.tls_enabled is True:
+            if pool.tls_ciphers is not None:
+                ret_value['tls_ciphers'] = pool.tls_ciphers
+            if pool.tls_versions is not None:
+                ret_value['tls_versions'] = pool.tls_versions
         if (pool.ca_tls_certificate_id and pool_tls_certs and
                 pool_tls_certs.get('ca_cert')):
             ret_value['ca_cert'] = pool_tls_certs.get('ca_cert')

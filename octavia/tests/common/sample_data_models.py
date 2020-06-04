@@ -248,7 +248,9 @@ class SampleDriverDataModels(object):
             constants.CA_TLS_CERTIFICATE_ID: self.pool_ca_container_ref,
             constants.CRL_CONTAINER_ID: self.pool_crl_container_ref,
             lib_consts.TLS_ENABLED: True,
-            lib_consts.TLS_CIPHERS: None}
+            lib_consts.TLS_CIPHERS: None,
+            lib_consts.TLS_VERSIONS: None
+        }
 
         self.test_pool1_dict.update(self._common_test_dict)
 
