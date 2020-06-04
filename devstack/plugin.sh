@@ -39,13 +39,7 @@ function octavia_lib_install {
 }
 
 function install_diskimage_builder {
-    if use_library_from_git "diskimage-builder"; then
-        GITREPO["diskimage-builder"]=$DISKIMAGE_BUILDER_REPO_URL
-        GITDIR["diskimage-builder"]=$DISKIMAGE_BUILDER_DIR
-        GITBRANCH["diskimage-builder"]=$DISKIMAGE_BUILDER_REPO_REF
-        git_clone_by_name "diskimage-builder"
-        setup_dev_lib -bindep "diskimage-builder"
-    fi
+    setup_dev_lib -bindep "diskimage-builder"
 }
 
 function set_octavia_worker_image_owner_id {
