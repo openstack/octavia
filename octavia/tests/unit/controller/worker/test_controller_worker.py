@@ -824,7 +824,8 @@ class TestControllerWorker(base.TestCase):
                                   mock_amp_repo_get):
 
         _flow_mock.reset_mock()
-
+        mock_member_repo_get.side_effect = [None, _member_mock,
+                                            _member_mock, _member_mock]
         cw = controller_worker.ControllerWorker()
         cw.batch_update_members([9], [11], [MEMBER_UPDATE_DICT])
 
@@ -837,6 +838,7 @@ class TestControllerWorker(base.TestCase):
                                         constants.POOL: _pool_mock}))
 
         _flow_mock.run.assert_called_once_with()
+        self.assertEqual(4, mock_member_repo_get.call_count)
 
     @mock.patch('octavia.controller.worker.flows.'
                 'pool_flows.PoolFlows.get_create_pool_flow',
