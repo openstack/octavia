@@ -115,7 +115,11 @@ api_opts = [
                       "new TLS-enabled pools.")),
     cfg.StrOpt('tls_cipher_blacklist', default='',
                help=_("Colon separated list of OpenSSL ciphers. "
-                      "Usage of these ciphers will be blocked."))
+                      "Usage of these ciphers will be blocked.")),
+    cfg.ListOpt('default_listener_tls_versions',
+                default=constants.TLS_VERSIONS_OWASP_SUITE_B,
+                help=_('List of TLS versions to use for new TLS-enabled '
+                       'listeners.'))
 ]
 
 # Options only used by the amphora agent

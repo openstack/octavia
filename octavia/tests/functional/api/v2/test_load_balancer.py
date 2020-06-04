@@ -2622,7 +2622,8 @@ class TestLoadBalancerGraph(base.BaseAPITest):
             'client_authentication': constants.CLIENT_AUTH_NONE,
             'client_crl_container_ref': None,
             'allowed_cidrs': None,
-            'tls_ciphers': None
+            'tls_ciphers': None,
+            'tls_versions': None
         }
         if create_sni_containers:
             create_listener['sni_container_refs'] = create_sni_containers
@@ -2670,6 +2671,8 @@ class TestLoadBalancerGraph(base.BaseAPITest):
             expected_listener['allowed_cidrs'] = expected_allowed_cidrs
         if create_protocol == constants.PROTOCOL_TERMINATED_HTTPS:
             expected_listener['tls_ciphers'] = constants.CIPHERS_OWASP_SUITE_B
+            expected_listener['tls_versions'] = (
+                constants.TLS_VERSIONS_OWASP_SUITE_B)
 
         return create_listener, expected_listener
 

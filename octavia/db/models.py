@@ -21,6 +21,7 @@ from sqlalchemy.ext import orderinglist
 from sqlalchemy import orm
 from sqlalchemy.orm import validates
 from sqlalchemy.sql import func
+from sqlalchemy_utils import ScalarListType
 
 from octavia.api.v2.types import amphora
 from octavia.api.v2.types import availability_zone_profile
@@ -522,6 +523,7 @@ class Listener(base_models.BASE, base_models.IdMixin,
         nullable=False, default=constants.CLIENT_AUTH_NONE)
     client_crl_container_id = sa.Column(sa.String(255), nullable=True)
     tls_ciphers = sa.Column(sa.String(2048), nullable=True)
+    tls_versions = sa.Column(ScalarListType(), nullable=True)
 
     _tags = orm.relationship(
         'Tags',

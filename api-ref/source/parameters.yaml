@@ -1567,6 +1567,22 @@ tls_enabled-optional:
   min_version: 2.8
   required: false
   type: boolean
+tls_versions:
+  description: |
+    A list of TLS protocol versions.
+    Available versions: SSLv3, TLSv1, TLSv1.1, TLSv1.2, TLSv1.3
+  in: body
+  min_version: 2.17
+  required: true
+  type: array
+tls_versions-optional:
+  description: |
+    A list of TLS protocol versions.
+    Available versions: SSLv3, TLSv1, TLSv1.1, TLSv1.2, TLSv1.3
+  in: body
+  min_version: 2.17
+  required: false
+  type: array
 total_connections:
   description: |
     The total connections handled.

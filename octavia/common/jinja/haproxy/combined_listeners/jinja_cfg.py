@@ -16,6 +16,7 @@ import os
 import re
 
 import jinja2
+from octavia_lib.common import constants as lib_consts
 
 from octavia.common.config import cfg
 from octavia.common import constants
@@ -167,7 +168,7 @@ class JinjaTemplater(object):
                  CONF.amphora_agent.administrative_log_facility,
              'user_log_facility': CONF.amphora_agent.user_log_facility,
              'connection_logging': self.connection_logging},
-            constants=constants)
+            constants=constants, lib_consts=lib_consts)
 
     def _transform_loadbalancer(self, host_amphora, loadbalancer, listeners,
                                 tls_certs, feature_compatibility):
@@ -282,9 +283,11 @@ class JinjaTemplater(object):
                     os.path.join(self.base_crt_dir, loadbalancer.id,
                                  tls_certs[listener.client_crl_container_id]))
 
-        if (listener.protocol == constants.PROTOCOL_TERMINATED_HTTPS and
-                listener.tls_ciphers is not None):
-            ret_value['tls_ciphers'] = listener.tls_ciphers
+        if listener.protocol == constants.PROTOCOL_TERMINATED_HTTPS:
+            if listener.tls_ciphers is not None:
+                ret_value['tls_ciphers'] = listener.tls_ciphers
+            if listener.tls_versions is not None:
+                ret_value['tls_versions'] = listener.tls_versions
 
         pools = []
         pool_gen = (pool for pool in listener.pools if

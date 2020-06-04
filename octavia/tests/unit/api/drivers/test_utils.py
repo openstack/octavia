@@ -127,8 +127,6 @@ class TestUtils(base.TestCase):
                         'provider': 'noop_driver'}
         ref_listeners = copy.deepcopy(self.sample_data.provider_listeners)
         # TODO(johnsom) Remove when versions implemented
-        for listener in ref_listeners:
-            delattr(listener, lib_constants.TLS_VERSIONS)
         expect_pools = copy.deepcopy(self.sample_data.provider_pools,)
         for pool in expect_pools:
             delattr(pool, lib_constants.TLS_VERSIONS)
@@ -204,9 +202,6 @@ class TestUtils(base.TestCase):
         provider_listeners = utils.db_listeners_to_provider_listeners(
             self.sample_data.test_db_listeners)
         ref_listeners = copy.deepcopy(self.sample_data.provider_listeners)
-        # TODO(johnsom) Remove when versions implemented
-        for listener in ref_listeners:
-            delattr(listener, lib_constants.TLS_VERSIONS)
         self.assertEqual(ref_listeners, provider_listeners)
 
     @mock.patch('oslo_context.context.RequestContext', return_value=None)
@@ -248,7 +243,6 @@ class TestUtils(base.TestCase):
         expect_pool_prov = copy.deepcopy(self.sample_data.provider_pool1_dict)
         # TODO(johnsom) Remove when versions and ciphers are implemented
         expect_pool_prov.pop(lib_constants.TLS_VERSIONS)
-        expect_prov.pop(lib_constants.TLS_VERSIONS)
         expect_prov['default_pool'] = expect_pool_prov
         provider_listener = utils.listener_dict_to_provider_dict(
             self.sample_data.test_listener1_dict)
@@ -284,7 +278,6 @@ class TestUtils(base.TestCase):
         del expect_pool_prov['tls_container_data']
         # TODO(johnsom) Remove when versions and ciphers are implemented
         expect_pool_prov.pop(lib_constants.TLS_VERSIONS)
-        expect_prov.pop(lib_constants.TLS_VERSIONS)
         expect_prov['default_pool'] = expect_pool_prov
         del expect_prov['default_tls_container_data']
         del expect_prov['sni_container_data']

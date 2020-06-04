@@ -1,0 +1,14 @@
+---
+features:
+  - |
+    HTTPS-terminated listeners can now be configured to use only specified
+    versions of TLS.  Default TLS versions for new listeners can be set with
+    ``default_listener_tls_versions`` in ``octavia.conf``.  Existing listeners
+    will continue to use the old defaults.
+upgrade:
+  - |
+    HTTPS-terminated listeners will now only allow TLS1.2 and TLS1.3 by
+    default. If no TLS versions are specified at listener create time, the
+    listener will only accept TLS1.2 and TLS1.3 connections. Previously TLS
+    listeners would accept any TLS version. Existing listeners will not be
+    changed.

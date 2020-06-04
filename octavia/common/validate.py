@@ -459,3 +459,15 @@ def check_default_ciphers_blacklist_conflict():
         raise exceptions.ValidationException(
             detail=_('Default pool ciphers conflict with blacklist. '
                      'Conflicting ciphers: ' + ', '.join(pool_rejected)))
+
+
+def check_tls_version_list(versions):
+    if versions == []:
+        raise exceptions.ValidationException(
+            detail=_('Empty TLS version list. Either specify at least one TLS '
+                     'version or remove this parameter to use the default.'))
+    invalid_versions = [v for v in versions
+                        if v not in constants.TLS_ALL_VERSIONS]
+    if invalid_versions:
+        raise exceptions.ValidationException(
+            detail=_('Invalid TLS versions: ' + ', '.join(invalid_versions)))
