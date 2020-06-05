@@ -46,7 +46,7 @@ if is_service_enabled nova; then
     openstack security group rule create --protocol icmp default
 
     # Boot some instances
-    NOVA_BOOT_ARGS="--key-name ${DEVSTACK_LBAAS_SSH_KEY_NAME} --image $(openstack image show cirros-0.3.5-x86_64-disk -f value -c id) --flavor 1 --nic net-id=$(openstack network show private -f value -c id)"
+    NOVA_BOOT_ARGS="--key-name ${DEVSTACK_LBAAS_SSH_KEY_NAME} --image $(openstack image show cirros-0.5.1-x86_64-disk -f value -c id) --flavor 1 --nic net-id=$(openstack network show private -f value -c id)"
 
     openstack server create ${NOVA_BOOT_ARGS} node1
     openstack server create ${NOVA_BOOT_ARGS} node2
