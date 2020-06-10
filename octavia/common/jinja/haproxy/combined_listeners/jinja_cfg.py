@@ -203,8 +203,8 @@ class JinjaTemplater(object):
             if listener.connection_limit and listener.connection_limit > -1:
                 connection_limit_sum += listener.connection_limit
             else:
-                # If *any* listener has no connection limit, global = MAX
-                connection_limit_sum = constants.HAPROXY_MAX_MAXCONN
+                connection_limit_sum += (
+                    CONF.haproxy_amphora.default_connection_limit)
         # If there's a limit between 0 and MAX, set it, otherwise just set MAX
         if 0 < connection_limit_sum < constants.HAPROXY_MAX_MAXCONN:
             ret_value['global_connection_limit'] = connection_limit_sum
@@ -262,7 +262,8 @@ class JinjaTemplater(object):
         if listener.connection_limit and listener.connection_limit > -1:
             ret_value['connection_limit'] = listener.connection_limit
         else:
-            ret_value['connection_limit'] = constants.HAPROXY_MAX_MAXCONN
+            ret_value['connection_limit'] = (
+                CONF.haproxy_amphora.default_connection_limit)
 
         if listener.tls_certificate_id:
             ret_value['crt_list_filename'] = os.path.join(

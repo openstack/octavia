@@ -636,6 +636,9 @@ NO_CHECK = 'no check'
 # NO_CHECK = no health monitor is enabled
 HAPROXY_MEMBER_STATUSES = (UP, DOWN, DRAIN, MAINT, NO_CHECK)
 
+# Default number of concurrent connections in a HAProxy listener.
+HAPROXY_DEFAULT_MAXCONN = 50000
+
 # Current maximum number of conccurent connections in HAProxy.
 # This is limited by the systemd "LimitNOFILE" and
 # the sysctl fs.file-max fs.nr_open settings in the image
