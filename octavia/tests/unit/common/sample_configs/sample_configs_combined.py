@@ -295,7 +295,7 @@ RET_LISTENER = {
     'protocol': 'HTTP',
     'protocol_mode': 'http',
     'default_pool': RET_POOL_1,
-    'connection_limit': constants.HAPROXY_MAX_MAXCONN,
+    'connection_limit': constants.HAPROXY_DEFAULT_MAXCONN,
     'user_log_format': '12345\\ sample_loadbalancer_id_1\\ %f\\ %ci\\ %cp\\ '
                        '%t\\ %{+Q}r\\ %ST\\ %B\\ %U\\ %[ssl_c_verify]\\ '
                        '%{+Q}[ssl_c_s_dn]\\ %b\\ %s\\ %Tt\\ %tsc',
@@ -315,7 +315,7 @@ RET_LISTENER_L7 = {
     'protocol': 'HTTP',
     'protocol_mode': 'http',
     'default_pool': RET_POOL_1,
-    'connection_limit': constants.HAPROXY_MAX_MAXCONN,
+    'connection_limit': constants.HAPROXY_DEFAULT_MAXCONN,
     'user_log_format': '12345\\ sample_loadbalancer_id_1\\ %f\\ %ci\\ %cp\\ '
                        '%t\\ %{+Q}r\\ %ST\\ %B\\ %U\\ %[ssl_c_verify]\\ '
                        '%{+Q}[ssl_c_s_dn]\\ %b\\ %s\\ %Tt\\ %tsc',
@@ -337,7 +337,7 @@ RET_LISTENER_TLS = {
     'protocol': 'TERMINATED_HTTPS',
     'protocol_mode': 'http',
     'default_pool': RET_POOL_1,
-    'connection_limit': constants.HAPROXY_MAX_MAXCONN,
+    'connection_limit': constants.HAPROXY_DEFAULT_MAXCONN,
     'tls_certificate_id': 'cont_id_1',
     'default_tls_path': '/etc/ssl/sample_loadbalancer_id_1/fakeCN.pem',
     'default_tls_container': RET_DEF_TLS_CONT,
@@ -352,7 +352,7 @@ RET_LISTENER_TLS_SNI = {
     'protocol': 'http',
     'protocol': 'TERMINATED_HTTPS',
     'default_pool': RET_POOL_1,
-    'connection_limit': constants.HAPROXY_MAX_MAXCONN,
+    'connection_limit': constants.HAPROXY_DEFAULT_MAXCONN,
     'tls_certificate_id': 'cont_id_1',
     'default_tls_path': '/etc/ssl/sample_loadbalancer_id_1/fakeCN.pem',
     'default_tls_container': RET_DEF_TLS_CONT,
@@ -384,7 +384,7 @@ RET_LB = {
     'peer_port': 1024,
     'topology': 'SINGLE',
     'enabled': True,
-    'global_connection_limit': constants.HAPROXY_MAX_MAXCONN,
+    'global_connection_limit': constants.HAPROXY_DEFAULT_MAXCONN,
     'amphorae': [sample_amphora_tuple()]}
 
 RET_LB_L7 = {
@@ -395,7 +395,7 @@ RET_LB_L7 = {
     'peer_port': 1024,
     'topology': 'SINGLE',
     'enabled': True,
-    'global_connection_limit': constants.HAPROXY_MAX_MAXCONN,
+    'global_connection_limit': constants.HAPROXY_DEFAULT_MAXCONN,
     'amphorae': [sample_amphora_tuple()]}
 
 UDP_SOURCE_IP_BODY = {
@@ -590,7 +590,8 @@ def sample_listener_tuple(proto=None, monitor=True, alloc_default_pool=True,
                           l7=False, enabled=True, insert_headers=None,
                           be_proto=None, monitor_ip_port=False,
                           monitor_proto=None, backup_member=False,
-                          disabled_member=False, connection_limit=-1,
+                          disabled_member=False,
+                          connection_limit=constants.DEFAULT_CONNECTION_LIMIT,
                           timeout_client_data=50000,
                           timeout_member_connect=5000,
                           timeout_member_data=50000,
@@ -1047,7 +1048,7 @@ def sample_base_expected_config(frontend=None, logging=None, backend=None,
                     "    default_backend sample_pool_id_1:sample_listener_id_1"
                     "\n"
                     "    timeout client 50000\n").format(
-            maxconn=constants.HAPROXY_MAX_MAXCONN)
+            maxconn=constants.HAPROXY_DEFAULT_MAXCONN)
     if logging is None:
         logging = ("    log-format 12345\\ sample_loadbalancer_id_1\\ %f\\ "
                    "%ci\\ %cp\\ %t\\ %{+Q}r\\ %ST\\ %B\\ %U\\ "
@@ -1069,13 +1070,13 @@ def sample_base_expected_config(frontend=None, logging=None, backend=None,
                    "check inter 30s fall 3 rise 2 cookie sample_member_id_1\n"
                    "    server sample_member_id_2 10.0.0.98:82 weight 13 "
                    "check inter 30s fall 3 rise 2 cookie sample_member_id_2\n"
-                   "\n").format(maxconn=constants.HAPROXY_MAX_MAXCONN)
+                   "\n").format(maxconn=constants.HAPROXY_DEFAULT_MAXCONN)
 
     if peers is None:
         peers = "\n\n"
     if global_opts is None:
         global_opts = "    maxconn {maxconn}\n\n".format(
-            maxconn=constants.HAPROXY_MAX_MAXCONN)
+            maxconn=constants.HAPROXY_DEFAULT_MAXCONN)
     if defaults is None:
         defaults = ("defaults\n"
                     "    log global\n"

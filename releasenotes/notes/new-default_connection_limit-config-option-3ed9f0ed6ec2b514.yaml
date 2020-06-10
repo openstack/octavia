@@ -1,0 +1,18 @@
+---
+features:
+  - |
+    Add a new configuration option to define the default connection_limit for
+    new listeners that use the Amphora provider. The option is
+    [haproxy_amphora].default_connection_limit and its default value is 50,000.
+    This value is used when creating or setting a listener with -1 as
+    connection_limit parameter, or when unsetting connection_limit parameter.
+fixes:
+  - |
+    With haproxy 1.8.x releases, haproxy consumes much more memory in the
+    amphorae because of pre-allocated data structures. This amount of memory
+    depends on the maxconn parameters in its configuration file (which is
+    related to the connection_limit parameter in the Octavia API).
+    In the Amphora provider, the default connection_limit value -1 is
+    now converted to a maxconn of 50,000. It was previously 1,000,000 but that
+    value triggered some memory allocation issues when quickly performing
+    multiple configuration updates in a load balancer.

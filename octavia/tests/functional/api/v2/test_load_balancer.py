@@ -2580,7 +2580,7 @@ class TestLoadBalancerGraph(base.BaseAPITest):
             'description': '',
             'default_tls_container_ref': None,
             'sni_container_refs': [],
-            'connection_limit': -1,
+            'connection_limit': constants.DEFAULT_CONNECTION_LIMIT,
             'admin_state_up': True,
             'provisioning_status': constants.PENDING_CREATE,
             'operating_status': constants.OFFLINE,
