@@ -49,7 +49,7 @@ class HAProxyCompatTestCase(base.TestCase):
             "%ci\\ %cp\\ %t\\ %{{+Q}}r\\ %ST\\ %B\\ %U\\ "
             "%[ssl_c_verify]\\ %{{+Q}}[ssl_c_s_dn]\\ %b\\ %s\\ %Tt\\ "
             "%tsc\n\n").format(
-            maxconn=constants.HAPROXY_MAX_MAXCONN)
+            maxconn=constants.HAPROXY_DEFAULT_MAXCONN)
         self.backend_without_external = (
             "backend sample_pool_id_1:sample_listener_id_1\n"
             "    mode http\n"
@@ -67,7 +67,7 @@ class HAProxyCompatTestCase(base.TestCase):
             "    server sample_member_id_2 10.0.0.98:82 weight 13 "
             "check inter 30s fall 3 rise 2 cookie "
             "sample_member_id_2\n").format(
-            maxconn=constants.HAPROXY_MAX_MAXCONN)
+            maxconn=constants.HAPROXY_DEFAULT_MAXCONN)
         self.backend_with_external = (
             "backend sample_pool_id_1:sample_listener_id_1\n"
             "    mode http\n"
@@ -87,7 +87,7 @@ class HAProxyCompatTestCase(base.TestCase):
             "    server sample_member_id_2 10.0.0.98:82 weight 13 "
             "check inter 30s fall 3 rise 2 cookie "
             "sample_member_id_2\n").format(
-            maxconn=constants.HAPROXY_MAX_MAXCONN)
+            maxconn=constants.HAPROXY_DEFAULT_MAXCONN)
 
     @mock.patch('subprocess.check_output')
     def test_get_haproxy_versions(self, mock_process):
