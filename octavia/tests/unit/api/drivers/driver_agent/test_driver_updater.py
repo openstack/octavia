@@ -13,13 +13,13 @@
 #    under the License.
 import copy
 from unittest import mock
+from unittest.mock import call
 
-from mock import call
+from octavia_lib.api.drivers import exceptions as driver_exceptions
+from octavia_lib.common import constants as lib_consts
 
 from octavia.api.drivers.driver_agent import driver_updater
 import octavia.tests.unit.base as base
-from octavia_lib.api.drivers import exceptions as driver_exceptions
-from octavia_lib.common import constants as lib_consts
 
 
 class TestDriverUpdater(base.TestCase):

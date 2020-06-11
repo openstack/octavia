@@ -66,6 +66,8 @@ untranslated_exception_re = re.compile(r"raise (?:\w*)\((.*)\)")
 no_eventlet_re = re.compile(r'(import|from)\s+[(]?eventlet')
 no_line_continuation_backslash_re = re.compile(r'.*(\\)\n')
 no_logging_re = re.compile(r'(import|from)\s+[(]?logging')
+import_mock_re = re.compile(r"\bimport[\s]+mock\b")
+import_from_mock_re = re.compile(r"\bfrom[\s]+mock[\s]+import\b")
 
 
 def _translation_checks_not_enforced(filename):
@@ -258,3 +260,18 @@ def check_no_logging_imports(logical_line):
     if no_logging_re.match(logical_line):
         msg = 'O348 Usage of Python logging module not allowed, use oslo_log'
         yield logical_line.index('logging'), msg
+
+
+@core.flake8ext
+def check_no_import_mock(logical_line):
+    """O349 - Test code must not import mock library.
+
+    :param logical_line: The logical line to check.
+    :returns: None if the logical line passes the check, otherwise a tuple
+              is yielded that contains the offending index in logical line
+              and a message describe the check validation failure.
+    """
+    if (import_mock_re.match(logical_line) or
+            import_from_mock_re.match(logical_line)):
+        msg = 'O349 Test code must not import mock library, use unittest.mock'
+        yield 0, msg
