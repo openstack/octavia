@@ -118,9 +118,10 @@ class TestUpdateHealthDb(base.TestCase):
     def _make_fake_lb_health_dict(self, listener=True, pool=True,
                                   health_monitor=True, members=1,
                                   lb_prov_status=constants.ACTIVE,
-                                  listener_protocol=constants.PROTOCOL_TCP):
+                                  listener_protocol=constants.PROTOCOL_TCP,
+                                  enabled=True):
 
-        lb_ref = {'enabled': True, 'id': self.FAKE_UUID_1,
+        lb_ref = {'enabled': enabled, 'id': self.FAKE_UUID_1,
                   constants.OPERATING_STATUS: 'bogus',
                   constants.PROVISIONING_STATUS: lb_prov_status}
 
@@ -193,6 +194,23 @@ class TestUpdateHealthDb(base.TestCase):
         lb_ref = self._make_fake_lb_health_dict(listener=False, pool=False)
         self.hm.amphora_repo.get_lb_for_health_update.return_value = lb_ref
 
+        self.hm.update_health(health, '192.0.2.1')
+        self.assertTrue(self.amphora_repo.get_lb_for_health_update.called)
+        self.assertTrue(self.loadbalancer_repo.update.called)
+        self.assertTrue(self.amphora_health_repo.replace.called)
+
+    def test_update_health_lb_disabled(self):
+
+        health = {
+            "id": self.FAKE_UUID_1,
+            "ver": 1,
+            "listeners": {},
+            "recv_time": time.time()
+        }
+
+        lb_ref = self._make_fake_lb_health_dict(
+            listener=True, pool=True, enabled=False)
+        self.hm.amphora_repo.get_lb_for_health_update.return_value = lb_ref
         self.hm.update_health(health, '192.0.2.1')
         self.assertTrue(self.amphora_repo.get_lb_for_health_update.called)
         self.assertTrue(self.loadbalancer_repo.update.called)
