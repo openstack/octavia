@@ -190,7 +190,7 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
         pool_dm = self.repos.create_pool_on_load_balancer(
             self.session, pool, listener_id=self.listener.id)
         pool_dm_dict = pool_dm.to_dict()
-        # These are not defiend in the sample pool dict but will
+        # These are not defined in the sample pool dict but will
         # be in the live data.
         del pool_dm_dict['members']
         del pool_dm_dict['health_monitor']
@@ -230,7 +230,7 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
         pool_dm = self.repos.create_pool_on_load_balancer(
             self.session, pool, listener_id=self.listener.id)
         pool_dm_dict = pool_dm.to_dict()
-        # These are not defiend in the sample pool dict but will
+        # These are not defined in the sample pool dict but will
         # be in the live data.
         del pool_dm_dict['members']
         del pool_dm_dict['health_monitor']
@@ -272,7 +272,7 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
         new_pool_dm = self.repos.update_pool_and_sp(
             self.session, pool_dm.id, update_pool)
         pool_dm_dict = new_pool_dm.to_dict()
-        # These are not defiend in the sample pool dict but will
+        # These are not defined in the sample pool dict but will
         # be in the live data.
         del pool_dm_dict['members']
         del pool_dm_dict['health_monitor']
@@ -316,7 +316,7 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
         new_pool_dm = self.repos.update_pool_and_sp(
             self.session, pool_dm.id, update_pool)
         pool_dm_dict = new_pool_dm.to_dict()
-        # These are not defiend in the sample pool dict but will
+        # These are not defined in the sample pool dict but will
         # be in the live data.
         del pool_dm_dict['members']
         del pool_dm_dict['health_monitor']
@@ -413,7 +413,7 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
         new_pool_dm = self.repos.update_pool_and_sp(
             self.session, pool_dm.id, update_pool)
         pool_dm_dict = new_pool_dm.to_dict()
-        # These are not defiend in the sample pool dict but will
+        # These are not defined in the sample pool dict but will
         # be in the live data.
         del pool_dm_dict['members']
         del pool_dm_dict['health_monitor']
