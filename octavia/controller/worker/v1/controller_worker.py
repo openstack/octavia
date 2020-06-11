@@ -483,12 +483,23 @@ class ControllerWorker(base_taskflow.BaseTaskFlowEngine):
                                                log=LOG):
             delete_member_tf.run()
 
+    @tenacity.retry(
+        retry=tenacity.retry_if_exception_type(db_exceptions.NoResultFound),
+        wait=tenacity.wait_incrementing(
+            RETRY_INITIAL_DELAY, RETRY_BACKOFF, RETRY_MAX),
+        stop=tenacity.stop_after_attempt(RETRY_ATTEMPTS))
     def batch_update_members(self, old_member_ids, new_member_ids,
                              updated_members):
-        old_members = [self._member_repo.get(db_apis.get_session(), id=mid)
-                       for mid in old_member_ids]
         new_members = [self._member_repo.get(db_apis.get_session(), id=mid)
                        for mid in new_member_ids]
+        # The API may not have commited all of the new member records yet.
+        # Make sure we retry looking them up.
+        if None in new_members or len(new_members) != len(new_member_ids):
+            LOG.warning('Failed to fetch one of the new members from DB. '
+                        'Retrying for up to 60 seconds.')
+            raise db_exceptions.NoResultFound
+        old_members = [self._member_repo.get(db_apis.get_session(), id=mid)
+                       for mid in old_member_ids]
         updated_members = [
             (self._member_repo.get(db_apis.get_session(), id=m.get('id')), m)
             for m in updated_members]
