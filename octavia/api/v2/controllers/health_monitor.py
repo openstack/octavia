@@ -13,6 +13,7 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+from octavia_lib.api.drivers import data_models as driver_dm
 from oslo_config import cfg
 from oslo_db import exception as odb_exceptions
 from oslo_log import log as logging
@@ -21,7 +22,6 @@ from pecan import request as pecan_request
 from wsme import types as wtypes
 from wsmeext import pecan as wsme_pecan
 
-from octavia.api.drivers import data_models as driver_dm
 from octavia.api.drivers import driver_factory
 from octavia.api.drivers import utils as driver_utils
 from octavia.api.v2.controllers import base
