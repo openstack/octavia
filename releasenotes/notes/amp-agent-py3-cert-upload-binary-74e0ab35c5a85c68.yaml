@@ -1,0 +1,11 @@
+---
+upgrade:
+  - |
+    Any amphorae running a py3 based image must be recycled or else they will
+    eventually fail on certificate rotation.
+fixes:
+  - |
+    Resolved broken certificate upload on py3 based amphora images. On a
+    housekeeping certificate rotation event, the amphora would clear out its
+    server certificate and return a 500, putting the amphora in ERROR status
+    and breaking further communication. See upgrade notes.
