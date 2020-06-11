@@ -36,19 +36,22 @@ the load-balancer API:
     It is equivalent to 'rule:context_is_admin or {auth_strategy == noauth}'
     if that would be valid syntax.
 
+Legacy Admin or Owner Policy
+----------------------------
+
 An alternate policy file has been provided in octavia/etc/policy called
-admin_or_owner-policy.json that removes the load-balancer RBAC role
+admin_or_owner-policy.yaml that removes the load-balancer RBAC role
 requirement. Please see the README.rst in that directory for more information.
 
 Sample File Generation
 ----------------------
 
-To generate a sample policy.json file from the Octavia defaults, run the
+To generate a sample policy.yaml file from the Octavia defaults, run the
 oslo policy generation script::
 
     oslopolicy-sample-generator
     --config-file etc/policy/octavia-policy-generator.conf
-    --output-file policy.json.sample
+    --output-file policy.yaml.sample
 
 Merged File Generation
 ----------------------
