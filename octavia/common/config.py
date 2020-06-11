@@ -148,6 +148,12 @@ networking_opts = [
                 help=_('List of IP addresses reserved from being used for '
                        'member addresses. IPv6 addresses should be in '
                        'expanded, uppercase form.')),
+    cfg.BoolOpt('allow_invisible_resource_usage', default=False,
+                help=_("When True, users can use network resources they "
+                       "cannot normally see as VIP or member subnets. Making "
+                       "this True may allow users to access resources on "
+                       "subnets they do not normally have access to via "
+                       "neutron RBAC policies.")),
 ]
 
 healthmanager_opts = [
