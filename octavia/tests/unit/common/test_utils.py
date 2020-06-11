@@ -89,3 +89,18 @@ class TestConfig(base.TestCase):
         exp_codes = '201-200, 205'
         self.assertEqual(utils.expand_expected_codes(exp_codes),
                          {'205'})
+
+    def test_base64_sha1_string(self):
+        str_to_sha1 = [
+            # no special cases str (no altchars)
+            ('77e7d60d-e137-4246-8a84-a25db33571cd',
+             'iVZVQ5AKmk2Ae0uGLP0Ue4OseRM='),
+            # backward compat amphorae with - in str[1:]
+            ('9c6e5f27-a0da-4ceb-afe5-5a81230be42e',
+             'NjrNgt3Egl-H5ScbYM5ChtUH3M8='),
+            # sha1 would start with -, now replaced with x
+            ('4db4a3cf-9fef-4057-b1fd-b2afbf7a8a0f',
+             'xxqntK8jJ_gE3QEmh-D1-XgCW_E=')
+        ]
+        for str, sha1 in str_to_sha1:
+            self.assertEqual(sha1, utils.base64_sha1_string(str))

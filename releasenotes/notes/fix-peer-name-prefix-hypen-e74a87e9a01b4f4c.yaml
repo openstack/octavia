@@ -1,0 +1,10 @@
+---
+upgrade:
+  - |
+    An amphora image update is recommended to pick up a workaround to an
+    HAProxy issue where it would fail to reload on configuration change should
+    the local peer name start with "-x".
+fixes:
+  - |
+    Workaround an HAProxy issue where it would fail to reload on configuration
+    change should the local peer name start with "-x".
