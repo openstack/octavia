@@ -148,9 +148,6 @@ class HaproxyAmphoraLoadBalancerDriver(
 
         has_tcp = False
         certs = {}
-        client_ca_filename = None
-        crl_filename = None
-        pool_tls_certs = dict()
         listeners_to_update = []
         for listener in loadbalancer.listeners:
             LOG.debug("%s updating listener %s on amphora %s",
@@ -174,22 +171,28 @@ class HaproxyAmphoraLoadBalancerDriver(
                         listener.tls_certificate_id:
                         self._process_tls_certificates(
                             listener, amphora, obj_id)['tls_cert']})
-                    client_ca_filename = self._process_secret(
-                        listener, listener.client_ca_tls_certificate_id,
-                        amphora, obj_id)
-                    crl_filename = self._process_secret(
-                        listener, listener.client_crl_container_id,
-                        amphora, obj_id)
-                    pool_tls_certs = self._process_listener_pool_certs(
-                        listener, amphora, obj_id)
+                    certs.update({listener.client_ca_tls_certificate_id:
+                                  self._process_secret(
+                                      listener,
+                                      listener.client_ca_tls_certificate_id,
+                                      amphora, obj_id)})
+                    certs.update({listener.client_crl_container_id:
+                                  self._process_secret(
+                                      listener,
+                                      listener.client_crl_container_id,
+                                      amphora, obj_id)})
+
+                    certs.update(self._process_listener_pool_certs(
+                        listener, amphora, obj_id))
 
                     if split_config:
                         config = self.jinja_split.build_config(
                             host_amphora=amphora, listener=listener,
                             haproxy_versions=haproxy_versions,
-                            client_ca_filename=client_ca_filename,
-                            client_crl=crl_filename,
-                            pool_tls_certs=pool_tls_certs)
+                            client_ca_filename=certs[
+                                listener.client_ca_tls_certificate_id],
+                            client_crl=certs[listener.client_crl_container_id],
+                            pool_tls_certs=certs)
                         self.clients[amphora.api_version].upload_config(
                             amphora, listener.id, config,
                             timeout_dict=timeout_dict)
@@ -211,10 +214,8 @@ class HaproxyAmphoraLoadBalancerDriver(
                 # Generate HaProxy configuration from listener object
                 config = self.jinja_combo.build_config(
                     host_amphora=amphora, listeners=listeners_to_update,
-                    haproxy_versions=haproxy_versions,
-                    client_ca_filename=client_ca_filename,
-                    client_crl=crl_filename,
-                    pool_tls_certs=pool_tls_certs)
+                    tls_certs=certs,
+                    haproxy_versions=haproxy_versions)
                 self.clients[amphora.api_version].upload_config(
                     amphora, loadbalancer.id, config,
                     timeout_dict=timeout_dict)

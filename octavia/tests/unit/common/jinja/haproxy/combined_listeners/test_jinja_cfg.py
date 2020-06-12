@@ -76,12 +76,19 @@ class TestHaproxyCfg(base.TestCase):
               "weight 13 check inter 30s fall 3 rise 2 cookie "
               "sample_member_id_2\n\n").format(
             maxconn=constants.HAPROXY_MAX_MAXCONN)
+        tls_tupe = {'cont_id_1':
+                    sample_configs_combined.sample_tls_container_tuple(
+                        id='tls_container_id',
+                        certificate='imaCert1', private_key='imaPrivateKey1',
+                        primary_cn='FakeCN'),
+                    'cont_id_ca': 'client_ca.pem',
+                    'cont_id_crl': 'SHA_ID.pem'}
         rendered_obj = self.jinja_cfg.render_loadbalancer_obj(
             sample_configs_combined.sample_amphora_tuple(),
             [sample_configs_combined.sample_listener_tuple(
                 proto='TERMINATED_HTTPS', tls=True, sni=True,
                 client_ca_cert=True, client_crl_cert=True)],
-            client_ca_filename='client_ca.pem', client_crl='SHA_ID.pem')
+            tls_tupe)
         self.assertEqual(
             sample_configs_combined.sample_base_expected_config(
                 frontend=fe, backend=be),
@@ -124,7 +131,13 @@ class TestHaproxyCfg(base.TestCase):
         rendered_obj = self.jinja_cfg.render_loadbalancer_obj(
             sample_configs_combined.sample_amphora_tuple(),
             [sample_configs_combined.sample_listener_tuple(
-                proto='TERMINATED_HTTPS', tls=True)])
+                proto='TERMINATED_HTTPS', tls=True)],
+            tls_certs={'cont_id_1':
+                       sample_configs_combined.sample_tls_container_tuple(
+                           id='tls_container_id',
+                           certificate='ImAalsdkfjCert',
+                           private_key='ImAsdlfksdjPrivateKey',
+                           primary_cn="FakeCN")})
         self.assertEqual(
             sample_configs_combined.sample_base_expected_config(
                 frontend=fe, backend=be),
@@ -812,7 +825,7 @@ class TestHaproxyCfg(base.TestCase):
             sample_configs_combined.sample_amphora_tuple(),
             [sample_configs_combined.sample_listener_tuple(
                 pool_cert=True, tls_enabled=True)],
-            pool_tls_certs={
+            tls_certs={
                 'sample_pool_id_1':
                     {'client_cert': cert_file_path,
                      'ca_cert': None, 'crl': None}})
@@ -852,7 +865,7 @@ class TestHaproxyCfg(base.TestCase):
             [sample_configs_combined.sample_listener_tuple(
                 pool_cert=True, pool_ca_cert=True, pool_crl=True,
                 tls_enabled=True)],
-            pool_tls_certs={
+            tls_certs={
                 'sample_pool_id_1':
                     {'client_cert': pool_client_cert,
                      'ca_cert': pool_ca_cert,
@@ -909,13 +922,13 @@ class TestHaproxyCfg(base.TestCase):
 
     def test_transform_listener(self):
         in_listener = sample_configs_combined.sample_listener_tuple()
-        ret = self.jinja_cfg._transform_listener(in_listener, {},
+        ret = self.jinja_cfg._transform_listener(in_listener, None, {},
                                                  in_listener.load_balancer)
         self.assertEqual(sample_configs_combined.RET_LISTENER, ret)
 
     def test_transform_listener_with_l7(self):
         in_listener = sample_configs_combined.sample_listener_tuple(l7=True)
-        ret = self.jinja_cfg._transform_listener(in_listener, {},
+        ret = self.jinja_cfg._transform_listener(in_listener, None, {},
                                                  in_listener.load_balancer)
         self.assertEqual(sample_configs_combined.RET_LISTENER_L7, ret)
 
@@ -923,7 +936,7 @@ class TestHaproxyCfg(base.TestCase):
         in_amphora = sample_configs_combined.sample_amphora_tuple()
         in_listener = sample_configs_combined.sample_listener_tuple()
         ret = self.jinja_cfg._transform_loadbalancer(
-            in_amphora, in_listener.load_balancer, [in_listener], {})
+            in_amphora, in_listener.load_balancer, [in_listener], None, {})
         self.assertEqual(sample_configs_combined.RET_LB, ret)
 
     def test_transform_amphora(self):
@@ -935,7 +948,7 @@ class TestHaproxyCfg(base.TestCase):
         in_amphora = sample_configs_combined.sample_amphora_tuple()
         in_listener = sample_configs_combined.sample_listener_tuple(l7=True)
         ret = self.jinja_cfg._transform_loadbalancer(
-            in_amphora, in_listener.load_balancer, [in_listener], {})
+            in_amphora, in_listener.load_balancer, [in_listener], None, {})
         self.assertEqual(sample_configs_combined.RET_LB_L7, ret)
 
     def test_transform_l7policy(self):
@@ -1053,6 +1066,7 @@ class TestHaproxyCfg(base.TestCase):
         rendered_obj = j_cfg.build_config(
             sample_amphora,
             [sample_proxy_listener],
+            tls_certs=None,
             haproxy_versions=("1", "8", "1"))
         self.assertEqual(
             sample_configs_combined.sample_base_expected_config(backend=be),
@@ -1080,6 +1094,7 @@ class TestHaproxyCfg(base.TestCase):
         rendered_obj = j_cfg.build_config(
             sample_amphora,
             [sample_proxy_listener],
+            tls_certs=None,
             haproxy_versions=("1", "5", "18"))
         self.assertEqual(
             sample_configs_combined.sample_base_expected_config(backend=be),
@@ -1162,6 +1177,7 @@ class TestHaproxyCfg(base.TestCase):
         rendered_obj = j_cfg.build_config(
             sample_configs_combined.sample_amphora_tuple(),
             [sample_listener],
+            tls_certs=None,
             haproxy_versions=("1", "5", "18"))
         self.assertEqual(
             sample_configs_combined.sample_base_expected_config(
