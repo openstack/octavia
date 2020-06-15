@@ -654,7 +654,7 @@ function octavia_cleanup {
     fi
     if [ $OCTAVIA_NODE == 'main' ] || [ $OCTAVIA_NODE == 'standalone' ] ; then
         if [ ${OCTAVIA_AMP_SSH_KEY_NAME}x != x ] ; then
-            openstack keypair delete ${OCTAVIA_AMP_SSH_KEY_NAME}
+            openstack keypair delete ${OCTAVIA_AMP_SSH_KEY_NAME} || true
         fi
     fi
     if [[ "$OCTAVIA_USE_MOD_WSGI" == "True" ]]; then
