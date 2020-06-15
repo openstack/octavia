@@ -76,7 +76,7 @@ class ZookeeperTaskFlowDriver(JobboardTaskFlowDriver):
         }
         jobboard_backend_conf.update(
             CONF.task_flow.jobboard_zookeeper_ssl_options)
-        return job_backends.backend(CONF.task_flow.jobboard_name,
+        return job_backends.backend(CONF.task_flow.jobboard_backend_namespace,
                                     jobboard_backend_conf,
                                     persistence=persistence)
 
