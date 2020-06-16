@@ -56,7 +56,7 @@ Existing data model:
                 communication between peers happens
     * ha_ip - this is the highly available IP.  In an active/passive topology
               it most likely exists on the MASTER amphora and on failure
-              it will be raised on the SLAVE amphora.  In an active/active
+              it will be raised on the BACKUP amphora.  In an active/active
               topology it may exist on both amphorae.  In the end, it is up
               to the amphora driver to decide how to use this.
 
