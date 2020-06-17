@@ -185,7 +185,7 @@ function _cleanup_octavia_apache_wsgi {
 
 function _start_octavia_apache_wsgi {
     if [[ "$WSGI_MODE" == "uwsgi" ]]; then
-        run_process o-api "$OCTAVIA_BIN_DIR/uwsgi --ini $OCTAVIA_UWSGI_CONF"
+        run_process o-api "$(which uwsgi) --ini $OCTAVIA_UWSGI_CONF"
         enable_apache_site octavia-wsgi
     else
         enable_apache_site octavia
