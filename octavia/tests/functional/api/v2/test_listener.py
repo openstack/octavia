@@ -589,7 +589,7 @@ class TestListener(base.BaseAPITest):
         lb_listener.update(extra_expects)
         self.assertTrue(uuidutils.is_uuid_like(listener_api.get('id')))
         for key, value in optionals.items():
-            self.assertEqual(value, lb_listener.get(key))
+            self.assertEqual(value, listener_api.get(key))
         lb_listener['id'] = listener_api.get('id')
         lb_listener.pop('sni_container_refs')
         sni_ex = [sni1, sni2]
@@ -930,7 +930,7 @@ class TestListener(base.BaseAPITest):
         lb_listener.update(extra_expects)
         self.assertTrue(uuidutils.is_uuid_like(listener_api.get('id')))
         for key, value in optionals.items():
-            self.assertEqual(value, lb_listener.get(key))
+            self.assertEqual(value, listener_api.get(key))
         lb_listener['id'] = listener_api.get('id')
         self.assertIsNotNone(listener_api.pop('created_at'))
         self.assertIsNone(listener_api.pop('updated_at'))
