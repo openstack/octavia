@@ -19,7 +19,7 @@ set -e
 
 usage() {
     echo
-    echo "Usage: $(basename $0)"
+    echo "Usage: $(basename "$0")"
     echo "            [-a i386 | **amd64** | armhf | ppc64le]"
     echo "            [-b **haproxy** ]"
     echo "            [-c **~/.cache/image-create** | <cache directory> ]"
@@ -67,7 +67,7 @@ usage() {
 
 version() {
     echo "Amphora disk image creation script version:"\
-        "`cat $OCTAVIA_REPO_PATH/diskimage-create/version.txt`"
+        "$(cat "${OCTAVIA_REPO_PATH}/diskimage-create/version.txt")"
     exit 1
 }
 
@@ -75,15 +75,15 @@ find_system_elements() {
     # List of possible system installation directories
     local system_prefixes="/usr/share /usr/local/share"
     for prefix in $system_prefixes; do
-        if [ -d $prefix/$1 ]; then
-            echo $prefix/$1
+        if [ -d "$prefix/$1" ]; then
+            echo "$prefix/$1"
             return
         fi
     done
 }
 
 # Figure out where our directory is located
-if [ -z $OCTAVIA_REPO_PATH ]; then
+if [ -z "$OCTAVIA_REPO_PATH" ]; then
     AMP_DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
     OCTAVIA_REPO_PATH=${OCTAVIA_REPO_PATH:-${AMP_DIR%/*}}
 fi
@@ -95,19 +95,19 @@ while getopts "a:b:c:d:efg:hi:k:l:no:pt:r:s:vw:x" opt; do
     case $opt in
         a)
             AMP_ARCH=$OPTARG
-            if [ $AMP_ARCH != "i386" ] && \
-                [ $AMP_ARCH != "amd64" ] && \
-                [ $AMP_ARCH != "ppc64le" ] && \
-                [ $AMP_ARCH != "armhf" ]; then
-                echo "Error: Unsupported architecture " $AMP_ARCH " specified"
+            if [ "$AMP_ARCH" != "i386" ] && \
+                [ "$AMP_ARCH" != "amd64" ] && \
+                [ "$AMP_ARCH" != "ppc64le" ] && \
+                [ "$AMP_ARCH" != "armhf" ]; then
+                echo "Error: Unsupported architecture $AMP_ARCH specified"
                 exit 3
             fi
         ;;
         b)
-            if [ $OPTARG == "haproxy" ]; then
+            if [ "$OPTARG" == "haproxy" ]; then
                 AMP_BACKEND=$OPTARG-octavia
             else
-                echo "Error: Unsupported backend type " $AMP_BACKEND " specified"
+                echo "Error: Unsupported backend type $AMP_BACKEND specified"
                 exit 3
             fi
         ;;
@@ -142,19 +142,19 @@ while getopts "a:b:c:d:efg:hi:k:l:no:pt:r:s:vw:x" opt; do
         ;;
         i)
             AMP_BASEOS=$OPTARG
-            if [ $AMP_BASEOS != "ubuntu" ] && \
-                [ $AMP_BASEOS != "ubuntu-minimal" ] && \
-                [ $AMP_BASEOS != "fedora" ] && \
-                [ $AMP_BASEOS != "centos" ] && \
-                [ $AMP_BASEOS != "centos-minimal" ] && \
-                [ $AMP_BASEOS != "rhel" ]; then
-                echo "Error: Unsupported base OS " $AMP_BASEOS " specified"
+            if [ "$AMP_BASEOS" != "ubuntu" ] && \
+                [ "$AMP_BASEOS" != "ubuntu-minimal" ] && \
+                [ "$AMP_BASEOS" != "fedora" ] && \
+                [ "$AMP_BASEOS" != "centos" ] && \
+                [ "$AMP_BASEOS" != "centos-minimal" ] && \
+                [ "$AMP_BASEOS" != "rhel" ]; then
+                echo "Error: Unsupported base OS $AMP_BASEOS specified"
                 exit 3
             fi
-            if [ $AMP_BASEOS == "ubuntu" ]; then
+            if [ "$AMP_BASEOS" == "ubuntu" ]; then
                 AMP_BASEOS="ubuntu-minimal"
             fi
-            if [ $AMP_BASEOS == "centos" ]; then
+            if [ "$AMP_BASEOS" == "centos" ]; then
                 AMP_BASEOS="centos-minimal"
             fi
         ;;
@@ -168,9 +168,9 @@ while getopts "a:b:c:d:efg:hi:k:l:no:pt:r:s:vw:x" opt; do
             AMP_DISABLE_SSHD=1
         ;;
         o)
-            AMP_OUTPUTFILENAME=$(readlink -f $OPTARG)
-            amp_dir=$(dirname $AMP_OUTPUTFILENAME)
-            if [ ! -d $amp_dir ]; then
+            AMP_OUTPUTFILENAME=$(readlink -f "$OPTARG")
+            amp_dir=$(dirname "$AMP_OUTPUTFILENAME")
+            if [ ! -d "$amp_dir" ]; then
                 echo "Error: Directory $amp_dir does not exist"
                 exit 3
             fi
@@ -184,17 +184,17 @@ while getopts "a:b:c:d:efg:hi:k:l:no:pt:r:s:vw:x" opt; do
         s)
             AMP_IMAGESIZE=$OPTARG
             if ! [[ $AMP_IMAGESIZE =~ ^[0-9]+$ ]]; then
-                echo "Error: Invalid image size " $AMP_IMAGESIZE " specified"
+                echo "Error: Invalid image size $AMP_IMAGESIZE specified"
                 exit 3
             fi
         ;;
         t)
             AMP_IMAGETYPE=$OPTARG
-            if [ $AMP_IMAGETYPE != "qcow2" ] && \
-                [ $AMP_IMAGETYPE != "tar" ] && \
-                [ $AMP_IMAGETYPE != "vhd" ] && \
-                [ $AMP_IMAGETYPE != "raw" ]; then
-                echo "Error: Unsupported image type " $AMP_IMAGETYPE " specified"
+            if [ "$AMP_IMAGETYPE" != "qcow2" ] && \
+                [ "$AMP_IMAGETYPE" != "tar" ] && \
+                [ "$AMP_IMAGETYPE" != "vhd" ] && \
+                [ "$AMP_IMAGETYPE" != "raw" ]; then
+                echo "Error: Unsupported image type $AMP_IMAGETYPE specified"
                 exit 3
             fi
         ;;
@@ -224,7 +224,7 @@ AMP_BACKEND=${AMP_BACKEND:-"haproxy-octavia"}
 
 AMP_CACHEDIR=${AMP_CACHEDIR:-"$HOME/.cache/image-create"}
 # Make sure we have an absolute path for the cache location
-mkdir -p $AMP_CACHEDIR
+mkdir -p "$AMP_CACHEDIR"
 AMP_CACHEDIR="$( cd "$AMP_CACHEDIR" && pwd )"
 
 AMP_BASEOS=${AMP_BASEOS:-"ubuntu-minimal"}
@@ -255,17 +255,17 @@ AMP_ENABLE_FULL_MAC_SECURITY=${AMP_ENABLE_FULL_MAC_SECURITY:-0}
 
 AMP_DISABLE_TMP_FS=${AMP_DISABLE_TMP_FS:-""}
 
-if [ "$AMP_BASEOS" = "rhel" -o "$AMP_BASEOS" = "centos-minimal" -o "$AMP_BASEOS" = "fedora" ] && [ "$AMP_IMAGESIZE" -lt 3 ]; then
+if [[ "$AMP_BASEOS" =~ ^(rhel|centos-minimal|fedora)$ ]] && [[ "$AMP_IMAGESIZE" -lt 3 ]]; then
     echo "RHEL/CentOS based amphora requires an image size of at least 3GB"
     exit 1
 fi
 
 OCTAVIA_ELEMENTS_PATH=$OCTAVIA_REPO_PATH/elements
 
-if ! [ -d $OCTAVIA_ELEMENTS_PATH ]; then
+if ! [ -d "$OCTAVIA_ELEMENTS_PATH" ]; then
     SYSTEM_OCTAVIA_ELEMENTS_PATH=$(find_system_elements octavia-image-elements)
-    if [ -z ${SYSTEM_OCTAVIA_ELEMENTS_PATH} ]; then
-        echo "ERROR: Octavia elements directory not found at: " $OCTAVIA_ELEMENTS_PATH " Exiting."
+    if [ -z "${SYSTEM_OCTAVIA_ELEMENTS_PATH}" ]; then
+        echo "ERROR: Octavia elements directory not found at: $OCTAVIA_ELEMENTS_PATH Exiting."
         exit 1
     fi
     OCTAVIA_ELEMENTS_PATH=${SYSTEM_OCTAVIA_ELEMENTS_PATH}
@@ -273,11 +273,11 @@ fi
 
 DIB_REPO_PATH=${DIB_REPO_PATH:-${OCTAVIA_REPO_PATH%/*}/diskimage-builder}
 
-if [ -d $DIB_REPO_PATH ]; then
+if [ -d "$DIB_REPO_PATH" ]; then
     export PATH=$PATH:$DIB_REPO_PATH/bin
 else
     if ! disk-image-create --version > /dev/null 2>&1; then
-        echo "ERROR: diskimage-builder repo directory not found at: " $DIB_REPO_PATH " or in path. Exiting."
+        echo "ERROR: diskimage-builder repo directory not found at: $DIB_REPO_PATH or in path. Exiting."
         exit 1
     fi
 fi
@@ -302,7 +302,7 @@ fi
 
 # Find out what platform we are on
 if [ -e /etc/os-release ]; then
-    platform=$(cat /etc/os-release  | grep ^NAME= | sed -e 's/\(NAME="\)\(.*\)\("\)/\2/g')
+    platform=$(grep '^NAME=' /etc/os-release | sed -e 's/\(NAME="\)\(.*\)\("\)/\2/g')
 else
     platform=$(head -1 /etc/system-release | grep -e CentOS -e 'Red Hat Enterprise Linux' || :)
     if [ -z "$platform" ]; then
@@ -326,8 +326,8 @@ fi
 if [[ "$platform" = 'Ubuntu' || "$platform" =~ 'Debian' ]]; then
     PKG_LIST="qemu-utils git kpartx debootstrap"
     for pkg in $PKG_LIST; do
-        if ! dpkg --get-selections 2> /dev/null | grep -q "^$pkg[[:space:]]*install$" >/dev/null; then
-            echo "Required package " $pkg " is not installed.  Exiting."
+        if ! dpkg --get-selections 2> /dev/null | grep -q "^${pkg}[[:space:]]*install$" >/dev/null; then
+            echo "Required package $pkg is not installed.  Exiting."
             echo "Binary dependencies on this platform are: ${PKG_LIST}"
             exit 1
         fi
@@ -335,19 +335,19 @@ if [[ "$platform" = 'Ubuntu' || "$platform" =~ 'Debian' ]]; then
 
     if [[ "$platform" = 'Ubuntu' ]]; then
         # Also check if we can build the BASEOS on this Ubuntu version
-        UBUNTU_VERSION=`lsb_release -r | awk '{print $2}'`
-        if [ "$AMP_BASEOS" != "ubuntu-minimal" ] && \
-            [ 1 -eq $(echo "$UBUNTU_VERSION < 16.04" | bc) ]; then
+        UBUNTU_VERSION=$(lsb_release -r | awk '{print $2}')
+        if [[ "$AMP_BASEOS" != "ubuntu-minimal" ]] && \
+            [[ 1 -eq "$(echo "$UBUNTU_VERSION < 16.04" | bc)" ]]; then
                 echo "Ubuntu minimum version 16.04 required to build $AMP_BASEOS."
                 echo "Earlier versions don't support the extended attributes required."
                 exit 1
         fi
     else
         # Check if we can build the BASEOS on this Debian version
-        DEBIAN_VERSION=`lsb_release -r | awk '{print $2}'`
+        DEBIAN_VERSION=$(lsb_release -r | awk '{print $2}')
         # As minimal Ubuntu version is 14.04, for debian it is Debian 8 Jessie
-        if [ "$AMP_BASEOS" != "ubuntu-minimal" ] && \
-            [ 1 -eq $(echo "$DEBIAN_VERSION < 8" | bc) ]; then
+        if [[ "$AMP_BASEOS" != "ubuntu-minimal" ]] && \
+            [[ 1 -eq "$(echo "$DEBIAN_VERSION < 8" | bc)" ]]; then
                 echo "Debian minimum version 8 required to build $AMP_BASEOS."
                 echo "Earlier versions don't support the extended attributes required."
                 exit 1
@@ -358,8 +358,8 @@ elif [[ $platform =~ "SUSE" ]]; then
     # use rpm -q to check for qemu-tools and git-core
     PKG_LIST="qemu-tools git-core"
     for pkg in $PKG_LIST; do
-        if ! rpm -q $pkg &> /dev/null; then
-            echo "Required package " ${pkg/\*} " is not installed.  Exiting."
+        if ! rpm -q "$pkg" &> /dev/null; then
+            echo "Required package ${pkg/\*} is not installed.  Exiting."
             echo "Binary dependencies on this platform are: ${PKG_LIST}"
             exit 1
         fi
@@ -372,15 +372,15 @@ elif [[ $platform =~ "Gentoo" ]]; then
         if grep -qs '|' <<< "$pkg"; then
             c=$(cut -d / -f 1 <<<"$pkg")
             for p in $(cut -d / -f 2 <<<"$pkg" | tr "|" " "); do
-                if [ -d /var/db/pkg/$c/$p-* ]; then
+                if [ -d /var/db/pkg/"$c"/"$p"-* ]; then
                     continue 2
                 fi
             done
-            echo "Required package " ${pkg/\*} " is not installed.  Exiting."
+            echo "Required package ${pkg/\*} is not installed.  Exiting."
             echo "Binary dependencies on this platform are: ${PKG_LIST}"
             exit 1
-        elif [ ! -d /var/db/pkg/$pkg-* ]; then
-            echo "Required package " ${pkg/\*} " is not installed.  Exiting."
+        elif [ ! -d /var/db/pkg/"$pkg"-* ]; then
+            echo "Required package ${pkg/\*} is not installed.  Exiting."
             echo "Binary dependencies on this platform are: ${PKG_LIST}"
             exit 1
         fi
@@ -391,8 +391,8 @@ else
     # "dnf|yum install qemu-img" works for all, but search requires wildcard
     PKG_LIST="qemu-img* git"
     for pkg in $PKG_LIST; do
-        if ! rpm -qa $pkg ; then
-            echo "Required package " ${pkg/\*} " is not installed.  Exiting."
+        if ! rpm -qa "$pkg" ; then
+            echo "Required package ${pkg/\*} is not installed.  Exiting."
             echo "Binary dependencies on this platform are: ${PKG_LIST}"
             exit 1
         fi
@@ -400,12 +400,12 @@ else
 fi
 
 if  [ "$AMP_WORKING_DIR" ]; then
-    mkdir -p $AMP_WORKING_DIR
-    TEMP=$(mktemp -d $AMP_WORKING_DIR/diskimage-create.XXXXXX)
+    mkdir -p "$AMP_WORKING_DIR"
+    TEMP=$(mktemp -d "$AMP_WORKING_DIR/diskimage-create.XXXXXX")
 else
     TEMP=$(mktemp -d diskimage-create.XXXXXX)
 fi
-pushd $TEMP > /dev/null
+pushd "$TEMP" > /dev/null
 
 # Setup the elements list
 
@@ -490,10 +490,12 @@ if [ "$USE_PYTHON3" = "False" ]; then
     export DIB_PYTHON_VERSION=2
 fi
 
-disk-image-create $AMP_LOGFILE $dib_trace_arg -a $AMP_ARCH -o $AMP_OUTPUTFILENAME -t $AMP_IMAGETYPE --image-size $AMP_IMAGESIZE --image-cache $AMP_CACHEDIR $AMP_DISABLE_TMP_FS $AMP_element_sequence
+disk-image-create "$AMP_LOGFILE" "$dib_trace_arg" -a "$AMP_ARCH" -o "$AMP_OUTPUTFILENAME" -t \
+"$AMP_IMAGETYPE" --image-size "$AMP_IMAGESIZE" --image-cache "$AMP_CACHEDIR" "$AMP_DISABLE_TMP_FS" \
+"$AMP_element_sequence"
 
 popd > /dev/null # out of $TEMP
-rm -rf $TEMP
+rm -rf "$TEMP"
 
 if [ -z "$DIB_REPOREF_amphora_agent" ]; then
     echo "Successfully built the amphora image using amphora-agent from the master branch."
