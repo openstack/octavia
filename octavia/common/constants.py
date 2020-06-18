@@ -641,6 +641,8 @@ HAPROXY_MEMBER_STATUSES = (UP, DOWN, DRAIN, MAINT, NO_CHECK)
 # the sysctl fs.file-max fs.nr_open settings in the image
 HAPROXY_MAX_MAXCONN = 1000000
 
+RESTARTING = 'RESTARTING'
+
 # Quota Constants
 QUOTA_UNLIMITED = -1
 MIN_QUOTA = QUOTA_UNLIMITED
