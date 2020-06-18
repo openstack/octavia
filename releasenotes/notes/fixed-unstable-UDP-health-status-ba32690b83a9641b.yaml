@@ -1,0 +1,7 @@
+---
+fixes:
+  - |
+    Fix a potential invalid DOWN operating status for members of a UDP pool.
+    A race condition could have occured when building the first heartbeat
+    message after adding a new member in a pool, this recently added member
+    could have been seen as DOWN.

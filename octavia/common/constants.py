@@ -644,6 +644,8 @@ HAPROXY_DEFAULT_MAXCONN = 50000
 # the sysctl fs.file-max fs.nr_open settings in the image
 HAPROXY_MAX_MAXCONN = 1000000
 
+RESTARTING = 'RESTARTING'
+
 # Quota Constants
 QUOTA_UNLIMITED = -1
 MIN_QUOTA = QUOTA_UNLIMITED

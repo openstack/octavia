@@ -432,6 +432,14 @@ class UpdateHealthDb(update_base.HealthUpdateBase):
                     member_status = constants.OFFLINE
                 elif status == constants.NO_CHECK:
                     member_status = constants.NO_MONITOR
+                elif status == constants.RESTARTING:
+                    # RESTARTING means that keepalived is restarting and a down
+                    # member has been detected, the real status of the member
+                    # is not clear, it might mean that the checker hasn't run
+                    # yet.
+                    # In this case, keep previous member_status, and wait for a
+                    # non-transitional status.
+                    pass
                 else:
                     LOG.warning('Member %(mem)s reported '
                                 'status of %(status)s',
