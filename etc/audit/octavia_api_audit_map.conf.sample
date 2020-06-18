@@ -4,7 +4,7 @@
 target_endpoint_type = load-balancer
 
 [custom_actions]
-failover = failover
+failover = update/failover
 
 # possible end path of API requests
 # path of api requests for CADF target typeURI
