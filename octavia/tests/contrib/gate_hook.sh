@@ -16,9 +16,6 @@ function load_conf_hook {
 
 export DEVSTACK_LOCAL_CONFIG+=$'\n'"enable_plugin barbican https://git.openstack.org/openstack/barbican"$'\n'
 
-# Allow testing against diskimage-builder changes with depends-on
-export DEVSTACK_LOCAL_CONFIG+=$'\n'"LIBS_FROM_GIT+=,diskimage-builder"$'\n'
-
 # Sort out our gate args
 . $(dirname "$0")/decode_args.sh
 

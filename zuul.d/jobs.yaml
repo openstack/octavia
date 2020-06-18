@@ -5,8 +5,6 @@
     required-projects:
       - openstack/devstack-gate
       - openstack/barbican
-      - name: openstack/diskimage-builder
-        override-checkout: 2.30.0
       - openstack/neutron-lbaas
       - openstack/octavia
       - openstack/octavia-lib
