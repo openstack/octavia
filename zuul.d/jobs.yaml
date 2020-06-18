@@ -5,7 +5,6 @@
     required-projects:
       - openstack/devstack-gate
       - openstack/barbican
-      - openstack/diskimage-builder
       - openstack/octavia
       - openstack/octavia-lib
       - openstack/python-barbicanclient
