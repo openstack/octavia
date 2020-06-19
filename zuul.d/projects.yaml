@@ -64,6 +64,7 @@
         - octavia-v2-dsvm-py2-scenario-two-node:
             voting: false
         - octavia-grenade:
+            voting: false
             irrelevant-files:
               - ^.*\.rst$
               - ^api-ref/.*$
@@ -120,17 +121,6 @@
               - name: openstack/diskimage-builder
                 override-checkout: 2.30.0
         - octavia-v2-dsvm-py2-scenario
-        - octavia-grenade:
-            irrelevant-files:
-              - ^.*\.rst$
-              - ^api-ref/.*$
-              - ^doc/.*$
-              - ^octavia/tests/unit/.*$
-              - ^releasenotes/.*$
-              - ^setup.cfg$
-              - ^tools/.*$
-              - ^(test-|)requirements.txt$
-              - ^tox.ini$
     periodic:
       jobs:
         - publish-openstack-octavia-amphora-image-xenial:
