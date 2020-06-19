@@ -116,6 +116,7 @@ class L7PolicyController(base.BaseController):
         """Creates a l7policy on a listener."""
         l7policy = l7policy_.l7policy
         context = pecan.request.context.get('octavia_context')
+
         # Verify the parent listener exists
         listener_id = l7policy.listener_id
         listener = self._get_db_listener(
@@ -123,14 +124,15 @@ class L7PolicyController(base.BaseController):
         load_balancer_id = listener.load_balancer_id
         l7policy.project_id, provider = self._get_lb_project_id_provider(
             context.session, load_balancer_id)
+
+        self._auth_validate_action(context, l7policy.project_id,
+                                   constants.RBAC_POST)
+
         # Make sure any pool specified by redirect_pool_id exists
         if l7policy.redirect_pool_id:
             db_pool = self._get_db_pool(
                 context.session, l7policy.redirect_pool_id)
             self._validate_protocol(listener.protocol, db_pool.protocol)
-
-        self._auth_validate_action(context, l7policy.project_id,
-                                   constants.RBAC_POST)
 
         # Load the driver early as it also provides validation
         driver = driver_factory.get_driver(provider)
@@ -199,6 +201,16 @@ class L7PolicyController(base.BaseController):
     def put(self, id, l7policy_):
         """Updates a l7policy."""
         l7policy = l7policy_.l7policy
+        context = pecan.request.context.get('octavia_context')
+        db_l7policy = self._get_db_l7policy(context.session, id,
+                                            show_deleted=False)
+        load_balancer_id, listener_id = self._get_listener_and_loadbalancer_id(
+            db_l7policy)
+        project_id, provider = self._get_lb_project_id_provider(
+            context.session, load_balancer_id)
+
+        self._auth_validate_action(context, project_id, constants.RBAC_PUT)
+
         l7policy_dict = validate.sanitize_l7policy_api_args(
             l7policy.to_dict(render_unsets=False))
         # Reset renamed attributes
@@ -206,10 +218,6 @@ class L7PolicyController(base.BaseController):
             if val in l7policy_dict:
                 l7policy_dict[attr] = l7policy_dict.pop(val)
         sanitized_l7policy = l7policy_types.L7PolicyPUT(**l7policy_dict)
-        context = pecan.request.context.get('octavia_context')
-
-        db_l7policy = self._get_db_l7policy(context.session, id,
-                                            show_deleted=False)
         listener = self._get_db_listener(
             context.session, db_l7policy.listener_id)
         # Make sure any specified redirect_pool_id exists
@@ -217,12 +225,6 @@ class L7PolicyController(base.BaseController):
             db_pool = self._get_db_pool(
                 context.session, l7policy_dict['redirect_pool_id'])
             self._validate_protocol(listener.protocol, db_pool.protocol)
-        load_balancer_id, listener_id = self._get_listener_and_loadbalancer_id(
-            db_l7policy)
-        project_id, provider = self._get_lb_project_id_provider(
-            context.session, load_balancer_id)
-
-        self._auth_validate_action(context, project_id, constants.RBAC_PUT)
 
         # Load the driver early as it also provides validation
         driver = driver_factory.get_driver(provider)

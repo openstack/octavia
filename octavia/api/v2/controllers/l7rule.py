@@ -123,10 +123,6 @@ class L7RuleController(base.BaseController):
     def post(self, rule_):
         """Creates a l7rule on an l7policy."""
         l7rule = rule_.rule
-        try:
-            validate.l7rule_data(l7rule)
-        except Exception as e:
-            raise exceptions.L7RuleValidation(error=e)
         context = pecan.request.context.get('octavia_context')
 
         db_l7policy = self._get_db_l7policy(context.session, self.l7policy_id,
@@ -135,11 +131,15 @@ class L7RuleController(base.BaseController):
             db_l7policy)
         l7rule.project_id, provider = self._get_lb_project_id_provider(
             context.session, load_balancer_id)
-
-        self._check_l7policy_max_rules(context.session)
-
         self._auth_validate_action(context, l7rule.project_id,
                                    constants.RBAC_POST)
+
+        try:
+            validate.l7rule_data(l7rule)
+        except Exception as e:
+            raise exceptions.L7RuleValidation(error=e)
+
+        self._check_l7policy_max_rules(context.session)
 
         # Load the driver early as it also provides validation
         driver = driver_factory.get_driver(provider)
@@ -192,15 +192,6 @@ class L7RuleController(base.BaseController):
         context = pecan.request.context.get('octavia_context')
         db_l7rule = self._get_db_l7rule(context.session, id,
                                         show_deleted=False)
-
-        # Handle the invert unset
-        if l7rule.invert is None:
-            l7rule.invert = False
-
-        new_l7rule = db_l7rule.to_dict()
-        new_l7rule.update(l7rule.to_dict())
-        new_l7rule = data_models.L7Rule.from_dict(new_l7rule)
-
         db_l7policy = self._get_db_l7policy(context.session, self.l7policy_id,
                                             show_deleted=False)
         load_balancer_id, listener_id = self._get_listener_and_loadbalancer_id(
@@ -209,6 +200,14 @@ class L7RuleController(base.BaseController):
             context.session, load_balancer_id)
 
         self._auth_validate_action(context, project_id, constants.RBAC_PUT)
+
+        # Handle the invert unset
+        if l7rule.invert is None:
+            l7rule.invert = False
+
+        new_l7rule = db_l7rule.to_dict()
+        new_l7rule.update(l7rule.to_dict())
+        new_l7rule = data_models.L7Rule.from_dict(new_l7rule)
 
         try:
             validate.l7rule_data(new_l7rule)

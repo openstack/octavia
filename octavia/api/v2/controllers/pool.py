@@ -190,22 +190,13 @@ class PoolsController(base.BaseController):
         # pool_dict:
         pool = pool_.pool
         context = pecan.request.context.get('octavia_context')
-        if pool.protocol == constants.PROTOCOL_UDP:
-            self._validate_pool_request_for_udp(pool)
-        else:
-            if (pool.session_persistence and (
-                    pool.session_persistence.persistence_timeout or
-                    pool.session_persistence.persistence_granularity)):
-                raise exceptions.ValidationException(detail=_(
-                    "persistence_timeout and persistence_granularity "
-                    "is only for UDP protocol pools."))
+        listener = None
         if pool.loadbalancer_id:
             pool.project_id, provider = self._get_lb_project_id_provider(
                 context.session, pool.loadbalancer_id)
         elif pool.listener_id:
             listener = self.repositories.listener.get(
                 context.session, id=pool.listener_id)
-            self._validate_protocol(listener.protocol, pool.protocol)
             pool.loadbalancer_id = listener.load_balancer_id
             pool.project_id, provider = self._get_lb_project_id_provider(
                 context.session, pool.loadbalancer_id)
@@ -216,6 +207,19 @@ class PoolsController(base.BaseController):
 
         self._auth_validate_action(context, pool.project_id,
                                    constants.RBAC_POST)
+
+        if pool.listener_id and listener:
+            self._validate_protocol(listener.protocol, pool.protocol)
+
+        if pool.protocol == constants.PROTOCOL_UDP:
+            self._validate_pool_request_for_udp(pool)
+        else:
+            if (pool.session_persistence and (
+                    pool.session_persistence.persistence_timeout or
+                    pool.session_persistence.persistence_granularity)):
+                raise exceptions.ValidationException(detail=_(
+                    "persistence_timeout and persistence_granularity "
+                    "is only for UDP protocol pools."))
 
         if pool.session_persistence:
             sp_dict = pool.session_persistence.to_dict(render_unsets=False)
@@ -432,14 +436,15 @@ class PoolsController(base.BaseController):
         """Deletes a pool from a load balancer."""
         context = pecan.request.context.get('octavia_context')
         db_pool = self._get_db_pool(context.session, id, show_deleted=False)
-        if db_pool.l7policies:
-            raise exceptions.PoolInUseByL7Policy(
-                id=db_pool.id, l7policy_id=db_pool.l7policies[0].id)
 
         project_id, provider = self._get_lb_project_id_provider(
             context.session, db_pool.load_balancer_id)
 
         self._auth_validate_action(context, project_id, constants.RBAC_DELETE)
+
+        if db_pool.l7policies:
+            raise exceptions.PoolInUseByL7Policy(
+                id=db_pool.id, l7policy_id=db_pool.l7policies[0].id)
 
         # Load the driver early as it also provides validation
         driver = driver_factory.get_driver(provider)
