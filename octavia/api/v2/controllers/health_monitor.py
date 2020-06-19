@@ -199,15 +199,18 @@ class HealthMonitorController(base.BaseController):
         context = pecan.request.context.get('octavia_context')
         health_monitor = health_monitor_.healthmonitor
 
-        if (not CONF.api_settings.allow_ping_health_monitors and
-                health_monitor.type == consts.HEALTH_MONITOR_PING):
-            raise exceptions.DisabledOption(
-                option='type', value=consts.HEALTH_MONITOR_PING)
-
         pool = self._get_db_pool(context.session, health_monitor.pool_id)
 
         health_monitor.project_id, provider = self._get_lb_project_id_provider(
             context.session, pool.load_balancer_id)
+
+        self._auth_validate_action(context, health_monitor.project_id,
+                                   consts.RBAC_POST)
+
+        if (not CONF.api_settings.allow_ping_health_monitors and
+                health_monitor.type == consts.HEALTH_MONITOR_PING):
+            raise exceptions.DisabledOption(
+                option='type', value=consts.HEALTH_MONITOR_PING)
 
         if pool.protocol == consts.PROTOCOL_UDP:
             self._validate_healthmonitor_request_for_udp(health_monitor)
@@ -217,9 +220,6 @@ class HealthMonitorController(base.BaseController):
                     "The %(type)s type is only supported for pools of type "
                     "%(protocol)s.") % {'type': health_monitor.type,
                                         'protocol': consts.PROTOCOL_UDP})
-
-        self._auth_validate_action(context, health_monitor.project_id,
-                                   consts.RBAC_POST)
 
         # Load the driver early as it also provides validation
         driver = driver_factory.get_driver(provider)
