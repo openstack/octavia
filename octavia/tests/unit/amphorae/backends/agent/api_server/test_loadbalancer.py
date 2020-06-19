@@ -14,6 +14,8 @@
 import subprocess
 from unittest import mock
 
+from oslo_config import cfg
+from oslo_config import fixture as oslo_fixture
 from oslo_utils import uuidutils
 
 from octavia.amphorae.backends.agent.api_server import loadbalancer
@@ -22,6 +24,7 @@ from octavia.common import constants as consts
 from octavia.tests.common import utils as test_utils
 import octavia.tests.unit.base as base
 
+CONF = cfg.CONF
 LISTENER_ID1 = uuidutils.generate_uuid()
 LB_ID1 = uuidutils.generate_uuid()
 
@@ -32,39 +35,6 @@ class ListenerTestCase(base.TestCase):
         self.mock_platform = mock.patch("distro.id").start()
         self.mock_platform.return_value = "ubuntu"
         self.test_loadbalancer = loadbalancer.Loadbalancer()
-
-    @mock.patch('os.makedirs')
-    @mock.patch('os.path.exists')
-    @mock.patch('os.listdir')
-    @mock.patch('os.path.join')
-    @mock.patch('octavia.amphorae.backends.agent.api_server.util.'
-                'get_loadbalancers')
-    @mock.patch('octavia.amphorae.backends.agent.api_server.util'
-                '.haproxy_sock_path')
-    def test_vrrp_check_script_update(self, mock_sock_path, mock_get_lbs,
-                                      mock_join, mock_listdir, mock_exists,
-                                      mock_makedirs):
-        mock_get_lbs.return_value = ['abc', LB_ID1]
-        mock_sock_path.return_value = 'listener.sock'
-        mock_exists.return_value = False
-        cmd = 'haproxy-vrrp-check ' + ' '.join(['listener.sock']) + '; exit $?'
-
-        path = agent_util.keepalived_dir()
-        m = self.useFixture(test_utils.OpenFixture(path)).mock_open
-
-        self.test_loadbalancer.vrrp_check_script_update(LB_ID1, 'stop')
-        handle = m()
-        handle.write.assert_called_once_with(cmd)
-
-        mock_get_lbs.return_value = ['abc', LB_ID1]
-        cmd = ('haproxy-vrrp-check ' + ' '.join(['listener.sock',
-                                                 'listener.sock']) + '; exit '
-                                                                     '$?')
-
-        m = self.useFixture(test_utils.OpenFixture(path)).mock_open
-        self.test_loadbalancer.vrrp_check_script_update(LB_ID1, 'start')
-        handle = m()
-        handle.write.assert_called_once_with(cmd)
 
     @mock.patch('os.path.exists')
     @mock.patch('octavia.amphorae.backends.agent.api_server' +
@@ -88,8 +58,8 @@ class ListenerTestCase(base.TestCase):
 
     @mock.patch('octavia.amphorae.backends.agent.api_server.loadbalancer.'
                 'Loadbalancer._check_haproxy_status')
-    @mock.patch('octavia.amphorae.backends.agent.api_server.loadbalancer.'
-                'Loadbalancer.vrrp_check_script_update')
+    @mock.patch('octavia.amphorae.backends.agent.api_server.util.'
+                'vrrp_check_script_update')
     @mock.patch('os.path.exists')
     @mock.patch('octavia.amphorae.backends.agent.api_server.loadbalancer.'
                 'Loadbalancer._check_lb_exists')
@@ -98,6 +68,8 @@ class ListenerTestCase(base.TestCase):
                            mock_path_exists, mock_vrrp_update,
                            mock_check_status):
         listener_id = uuidutils.generate_uuid()
+
+        conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
 
         mock_path_exists.side_effect = [False, True, True, False, False]
         mock_check_status.side_effect = ['bogus', consts.OFFLINE]
@@ -121,6 +93,9 @@ class ListenerTestCase(base.TestCase):
         self.assertEqual(ref_details, result.json['details'])
 
         # Happy path - VRRP - RELOAD
+        conf.config(group="controller_worker",
+                    loadbalancer_topology=consts.TOPOLOGY_ACTIVE_STANDBY)
+
         mock_lb_exists.reset_mock()
         mock_vrrp_update.reset_mock()
         mock_check_output.reset_mock()
@@ -167,6 +142,9 @@ class ListenerTestCase(base.TestCase):
         self.assertEqual(ref_details, result.json['details'])
 
         # Unhappy path - Not already running
+        conf.config(group="controller_worker",
+                    loadbalancer_topology=consts.TOPOLOGY_SINGLE)
+
         mock_lb_exists.reset_mock()
         mock_vrrp_update.reset_mock()
         mock_check_output.reset_mock()

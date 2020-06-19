@@ -202,6 +202,21 @@ class AmphoraLoadBalancerDriver(object, metaclass=abc.ABCMeta):
         :type agent_config: string
         """
 
+    @abc.abstractmethod
+    def get_interface_from_ip(self, amphora, ip_address, timeout_dict=None):
+        """Get the interface name from an IP address.
+
+        :param amphora: The amphora to query.
+        :type amphora: octavia.db.models.Amphora
+        :param ip_address: The IP address to lookup. (IPv4 or IPv6)
+        :type ip_address: string
+        :param timeout_dict: Dictionary of timeout values for calls to the
+                             amphora. May contain: req_conn_timeout,
+                             req_read_timeout, conn_max_retries,
+                             conn_retry_interval
+        :type timeout_dict: dict
+        """
+
 
 class HealthMixin(object, metaclass=abc.ABCMeta):
     @abc.abstractmethod
@@ -252,10 +267,17 @@ class VRRPDriverMixin(object, metaclass=abc.ABCMeta):
     class XYZ: ...
     """
     @abc.abstractmethod
-    def update_vrrp_conf(self, loadbalancer):
+    def update_vrrp_conf(self, loadbalancer, amphorae_network_config, amphora,
+                         timeout_dict=None):
         """Update amphorae of the loadbalancer with a new VRRP configuration
 
         :param loadbalancer: loadbalancer object
+        :param amphorae_network_config: amphorae network configurations
+        :param amphora: The amphora object to update.
+        :param timeout_dict: Dictionary of timeout values for calls to the
+                             amphora. May contain: req_conn_timeout,
+                             req_read_timeout, conn_max_retries,
+                             conn_retry_interval
         """
 
     @abc.abstractmethod
@@ -266,10 +288,14 @@ class VRRPDriverMixin(object, metaclass=abc.ABCMeta):
         """
 
     @abc.abstractmethod
-    def start_vrrp_service(self, loadbalancer):
-        """Start the VRRP services of all amphorae of the loadbalancer
+    def start_vrrp_service(self, amphora, timeout_dict=None):
+        """Start the VRRP services on the amphora
 
-        :param loadbalancer: loadbalancer object
+        :param amphora: The amphora object to start the service on.
+        :param timeout_dict: Dictionary of timeout values for calls to the
+                             amphora. May contain: req_conn_timeout,
+                             req_read_timeout, conn_max_retries,
+                             conn_retry_interval
         """
 
     @abc.abstractmethod
@@ -277,11 +303,4 @@ class VRRPDriverMixin(object, metaclass=abc.ABCMeta):
         """Reload the VRRP services of all amphorae of the loadbalancer
 
         :param loadbalancer: loadbalancer object
-        """
-
-    @abc.abstractmethod
-    def get_vrrp_interface(self, amphora):
-        """Get the VRRP interface object for a specific amphora
-
-        :param amphora: amphora object
         """

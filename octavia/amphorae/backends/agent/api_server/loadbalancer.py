@@ -235,12 +235,11 @@ class Loadbalancer(object):
                 details="Unknown action: {0}".format(action)), status=400)
 
         self._check_lb_exists(lb_id)
+        is_vrrp = (CONF.controller_worker.loadbalancer_topology ==
+                   consts.TOPOLOGY_ACTIVE_STANDBY)
 
-        # Since this script should be created at LB create time
-        # we can check for this path to see if VRRP is enabled
-        # on this amphora and not write the file if VRRP is not in use
-        if os.path.exists(util.keepalived_check_script_path()):
-            self.vrrp_check_script_update(lb_id, action)
+        if is_vrrp:
+            util.vrrp_check_script_update(lb_id, action)
 
         # HAProxy does not start the process when given a reload
         # so start it if haproxy is not already running
@@ -262,6 +261,14 @@ class Loadbalancer(object):
                 return webob.Response(json=dict(
                     message="Error {0}ing haproxy".format(action),
                     details=e.output), status=500)
+
+        # If we are not in active/standby we need to send an IP
+        # advertisement (GARP or NA). Keepalived handles this for
+        # active/standby load balancers.
+        if not is_vrrp and action in [consts.AMP_ACTION_START,
+                                      consts.AMP_ACTION_RELOAD]:
+            util.send_vip_advertisements(lb_id)
+
         if action in [consts.AMP_ACTION_STOP,
                       consts.AMP_ACTION_RELOAD]:
             return webob.Response(json=dict(
@@ -307,7 +314,7 @@ class Loadbalancer(object):
         # we can check for this path to see if VRRP is enabled
         # on this amphora and not write the file if VRRP is not in use
         if os.path.exists(util.keepalived_check_script_path()):
-            self.vrrp_check_script_update(
+            util.vrrp_check_script_update(
                 lb_id, action=consts.AMP_ACTION_STOP)
 
         # delete the ssl files
@@ -454,22 +461,6 @@ class Loadbalancer(object):
 
     def _cert_file_path(self, lb_id, filename):
         return os.path.join(self._cert_dir(lb_id), filename)
-
-    def vrrp_check_script_update(self, lb_id, action):
-        lb_ids = util.get_loadbalancers()
-        if action == consts.AMP_ACTION_STOP:
-            lb_ids.remove(lb_id)
-        args = []
-        for lbid in lb_ids:
-            args.append(util.haproxy_sock_path(lbid))
-
-        if not os.path.exists(util.keepalived_dir()):
-            os.makedirs(util.keepalived_dir())
-            os.makedirs(util.keepalived_check_scripts_dir())
-
-        cmd = 'haproxy-vrrp-check {args}; exit $?'.format(args=' '.join(args))
-        with open(util.haproxy_check_script_path(), 'w') as text_file:
-            text_file.write(cmd)
 
     def _check_haproxy_status(self, lb_id):
         if os.path.exists(util.pid_path(lb_id)):

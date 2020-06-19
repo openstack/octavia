@@ -270,8 +270,8 @@ class TestServerTestCase(base.TestCase):
 
     @mock.patch('os.listdir')
     @mock.patch('os.path.exists')
-    @mock.patch('octavia.amphorae.backends.agent.api_server.loadbalancer.'
-                'Loadbalancer.vrrp_check_script_update')
+    @mock.patch('octavia.amphorae.backends.agent.api_server.util.'
+                'vrrp_check_script_update')
     @mock.patch('subprocess.check_output')
     def _test_start(self, distro, mock_subprocess, mock_vrrp, mock_exists,
                     mock_listdir):
@@ -346,8 +346,8 @@ class TestServerTestCase(base.TestCase):
 
     @mock.patch('os.listdir')
     @mock.patch('os.path.exists')
-    @mock.patch('octavia.amphorae.backends.agent.api_server.loadbalancer.'
-                'Loadbalancer.vrrp_check_script_update')
+    @mock.patch('octavia.amphorae.backends.agent.api_server.util.'
+                'vrrp_check_script_update')
     @mock.patch('octavia.amphorae.backends.agent.api_server.loadbalancer.'
                 'Loadbalancer._check_haproxy_status')
     @mock.patch('subprocess.check_output')
@@ -460,8 +460,8 @@ class TestServerTestCase(base.TestCase):
     @mock.patch('os.listdir')
     @mock.patch('os.path.exists')
     @mock.patch('subprocess.check_output')
-    @mock.patch('octavia.amphorae.backends.agent.api_server.loadbalancer.'
-                'Loadbalancer.vrrp_check_script_update')
+    @mock.patch('octavia.amphorae.backends.agent.api_server.util.'
+                'vrrp_check_script_update')
     @mock.patch('octavia.amphorae.backends.agent.api_server.util.' +
                 'get_haproxy_pid')
     @mock.patch('shutil.rmtree')
@@ -2322,6 +2322,8 @@ class TestServerTestCase(base.TestCase):
         self._test_upload_keepalived_config(consts.INIT_SYSVINIT,
                                             consts.UBUNTU, mock_init_system)
 
+    @mock.patch('octavia.amphorae.backends.agent.api_server.util.'
+                'vrrp_check_script_update')
     @mock.patch('os.path.exists')
     @mock.patch('os.makedirs')
     @mock.patch('os.rename')
@@ -2330,7 +2332,8 @@ class TestServerTestCase(base.TestCase):
     def _test_upload_keepalived_config(self, init_system, distro,
                                        mock_init_system, mock_remove,
                                        mock_subprocess, mock_rename,
-                                       mock_makedirs, mock_exists):
+                                       mock_makedirs, mock_exists,
+                                       mock_vrrp_check):
 
         self.assertIn(distro, [consts.UBUNTU, consts.CENTOS])
         flags = os.O_WRONLY | os.O_CREAT | os.O_TRUNC
@@ -2353,8 +2356,11 @@ class TestServerTestCase(base.TestCase):
             mock_open.assert_called_with(cfg_path, flags, mode)
             mock_fdopen.assert_called_with(123, 'wb')
             self.assertEqual(200, rv.status_code)
+            mock_vrrp_check.assert_called_once_with(None,
+                                                    consts.AMP_ACTION_START)
 
         mock_exists.return_value = False
+        mock_vrrp_check.reset_mock()
         script_path = util.keepalived_check_script_path()
         m = self.useFixture(test_utils.OpenFixture(script_path)).mock_open
 
@@ -2372,6 +2378,8 @@ class TestServerTestCase(base.TestCase):
             mock_open.assert_called_with(script_path, flags, mode)
             mock_fdopen.assert_called_with(123, 'w')
             self.assertEqual(200, rv.status_code)
+            mock_vrrp_check.assert_called_once_with(None,
+                                                    consts.AMP_ACTION_START)
 
     def test_ubuntu_manage_service_vrrp(self):
         self._test_manage_service_vrrp(consts.UBUNTU)

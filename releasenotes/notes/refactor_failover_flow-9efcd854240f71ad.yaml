@@ -1,0 +1,11 @@
+---
+upgrade:
+  - |
+    The failover improvements do not require an updated amphora image,
+    but updating existing amphora will minimize the failover
+    outage time for standalone amphora on subsequent failovers.
+fixes:
+  - |
+    Significantly improved the reliability and performance of amphora
+    and load balancer failovers. This is especially true when the
+    Nova service is experiencing failures.
