@@ -261,7 +261,7 @@ networking_opts = [
                        "neutron RBAC policies.")),
 ]
 
-healthmanager_opts = [
+health_manager_opts = [
     cfg.IPOpt('bind_ip', default='127.0.0.1',
               help=_('IP address the controller will listen on for '
                      'heart beats')),
@@ -303,11 +303,12 @@ healthmanager_opts = [
                mutable=True,
                help=_('Sleep time between sending heartbeats.')),
 
-    # Used for updating health and stats
+    # Used for updating health
     cfg.StrOpt('health_update_driver', default='health_db',
-               help=_('Driver for updating amphora health system.')),
-    cfg.StrOpt('stats_update_driver', default='stats_db',
-               help=_('Driver for updating amphora statistics.')),
+               help=_('Driver for updating amphora health system.'),
+               deprecated_for_removal=True,
+               deprecated_reason=_('This driver interface was removed.'),
+               deprecated_since='Victoria'),
 ]
 
 oslo_messaging_opts = [
@@ -485,6 +486,11 @@ controller_worker_opts = [
     cfg.StrOpt('distributor_driver',
                default='distributor_noop_driver',
                help=_('Name of the distributor driver to use')),
+    cfg.ListOpt('statistics_drivers', default=['stats_db'],
+                deprecated_name='stats_update_driver',
+                deprecated_group='health_manager',
+                deprecated_since='Victoria',
+                help=_('List of drivers for updating amphora statistics.')),
     cfg.StrOpt('loadbalancer_topology',
                default=constants.TOPOLOGY_SINGLE,
                choices=constants.SUPPORTED_LB_TOPOLOGIES,
@@ -846,7 +852,7 @@ cfg.CONF.register_opts(keepalived_vrrp_opts, group='keepalived_vrrp')
 cfg.CONF.register_opts(task_flow_opts, group='task_flow')
 cfg.CONF.register_opts(house_keeping_opts, group='house_keeping')
 cfg.CONF.register_opts(certificate_opts, group='certificates')
-cfg.CONF.register_opts(healthmanager_opts, group='health_manager')
+cfg.CONF.register_opts(health_manager_opts, group='health_manager')
 cfg.CONF.register_opts(nova_opts, group='nova')
 cfg.CONF.register_opts(cinder_opts, group='cinder')
 cfg.CONF.register_opts(glance_opts, group='glance')

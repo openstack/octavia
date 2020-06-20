@@ -25,20 +25,6 @@ from octavia.tests.unit import base
 FAKE_UUID_1 = uuidutils.generate_uuid()
 
 
-class TestLoggingUpdate(base.TestCase):
-    def setUp(self):
-        super().setUp()
-        self.mixin = driver.LoggingUpdate()
-
-    def test_update_stats(self):
-        self.mixin.update_stats('test update stats')
-        self.assertEqual('test update stats', self.mixin.stats)
-
-    def test_update_health(self):
-        self.mixin.update_health('test update health')
-        self.assertEqual('test update health', self.mixin.health)
-
-
 class TestNoopAmphoraLoadBalancerDriver(base.TestCase):
     FAKE_UUID_1 = uuidutils.generate_uuid()
 

@@ -19,18 +19,6 @@ from octavia.amphorae.drivers import driver_base
 LOG = logging.getLogger(__name__)
 
 
-class LoggingUpdate(object):
-    def update_stats(self, stats):
-        LOG.debug("Amphora %s no-op, update stats %s",
-                  self.__class__.__name__, stats)
-        self.stats = stats
-
-    def update_health(self, health):
-        LOG.debug("Amphora %s no-op, update health %s",
-                  self.__class__.__name__, health)
-        self.health = health
-
-
 class NoopManager(object):
 
     def __init__(self):

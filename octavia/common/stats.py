@@ -43,7 +43,13 @@ class StatsMixin(object):
             statistics += db_l
 
             amp = self.repo_amphora.get(session, id=db_l.amphora_id)
-            if amp and amp.status == constants.AMPHORA_ALLOCATED:
+            # Amphora ID and Listener ID will be the same in the case that the
+            # stats are coming from a provider driver other than the `amphora`
+            # driver. In that case and when the current amphora is ALLOCATED
+            # are the only times we should include the *active* connections,
+            # because non-active amphora will have incorrect counts.
+            if (amp and amp.status == constants.AMPHORA_ALLOCATED) or (
+                    db_l.amphora_id == db_l.listener_id):
                 statistics.active_connections += db_l.active_connections
         return statistics
 

@@ -176,7 +176,6 @@ class ListenerStatistics(base_models.BASE):
         return value
 
     def __iadd__(self, other):
-
         if isinstance(other, (ListenerStatistics,
                               data_models.ListenerStatistics)):
             self.bytes_in += other.bytes_in

@@ -182,7 +182,7 @@ class ListenerStatistics(BaseDataModel):
 
     def __init__(self, listener_id=None, amphora_id=None, bytes_in=0,
                  bytes_out=0, active_connections=0,
-                 total_connections=0, request_errors=0):
+                 total_connections=0, request_errors=0, received_time=0.0):
         self.listener_id = listener_id
         self.amphora_id = amphora_id
         self.bytes_in = bytes_in
@@ -190,6 +190,7 @@ class ListenerStatistics(BaseDataModel):
         self.active_connections = active_connections
         self.total_connections = total_connections
         self.request_errors = request_errors
+        self.received_time = received_time
 
     def get_stats(self):
         stats = {
@@ -201,8 +202,12 @@ class ListenerStatistics(BaseDataModel):
         }
         return stats
 
-    def __iadd__(self, other):
+    def db_fields(self):
+        fields = self.to_dict()
+        fields.pop('received_time')
+        return fields
 
+    def __iadd__(self, other):
         if isinstance(other, ListenerStatistics):
             self.bytes_in += other.bytes_in
             self.bytes_out += other.bytes_out

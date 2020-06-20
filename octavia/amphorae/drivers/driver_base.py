@@ -189,23 +189,6 @@ class AmphoraLoadBalancerDriver(object, metaclass=abc.ABCMeta):
         neutron network to utilize.
         """
 
-    def start_health_check(self, health_mixin):
-        """Start health checks.
-
-        :param health_mixin: health mixin object
-        :type health_mixin: HealthMixin
-
-        Starts listener process and calls HealthMixin to update
-        databases information.
-        """
-
-    def stop_health_check(self):
-        """Stop health checks.
-
-        Stops listener process and calls HealthMixin to update
-        databases information.
-        """
-
     def upload_cert_amp(self, amphora, pem_file):
         """Upload cert info to the amphora.
 
@@ -239,47 +222,6 @@ class AmphoraLoadBalancerDriver(object, metaclass=abc.ABCMeta):
                              req_read_timeout, conn_max_retries,
                              conn_retry_interval
         :type timeout_dict: dict
-        """
-
-
-class HealthMixin(object, metaclass=abc.ABCMeta):
-    @abc.abstractmethod
-    def update_health(self, health):
-        """Return ceilometer ready health
-
-        :param health: health information emitted from the amphora
-        :type health: bool
-        :returns: return health
-
-        At this moment, we just build the basic structure for testing, will
-        add more function along with the development, eventually, we want it
-        return:
-        map: {"amphora-status":HEALTHY, loadbalancers: {"loadbalancer-id":
-        {"loadbalancer-status": HEALTHY,
-        "listeners":{"listener-id":{"listener-status":HEALTHY,
-        "nodes":{"node-id":HEALTHY, ...}}, ...}, ...}}
-        only items whose health has changed need to be submitted
-        awesome update code
-        """
-
-
-class StatsMixin(object, metaclass=abc.ABCMeta):
-    @abc.abstractmethod
-    def update_stats(self, stats):
-        """Return ceilometer ready stats
-
-        :param stats: statistic information emitted from the amphora
-        :type stats: string
-        :returns: return stats
-
-        At this moment, we just build the basic structure for testing, will
-        add more function along with the development, eventually, we want it
-        return:
-        uses map {"loadbalancer-id":{"listener-id":
-        {"bytes-in": 123, "bytes_out":123, "active_connections":123,
-        "total_connections", 123}, ...}
-        elements are named to keep it extsnsible for future versions
-        awesome update code and code to send to ceilometer
         """
 
 

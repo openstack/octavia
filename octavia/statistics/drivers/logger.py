@@ -14,16 +14,16 @@
 
 from oslo_log import log as logging
 
-from octavia.controller.healthmanager.health_drivers import update_base
+from octavia.statistics import stats_base
 
 LOG = logging.getLogger(__name__)
 
 
-class HealthUpdateLogger(update_base.HealthUpdateBase):
-    def update_health(self, health, srcaddr):
-        LOG.info("Health update triggered for: %s", health.get('id'))
-
-
-class StatsUpdateLogger(update_base.StatsUpdateBase):
-    def update_stats(self, health_message, srcaddr):
-        LOG.info("Stats update triggered for: %s", health_message.get('id'))
+class StatsLogger(stats_base.StatsDriverMixin):
+    def update_stats(self, listener_stats, deltas=False):
+        for stats_object in listener_stats:
+            LOG.info("Logging listener stats%s for listener `%s` / "
+                     "amphora `%s`: %s",
+                     ' deltas' if deltas else '',
+                     stats_object.listener_id, stats_object.amphora_id,
+                     stats_object.get_stats())

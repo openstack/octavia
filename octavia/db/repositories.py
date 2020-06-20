@@ -1206,21 +1206,30 @@ class ListenerRepository(BaseRepository):
 class ListenerStatisticsRepository(BaseRepository):
     model_class = models.ListenerStatistics
 
-    def replace(self, session, listener_id, amphora_id, **model_kwargs):
-        """replace or insert listener into database."""
+    def replace(self, session, stats_obj):
+        """Create or override a listener's statistics (insert/update)
+
+        :param session: A Sql Alchemy database session
+        :param stats_obj: Listener statistics object to store
+        :type stats_obj: octavia.common.data_models.ListenerStatistics
+        """
+        if not stats_obj.amphora_id:
+            # amphora_id can't be null, so clone the listener_id
+            stats_obj.amphora_id = stats_obj.listener_id
+
         with session.begin(subtransactions=True):
+            # TODO(johnsom): This can be simplified/optimized using an "upsert"
             count = session.query(self.model_class).filter_by(
-                listener_id=listener_id, amphora_id=amphora_id).count()
+                listener_id=stats_obj.listener_id,
+                amphora_id=stats_obj.amphora_id).count()
             if count:
                 session.query(self.model_class).filter_by(
-                    listener_id=listener_id,
-                    amphora_id=amphora_id).update(
-                    model_kwargs,
+                    listener_id=stats_obj.listener_id,
+                    amphora_id=stats_obj.amphora_id).update(
+                    stats_obj.get_stats(),
                     synchronize_session=False)
             else:
-                model_kwargs['listener_id'] = listener_id
-                model_kwargs['amphora_id'] = amphora_id
-                self.create(session, **model_kwargs)
+                self.create(session, **stats_obj.db_fields())
 
     def increment(self, session, delta_stats):
         """Updates a listener's statistics, incrementing by the passed deltas.
@@ -1228,10 +1237,13 @@ class ListenerStatisticsRepository(BaseRepository):
         :param session: A Sql Alchemy database session
         :param delta_stats: Listener statistics deltas to add
         :type delta_stats: octavia.common.data_models.ListenerStatistics
-
         """
+        if not delta_stats.amphora_id:
+            # amphora_id can't be null, so clone the listener_id
+            delta_stats.amphora_id = delta_stats.listener_id
 
         with session.begin(subtransactions=True):
+            # TODO(johnsom): This can be simplified/optimized using an "upsert"
             count = session.query(self.model_class).filter_by(
                 listener_id=delta_stats.listener_id,
                 amphora_id=delta_stats.amphora_id).count()
@@ -1244,7 +1256,7 @@ class ListenerStatisticsRepository(BaseRepository):
                 existing_stats.active_connections = (
                     delta_stats.active_connections)
             else:
-                self.create(session, **delta_stats.to_dict())
+                self.create(session, **delta_stats.db_fields())
 
     def update(self, session, listener_id, **model_kwargs):
         """Updates a listener's statistics, overriding with the passed values.

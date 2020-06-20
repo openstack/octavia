@@ -19,6 +19,7 @@ from octavia_lib.api.drivers import exceptions as driver_exceptions
 from octavia_lib.common import constants as lib_consts
 
 from octavia.api.drivers.driver_agent import driver_updater
+from octavia.common import data_models
 import octavia.tests.unit.base as base
 
 
@@ -242,37 +243,52 @@ class TestDriverUpdater(base.TestCase):
             lib_consts.STATUS_CODE: lib_consts.DRVR_STATUS_CODE_FAILED,
             lib_consts.FAULT_STRING: 'boom'}, result)
 
-    @mock.patch('octavia.db.repositories.ListenerStatisticsRepository.replace')
-    def test_update_listener_statistics(self, mock_replace):
-        listener_stats_list = [{"id": 1, "active_connections": 10,
-                                         "bytes_in": 20,
-                                         "bytes_out": 30,
-                                         "request_errors": 40,
-                                         "total_connections": 50},
-                               {"id": 2, "active_connections": 60,
-                                         "bytes_in": 70,
-                                         "bytes_out": 80,
-                                         "request_errors": 90,
-                                         "total_connections": 100}]
-        listener_stats_dict = {"listeners": listener_stats_list}
+    @mock.patch('time.time')
+    @mock.patch('octavia.statistics.stats_base.update_stats_via_driver')
+    def test_update_listener_statistics(self, mock_stats_base, mock_time):
+        mock_time.return_value = 12345.6
+        listener_stats_li = [
+            {"id": 1,
+             "active_connections": 10,
+             "bytes_in": 20,
+             "bytes_out": 30,
+             "request_errors": 40,
+             "total_connections": 50},
+            {"id": 2,
+             "active_connections": 60,
+             "bytes_in": 70,
+             "bytes_out": 80,
+             "request_errors": 90,
+             "total_connections": 100}]
+        listener_stats_dict = {"listeners": listener_stats_li}
 
-        mock_replace.side_effect = [mock.DEFAULT, mock.DEFAULT,
-                                    Exception('boom')]
+        mock_stats_base.side_effect = [mock.DEFAULT, Exception('boom')]
         result = self.driver_updater.update_listener_statistics(
-            copy.deepcopy(listener_stats_dict))
-        calls = [call(self.mock_session, 1, 1, active_connections=10,
-                      bytes_in=20, bytes_out=30, request_errors=40,
-                      total_connections=50),
-                 call(self.mock_session, 2, 2, active_connections=60,
-                      bytes_in=70, bytes_out=80, request_errors=90,
-                      total_connections=100)]
-        mock_replace.assert_has_calls(calls)
+            listener_stats_dict)
+        listener_stats_objects = [
+            data_models.ListenerStatistics(
+                listener_id=listener_stats_li[0]['id'],
+                active_connections=listener_stats_li[0]['active_connections'],
+                bytes_in=listener_stats_li[0]['bytes_in'],
+                bytes_out=listener_stats_li[0]['bytes_out'],
+                request_errors=listener_stats_li[0]['request_errors'],
+                total_connections=listener_stats_li[0]['total_connections'],
+                received_time=mock_time.return_value),
+            data_models.ListenerStatistics(
+                listener_id=listener_stats_li[1]['id'],
+                active_connections=listener_stats_li[1]['active_connections'],
+                bytes_in=listener_stats_li[1]['bytes_in'],
+                bytes_out=listener_stats_li[1]['bytes_out'],
+                request_errors=listener_stats_li[1]['request_errors'],
+                total_connections=listener_stats_li[1]['total_connections'],
+                received_time=mock_time.return_value)]
+        mock_stats_base.assert_called_once_with(listener_stats_objects)
         self.assertEqual(self.ref_ok_response, result)
 
         # Test empty stats updates
-        mock_replace.reset_mock()
+        mock_stats_base.reset_mock()
         result = self.driver_updater.update_listener_statistics({})
-        mock_replace.assert_not_called()
+        mock_stats_base.assert_not_called()
         self.assertEqual(self.ref_ok_response, result)
 
         # Test missing ID
@@ -286,9 +302,9 @@ class TestDriverUpdater(base.TestCase):
 
         # Test for replace exception
         result = self.driver_updater.update_listener_statistics(
-            copy.deepcopy(listener_stats_dict))
+            listener_stats_dict)
         ref_update_listener_stats_error = {
             lib_consts.STATUS_CODE: lib_consts.DRVR_STATUS_CODE_FAILED,
             lib_consts.STATS_OBJECT: lib_consts.LISTENERS,
-            lib_consts.FAULT_STRING: 'boom', lib_consts.STATS_OBJECT_ID: 1}
+            lib_consts.FAULT_STRING: 'boom'}
         self.assertEqual(ref_update_listener_stats_error, result)

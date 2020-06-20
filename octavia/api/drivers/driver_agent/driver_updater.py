@@ -12,13 +12,17 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import time
+
 from octavia_lib.api.drivers import exceptions as driver_exceptions
 from octavia_lib.common import constants as lib_consts
 
 from octavia.common import constants as consts
+from octavia.common import data_models
 from octavia.common import utils
 from octavia.db import api as db_apis
 from octavia.db import repositories as repo
+from octavia.statistics import stats_base
 
 
 class DriverUpdater(object):
@@ -151,24 +155,34 @@ class DriverUpdater(object):
         :returns: None
         """
         listener_stats = statistics.get(lib_consts.LISTENERS, [])
+        stats_objects = []
         for stat in listener_stats:
             try:
-                listener_id = stat.pop('id')
+                stats_obj = data_models.ListenerStatistics(
+                    listener_id=stat['id'],
+                    bytes_in=stat['bytes_in'],
+                    bytes_out=stat['bytes_out'],
+                    active_connections=stat['active_connections'],
+                    total_connections=stat['total_connections'],
+                    request_errors=stat['request_errors'],
+                    received_time=time.time()
+                )
+                stats_objects.append(stats_obj)
             except Exception as e:
                 return {
                     lib_consts.STATUS_CODE: lib_consts.DRVR_STATUS_CODE_FAILED,
                     lib_consts.FAULT_STRING: str(e),
                     lib_consts.STATS_OBJECT: lib_consts.LISTENERS}
-            # Provider drivers other than the amphora driver do not have
-            # an amphora ID, use the listener ID again here to meet the
-            # constraint requirement.
-            try:
-                self.listener_stats_repo.replace(self.db_session, listener_id,
-                                                 listener_id, **stat)
-            except Exception as e:
-                return {
-                    lib_consts.STATUS_CODE: lib_consts.DRVR_STATUS_CODE_FAILED,
-                    lib_consts.FAULT_STRING: str(e),
-                    lib_consts.STATS_OBJECT: lib_consts.LISTENERS,
-                    lib_consts.STATS_OBJECT_ID: listener_id}
+
+        # Provider drivers other than the amphora driver do not have
+        # an amphora ID, use the listener ID again here to meet the
+        # constraint requirement.
+        try:
+            if stats_objects:
+                stats_base.update_stats_via_driver(stats_objects)
+        except Exception as e:
+            return {
+                lib_consts.STATUS_CODE: lib_consts.DRVR_STATUS_CODE_FAILED,
+                lib_consts.FAULT_STRING: str(e),
+                lib_consts.STATS_OBJECT: lib_consts.LISTENERS}
         return {lib_consts.STATUS_CODE: lib_consts.DRVR_STATUS_CODE_OK}

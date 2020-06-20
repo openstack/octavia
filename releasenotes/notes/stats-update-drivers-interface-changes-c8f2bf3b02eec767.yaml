@@ -1,0 +1,17 @@
+---
+features:
+  - |
+    Loadbalancer statistics can now be reported to multiple backend locations
+    simply by specifying multiple statistics drivers in config.
+upgrade:
+  - |
+    The internal interface for loadbalancer statistics collection has moved.
+    When upgrading, see deprecation notes for the ``stats_update_driver``
+    config option, as it will need to be moved and renamed.
+deprecations:
+  - |
+    The option ``health_manager.health_update_driver`` has been deprecated as
+    it was never really used, so the driver layer was removed.
+    The option ``health_manager.stats_update_driver`` was moved and renamed
+    to ``controller_worker.statistics_drivers`` (note it is now plural). It
+    can now contain a list of multiple drivers for handling statistics.
