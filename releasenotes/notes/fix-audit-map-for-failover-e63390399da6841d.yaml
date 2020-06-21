@@ -1,0 +1,5 @@
+---
+fixes:
+  - |
+    Fixed an issue in the CADF audit map file for failover actions that could
+    cause keystonemiddleware to raise an exception.
