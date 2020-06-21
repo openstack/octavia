@@ -13,8 +13,13 @@ failover = update/failover
 # path containing "nodes" keyword and node uuid.
 [path_keywords]
 amphorae = amphora
+availabilityzones = availabilityzone
+availabilityzoneprofiles = availabilityzoneprofile
+config = None
 defaults = None
 failover = None
+flavors = flavor
+flavorprofiles = flavorprofile
 healthmonitors = healthmonitor
 l7policies = l7policy
 listeners = listener
