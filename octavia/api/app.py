@@ -23,6 +23,7 @@ from oslo_middleware import request_id
 from oslo_middleware import sizelimit
 from pecan import configuration as pecan_configuration
 from pecan import make_app as pecan_make_app
+from oslo_utils import importutils
 
 from octavia.api import config as app_config
 from octavia.api.drivers import driver_factory
@@ -33,6 +34,10 @@ from octavia.common import service as octavia_service
 
 LOG = logging.getLogger(__name__)
 CONF = cfg.CONF
+
+# sapcc/openstack-watcher-middleware
+watcher_errors = importutils.try_import('watcher.errors')
+watcher_middleware = importutils.try_import('watcher.watcher')
 
 
 def get_pecan_config():
@@ -90,6 +95,21 @@ def _wrap_app(app):
         app = keystone.SkippingAuthProtocol(app, {})
 
     app = http_proxy_to_wsgi.HTTPProxyToWSGI(app)
+
+    # sapcc/openstack-watcher-middleware
+    if watcher_errors and watcher_middleware and CONF.watcher.enabled:
+        LOG.info("Openstack-Watcher-Middleware activated")
+        try:
+            app = watcher_middleware.OpenStackWatcherMiddleware(
+                app,
+                config=dict(CONF.watcher)
+            )
+        except (EnvironmentError, OSError,
+                watcher_errors.ConfigError) as e:
+            raise exceptions.InputFileError(
+                file_name=CONF.watcher.config_file,
+                reason=e
+            )
 
     # This should be the last middleware in the list (which results in
     # it being the first in the middleware chain). This is to ensure
