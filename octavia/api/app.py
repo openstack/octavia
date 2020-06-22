@@ -93,6 +93,7 @@ def _wrap_app(app):
 
     # sapcc/openstack-watcher-middleware
     if watcher_errors and watcher_middleware and CONF.watcher.enabled:
+        LOG.info("Openstack-Watcher-Middleware activated")
         try:
             app = watcher_middleware.OpenStackWatcherMiddleware(
                 app,
