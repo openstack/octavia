@@ -19,15 +19,13 @@ class ComputeBase(object, metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     def build(self, name="amphora_name", amphora_flavor=None,
-              image_id=None, image_tag=None, image_owner=None,
-              key_name=None, sec_groups=None, network_ids=None,
-              config_drive_files=None, user_data=None, server_group_id=None,
-              availability_zone=None):
+              image_tag=None, image_owner=None, key_name=None, sec_groups=None,
+              network_ids=None, config_drive_files=None, user_data=None,
+              server_group_id=None, availability_zone=None):
         """Build a new amphora.
 
         :param name: Optional name for Amphora
         :param amphora_flavor: Optionally specify a flavor
-        :param image_id: ID of the base image for the amphora instance
         :param image_tag: tag of the base image for the amphora instance
         :param key_name: Optionally specify a keypair
         :param sec_groups: Optionally specify list of security groups
