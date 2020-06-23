@@ -69,6 +69,20 @@ class AmphoraLoadBalancerDriver(object):
         """
 
     @abc.abstractmethod
+    def reload(self, loadbalancer, amphora):
+        """Reload the listeners on the amphora.
+
+        :param loadbalancer: loadbalancer object to reload listeners
+        :type loadbalancer: octavia.db.models.LoadBalancer
+        :param amphora: Amphora to start. If None, reload on all amphora
+        :type amphora: octavia.db.models.Amphora
+        :returns: return a value list (listener, vip, status flag--enable)
+
+        At this moment, we just build the basic structure for testing, will
+        add more function along with the development.
+        """
+
+    @abc.abstractmethod
     def delete(self, listener):
         """Delete the listener on the vip.
 
