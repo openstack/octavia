@@ -1,0 +1,7 @@
+---
+features:
+  - |
+    Operators can now use the 'amp_image_tag' Octavia flavor capability when
+    using the amphora provider driver. This allows custom amphora images to be
+    used per-load balancer. If this is not defined in an Octavia flavor, the
+    amp_image_tag Octavia configuration file setting will continue to be used.

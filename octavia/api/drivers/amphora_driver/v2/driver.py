@@ -413,6 +413,26 @@ class AmphoraProviderDriver(driver_base.ProviderDriver):
             # when the octavia-lib supports it.
             compute_driver.validate_flavor(compute_flavor)
 
+        amp_image_tag = flavor_dict.get(consts.AMP_IMAGE_TAG, None)
+        if amp_image_tag:
+            image_driver = stevedore_driver.DriverManager(
+                namespace='octavia.image.drivers',
+                name=CONF.controller_worker.image_driver,
+                invoke_on_load=True
+            ).driver
+
+            try:
+                image_driver.get_image_id_by_tag(
+                    amp_image_tag, CONF.controller_worker.amp_image_owner_id)
+            except Exception as e:
+                raise exceptions.NotFound(
+                    user_fault_string='Failed to find an image with tag {} '
+                                      'due to: {}'.format(
+                                          amp_image_tag, str(e)),
+                    operator_fault_string='Failed to find an image with tag '
+                                          '{} due to: {}'.format(
+                                              amp_image_tag, str(e)))
+
     # Availability Zone
     def get_supported_availability_zone_metadata(self):
         """Returns the valid availability zone metadata keys and descriptions.

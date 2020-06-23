@@ -43,6 +43,10 @@ SUPPORTED_FLAVOR_SCHEMA = {
         consts.COMPUTE_FLAVOR: {
             "type": "string",
             "description": "The compute driver flavor ID."
+        },
+        consts.AMP_IMAGE_TAG: {
+            "type": "string",
+            "description": "The amphora image tag."
         }
     }
 }

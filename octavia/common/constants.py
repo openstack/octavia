@@ -787,6 +787,7 @@ AVAILABILITY_ZONE_DATA = 'availability_zone_data'
 # Flavor metadata
 LOADBALANCER_TOPOLOGY = 'loadbalancer_topology'
 COMPUTE_FLAVOR = 'compute_flavor'
+AMP_IMAGE_TAG = 'amp_image_tag'
 
 # TODO(johnsom) move to octavia_lib
 # client certification authorization option

@@ -78,9 +78,12 @@ class ComputeCreate(BaseComputeTask):
                                   CONF.controller_worker.loadbalancer_topology)
             amp_compute_flavor = flavor.get(
                 constants.COMPUTE_FLAVOR, CONF.controller_worker.amp_flavor_id)
+            amp_image_tag = flavor.get(
+                constants.AMP_IMAGE_TAG, CONF.controller_worker.amp_image_tag)
         else:
             topology = CONF.controller_worker.loadbalancer_topology
             amp_compute_flavor = CONF.controller_worker.amp_flavor_id
+            amp_image_tag = CONF.controller_worker.amp_image_tag
 
         if availability_zone:
             amp_availability_zone = availability_zone.get(
@@ -113,7 +116,7 @@ class ComputeCreate(BaseComputeTask):
             compute_id = self.compute.build(
                 name="amphora-" + amphora_id,
                 amphora_flavor=amp_compute_flavor,
-                image_tag=CONF.controller_worker.amp_image_tag,
+                image_tag=amp_image_tag,
                 image_owner=CONF.controller_worker.amp_image_owner_id,
                 key_name=key_name,
                 sec_groups=CONF.controller_worker.amp_secgroup_list,
