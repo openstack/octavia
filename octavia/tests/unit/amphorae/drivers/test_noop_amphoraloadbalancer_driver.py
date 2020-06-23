@@ -95,6 +95,14 @@ class TestNoopAmphoraLoadBalancerDriver(base.TestCase):
                          self.driver.driver.amphoraconfig[(
                              self.load_balancer.id, '321')])
 
+    def test_reload(self):
+        mock_amphora = mock.MagicMock()
+        mock_amphora.id = '321'
+        self.driver.reload(self.load_balancer, amphora=mock_amphora)
+        self.assertEqual((self.load_balancer, mock_amphora, 'reload'),
+                         self.driver.driver.amphoraconfig[(
+                             self.load_balancer.id, '321')])
+
     def test_delete(self):
         self.driver.delete(self.listener)
         self.assertEqual((self.listener, self.vip, 'delete'),
