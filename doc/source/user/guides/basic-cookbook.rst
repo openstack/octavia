@@ -779,9 +779,9 @@ Health Monitor Best Practices
 =============================
 While it is possible to set up a listener without a health monitor, if a
 back-end pool member goes down, Octavia will not remove the failed server from
-the pool until a considerable time has passed. This can lead to service
-disruption for web clients. Because of this, we recommend always configuring
-production load balancers to use a health monitor.
+the pool. This can lead to service disruption for web clients. Because of this,
+we recommend always configuring production load balancers to use a health
+monitor.
 
 The health monitor itself is a process that does periodic health checks on each
 back-end server to pre-emptively detect failed servers and temporarily pull
