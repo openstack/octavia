@@ -164,3 +164,10 @@
     vars:
         amphora_os: centos
         amphora_os_release: 8
+
+- job:
+    name: octavia-v2-dsvm-scenario-nftables
+    parent: octavia-v2-dsvm-scenario
+    vars:
+      devstack_localrc:
+        OCTAVIA_AMP_USE_NFTABLES: True

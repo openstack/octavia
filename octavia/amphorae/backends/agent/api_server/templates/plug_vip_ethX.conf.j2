@@ -78,5 +78,5 @@ post-up /sbin/ip {{ '-6 ' if vip_ipv6 }}rule add from {{ vip }}/{{ '128' if vip_
 post-down /sbin/ip {{ '-6 ' if vip_ipv6 }}rule del from {{ vip }}/{{ '128' if vip_ipv6 else '32' }} table 1 priority 100
 {%- endif %}
 
-post-up /sbin/ip{{ '6' if vip_ipv6 }}tables -t nat -A POSTROUTING -p udp -o {{ interface }} -j MASQUERADE
-post-down /sbin/ip{{ '6' if vip_ipv6 }}tables -t nat -D POSTROUTING -p udp -o {{ interface }} -j MASQUERADE
+post-up /usr/local/bin/udp-masquerade.sh add {{ 'ipv6' if vip_ipv6 else 'ipv4' }} {{ interface }}
+post-down /usr/local/bin/udp-masquerade.sh delete {{ 'ipv6' if vip_ipv6 else 'ipv4' }} {{ interface }}

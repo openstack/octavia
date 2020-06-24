@@ -64,6 +64,11 @@ function build_octavia_worker_image {
         export DIB_LOCAL_ELEMENTS=$DIB_LOCAL_ELEMENTS
     fi
 
+    # Pull in the option to install nftables in the amphora
+    if [ -n "$DIB_OCTAVIA_AMP_USE_NFTABLES" ]; then
+        export DIB_OCTAVIA_AMP_USE_NFTABLES=$DIB_OCTAVIA_AMP_USE_NFTABLES
+    fi
+
     # pull the agent code from the current code zuul has a reference to
     if [ -n "$DIB_REPOLOCATION_pip_and_virtualenv" ]; then
         export DIB_REPOLOCATION_pip_and_virtualenv=$DIB_REPOLOCATION_pip_and_virtualenv
@@ -463,17 +468,34 @@ function create_mgmt_network_interface {
         die "Unknown network controller. Please define octavia_create_network_interface_device"
     fi
     sudo ip link set dev o-hm0 address $MGMT_PORT_MAC
-    if [ $SERVICE_IP_VERSION == '6' ] ; then
-        # Allow the required IPv6 ICMP messages
-        sudo ip6tables -I INPUT -i o-hm0 -p ipv6-icmp -j ACCEPT
-        sudo ip6tables -I INPUT -i o-hm0 -p udp --dport $OCTAVIA_HM_LISTEN_PORT -j ACCEPT
-        sudo ip6tables -I INPUT -i o-hm0 -p udp --dport $OCTAVIA_AMP_LOG_ADMIN_PORT -j ACCEPT
-        sudo ip6tables -I INPUT -i o-hm0 -p udp --dport $OCTAVIA_AMP_LOG_TENANT_PORT -j ACCEPT
+
+    # Check if the host is using nftables, an alternative to iptables
+    if [ -x "$(sudo bash -c 'command -v nft')" ]; then
+        sudo nft add table inet octavia
+        sudo nft add chain inet octavia o-hm0-incoming { type filter hook input priority 0\;}
+        sudo nft flush chain inet octavia o-hm0-incoming
+        # Note: Order is important here and using counter here as this is
+        # devstack for testing.
+        sudo nft insert rule inet octavia o-hm0-incoming iifname "o-hm0" counter log drop
+        sudo nft insert rule inet octavia o-hm0-incoming iifname "o-hm0" meta l4proto ipv6-icmp counter accept
+        sudo nft insert rule inet octavia o-hm0-incoming iifname "o-hm0" udp dport $OCTAVIA_HM_LISTEN_PORT counter accept
+        sudo nft insert rule inet octavia o-hm0-incoming iifname "o-hm0" udp dport $OCTAVIA_AMP_LOG_ADMIN_PORT counter accept
+        sudo nft insert rule inet octavia o-hm0-incoming iifname "o-hm0" udp dport $OCTAVIA_AMP_LOG_TENANT_PORT counter accept
+        sudo nft insert rule inet octavia o-hm0-incoming iifname "o-hm0" ct state related,established accept
     else
-        sudo iptables -I INPUT -i o-hm0 -p udp --dport $OCTAVIA_HM_LISTEN_PORT -j ACCEPT
-        sudo iptables -I INPUT -i o-hm0 -p udp --dport $OCTAVIA_AMP_LOG_ADMIN_PORT -j ACCEPT
-        sudo iptables -I INPUT -i o-hm0 -p udp --dport $OCTAVIA_AMP_LOG_TENANT_PORT -j ACCEPT
+        if [ $SERVICE_IP_VERSION == '6' ] ; then
+            # Allow the required IPv6 ICMP messages
+            sudo ip6tables -I INPUT -i o-hm0 -p ipv6-icmp -j ACCEPT
+            sudo ip6tables -I INPUT -i o-hm0 -p udp --dport $OCTAVIA_HM_LISTEN_PORT -j ACCEPT
+            sudo ip6tables -I INPUT -i o-hm0 -p udp --dport $OCTAVIA_AMP_LOG_ADMIN_PORT -j ACCEPT
+            sudo ip6tables -I INPUT -i o-hm0 -p udp --dport $OCTAVIA_AMP_LOG_TENANT_PORT -j ACCEPT
+        else
+            sudo iptables -I INPUT -i o-hm0 -p udp --dport $OCTAVIA_HM_LISTEN_PORT -j ACCEPT
+            sudo iptables -I INPUT -i o-hm0 -p udp --dport $OCTAVIA_AMP_LOG_ADMIN_PORT -j ACCEPT
+            sudo iptables -I INPUT -i o-hm0 -p udp --dport $OCTAVIA_AMP_LOG_TENANT_PORT -j ACCEPT
+        fi
     fi
+
 
     if [ $OCTAVIA_CONTROLLER_IP_PORT_LIST == 'auto' ] ; then
         iniset $OCTAVIA_CONF health_manager controller_ip_port_list $MGMT_PORT_IP:$OCTAVIA_HM_LISTEN_PORT
