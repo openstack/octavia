@@ -55,13 +55,18 @@ class AmphoraLoadBalancerDriver(object):
         """
 
     @abc.abstractmethod
-    def start(self, loadbalancer, amphora):
+    def start(self, loadbalancer, amphora, timeout_dict=None):
         """Start the listeners on the amphora.
 
         :param loadbalancer: loadbalancer object to start listeners
         :type loadbalancer: octavia.db.models.LoadBalancer
         :param amphora: Amphora to start. If None, start on all amphora
         :type amphora: octavia.db.models.Amphora
+        :param timeout_dict: Dictionary of timeout values for calls to the
+                             amphora. May contain: req_conn_timeout,
+                             req_read_timeout, conn_max_retries,
+                             conn_retry_interval
+        :type timeout_dict: dict
         :returns: return a value list (listener, vip, status flag--enable)
 
         At this moment, we just build the basic structure for testing, will
@@ -69,13 +74,18 @@ class AmphoraLoadBalancerDriver(object):
         """
 
     @abc.abstractmethod
-    def reload(self, loadbalancer, amphora):
+    def reload(self, loadbalancer, amphora, timeout_dict=None):
         """Reload the listeners on the amphora.
 
         :param loadbalancer: loadbalancer object to reload listeners
         :type loadbalancer: octavia.db.models.LoadBalancer
         :param amphora: Amphora to start. If None, reload on all amphora
         :type amphora: octavia.db.models.Amphora
+        :param timeout_dict: Dictionary of timeout values for calls to the
+                             amphora. May contain: req_conn_timeout,
+                             req_read_timeout, conn_max_retries,
+                             conn_retry_interval
+        :type timeout_dict: dict
         :returns: return a value list (listener, vip, status flag--enable)
 
         At this moment, we just build the basic structure for testing, will

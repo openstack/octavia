@@ -57,16 +57,18 @@ class NoopManager(object):
                                               loadbalancer.vip,
                                               'active')
 
-    def start(self, loadbalancer, amphora=None):
-        LOG.debug("Amphora %s no-op, start listeners, lb %s, amp %s",
-                  self.__class__.__name__, loadbalancer.id, amphora)
+    def start(self, loadbalancer, amphora=None, timeout_dict=None):
+        LOG.debug("Amphora %s no-op, start listeners, lb %s, amp %s"
+                  "timeouts %s", self.__class__.__name__, loadbalancer.id,
+                  amphora, timeout_dict)
         self.amphoraconfig[
             (loadbalancer.id, amphora.id)] = (loadbalancer, amphora,
                                               'start')
 
-    def reload(self, loadbalancer, amphora=None):
-        LOG.debug("Amphora %s no-op, reload listeners, lb %s, amp %s",
-                  self.__class__.__name__, loadbalancer.id, amphora)
+    def reload(self, loadbalancer, amphora=None, timeout_dict=None):
+        LOG.debug("Amphora %s no-op, reload listeners, lb %s, amp %s, "
+                  "timeouts %s", self.__class__.__name__, loadbalancer.id,
+                  amphora, timeout_dict)
         self.amphoraconfig[
             (loadbalancer.id, amphora.id)] = (loadbalancer, amphora,
                                               'reload')
@@ -144,13 +146,13 @@ class NoopAmphoraLoadBalancerDriver(
 
         self.driver.update(loadbalancer)
 
-    def start(self, loadbalancer, amphora=None):
+    def start(self, loadbalancer, amphora=None, timeout_dict=None):
 
-        self.driver.start(loadbalancer, amphora)
+        self.driver.start(loadbalancer, amphora, timeout_dict)
 
-    def reload(self, loadbalancer, amphora=None):
+    def reload(self, loadbalancer, amphora=None, timeout_dict=None):
 
-        self.driver.reload(loadbalancer, amphora)
+        self.driver.reload(loadbalancer, amphora, timeout_dict)
 
     def delete(self, listener):
 
