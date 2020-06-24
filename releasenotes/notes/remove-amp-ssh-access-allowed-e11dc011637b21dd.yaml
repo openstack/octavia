@@ -1,0 +1,6 @@
+---
+upgrade:
+  - |
+    The option ``[controller_worker]/amp_ssh_access_allowed`` has been
+    deprecated since Queens release and is now removed. This option was
+    superseded by ``[controller_worker]/amp_ssh_key_name`` option.

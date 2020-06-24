@@ -308,8 +308,6 @@ class TestComputeTasks(base.TestCase):
 
         mock_driver.build.return_value = COMPUTE_ID
         self.conf.config(
-            group="controller_worker", amp_ssh_access_allowed=False)
-        self.conf.config(
             group="controller_worker", user_data_config_drive=False)
         mock_log_cfg.return_value = 'FAKE CFG'
 
