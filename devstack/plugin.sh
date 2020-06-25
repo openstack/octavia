@@ -307,6 +307,7 @@ function octavia_configure {
     iniset $OCTAVIA_CONF controller_worker compute_driver ${OCTAVIA_COMPUTE_DRIVER}
     iniset $OCTAVIA_CONF controller_worker volume_driver  ${OCTAVIA_VOLUME_DRIVER}
     iniset $OCTAVIA_CONF controller_worker network_driver ${OCTAVIA_NETWORK_DRIVER}
+    iniset $OCTAVIA_CONF controller_worker image_driver ${OCTAVIA_IMAGE_DRIVER}
     iniset $OCTAVIA_CONF controller_worker amp_image_tag ${OCTAVIA_AMP_IMAGE_TAG}
 
     iniuncomment $OCTAVIA_CONF health_manager heartbeat_key

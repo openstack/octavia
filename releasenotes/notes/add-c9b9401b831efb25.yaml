@@ -1,0 +1,10 @@
+---
+features:
+  - |
+    Introduced an image driver interface. Supported drivers are noop and
+    Glance.
+upgrade:
+  - |
+    When the amphora provider driver is enabled, operators need to set option
+    ``[controller_worker]/image_driver``. The default image driver is
+    ``image_glance_driver``. For testing could be used ``image_noop_driver``.

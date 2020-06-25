@@ -811,6 +811,10 @@ L4_PROTOCOL_MAP = {
     PROTOCOL_UDP: PROTOCOL_UDP,
 }
 
+# Image drivers
+SUPPORTED_IMAGE_DRIVERS = ['image_noop_driver',
+                           'image_glance_driver']
+
 # Volume drivers
 VOLUME_NOOP_DRIVER = 'volume_noop_driver'
 SUPPORTED_VOLUME_DRIVERS = [VOLUME_NOOP_DRIVER,

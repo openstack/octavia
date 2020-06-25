@@ -18,7 +18,6 @@ from oslo_config import cfg
 from oslo_config import fixture as oslo_fixture
 from oslo_utils import uuidutils
 
-from octavia.common import clients
 from octavia.common import constants
 from octavia.common import data_models as models
 from octavia.common import exceptions
@@ -29,41 +28,6 @@ import octavia.tests.unit.base as base
 CONF = cfg.CONF
 
 
-class Test_ExtractAmpImageIdByTag(base.TestCase):
-
-    def setUp(self):
-        super(Test_ExtractAmpImageIdByTag, self).setUp()
-        client_mock = mock.patch.object(clients.GlanceAuth,
-                                        'get_glance_client')
-        self.client = client_mock.start().return_value
-
-    def test_no_images(self):
-        self.client.images.list.return_value = []
-        self.assertRaises(
-            exceptions.GlanceNoTaggedImages,
-            nova_common._extract_amp_image_id_by_tag, self.client,
-            'faketag', None)
-
-    def test_single_image(self):
-        images = [
-            {'id': uuidutils.generate_uuid(), 'tag': 'faketag'}
-        ]
-        self.client.images.list.return_value = images
-        image_id = nova_common._extract_amp_image_id_by_tag(self.client,
-                                                            'faketag', None)
-        self.assertIn(image_id, images[0]['id'])
-
-    def test_multiple_images_returns_one_of_images(self):
-        images = [
-            {'id': image_id, 'tag': 'faketag'}
-            for image_id in [uuidutils.generate_uuid() for i in range(10)]
-        ]
-        self.client.images.list.return_value = images
-        image_id = nova_common._extract_amp_image_id_by_tag(self.client,
-                                                            'faketag', None)
-        self.assertIn(image_id, [image['id'] for image in images])
-
-
 class TestNovaClient(base.TestCase):
 
     def setUp(self):
@@ -72,6 +36,8 @@ class TestNovaClient(base.TestCase):
         self.net_name = "lb-mgmt-net"
         conf.config(group="controller_worker",
                     amp_boot_network_list=['1', '2'])
+        conf.config(group="controller_worker",
+                    image_driver='image_noop_driver')
         self.conf = conf
         self.fake_image_uuid = uuidutils.generate_uuid()
 
@@ -134,12 +100,6 @@ class TestNovaClient(base.TestCase):
         self.network_id = uuidutils.generate_uuid()
         self.flavor_id = uuidutils.generate_uuid()
         self.availability_zone = 'my_test_az'
-
-        self.mock_image_tag = mock.patch(
-            'octavia.compute.drivers.nova_driver.'
-            '_extract_amp_image_id_by_tag').start()
-        self.mock_image_tag.return_value = 1
-        self.addCleanup(self.mock_image_tag.stop)
 
         super().setUp()
 

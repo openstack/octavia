@@ -31,32 +31,6 @@ LOG = logging.getLogger(__name__)
 CONF = cfg.CONF
 
 
-def _extract_amp_image_id_by_tag(client, image_tag, image_owner):
-    if image_owner:
-        images = list(client.images.list(
-            filters={'tag': [image_tag],
-                     'owner': image_owner,
-                     'status': constants.GLANCE_IMAGE_ACTIVE},
-            sort='created_at:desc',
-            limit=2))
-    else:
-        images = list(client.images.list(
-            filters={'tag': [image_tag],
-                     'status': constants.GLANCE_IMAGE_ACTIVE},
-            sort='created_at:desc',
-            limit=2))
-
-    if not images:
-        raise exceptions.GlanceNoTaggedImages(tag=image_tag)
-    image_id = images[0]['id']
-    num_images = len(images)
-    if num_images > 1:
-        LOG.warning("A single Glance image should be tagged with %(tag)s tag, "
-                    "but at least two were found. Using %(image_id)s.",
-                    {'tag': image_tag, 'image_id': image_id})
-    return image_id
-
-
 class VirtualMachineManager(compute_base.ComputeBase):
     '''Compute implementation of virtual machines via nova.'''
 
@@ -69,13 +43,6 @@ class VirtualMachineManager(compute_base.ComputeBase):
             endpoint_type=CONF.nova.endpoint_type,
             insecure=CONF.nova.insecure,
             cacert=CONF.nova.ca_certificates_file)
-        self._glance_client = clients.GlanceAuth.get_glance_client(
-            service_name=CONF.glance.service_name,
-            endpoint=CONF.glance.endpoint,
-            region=CONF.glance.region_name,
-            endpoint_type=CONF.glance.endpoint_type,
-            insecure=CONF.glance.insecure,
-            cacert=CONF.glance.ca_certificates_file)
         self.manager = self._nova_client.servers
         self.server_groups = self._nova_client.server_groups
         self.flavor_manager = self._nova_client.flavors
@@ -83,6 +50,11 @@ class VirtualMachineManager(compute_base.ComputeBase):
         self.volume_driver = stevedore_driver.DriverManager(
             namespace='octavia.volume.drivers',
             name=CONF.controller_worker.volume_driver,
+            invoke_on_load=True
+        ).driver
+        self.image_driver = stevedore_driver.DriverManager(
+            namespace='octavia.image.drivers',
+            name=CONF.controller_worker.image_driver,
             invoke_on_load=True
         ).driver
 
@@ -132,8 +104,8 @@ class VirtualMachineManager(compute_base.ComputeBase):
                 "group": server_group_id}
             az_name = availability_zone or CONF.nova.availability_zone
 
-            image_id = _extract_amp_image_id_by_tag(
-                self._glance_client, image_tag, image_owner)
+            image_id = self.image_driver.get_image_id_by_tag(
+                image_tag, image_owner)
 
             if CONF.nova.random_amphora_name_length:
                 r = random.SystemRandom()

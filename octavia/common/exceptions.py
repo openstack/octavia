@@ -232,8 +232,8 @@ class NoReadyAmphoraeException(OctaviaException):
     message = _('There are not any READY amphora available.')
 
 
-class GlanceNoTaggedImages(OctaviaException):
-    message = _("No Glance images are tagged with %(tag)s tag.")
+class ImageGetException(OctaviaException):
+    message = _('Failed to retrieve image with %(tag)s tag.')
 
 
 # This is an internal use exception for the taskflow work flow
