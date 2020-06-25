@@ -98,7 +98,7 @@ Command syntax:
 .. code-block::
 
     $ diskimage-create.sh
-            [-a i386 | **amd64** | armhf | ppc64le ]
+            [-a i386 | **amd64** | armhf | aarch64 | ppc64le ]
             [-b **haproxy** ]
             [-c **~/.cache/image-create** | <cache directory> ]
             [-d **bionic**/**8** | <other release id> ]

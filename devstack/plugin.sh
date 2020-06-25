@@ -94,13 +94,19 @@ function build_octavia_worker_image {
         octavia_dib_tracing_arg="-x"
     fi
     if [[ ${OCTAVIA_AMP_BASE_OS:+1} ]] ; then
-    export PARAM_OCTAVIA_AMP_BASE_OS='-i '$OCTAVIA_AMP_BASE_OS
+        export PARAM_OCTAVIA_AMP_BASE_OS='-i '$OCTAVIA_AMP_BASE_OS
     fi
     if [[ ${OCTAVIA_AMP_DISTRIBUTION_RELEASE_ID:+1} ]] ; then
-    export PARAM_OCTAVIA_AMP_DISTRIBUTION_RELEASE_ID='-d '$OCTAVIA_AMP_DISTRIBUTION_RELEASE_ID
+        export PARAM_OCTAVIA_AMP_DISTRIBUTION_RELEASE_ID='-d '$OCTAVIA_AMP_DISTRIBUTION_RELEASE_ID
     fi
     if [[ ${OCTAVIA_AMP_IMAGE_SIZE:+1} ]] ; then
-    export PARAM_OCTAVIA_AMP_IMAGE_SIZE='-s '$OCTAVIA_AMP_IMAGE_SIZE
+        export PARAM_OCTAVIA_AMP_IMAGE_SIZE='-s '$OCTAVIA_AMP_IMAGE_SIZE
+    fi
+    if [[ ${OCTAVIA_AMP_IMAGE_ARCH:+1} ]] ; then
+        export PARAM_OCTAVIA_AMP_IMAGE_ARCH='-a '$OCTAVIA_AMP_IMAGE_ARCH
+    fi
+    if [[ "$(trueorfalse False OCTAVIA_AMP_DISABLE_TMP_FS)" == "True" ]]; then
+        export PARAM_OCTAVIA_AMP_DISABLE_TMP_FS='-f'
     fi
 
     # Use the infra pypi mirror if it is available
@@ -125,7 +131,7 @@ function build_octavia_worker_image {
         fi
         sudo mkdir -m755 ${dib_logs}
         sudo chown $STACK_USER ${dib_logs}
-        $OCTAVIA_DIR/diskimage-create/diskimage-create.sh -l ${dib_logs}/$(basename $OCTAVIA_AMP_IMAGE_FILE).log $octavia_dib_tracing_arg -o $OCTAVIA_AMP_IMAGE_FILE ${PARAM_OCTAVIA_AMP_BASE_OS:-} ${PARAM_OCTAVIA_AMP_DISTRIBUTION_RELEASE_ID:-} ${PARAM_OCTAVIA_AMP_IMAGE_SIZE:-}
+        $OCTAVIA_DIR/diskimage-create/diskimage-create.sh -l ${dib_logs}/$(basename $OCTAVIA_AMP_IMAGE_FILE).log $octavia_dib_tracing_arg -o $OCTAVIA_AMP_IMAGE_FILE ${PARAM_OCTAVIA_AMP_BASE_OS:-} ${PARAM_OCTAVIA_AMP_DISTRIBUTION_RELEASE_ID:-} ${PARAM_OCTAVIA_AMP_IMAGE_SIZE:-} ${PARAM_OCTAVIA_AMP_IMAGE_ARCH:-} ${PARAM_OCTAVIA_AMP_DISABLE_TMP_FS:-}
     fi
 
     if ! [ -f $OCTAVIA_AMP_IMAGE_FILE ]; then
@@ -559,8 +565,14 @@ function configure_lb_mgmt_sec_grp {
 }
 
 function create_amphora_flavor {
+    disk_size=${OCTAVIA_AMP_IMAGE_SIZE:-2}
+    if [[ "$OCTAVIA_AMP_IMAGE_ARCH" =~ (aarch64|arm64) ]]; then
+        # DIB produces images larger than size specified, add another GB to the flavor disk
+        # See https://bugs.launchpad.net/diskimage-builder/+bug/1918461
+        disk_size=$((disk_size + 1))
+    fi
     # Pass even if it exists to avoid race condition on multinode
-    openstack flavor create --id auto --ram 1024 --disk ${OCTAVIA_AMP_IMAGE_SIZE:-2} --vcpus 1 --private m1.amphora -f value -c id --property hw_rng:allowed=True || true
+    openstack flavor create --id auto --ram 1024 --disk $disk_size --vcpus 1 --private m1.amphora -f value -c id --property hw_rng:allowed=True || true
     amp_flavor_id=$(openstack flavor show m1.amphora -f value -c id)
     iniset $OCTAVIA_CONF controller_worker amp_flavor_id $amp_flavor_id
 }
@@ -738,7 +750,15 @@ function octavia_init {
         OCTAVIA_AMP_IMAGE_ID=$(openstack image list -f value --property name=${OCTAVIA_AMP_IMAGE_NAME} -c ID)
 
         if [ -n "$OCTAVIA_AMP_IMAGE_ID" ]; then
-            openstack image set --tag ${OCTAVIA_AMP_IMAGE_TAG} --property hw_architecture='x86_64' --property hw_rng_model=virtio ${OCTAVIA_AMP_IMAGE_ID}
+            # Normalize architecture
+            # https://docs.openstack.org/nova/latest/configuration/config.html#filter_scheduler.image_properties_default_architecture
+            hw_arch=${OCTAVIA_AMP_IMAGE_ARCH:-x86_64}
+            if [[ "$OCTAVIA_AMP_IMAGE_ARCH" == "amd64" ]]; then
+                hw_arch="x86_64"
+            elif [[ "$OCTAVIA_AMP_IMAGE_ARCH" == "arm64" ]]; then
+                hw_arch="aarch64"
+            fi
+            openstack image set --tag ${OCTAVIA_AMP_IMAGE_TAG} --property hw_architecture=${hw_arch} --property hw_rng_model=virtio ${OCTAVIA_AMP_IMAGE_ID}
         fi
 
         # Create a management network.
