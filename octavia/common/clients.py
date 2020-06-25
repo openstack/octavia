@@ -120,7 +120,9 @@ class NeutronAuth(object):
         neutron_endpoint = CONF.neutron.endpoint
         if not neutron_endpoint:
             session = keystone.KeystoneSession().get_session()
-            endpoint_data = session.get_endpoint_data(service_type='network')
+            endpoint_data = session.get_endpoint_data(
+                service_type='network', interface=CONF.neutron.endpoint_type,
+                region_name=CONF.neutron.region_name)
             neutron_endpoint = endpoint_data.catalog_url
 
         kwargs = {
