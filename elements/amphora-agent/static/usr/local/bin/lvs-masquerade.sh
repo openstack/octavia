@@ -36,10 +36,14 @@ if [ "$1" == "add" ]; then
             nft add table ip octavia-ipv4
             nft add chain ip octavia-ipv4 ip-udp-masq { type nat hook postrouting priority 100\;}
             nft add rule ip octavia-ipv4 ip-udp-masq oifname "$3" meta l4proto udp masquerade
+            nft add chain ip octavia-ipv4 ip-sctp-masq { type nat hook postrouting priority 100\;}
+            nft add rule ip octavia-ipv4 ip-sctp-masq oifname "$3" meta l4proto sctp masquerade
         elif [ "$2" == "ipv6" ]; then
             nft add table ip6 octavia-ipv6
             nft add chain ip6 octavia-ipv6 ip6-udp-masq { type nat hook postrouting priority 100\;}
             nft add rule ip6 octavia-ipv6 ip6-udp-masq oifname "$3" meta l4proto udp masquerade
+            nft add chain ip6 octavia-ipv6 ip6-sctp-masq { type nat hook postrouting priority 100\;}
+            nft add rule ip6 octavia-ipv6 ip6-sctp-masq oifname "$3" meta l4proto sctp masquerade
         else
             usage
         fi
@@ -47,8 +51,10 @@ if [ "$1" == "add" ]; then
     else # nft not found, fall back to iptables
         if [ "$2" == "ipv4" ]; then
             /sbin/iptables -t nat -A POSTROUTING -p udp -o $3 -j MASQUERADE
+            /sbin/iptables -t nat -A POSTROUTING -p sctp -o $3 -j MASQUERADE
         elif [ "$2" == "ipv6" ]; then
             /sbin/ip6tables -t nat -A POSTROUTING -p udp -o $3 -j MASQUERADE
+            /sbin/ip6tables -t nat -A POSTROUTING -p sctp -o $3 -j MASQUERADE
         else
             usage
         fi
@@ -60,9 +66,13 @@ elif [ "$1" == "delete" ]; then
         if [ "$2" == "ipv4" ]; then
             nft flush chain ip octavia-ipv4 ip-udp-masq
             nft delete chain ip octavia-ipv4 ip-udp-masq
+            nft flush chain ip octavia-ipv4 ip-sctp-masq
+            nft delete chain ip octavia-ipv4 ip-sctp-masq
         elif [ "$2" == "ipv6" ]; then
             nft flush chain ip6 octavia-ipv6 ip-udp-masq
             nft delete chain ip6 octavia-ipv6 ip-udp-masq
+            nft flush chain ip6 octavia-ipv6 ip-sctp-masq
+            nft delete chain ip6 octavia-ipv6 ip-sctp-masq
         else
             usage
         fi
@@ -70,8 +80,10 @@ elif [ "$1" == "delete" ]; then
     else # nft not found, fall back to iptables
         if [ "$2" == "ipv4" ]; then
             /sbin/iptables -t nat -D POSTROUTING -p udp -o $3 -j MASQUERADE
+            /sbin/iptables -t nat -D POSTROUTING -p sctp -o $3 -j MASQUERADE
         elif [ "$2" == "ipv6" ]; then
             /sbin/ip6tables -t nat -D POSTROUTING -p udp -o $3 -j MASQUERADE
+            /sbin/ip6tables -t nat -D POSTROUTING -p sctp -o $3 -j MASQUERADE
         else
             usage
         fi

@@ -71,7 +71,7 @@ class TestHaproxyAmphoraLoadBalancerDriverTest(base.TestCase):
             'haproxy_version': u'1.6.3-1ubuntu0.1',
             'api_version': API_VERSION}
         self.driver.jinja_split = mock.MagicMock()
-        self.driver.udp_jinja = mock.MagicMock()
+        self.driver.lvs_jinja = mock.MagicMock()
 
         # Build sample Listener and VIP configs
         self.sl = sample_configs_split.sample_listener_tuple(
@@ -252,7 +252,7 @@ class TestHaproxyAmphoraLoadBalancerDriverTest(base.TestCase):
         mock_secret.assert_has_calls(secret_calls)
 
     def test_udp_update(self):
-        self.driver.udp_jinja.build_config.side_effect = ['fake_udp_config']
+        self.driver.lvs_jinja.build_config.side_effect = ['fake_udp_config']
 
         # Execute driver method
         self.driver.update(self.lb_udp)

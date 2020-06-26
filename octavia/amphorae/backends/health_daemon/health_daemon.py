@@ -241,18 +241,19 @@ def build_stats_message():
                                          "members": pool['members']}
 
     # UDP listener part
-    udp_listener_ids = util.get_udp_listeners()
-    if udp_listener_ids:
-        listeners_stats = keepalivedlvs_query.get_udp_listeners_stats()
+    lvs_listener_ids = util.get_lvs_listeners()
+    if lvs_listener_ids:
+        listeners_stats = keepalivedlvs_query.get_lvs_listeners_stats()
         if listeners_stats:
             for listener_id, listener_stats in listeners_stats.items():
                 delta_values = calculate_stats_deltas(
                     listener_id, listener_stats['stats'])
-                pool_status = keepalivedlvs_query.get_udp_listener_pool_status(
-                    listener_id)
-                udp_listener_dict = dict()
-                udp_listener_dict['status'] = listener_stats['status']
-                udp_listener_dict['stats'] = {
+                pool_status = (
+                    keepalivedlvs_query.get_lvs_listener_pool_status(
+                        listener_id))
+                lvs_listener_dict = dict()
+                lvs_listener_dict['status'] = listener_stats['status']
+                lvs_listener_dict['stats'] = {
                     'tx': delta_values['bout'],
                     'rx': delta_values['bin'],
                     'conns': listener_stats['stats']['scur'],
@@ -265,6 +266,6 @@ def build_stats_message():
                         "status": pool_status['lvs']['status'],
                         "members": pool_status['lvs']['members']
                     }
-                msg['listeners'][listener_id] = udp_listener_dict
+                msg['listeners'][listener_id] = lvs_listener_dict
     persist_counters()
     return msg

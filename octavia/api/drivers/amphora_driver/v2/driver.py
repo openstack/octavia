@@ -53,6 +53,7 @@ AMPHORA_SUPPORTED_PROTOCOLS = [
     lib_consts.PROTOCOL_PROXY,
     lib_consts.PROTOCOL_PROXYV2,
     lib_consts.PROTOCOL_UDP,
+    lib_consts.PROTOCOL_SCTP,
 ]
 
 
@@ -313,8 +314,8 @@ class AmphoraProviderDriver(driver_base.ProviderDriver):
             LOG.info("Member batch update is a noop, returning early.")
 
     def _validate_members(self, db_pool, members):
-        if db_pool.protocol == consts.PROTOCOL_UDP:
-            # For UDP LBs, check that we are not mixing IPv4 and IPv6
+        if db_pool.protocol in consts.LVS_PROTOCOLS:
+            # For SCTP/UDP LBs, check that we are not mixing IPv4 and IPv6
             for member in members:
                 member_is_ipv6 = utils.is_ipv6(member.address)
 
@@ -324,8 +325,8 @@ class AmphoraProviderDriver(driver_base.ProviderDriver):
 
                     if member_is_ipv6 != vip_is_ipv6:
                         msg = ("This provider doesn't support mixing IPv4 and "
-                               "IPv6 addresses for its VIP and members in UDP "
-                               "load balancers.")
+                               "IPv6 addresses for its VIP and members in {} "
+                               "load balancers.".format(db_pool.protocol))
                         raise exceptions.UnsupportedOptionError(
                             user_fault_string=msg,
                             operator_fault_string=msg)

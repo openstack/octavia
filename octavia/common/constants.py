@@ -807,6 +807,12 @@ TOPIC_AMPHORA_V2 = 'octavia_provisioning_v2'
 HAPROXY_HTTP_PROTOCOLS = [lib_consts.PROTOCOL_HTTP,
                           lib_consts.PROTOCOL_TERMINATED_HTTPS]
 
+LVS_PROTOCOLS = [PROTOCOL_UDP,
+                 lib_consts.PROTOCOL_SCTP]
+
+HAPROXY_BACKEND = 'HAPROXY'
+LVS_BACKEND = 'LVS'
+
 # Map each supported protocol to its L4 protocol
 L4_PROTOCOL_MAP = {
     PROTOCOL_TCP: PROTOCOL_TCP,

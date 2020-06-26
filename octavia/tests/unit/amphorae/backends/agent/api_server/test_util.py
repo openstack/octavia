@@ -178,25 +178,25 @@ class TestUtil(base.TestCase):
         mock_cfg_path.return_value = '/there'
         mock_path_exists.side_effect = [True, False, True, False, False]
 
-        result = util.get_protocol_for_lb_object('1')
+        result = util.get_backend_for_lb_object('1')
 
         mock_cfg_path.assert_called_once_with('1')
         mock_path_exists.assert_called_once_with('/there')
         self.assertFalse(mock_lvs_path.called)
-        self.assertEqual(consts.PROTOCOL_TCP, result)
+        self.assertEqual(consts.HAPROXY_BACKEND, result)
 
         mock_cfg_path.reset_mock()
 
-        result = util.get_protocol_for_lb_object('2')
+        result = util.get_backend_for_lb_object('2')
 
         mock_cfg_path.assert_called_once_with('2')
         mock_lvs_path.assert_called_once_with('2')
-        self.assertEqual(consts.PROTOCOL_UDP, result)
+        self.assertEqual(consts.LVS_BACKEND, result)
 
         mock_cfg_path.reset_mock()
         mock_lvs_path.reset_mock()
 
-        result = util.get_protocol_for_lb_object('3')
+        result = util.get_backend_for_lb_object('3')
 
         mock_cfg_path.assert_called_once_with('3')
         mock_lvs_path.assert_called_once_with('3')
@@ -281,7 +281,7 @@ class TestUtil(base.TestCase):
                           LISTENER_ID1)
 
     @mock.patch('octavia.amphorae.backends.agent.api_server.util.'
-                'get_udp_listeners')
+                'get_lvs_listeners')
     @mock.patch('os.makedirs')
     @mock.patch('os.path.exists')
     @mock.patch('os.listdir')

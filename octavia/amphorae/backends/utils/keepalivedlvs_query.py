@@ -15,6 +15,7 @@ import os
 import re
 import subprocess
 
+from octavia_lib.common import constants as lib_consts
 from oslo_log import log as logging
 
 from octavia.amphorae.backends.agent.api_server import util
@@ -91,10 +92,12 @@ def get_listener_realserver_mapping(ns_name, listener_ip_port,
         if 'RemoteAddress:Port' in line:
             result_keys = re.split(r'\s+',
                                    LVS_KEY_REGEX.findall(line)[0].strip())
-        elif line.startswith('UDP') and find_target_block:
+        elif ((line.startswith(constants.PROTOCOL_UDP) or
+               line.startswith(lib_consts.PROTOCOL_SCTP)) and
+              find_target_block):
             break
-        elif line.startswith('UDP') and re.match(r'^UDP\s+%s\s+\w+' % idex,
-                                                 line):
+        elif re.match(r'^(UDP|SCTP)\s+%s\s+\w+' % idex,
+                      line):
             find_target_block = True
         elif find_target_block and line:
             rs_is_ipv4 = True
@@ -134,7 +137,7 @@ def get_listener_realserver_mapping(ns_name, listener_ip_port,
     return find_target_block, actual_member_result
 
 
-def get_udp_listener_resource_ipports_nsname(listener_id):
+def get_lvs_listener_resource_ipports_nsname(listener_id):
     # resource_ipport_mapping = {'Listener': {'id': listener-id,
     #                                         'ipport': ipport},
     #                            'Pool': {'id': pool-id},
@@ -162,7 +165,7 @@ def get_udp_listener_resource_ipports_nsname(listener_id):
 
         if not listener_ip_port:
             # If not get listener_ip_port from the lvs config file,
-            # that means the udp listener's default pool have no enabled member
+            # that means the listener's default pool have no enabled member
             # yet. But at this moment, we can get listener_id and ns_name, so
             # for this function, we will just return ns_name
             return resource_ipport_mapping, ns_name
@@ -225,9 +228,9 @@ def get_udp_listener_resource_ipports_nsname(listener_id):
     return resource_ipport_mapping, ns_name
 
 
-def get_udp_listener_pool_status(listener_id):
+def get_lvs_listener_pool_status(listener_id):
     (resource_ipport_mapping,
-     ns_name) = get_udp_listener_resource_ipports_nsname(listener_id)
+     ns_name) = get_lvs_listener_resource_ipports_nsname(listener_id)
     if 'Pool' not in resource_ipport_mapping:
         return {}
     if 'Members' not in resource_ipport_mapping:
@@ -340,7 +343,8 @@ def get_ipvsadm_info(ns_name, is_stats_cmd=False):
             fields.extend(split_line(output[line_num]))
             fields.extend(temp_fields)
         # here we get the all fields
-        elif constants.PROTOCOL_UDP in output[line_num]:
+        elif (constants.PROTOCOL_UDP in output[line_num] or
+              lib_consts.PROTOCOL_SCTP in output[line_num]):
             # if UDP/TCP in this line, we can know this line is
             # VS configuration.
             vs_values = split_line(output[line_num])
@@ -372,11 +376,11 @@ def get_ipvsadm_info(ns_name, is_stats_cmd=False):
     return value_mapping
 
 
-def get_udp_listeners_stats():
-    udp_listener_ids = util.get_udp_listeners()
+def get_lvs_listeners_stats():
+    lvs_listener_ids = util.get_lvs_listeners()
     need_check_listener_ids = [
-        listener_id for listener_id in udp_listener_ids
-        if util.is_udp_listener_running(listener_id)]
+        listener_id for listener_id in lvs_listener_ids
+        if util.is_lvs_listener_running(listener_id)]
     ipport_mapping = dict()
     listener_stats_res = dict()
     for check_listener_id in need_check_listener_ids:
@@ -388,8 +392,8 @@ def get_udp_listeners_stats():
         #                                       {'id': member-id-2,
         #                                        'ipport': ipport}],
         #                            'HealthMonitor': {'id': healthmonitor-id}}
-        (resource_ipport_mapping,
-         ns_name) = get_udp_listener_resource_ipports_nsname(check_listener_id)
+        resource_ipport_mapping, ns_name = (
+            get_lvs_listener_resource_ipports_nsname(check_listener_id))
 
         # Listener is disabled, we don't need to send an update
         if resource_ipport_mapping is None:

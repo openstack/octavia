@@ -43,7 +43,7 @@ class TestAmphoraInfo(base.TestCase):
         super().setUp()
         self.osutils_mock = mock.MagicMock()
         self.amp_info = amphora_info.AmphoraInfo(self.osutils_mock)
-        self.udp_driver = mock.MagicMock()
+        self.lvs_driver = mock.MagicMock()
 
         # setup a fake haproxy config file
         templater = jinja_cfg.JinjaTemplater(
@@ -95,7 +95,7 @@ class TestAmphoraInfo(base.TestCase):
                                           mock_pkg_version, mock_webob):
 
         mock_pkg_version.side_effect = self._return_version
-        self.udp_driver.get_subscribed_amp_compile_info.side_effect = [
+        self.lvs_driver.get_subscribed_amp_compile_info.side_effect = [
             ['keepalived', 'ipvsadm']]
         original_version = api_server.VERSION
         api_server.VERSION = self.API_VERSION
@@ -105,7 +105,7 @@ class TestAmphoraInfo(base.TestCase):
                          'keepalived_version': self.KEEPALIVED_VERSION,
                          'ipvsadm_version': self.IPVSADM_VERSION
                          }
-        self.amp_info.compile_amphora_info(extend_udp_driver=self.udp_driver)
+        self.amp_info.compile_amphora_info(extend_lvs_driver=self.lvs_driver)
         mock_webob.Response.assert_called_once_with(json=expected_dict)
         api_server.VERSION = original_version
 
@@ -183,7 +183,7 @@ class TestAmphoraInfo(base.TestCase):
         api_server.VERSION = original_version
 
     @mock.patch('octavia.amphorae.backends.agent.api_server.util.'
-                'get_udp_listeners',
+                'get_lvs_listeners',
                 return_value=[FAKE_LISTENER_ID_3, FAKE_LISTENER_ID_4])
     @mock.patch('octavia.amphorae.backends.agent.api_server.util.'
                 'get_loadbalancers')
@@ -201,10 +201,11 @@ class TestAmphoraInfo(base.TestCase):
     @mock.patch('octavia.amphorae.backends.agent.api_server.'
                 'amphora_info.AmphoraInfo._count_haproxy_processes')
     @mock.patch('socket.gethostname', return_value='FAKE_HOST')
-    def test_compile_amphora_details_for_udp(self, mhostname, m_count,
-                                             m_pkg_version, m_load, m_get_nets,
-                                             m_os, m_cpu, mget_mem,
-                                             mock_get_lb, mget_udp_listener):
+    def test_compile_amphora_details_for_ipvs(self, mhostname, m_count,
+                                              m_pkg_version, m_load,
+                                              m_get_nets,
+                                              m_os, m_cpu, mget_mem,
+                                              mock_get_lb, mget_lvs_listener):
         mget_mem.return_value = {'SwapCached': 0, 'Buffers': 344792,
                                  'MemTotal': 21692784, 'Cached': 4271856,
                                  'Slab': 534384, 'MemFree': 12685624,
@@ -224,9 +225,9 @@ class TestAmphoraInfo(base.TestCase):
                                             'network_tx': 578}}
         m_load.return_value = ['0.09', '0.11', '0.10']
         m_count.return_value = 5
-        self.udp_driver.get_subscribed_amp_compile_info.return_value = [
+        self.lvs_driver.get_subscribed_amp_compile_info.return_value = [
             'keepalived', 'ipvsadm']
-        self.udp_driver.is_listener_running.side_effect = [True, False]
+        self.lvs_driver.is_listener_running.side_effect = [True, False]
         mock_get_lb.return_value = [self.LB_ID_1]
         original_version = api_server.VERSION
         api_server.VERSION = self.API_VERSION
@@ -242,7 +243,7 @@ class TestAmphoraInfo(base.TestCase):
                          u'haproxy_version': self.HAPROXY_VERSION,
                          u'keepalived_version': self.KEEPALIVED_VERSION,
                          u'ipvsadm_version': self.IPVSADM_VERSION,
-                         u'udp_listener_process_count': 1,
+                         u'lvs_listener_process_count': 1,
                          u'hostname': u'FAKE_HOST',
                          u'listeners': sorted(list(set(
                              [self.FAKE_LISTENER_ID_3,
@@ -263,7 +264,7 @@ class TestAmphoraInfo(base.TestCase):
                          u'packages': {},
                          u'topology': u'SINGLE',
                          u'topology_status': u'OK'}
-        actual = self.amp_info.compile_amphora_details(self.udp_driver)
+        actual = self.amp_info.compile_amphora_details(self.lvs_driver)
         self.assertEqual(expected_dict, actual.json)
         api_server.VERSION = original_version
 
@@ -281,27 +282,27 @@ class TestAmphoraInfo(base.TestCase):
             [uuidutils.generate_uuid(), uuidutils.generate_uuid()])
         self.assertEqual(1, result)
 
-    def test__count_udp_listener_processes(self):
-        self.udp_driver.is_listener_running.side_effect = [True, False, True]
+    def test__count_lvs_listener_processes(self):
+        self.lvs_driver.is_listener_running.side_effect = [True, False, True]
         expected = 2
-        actual = self.amp_info._count_udp_listener_processes(
-            self.udp_driver, [self.FAKE_LISTENER_ID_1,
+        actual = self.amp_info._count_lvs_listener_processes(
+            self.lvs_driver, [self.FAKE_LISTENER_ID_1,
                               self.FAKE_LISTENER_ID_2,
                               self.FAKE_LISTENER_ID_3])
         self.assertEqual(expected, actual)
 
     @mock.patch('octavia.amphorae.backends.agent.api_server.'
                 'amphora_info.AmphoraInfo._get_version_of_installed_package')
-    def test__get_extend_body_from_udp_driver(self, m_get_version):
-        self.udp_driver.get_subscribed_amp_compile_info.return_value = [
+    def test__get_extend_body_from_lvs_driver(self, m_get_version):
+        self.lvs_driver.get_subscribed_amp_compile_info.return_value = [
             'keepalived', 'ipvsadm']
         m_get_version.side_effect = self._return_version
         expected = {
             "keepalived_version": self.KEEPALIVED_VERSION,
             "ipvsadm_version": self.IPVSADM_VERSION
         }
-        actual = self.amp_info._get_extend_body_from_udp_driver(
-            self.udp_driver)
+        actual = self.amp_info._get_extend_body_from_lvs_driver(
+            self.lvs_driver)
         self.assertEqual(expected, actual)
 
     def test__get_meminfo(self):

@@ -29,9 +29,9 @@ class KeepalivedLvsTestCase(base.TestCase):
 
     @mock.patch.object(keepalivedlvs, "webob")
     @mock.patch('os.path.exists')
-    def test_delete_udp_listener_not_exist(self, m_exist, m_webob):
+    def test_delete_lvs_listener_not_exist(self, m_exist, m_webob):
         m_exist.return_value = False
-        self.test_keepalivedlvs.delete_udp_listener(self.FAKE_ID)
+        self.test_keepalivedlvs.delete_lvs_listener(self.FAKE_ID)
         calls = [
             mock.call(
                 json=dict(message='UDP Listener Not Found',
@@ -48,11 +48,12 @@ class KeepalivedLvsTestCase(base.TestCase):
     @mock.patch('subprocess.check_output')
     @mock.patch('os.remove')
     @mock.patch('os.path.exists')
-    def test_delete_udp_listener_unsupported_sysinit(self, m_exist, m_remove,
+    def test_delete_lvs_listener_unsupported_sysinit(self, m_exist, m_remove,
                                                      m_check_output, mget_pid,
                                                      m_init_sys):
         m_exist.return_value = True
         mget_pid.return_value = '0'
         self.assertRaises(
-            util.UnknownInitError, self.test_keepalivedlvs.delete_udp_listener,
+            util.UnknownInitError,
+            self.test_keepalivedlvs.delete_lvs_listener,
             self.FAKE_ID)

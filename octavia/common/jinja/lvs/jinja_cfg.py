@@ -15,6 +15,7 @@
 import os
 
 import jinja2
+from octavia_lib.common import constants as lib_consts
 
 from octavia.common.config import cfg
 from octavia.common import constants
@@ -24,7 +25,8 @@ from octavia.common import utils as octavia_utils
 CONF = cfg.CONF
 
 PROTOCOL_MAP = {
-    constants.PROTOCOL_UDP: 'udp'
+    constants.PROTOCOL_UDP: 'udp',
+    lib_consts.PROTOCOL_SCTP: 'sctp'
 }
 
 BALANCE_MAP = {
@@ -92,7 +94,8 @@ class LvsJinjaTemplater(object):
             listener)
         return self._get_template().render(
             {'loadbalancer': loadbalancer},
-            constants=constants)
+            constants=constants,
+            lib_consts=lib_consts)
 
     def _transform_loadbalancer(self, loadbalancer, listener):
         """Transforms a load balancer into an object that will
@@ -186,9 +189,13 @@ class LvsJinjaTemplater(object):
             'monitor_port': member.monitor_port
         }
 
-    def _get_default_lvs_check_script_path(self):
-        return (CONF.haproxy_amphora.base_path +
-                '/lvs/check/' + CHECK_SCRIPT_NAME)
+    def _get_default_lvs_check_script_path(self, monitor_type):
+        if monitor_type == constants.HEALTH_MONITOR_UDP_CONNECT:
+            return (CONF.haproxy_amphora.base_path +
+                    '/lvs/check/' + CHECK_SCRIPT_NAME)
+        if monitor_type == lib_consts.HEALTH_MONITOR_SCTP:
+            return "amphora-health-checker sctp"
+        return None
 
     def _transform_health_monitor(self, monitor):
         """Transforms a health monitor into an object that will
@@ -202,10 +209,8 @@ class LvsJinjaTemplater(object):
             'timeout': monitor.timeout,
             'enabled': monitor.enabled,
             'fall_threshold': monitor.fall_threshold,
-            'check_script_path': (self._get_default_lvs_check_script_path()
-                                  if monitor.type ==
-                                  constants.HEALTH_MONITOR_UDP_CONNECT else
-                                  None)
+            'check_script_path': (
+                self._get_default_lvs_check_script_path(monitor.type))
         }
         if monitor.type == constants.HEALTH_MONITOR_HTTP:
             return_val.update({

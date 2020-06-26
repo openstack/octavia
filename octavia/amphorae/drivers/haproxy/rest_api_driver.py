@@ -75,7 +75,7 @@ class HaproxyAmphoraLoadBalancerDriver(
             base_crt_dir=CONF.haproxy_amphora.base_cert_dir,
             haproxy_template=CONF.haproxy_amphora.haproxy_template,
             connection_logging=CONF.haproxy_amphora.connection_logging)
-        self.udp_jinja = jinja_udp_cfg.LvsJinjaTemplater()
+        self.lvs_jinja = jinja_udp_cfg.LvsJinjaTemplater()
 
     def _get_haproxy_versions(self, amphora):
         """Get major and minor version number from haproxy
@@ -154,9 +154,9 @@ class HaproxyAmphoraLoadBalancerDriver(
         for listener in loadbalancer.listeners:
             LOG.debug("%s updating listener %s on amphora %s",
                       self.__class__.__name__, listener.id, amphora.id)
-            if listener.protocol == 'UDP':
+            if listener.protocol in consts.LVS_PROTOCOLS:
                 # Generate Keepalived LVS configuration from listener object
-                config = self.udp_jinja.build_config(listener=listener)
+                config = self.lvs_jinja.build_config(listener=listener)
                 self.clients[amphora.api_version].upload_udp_config(
                     amphora, listener.id, config, timeout_dict=timeout_dict)
                 self.clients[amphora.api_version].reload_listener(
@@ -240,7 +240,7 @@ class HaproxyAmphoraLoadBalancerDriver(
             if amp.status != consts.DELETED:
                 # Generate Keepalived LVS configuration from listener object
                 self._populate_amphora_api_version(amp)
-                config = self.udp_jinja.build_config(listener=listener)
+                config = self.lvs_jinja.build_config(listener=listener)
                 self.clients[amp.api_version].upload_udp_config(
                     amp, listener.id, config)
                 self.clients[amp.api_version].reload_listener(
@@ -282,7 +282,7 @@ class HaproxyAmphoraLoadBalancerDriver(
                         'process mode.', amp.id, loadbalancer.id)
                     has_tcp = False
                     for listener in loadbalancer.listeners:
-                        if listener.protocol == consts.PROTOCOL_UDP:
+                        if listener.protocol in consts.LVS_PROTOCOLS:
                             getattr(self.clients[amp.api_version], func_name)(
                                 amp, listener.id, *args)
                         else:
@@ -298,10 +298,10 @@ class HaproxyAmphoraLoadBalancerDriver(
         self._apply('start_listener', loadbalancer, amphora, timeout_dict)
 
     def delete(self, listener):
-        # Delete any UDP listeners the old way (we didn't update the way they
-        # are configured)
+        # Delete any UDP/SCTP listeners the old way (we didn't update the way
+        # they are configured)
         loadbalancer = listener.load_balancer
-        if listener.protocol == consts.PROTOCOL_UDP:
+        if listener.protocol in consts.LVS_PROTOCOLS:
             for amp in loadbalancer.amphorae:
                 if amp.status != consts.DELETED:
                     self._populate_amphora_api_version(amp)
@@ -309,7 +309,7 @@ class HaproxyAmphoraLoadBalancerDriver(
                         amp, listener.id)
             return
 
-        # In case the listener is not UDP, things get more complicated.
+        # In case the listener is not UDP or SCTP, things get more complicated.
         # We need to do this individually for each amphora in case some are
         # using split config and others are using combined config.
         for amp in loadbalancer.amphorae:
@@ -353,11 +353,11 @@ class HaproxyAmphoraLoadBalancerDriver(
                 amphora, listener.load_balancer.id,
                 '{id}.pem'.format(id=cert_id))
 
-        # See how many non-UDP listeners we have left
-        non_udp_listener_count = len([
+        # See how many non-UDP/SCTP listeners we have left
+        non_lvs_listener_count = len([
             1 for li in listener.load_balancer.listeners
-            if li.protocol != consts.PROTOCOL_UDP])
-        if non_udp_listener_count > 0:
+            if li.protocol not in consts.LVS_PROTOCOLS])
+        if non_lvs_listener_count > 0:
             # We have other listeners, so just update is fine.
             # TODO(rm_work): This is a little inefficient since this duplicates
             # a lot of the detection logic that has already been done, but it
@@ -980,6 +980,7 @@ class AmphoraAPIClient1_0(AmphoraAPIClientBase):
                      timeout_dict=timeout_dict)
         return exc.check_exception(r, log_error=log_error).json()
 
+    # The function is used for all LVS-supported protocol listener (UDP, SCTP)
     def upload_udp_config(self, amp, listener_id, config, timeout_dict=None):
         r = self.put(
             amp,

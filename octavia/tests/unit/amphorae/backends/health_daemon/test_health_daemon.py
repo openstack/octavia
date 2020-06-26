@@ -379,13 +379,13 @@ class TestHealthDaemon(base.TestCase):
         self.assertEqual(0, mock_fdopen().read.call_count)
 
     @mock.patch("octavia.amphorae.backends.utils.keepalivedlvs_query."
-                "get_udp_listener_pool_status")
+                "get_lvs_listener_pool_status")
     @mock.patch("octavia.amphorae.backends.utils.keepalivedlvs_query."
-                "get_udp_listeners_stats")
+                "get_lvs_listeners_stats")
     @mock.patch("octavia.amphorae.backends.agent.api_server.util."
-                "get_udp_listeners")
-    def test_build_stats_message_with_udp_listener(
-            self, mock_get_udp_listeners,
+                "get_lvs_listeners")
+    def test_build_stats_message_with_lvs_listener(
+            self, mock_get_lvs_listeners,
             mock_get_listener_stats, mock_get_pool_status):
         health_daemon.COUNTERS = None
         health_daemon.COUNTERS_FILE = None
@@ -395,7 +395,7 @@ class TestHealthDaemon(base.TestCase):
         pool_id = uuidutils.generate_uuid()
         member_id1 = uuidutils.generate_uuid()
         member_id2 = uuidutils.generate_uuid()
-        mock_get_udp_listeners.return_value = [udp_listener_id1,
+        mock_get_lvs_listeners.return_value = [udp_listener_id1,
                                                udp_listener_id2,
                                                udp_listener_id3]
 

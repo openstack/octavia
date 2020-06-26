@@ -197,7 +197,9 @@ class AllowedAddressPairsDriver(neutron_base.BaseNeutronDriver):
         del_ports = set(old_ports) - set(updated_ports)
         for rule in rules.get('security_group_rules', []):
             if (rule.get('protocol', '') and
-                    rule.get('protocol', '').lower() in ['tcp', 'udp'] and
+                    rule.get('protocol', '').upper() in
+                    [constants.PROTOCOL_TCP, constants.PROTOCOL_UDP,
+                     lib_consts.PROTOCOL_SCTP] and
                     (rule.get('port_range_max'), rule.get('protocol'),
                      rule.get('remote_ip_prefix')) in del_ports):
                 rule_id = rule.get(constants.ID)

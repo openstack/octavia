@@ -15,6 +15,7 @@
 
 import collections
 
+from octavia_lib.common import constants as lib_consts
 from oslo_config import cfg
 
 from octavia.common import constants
@@ -416,16 +417,6 @@ RET_UDP_HEALTH_MONITOR = {
                           '/lvs/check/udp_check.sh')
 }
 
-UDP_HEALTH_MONITOR_NO_SCRIPT = {
-    'id': 'sample_monitor_id_1',
-    'check_script_path': None,
-    'delay': 30,
-    'enabled': True,
-    'fall_threshold': 3,
-    'timeout': 31,
-    'type': 'UDP'
-}
-
 RET_UDP_MEMBER = {
     'id': 'member_id_1',
     'address': '192.0.2.10',
@@ -469,7 +460,7 @@ UDP_MEMBER_2 = {
 RET_UDP_POOL = {
     'id': 'sample_pool_id_1',
     'enabled': True,
-    'health_monitor': UDP_HEALTH_MONITOR_NO_SCRIPT,
+    'health_monitor': RET_UDP_HEALTH_MONITOR,
     'lb_algorithm': 'rr',
     'members': [UDP_MEMBER_1, UDP_MEMBER_2],
     'protocol': 'udp',
@@ -490,6 +481,89 @@ RET_UDP_LISTENER = {
     'enabled': True,
     'id': 'sample_listener_id_1',
     'protocol_mode': 'udp',
+    'protocol_port': '80'
+}
+
+SCTP_SOURCE_IP_BODY = {
+    'type': constants.SESSION_PERSISTENCE_SOURCE_IP,
+    'persistence_timeout': 33,
+    'persistence_granularity': '255.0.0.0'
+}
+
+RET_SCTP_HEALTH_MONITOR = {
+    'id': 'sample_monitor_id_1',
+    'type': lib_consts.HEALTH_MONITOR_SCTP,
+    'delay': 30,
+    'timeout': 31,
+    'enabled': True,
+    'fall_threshold': 3,
+    'check_script_path': 'amphora-health-checker sctp'
+}
+
+RET_SCTP_MEMBER = {
+    'id': 'member_id_1',
+    'address': '192.0.2.10',
+    'protocol_port': 82,
+    'weight': 13,
+    'enabled': True,
+    'monitor_address': None,
+    'monitor_port': None
+}
+
+RET_SCTP_MEMBER_MONITOR_IP_PORT = {
+    'id': 'member_id_1',
+    'address': '192.0.2.10',
+    'protocol_port': 82,
+    'weight': 13,
+    'enabled': True,
+    'monitor_address': '192.168.1.1',
+    'monitor_port': 9000
+}
+
+SCTP_MEMBER_1 = {
+    'id': 'sample_member_id_1',
+    'address': '10.0.0.99',
+    'enabled': True,
+    'protocol_port': 82,
+    'weight': 13,
+    'monitor_address': None,
+    'monitor_port': None,
+}
+
+SCTP_MEMBER_2 = {
+    'id': 'sample_member_id_2',
+    'address': '10.0.0.98',
+    'enabled': True,
+    'protocol_port': 82,
+    'weight': 13,
+    'monitor_address': None,
+    'monitor_port': None
+}
+
+RET_SCTP_POOL = {
+    'id': 'sample_pool_id_1',
+    'enabled': True,
+    'health_monitor': RET_SCTP_HEALTH_MONITOR,
+    'lb_algorithm': 'rr',
+    'members': [SCTP_MEMBER_1, SCTP_MEMBER_2],
+    'protocol': 'sctp',
+    'session_persistence': SCTP_SOURCE_IP_BODY
+}
+
+RET_SCTP_LISTENER = {
+    'connection_limit': 98,
+    'default_pool': {
+        'id': 'sample_pool_id_1',
+        'enabled': True,
+        'health_monitor': RET_SCTP_HEALTH_MONITOR,
+        'lb_algorithm': 'rr',
+        'members': [SCTP_MEMBER_1, SCTP_MEMBER_2],
+        'protocol': 'sctp',
+        'session_persistence': SCTP_SOURCE_IP_BODY
+    },
+    'enabled': True,
+    'id': 'sample_listener_id_1',
+    'protocol_mode': 'sctp',
     'protocol_port': '80'
 }
 
@@ -812,7 +886,11 @@ def sample_pool_tuple(listener_id=None, proto=None, monitor=True,
         tls_ciphers = None
         tls_versions = None
         alpn_protocols = None
-    monitor_proto = proto if monitor_proto is None else monitor_proto
+    if monitor_proto is None:
+        if proto == constants.PROTOCOL_UDP:
+            monitor_proto = constants.HEALTH_MONITOR_UDP_CONNECT
+        else:
+            monitor_proto = proto
     in_pool = collections.namedtuple(
         'pool', 'id, protocol, lb_algorithm, members, health_monitor, '
                 'session_persistence, enabled, operating_status, '
@@ -820,7 +898,7 @@ def sample_pool_tuple(listener_id=None, proto=None, monitor=True,
                 'crl_container_id, tls_enabled, tls_ciphers, '
                 'tls_versions, provisioning_status, alpn_protocols, ' +
                 constants.HTTP_REUSE)
-    if (proto == constants.PROTOCOL_UDP and
+    if (proto in constants.LVS_PROTOCOLS and
             persistence_type == constants.SESSION_PERSISTENCE_SOURCE_IP):
         kwargs = {'persistence_type': persistence_type,
                   'persistence_timeout': persistence_timeout,
@@ -956,6 +1034,8 @@ def sample_health_monitor_tuple(proto='HTTP', sample_hm=1,
     if proto == constants.HEALTH_MONITOR_UDP_CONNECT:
         kwargs['check_script_path'] = (CONF.haproxy_amphora.base_path +
                                        'lvs/check/' + 'udp_check.sh')
+    elif proto == lib_consts.HEALTH_MONITOR_SCTP:
+        kwargs['check_script_path'] = 'amphora-health-checker sctp'
     else:
         kwargs['check_script_path'] = None
     return monitor(**kwargs)

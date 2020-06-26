@@ -258,9 +258,9 @@ class LvsQueryTestCase(base.TestCase):
                 health_monitor_enabled=True)
             self.assertEqual((False, {}), result)
 
-    def test_get_udp_listener_resource_ipports_nsname(self):
+    def test_get_lvs_listener_resource_ipports_nsname(self):
         # ipv4
-        res = lvs_query.get_udp_listener_resource_ipports_nsname(
+        res = lvs_query.get_lvs_listener_resource_ipports_nsname(
             self.listener_id_v4)
         expected = {'Listener': {'id': self.listener_id_v4,
                                  'ipport': '10.0.0.37:7777'},
@@ -276,7 +276,7 @@ class LvsQueryTestCase(base.TestCase):
         self.assertEqual((expected, constants.AMPHORA_NAMESPACE), res)
 
         # ipv6
-        res = lvs_query.get_udp_listener_resource_ipports_nsname(
+        res = lvs_query.get_lvs_listener_resource_ipports_nsname(
             self.listener_id_v6)
         expected = {'Listener': {
             'id': self.listener_id_v6,
@@ -294,13 +294,13 @@ class LvsQueryTestCase(base.TestCase):
         self.assertEqual((expected, constants.AMPHORA_NAMESPACE), res)
 
         # disabled
-        res = lvs_query.get_udp_listener_resource_ipports_nsname(
+        res = lvs_query.get_lvs_listener_resource_ipports_nsname(
             self.disabled_listener_id)
         self.assertEqual((None, constants.AMPHORA_NAMESPACE), res)
 
     @mock.patch('os.stat')
     @mock.patch('subprocess.check_output')
-    def test_get_udp_listener_pool_status(self, mock_check_output,
+    def test_get_lvs_listener_pool_status(self, mock_check_output,
                                           mock_os_stat):
         mock_os_stat.side_effect = (
             mock.Mock(st_mtime=1234),
@@ -309,7 +309,7 @@ class LvsQueryTestCase(base.TestCase):
 
         # test with ipv4 and ipv6
         mock_check_output.return_value = KERNAL_FILE_SAMPLE_V4
-        res = lvs_query.get_udp_listener_pool_status(self.listener_id_v4)
+        res = lvs_query.get_lvs_listener_pool_status(self.listener_id_v4)
         expected = {
             'lvs':
             {'uuid': self.pool_id_v4,
@@ -326,7 +326,7 @@ class LvsQueryTestCase(base.TestCase):
         )
 
         mock_check_output.return_value = KERNAL_FILE_SAMPLE_V6
-        res = lvs_query.get_udp_listener_pool_status(self.listener_id_v6)
+        res = lvs_query.get_lvs_listener_pool_status(self.listener_id_v6)
         expected = {
             'lvs':
             {'uuid': self.pool_id_v6,
@@ -339,7 +339,7 @@ class LvsQueryTestCase(base.TestCase):
 
     @mock.patch('os.stat')
     @mock.patch('subprocess.check_output')
-    def test_get_udp_listener_pool_status_restarting(self, mock_check_output,
+    def test_get_lvs_listener_pool_status_restarting(self, mock_check_output,
                                                      mock_os_stat):
         mock_os_stat.side_effect = (
             mock.Mock(st_mtime=1234),  # config file
@@ -348,7 +348,7 @@ class LvsQueryTestCase(base.TestCase):
 
         # test with ipv4 and ipv6
         mock_check_output.return_value = KERNAL_FILE_SAMPLE_V4
-        res = lvs_query.get_udp_listener_pool_status(self.listener_id_v4)
+        res = lvs_query.get_lvs_listener_pool_status(self.listener_id_v4)
         expected = {
             'lvs':
             {'uuid': self.pool_id_v4,
@@ -360,8 +360,8 @@ class LvsQueryTestCase(base.TestCase):
         self.assertEqual(expected, res)
 
     @mock.patch('octavia.amphorae.backends.utils.keepalivedlvs_query.'
-                'get_udp_listener_resource_ipports_nsname')
-    def test_get_udp_listener_pool_status_when_no_pool(
+                'get_lvs_listener_resource_ipports_nsname')
+    def test_get_lvs_listener_pool_status_when_no_pool(
             self, mock_get_resource_ipports):
         # Just test with ipv4, ipv6 tests is same.
         # the returned resource_ipport_mapping doesn't contains the 'Pool'
@@ -374,12 +374,12 @@ class LvsQueryTestCase(base.TestCase):
                     'id': self.listener_id_v4,
                     'ipport': '10.0.0.37:7777'}},
             constants.AMPHORA_NAMESPACE)
-        res = lvs_query.get_udp_listener_pool_status(self.listener_id_v4)
+        res = lvs_query.get_lvs_listener_pool_status(self.listener_id_v4)
         self.assertEqual({}, res)
 
     @mock.patch('octavia.amphorae.backends.utils.keepalivedlvs_query.'
-                'get_udp_listener_resource_ipports_nsname')
-    def test_get_udp_listener_pool_status_when_no_members(
+                'get_lvs_listener_resource_ipports_nsname')
+    def test_get_lvs_listener_pool_status_when_no_members(
             self, mock_get_resource_ipports):
         # Just test with ipv4, ipv6 tests is same.
         # the returned resource_ipport_mapping doesn't contains the 'Members'
@@ -392,7 +392,7 @@ class LvsQueryTestCase(base.TestCase):
                              'ipport': '10.0.0.37:7777'},
                 'Pool': {'id': self.pool_id_v4}},
             constants.AMPHORA_NAMESPACE)
-        res = lvs_query.get_udp_listener_pool_status(self.listener_id_v4)
+        res = lvs_query.get_lvs_listener_pool_status(self.listener_id_v4)
         expected = {'lvs': {
             'uuid': self.pool_id_v4,
             'status': constants.UP,
@@ -403,7 +403,7 @@ class LvsQueryTestCase(base.TestCase):
     @mock.patch('os.stat')
     @mock.patch('octavia.amphorae.backends.utils.keepalivedlvs_query.'
                 'get_listener_realserver_mapping')
-    def test_get_udp_listener_pool_status_when_not_get_realserver_result(
+    def test_get_lvs_listener_pool_status_when_not_get_realserver_result(
             self, mock_get_mapping, mock_os_stat):
         # This will hit if the kernel lvs file (/proc/net/ip_vs)
         # lose its content. So at this moment, eventhough we configure the
@@ -414,7 +414,7 @@ class LvsQueryTestCase(base.TestCase):
             mock.Mock(st_mtime=1234),
         )
         mock_get_mapping.return_value = (False, {})
-        res = lvs_query.get_udp_listener_pool_status(self.listener_id_v4)
+        res = lvs_query.get_lvs_listener_pool_status(self.listener_id_v4)
         expected = {
             'lvs':
             {'uuid': self.pool_id_v4,
@@ -484,10 +484,10 @@ class LvsQueryTestCase(base.TestCase):
 
     @mock.patch('subprocess.check_output')
     @mock.patch("octavia.amphorae.backends.agent.api_server.util."
-                "is_udp_listener_running", return_value=True)
+                "is_lvs_listener_running", return_value=True)
     @mock.patch("octavia.amphorae.backends.agent.api_server.util."
-                "get_udp_listeners")
-    def test_get_udp_listeners_stats(
+                "get_lvs_listeners")
+    def test_get_lvs_listeners_stats(
             self, mock_get_listener, mock_is_running, mock_check_output):
         # The ipv6 test is same with ipv4, so just test ipv4 here
         mock_get_listener.return_value = [self.listener_id_v4]
@@ -501,7 +501,7 @@ class LvsQueryTestCase(base.TestCase):
             "member1_ipport": "10.0.0.25:2222",
             "member2_ipport": "10.0.0.35:3333"})
         mock_check_output.side_effect = output_list
-        res = lvs_query.get_udp_listeners_stats()
+        res = lvs_query.get_lvs_listeners_stats()
         # We can check the expected result reference the stats sample,
         # that means this func can compute the stats info of single listener.
         expected = {self.listener_id_v4: {
@@ -513,16 +513,16 @@ class LvsQueryTestCase(base.TestCase):
         # if no udp listener need to be collected.
         # Then this function will return nothing.
         mock_is_running.return_value = False
-        res = lvs_query.get_udp_listeners_stats()
+        res = lvs_query.get_lvs_listeners_stats()
         self.assertEqual({}, res)
 
     @mock.patch('subprocess.check_output')
     @mock.patch("octavia.amphorae.backends.agent.api_server.util."
-                "is_udp_listener_running", return_value=True)
+                "is_lvs_listener_running", return_value=True)
     @mock.patch("octavia.amphorae.backends.agent.api_server.util."
-                "get_udp_listeners")
-    def test_get_udp_listeners_stats_disabled_listener(
+                "get_lvs_listeners")
+    def test_get_lvs_listeners_stats_disabled_listener(
             self, mock_get_listener, mock_is_running, mock_check_output):
         mock_get_listener.return_value = [self.disabled_listener_id]
-        res = lvs_query.get_udp_listeners_stats()
+        res = lvs_query.get_lvs_listeners_stats()
         self.assertEqual({}, res)
