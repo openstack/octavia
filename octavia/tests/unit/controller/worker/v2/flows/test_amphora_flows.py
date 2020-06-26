@@ -80,6 +80,8 @@ class TestAmphoraFlows(base.TestCase):
 
         self.assertIsInstance(amp_flow, flow.Flow)
 
+        self.assertIn(constants.FLAVOR, amp_flow.requires)
+        self.assertIn(constants.BUILD_TYPE_PRIORITY, amp_flow.requires)
         self.assertIn(constants.LOADBALANCER_ID, amp_flow.requires)
 
         self.assertIn(constants.AMPHORA, amp_flow.provides)
@@ -100,6 +102,8 @@ class TestAmphoraFlows(base.TestCase):
 
         self.assertIsInstance(amp_flow, flow.Flow)
 
+        self.assertIn(constants.FLAVOR, amp_flow.requires)
+        self.assertIn(constants.BUILD_TYPE_PRIORITY, amp_flow.requires)
         self.assertIn(constants.LOADBALANCER_ID, amp_flow.requires)
 
         self.assertIn(constants.AMPHORA, amp_flow.provides)
@@ -121,6 +125,8 @@ class TestAmphoraFlows(base.TestCase):
 
         self.assertIsInstance(amp_flow, flow.Flow)
 
+        self.assertIn(constants.FLAVOR, amp_flow.requires)
+        self.assertIn(constants.BUILD_TYPE_PRIORITY, amp_flow.requires)
         self.assertIn(constants.LOADBALANCER_ID, amp_flow.requires)
 
         self.assertIn(constants.AMPHORA, amp_flow.provides)
@@ -142,8 +148,14 @@ class TestAmphoraFlows(base.TestCase):
             'SOMEPREFIX', constants.ROLE_MASTER)
 
         self.assertIsInstance(amp_flow, flow.Flow)
-        self.assertIn(constants.AMPHORA_ID, amp_flow.provides)
+
+        self.assertIn(constants.FLAVOR, amp_flow.requires)
+        self.assertIn(constants.BUILD_TYPE_PRIORITY, amp_flow.requires)
+        self.assertIn(constants.LOADBALANCER_ID, amp_flow.requires)
         self.assertIn(constants.SERVER_GROUP_ID, amp_flow.requires)
+
+        self.assertIn(constants.AMPHORA, amp_flow.provides)
+        self.assertIn(constants.AMPHORA_ID, amp_flow.provides)
         self.assertIn(constants.COMPUTE_ID, amp_flow.provides)
         self.assertIn(constants.COMPUTE_OBJ, amp_flow.provides)
         self.assertIn(constants.SERVER_PEM, amp_flow.provides)
@@ -161,6 +173,8 @@ class TestAmphoraFlows(base.TestCase):
 
         self.assertIsInstance(amp_flow, flow.Flow)
 
+        self.assertIn(constants.FLAVOR, amp_flow.requires)
+        self.assertIn(constants.BUILD_TYPE_PRIORITY, amp_flow.requires)
         self.assertIn(constants.LOADBALANCER_ID, amp_flow.requires)
 
         self.assertIn(constants.AMPHORA, amp_flow.provides)
@@ -181,6 +195,8 @@ class TestAmphoraFlows(base.TestCase):
 
         self.assertIsInstance(amp_flow, flow.Flow)
 
+        self.assertIn(constants.FLAVOR, amp_flow.requires)
+        self.assertIn(constants.BUILD_TYPE_PRIORITY, amp_flow.requires)
         self.assertIn(constants.LOADBALANCER_ID, amp_flow.requires)
 
         self.assertIn(constants.AMPHORA, amp_flow.provides)
@@ -201,6 +217,12 @@ class TestAmphoraFlows(base.TestCase):
             'SOMEPREFIX', constants.ROLE_BACKUP)
 
         self.assertIsInstance(amp_flow, flow.Flow)
+
+        self.assertIn(constants.FLAVOR, amp_flow.requires)
+        self.assertIn(constants.BUILD_TYPE_PRIORITY, amp_flow.requires)
+        self.assertIn(constants.LOADBALANCER_ID, amp_flow.requires)
+        self.assertIn(constants.SERVER_GROUP_ID, amp_flow.requires)
+
         self.assertIn(constants.AMPHORA_ID, amp_flow.provides)
         self.assertIn(constants.SERVER_GROUP_ID, amp_flow.requires)
         self.assertIn(constants.COMPUTE_ID, amp_flow.provides)
