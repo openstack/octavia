@@ -14,6 +14,7 @@
 #
 from unittest import mock
 
+from oslo_utils import uuidutils
 from taskflow.patterns import linear_flow as flow
 
 from octavia.common import constants
@@ -57,15 +58,16 @@ class TestListenerFlows(base.TestCase):
         self.assertEqual(0, len(listener_flow.provides))
 
     def test_get_delete_listener_internal_flow(self, mock_get_net_driver):
+        fake_listener = {constants.LISTENER_ID: uuidutils.generate_uuid()}
         listener_flow = self.ListenerFlow.get_delete_listener_internal_flow(
-            'test-listener')
+            fake_listener)
 
         self.assertIsInstance(listener_flow, flow.Flow)
 
-        self.assertIn('test-listener', listener_flow.requires)
+        self.assertIn(constants.LOADBALANCER_ID, listener_flow.requires)
         self.assertIn(constants.PROJECT_ID, listener_flow.requires)
 
-        self.assertEqual(3, len(listener_flow.requires))
+        self.assertEqual(2, len(listener_flow.requires))
         self.assertEqual(0, len(listener_flow.provides))
 
     def test_get_update_listener_flow(self, mock_get_net_driver):

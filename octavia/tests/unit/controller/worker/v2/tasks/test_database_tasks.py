@@ -46,10 +46,10 @@ HA_PORT_ID = uuidutils.generate_uuid()
 L7POLICY_ID = uuidutils.generate_uuid()
 L7RULE_ID = uuidutils.generate_uuid()
 VIP_IP = '192.0.5.2'
+VRRP_ID = 1
 VRRP_IP = '192.0.5.3'
 HA_IP = '192.0.5.4'
 AMP_ROLE = 'FAKE_ROLE'
-VRRP_ID = random.randrange(255)
 VRRP_PRIORITY = random.randrange(100)
 CACHED_ZONE = 'zone1'
 IMAGE_ID = uuidutils.generate_uuid()
@@ -542,8 +542,15 @@ class TestDatabaseTasks(base.TestCase):
                                          mock_amphora_repo_update,
                                          mock_amphora_repo_delete):
 
+        amphora_dict = {constants.ID: AMP_ID}
+        vip_dict = {constants.IP_ADDRESS: HA_IP,
+                    constants.PORT_ID: HA_PORT_ID}
+        fixed_ips = [{constants.IP_ADDRESS: VRRP_IP}]
+        base_port_dict = {constants.ID: VRRP_PORT_ID,
+                          constants.FIXED_IPS: fixed_ips}
+
         update_amp_fo_details = database_tasks.UpdateAmpFailoverDetails()
-        update_amp_fo_details.execute(self.amphora, self.amphora)
+        update_amp_fo_details.execute(amphora_dict, vip_dict, base_port_dict)
 
         mock_amphora_repo_update.assert_called_once_with(
             'TEST',
@@ -1337,16 +1344,16 @@ class TestDatabaseTasks(base.TestCase):
                                              mock_amphora_repo_update,
                                              mock_amphora_repo_delete):
         unused_pool = data_models.Pool(id='unused_pool')
-        members1 = [{constants.MEMBER_ID: 'member1'},
-                    {constants.MEMBER_ID: 'member2'}]
+        members1 = [data_models.Member(id='member1'),
+                    data_models.Member(id='member2')]
         health_monitor = data_models.HealthMonitor(id='hm1')
         default_pool = data_models.Pool(id='default_pool',
                                         members=members1,
                                         health_monitor=health_monitor)
         listener1 = data_models.Listener(id='listener1',
                                          default_pool=default_pool)
-        members2 = [{constants.MEMBER_ID: 'member3'},
-                    {constants.MEMBER_ID: 'member4'}]
+        members2 = [data_models.Member(id='member3'),
+                    data_models.Member(id='member4')]
         redirect_pool = data_models.Pool(id='redirect_pool',
                                          members=members2)
         l7rules = [data_models.L7Rule(id='rule1')]
@@ -1954,6 +1961,22 @@ class TestDatabaseTasks(base.TestCase):
         result = get_vip_from_lb_obj.execute(self.loadbalancer_mock)
         self.assertEqual(_vip_mock.to_dict(), result)
 
+    @mock.patch('octavia.db.repositories.LoadBalancerRepository.get')
+    def test_get_loadbalancer(self, mock_lb_get, mock_generate_uuid, mock_LOG,
+                              mock_get_session, mock_loadbalancer_repo_update,
+                              mock_listener_repo_update,
+                              mock_amphora_repo_update,
+                              mock_amphora_repo_delete):
+        LB_ID = uuidutils.generate_uuid()
+        get_loadbalancer_obj = database_tasks.GetLoadBalancer()
+
+        mock_lb_get.return_value = _db_loadbalancer_mock
+
+        result = get_loadbalancer_obj.execute(LB_ID)
+
+        self.assertEqual(self.loadbalancer_mock, result)
+        mock_lb_get.assert_called_once_with('TEST', id=LB_ID)
+
     @mock.patch('octavia.db.repositories.VRRPGroupRepository.create')
     def test_create_vrrp_group_for_lb(self,
                                       mock_vrrp_group_create,
@@ -1968,7 +1991,7 @@ class TestDatabaseTasks(base.TestCase):
         mock_get_session.side_effect = ['TEST',
                                         odb_exceptions.DBDuplicateEntry]
         create_vrrp_group = database_tasks.CreateVRRPGroupForLB()
-        create_vrrp_group.execute(self.loadbalancer_mock)
+        create_vrrp_group.execute(LB_ID)
         mock_vrrp_group_create.assert_called_once_with(
             'TEST', load_balancer_id=LB_ID,
             vrrp_group_name=LB_ID.replace('-', ''),

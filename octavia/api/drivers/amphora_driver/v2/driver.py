@@ -87,8 +87,11 @@ class AmphoraProviderDriver(driver_base.ProviderDriver):
         try:
             vip = network_driver.allocate_vip(lb_obj)
         except network_base.AllocateVIPException as e:
-            raise exceptions.DriverError(user_fault_string=e.orig_msg,
-                                         operator_fault_string=e.orig_msg)
+            message = str(e)
+            if getattr(e, 'orig_msg', None) is not None:
+                message = e.orig_msg
+            raise exceptions.DriverError(user_fault_string=message,
+                                         operator_fault_string=message)
 
         LOG.info('Amphora provider created VIP port %s for load balancer %s.',
                  vip.port_id, loadbalancer_id)
