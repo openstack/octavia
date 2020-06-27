@@ -74,22 +74,23 @@ class PoolFlows(object):
 
         :returns: The flow for deleting a pool
         """
-        delete_pool_flow = linear_flow.Flow(constants.DELETE_POOL_FLOW)
+        delete_pool_flow = linear_flow.Flow(constants.DELETE_POOL_FLOW + '-' +
+                                            pool_id)
         # health monitor should cascade
         # members should cascade
         delete_pool_flow.add(database_tasks.MarkPoolPendingDeleteInDB(
             name='mark_pool_pending_delete_in_db_' + pool_id,
             requires=constants.POOL_ID,
-            rebind={constants.POOL_ID: pool_id}))
+            inject={constants.POOL_ID: pool_id}))
         delete_pool_flow.add(database_tasks.CountPoolChildrenForQuota(
             name='count_pool_children_for_quota_' + pool_id,
             requires=constants.POOL_ID,
             provides=constants.POOL_CHILD_COUNT,
-            rebind={constants.POOL_ID: pool_id}))
+            inject={constants.POOL_ID: pool_id}))
         delete_pool_flow.add(database_tasks.DeletePoolInDB(
             name='delete_pool_in_db_' + pool_id,
             requires=constants.POOL_ID,
-            rebind={constants.POOL_ID: pool_id}))
+            inject={constants.POOL_ID: pool_id}))
         delete_pool_flow.add(database_tasks.DecrementPoolQuota(
             name='decrement_pool_quota_' + pool_id,
             requires=[constants.PROJECT_ID, constants.POOL_CHILD_COUNT]))

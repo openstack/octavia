@@ -18,10 +18,12 @@ from oslo_config import cfg
 from oslo_config import fixture as oslo_fixture
 from oslo_utils import uuidutils
 from taskflow.types import failure
+import tenacity
 
 from octavia.api.drivers import utils as provider_utils
 from octavia.common import constants
 from octavia.common import data_models as o_data_models
+from octavia.common import exceptions
 from octavia.controller.worker.v2.tasks import network_tasks
 from octavia.network import base as net_base
 from octavia.network import data_models
@@ -81,6 +83,11 @@ class TestNetworkTasks(base.TestCase):
         self.db_amphora_mock.id = AMPHORA_ID
         self.db_amphora_mock.compute_id = COMPUTE_ID
         self.db_amphora_mock.status = constants.AMPHORA_ALLOCATED
+        self.boot_net_id = NETWORK_ID
+        conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
+        conf.config(group="controller_worker",
+                    amp_boot_network_list=[self.boot_net_id])
+        conf.config(group="networking", max_retries=1)
         self.amphora_mock = {constants.ID: AMPHORA_ID,
                              constants.COMPUTE_ID: COMPUTE_ID,
                              constants.LB_NETWORK_IP: IP_ADDRESS,
@@ -94,9 +101,84 @@ class TestNetworkTasks(base.TestCase):
         }
 
         conf = oslo_fixture.Config(cfg.CONF)
-        conf.config(group="controller_worker", amp_boot_network_list=['netid'])
+        conf.config(group="controller_worker",
+                    amp_boot_network_list=[self.boot_net_id])
 
         super(TestNetworkTasks, self).setUp()
+
+    @mock.patch('octavia.db.repositories.LoadBalancerRepository.get')
+    @mock.patch('octavia.db.api.get_session', return_value=_session_mock)
+    def test_calculate_amphora_delta(self, mock_get_session, mock_lb_repo_get,
+                                     mock_get_net_driver):
+        LB_ID = uuidutils.generate_uuid()
+        DELETE_NETWORK_ID = uuidutils.generate_uuid()
+        MEMBER_NETWORK_ID = uuidutils.generate_uuid()
+        MEMBER_SUBNET_ID = uuidutils.generate_uuid()
+        VRRP_PORT_ID = uuidutils.generate_uuid()
+        mock_driver = mock.MagicMock()
+        mock_get_net_driver.return_value = mock_driver
+        member_mock = mock.MagicMock()
+        member_mock.subnet_id = MEMBER_SUBNET_ID
+        pool_mock = mock.MagicMock()
+        pool_mock.members = [member_mock]
+        lb_mock = mock.MagicMock()
+        lb_mock.pools = [pool_mock]
+        lb_dict = {constants.LOADBALANCER_ID: LB_ID}
+        amphora_dict = {constants.ID: AMPHORA_ID,
+                        constants.COMPUTE_ID: COMPUTE_ID,
+                        constants.VRRP_PORT_ID: VRRP_PORT_ID}
+        vrrp_port_mock = mock.MagicMock()
+        vrrp_port_mock.network_id = self.boot_net_id
+        vrrp_port_dict = {constants.NETWORK_ID: self.boot_net_id}
+        mock_subnet = mock.MagicMock()
+        mock_subnet.network_id = MEMBER_NETWORK_ID
+        nic1_delete_mock = mock.MagicMock()
+        nic1_delete_mock.network_id = DELETE_NETWORK_ID
+        nic2_keep_mock = mock.MagicMock()
+        nic2_keep_mock.network_id = self.boot_net_id
+
+        mock_lb_repo_get.return_value = lb_mock
+        mock_driver.get_port.return_value = vrrp_port_mock
+        mock_driver.get_subnet.return_value = mock_subnet
+        mock_driver.get_plugged_networks.return_value = [nic1_delete_mock,
+                                                         nic2_keep_mock]
+
+        calc_amp_delta = network_tasks.CalculateAmphoraDelta()
+
+        # Test vrrp_port_id is None
+        result = calc_amp_delta.execute(lb_dict, amphora_dict, {})
+
+        self.assertEqual(AMPHORA_ID, result[constants.AMPHORA_ID])
+        self.assertEqual(COMPUTE_ID, result[constants.COMPUTE_ID])
+        self.assertEqual(1, len(result[constants.ADD_NICS]))
+        self.assertEqual(MEMBER_NETWORK_ID,
+                         result[constants.ADD_NICS][0][constants.NETWORK_ID])
+        self.assertEqual(1, len(result[constants.DELETE_NICS]))
+        self.assertEqual(
+            DELETE_NETWORK_ID,
+            result[constants.DELETE_NICS][0][constants.NETWORK_ID])
+        mock_driver.get_port.assert_called_once_with(VRRP_PORT_ID)
+        mock_driver.get_subnet.assert_called_once_with(MEMBER_SUBNET_ID)
+        mock_driver.get_plugged_networks.assert_called_once_with(COMPUTE_ID)
+
+        # Test with vrrp_port_id
+        mock_driver.reset_mock()
+
+        result = calc_amp_delta.execute(lb_dict, amphora_dict, {},
+                                        vrrp_port=vrrp_port_dict)
+
+        self.assertEqual(AMPHORA_ID, result[constants.AMPHORA_ID])
+        self.assertEqual(COMPUTE_ID, result[constants.COMPUTE_ID])
+        self.assertEqual(1, len(result[constants.ADD_NICS]))
+        self.assertEqual(MEMBER_NETWORK_ID,
+                         result[constants.ADD_NICS][0][constants.NETWORK_ID])
+        self.assertEqual(1, len(result[constants.DELETE_NICS]))
+        self.assertEqual(
+            DELETE_NETWORK_ID,
+            result[constants.DELETE_NICS][0][constants.NETWORK_ID])
+        mock_driver.get_port.assert_not_called()
+        mock_driver.get_subnet.assert_called_once_with(MEMBER_SUBNET_ID)
+        mock_driver.get_plugged_networks.assert_called_once_with(COMPUTE_ID)
 
     @mock.patch('octavia.db.repositories.LoadBalancerRepository.get')
     @mock.patch('octavia.db.api.get_session', return_value=_session_mock)
@@ -110,9 +192,9 @@ class TestNetworkTasks(base.TestCase):
             constants.VRRP_PORT_ID: PORT_ID}
         mock_get_net_driver.return_value = mock_driver
         mock_driver.get_plugged_networks.return_value = [
-            data_models.Interface(network_id='netid')]
+            data_models.Interface(network_id=self.boot_net_id)]
         mock_driver.get_port.return_value = data_models.Port(
-            network_id='netid')
+            network_id=self.boot_net_id)
         EMPTY = {}
         empty_deltas = {self.db_amphora_mock.id: data_models.Delta(
             amphora_id=AMPHORA_ID,
@@ -179,7 +261,7 @@ class TestNetworkTasks(base.TestCase):
         pool_mock.members = [member_mock]
         mock_driver.get_plugged_networks.return_value = [
             data_models.Interface(network_id=3),
-            data_models.Interface(network_id='netid')]
+            data_models.Interface(network_id=self.boot_net_id)]
 
         self.assertEqual(empty_deltas,
                          calc_delta.execute(self.load_balancer_mock, {}))
@@ -192,7 +274,7 @@ class TestNetworkTasks(base.TestCase):
         pool_mock.members = [member_mock]
         mock_driver.get_plugged_networks.return_value = [
             data_models.Interface(network_id=2),
-            data_models.Interface(network_id='netid')]
+            data_models.Interface(network_id=self.boot_net_id)]
 
         ndm = data_models.Delta(amphora_id=self.db_amphora_mock.id,
                                 compute_id=self.db_amphora_mock.compute_id,
@@ -210,7 +292,7 @@ class TestNetworkTasks(base.TestCase):
         pool_mock.members = []
         mock_driver.get_plugged_networks.return_value = [
             data_models.Interface(network_id=2),
-            data_models.Interface(network_id='netid')
+            data_models.Interface(network_id=self.boot_net_id)
         ]
 
         ndm = data_models.Delta(amphora_id=self.db_amphora_mock.id,
@@ -648,6 +730,7 @@ class TestNetworkTasks(base.TestCase):
             t_constants.MOCK_QOS_POLICY_ID1, mock.ANY)
         self.assertEqual(2, mock_driver.apply_qos_on_port.call_count)
 
+        mock_get_lb.return_value = null_qos_lb
         mock_driver.reset_mock()
         update_dict = {}
         net.execute(null_qos_lb_dict, update_dict=update_dict)
@@ -685,7 +768,7 @@ class TestNetworkTasks(base.TestCase):
         net.revert(None, pr_tm_dict, update_dict=update_dict)
         mock_driver.apply_qos_on_port.assert_called_with(
             t_constants.MOCK_QOS_POLICY_ID2, mock.ANY)
-        self.assertEqual(2, mock_driver.apply_qos_on_port.call_count)
+        self.assertEqual(1, mock_driver.apply_qos_on_port.call_count)
 
     @mock.patch('octavia.db.repositories.LoadBalancerRepository.get')
     @mock.patch('octavia.db.api.get_session', return_value=_session_mock)
@@ -769,6 +852,28 @@ class TestNetworkTasks(base.TestCase):
         net_task = network_tasks.UpdateVIPForDelete()
         net_task.execute(listener)
         mock_driver.update_vip.assert_called_once_with(lb, for_delete=True)
+
+    @mock.patch('octavia.db.api.get_session', return_value='TEST')
+    @mock.patch('octavia.db.repositories.AmphoraRepository.get')
+    @mock.patch('octavia.db.repositories.LoadBalancerRepository.get')
+    def test_get_amphora_network_configs_by_id(
+            self, mock_lb_get, mock_amp_get,
+            mock_get_session, mock_get_net_driver):
+        LB_ID = uuidutils.generate_uuid()
+        AMP_ID = uuidutils.generate_uuid()
+        mock_driver = mock.MagicMock()
+        mock_get_net_driver.return_value = mock_driver
+        mock_amp_get.return_value = 'mock amphora'
+        mock_lb_get.return_value = 'mock load balancer'
+
+        net_task = network_tasks.GetAmphoraNetworkConfigsByID()
+
+        net_task.execute(LB_ID, AMP_ID)
+
+        mock_driver.get_network_configs.assert_called_once_with(
+            'mock load balancer', amphora='mock amphora')
+        mock_amp_get.assert_called_once_with('TEST', id=AMP_ID)
+        mock_lb_get.assert_called_once_with('TEST', id=LB_ID)
 
     @mock.patch('octavia.db.repositories.LoadBalancerRepository.get')
     @mock.patch('octavia.db.api.get_session', return_value=_session_mock)
@@ -854,49 +959,6 @@ class TestNetworkTasks(base.TestCase):
         mock_driver.plug_port.assert_any_call(self.db_amphora_mock, port1)
         mock_driver.plug_port.assert_any_call(self.db_amphora_mock, port2)
 
-    @mock.patch('octavia.db.repositories.AmphoraRepository.get')
-    @mock.patch('octavia.db.api.get_session', return_value=mock.MagicMock())
-    def test_plug_vip_port(self, mock_session, mock_get, mock_get_net_driver):
-        mock_driver = mock.MagicMock()
-        mock_get.return_value = self.db_amphora_mock
-        mock_get_net_driver.return_value = mock_driver
-        vrrp_port = mock.MagicMock()
-
-        amphorae_network_config = mock.MagicMock()
-        mock_driver.get_port.return_value = vrrp_port
-
-        plugvipport = network_tasks.PlugVIPPort()
-        amp = {constants.ID: AMPHORA_ID,
-               constants.COMPUTE_ID: '1234'}
-        plugvipport.execute(amp, amphorae_network_config)
-        mock_driver.plug_port.assert_called_once_with(self.db_amphora_mock,
-                                                      vrrp_port)
-        dict_amp_config = {
-            AMPHORA_ID: {constants.VRRP_PORT: {constants.ID: 5555}}
-        }
-
-        # test revert
-        plugvipport.revert(None, amp, dict_amp_config)
-        mock_driver.unplug_port.assert_called_with(self.db_amphora_mock,
-                                                   vrrp_port)
-
-    @mock.patch('octavia.db.repositories.AmphoraRepository.get')
-    @mock.patch('octavia.db.api.get_session', return_value=mock.MagicMock())
-    def test_wait_for_port_detach(self, mock_session, mock_get,
-                                  mock_get_net_driver):
-        mock_driver = mock.MagicMock()
-        mock_get.return_value = self.db_amphora_mock
-        mock_get_net_driver.return_value = mock_driver
-
-        amphora = {constants.ID: AMPHORA_ID,
-                   constants.LB_NETWORK_IP: IP_ADDRESS}
-
-        waitforportdetach = network_tasks.WaitForPortDetach()
-        waitforportdetach.execute(amphora)
-
-        mock_driver.wait_for_port_detach.assert_called_once_with(
-            self.db_amphora_mock)
-
     @mock.patch('octavia.db.repositories.LoadBalancerRepository.get')
     @mock.patch('octavia.db.api.get_session', return_value=_session_mock)
     def test_update_vip_sg(self, mock_session, mock_lb_get,
@@ -928,7 +990,7 @@ class TestNetworkTasks(base.TestCase):
         mock_lb_get.return_value = LB
         mock_get.return_value = self.db_amphora_mock
         mock_get_net_driver.return_value = mock_driver
-        net = network_tasks.PlugVIPAmpphora()
+        net = network_tasks.PlugVIPAmphora()
         mockSubnet = mock_driver.get_subnet()
         net.execute(self.load_balancer_mock, amphora, mockSubnet)
         mock_driver.plug_aap_port.assert_called_once_with(
@@ -943,7 +1005,7 @@ class TestNetworkTasks(base.TestCase):
         mock_lb_get.return_value = LB
         mock_get.return_value = self.db_amphora_mock
         mock_get_net_driver.return_value = mock_driver
-        net = network_tasks.PlugVIPAmpphora()
+        net = network_tasks.PlugVIPAmphora()
         mockSubnet = mock.MagicMock()
         amphora = {constants.ID: AMPHORA_ID,
                    constants.LB_NETWORK_IP: IP_ADDRESS}
@@ -951,3 +1013,273 @@ class TestNetworkTasks(base.TestCase):
                    amphora, mockSubnet)
         mock_driver.unplug_aap_port.assert_called_once_with(
             LB.vip, self.db_amphora_mock, mockSubnet)
+
+    @mock.patch('octavia.controller.worker.v2.tasks.network_tasks.DeletePort.'
+                'update_progress')
+    def test_delete_port(self, mock_update_progress, mock_get_net_driver):
+        PORT_ID = uuidutils.generate_uuid()
+        mock_driver = mock.MagicMock()
+        mock_get_net_driver.return_value = mock_driver
+        mock_driver.delete_port.side_effect = [
+            mock.DEFAULT, exceptions.OctaviaException('boom'), mock.DEFAULT,
+            exceptions.OctaviaException('boom'),
+            exceptions.OctaviaException('boom'),
+            exceptions.OctaviaException('boom'),
+            exceptions.OctaviaException('boom'),
+            exceptions.OctaviaException('boom'),
+            exceptions.OctaviaException('boom')]
+        mock_driver.admin_down_port.side_effect = [
+            mock.DEFAULT, exceptions.OctaviaException('boom')]
+
+        net_task = network_tasks.DeletePort()
+
+        # Limit the retry attempts for the test run to save time
+        net_task.execute.retry.stop = tenacity.stop_after_attempt(2)
+
+        # Test port ID is None (no-op)
+        net_task.execute(None)
+
+        mock_update_progress.assert_not_called()
+        mock_driver.delete_port.assert_not_called()
+
+        # Test successful delete
+        mock_update_progress.reset_mock()
+        mock_driver.reset_mock()
+
+        net_task.execute(PORT_ID)
+
+        mock_update_progress.assert_called_once_with(0.5)
+        mock_driver.delete_port.assert_called_once_with(PORT_ID)
+
+        # Test exception and successful retry
+        mock_update_progress.reset_mock()
+        mock_driver.reset_mock()
+
+        net_task.execute(PORT_ID)
+
+        mock_update_progress.assert_has_calls([mock.call(0.5), mock.call(1.0)])
+        mock_driver.delete_port.assert_has_calls([mock.call(PORT_ID),
+                                                  mock.call(PORT_ID)])
+
+        # Test passive failure
+        mock_update_progress.reset_mock()
+        mock_driver.reset_mock()
+
+        net_task.execute(PORT_ID, passive_failure=True)
+
+        mock_update_progress.assert_has_calls([mock.call(0.5), mock.call(1.0)])
+        mock_driver.delete_port.assert_has_calls([mock.call(PORT_ID),
+                                                  mock.call(PORT_ID)])
+        mock_driver.admin_down_port.assert_called_once_with(PORT_ID)
+
+        # Test passive failure admin down failure
+        mock_update_progress.reset_mock()
+        mock_driver.reset_mock()
+        mock_driver.admin_down_port.reset_mock()
+
+        net_task.execute(PORT_ID, passive_failure=True)
+
+        mock_update_progress.assert_has_calls([mock.call(0.5), mock.call(1.0)])
+        mock_driver.delete_port.assert_has_calls([mock.call(PORT_ID),
+                                                  mock.call(PORT_ID)])
+        mock_driver.admin_down_port.assert_called_once_with(PORT_ID)
+
+        # Test non-passive failure
+        mock_update_progress.reset_mock()
+        mock_driver.reset_mock()
+        mock_driver.admin_down_port.reset_mock()
+
+        mock_driver.admin_down_port.side_effect = [
+            exceptions.OctaviaException('boom')]
+
+        self.assertRaises(exceptions.OctaviaException, net_task.execute,
+                          PORT_ID)
+
+        mock_update_progress.assert_has_calls([mock.call(0.5), mock.call(1.0)])
+        mock_driver.delete_port.assert_has_calls([mock.call(PORT_ID),
+                                                  mock.call(PORT_ID)])
+        mock_driver.admin_down_port.assert_not_called()
+
+    def test_create_vip_base_port(self, mock_get_net_driver):
+        AMP_ID = uuidutils.generate_uuid()
+        PORT_ID = uuidutils.generate_uuid()
+        VIP_NETWORK_ID = uuidutils.generate_uuid()
+        VIP_QOS_ID = uuidutils.generate_uuid()
+        VIP_SG_ID = uuidutils.generate_uuid()
+        VIP_SUBNET_ID = uuidutils.generate_uuid()
+        VIP_IP_ADDRESS = '203.0.113.81'
+        mock_driver = mock.MagicMock()
+        mock_get_net_driver.return_value = mock_driver
+        vip_dict = {constants.IP_ADDRESS: VIP_IP_ADDRESS,
+                    constants.NETWORK_ID: VIP_NETWORK_ID,
+                    constants.QOS_POLICY_ID: VIP_QOS_ID,
+                    constants.SUBNET_ID: VIP_SUBNET_ID}
+        port_mock = mock.MagicMock()
+        port_mock.id = PORT_ID
+
+        mock_driver.create_port.side_effect = [
+            port_mock, exceptions.OctaviaException('boom'),
+            exceptions.OctaviaException('boom'),
+            exceptions.OctaviaException('boom')]
+        mock_driver.delete_port.side_effect = [mock.DEFAULT, Exception('boom')]
+
+        net_task = network_tasks.CreateVIPBasePort()
+
+        # Limit the retry attempts for the test run to save time
+        net_task.execute.retry.stop = tenacity.stop_after_attempt(2)
+
+        # Test execute
+        result = net_task.execute(vip_dict, VIP_SG_ID, AMP_ID)
+
+        self.assertEqual(port_mock.to_dict(), result)
+        mock_driver.create_port.assert_called_once_with(
+            VIP_NETWORK_ID, name=constants.AMP_BASE_PORT_PREFIX + AMP_ID,
+            fixed_ips=[{constants.SUBNET_ID: VIP_SUBNET_ID}],
+            secondary_ips=[VIP_IP_ADDRESS], security_group_ids=[VIP_SG_ID],
+            qos_policy_id=VIP_QOS_ID)
+
+        # Test execute exception
+        mock_driver.reset_mock()
+
+        self.assertRaises(exceptions.OctaviaException, net_task.execute,
+                          vip_dict, None, AMP_ID)
+
+        # Test revert when this task failed
+        mock_driver.reset_mock()
+
+        net_task.revert(failure.Failure.from_exception(Exception('boom')),
+                        vip_dict, VIP_SG_ID, AMP_ID)
+
+        mock_driver.delete_port.assert_not_called()
+
+        # Test revert
+        mock_driver.reset_mock()
+
+        net_task.revert([port_mock], vip_dict, VIP_SG_ID, AMP_ID)
+
+        mock_driver.delete_port.assert_called_once_with(PORT_ID)
+
+        # Test revert exception
+        mock_driver.reset_mock()
+
+        net_task.revert([port_mock], vip_dict, VIP_SG_ID, AMP_ID)
+
+        mock_driver.delete_port.assert_called_once_with(PORT_ID)
+
+    @mock.patch('time.sleep')
+    def test_admin_down_port(self, mock_sleep, mock_get_net_driver):
+        PORT_ID = uuidutils.generate_uuid()
+        mock_driver = mock.MagicMock()
+        mock_get_net_driver.return_value = mock_driver
+        port_down_mock = mock.MagicMock()
+        port_down_mock.status = constants.DOWN
+        port_up_mock = mock.MagicMock()
+        port_up_mock.status = constants.UP
+        mock_driver.set_port_admin_state_up.side_effect = [
+            mock.DEFAULT, net_base.PortNotFound, mock.DEFAULT, mock.DEFAULT,
+            Exception('boom')]
+        mock_driver.get_port.side_effect = [port_down_mock, port_up_mock]
+
+        net_task = network_tasks.AdminDownPort()
+
+        # Test execute
+        net_task.execute(PORT_ID)
+
+        mock_driver.set_port_admin_state_up.assert_called_once_with(PORT_ID,
+                                                                    False)
+        mock_driver.get_port.assert_called_once_with(PORT_ID)
+
+        # Test passive fail on port not found
+        mock_driver.reset_mock()
+
+        net_task.execute(PORT_ID)
+
+        mock_driver.set_port_admin_state_up.assert_called_once_with(PORT_ID,
+                                                                    False)
+        mock_driver.get_port.assert_not_called()
+
+        # Test passive fail on port stays up
+        mock_driver.reset_mock()
+
+        net_task.execute(PORT_ID)
+
+        mock_driver.set_port_admin_state_up.assert_called_once_with(PORT_ID,
+                                                                    False)
+        mock_driver.get_port.assert_called_once_with(PORT_ID)
+
+        # Test revert when this task failed
+        mock_driver.reset_mock()
+
+        net_task.revert(failure.Failure.from_exception(Exception('boom')),
+                        PORT_ID)
+
+        mock_driver.set_port_admin_state_up.assert_not_called()
+
+        # Test revert
+        mock_driver.reset_mock()
+
+        net_task.revert(None, PORT_ID)
+
+        mock_driver.set_port_admin_state_up.assert_called_once_with(PORT_ID,
+                                                                    True)
+
+        # Test revert exception passive failure
+        mock_driver.reset_mock()
+
+        net_task.revert(None, PORT_ID)
+
+        mock_driver.set_port_admin_state_up.assert_called_once_with(PORT_ID,
+                                                                    True)
+
+    @mock.patch('octavia.common.utils.get_vip_security_group_name')
+    def test_get_vip_security_group_id(self, mock_get_sg_name,
+                                       mock_get_net_driver):
+        LB_ID = uuidutils.generate_uuid()
+        SG_ID = uuidutils.generate_uuid()
+        SG_NAME = 'fake_SG_name'
+        mock_driver = mock.MagicMock()
+        mock_get_net_driver.return_value = mock_driver
+        mock_get_sg_name.return_value = SG_NAME
+        sg_mock = mock.MagicMock()
+        sg_mock.id = SG_ID
+        mock_driver.get_security_group.side_effect = [
+            sg_mock, None, net_base.SecurityGroupNotFound,
+            net_base.SecurityGroupNotFound]
+
+        net_task = network_tasks.GetVIPSecurityGroupID()
+
+        # Test execute
+        result = net_task.execute(LB_ID)
+
+        mock_driver.get_security_group.assert_called_once_with(SG_NAME)
+        mock_get_sg_name.assert_called_once_with(LB_ID)
+
+        # Test execute with empty get subnet response
+        mock_driver.reset_mock()
+        mock_get_sg_name.reset_mock()
+
+        result = net_task.execute(LB_ID)
+
+        self.assertIsNone(result)
+        mock_get_sg_name.assert_called_once_with(LB_ID)
+
+        # Test execute no security group found, security groups enabled
+        mock_driver.reset_mock()
+        mock_get_sg_name.reset_mock()
+        mock_driver.sec_grp_enabled = True
+
+        self.assertRaises(net_base.SecurityGroupNotFound, net_task.execute,
+                          LB_ID)
+        mock_driver.get_security_group.assert_called_once_with(SG_NAME)
+        mock_get_sg_name.assert_called_once_with(LB_ID)
+
+        # Test execute no security group found, security groups disabled
+        mock_driver.reset_mock()
+        mock_get_sg_name.reset_mock()
+        mock_driver.sec_grp_enabled = False
+
+        result = net_task.execute(LB_ID)
+
+        self.assertIsNone(result)
+        mock_driver.get_security_group.assert_called_once_with(SG_NAME)
+        mock_get_sg_name.assert_called_once_with(LB_ID)

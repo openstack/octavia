@@ -203,13 +203,13 @@ class TestAmphoraDriverTasks(base.TestCase):
 
         # Test no listeners
         mock_lb.listeners = None
-        listeners_reload_obj.execute(mock_lb, None, 0)
+        listeners_reload_obj.execute(mock_lb, 0, None)
         mock_driver.reload.assert_not_called()
 
         # Test with listeners
         mock_driver.start.reset_mock()
         mock_lb.listeners = [mock_listener]
-        listeners_reload_obj.execute(mock_lb, [amphora_mock], 0,
+        listeners_reload_obj.execute(mock_lb, 0, [amphora_mock],
                                      timeout_dict=self.timeout_dict)
         mock_driver.reload.assert_called_once_with(mock_lb, amphora_mock,
                                                    self.timeout_dict)
@@ -620,7 +620,7 @@ class TestAmphoraDriverTasks(base.TestCase):
         amphora_update_vrrp_interface_obj = (
             amphora_driver_tasks.AmphoraIndexUpdateVRRPInterface())
         amphora_update_vrrp_interface_obj.execute(
-            [_amphora_mock], 0, timeout_dict)
+            0, [_amphora_mock], timeout_dict)
         mock_driver.get_interface_from_ip.assert_called_once_with(
             _amphora_mock, _amphora_mock.vrrp_ip, timeout_dict=timeout_dict)
         mock_amphora_repo_update.assert_called_once_with(
@@ -629,7 +629,7 @@ class TestAmphoraDriverTasks(base.TestCase):
         # Test with an exception
         mock_amphora_repo_update.reset_mock()
         amphora_update_vrrp_interface_obj.execute(
-            [_amphora_mock], 0, timeout_dict)
+            0, [_amphora_mock], timeout_dict)
         mock_amphora_repo_update.assert_called_once_with(
             _session_mock, _amphora_mock.id, status=constants.ERROR)
 
@@ -691,19 +691,6 @@ class TestAmphoraDriverTasks(base.TestCase):
                                         0, [_amphora_mock], 'fakeint0')
         mock_amphora_repo_update.assert_called_once_with(
             _session_mock, _amphora_mock.id, status=constants.ERROR)
-
-    def test_amphora_vrrp_stop(self,
-                               mock_driver,
-                               mock_generate_uuid,
-                               mock_log,
-                               mock_get_session,
-                               mock_listener_repo_get,
-                               mock_listener_repo_update,
-                               mock_amphora_repo_update):
-        amphora_vrrp_stop_obj = (
-            amphora_driver_tasks.AmphoraVRRPStop())
-        amphora_vrrp_stop_obj.execute(_LB_mock)
-        mock_driver.stop_vrrp_service.assert_called_once_with(_LB_mock)
 
     def test_amphora_vrrp_start(self,
                                 mock_driver,

@@ -1571,54 +1571,6 @@ class TestControllerWorker(base.TestCase):
             assert_called_once_with(FAKE_FLOW, store=expected_stored_params))
         _flow_mock.run.assert_called_once_with()
 
-    @mock.patch(
-        'octavia.db.repositories.AmphoraRepository.get_lb_for_amphora',
-        return_value=None)
-    @mock.patch('octavia.controller.worker.v1.flows.'
-                'amphora_flows.AmphoraFlows.get_failover_amphora_flow',
-                return_value=_flow_mock)
-    def test_failover_spare_amphora(self,
-                                    mock_get_failover_flow,
-                                    mock_get_lb_for_amphora,
-                                    mock_api_get_session,
-                                    mock_dyn_log_listener,
-                                    mock_taskflow_load,
-                                    mock_pool_repo_get,
-                                    mock_member_repo_get,
-                                    mock_l7rule_repo_get,
-                                    mock_l7policy_repo_get,
-                                    mock_listener_repo_get,
-                                    mock_lb_repo_get,
-                                    mock_health_mon_repo_get,
-                                    mock_amp_repo_get):
-
-        _flow_mock.reset_mock()
-
-        # simulate a spare amphora (amphora not attached to any load_balancer)
-        mock_amphora = mock.MagicMock()
-        mock_amphora.id = AMP_ID
-        mock_amphora.status = constants.AMPHORA_READY
-        mock_amphora.load_balancer_id = None
-        mock_amp_repo_get.return_value = mock_amphora
-
-        cw = controller_worker.ControllerWorker()
-        cw.failover_amphora(AMP_ID)
-
-        (base_taskflow.BaseTaskFlowEngine._taskflow_load.
-            assert_called_once_with(
-                _flow_mock,
-                store={constants.LOADBALANCER: None,
-                       constants.LOADBALANCER_ID: None,
-                       constants.BUILD_TYPE_PRIORITY:
-                           constants.LB_CREATE_FAILOVER_PRIORITY,
-                       constants.FLAVOR: {},
-                       constants.SERVER_GROUP_ID: None,
-                       constants.AVAILABILITY_ZONE: {},
-                       constants.VIP: None
-                       }))
-
-        _flow_mock.run.assert_called_once_with()
-
     @mock.patch('octavia.db.repositories.AmphoraHealthRepository.delete')
     def test_failover_deleted_amphora(self,
                                       mock_delete,

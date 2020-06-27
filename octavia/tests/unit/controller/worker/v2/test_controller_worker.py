@@ -21,6 +21,7 @@ from oslo_utils import uuidutils
 from octavia.api.drivers import utils as provider_utils
 from octavia.common import constants
 from octavia.common import data_models
+from octavia.common import exceptions
 from octavia.controller.worker.v2 import controller_worker
 from octavia.controller.worker.v2.flows import flow_utils
 import octavia.tests.unit.base as base
@@ -38,6 +39,9 @@ L7POLICY_ID = uuidutils.generate_uuid()
 L7RULE_ID = uuidutils.generate_uuid()
 PROJECT_ID = uuidutils.generate_uuid()
 LISTENER_ID = uuidutils.generate_uuid()
+FLAVOR_ID = uuidutils.generate_uuid()
+SERVER_GROUP_ID = uuidutils.generate_uuid()
+AZ_ID = uuidutils.generate_uuid()
 HEALTH_UPDATE_DICT = {'delay': 1, 'timeout': 2}
 LISTENER_UPDATE_DICT = {'name': 'test', 'description': 'test2'}
 MEMBER_UPDATE_DICT = {'weight': 1, 'ip_address': '10.0.0.0'}
@@ -63,7 +67,11 @@ _vip_mock = mock.MagicMock()
 _listener_mock = mock.MagicMock()
 _db_load_balancer_mock = mock.MagicMock()
 _load_balancer_mock = {
-    constants.LOADBALANCER_ID: LB_ID
+    constants.LOADBALANCER_ID: LB_ID,
+    constants.TOPOLOGY: constants.TOPOLOGY_SINGLE,
+    constants.FLAVOR_ID: None,
+    constants.AVAILABILITY_ZONE: None,
+    constants.SERVER_GROUP_ID: None
 }
 
 _member_mock = mock.MagicMock()
@@ -123,13 +131,19 @@ class TestControllerWorker(base.TestCase):
         _db_load_balancer_mock.amphorae = _db_amphora_mock
         _db_load_balancer_mock.vip = _vip_mock
         _db_load_balancer_mock.id = LB_ID
+        _db_load_balancer_mock.flavor_id = None
+        _db_load_balancer_mock.availability_zone = None
+        _db_load_balancer_mock.server_group_id = None
         _db_load_balancer_mock.project_id = PROJECT_ID
+        _db_load_balancer_mock.topology = constants.TOPOLOGY_SINGLE
         _listener_mock.load_balancer = _db_load_balancer_mock
         _listener_mock.id = LISTENER_ID
         _listener_mock.to_dict.return_value = {
-            constants.ID: LISTENER_ID, constants.LOAD_BALANCER_ID: LB_ID}
+            constants.ID: LISTENER_ID, constants.LOAD_BALANCER_ID: LB_ID,
+            constants.PROJECT_ID: PROJECT_ID}
         self.ref_listener_dict = {constants.LISTENER_ID: LISTENER_ID,
-                                  constants.LOADBALANCER_ID: LB_ID}
+                                  constants.LOADBALANCER_ID: LB_ID,
+                                  constants.PROJECT_ID: PROJECT_ID}
 
         _member_mock.pool = _db_pool_mock
         _l7policy_mock.listener = _listener_mock
@@ -179,6 +193,7 @@ class TestControllerWorker(base.TestCase):
                 store={constants.BUILD_TYPE_PRIORITY:
                        constants.LB_CREATE_SPARES_POOL_PRIORITY,
                        constants.FLAVOR: None,
+                       constants.SERVER_GROUP_ID: None,
                        constants.AVAILABILITY_ZONE: None}))
 
     @mock.patch('octavia.db.repositories.AvailabilityZoneRepository.'
@@ -215,39 +230,8 @@ class TestControllerWorker(base.TestCase):
                 store={constants.BUILD_TYPE_PRIORITY:
                        constants.LB_CREATE_SPARES_POOL_PRIORITY,
                        constants.FLAVOR: None,
+                       constants.SERVER_GROUP_ID: None,
                        constants.AVAILABILITY_ZONE: az_data}))
-
-    @mock.patch('octavia.controller.worker.v2.flows.'
-                'amphora_flows.AmphoraFlows.get_delete_amphora_flow',
-                return_value='TEST')
-    def test_delete_amphora(self,
-                            mock_get_delete_amp_flow,
-                            mock_api_get_session,
-                            mock_dyn_log_listener,
-                            mock_taskflow_load,
-                            mock_pool_repo_get,
-                            mock_member_repo_get,
-                            mock_l7rule_repo_get,
-                            mock_l7policy_repo_get,
-                            mock_listener_repo_get,
-                            mock_lb_repo_get,
-                            mock_health_mon_repo_get,
-                            mock_amp_repo_get):
-
-        _flow_mock.reset_mock()
-
-        cw = controller_worker.ControllerWorker()
-        cw.delete_amphora(AMP_ID)
-
-        mock_amp_repo_get.assert_called_once_with(
-            _db_session,
-            id=AMP_ID)
-        mock_amp_repo_get.return_value = _db_amphora_mock
-
-        (cw.services_controller.run_poster.
-            assert_called_once_with(
-                flow_utils.get_delete_amphora_flow,
-                store={constants.AMPHORA: _db_amphora_mock.to_dict()}))
 
     @mock.patch('octavia.controller.worker.v2.flows.'
                 'health_monitor_flows.HealthMonitorFlows.'
@@ -378,7 +362,8 @@ class TestControllerWorker(base.TestCase):
         cw = controller_worker.ControllerWorker()
 
         listener_dict = {constants.LISTENER_ID: LISTENER_ID,
-                         constants.LOADBALANCER_ID: LB_ID}
+                         constants.LOADBALANCER_ID: LB_ID,
+                         constants.PROJECT_ID: PROJECT_ID}
         cw.create_listener(listener_dict)
         provider_lb = provider_utils.db_loadbalancer_to_provider_loadbalancer(
             _db_load_balancer_mock).to_dict()
@@ -406,7 +391,8 @@ class TestControllerWorker(base.TestCase):
         _flow_mock.reset_mock()
 
         listener_dict = {constants.LISTENER_ID: LISTENER_ID,
-                         constants.LOADBALANCER_ID: LB_ID}
+                         constants.LOADBALANCER_ID: LB_ID,
+                         constants.PROJECT_ID: PROJECT_ID}
         cw = controller_worker.ControllerWorker()
         cw.delete_listener(listener_dict)
 
@@ -447,7 +433,37 @@ class TestControllerWorker(base.TestCase):
                                            constants.LISTENERS:
                                            [listener_dict]}))
 
-    def test_create_load_balancer_single(
+    def test_create_load_balancer_single_no_anti_affinity(
+            self, mock_api_get_session,
+            mock_dyn_log_listener, mock_taskflow_load, mock_pool_repo_get,
+            mock_member_repo_get, mock_l7rule_repo_get, mock_l7policy_repo_get,
+            mock_listener_repo_get, mock_lb_repo_get,
+            mock_health_mon_repo_get, mock_amp_repo_get):
+        # Test the code path with Nova anti-affinity disabled
+        self.conf.config(group="nova", enable_anti_affinity=False)
+        self._test_create_load_balancer_single(
+            mock_api_get_session,
+            mock_dyn_log_listener, mock_taskflow_load, mock_pool_repo_get,
+            mock_member_repo_get, mock_l7rule_repo_get,
+            mock_l7policy_repo_get, mock_listener_repo_get,
+            mock_lb_repo_get, mock_health_mon_repo_get, mock_amp_repo_get)
+
+    def test_create_load_balancer_single_anti_affinity(
+            self, mock_api_get_session,
+            mock_dyn_log_listener, mock_taskflow_load, mock_pool_repo_get,
+            mock_member_repo_get, mock_l7rule_repo_get, mock_l7policy_repo_get,
+            mock_listener_repo_get, mock_lb_repo_get,
+            mock_health_mon_repo_get, mock_amp_repo_get):
+        # Test the code path with Nova anti-affinity enabled
+        self.conf.config(group="nova", enable_anti_affinity=True)
+        self._test_create_load_balancer_single(
+            mock_api_get_session,
+            mock_dyn_log_listener, mock_taskflow_load, mock_pool_repo_get,
+            mock_member_repo_get, mock_l7rule_repo_get,
+            mock_l7policy_repo_get, mock_listener_repo_get,
+            mock_lb_repo_get, mock_health_mon_repo_get, mock_amp_repo_get)
+
+    def _test_create_load_balancer_single(
             self,
             mock_api_get_session,
             mock_dyn_log_listener,
@@ -471,6 +487,7 @@ class TestControllerWorker(base.TestCase):
             'update_dict': {'topology': constants.TOPOLOGY_SINGLE},
             constants.BUILD_TYPE_PRIORITY: constants.LB_CREATE_NORMAL_PRIORITY,
             constants.FLAVOR: None,
+            constants.SERVER_GROUP_ID: None,
             constants.AVAILABILITY_ZONE: None,
         }
         lb_mock = mock.MagicMock()
@@ -510,6 +527,7 @@ class TestControllerWorker(base.TestCase):
             'update_dict': {'topology': constants.TOPOLOGY_ACTIVE_STANDBY},
             constants.BUILD_TYPE_PRIORITY: constants.LB_CREATE_NORMAL_PRIORITY,
             constants.FLAVOR: None,
+            constants.SERVER_GROUP_ID: None,
             constants.AVAILABILITY_ZONE: None,
         }
         setattr(mock_lb_repo_get.return_value, 'topology',
@@ -554,6 +572,7 @@ class TestControllerWorker(base.TestCase):
             'update_dict': {'topology': constants.TOPOLOGY_SINGLE},
             constants.BUILD_TYPE_PRIORITY: constants.LB_CREATE_NORMAL_PRIORITY,
             constants.FLAVOR: None,
+            constants.SERVER_GROUP_ID: None,
             constants.AVAILABILITY_ZONE: None,
         }
 
@@ -599,6 +618,7 @@ class TestControllerWorker(base.TestCase):
             'update_dict': {'topology': constants.TOPOLOGY_ACTIVE_STANDBY},
             constants.BUILD_TYPE_PRIORITY: constants.LB_CREATE_NORMAL_PRIORITY,
             constants.FLAVOR: None,
+            constants.SERVER_GROUP_ID: None,
             constants.AVAILABILITY_ZONE: None,
         }
 
@@ -637,6 +657,7 @@ class TestControllerWorker(base.TestCase):
                 flow_utils.get_delete_load_balancer_flow,
                 _load_balancer_mock,
                 store={constants.LOADBALANCER: _load_balancer_mock,
+                       constants.LOADBALANCER_ID: LB_ID,
                        constants.SERVER_GROUP_ID:
                            _db_load_balancer_mock.server_group_id,
                        constants.PROJECT_ID: _db_load_balancer_mock.project_id,
@@ -664,14 +685,16 @@ class TestControllerWorker(base.TestCase):
         mock_lb_repo_get.assert_called_once_with(
             _db_session,
             id=LB_ID)
-        list_name = 'listener_%s' % _listener_mock.id
+
+        listener_list = [{constants.LISTENER_ID: LISTENER_ID,
+                          constants.LOADBALANCER_ID: LB_ID,
+                          constants.PROJECT_ID: PROJECT_ID}]
 
         (cw.services_controller.run_poster.
             assert_called_once_with(
                 flow_utils.get_cascade_delete_load_balancer_flow,
-                _load_balancer_mock,
+                _load_balancer_mock, listener_list, [],
                 store={constants.LOADBALANCER: _load_balancer_mock,
-                       list_name: self.ref_listener_dict,
                        constants.LOADBALANCER_ID: LB_ID,
                        constants.SERVER_GROUP_ID:
                            _db_load_balancer_mock.server_group_id,
@@ -1178,55 +1201,340 @@ class TestControllerWorker(base.TestCase):
                                         constants.UPDATE_DICT:
                                             L7RULE_UPDATE_DICT}))
 
+    @mock.patch('octavia.api.drivers.utils.'
+                'db_loadbalancer_to_provider_loadbalancer')
+    @mock.patch('octavia.db.repositories.LoadBalancerRepository.update')
+    def test_failover_amphora_lb_single(self,
+                                        mock_update,
+                                        mock_lb_db_to_provider,
+                                        mock_api_get_session,
+                                        mock_dyn_log_listener,
+                                        mock_taskflow_load,
+                                        mock_pool_repo_get,
+                                        mock_member_repo_get,
+                                        mock_l7rule_repo_get,
+                                        mock_l7policy_repo_get,
+                                        mock_listener_repo_get,
+                                        mock_lb_repo_get,
+                                        mock_health_mon_repo_get,
+                                        mock_amp_repo_get):
+        mock_lb = mock.MagicMock()
+        mock_lb.id = LB_ID
+        mock_lb.topology = constants.TOPOLOGY_SINGLE
+        mock_lb.flavor_id = None
+        mock_lb.availability_zone = None
+        mock_lb.server_group_id = None
+        mock_lb_repo_get.return_value = mock_lb
+        mock_provider_lb = mock.MagicMock()
+        mock_lb_db_to_provider.return_value = mock_provider_lb
+        mock_amphora = mock.MagicMock()
+        mock_amphora.load_balancer_id = None
+        mock_amphora.id = AMP_ID
+        mock_amphora.load_balancer_id = LB_ID
+        mock_amphora.status = constants.AMPHORA_READY
+        mock_amp_repo_get.return_value = mock_amphora
+        expected_stored_params = {
+            constants.AVAILABILITY_ZONE: {},
+            constants.BUILD_TYPE_PRIORITY:
+                constants.LB_CREATE_FAILOVER_PRIORITY,
+            constants.FLAVOR: {constants.LOADBALANCER_TOPOLOGY:
+                               constants.TOPOLOGY_SINGLE},
+            constants.LOADBALANCER: mock_provider_lb.to_dict(),
+            constants.LOADBALANCER_ID: LB_ID,
+            constants.SERVER_GROUP_ID: None,
+            constants.VIP: mock_lb.vip.to_dict()}
+
+        cw = controller_worker.ControllerWorker()
+        cw.services_controller.reset_mock()
+        cw.failover_amphora(AMP_ID)
+
+        cw.services_controller.run_poster.assert_called_once_with(
+            flow_utils.get_failover_amphora_flow,
+            mock_amphora.to_dict(), 1, store=expected_stored_params,
+            wait=True)
+
     @mock.patch('octavia.db.repositories.AvailabilityZoneRepository.'
                 'get_availability_zone_metadata_dict', return_value={})
+    @mock.patch('octavia.api.drivers.utils.'
+                'db_loadbalancer_to_provider_loadbalancer')
+    @mock.patch('octavia.db.repositories.LoadBalancerRepository.update')
+    def test_failover_amphora_lb_act_stdby(self,
+                                           mock_update,
+                                           mock_lb_db_to_provider,
+                                           mock_get_az_meta,
+                                           mock_api_get_session,
+                                           mock_dyn_log_listener,
+                                           mock_taskflow_load,
+                                           mock_pool_repo_get,
+                                           mock_member_repo_get,
+                                           mock_l7rule_repo_get,
+                                           mock_l7policy_repo_get,
+                                           mock_listener_repo_get,
+                                           mock_lb_repo_get,
+                                           mock_health_mon_repo_get,
+                                           mock_amp_repo_get):
+        mock_lb = mock.MagicMock()
+        mock_lb.id = LB_ID
+        mock_lb.topology = constants.TOPOLOGY_ACTIVE_STANDBY
+        mock_lb.flavor_id = None
+        mock_lb.availability_zone = None
+        mock_lb.server_group_id = None
+        mock_lb_repo_get.return_value = mock_lb
+        mock_provider_lb = mock.MagicMock()
+        mock_lb_db_to_provider.return_value = mock_provider_lb
+        mock_amphora = mock.MagicMock()
+        mock_amphora.load_balancer_id = None
+        mock_amphora.id = AMP_ID
+        mock_amphora.load_balancer_id = LB_ID
+        mock_amphora.status = constants.AMPHORA_READY
+        mock_amp_repo_get.return_value = mock_amphora
+        expected_stored_params = {
+            constants.AVAILABILITY_ZONE: {},
+            constants.BUILD_TYPE_PRIORITY:
+                constants.LB_CREATE_FAILOVER_PRIORITY,
+            constants.FLAVOR: {constants.LOADBALANCER_TOPOLOGY:
+                               constants.TOPOLOGY_ACTIVE_STANDBY},
+            constants.LOADBALANCER: mock_provider_lb.to_dict(),
+            constants.LOADBALANCER_ID: LB_ID,
+            constants.SERVER_GROUP_ID: None,
+            constants.VIP: mock_lb.vip.to_dict()}
+
+        cw = controller_worker.ControllerWorker()
+        cw.services_controller.reset_mock()
+        cw.failover_amphora(AMP_ID)
+
+        cw.services_controller.run_poster.assert_called_once_with(
+            flow_utils.get_failover_amphora_flow,
+            mock_amphora.to_dict(), 2, store=expected_stored_params,
+            wait=True)
+
+    @mock.patch('octavia.db.repositories.AvailabilityZoneRepository.'
+                'get_availability_zone_metadata_dict', return_value={})
+    @mock.patch('octavia.api.drivers.utils.'
+                'db_loadbalancer_to_provider_loadbalancer')
+    @mock.patch('octavia.db.repositories.LoadBalancerRepository.update')
+    def test_failover_amphora_anti_affinity(self,
+                                            mock_update,
+                                            mock_lb_db_to_provider,
+                                            mock_get_az_meta,
+                                            mock_api_get_session,
+                                            mock_dyn_log_listener,
+                                            mock_taskflow_load,
+                                            mock_pool_repo_get,
+                                            mock_member_repo_get,
+                                            mock_l7rule_repo_get,
+                                            mock_l7policy_repo_get,
+                                            mock_listener_repo_get,
+                                            mock_lb_repo_get,
+                                            mock_health_mon_repo_get,
+                                            mock_amp_repo_get):
+        mock_lb = mock.MagicMock()
+        mock_lb.id = LB_ID
+        mock_lb.topology = constants.TOPOLOGY_ACTIVE_STANDBY
+        mock_lb.flavor_id = None
+        mock_lb.availability_zone = None
+        mock_lb.server_group_id = SERVER_GROUP_ID
+        mock_lb_repo_get.return_value = mock_lb
+        mock_provider_lb = mock.MagicMock()
+        mock_lb_db_to_provider.return_value = mock_provider_lb
+        mock_amphora = mock.MagicMock()
+        mock_amphora.load_balancer_id = None
+        mock_amphora.id = AMP_ID
+        mock_amphora.load_balancer_id = LB_ID
+        mock_amphora.status = constants.AMPHORA_READY
+        mock_amp_repo_get.return_value = mock_amphora
+        expected_stored_params = {
+            constants.AVAILABILITY_ZONE: {},
+            constants.BUILD_TYPE_PRIORITY:
+                constants.LB_CREATE_FAILOVER_PRIORITY,
+            constants.FLAVOR: {constants.LOADBALANCER_TOPOLOGY:
+                               constants.TOPOLOGY_ACTIVE_STANDBY},
+            constants.LOADBALANCER: mock_provider_lb.to_dict(),
+            constants.LOADBALANCER_ID: LB_ID,
+            constants.SERVER_GROUP_ID: SERVER_GROUP_ID,
+            constants.VIP: mock_lb.vip.to_dict()}
+
+        cw = controller_worker.ControllerWorker()
+        cw.services_controller.reset_mock()
+        cw.failover_amphora(AMP_ID)
+
+        cw.services_controller.run_poster.assert_called_once_with(
+            flow_utils.get_failover_amphora_flow,
+            mock_amphora.to_dict(), 2, store=expected_stored_params,
+            wait=True)
+
+    @mock.patch('octavia.api.drivers.utils.'
+                'db_loadbalancer_to_provider_loadbalancer')
+    @mock.patch('octavia.db.repositories.LoadBalancerRepository.update')
+    def test_failover_amphora_unknown_topology(self,
+                                               mock_update,
+                                               mock_lb_db_to_provider,
+                                               mock_api_get_session,
+                                               mock_dyn_log_listener,
+                                               mock_taskflow_load,
+                                               mock_pool_repo_get,
+                                               mock_member_repo_get,
+                                               mock_l7rule_repo_get,
+                                               mock_l7policy_repo_get,
+                                               mock_listener_repo_get,
+                                               mock_lb_repo_get,
+                                               mock_health_mon_repo_get,
+                                               mock_amp_repo_get):
+        mock_lb = mock.MagicMock()
+        mock_lb.id = LB_ID
+        mock_lb.topology = 'bogus'
+        mock_lb.flavor_id = None
+        mock_lb.availability_zone = None
+        mock_lb.server_group_id = SERVER_GROUP_ID
+        mock_lb_repo_get.return_value = mock_lb
+        mock_provider_lb = mock.MagicMock()
+        mock_lb_db_to_provider.return_value = mock_provider_lb
+        mock_amphora = mock.MagicMock()
+        mock_amphora.load_balancer_id = None
+        mock_amphora.id = AMP_ID
+        mock_amphora.load_balancer_id = LB_ID
+        mock_amphora.status = constants.AMPHORA_READY
+        mock_amp_repo_get.return_value = mock_amphora
+        expected_stored_params = {
+            constants.AVAILABILITY_ZONE: {},
+            constants.BUILD_TYPE_PRIORITY:
+                constants.LB_CREATE_FAILOVER_PRIORITY,
+            constants.FLAVOR: {constants.LOADBALANCER_TOPOLOGY:
+                               mock_lb.topology},
+            constants.LOADBALANCER: mock_provider_lb.to_dict(),
+            constants.LOADBALANCER_ID: LB_ID,
+            constants.SERVER_GROUP_ID: SERVER_GROUP_ID,
+            constants.VIP: mock_lb.vip.to_dict()}
+
+        cw = controller_worker.ControllerWorker()
+        cw.services_controller.reset_mock()
+        cw.failover_amphora(AMP_ID)
+
+        cw.services_controller.run_poster.assert_called_once_with(
+            flow_utils.get_failover_amphora_flow,
+            mock_amphora.to_dict(), None, store=expected_stored_params,
+            wait=True)
+
     @mock.patch('octavia.db.repositories.FlavorRepository.'
                 'get_flavor_metadata_dict', return_value={})
+    @mock.patch('octavia.api.drivers.utils.'
+                'db_loadbalancer_to_provider_loadbalancer')
     @mock.patch('octavia.db.repositories.LoadBalancerRepository.update')
-    def test_failover_amphora(self,
-                              mock_update,
-                              mock_get_flavor_meta,
-                              mock_get_az_meta,
-                              mock_api_get_session,
-                              mock_dyn_log_listener,
-                              mock_taskflow_load,
-                              mock_pool_repo_get,
-                              mock_member_repo_get,
-                              mock_l7rule_repo_get,
-                              mock_l7policy_repo_get,
-                              mock_listener_repo_get,
-                              mock_lb_repo_get,
-                              mock_health_mon_repo_get,
-                              mock_amp_repo_get):
+    def test_failover_amphora_with_flavor(self,
+                                          mock_update,
+                                          mock_lb_db_to_provider,
+                                          mock_get_flavor_meta,
+                                          mock_api_get_session,
+                                          mock_dyn_log_listener,
+                                          mock_taskflow_load,
+                                          mock_pool_repo_get,
+                                          mock_member_repo_get,
+                                          mock_l7rule_repo_get,
+                                          mock_l7policy_repo_get,
+                                          mock_listener_repo_get,
+                                          mock_lb_repo_get,
+                                          mock_health_mon_repo_get,
+                                          mock_amp_repo_get):
+        mock_lb = mock.MagicMock()
+        mock_lb.id = LB_ID
+        mock_lb.topology = constants.TOPOLOGY_SINGLE
+        mock_lb.flavor_id = FLAVOR_ID
+        mock_lb.availability_zone = None
+        mock_lb.server_group_id = None
+        mock_lb_repo_get.return_value = mock_lb
+        mock_provider_lb = mock.MagicMock()
+        mock_lb_db_to_provider.return_value = mock_provider_lb
+        mock_amphora = mock.MagicMock()
+        mock_amphora.load_balancer_id = None
+        mock_amphora.id = AMP_ID
+        mock_amphora.load_balancer_id = LB_ID
+        mock_amphora.status = constants.AMPHORA_READY
+        mock_amp_repo_get.return_value = mock_amphora
+        expected_stored_params = {
+            constants.AVAILABILITY_ZONE: {},
+            constants.BUILD_TYPE_PRIORITY:
+                constants.LB_CREATE_FAILOVER_PRIORITY,
+            constants.FLAVOR: {constants.LOADBALANCER_TOPOLOGY:
+                               constants.TOPOLOGY_SINGLE,
+                               'taste': 'spicy'},
+            constants.LOADBALANCER: mock_provider_lb.to_dict(),
+            constants.LOADBALANCER_ID: LB_ID,
+            constants.SERVER_GROUP_ID: None,
+            constants.VIP: mock_lb.vip.to_dict()}
+        mock_get_flavor_meta.return_value = {'taste': 'spicy'}
 
-        _flow_mock.reset_mock()
-        _db_amphora_mock.reset_mock()
-        mock_amp_repo_get.return_value = _db_amphora_mock
         cw = controller_worker.ControllerWorker()
+        cw.services_controller.reset_mock()
         cw.failover_amphora(AMP_ID)
-        mock_lb_repo_get.return_value = _db_load_balancer_mock
-        (cw.services_controller.run_poster.
-            assert_called_once_with(
-                flow_utils.get_failover_flow,
-                role=_db_amphora_mock.role,
-                load_balancer={},
-                wait=True,
-                store={constants.FAILED_AMPHORA: _db_amphora_mock.to_dict(),
-                       constants.LOADBALANCER_ID:
-                           _db_amphora_mock.load_balancer_id,
-                       constants.BUILD_TYPE_PRIORITY:
-                           constants.LB_CREATE_FAILOVER_PRIORITY,
-                       constants.FLAVOR: {},
-                       constants.AVAILABILITY_ZONE: {}
-                       }))
 
-        mock_update.assert_called_with(_db_session, LB_ID,
-                                       provisioning_status=constants.ACTIVE)
+        cw.services_controller.run_poster.assert_called_once_with(
+            flow_utils.get_failover_amphora_flow,
+            mock_amphora.to_dict(), 1, store=expected_stored_params,
+            wait=True)
 
-    @mock.patch('octavia.controller.worker.v2.controller_worker.'
-                'ControllerWorker._perform_amphora_failover')
+    @mock.patch('octavia.db.repositories.AvailabilityZoneRepository.'
+                'get_availability_zone_metadata_dict', return_value={})
+    @mock.patch('octavia.api.drivers.utils.'
+                'db_loadbalancer_to_provider_loadbalancer')
+    @mock.patch('octavia.db.repositories.LoadBalancerRepository.update')
+    def test_failover_amphora_with_az(self,
+                                      mock_update,
+                                      mock_lb_db_to_provider,
+                                      mock_get_az_meta,
+                                      mock_api_get_session,
+                                      mock_dyn_log_listener,
+                                      mock_taskflow_load,
+                                      mock_pool_repo_get,
+                                      mock_member_repo_get,
+                                      mock_l7rule_repo_get,
+                                      mock_l7policy_repo_get,
+                                      mock_listener_repo_get,
+                                      mock_lb_repo_get,
+                                      mock_health_mon_repo_get,
+                                      mock_amp_repo_get):
+        mock_lb = mock.MagicMock()
+        mock_lb.id = LB_ID
+        mock_lb.topology = constants.TOPOLOGY_SINGLE
+        mock_lb.flavor_id = None
+        mock_lb.availability_zone = AZ_ID
+        mock_lb.server_group_id = None
+        mock_lb_repo_get.return_value = mock_lb
+        mock_provider_lb = mock.MagicMock()
+        mock_lb_db_to_provider.return_value = mock_provider_lb
+        mock_amphora = mock.MagicMock()
+        mock_amphora.load_balancer_id = None
+        mock_amphora.id = AMP_ID
+        mock_amphora.load_balancer_id = LB_ID
+        mock_amphora.status = constants.AMPHORA_READY
+        mock_amp_repo_get.return_value = mock_amphora
+        expected_stored_params = {
+            constants.AVAILABILITY_ZONE: {'planet': 'jupiter'},
+            constants.BUILD_TYPE_PRIORITY:
+                constants.LB_CREATE_FAILOVER_PRIORITY,
+            constants.FLAVOR: {constants.LOADBALANCER_TOPOLOGY:
+                               constants.TOPOLOGY_SINGLE},
+            constants.LOADBALANCER: mock_provider_lb.to_dict(),
+            constants.LOADBALANCER_ID: LB_ID,
+            constants.SERVER_GROUP_ID: None,
+            constants.VIP: mock_lb.vip.to_dict()}
+        mock_get_az_meta.return_value = {'planet': 'jupiter'}
+
+        cw = controller_worker.ControllerWorker()
+        cw.services_controller.reset_mock()
+        cw.failover_amphora(AMP_ID)
+
+        print(cw, flush=True)
+        print(cw.services_controller, flush=True)
+        print(cw.services_controller.run_poster, flush=True)
+        cw.services_controller.run_poster.assert_called_once_with(
+            flow_utils.get_failover_amphora_flow,
+            mock_amphora.to_dict(), 1, store=expected_stored_params,
+            wait=True)
+
+    @mock.patch('octavia.controller.worker.v1.flows.amphora_flows.'
+                'AmphoraFlows.get_failover_amphora_flow')
     def test_failover_amp_missing_amp(self,
-                                      mock_perform_amp_failover,
+                                      mock_get_amp_failover,
                                       mock_api_get_session,
                                       mock_dyn_log_listener,
                                       mock_taskflow_load,
@@ -1244,14 +1552,11 @@ class TestControllerWorker(base.TestCase):
         cw = controller_worker.ControllerWorker()
         cw.failover_amphora(AMP_ID)
 
-        mock_perform_amp_failover.assert_not_called()
+        mock_get_amp_failover.assert_not_called()
 
-    @mock.patch('octavia.controller.worker.v2.controller_worker.'
-                'ControllerWorker._perform_amphora_failover')
     @mock.patch('octavia.db.repositories.LoadBalancerRepository.update')
     def test_failover_amp_flow_exception(self,
                                          mock_update,
-                                         mock_perform_amp_failover,
                                          mock_api_get_session,
                                          mock_dyn_log_listener,
                                          mock_taskflow_load,
@@ -1263,19 +1568,21 @@ class TestControllerWorker(base.TestCase):
                                          mock_lb_repo_get,
                                          mock_health_mon_repo_get,
                                          mock_amp_repo_get):
+        mock_amphora = mock.MagicMock()
+        mock_amphora.id = AMP_ID
+        mock_amphora.load_balancer_id = LB_ID
+        mock_amp_repo_get.return_value = mock_amphora
 
-        mock_perform_amp_failover.side_effect = TestException('boom')
+        mock_lb_repo_get.side_effect = TestException('boom')
         cw = controller_worker.ControllerWorker()
-        self.assertRaises(TestException, cw.failover_amphora, AMP_ID)
+        cw.failover_amphora(AMP_ID)
         mock_update.assert_called_with(_db_session, LB_ID,
                                        provisioning_status=constants.ERROR)
 
-    @mock.patch('octavia.controller.worker.v2.controller_worker.'
-                'ControllerWorker._perform_amphora_failover')
-    @mock.patch('octavia.db.repositories.LoadBalancerRepository.update')
+    @mock.patch('octavia.controller.worker.v1.flows.amphora_flows.'
+                'AmphoraFlows.get_failover_amphora_flow')
     def test_failover_amp_no_lb(self,
-                                mock_lb_update,
-                                mock_perform_amp_failover,
+                                mock_get_failover_amp_flow,
                                 mock_api_get_session,
                                 mock_dyn_log_listener,
                                 mock_taskflow_load,
@@ -1287,60 +1594,29 @@ class TestControllerWorker(base.TestCase):
                                 mock_lb_repo_get,
                                 mock_health_mon_repo_get,
                                 mock_amp_repo_get):
-
-        amphora = mock.MagicMock()
-        amphora.load_balancer_id = None
-        mock_amp_repo_get.return_value = amphora
-
-        cw = controller_worker.ControllerWorker()
-        cw.failover_amphora(AMP_ID)
-
-        mock_lb_update.assert_not_called()
-        mock_perform_amp_failover.assert_called_once_with(
-            amphora, constants.LB_CREATE_FAILOVER_PRIORITY)
-
-    @mock.patch(
-        'octavia.db.repositories.AmphoraRepository.get_lb_for_amphora',
-        return_value=None)
-    def test_failover_spare_amphora(self,
-                                    mock_get_lb_for_amphora,
-                                    mock_api_get_session,
-                                    mock_dyn_log_listener,
-                                    mock_taskflow_load,
-                                    mock_pool_repo_get,
-                                    mock_member_repo_get,
-                                    mock_l7rule_repo_get,
-                                    mock_l7policy_repo_get,
-                                    mock_listener_repo_get,
-                                    mock_lb_repo_get,
-                                    mock_health_mon_repo_get,
-                                    mock_amp_repo_get):
-
-        _flow_mock.reset_mock()
-
-        # simulate a spare amphora (amphora not attached to any load_balancer)
+        _flow_mock.run.reset_mock()
         mock_amphora = mock.MagicMock()
+        mock_amphora.load_balancer_id = None
         mock_amphora.id = AMP_ID
         mock_amphora.status = constants.AMPHORA_READY
-        mock_amphora.load_balancer_id = None
-        mock_amphora.role = constants.ROLE_STANDALONE
+        mock_amp_repo_get.return_value = mock_amphora
+        expected_stored_params = {constants.AVAILABILITY_ZONE: {},
+                                  constants.BUILD_TYPE_PRIORITY:
+                                      constants.LB_CREATE_FAILOVER_PRIORITY,
+                                  constants.FLAVOR: {},
+                                  constants.LOADBALANCER: None,
+                                  constants.LOADBALANCER_ID: None,
+                                  constants.SERVER_GROUP_ID: None,
+                                  constants.VIP: {}}
 
         cw = controller_worker.ControllerWorker()
-        cw._perform_amphora_failover(mock_amphora,
-                                     constants.LB_CREATE_FAILOVER_PRIORITY)
+        cw.services_controller.reset_mock()
+        cw.failover_amphora(AMP_ID)
 
-        (cw.services_controller.run_poster.
-            assert_called_once_with(
-                flow_utils.get_failover_flow,
-                role=constants.ROLE_STANDALONE, load_balancer=None,
-                wait=True,
-                store={constants.FAILED_AMPHORA: mock_amphora.to_dict(),
-                       constants.LOADBALANCER_ID: None,
-                       constants.BUILD_TYPE_PRIORITY:
-                           constants.LB_CREATE_FAILOVER_PRIORITY,
-                       constants.FLAVOR: {},
-                       constants.AVAILABILITY_ZONE: {}
-                       }))
+        cw.services_controller.run_poster.assert_called_once_with(
+            flow_utils.get_failover_amphora_flow,
+            mock_amphora.to_dict(),
+            None, store=expected_stored_params, wait=True)
 
     @mock.patch('octavia.db.repositories.AmphoraHealthRepository.delete')
     def test_failover_deleted_amphora(self,
@@ -1361,112 +1637,391 @@ class TestControllerWorker(base.TestCase):
         mock_amphora = mock.MagicMock()
         mock_amphora.id = AMP_ID
         mock_amphora.status = constants.DELETED
+        mock_amp_repo_get.return_value = mock_amphora
 
         cw = controller_worker.ControllerWorker()
-        cw._perform_amphora_failover(mock_amphora, 10)
+        cw.failover_amphora(AMP_ID)
 
         mock_delete.assert_called_with(_db_session, amphora_id=AMP_ID)
         mock_taskflow_load.assert_not_called()
 
-    @mock.patch('octavia.controller.worker.v2.'
-                'controller_worker.ControllerWorker._perform_amphora_failover')
-    @mock.patch('octavia.db.repositories.LoadBalancerRepository.update')
-    def test_failover_loadbalancer(self,
-                                   mock_update,
-                                   mock_perform,
-                                   mock_api_get_session,
-                                   mock_dyn_log_listener,
-                                   mock_taskflow_load,
-                                   mock_pool_repo_get,
-                                   mock_member_repo_get,
-                                   mock_l7rule_repo_get,
-                                   mock_l7policy_repo_get,
-                                   mock_listener_repo_get,
-                                   mock_lb_repo_get,
-                                   mock_health_mon_repo_get,
-                                   mock_amp_repo_get):
-        _amphora_mock2 = mock.MagicMock()
-        _amphora_mock3 = mock.MagicMock()
-        _amphora_mock3.status = constants.DELETED
-        _db_load_balancer_mock.amphorae = [
-            _db_amphora_mock, _amphora_mock2, _amphora_mock3]
+    def test_get_amphorae_for_failover_single(self,
+                                              mock_api_get_session,
+                                              mock_dyn_log_listener,
+                                              mock_taskflow_load,
+                                              mock_pool_repo_get,
+                                              mock_member_repo_get,
+                                              mock_l7rule_repo_get,
+                                              mock_l7policy_repo_get,
+                                              mock_listener_repo_get,
+                                              mock_lb_repo_get,
+                                              mock_health_mon_repo_get,
+                                              mock_amp_repo_get):
+        amphora1_mock = mock.MagicMock()
+        amphora1_mock.status = constants.AMPHORA_ALLOCATED
+        amphora2_mock = mock.MagicMock()
+        amphora2_mock.status = constants.DELETED
+
+        load_balancer_mock = mock.MagicMock()
+        load_balancer_mock.topology = constants.TOPOLOGY_SINGLE
+        load_balancer_mock.amphorae = [amphora1_mock, amphora2_mock]
+
         cw = controller_worker.ControllerWorker()
-        cw.failover_loadbalancer('123')
-        mock_perform.assert_called_with(
-            _amphora_mock2,
-            constants.LB_CREATE_ADMIN_FAILOVER_PRIORITY)
-        mock_update.assert_called_with(_db_session, '123',
-                                       provisioning_status=constants.ACTIVE)
+        result = cw._get_amphorae_for_failover(load_balancer_mock)
 
-        mock_perform.reset_mock()
-        _db_load_balancer_mock.amphorae = [
-            _db_amphora_mock, _amphora_mock2, _amphora_mock3]
-        _amphora_mock2.role = constants.ROLE_BACKUP
-        cw.failover_loadbalancer('123')
-        # because mock2 gets failed over earlier now _amphora_mock
-        # is the last one
-        mock_perform.assert_called_with(
-            _db_amphora_mock, constants.LB_CREATE_ADMIN_FAILOVER_PRIORITY)
-        mock_update.assert_called_with(_db_session, '123',
-                                       provisioning_status=constants.ACTIVE)
+        self.assertEqual([amphora1_mock.to_dict()], result)
 
-        mock_perform.side_effect = OverflowError()
-        self.assertRaises(OverflowError, cw.failover_loadbalancer, 123)
-        mock_update.assert_called_with(_db_session, 123,
-                                       provisioning_status=constants.ERROR)
+    @mock.patch('octavia.common.utils.get_amphora_driver')
+    def test_get_amphorae_for_failover_act_stdby(self,
+                                                 mock_get_amp_driver,
+                                                 mock_api_get_session,
+                                                 mock_dyn_log_listener,
+                                                 mock_taskflow_load,
+                                                 mock_pool_repo_get,
+                                                 mock_member_repo_get,
+                                                 mock_l7rule_repo_get,
+                                                 mock_l7policy_repo_get,
+                                                 mock_listener_repo_get,
+                                                 mock_lb_repo_get,
+                                                 mock_health_mon_repo_get,
+                                                 mock_amp_repo_get):
+        # Note: This test uses three amphora even though we only have
+        #       two per load balancer to properly test the ordering from
+        #       this method.
+        amp_driver_mock = mock.MagicMock()
+        amp_driver_mock.get_interface_from_ip.side_effect = [
+            'fake0', None, 'fake1']
+        mock_get_amp_driver.return_value = amp_driver_mock
+        backup_amphora_mock = mock.MagicMock()
+        backup_amphora_mock.status = constants.AMPHORA_ALLOCATED
+        deleted_amphora_mock = mock.MagicMock()
+        deleted_amphora_mock.status = constants.DELETED
+        master_amphora_mock = mock.MagicMock()
+        master_amphora_mock.status = constants.AMPHORA_ALLOCATED
+        bogus_amphora_mock = mock.MagicMock()
+        bogus_amphora_mock.status = constants.AMPHORA_ALLOCATED
 
-    @mock.patch('octavia.db.repositories.AvailabilityZoneRepository.'
-                'get_availability_zone_metadata_dict', return_value={})
-    @mock.patch('octavia.db.repositories.FlavorRepository.'
-                'get_flavor_metadata_dict', return_value={})
-    @mock.patch(
-        'octavia.db.repositories.AmphoraRepository.get_lb_for_amphora',
-        return_value=_db_load_balancer_mock)
-    @mock.patch('octavia.db.repositories.LoadBalancerRepository.update')
-    def test_failover_amphora_anti_affinity(self,
-                                            mock_update,
-                                            mock_get_lb_for_amphora,
-                                            mock_get_flavor_meta,
-                                            mock_get_az_meta,
-                                            mock_api_get_session,
-                                            mock_dyn_log_listener,
-                                            mock_taskflow_load,
-                                            mock_pool_repo_get,
-                                            mock_member_repo_get,
-                                            mock_l7rule_repo_get,
-                                            mock_l7policy_repo_get,
-                                            mock_listener_repo_get,
-                                            mock_lb_repo_get,
-                                            mock_health_mon_repo_get,
-                                            mock_amp_repo_get):
+        load_balancer_mock = mock.MagicMock()
+        load_balancer_mock.topology = constants.TOPOLOGY_ACTIVE_STANDBY
+        load_balancer_mock.amphorae = [
+            master_amphora_mock, deleted_amphora_mock, backup_amphora_mock,
+            bogus_amphora_mock]
 
-        self.conf.config(group="nova", enable_anti_affinity=True)
+        cw = controller_worker.ControllerWorker()
+        result = cw._get_amphorae_for_failover(load_balancer_mock)
+
+        self.assertEqual([master_amphora_mock.to_dict(),
+                          bogus_amphora_mock.to_dict(),
+                          backup_amphora_mock.to_dict()], result)
+
+    @mock.patch('octavia.common.utils.get_amphora_driver')
+    def test_get_amphorae_for_failover_act_stdby_net_split(
+            self, mock_get_amp_driver, mock_api_get_session,
+            mock_dyn_log_listener, mock_taskflow_load, mock_pool_repo_get,
+            mock_member_repo_get, mock_l7rule_repo_get, mock_l7policy_repo_get,
+            mock_listener_repo_get, mock_lb_repo_get, mock_health_mon_repo_get,
+            mock_amp_repo_get):
+        # Case where the amps can't see eachother and somehow end up with
+        # two amphora with an interface. This is highly unlikely as the
+        # higher priority amphora should get the IP in a net split, but
+        # let's test the code for this odd case.
+        # Note: This test uses three amphora even though we only have
+        #       two per load balancer to properly test the ordering from
+        #       this method.
+        amp_driver_mock = mock.MagicMock()
+        amp_driver_mock.get_interface_from_ip.side_effect = [
+            'fake0', 'fake1']
+        mock_get_amp_driver.return_value = amp_driver_mock
+        backup_amphora_mock = mock.MagicMock()
+        backup_amphora_mock.status = constants.AMPHORA_ALLOCATED
+        deleted_amphora_mock = mock.MagicMock()
+        deleted_amphora_mock.status = constants.DELETED
+        master_amphora_mock = mock.MagicMock()
+        master_amphora_mock.status = constants.AMPHORA_ALLOCATED
+
+        load_balancer_mock = mock.MagicMock()
+        load_balancer_mock.topology = constants.TOPOLOGY_ACTIVE_STANDBY
+        load_balancer_mock.amphorae = [
+            backup_amphora_mock, deleted_amphora_mock, master_amphora_mock]
+
+        cw = controller_worker.ControllerWorker()
+        result = cw._get_amphorae_for_failover(load_balancer_mock)
+
+        self.assertEqual([backup_amphora_mock.to_dict(),
+                          master_amphora_mock.to_dict()], result)
+
+    def test_get_amphorae_for_failover_bogus_topology(self,
+                                                      mock_api_get_session,
+                                                      mock_dyn_log_listener,
+                                                      mock_taskflow_load,
+                                                      mock_pool_repo_get,
+                                                      mock_member_repo_get,
+                                                      mock_l7rule_repo_get,
+                                                      mock_l7policy_repo_get,
+                                                      mock_listener_repo_get,
+                                                      mock_lb_repo_get,
+                                                      mock_health_mon_repo_get,
+                                                      mock_amp_repo_get):
+        load_balancer_mock = mock.MagicMock()
+        load_balancer_mock.topology = 'bogus'
+
+        cw = controller_worker.ControllerWorker()
+        self.assertRaises(exceptions.InvalidTopology,
+                          cw._get_amphorae_for_failover,
+                          load_balancer_mock)
+
+    @mock.patch('octavia.controller.worker.v2.controller_worker.'
+                'ControllerWorker._get_amphorae_for_failover')
+    def test_failover_loadbalancer_single(self,
+                                          mock_get_amps_for_failover,
+                                          mock_api_get_session,
+                                          mock_dyn_log_listener,
+                                          mock_taskflow_load,
+                                          mock_pool_repo_get,
+                                          mock_member_repo_get,
+                                          mock_l7rule_repo_get,
+                                          mock_l7policy_repo_get,
+                                          mock_listener_repo_get,
+                                          mock_lb_repo_get,
+                                          mock_health_mon_repo_get,
+                                          mock_amp_repo_get):
         _flow_mock.reset_mock()
-        _db_load_balancer_mock.server_group_id = "123"
-
-        cw = controller_worker.ControllerWorker()
-        cw.failover_amphora(AMP_ID)
+        mock_lb_repo_get.return_value = _db_load_balancer_mock
+        mock_get_amps_for_failover.return_value = [_amphora_mock]
         provider_lb = provider_utils.db_loadbalancer_to_provider_loadbalancer(
             _db_load_balancer_mock).to_dict()
 
-        (cw.services_controller.run_poster.
-            assert_called_once_with(
-                flow_utils.get_failover_flow,
-                role=_db_amphora_mock.role,
-                load_balancer=provider_lb,
-                wait=True,
-                store={constants.FAILED_AMPHORA: _db_amphora_mock.to_dict(),
-                       constants.LOADBALANCER_ID:
-                           _db_amphora_mock.load_balancer_id,
-                       constants.BUILD_TYPE_PRIORITY:
-                           constants.LB_CREATE_FAILOVER_PRIORITY,
-                       constants.SERVER_GROUP_ID: "123",
-                       constants.FLAVOR: {},
-                       constants.AVAILABILITY_ZONE: {}
-                       }))
+        expected_flavor = {constants.LOADBALANCER_TOPOLOGY:
+                           _load_balancer_mock[constants.TOPOLOGY]}
+        provider_lb[constants.FLAVOR] = expected_flavor
+        expected_flow_store = {constants.LOADBALANCER: provider_lb,
+                               constants.BUILD_TYPE_PRIORITY:
+                                   constants.LB_CREATE_FAILOVER_PRIORITY,
+                               constants.LOADBALANCER_ID:
+                                   _load_balancer_mock[
+                                       constants.LOADBALANCER_ID],
+                               constants.SERVER_GROUP_ID:
+                                   _load_balancer_mock[
+                                       constants.SERVER_GROUP_ID],
+                               constants.FLAVOR: expected_flavor,
+                               constants.AVAILABILITY_ZONE: {}}
 
-        mock_update.assert_called_with(_db_session, LB_ID,
-                                       provisioning_status=constants.ACTIVE)
+        cw = controller_worker.ControllerWorker()
+        cw.failover_loadbalancer(LB_ID)
+
+        mock_lb_repo_get.assert_called_once_with(_db_session, id=LB_ID)
+        mock_get_amps_for_failover.assert_called_once_with(
+            _db_load_balancer_mock)
+
+        cw.services_controller.run_poster.assert_called_once_with(
+            flow_utils.get_failover_LB_flow, [_amphora_mock], provider_lb,
+            wait=True, store=expected_flow_store)
+
+    @mock.patch('octavia.controller.worker.v2.controller_worker.'
+                'ControllerWorker._get_amphorae_for_failover')
+    def test_failover_loadbalancer_act_stdby(self,
+                                             mock_get_amps_for_failover,
+                                             mock_api_get_session,
+                                             mock_dyn_log_listener,
+                                             mock_taskflow_load,
+                                             mock_pool_repo_get,
+                                             mock_member_repo_get,
+                                             mock_l7rule_repo_get,
+                                             mock_l7policy_repo_get,
+                                             mock_listener_repo_get,
+                                             mock_lb_repo_get,
+                                             mock_health_mon_repo_get,
+                                             mock_amp_repo_get):
+        _flow_mock.reset_mock()
+        load_balancer_mock = mock.MagicMock()
+        load_balancer_mock.listeners = [_listener_mock]
+        load_balancer_mock.topology = constants.TOPOLOGY_ACTIVE_STANDBY
+        load_balancer_mock.flavor_id = None
+        load_balancer_mock.availability_zone = None
+        load_balancer_mock.vip = _vip_mock
+        mock_lb_repo_get.return_value = load_balancer_mock
+        mock_get_amps_for_failover.return_value = [_amphora_mock,
+                                                   _amphora_mock]
+        provider_lb = provider_utils.db_loadbalancer_to_provider_loadbalancer(
+            load_balancer_mock).to_dict()
+
+        expected_flavor = {constants.LOADBALANCER_TOPOLOGY:
+                           load_balancer_mock.topology}
+        provider_lb[constants.FLAVOR] = expected_flavor
+        expected_flow_store = {constants.LOADBALANCER: provider_lb,
+                               constants.BUILD_TYPE_PRIORITY:
+                                   constants.LB_CREATE_FAILOVER_PRIORITY,
+                               constants.LOADBALANCER_ID:
+                                   load_balancer_mock.id,
+                               constants.SERVER_GROUP_ID:
+                                   load_balancer_mock.server_group_id,
+                               constants.FLAVOR: expected_flavor,
+                               constants.AVAILABILITY_ZONE: {}}
+
+        cw = controller_worker.ControllerWorker()
+        cw.failover_loadbalancer(LB_ID)
+
+        mock_lb_repo_get.assert_called_once_with(_db_session, id=LB_ID)
+        mock_get_amps_for_failover.assert_called_once_with(load_balancer_mock)
+
+        cw.services_controller.run_poster.assert_called_once_with(
+            flow_utils.get_failover_LB_flow, [_amphora_mock, _amphora_mock],
+            provider_lb, wait=True, store=expected_flow_store)
+
+    @mock.patch('octavia.db.repositories.LoadBalancerRepository.update')
+    def test_failover_loadbalancer_no_lb(self,
+                                         mock_lb_repo_update,
+                                         mock_api_get_session,
+                                         mock_dyn_log_listener,
+                                         mock_taskflow_load,
+                                         mock_pool_repo_get,
+                                         mock_member_repo_get,
+                                         mock_l7rule_repo_get,
+                                         mock_l7policy_repo_get,
+                                         mock_listener_repo_get,
+                                         mock_lb_repo_get,
+                                         mock_health_mon_repo_get,
+                                         mock_amp_repo_get):
+        mock_lb_repo_get.return_value = None
+
+        cw = controller_worker.ControllerWorker()
+        cw.failover_loadbalancer(LB_ID)
+
+        mock_lb_repo_update.assert_called_once_with(
+            _db_session, LB_ID, provisioning_status=constants.ERROR)
+
+    @mock.patch('octavia.db.repositories.LoadBalancerRepository.update')
+    @mock.patch('octavia.controller.worker.v2.controller_worker.'
+                'ControllerWorker._get_amphorae_for_failover')
+    def test_failover_loadbalancer_with_bogus_topology(
+            self, mock_get_amps_for_failover, mock_lb_repo_update,
+            mock_api_get_session, mock_dyn_log_listener, mock_taskflow_load,
+            mock_pool_repo_get, mock_member_repo_get, mock_l7rule_repo_get,
+            mock_l7policy_repo_get, mock_listener_repo_get, mock_lb_repo_get,
+            mock_health_mon_repo_get, mock_amp_repo_get):
+        _flow_mock.reset_mock()
+        load_balancer_mock = mock.MagicMock()
+        load_balancer_mock.topology = 'bogus'
+        mock_lb_repo_get.return_value = load_balancer_mock
+        mock_get_amps_for_failover.return_value = [_amphora_mock]
+
+        cw = controller_worker.ControllerWorker()
+        result = cw.failover_loadbalancer(LB_ID)
+
+        self.assertIsNone(result)
+        mock_lb_repo_update.assert_called_once_with(
+            _db_session, LB_ID, provisioning_status=constants.ERROR)
+        mock_lb_repo_get.assert_called_once_with(_db_session, id=LB_ID)
+        mock_get_amps_for_failover.assert_called_once_with(load_balancer_mock)
+
+    @mock.patch('octavia.db.repositories.AvailabilityZoneRepository.'
+                'get_availability_zone_metadata_dict', return_value={})
+    @mock.patch('octavia.controller.worker.v2.controller_worker.'
+                'ControllerWorker._get_amphorae_for_failover')
+    def test_failover_loadbalancer_with_az(self,
+                                           mock_get_amps_for_failover,
+                                           mock_get_az_meta,
+                                           mock_api_get_session,
+                                           mock_dyn_log_listener,
+                                           mock_taskflow_load,
+                                           mock_pool_repo_get,
+                                           mock_member_repo_get,
+                                           mock_l7rule_repo_get,
+                                           mock_l7policy_repo_get,
+                                           mock_listener_repo_get,
+                                           mock_lb_repo_get,
+                                           mock_health_mon_repo_get,
+                                           mock_amp_repo_get):
+        _flow_mock.reset_mock()
+        load_balancer_mock = mock.MagicMock()
+        load_balancer_mock.listeners = [_listener_mock]
+        load_balancer_mock.topology = constants.TOPOLOGY_ACTIVE_STANDBY
+        load_balancer_mock.flavor_id = None
+        load_balancer_mock.availability_zone = uuidutils.generate_uuid()
+        load_balancer_mock.vip = _vip_mock
+        mock_lb_repo_get.return_value = load_balancer_mock
+        mock_get_amps_for_failover.return_value = [_amphora_mock]
+        mock_get_az_meta.return_value = {'planet': 'jupiter'}
+        provider_lb = provider_utils.db_loadbalancer_to_provider_loadbalancer(
+            load_balancer_mock).to_dict()
+
+        expected_flavor = {constants.LOADBALANCER_TOPOLOGY:
+                           load_balancer_mock.topology}
+        provider_lb[constants.FLAVOR] = expected_flavor
+        expected_flow_store = {constants.LOADBALANCER: provider_lb,
+                               constants.BUILD_TYPE_PRIORITY:
+                                   constants.LB_CREATE_FAILOVER_PRIORITY,
+                               constants.LOADBALANCER_ID:
+                                   load_balancer_mock.id,
+                               constants.FLAVOR: expected_flavor,
+                               constants.SERVER_GROUP_ID:
+                                   load_balancer_mock.server_group_id,
+                               constants.AVAILABILITY_ZONE: {
+                                   'planet': 'jupiter'}}
+
+        cw = controller_worker.ControllerWorker()
+        cw.failover_loadbalancer(LB_ID)
+
+        mock_lb_repo_get.assert_called_once_with(_db_session, id=LB_ID)
+        mock_get_amps_for_failover.assert_called_once_with(load_balancer_mock)
+
+        cw.services_controller.run_poster.assert_called_once_with(
+            flow_utils.get_failover_LB_flow, [_amphora_mock], provider_lb,
+            wait=True, store=expected_flow_store)
+
+    @mock.patch('octavia.db.repositories.FlavorRepository.'
+                'get_flavor_metadata_dict', return_value={'taste': 'spicy'})
+    @mock.patch('octavia.controller.worker.v2.controller_worker.'
+                'ControllerWorker._get_amphorae_for_failover')
+    def test_failover_loadbalancer_with_flavor(self,
+                                               mock_get_amps_for_failover,
+                                               mock_get_flavor_meta,
+                                               mock_api_get_session,
+                                               mock_dyn_log_listener,
+                                               mock_taskflow_load,
+                                               mock_pool_repo_get,
+                                               mock_member_repo_get,
+                                               mock_l7rule_repo_get,
+                                               mock_l7policy_repo_get,
+                                               mock_listener_repo_get,
+                                               mock_lb_repo_get,
+                                               mock_health_mon_repo_get,
+                                               mock_amp_repo_get):
+        _flow_mock.reset_mock()
+        load_balancer_mock = mock.MagicMock()
+        load_balancer_mock.listeners = [_listener_mock]
+        load_balancer_mock.topology = constants.TOPOLOGY_SINGLE
+        load_balancer_mock.flavor_id = uuidutils.generate_uuid()
+        load_balancer_mock.availability_zone = None
+        load_balancer_mock.vip = _vip_mock
+        mock_lb_repo_get.return_value = load_balancer_mock
+        mock_get_amps_for_failover.return_value = [_amphora_mock,
+                                                   _amphora_mock]
+        provider_lb = provider_utils.db_loadbalancer_to_provider_loadbalancer(
+            load_balancer_mock).to_dict()
+
+        expected_flavor = {'taste': 'spicy', constants.LOADBALANCER_TOPOLOGY:
+                           load_balancer_mock.topology}
+        provider_lb[constants.FLAVOR] = expected_flavor
+        expected_flow_store = {constants.LOADBALANCER: provider_lb,
+                               constants.BUILD_TYPE_PRIORITY:
+                                   constants.LB_CREATE_FAILOVER_PRIORITY,
+                               constants.LOADBALANCER_ID:
+                                   load_balancer_mock.id,
+                               constants.FLAVOR: expected_flavor,
+                               constants.SERVER_GROUP_ID:
+                                   load_balancer_mock.server_group_id,
+                               constants.AVAILABILITY_ZONE: {}}
+
+        cw = controller_worker.ControllerWorker()
+        cw.failover_loadbalancer(LB_ID)
+
+        mock_lb_repo_get.assert_called_once_with(_db_session, id=LB_ID)
+        mock_get_amps_for_failover.assert_called_once_with(load_balancer_mock)
+
+        cw.services_controller.run_poster.assert_called_once_with(
+            flow_utils.get_failover_LB_flow, [_amphora_mock, _amphora_mock],
+            provider_lb, wait=True, store=expected_flow_store)
 
     def test_amphora_cert_rotation(self,
                                    mock_api_get_session,
@@ -1482,6 +2037,7 @@ class TestControllerWorker(base.TestCase):
                                    mock_amp_repo_get):
         _flow_mock.reset_mock()
         cw = controller_worker.ControllerWorker()
+        cw.services_controller.reset_mock()
         cw.amphora_cert_rotation(AMP_ID)
         mock_amp_repo_get.return_value = _db_amphora_mock
         (cw.services_controller.run_poster.
@@ -1514,6 +2070,7 @@ class TestControllerWorker(base.TestCase):
         mock_get_lb_for_amp.return_value = mock_lb
         mock_flavor_meta.return_value = {'test': 'dict'}
         cw = controller_worker.ControllerWorker()
+        cw.services_controller.reset_mock()
         cw.update_amphora_agent_config(AMP_ID)
 
         mock_amp_repo_get.assert_called_once_with(_db_session, id=AMP_ID)

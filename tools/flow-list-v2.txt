@@ -1,0 +1,32 @@
+# List of TaskFlow flows that should be documented
+# Some flows are used by other flows, so just list the primary flows here
+# Format:
+# module class flow
+octavia.controller.worker.v2.flows.amphora_flows AmphoraFlows get_create_amphora_flow
+octavia.controller.worker.v2.flows.amphora_flows AmphoraFlows get_failover_amphora_flow
+octavia.controller.worker.v2.flows.amphora_flows AmphoraFlows cert_rotate_amphora_flow
+octavia.controller.worker.v2.flows.load_balancer_flows LoadBalancerFlows get_create_load_balancer_flow
+octavia.controller.worker.v2.flows.load_balancer_flows LoadBalancerFlows get_delete_load_balancer_flow
+octavia.controller.worker.v2.flows.load_balancer_flows LoadBalancerFlows get_cascade_delete_load_balancer_flow
+octavia.controller.worker.v2.flows.load_balancer_flows LoadBalancerFlows get_update_load_balancer_flow
+octavia.controller.worker.v2.flows.load_balancer_flows LoadBalancerFlows get_failover_LB_flow
+octavia.controller.worker.v2.flows.listener_flows ListenerFlows get_create_listener_flow
+octavia.controller.worker.v2.flows.listener_flows ListenerFlows get_create_all_listeners_flow
+octavia.controller.worker.v2.flows.listener_flows ListenerFlows get_delete_listener_flow
+octavia.controller.worker.v2.flows.listener_flows ListenerFlows get_update_listener_flow
+octavia.controller.worker.v2.flows.pool_flows PoolFlows get_create_pool_flow
+octavia.controller.worker.v2.flows.pool_flows PoolFlows get_delete_pool_flow
+octavia.controller.worker.v2.flows.pool_flows PoolFlows get_update_pool_flow
+octavia.controller.worker.v2.flows.member_flows MemberFlows get_create_member_flow
+octavia.controller.worker.v2.flows.member_flows MemberFlows get_delete_member_flow
+octavia.controller.worker.v2.flows.member_flows MemberFlows get_update_member_flow
+octavia.controller.worker.v2.flows.member_flows MemberFlows get_batch_update_members_flow
+octavia.controller.worker.v2.flows.health_monitor_flows HealthMonitorFlows get_create_health_monitor_flow
+octavia.controller.worker.v2.flows.health_monitor_flows HealthMonitorFlows get_delete_health_monitor_flow
+octavia.controller.worker.v2.flows.health_monitor_flows HealthMonitorFlows get_update_health_monitor_flow
+octavia.controller.worker.v2.flows.l7policy_flows L7PolicyFlows get_create_l7policy_flow
+octavia.controller.worker.v2.flows.l7policy_flows L7PolicyFlows get_delete_l7policy_flow
+octavia.controller.worker.v2.flows.l7policy_flows L7PolicyFlows get_update_l7policy_flow
+octavia.controller.worker.v2.flows.l7rule_flows L7RuleFlows get_create_l7rule_flow
+octavia.controller.worker.v2.flows.l7rule_flows L7RuleFlows get_delete_l7rule_flow
+octavia.controller.worker.v2.flows.l7rule_flows L7RuleFlows get_update_l7rule_flow
