@@ -40,6 +40,9 @@ class BaseDataModel(object):
             if isinstance(value, datetime.datetime):
                 ret[attr] = value.isoformat()
                 continue
+            if isinstance(value, bytes):
+                ret[attr] = value.decode()
+                continue
             if recurse:
                 if isinstance(getattr(self, attr), list):
                     ret[attr] = []

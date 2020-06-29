@@ -133,17 +133,30 @@ class AmphoraProviderDriver(driver_base.ProviderDriver):
                    consts.LOAD_BALANCER_UPDATES: lb_dict}
         self.client.cast({}, 'update_load_balancer', **payload)
 
+    def _encrypt_tls_container_data(self, tls_container_data):
+        for key, val in tls_container_data.items():
+            if isinstance(val, bytes):
+                tls_container_data[key] = self.fernet.encrypt(val)
+            elif isinstance(val, list):
+                encrypt_vals = []
+                for i in val:
+                    if isinstance(i, bytes):
+                        encrypt_vals.append(self.fernet.encrypt(i))
+                    else:
+                        encrypt_vals.append(i)
+                tls_container_data[key] = encrypt_vals
+
     def _encrypt_listener_dict(self, listener_dict):
         # We need to encrypt the user cert/key data for sending it
         # over messaging.
         if listener_dict.get(consts.DEFAULT_TLS_CONTAINER_DATA, False):
-            listener_dict[consts.DEFAULT_TLS_CONTAINER_DATA] = (
-                self.fernet.encrypt(
-                    listener_dict[consts.DEFAULT_TLS_CONTAINER_DATA]))
+            container_data = listener_dict[consts.DEFAULT_TLS_CONTAINER_DATA]
+            self._encrypt_tls_container_data(container_data)
         if listener_dict.get(consts.SNI_CONTAINER_DATA, False):
             sni_list = []
             for sni_data in listener_dict[consts.SNI_CONTAINER_DATA]:
-                sni_list.append(self.fernet.encrypt(sni_data))
+                self._encrypt_tls_container_data(sni_data)
+                sni_list.append(sni_data)
             if sni_list:
                 listener_dict[consts.SNI_CONTAINER_DATA] = sni_list
 
@@ -151,7 +164,7 @@ class AmphoraProviderDriver(driver_base.ProviderDriver):
     def listener_create(self, listener):
         self._validate_alpn_protocols(listener)
         payload = {consts.LISTENER: listener.to_dict()}
-        self._encrypt_listener_dict(payload)
+        self._encrypt_listener_dict(payload[consts.LISTENER])
 
         self.client.cast({}, 'create_listener', **payload)
 

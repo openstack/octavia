@@ -746,9 +746,9 @@ class TestAmphoraDriver(base.TestRpc):
     def test_encrypt_listener_dict(self, mock_fernet):
         mock_fern = mock.MagicMock()
         mock_fernet.return_value = mock_fern
-        TEST_DATA = 'some data'
-        TEST_DATA2 = 'more data'
-        FAKE_ENCRYPTED_DATA = 'alqwkhjetrhth'
+        TEST_DATA = {'cert': b'some data'}
+        TEST_DATA2 = {'test': 'more data'}
+        FAKE_ENCRYPTED_DATA = b'alqwkhjetrhth'
         mock_fern.encrypt.return_value = FAKE_ENCRYPTED_DATA
 
         # We need a class instance with the mock
@@ -759,21 +759,21 @@ class TestAmphoraDriver(base.TestRpc):
 
         amp_driver._encrypt_listener_dict(list_dict)
 
-        mock_fern.encrypt.assert_called_once_with(TEST_DATA)
+        mock_fern.encrypt.assert_called_once_with(b'some data')
 
-        self.assertEqual(FAKE_ENCRYPTED_DATA,
+        self.assertEqual({'cert': FAKE_ENCRYPTED_DATA},
                          list_dict[consts.DEFAULT_TLS_CONTAINER_DATA])
 
         mock_fern.reset_mock()
 
         # Test just sni_container_data
-        list_dict = {consts.SNI_CONTAINER_DATA: [TEST_DATA, TEST_DATA2]}
+        TEST_DATA = {'cert': b'some data'}
+        sni_dict = {consts.SNI_CONTAINER_DATA: [TEST_DATA, TEST_DATA2]}
 
-        amp_driver._encrypt_listener_dict(list_dict)
+        amp_driver._encrypt_listener_dict(sni_dict)
 
-        calls = [mock.call(TEST_DATA), mock.call(TEST_DATA2)]
+        mock_fern.encrypt.assert_called_once_with(b'some data')
 
-        mock_fern.encrypt.assert_has_calls(calls)
-
-        encrypted_sni = [FAKE_ENCRYPTED_DATA, FAKE_ENCRYPTED_DATA]
-        self.assertEqual(encrypted_sni, list_dict[consts.SNI_CONTAINER_DATA])
+        encrypted_sni = [{'cert': FAKE_ENCRYPTED_DATA},
+                         TEST_DATA2]
+        self.assertEqual(encrypted_sni, sni_dict[consts.SNI_CONTAINER_DATA])

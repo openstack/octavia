@@ -206,6 +206,10 @@ def _get_secret_data(cert_manager, project_id, secret_ref, for_delete=False):
             secret_data = None
         else:
             raise exceptions.CertificateRetrievalException(ref=secret_ref)
+    # We need to have json convertible data for storing it in
+    # persistence jobboard backend.
+    if isinstance(secret_data, bytes):
+        return secret_data.decode()
     return secret_data
 
 
