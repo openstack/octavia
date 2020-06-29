@@ -471,3 +471,40 @@ def check_tls_version_list(versions):
     if invalid_versions:
         raise exceptions.ValidationException(
             detail=_('Invalid TLS versions: ' + ', '.join(invalid_versions)))
+
+
+def check_tls_version_min(versions, message=None):
+    """Checks a TLS version string against the configured minimum."""
+
+    if not CONF.api_settings.minimum_tls_version:
+        return
+
+    if not message:
+        message = _("Requested TLS versions are less than the minimum: ")
+
+    min_ver_index = constants.TLS_ALL_VERSIONS.index(
+        CONF.api_settings.minimum_tls_version)
+
+    rejected = []
+    for ver in versions:
+        if constants.TLS_ALL_VERSIONS.index(ver) < min_ver_index:
+            rejected.append(ver)
+    if rejected:
+        raise exceptions.ValidationException(detail=(
+            message + ', '.join(rejected) + " < " +
+            CONF.api_settings.minimum_tls_version))
+
+
+def check_default_tls_versions_min_conflict():
+    if not CONF.api_settings.minimum_tls_version:
+        return
+
+    listener_message = _("Default listener TLS versions are less than the "
+                         "minimum: ")
+    pool_message = _("Default pool TLS versions are less than the minimum: ")
+
+    check_tls_version_min(CONF.api_settings.default_listener_tls_versions,
+                          message=listener_message)
+
+    check_tls_version_min(CONF.api_settings.default_pool_tls_versions,
+                          message=pool_message)

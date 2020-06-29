@@ -288,9 +288,11 @@ class ListenersController(base.BaseController):
         vip_address = vip_db.ip_address
         self._validate_cidr_compatible_with_vip(vip_address, allowed_cidrs)
 
-        # Validate TLS version list
         if listener_protocol == constants.PROTOCOL_TERMINATED_HTTPS:
+            # Validate TLS version list
             validate.check_tls_version_list(listener_dict['tls_versions'])
+            # Validate TLS versions against minimum
+            validate.check_tls_version_min(listener_dict['tls_versions'])
 
         try:
             db_listener = self.repositories.listener.create(
@@ -498,9 +500,11 @@ class ListenersController(base.BaseController):
                     'The following ciphers have been blacklisted by an '
                     'administrator: ' + ', '.join(rejected_ciphers)))
 
-        # Validate TLS version list
         if listener.tls_versions is not wtypes.Unset:
+            # Validate TLS version list
             validate.check_tls_version_list(listener.tls_versions)
+            # Validate TLS versions against minimum
+            validate.check_tls_version_min(listener.tls_versions)
 
     def _set_default_on_none(self, listener):
         """Reset settings to their default values if None/null was passed in

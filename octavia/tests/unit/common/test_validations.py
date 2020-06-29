@@ -484,3 +484,31 @@ class TestValidations(base.TestCase):
             exceptions.ValidationException,
             validate.check_tls_version_list,
             [])
+
+    def test_check_tls_version_min(self):
+        self.conf.config(group="api_settings", minimum_tls_version='TLSv1.2')
+
+        # Test valid list
+        validate.check_tls_version_min(['TLSv1.2', 'TLSv1.3'])
+
+        # Test invalid list
+        self.assertRaises(exceptions.ValidationException,
+                          validate.check_tls_version_min,
+                          ['TLSv1', 'TLSv1.1', 'TLSv1.2'])
+
+    def test_check_default_tls_versions_min_conflict(self):
+        self.conf.config(group="api_settings", minimum_tls_version='TLSv1.2')
+
+        # Test conflict in listener default
+        self.conf.config(group="api_settings", default_listener_tls_versions=[
+                         'SSLv3', 'TLSv1.2'])
+        self.assertRaises(exceptions.ValidationException,
+                          validate.check_default_tls_versions_min_conflict)
+
+        # Test conflict in pool default
+        self.conf.config(group="api_settings", default_listener_tls_versions=[
+                         'TLSv1.2'])
+        self.conf.config(group="api_settings", default_pool_tls_versions=[
+                         'TLSv1', 'TLSv1.3'])
+        self.assertRaises(exceptions.ValidationException,
+                          validate.check_default_tls_versions_min_conflict)
