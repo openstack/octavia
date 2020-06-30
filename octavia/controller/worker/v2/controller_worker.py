@@ -134,6 +134,12 @@ class ControllerWorker(object):
             db_apis.get_session(),
             id=health_monitor[constants.HEALTHMONITOR_ID])
 
+        if not db_health_monitor:
+            LOG.warning('Failed to fetch %s %s from DB. Retrying for up to '
+                        '60 seconds.', 'healthmonitor',
+                        db_health_monitor[constants.HEALTHMONITOR_ID])
+            raise db_exceptions.NoResultFound
+
         pool = db_health_monitor.pool
         pool.health_monitor = db_health_monitor
         load_balancer = pool.load_balancer
