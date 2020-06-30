@@ -136,8 +136,8 @@ class LvsJinjaTemplater(object):
         ret_value = {
             'id': pool.id,
             'protocol': PROTOCOL_MAP[pool.protocol],
-            'lb_algorithm': BALANCE_MAP.get(pool.lb_algorithm,
-                                            'roundrobin'),
+            'lb_algorithm': (BALANCE_MAP.get(pool.lb_algorithm) or
+                             BALANCE_MAP[constants.LB_ALGORITHM_ROUND_ROBIN]),
             'members': [],
             'health_monitor': '',
             'session_persistence': '',

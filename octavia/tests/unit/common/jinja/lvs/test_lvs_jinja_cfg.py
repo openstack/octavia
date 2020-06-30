@@ -269,6 +269,15 @@ class TestLvsCfg(base.TestCase):
             proto=constants.PROTOCOL_UDP,
             persistence_type=constants.SESSION_PERSISTENCE_SOURCE_IP,
             persistence_timeout=33, persistence_granularity='255.0.0.0',
+            lb_algorithm=None,
+        )
+        ret = self.udp_jinja_cfg._transform_pool(in_pool)
+        self.assertEqual(sample_configs_combined.RET_UDP_POOL, ret)
+
+        in_pool = sample_configs_combined.sample_pool_tuple(
+            proto=constants.PROTOCOL_UDP,
+            persistence_type=constants.SESSION_PERSISTENCE_SOURCE_IP,
+            persistence_timeout=33, persistence_granularity='255.0.0.0',
             monitor=False)
         sample_configs_combined.RET_UDP_POOL['health_monitor'] = ''
         ret = self.udp_jinja_cfg._transform_pool(in_pool)
