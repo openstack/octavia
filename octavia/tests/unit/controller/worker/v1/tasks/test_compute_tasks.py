@@ -29,7 +29,6 @@ import octavia.tests.unit.base as base
 
 
 AMP_FLAVOR_ID = '10'
-AMP_IMAGE_ID = '11'
 AMP_IMAGE_TAG = 'glance_tag'
 AMP_SSH_KEY_NAME = None
 AMP_NET = [uuidutils.generate_uuid()]
@@ -66,8 +65,6 @@ class TestComputeTasks(base.TestCase):
         self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
         self.conf.config(
             group="controller_worker", amp_flavor_id=AMP_FLAVOR_ID)
-        self.conf.config(
-            group="controller_worker", amp_image_id=AMP_IMAGE_ID)
         self.conf.config(
             group="controller_worker", amp_image_tag=AMP_IMAGE_TAG)
         self.conf.config(
@@ -114,7 +111,6 @@ class TestComputeTasks(base.TestCase):
         mock_driver.build.assert_called_once_with(
             name="amphora-" + _amphora_mock.id,
             amphora_flavor=AMP_FLAVOR_ID,
-            image_id=AMP_IMAGE_ID,
             image_tag=AMP_IMAGE_TAG,
             image_owner=image_owner_id,
             key_name=AMP_SSH_KEY_NAME,
@@ -178,7 +174,6 @@ class TestComputeTasks(base.TestCase):
         mock_driver.build.assert_called_once_with(
             name="amphora-" + _amphora_mock.id,
             amphora_flavor=AMP_FLAVOR_ID,
-            image_id=AMP_IMAGE_ID,
             image_tag=AMP_IMAGE_TAG,
             image_owner='',
             key_name=AMP_SSH_KEY_NAME,
@@ -245,7 +240,6 @@ class TestComputeTasks(base.TestCase):
         mock_driver.build.assert_called_once_with(
             name="amphora-" + _amphora_mock.id,
             amphora_flavor=AMP_FLAVOR_ID,
-            image_id=AMP_IMAGE_ID,
             image_tag=AMP_IMAGE_TAG,
             image_owner=image_owner_id,
             key_name=AMP_SSH_KEY_NAME,
@@ -311,7 +305,6 @@ class TestComputeTasks(base.TestCase):
         mock_driver.build.assert_called_once_with(
             name="amphora-" + _amphora_mock.id,
             amphora_flavor=AMP_FLAVOR_ID,
-            image_id=AMP_IMAGE_ID,
             image_tag=AMP_IMAGE_TAG,
             image_owner='',
             key_name=None,
@@ -378,7 +371,6 @@ class TestComputeTasks(base.TestCase):
         mock_driver.build.assert_called_once_with(
             name="amphora-" + _amphora_mock.id,
             amphora_flavor=AMP_FLAVOR_ID,
-            image_id=AMP_IMAGE_ID,
             image_tag=AMP_IMAGE_TAG,
             image_owner='',
             key_name=AMP_SSH_KEY_NAME,

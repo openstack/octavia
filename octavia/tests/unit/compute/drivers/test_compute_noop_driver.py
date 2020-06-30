@@ -32,7 +32,6 @@ class TestNoopComputeDriver(base.TestCase):
 
         self.name = "amphora_name"
         self.amphora_flavor = "m1.tiny"
-        self.image_id = self.FAKE_UUID_1
         self.image_tag = "faketag"
         self.image_owner = self.FAKE_UUID_2
         self.key_name = "key_name"
@@ -54,20 +53,19 @@ class TestNoopComputeDriver(base.TestCase):
 
     def test_build(self):
         self.driver.build(self.name, self.amphora_flavor,
-                          self.image_id, self.image_tag, self.image_owner,
+                          self.image_tag, self.image_owner,
                           self.key_name, self.sec_groups, self.network_ids,
                           self.confdrivefiles, self.user_data, self.port_ids,
                           self.server_group_id)
 
         self.assertEqual((self.name, self.amphora_flavor,
-                          self.image_id, self.image_tag, self.image_owner,
+                          self.image_tag, self.image_owner,
                           self.key_name, self.sec_groups, self.network_ids,
                           self.confdrivefiles, self.user_data, self.port_ids,
                           self.server_group_id, 'build'),
                          self.driver.driver.computeconfig[(
                              self.name,
                              self.amphora_flavor,
-                             self.image_id,
                              self.image_tag,
                              self.image_owner,
                              self.key_name,

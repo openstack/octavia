@@ -108,7 +108,6 @@ class ComputeCreate(BaseComputeTask):
             compute_id = self.compute.build(
                 name="amphora-" + amphora_id,
                 amphora_flavor=amp_compute_flavor,
-                image_id=CONF.controller_worker.amp_image_id,
                 image_tag=CONF.controller_worker.amp_image_tag,
                 image_owner=CONF.controller_worker.amp_image_owner_id,
                 key_name=key_name,

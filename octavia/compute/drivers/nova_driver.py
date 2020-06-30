@@ -57,16 +57,6 @@ def _extract_amp_image_id_by_tag(client, image_tag, image_owner):
     return image_id
 
 
-def _get_image_uuid(client, image_id, image_tag, image_owner):
-    if image_id:
-        if image_tag:
-            LOG.warning("Both amp_image_id and amp_image_tag options defined. "
-                        "Using the amp_image_id.")
-        return image_id
-
-    return _extract_amp_image_id_by_tag(client, image_tag, image_owner)
-
-
 class VirtualMachineManager(compute_base.ComputeBase):
     '''Compute implementation of virtual machines via nova.'''
 
@@ -97,15 +87,13 @@ class VirtualMachineManager(compute_base.ComputeBase):
         ).driver
 
     def build(self, name="amphora_name", amphora_flavor=None,
-              image_id=None, image_tag=None, image_owner=None,
-              key_name=None, sec_groups=None, network_ids=None,
-              port_ids=None, config_drive_files=None, user_data=None,
-              server_group_id=None, availability_zone=None):
+              image_tag=None, image_owner=None, key_name=None, sec_groups=None,
+              network_ids=None, port_ids=None, config_drive_files=None,
+              user_data=None, server_group_id=None, availability_zone=None):
         '''Create a new virtual machine.
 
         :param name: optional name for amphora
         :param amphora_flavor: image flavor for virtual machine
-        :param image_id: image ID for virtual machine
         :param image_tag: image tag for virtual machine
         :param key_name: keypair to add to the virtual machine
         :param sec_groups: Security group IDs for virtual machine
@@ -144,8 +132,8 @@ class VirtualMachineManager(compute_base.ComputeBase):
                 "group": server_group_id}
             az_name = availability_zone or CONF.nova.availability_zone
 
-            image_id = _get_image_uuid(
-                self._glance_client, image_id, image_tag, image_owner)
+            image_id = _extract_amp_image_id_by_tag(
+                self._glance_client, image_tag, image_owner)
 
             if CONF.nova.random_amphora_name_length:
                 r = random.SystemRandom()

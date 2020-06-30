@@ -1,0 +1,6 @@
+---
+upgrade:
+  - |
+    The option ``[controller_worker]/amp_image_id`` has been deprecated since
+    Mitaka release and is now removed. This option was superseded by
+    ``[controller_worker]/amp_image_tag`` option.

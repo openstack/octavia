@@ -433,13 +433,7 @@ controller_worker_opts = [
                default='',
                help=_('Glance image tag for the Amphora image to boot. '
                       'Use this option to be able to update the image '
-                      'without reconfiguring Octavia. '
-                      'Ignored if amp_image_id is defined.')),
-    cfg.StrOpt('amp_image_id',
-               default='',
-               deprecated_for_removal=True,
-               deprecated_reason='Superseded by amp_image_tag option.',
-               help=_('Glance image id for the Amphora image to boot')),
+                      'without reconfiguring Octavia.')),
     cfg.StrOpt('amp_image_owner_id',
                default='',
                help=_('Restrict glance image selection to a specific '

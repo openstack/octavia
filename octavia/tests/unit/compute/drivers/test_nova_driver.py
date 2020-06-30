@@ -29,29 +29,6 @@ import octavia.tests.unit.base as base
 CONF = cfg.CONF
 
 
-class Test_GetImageUuid(base.TestCase):
-
-    def test__get_image_uuid_tag(self):
-        client = mock.Mock()
-        with mock.patch.object(nova_common,
-                               '_extract_amp_image_id_by_tag',
-                               return_value='fakeid') as extract:
-            image_id = nova_common._get_image_uuid(client, '', 'faketag', None)
-        self.assertEqual('fakeid', image_id)
-        extract.assert_called_with(client, 'faketag', None)
-
-    def test__get_image_uuid_notag(self):
-        client = mock.Mock()
-        image_id = nova_common._get_image_uuid(client, 'fakeid', '', None)
-        self.assertEqual('fakeid', image_id)
-
-    def test__get_image_uuid_id_beats_tag(self):
-        client = mock.Mock()
-        image_id = nova_common._get_image_uuid(client, 'fakeid',
-                                               'faketag', None)
-        self.assertEqual('fakeid', image_id)
-
-
 class Test_ExtractAmpImageIdByTag(base.TestCase):
 
     def setUp(self):
@@ -158,10 +135,16 @@ class TestNovaClient(base.TestCase):
         self.flavor_id = uuidutils.generate_uuid()
         self.availability_zone = 'my_test_az'
 
+        self.mock_image_tag = mock.patch(
+            'octavia.compute.drivers.nova_driver.'
+            '_extract_amp_image_id_by_tag').start()
+        self.mock_image_tag.return_value = 1
+        self.addCleanup(self.mock_image_tag.stop)
+
         super(TestNovaClient, self).setUp()
 
     def test_build(self):
-        amphora_id = self.manager.build(amphora_flavor=1, image_id=1,
+        amphora_id = self.manager.build(amphora_flavor=1, image_tag='stout',
                                         key_name=1,
                                         sec_groups=1,
                                         network_ids=[1],
@@ -192,7 +175,7 @@ class TestNovaClient(base.TestCase):
                          volume_driver='volume_cinder_driver')
         self.manager.volume_driver = mock_driver
         mock_driver.create_volume_from_image.return_value = 1
-        amphora_id = self.manager.build(amphora_flavor=1, image_id=1,
+        amphora_id = self.manager.build(amphora_flavor=1, image_tag='pilsner',
                                         key_name=1,
                                         sec_groups=1,
                                         network_ids=[1],
@@ -220,7 +203,7 @@ class TestNovaClient(base.TestCase):
     def test_build_with_availability_zone(self):
         FAKE_AZ = "my_availability_zone"
 
-        amphora_id = self.manager.build(amphora_flavor=1, image_id=1,
+        amphora_id = self.manager.build(amphora_flavor=1, image_tag='malt',
                                         key_name=1,
                                         sec_groups=1,
                                         network_ids=[1],
@@ -250,7 +233,7 @@ class TestNovaClient(base.TestCase):
         FAKE_AZ = "my_availability_zone"
         self.conf.config(group="nova", availability_zone=FAKE_AZ)
 
-        amphora_id = self.manager.build(amphora_flavor=1, image_id=1,
+        amphora_id = self.manager.build(amphora_flavor=1, image_tag='ipa',
                                         key_name=1,
                                         sec_groups=1,
                                         network_ids=[1],
@@ -280,14 +263,14 @@ class TestNovaClient(base.TestCase):
         self.addCleanup(self.conf.config,
                         group='nova', random_amphora_name_length=0)
 
-        self.manager.build(name="b" * 50, image_id=1)
+        self.manager.build(name="b" * 50)
         self.assertEqual(
             15, len(self.manager.manager.create.call_args[1]['name']))
 
     def test_build_with_default_boot_network(self):
         self.conf.config(group="controller_worker",
                          amp_boot_network_list='')
-        amphora_id = self.manager.build(amphora_flavor=1, image_id=1,
+        amphora_id = self.manager.build(amphora_flavor=1, image_tag='porter',
                                         key_name=1,
                                         sec_groups=1,
                                         network_ids=None,
@@ -317,16 +300,11 @@ class TestNovaClient(base.TestCase):
         self.assertRaises(exceptions.ComputeBuildException, self.manager.build)
 
     def test_build_extracts_image_id_by_tag(self):
-        expected_id = 'fakeid-by-tag'
-        with mock.patch.object(nova_common, '_get_image_uuid',
-                               return_value=expected_id):
-            self.manager.build(image_id='fakeid', image_tag='tag')
-
-        self.assertEqual(expected_id,
-                         self.manager.manager.create.call_args[1]['image'])
+        self.manager.build(image_tag='tag')
+        self.assertEqual(1, self.manager.manager.create.call_args[1]['image'])
 
     def test_delete(self):
-        amphora_id = self.manager.build(amphora_flavor=1, image_id=1,
+        amphora_id = self.manager.build(amphora_flavor=1, image_tag='pale_ale',
                                         key_name=1, sec_groups=1,
                                         network_ids=[1])
         self.manager.delete(amphora_id)
@@ -334,7 +312,7 @@ class TestNovaClient(base.TestCase):
 
     def test_bad_delete(self):
         self.manager.manager.delete.side_effect = Exception
-        amphora_id = self.manager.build(amphora_flavor=1, image_id=1,
+        amphora_id = self.manager.build(amphora_flavor=1, image_tag='lager',
                                         key_name=1, sec_groups=1,
                                         network_ids=[1])
         self.assertRaises(exceptions.ComputeDeleteException,
