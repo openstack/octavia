@@ -14,7 +14,12 @@
 
 import sys
 
-import keystonemiddleware.audit as audit_middleware
+# Try using custom auditmiddleware
+try:
+    import auditmiddleware as audit_middleware
+except ImportError:
+    import keystonemiddleware.audit as audit_middleware
+
 from oslo_config import cfg
 from oslo_log import log as logging
 from oslo_middleware import cors
@@ -91,11 +96,6 @@ def _wrap_app(app):
                 reason=e
             )
 
-    if cfg.CONF.api_settings.auth_strategy == constants.KEYSTONE:
-        app = keystone.SkippingAuthProtocol(app, {})
-
-    app = http_proxy_to_wsgi.HTTPProxyToWSGI(app)
-
     # sapcc/openstack-watcher-middleware
     if watcher_errors and watcher_middleware and CONF.watcher.enabled:
         LOG.info("Openstack-Watcher-Middleware activated")
@@ -110,6 +110,11 @@ def _wrap_app(app):
                 file_name=CONF.watcher.config_file,
                 reason=e
             )
+
+    if cfg.CONF.api_settings.auth_strategy == constants.KEYSTONE:
+        app = keystone.SkippingAuthProtocol(app, {})
+
+    app = http_proxy_to_wsgi.HTTPProxyToWSGI(app)
 
     # This should be the last middleware in the list (which results in
     # it being the first in the middleware chain). This is to ensure

@@ -1,4 +1,5 @@
 raven
 -e git+https://github.com/sapcc/octavia-f5-provider-driver.git#egg=octavia-f5-provider-driver
 git+https://github.com/sapcc/openstack-watcher-middleware.git#egg=watcher-middleware
+git+https://github.com/sapcc/openstack-audit-middleware.git@master#egg=audit-middleware
 
