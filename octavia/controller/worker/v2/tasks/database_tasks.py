@@ -1874,7 +1874,9 @@ class MarkHealthMonitorActiveInDB(BaseDatabaseTask):
 
         LOG.debug("Mark ACTIVE in DB for health monitor id: %s",
                   health_mon[constants.HEALTHMONITOR_ID])
-        op_status = (constants.ONLINE if health_mon[constants.ADMIN_STATE_UP]
+        db_health_mon = self.health_mon_repo.get(
+            db_apis.get_session(), id=health_mon[constants.HEALTHMONITOR_ID])
+        op_status = (constants.ONLINE if db_health_mon.enabled
                      else constants.OFFLINE)
         self.health_mon_repo.update(db_apis.get_session(),
                                     health_mon[constants.HEALTHMONITOR_ID],
