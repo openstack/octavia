@@ -442,15 +442,6 @@ controller_worker_opts = [
                default='',
                help=_('Optional SSH keypair name, in nova, that will be used '
                       'for the authorized_keys inside the amphora.')),
-    cfg.BoolOpt('amp_ssh_access_allowed',
-                default=True,
-                deprecated_for_removal=True,
-                deprecated_reason='This option and amp_ssh_key_name overlap '
-                                  'in functionality, and only one is needed. '
-                                  'SSH access can be enabled/disabled simply '
-                                  'by setting amp_ssh_key_name, or not.',
-                help=_('Determines whether or not to allow access '
-                       'to the Amphorae')),
     cfg.ListOpt('amp_boot_network_list',
                 default='',
                 help=_('List of networks to attach to the Amphorae. '
