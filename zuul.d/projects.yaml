@@ -56,9 +56,6 @@
         - octavia-v2-dsvm-py2-scenario-centos-7:
             vars: *scenario-vars
             voting: false
-        - octavia-v2-dsvm-scenario-ubuntu-bionic:
-            vars: *scenario-vars
-            voting: false
         - octavia-v2-dsvm-scenario-two-node:
             vars: *scenario-vars
             voting: false
