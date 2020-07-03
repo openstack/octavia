@@ -146,3 +146,23 @@ class L7PolicySingleCreate(BaseL7PolicyType):
     tags = wtypes.wsattr(wtypes.ArrayType(wtypes.StringType(max_length=255)))
     redirect_http_code = wtypes.wsattr(
         wtypes.Enum(int, *constants.SUPPORTED_L7POLICY_REDIRECT_HTTP_CODES))
+
+
+class L7PolicyStatusResponse(BaseL7PolicyType):
+    """Defines which attributes are to be shown on status response."""
+    id = wtypes.wsattr(wtypes.UuidType())
+    name = wtypes.wsattr(wtypes.StringType())
+    operating_status = wtypes.wsattr(wtypes.StringType())
+    provisioning_status = wtypes.wsattr(wtypes.StringType())
+    action = wtypes.wsattr(wtypes.StringType())
+    rules = wtypes.wsattr([l7rule.L7RuleStatusReponse])
+
+    @classmethod
+    def from_data_model(cls, data_model, children=False):
+        policy = super(L7PolicyStatusResponse, cls).from_data_model(
+            data_model, children=children)
+
+        rule_model = l7rule.L7RuleStatusReponse
+        policy.rules = [
+            rule_model.from_data_model(i) for i in data_model.l7rules]
+        return policy
