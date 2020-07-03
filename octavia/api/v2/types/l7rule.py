@@ -119,3 +119,17 @@ class L7RuleSingleCreate(BaseL7Type):
     invert = wtypes.wsattr(bool, default=False)
     admin_state_up = wtypes.wsattr(bool, default=True)
     tags = wtypes.wsattr(wtypes.ArrayType(wtypes.StringType(max_length=255)))
+
+
+class L7RuleStatusReponse(BaseL7Type):
+    """Defines which attributes are to be shown on status response."""
+    id = wtypes.wsattr(wtypes.UuidType())
+    type = wtypes.wsattr(wtypes.StringType())
+    provisioning_status = wtypes.wsattr(wtypes.StringType())
+    operating_status = wtypes.wsattr(wtypes.StringType())
+
+    @classmethod
+    def from_data_model(cls, data_model, children=False):
+        rule = super(L7RuleStatusReponse, cls).from_data_model(
+            data_model, children=children)
+        return rule

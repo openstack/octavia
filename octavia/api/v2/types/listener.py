@@ -271,6 +271,7 @@ class ListenerStatusResponse(BaseListenerType):
     operating_status = wtypes.wsattr(wtypes.StringType())
     provisioning_status = wtypes.wsattr(wtypes.StringType())
     pools = wtypes.wsattr([pool.PoolStatusResponse])
+    l7policies = wtypes.wsattr([l7policy.L7PolicyStatusResponse])
 
     @classmethod
     def from_data_model(cls, data_model, children=False):
@@ -280,6 +281,11 @@ class ListenerStatusResponse(BaseListenerType):
         pool_model = pool.PoolStatusResponse
         listener.pools = [
             pool_model.from_data_model(i) for i in data_model.pools]
+
+        l7policy_model = l7policy.L7PolicyStatusResponse
+        listener.l7policies = [
+            l7policy_model.from_data_model(i) for i in data_model.l7policies
+        ]
 
         if not listener.name:
             listener.name = ""
