@@ -54,6 +54,7 @@ jmespath==0.9.3
 jsonpatch==1.21
 jsonpointer==2.0
 jsonschema==3.2.0
+kazoo==2.6.0
 keystoneauth1==3.4.0
 keystonemiddleware==4.17.0
 kombu==4.1.0
@@ -129,6 +130,7 @@ python-novaclient==9.1.0
 python-subunit==1.0.0
 pytz==2018.3
 PyYAML==3.12
+redis==2.10.0
 repoze.lru==0.7
 requests==2.14.2
 requests-mock==1.2.0
@@ -172,4 +174,5 @@ WebTest==2.0.29
 Werkzeug==0.14.1
 wrapt==1.10.11
 WSME==0.8.0
+zake==0.1.6
 python-cinderclient==3.3.0

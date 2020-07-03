@@ -28,6 +28,8 @@ Also to monitor progress on taskflow jobs amphorav2 provider uses
 jobboard. As jobboard backend could be used Redis or Zookeeper key-value
 storages. Operator should chose the one that is more preferable for specific
 cloud. The default is Redis.
+Key-values storage clients should be install with extras [zookeeper] or [redis]
+during installation of octavia packages.
 
 1. Create the database, complete these steps:
 

@@ -9,7 +9,11 @@ set -ex
 GET_PIP_CACHE_LOCATION=/opt/stack/cache/files/get-pip.py
 
 function octavia_install {
-    setup_develop $OCTAVIA_DIR
+    if [[ ${OCTAVIA_ENABLE_AMPHORAV2_JOBBOARD} == True ]]; then
+        setup_develop $OCTAVIA_DIR redis
+    else
+        setup_develop $OCTAVIA_DIR
+    fi
     if [ $OCTAVIA_NODE == 'main' ] || [ $OCTAVIA_NODE == 'standalone' ] ; then
         if ! [ "$DISABLE_AMP_IMAGE_BUILD" == 'True' ]; then
             if [[ ${DISTRO} =~ (rhel|centos) ]]; then
@@ -243,7 +247,6 @@ function install_redis {
 
     start_service redis
 
-    pip_install_gr redis
 }
 
 function uninstall_redis {
@@ -257,7 +260,6 @@ function uninstall_redis {
 
     stop_service redis
 
-    pip_unistall redis
 }
 
 function octavia_configure {
