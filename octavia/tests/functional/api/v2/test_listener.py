@@ -317,7 +317,7 @@ class TestListener(base.BaseAPITest):
         links = middle[self.root_tag_links]
         self.assertEqual(1, len(objs))
         self.assertEqual(2, len(links))
-        self.assertItemsEqual(['previous', 'next'],
+        self.assertCountEqual(['previous', 'next'],
                               [link['rel'] for link in links])
 
     def test_get_all_fields_filter(self):
@@ -2244,7 +2244,7 @@ class TestListener(base.BaseAPITest):
         listener_path = self.LISTENER_PATH.format(
             listener_id=listener['listener']['id'])
         get_listener = self.get(listener_path).json['listener']
-        self.assertItemsEqual([sni_id1, sni_id2],
+        self.assertCountEqual([sni_id1, sni_id2],
                               get_listener['sni_container_refs'])
 
     # TODO(johnsom) Fix this when there is a noop certificate manager
