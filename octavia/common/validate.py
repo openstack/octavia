@@ -435,29 +435,29 @@ def is_flavor_spares_compatible(flavor):
     return True
 
 
-def check_cipher_blacklist(cipherstring):
+def check_cipher_prohibit_list(cipherstring):
     ciphers = cipherstring.split(':')
-    blacklist = CONF.api_settings.tls_cipher_blacklist.split(':')
+    prohibit_list = CONF.api_settings.tls_cipher_prohibit_list.split(':')
     rejected = []
     for cipher in ciphers:
-        if cipher in blacklist:
+        if cipher in prohibit_list:
             rejected.append(cipher)
     return rejected
 
 
-def check_default_ciphers_blacklist_conflict():
-    listener_rejected = check_cipher_blacklist(
+def check_default_ciphers_prohibit_list_conflict():
+    listener_rejected = check_cipher_prohibit_list(
         CONF.api_settings.default_listener_ciphers)
     if listener_rejected:
         raise exceptions.ValidationException(
-            detail=_('Default listener ciphers conflict with blacklist. '
+            detail=_('Default listener ciphers conflict with prohibit list. '
                      'Conflicting ciphers: ' + ', '.join(listener_rejected)))
 
-    pool_rejected = check_cipher_blacklist(
+    pool_rejected = check_cipher_prohibit_list(
         CONF.api_settings.default_pool_ciphers)
     if pool_rejected:
         raise exceptions.ValidationException(
-            detail=_('Default pool ciphers conflict with blacklist. '
+            detail=_('Default pool ciphers conflict with prohibit list. '
                      'Conflicting ciphers: ' + ', '.join(pool_rejected)))
 
 

@@ -224,13 +224,13 @@ class ListenersController(base.BaseController):
                 "A client authentication CA reference is required to "
                 "specify a client authentication revocation list."))
 
-        # Check TLS cipher blacklist
+        # Check TLS cipher prohibit list
         if 'tls_ciphers' in listener_dict and listener_dict['tls_ciphers']:
-            rejected_ciphers = validate.check_cipher_blacklist(
+            rejected_ciphers = validate.check_cipher_prohibit_list(
                 listener_dict['tls_ciphers'])
             if rejected_ciphers:
                 raise exceptions.ValidationException(detail=_(
-                    'The following ciphers have been blacklisted by an '
+                    'The following ciphers have been prohibited by an '
                     'administrator: ' + ', '.join(rejected_ciphers)))
 
         # Validate the TLS containers
@@ -491,13 +491,13 @@ class ListenersController(base.BaseController):
             self._validate_cidr_compatible_with_vip(
                 vip_address, listener.allowed_cidrs)
 
-        # Check TLS cipher blacklist
+        # Check TLS cipher prohibit list
         if listener.tls_ciphers:
-            rejected_ciphers = validate.check_cipher_blacklist(
+            rejected_ciphers = validate.check_cipher_prohibit_list(
                 listener.tls_ciphers)
             if rejected_ciphers:
                 raise exceptions.ValidationException(detail=_(
-                    'The following ciphers have been blacklisted by an '
+                    'The following ciphers have been prohibited by an '
                     'administrator: ' + ', '.join(rejected_ciphers)))
 
         if listener.tls_versions is not wtypes.Unset:

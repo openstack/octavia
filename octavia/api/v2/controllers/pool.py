@@ -122,13 +122,13 @@ class PoolsController(base.BaseController):
                 pool_dict.get('ca_tls_certificate_id'),
                 pool_dict.get('crl_container_id', None))
 
-        # Check TLS cipher blacklist
+        # Check TLS cipher prohibit list
         if 'tls_ciphers' in pool_dict and pool_dict['tls_ciphers']:
-            rejected_ciphers = validate.check_cipher_blacklist(
+            rejected_ciphers = validate.check_cipher_prohibit_list(
                 pool_dict['tls_ciphers'])
             if rejected_ciphers:
                 raise exceptions.ValidationException(detail=_(
-                    'The following ciphers have been blacklisted by an '
+                    'The following ciphers have been prohibited by an '
                     'administrator: ' + ', '.join(rejected_ciphers)))
 
         if pool_dict['tls_enabled']:
@@ -396,13 +396,13 @@ class PoolsController(base.BaseController):
         if ca_ref:
             self._validate_client_ca_and_crl_refs(ca_ref, crl_ref)
 
-        # Check TLS cipher blacklist
+        # Check TLS cipher prohibit list
         if pool.tls_ciphers:
-            rejected_ciphers = validate.check_cipher_blacklist(
+            rejected_ciphers = validate.check_cipher_prohibit_list(
                 pool.tls_ciphers)
             if rejected_ciphers:
                 raise exceptions.ValidationException(detail=_(
-                    "The following ciphers have been blacklisted by an "
+                    "The following ciphers have been prohibited by an "
                     "administrator: " + ', '.join(rejected_ciphers)))
 
         if pool.tls_versions is not wtypes.Unset:

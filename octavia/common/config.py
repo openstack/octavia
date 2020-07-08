@@ -113,7 +113,8 @@ api_opts = [
                default=constants.CIPHERS_OWASP_SUITE_B,
                help=_("Default OpenSSL cipher string (colon-separated) for "
                       "new TLS-enabled pools.")),
-    cfg.StrOpt('tls_cipher_blacklist', default='',
+    cfg.StrOpt('tls_cipher_prohibit_list', default='',
+               deprecated_name='tls_cipher_blacklist',
                help=_("Colon separated list of OpenSSL ciphers. "
                       "Usage of these ciphers will be blocked.")),
     cfg.ListOpt('default_listener_tls_versions',
@@ -857,7 +858,7 @@ def init(args, **kwargs):
              **kwargs)
     validate.check_default_tls_versions_min_conflict()
     setup_remote_debugger()
-    validate.check_default_ciphers_blacklist_conflict()
+    validate.check_default_ciphers_prohibit_list_conflict()
 
 
 def setup_logging(conf):

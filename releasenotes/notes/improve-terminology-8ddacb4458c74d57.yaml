@@ -1,0 +1,9 @@
+---
+deprecations:
+  - |
+    Terminology such as ``blacklist`` has been replaced with more
+    inclusive words, such as ``prohibit list`` wherever possible.
+
+    The configuration option ``tls_cipher_blacklist`` has been deprecated
+    and replaced with ``tls_cipher_prohibit_list``. It will be removed in a
+    future release.
