@@ -45,6 +45,11 @@ AMPHORA_SUPPORTED_LB_ALGORITHMS = [
     consts.LB_ALGORITHM_SOURCE_IP,
     consts.LB_ALGORITHM_LEAST_CONNECTIONS]
 
+VALID_L7POLICY_LISTENER_PROTOCOLS = [
+    lib_consts.PROTOCOL_HTTP,
+    lib_consts.PROTOCOL_TERMINATED_HTTPS
+]
+
 
 class AmphoraProviderDriver(driver_base.ProviderDriver):
     def __init__(self):
@@ -323,6 +328,14 @@ class AmphoraProviderDriver(driver_base.ProviderDriver):
 
     # L7 Policy
     def l7policy_create(self, l7policy):
+        db_listener = self.repositories.listener.get(db_apis.get_session(),
+                                                     id=l7policy.listener_id)
+        if db_listener.protocol not in VALID_L7POLICY_LISTENER_PROTOCOLS:
+            msg = ('%s protocol listeners do not support L7 policies' % (
+                db_listener.protocol))
+            raise exceptions.UnsupportedOptionError(
+                user_fault_string=msg,
+                operator_fault_string=msg)
         payload = {consts.L7POLICY: l7policy.to_dict()}
         self.client.cast({}, 'create_l7policy', **payload)
 
