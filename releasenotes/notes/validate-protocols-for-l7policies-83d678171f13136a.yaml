@@ -1,0 +1,7 @@
+---
+fixes:
+  - |
+    Validate that the creation of L7 policies is compatible with the protocol
+    of the listener in the Amphora driver. L7 policies are allowed for
+    Terminated HTTPS or HTTP protocol listeners, but not for HTTPS, TCP or UDP
+    protocols listeners.
