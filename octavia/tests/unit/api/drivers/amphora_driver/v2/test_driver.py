@@ -674,13 +674,31 @@ class TestAmphoraDriver(base.TestRpc):
         mock_cast.assert_called_with({}, 'update_health_monitor', **payload)
 
     # L7 Policy
+    @mock.patch('octavia.db.api.get_session')
+    @mock.patch('octavia.db.repositories.ListenerRepository.get')
     @mock.patch('oslo_messaging.RPCClient.cast')
-    def test_l7policy_create(self, mock_cast):
+    def test_l7policy_create(self, mock_cast, mock_listener_get, mock_session):
+        mock_listener = mock.MagicMock()
+        mock_listener.protocol = consts.PROTOCOL_HTTP
+        mock_listener_get.return_value = mock_listener
         provider_l7policy = driver_dm.L7Policy(
             l7policy_id=self.sample_data.l7policy1_id)
         self.amp_driver.l7policy_create(provider_l7policy)
         payload = {consts.L7POLICY: provider_l7policy.to_dict()}
         mock_cast.assert_called_with({}, 'create_l7policy', **payload)
+
+    @mock.patch('octavia.db.api.get_session')
+    @mock.patch('octavia.db.repositories.ListenerRepository.get')
+    def test_l7policy_create_invalid_listener_protocol(self, mock_listener_get,
+                                                       mock_session):
+        mock_listener = mock.MagicMock()
+        mock_listener.protocol = consts.PROTOCOL_UDP
+        mock_listener_get.return_value = mock_listener
+        provider_l7policy = driver_dm.L7Policy(
+            l7policy_id=self.sample_data.l7policy1_id)
+        self.assertRaises(exceptions.UnsupportedOptionError,
+                          self.amp_driver.l7policy_create,
+                          provider_l7policy)
 
     @mock.patch('oslo_messaging.RPCClient.cast')
     def test_l7policy_delete(self, mock_cast):
