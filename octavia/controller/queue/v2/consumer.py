@@ -50,12 +50,11 @@ class ConsumerService(cotyledon.Service):
             access_policy=self.access_policy
         )
         self.message_listener.start()
-        if constants.AMPHORAV2 in CONF.api_settings.enabled_provider_drivers:
-            if CONF.task_flow.jobboard_enabled:
-                for e in self.endpoints:
-                    e.worker.services_controller.run_conductor(
-                        'octavia-task-flow-conductor-%s' %
-                        uuidutils.generate_uuid())
+        if CONF.task_flow.jobboard_enabled:
+            for e in self.endpoints:
+                e.worker.services_controller.run_conductor(
+                    'octavia-task-flow-conductor-%s' %
+                    uuidutils.generate_uuid())
 
     def terminate(self):
         if self.message_listener:

@@ -78,10 +78,10 @@ class DatabaseCleanup(object):
 class CertRotation(object):
     def __init__(self):
         self.threads = CONF.house_keeping.cert_rotate_threads
-        if CONF.api_settings.default_provider_driver == constants.AMPHORAV2:
-            self.cw = cw2.ControllerWorker()
-        else:
+        if CONF.api_settings.default_provider_driver == constants.AMPHORAV1:
             self.cw = cw1.ControllerWorker()
+        else:
+            self.cw = cw2.ControllerWorker()
 
     def rotate(self):
         """Check the amphora db table for expiring auth certs."""
