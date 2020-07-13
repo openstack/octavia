@@ -208,6 +208,10 @@ class ListenerStatistics(BaseDataModel):
             self.bytes_out += other.bytes_out
             self.request_errors += other.request_errors
             self.total_connections += other.total_connections
+        else:
+            raise TypeError(  # noqa: O342
+                "unsupported operand type(s) for +=: '{0}' and '{1}'".format(
+                    type(self), type(other)))
 
         return self
 

@@ -1385,7 +1385,7 @@ class TestUpdateStatsDb(base.TestCase):
         self.loadbalancer_repo.get.return_value = self.loadbalancer
 
     @mock.patch('octavia.db.api.get_session')
-    def test_update_stats(self, mock_session):
+    def test_update_stats_v1(self, mock_session):
 
         health = {
             "id": self.amphora_id,
@@ -1422,10 +1422,52 @@ class TestUpdateStatsDb(base.TestCase):
             total_connections=self.listener_stats.total_connections,
             request_errors=self.listener_stats.request_errors)
 
-        # Test with missing DB listener
-        self.sm.repo_listener.get.return_value = None
+        # Test with update failure
+        mock_session.side_effect = Exception
+        self.sm.update_stats(health, '192.0.2.1')
+
+    @mock.patch('octavia.db.api.get_session')
+    def test_update_stats_v3(self, mock_session):
+
+        health = {
+            "id": self.amphora_id,
+            "seq": random.randint(0, 100),
+            "ver": 3,
+            "listeners": {
+                self.listener_id: {
+                    "status": constants.OPEN,
+                    "stats": {
+                        "ereq": self.listener_stats.request_errors,
+                        "conns": self.listener_stats.active_connections,
+                        "totconns": self.listener_stats.total_connections,
+                        "rx": self.listener_stats.bytes_in,
+                        "tx": self.listener_stats.bytes_out,
+                    },
+                    "pools": {
+                        "pool-id-1": {
+                            "status": constants.UP,
+                            "members": {"member-id-1": constants.ONLINE}
+                        }
+                    }
+                }
+            }
+        }
+
+        delta_stats_model = data_models.ListenerStatistics(
+            listener_id=self.listener_id,
+            amphora_id=self.amphora_id,
+            bytes_in=self.listener_stats.bytes_in,
+            bytes_out=self.listener_stats.bytes_out,
+            active_connections=self.listener_stats.active_connections,
+            total_connections=self.listener_stats.total_connections,
+            request_errors=self.listener_stats.request_errors
+        )
+        mock_session.return_value = 'blah'
 
         self.sm.update_stats(health, '192.0.2.1')
+
+        self.listener_stats_repo.increment.assert_called_once_with(
+            'blah', delta_stats_model)
 
         # Test with update failure
         mock_session.side_effect = Exception

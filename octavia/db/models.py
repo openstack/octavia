@@ -175,6 +175,21 @@ class ListenerStatistics(base_models.BASE):
                                'Current value is %(value)d.') % data)
         return value
 
+    def __iadd__(self, other):
+
+        if isinstance(other, (ListenerStatistics,
+                              data_models.ListenerStatistics)):
+            self.bytes_in += other.bytes_in
+            self.bytes_out += other.bytes_out
+            self.request_errors += other.request_errors
+            self.total_connections += other.total_connections
+        else:
+            raise TypeError(  # noqa: O342
+                "unsupported operand type(s) for +=: '{0}' and '{1}'".format(
+                    type(self), type(other)))
+
+        return self
+
 
 class Member(base_models.BASE, base_models.IdMixin, base_models.ProjectMixin,
              models.TimestampMixin, base_models.NameMixin,

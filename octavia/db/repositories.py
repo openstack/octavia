@@ -1222,8 +1222,39 @@ class ListenerStatisticsRepository(BaseRepository):
                 model_kwargs['amphora_id'] = amphora_id
                 self.create(session, **model_kwargs)
 
+    def increment(self, session, delta_stats):
+        """Updates a listener's statistics, incrementing by the passed deltas.
+
+        :param session: A Sql Alchemy database session
+        :param delta_stats: Listener statistics deltas to add
+        :type delta_stats: octavia.common.data_models.ListenerStatistics
+
+        """
+
+        with session.begin(subtransactions=True):
+            count = session.query(self.model_class).filter_by(
+                listener_id=delta_stats.listener_id,
+                amphora_id=delta_stats.amphora_id).count()
+            if count:
+                existing_stats = session.query(
+                    self.model_class).with_for_update().filter_by(
+                    listener_id=delta_stats.listener_id,
+                    amphora_id=delta_stats.amphora_id).one()
+                existing_stats += delta_stats
+                existing_stats.active_connections = (
+                    delta_stats.active_connections)
+            else:
+                self.create(session, **delta_stats.to_dict())
+
     def update(self, session, listener_id, **model_kwargs):
-        """Updates a listener's statistics by a listener's id."""
+        """Updates a listener's statistics, overriding with the passed values.
+
+        :param session: A Sql Alchemy database session
+        :param listener_id: The UUID of the listener to update
+        :type listener_id: str
+        :param model_kwargs: Entity attributes that should be updated
+
+        """
         with session.begin(subtransactions=True):
             session.query(self.model_class).filter_by(
                 listener_id=listener_id).update(model_kwargs)

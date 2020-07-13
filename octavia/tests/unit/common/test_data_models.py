@@ -14,6 +14,7 @@
 
 import copy
 import datetime
+import random
 
 from oslo_utils import uuidutils
 
@@ -27,6 +28,7 @@ class TestDataModels(base.TestCase):
     def setUp(self):
 
         self.LB_ID = uuidutils.generate_uuid()
+        self.LISTENER_ID = uuidutils.generate_uuid()
         self.PROJECT_ID = uuidutils.generate_uuid()
         self.SERVER_GROUP_ID = uuidutils.generate_uuid()
         self.CREATED_AT = datetime.datetime.now()
@@ -479,3 +481,55 @@ class TestDataModels(base.TestCase):
         test_Quota_obj.update(update_dict)
 
         self.assertEqual(reference_Quota_obj, test_Quota_obj)
+
+    def test_ListenerStatistics_iadd(self):
+        # test incrementing add function
+
+        bytes_in1 = random.randrange(1000000000)
+        bytes_out1 = random.randrange(1000000000)
+        active_conns1 = random.randrange(1000000000)
+        total_conns1 = random.randrange(1000000000)
+        request_errors1 = random.randrange(1000000000)
+        stats_1 = data_models.ListenerStatistics(
+            listener_id=self.LISTENER_ID,
+            amphora_id=self.AMP_ID,
+            bytes_in=bytes_in1,
+            bytes_out=bytes_out1,
+            active_connections=active_conns1,
+            total_connections=total_conns1,
+            request_errors=request_errors1
+        )
+
+        bytes_in2 = random.randrange(1000000000)
+        bytes_out2 = random.randrange(1000000000)
+        active_conns2 = random.randrange(1000000000)
+        total_conns2 = random.randrange(1000000000)
+        request_errors2 = random.randrange(1000000000)
+        stats_2 = data_models.ListenerStatistics(
+            listener_id="listener 2",
+            amphora_id="amphora 2",
+            bytes_in=bytes_in2,
+            bytes_out=bytes_out2,
+            active_connections=active_conns2,
+            total_connections=total_conns2,
+            request_errors=request_errors2
+        )
+
+        # test successful +=
+        stats_1 += stats_2
+
+        # not a delta, so it won't be incremented
+        self.assertEqual(stats_1.active_connections, active_conns1)
+        self.assertEqual(stats_1.listener_id, self.LISTENER_ID)
+        self.assertEqual(stats_1.amphora_id, self.AMP_ID)
+
+        # deltas will be incremented
+        self.assertEqual(stats_1.bytes_in, bytes_in1 + bytes_in2)
+        self.assertEqual(stats_1.bytes_out, bytes_out1 + bytes_out2)
+        self.assertEqual(stats_1.total_connections,
+                         total_conns1 + total_conns2)
+        self.assertEqual(stats_1.request_errors,
+                         request_errors1 + request_errors2)
+
+        # test incrementing an incompatible object
+        self.assertRaises(TypeError, stats_1.__iadd__, "boom")

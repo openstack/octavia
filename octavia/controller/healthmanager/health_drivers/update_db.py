@@ -23,6 +23,7 @@ import sqlalchemy
 from stevedore import driver as stevedore_driver
 
 from octavia.common import constants
+from octavia.common import data_models
 from octavia.common import stats
 from octavia.controller.healthmanager.health_drivers import update_base
 from octavia.db import api as db_api
@@ -461,10 +462,6 @@ class UpdateHealthDb(update_base.HealthUpdateBase):
 
 class UpdateStatsDb(update_base.StatsUpdateBase, stats.StatsMixin):
 
-    def __init__(self):
-        super(UpdateStatsDb, self).__init__()
-        self.repo_listener = repo.ListenerRepository()
-
     def update_stats(self, health_message, srcaddr):
         # The executor will eat any exceptions from the update_stats code
         # so we need to wrap it and log the unhandled exception
@@ -533,7 +530,28 @@ class UpdateStatsDb(update_base.StatsUpdateBase, stats.StatsMixin):
              "ver": 2
             }
 
+        Example V3 message::
+
+            See V2 message, except values are deltas rather than absolutes.
+
         """
+
+        version = health_message.get("ver", 1)
+
+        if version <= 2:
+            self.version2(health_message)
+        elif version == 3:
+            self.version3(health_message)
+        else:
+            LOG.warning("Unknown message version: %s, ignoring...", version)
+
+    def version2(self, health_message):
+        """Parse version 1 and 2 of the health message.
+
+        :param health_message: health message dictionary
+        :type health_message: dict
+        """
+
         session = db_api.get_session()
 
         amphora_id = health_message['id']
@@ -545,8 +563,36 @@ class UpdateStatsDb(update_base.StatsUpdateBase, stats.StatsMixin):
                      'active_connections': stats['conns'],
                      'total_connections': stats['totconns'],
                      'request_errors': stats['ereq']}
-            LOG.debug("Updating listener stats in db and sending event.")
-            LOG.debug("Listener %s / Amphora %s stats: %s",
+            LOG.debug("Updating listener stats in db."
+                      "Listener %s / Amphora %s stats: %s",
                       listener_id, amphora_id, stats)
             self.listener_stats_repo.replace(
                 session, listener_id, amphora_id, **stats)
+
+    def version3(self, health_message):
+        """Parse version 3 of the health message.
+
+        :param health_message: health message dictionary
+        :type health_message: dict
+        """
+
+        session = db_api.get_session()
+
+        amphora_id = health_message['id']
+        listeners = health_message['listeners']
+        for listener_id, listener in listeners.items():
+
+            delta_stats = listener.get('stats')
+            delta_stats_model = data_models.ListenerStatistics(
+                listener_id=listener_id,
+                amphora_id=amphora_id,
+                bytes_in=delta_stats['rx'],
+                bytes_out=delta_stats['tx'],
+                active_connections=delta_stats['conns'],
+                total_connections=delta_stats['totconns'],
+                request_errors=delta_stats['ereq']
+            )
+            LOG.debug("Updating listener stats in db."
+                      "Listener %s / Amphora %s stats: %s",
+                      listener_id, amphora_id, delta_stats_model.to_dict())
+            self.listener_stats_repo.increment(session, delta_stats_model)
