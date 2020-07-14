@@ -27,7 +27,6 @@ from oslo_log import log as logging
 from oslo_serialization import jsonutils
 from oslo_utils import excutils
 from oslo_utils import uuidutils
-from sqlalchemy.orm import joinedload
 from sqlalchemy.orm import noload
 from sqlalchemy.orm import subqueryload
 from sqlalchemy.sql.expression import false
@@ -1247,10 +1246,7 @@ class AmphoraRepository(BaseRepository):
                 .filter(models.Amphora.status != consts.DELETED)
                 # And the LB is also not DELETED
                 .filter(models.LoadBalancer.provisioning_status !=
-                        consts.DELETED)
-                # And what does this do? Some SQLAlchemy magic?
-                .options(joinedload('*'))
-            ).first()
+                        consts.DELETED)).first()
             if db_lb:
                 return db_lb.to_data_model()
             return None
