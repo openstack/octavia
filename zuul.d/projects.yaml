@@ -58,6 +58,9 @@
         - octavia-v2-dsvm-scenario-amphora-v2:
             irrelevant-files: *irrelevant-files
             voting: false
+        - octavia-v2-dsvm-scenario-centos-8:
+            irrelevant-files: *irrelevant-files
+            voting: false
     gate:
       fail-fast: true
       queue: octavia
