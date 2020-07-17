@@ -1,0 +1,11 @@
+---
+deprecations:
+  - |
+    Spares pool support is deprecated, pending removal in the X release. Use of
+    the spares pool was originally recommended to increase provisioning speed,
+    but since Nova's server groups do not support adding existing VMs, Octavia
+    cannot support use of the spares pool with the Active-Standby topology.
+    Since this is our recommended topology for production deployments, and
+    speed is less essential in development/testing environments (the only place
+    we could recommend the use of Single topology), the overhead of maintaining
+    spares pool support exceeds its theoretical usefulness.

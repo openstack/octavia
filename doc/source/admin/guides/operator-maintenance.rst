@@ -185,6 +185,10 @@ the Octavia services (except octavia-api).
 Rotating spare Amphorae
 -----------------------
 
+.. warning::
+
+    Spares pool support is deprecated as of the Victoria release.
+
 If the spare pool is enabled in Octavia, spare amphorae must be rotated
 first, so a new load balancer will use the new amphora image from a newly
 spawned spare amphora.
