@@ -2248,7 +2248,29 @@ class TestListener(base.BaseAPITest):
 
     # TODO(johnsom) Fix this when there is a noop certificate manager
     @mock.patch('octavia.common.tls_utils.cert_parser.load_certificates_data')
-    def test_update_with_sni_data(self, mock_cert_data):
+    def test_update_tls_terminated_with_sni_data(self, mock_cert_data):
+        cert2 = data_models.TLSContainer(certificate='cert 2')
+        cert3 = data_models.TLSContainer(certificate='cert 3')
+        mock_cert_data.return_value = {'sni_certs': [cert2, cert3]}
+        sni_id1 = uuidutils.generate_uuid()
+        sni_id2 = uuidutils.generate_uuid()
+        listener = self.create_listener(
+            constants.PROTOCOL_TERMINATED_HTTPS, 80, self.lb_id,
+            default_tls_container_ref=uuidutils.generate_uuid())
+        self.set_lb_status(self.lb_id)
+        listener_path = self.LISTENER_PATH.format(
+            listener_id=listener['listener']['id'])
+        get_listener = self.get(listener_path).json['listener']
+        self.assertEqual([], get_listener.get('sni_container_refs'))
+        self.put(listener_path,
+                 self._build_body({'sni_container_refs': [sni_id1, sni_id2]}))
+        get_listener = self.get(listener_path).json['listener']
+        self.assertItemsEqual([sni_id1, sni_id2],
+                              get_listener.get('sni_container_refs'))
+
+    # TODO(johnsom) Fix this when there is a noop certificate manager
+    @mock.patch('octavia.common.tls_utils.cert_parser.load_certificates_data')
+    def test_update_non_tls_terminated_with_sni_data(self, mock_cert_data):
         cert2 = data_models.TLSContainer(certificate='cert 2')
         cert3 = data_models.TLSContainer(certificate='cert 3')
         mock_cert_data.return_value = {'sni_certs': [cert2, cert3]}
@@ -2261,8 +2283,12 @@ class TestListener(base.BaseAPITest):
             listener_id=listener['listener']['id'])
         get_listener = self.get(listener_path).json['listener']
         self.assertEqual([], get_listener.get('sni_container_refs'))
-        self.put(listener_path,
-                 self._build_body({'sni_container_refs': [sni_id1, sni_id2]}))
+        body = self._build_body({'sni_container_refs': [sni_id1, sni_id2]})
+        response = self.put(listener_path, body, status=400).json
+        self.assertEqual(
+            "Validation failure: Certificate container references are only "
+            "allowed on TERMINATED_HTTPS protocol listeners.",
+            response['faultstring'])
         get_listener = self.get(listener_path).json['listener']
         self.assertEqual([], get_listener.get('sni_container_refs'))
 

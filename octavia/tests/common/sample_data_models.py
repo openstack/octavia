@@ -449,9 +449,8 @@ class SampleDriverDataModels(object):
             lib_consts.CONNECTION_LIMIT: 10000,
             constants.TLS_CERTIFICATE_ID: self.default_tls_container_ref,
             lib_consts.DEFAULT_POOL: self.test_pool1_dict,
-            constants.SNI_CONTAINERS: [
-                {constants.TLS_CONTAINER_ID: self.sni_container_ref_1},
-                {constants.TLS_CONTAINER_ID: self.sni_container_ref_2}],
+            constants.SNI_CONTAINERS: [self.sni_container_ref_1,
+                                       self.sni_container_ref_2],
             constants.PEER_PORT: 55,
             lib_consts.L7POLICIES: self.test_l7policies,
             lib_consts.INSERT_HEADERS: {},
