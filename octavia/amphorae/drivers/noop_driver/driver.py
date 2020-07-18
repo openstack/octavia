@@ -73,7 +73,7 @@ class NoopManager(object):
                             listener.load_balancer.vip.ip_address)] = (
             listener, listener.load_balancer.vip, 'delete')
 
-    def get_info(self, amphora):
+    def get_info(self, amphora, raise_retry_exception=False):
         LOG.debug("Amphora %s no-op, info amphora %s",
                   self.__class__.__name__, amphora.id)
         self.amphoraconfig[amphora.id] = (amphora.id, 'get_info')
@@ -138,9 +138,10 @@ class NoopAmphoraLoadBalancerDriver(
 
         self.driver.delete(listener)
 
-    def get_info(self, amphora):
+    def get_info(self, amphora, raise_retry_exception=False):
 
-        self.driver.get_info(amphora)
+        self.driver.get_info(amphora,
+                             raise_retry_exception=raise_retry_exception)
 
     def get_diagnostics(self, amphora):
 

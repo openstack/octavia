@@ -121,3 +121,9 @@ class NodeProvisioningError(ProvisioningErrors):
 class AmpDriverNotImplementedError(AmphoraDriverError):
 
     message = _('Amphora does not implement this feature.')
+
+
+class AmpConnectionRetry(AmphoraDriverError):
+
+    message = _('Could not connect to amphora, exception caught: '
+                '%(exception)s')

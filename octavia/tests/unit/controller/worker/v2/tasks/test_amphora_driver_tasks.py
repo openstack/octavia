@@ -580,8 +580,10 @@ class TestAmphoraDriverTasks(base.TestCase):
                                                mock_amphora_repo_update):
         amp_compute_conn_wait_obj = (
             amphora_driver_tasks.AmphoraComputeConnectivityWait())
-        amp_compute_conn_wait_obj.execute(_amphora_mock)
-        mock_driver.get_info.assert_called_once_with(_amphora_mock)
+        amp_compute_conn_wait_obj.execute(_amphora_mock,
+                                          raise_retry_exception=True)
+        mock_driver.get_info.assert_called_once_with(
+            _amphora_mock, raise_retry_exception=True)
 
         mock_driver.get_info.side_effect = driver_except.TimeOutException()
         self.assertRaises(driver_except.TimeOutException,

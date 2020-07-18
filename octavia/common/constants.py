@@ -383,6 +383,7 @@ VRRP_GROUP = 'vrrp_group'
 # Taskflow flow and task names
 CERT_ROTATE_AMPHORA_FLOW = 'octavia-cert-rotate-amphora-flow'
 CREATE_AMPHORA_FLOW = 'octavia-create-amphora-flow'
+CREATE_AMPHORA_RETRY_SUBFLOW = 'octavia-create-amphora-retry-subflow'
 CREATE_AMPHORA_FOR_LB_FLOW = 'octavia-create-amp-for-lb-flow'
 CREATE_HEALTH_MONITOR_FLOW = 'octavia-create-health-monitor-flow'
 CREATE_LISTENER_FLOW = 'octavia-create-listener_flow'
