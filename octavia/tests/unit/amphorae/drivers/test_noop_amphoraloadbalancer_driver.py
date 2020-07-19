@@ -49,7 +49,7 @@ class TestNoopAmphoraLoadBalancerDriver(base.TestCase):
         self.listener.id = uuidutils.generate_uuid()
         self.listener.protocol_port = 80
         self.vip = data_models.Vip()
-        self.vip.ip_address = "10.0.0.1"
+        self.vip.ip_address = "192.51.100.1"
         self.amphora = data_models.Amphora()
         self.amphora.id = self.FAKE_UUID_1
         self.load_balancer = data_models.LoadBalancer(
@@ -152,3 +152,12 @@ class TestNoopAmphoraLoadBalancerDriver(base.TestCase):
              'update_amphora_agent_config'),
             self.driver.driver.amphoraconfig[(
                 self.amphora.id, self.agent_config)])
+
+    def test_get_interface_from_ip(self):
+        result = self.driver.get_interface_from_ip(self.amphora,
+                                                   '198.51.100.99')
+        self.assertEqual('noop0', result)
+
+        result = self.driver.get_interface_from_ip(self.amphora,
+                                                   '198.51.100.9')
+        self.assertIsNone(result)

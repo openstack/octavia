@@ -91,7 +91,7 @@ class HaproxyAmphoraLoadBalancerDriver(
 
         return haproxy_version_string.split('.')[:2]
 
-    def _populate_amphora_api_version(self, amphora,
+    def _populate_amphora_api_version(self, amphora, timeout_dict=None,
                                       raise_retry_exception=False):
         """Populate the amphora object with the api_version
 
@@ -103,7 +103,7 @@ class HaproxyAmphoraLoadBalancerDriver(
         if not getattr(amphora, 'api_version', None):
             try:
                 amphora.api_version = self.clients['base'].get_api_version(
-                    amphora,
+                    amphora, timeout_dict=timeout_dict,
                     raise_retry_exception=raise_retry_exception)['api_version']
             except exc.NotFound:
                 # Amphora is too old for version discovery, default to 0.5
@@ -292,8 +292,11 @@ class HaproxyAmphoraLoadBalancerDriver(
                         getattr(self.clients[amp.api_version], func_name)(
                             amp, loadbalancer.id, *args)
 
-    def start(self, loadbalancer, amphora=None):
-        self._apply('start_listener', loadbalancer, amphora)
+    def reload(self, loadbalancer, amphora=None, timeout_dict=None):
+        self._apply('reload_listener', loadbalancer, amphora, timeout_dict)
+
+    def start(self, loadbalancer, amphora=None, timeout_dict=None):
+        self._apply('start_listener', loadbalancer, amphora, timeout_dict)
 
     def delete(self, listener):
         # Delete any UDP listeners the old way (we didn't update the way they
@@ -581,6 +584,28 @@ class HaproxyAmphoraLoadBalancerDriver(
                       'API.'.format(amphora.id))
             raise driver_except.AmpDriverNotImplementedError()
 
+    def get_interface_from_ip(self, amphora, ip_address, timeout_dict=None):
+        """Get the interface name for an IP address.
+
+        :param amphora: The amphora to query.
+        :type amphora: octavia.db.models.Amphora
+        :param ip_address: The IP address to lookup. (IPv4 or IPv6)
+        :type ip_address: string
+        :param timeout_dict: Dictionary of timeout values for calls to the
+                             amphora. May contain: req_conn_timeout,
+                             req_read_timeout, conn_max_retries,
+                             conn_retry_interval
+        :type timeout_dict: dict
+        :returns: None if not found, the interface name string if found.
+        """
+        try:
+            self._populate_amphora_api_version(amphora, timeout_dict)
+            response_json = self.clients[amphora.api_version].get_interface(
+                amphora, ip_address, timeout_dict, log_error=False)
+            return response_json.get('interface', None)
+        except (exc.NotFound, driver_except.TimeOutException):
+            return None
+
 
 # Check a custom hostname
 class CustomHostNameCheckingAdapter(requests.adapters.HTTPAdapter):
@@ -707,9 +732,10 @@ class AmphoraAPIClientBase(object):
                    'exception': exception})
         raise driver_except.TimeOutException()
 
-    def get_api_version(self, amp, raise_retry_exception=False):
+    def get_api_version(self, amp, timeout_dict=None,
+                        raise_retry_exception=False):
         amp.api_version = None
-        r = self.get(amp, retry_404=False,
+        r = self.get(amp, retry_404=False, timeout_dict=timeout_dict,
                      raise_retry_exception=raise_retry_exception)
         # Handle 404 special as we don't want to log an ERROR on 404
         exc.check_exception(r, (404,))
@@ -810,16 +836,15 @@ class AmphoraAPIClient0_5(AmphoraAPIClientBase):
         r = self.put(amp, 'vrrp/upload', data=config)
         return exc.check_exception(r)
 
-    def _vrrp_action(self, action, amp):
-        r = self.put(amp, 'vrrp/{action}'.format(action=action))
+    def _vrrp_action(self, action, amp, timeout_dict=None):
+        r = self.put(amp, 'vrrp/{action}'.format(action=action),
+                     timeout_dict=timeout_dict)
         return exc.check_exception(r)
 
-    def get_interface(self, amp, ip_addr, timeout_dict=None):
+    def get_interface(self, amp, ip_addr, timeout_dict=None, log_error=True):
         r = self.get(amp, 'interface/{ip_addr}'.format(ip_addr=ip_addr),
                      timeout_dict=timeout_dict)
-        if exc.check_exception(r):
-            return r.json()
-        return None
+        return exc.check_exception(r, log_error=log_error).json()
 
     def upload_udp_config(self, amp, listener_id, config, timeout_dict=None):
         r = self.put(
@@ -940,16 +965,15 @@ class AmphoraAPIClient1_0(AmphoraAPIClientBase):
         r = self.put(amp, 'vrrp/upload', data=config)
         return exc.check_exception(r)
 
-    def _vrrp_action(self, action, amp):
-        r = self.put(amp, 'vrrp/{action}'.format(action=action))
+    def _vrrp_action(self, action, amp, timeout_dict=None):
+        r = self.put(amp, 'vrrp/{action}'.format(action=action),
+                     timeout_dict=timeout_dict)
         return exc.check_exception(r)
 
-    def get_interface(self, amp, ip_addr, timeout_dict=None):
+    def get_interface(self, amp, ip_addr, timeout_dict=None, log_error=True):
         r = self.get(amp, 'interface/{ip_addr}'.format(ip_addr=ip_addr),
                      timeout_dict=timeout_dict)
-        if exc.check_exception(r):
-            return r.json()
-        return None
+        return exc.check_exception(r, log_error=log_error).json()
 
     def upload_udp_config(self, amp, listener_id, config, timeout_dict=None):
         r = self.put(

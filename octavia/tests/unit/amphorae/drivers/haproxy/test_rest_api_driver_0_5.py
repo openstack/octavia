@@ -461,7 +461,30 @@ class TestHaproxyAmphoraLoadBalancerDriverTest(base.TestCase):
         self.driver.start(loadbalancer)
         self.driver.clients[
             API_VERSION].start_listener.assert_called_once_with(
-            amp1, listener.id)
+            amp1, listener.id, None)
+
+    def test_reload(self):
+        amp1 = mock.MagicMock()
+        amp1.api_version = API_VERSION
+        amp2 = mock.MagicMock()
+        amp2.api_version = API_VERSION
+        amp2.status = constants.DELETED
+        loadbalancer = mock.MagicMock()
+        loadbalancer.id = uuidutils.generate_uuid()
+        loadbalancer.amphorae = [amp1, amp2]
+        loadbalancer.vip = self.sv
+        listener = mock.MagicMock()
+        listener.id = uuidutils.generate_uuid()
+        listener.protocol = constants.PROTOCOL_HTTP
+        loadbalancer.listeners = [listener]
+        listener.load_balancer = loadbalancer
+        self.driver.clients[
+            API_VERSION].reload_listener.__name__ = 'reload_listener'
+        # Execute driver method
+        self.driver.reload(loadbalancer)
+        self.driver.clients[
+            API_VERSION].reload_listener.assert_called_once_with(
+            amp1, listener.id, None)
 
     def test_start_with_amphora(self):
         # Execute driver method
@@ -471,7 +494,7 @@ class TestHaproxyAmphoraLoadBalancerDriverTest(base.TestCase):
         self.driver.start(self.lb, self.amp)
         self.driver.clients[
             API_VERSION].start_listener.assert_called_once_with(
-            self.amp, self.sl.id)
+            self.amp, self.sl.id, None)
 
         self.driver.clients[API_VERSION].start_listener.reset_mock()
         amp.status = constants.DELETED
@@ -485,7 +508,7 @@ class TestHaproxyAmphoraLoadBalancerDriverTest(base.TestCase):
         self.driver.start(self.lb_udp)
         self.driver.clients[
             API_VERSION].start_listener.assert_called_once_with(
-            self.amp, self.sl_udp.id)
+            self.amp, self.sl_udp.id, None)
 
     @mock.patch('octavia.amphorae.drivers.haproxy.rest_api_driver.'
                 'HaproxyAmphoraLoadBalancerDriver._process_secret')
@@ -627,11 +650,6 @@ class TestHaproxyAmphoraLoadBalancerDriverTest(base.TestCase):
             self.amp, dict(mac_address=FAKE_MAC_ADDRESS,
                            fixed_ips=expected_fixed_ips,
                            mtu=FAKE_MTU))
-
-    def test_get_vrrp_interface(self):
-        self.driver.get_vrrp_interface(self.amp)
-        self.driver.clients[API_VERSION].get_interface.assert_called_once_with(
-            self.amp, self.amp.vrrp_ip, timeout_dict=None)
 
     def test_get_haproxy_versions(self):
         ref_haproxy_versions = ['1', '6']

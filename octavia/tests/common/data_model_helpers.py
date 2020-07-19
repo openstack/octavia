@@ -27,7 +27,8 @@ def generate_load_balancer_tree():
 LB_SEED = 0
 
 
-def generate_load_balancer(vip=None, amphorae=None):
+def generate_load_balancer(vip=None, amphorae=None,
+                           topology=constants.TOPOLOGY_SINGLE):
     amphorae = amphorae or []
     global LB_SEED
     LB_SEED += 1
@@ -36,6 +37,7 @@ def generate_load_balancer(vip=None, amphorae=None):
                                   name='lb{0}'.format(LB_SEED),
                                   description='lb{0}'.format(LB_SEED),
                                   vip=vip,
+                                  topology=topology,
                                   amphorae=amphorae)
     for amp in lb.amphorae:
         amp.load_balancer = lb

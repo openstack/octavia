@@ -53,12 +53,26 @@ class TestVRRPRestDriver(base.TestCase):
 
         mock_templater.return_value = self.FAKE_CONFIG
 
-        self.keepalived_mixin.update_vrrp_conf(self.lb_mock,
-                                               self.amphorae_network_config)
+        self.keepalived_mixin.update_vrrp_conf(
+            self.lb_mock, self.amphorae_network_config, self.amphora_mock)
 
         self.clients[API_VERSION].upload_vrrp_config.assert_called_once_with(
             self.amphora_mock,
             self.FAKE_CONFIG)
+
+        # Test amphora not in AMPHORA_ALLOCATED state
+        mock_templater.reset_mock()
+        self.clients[API_VERSION].upload_vrrp_config.reset_mock()
+        ready_amphora_mock = mock.MagicMock()
+        ready_amphora_mock.id = uuidutils.generate_uuid()
+        ready_amphora_mock.status = constants.AMPHORA_READY
+        ready_amphora_mock.api_version = API_VERSION
+
+        self.keepalived_mixin.update_vrrp_conf(
+            self.lb_mock, self.amphorae_network_config, ready_amphora_mock)
+
+        mock_templater.assert_not_called()
+        self.clients[API_VERSION].upload_vrrp_config.assert_not_called()
 
     def test_stop_vrrp_service(self):
 
@@ -69,10 +83,21 @@ class TestVRRPRestDriver(base.TestCase):
 
     def test_start_vrrp_service(self):
 
-        self.keepalived_mixin.start_vrrp_service(self.lb_mock)
+        self.keepalived_mixin.start_vrrp_service(self.amphora_mock)
 
         self.clients[API_VERSION].start_vrrp.assert_called_once_with(
-            self.amphora_mock)
+            self.amphora_mock, timeout_dict=None)
+
+        # Test amphora not in AMPHORA_ALLOCATED state
+        self.clients[API_VERSION].start_vrrp.reset_mock()
+        ready_amphora_mock = mock.MagicMock()
+        ready_amphora_mock.id = uuidutils.generate_uuid()
+        ready_amphora_mock.status = constants.AMPHORA_READY
+        ready_amphora_mock.api_version = API_VERSION
+
+        self.keepalived_mixin.start_vrrp_service(ready_amphora_mock)
+
+        self.clients[API_VERSION].start_vrrp.assert_not_called()
 
     def test_reload_vrrp_service(self):
 

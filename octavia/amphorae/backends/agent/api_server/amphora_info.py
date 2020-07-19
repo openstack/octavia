@@ -12,20 +12,19 @@
 # License for the specific language governing permissions and limitations
 #    under the License.
 
-import ipaddress
 import os
 import re
 import socket
 import subprocess
 
 import pyroute2
-import six
 import webob
 
-import netifaces
 from octavia.amphorae.backends.agent import api_server
 from octavia.amphorae.backends.agent.api_server import util
+from octavia.amphorae.backends.utils import network_utils
 from octavia.common import constants as consts
+from octavia.common import exceptions
 
 
 class AmphoraInfo(object):
@@ -176,65 +175,15 @@ class AmphoraInfo(object):
         return networks
 
     def get_interface(self, ip_addr):
-
         try:
-            ip_version = ipaddress.ip_address(six.text_type(ip_addr)).version
-        except Exception:
+            interface = network_utils.get_interface_name(
+                ip_addr, net_ns=consts.AMPHORA_NAMESPACE)
+        except exceptions.InvalidIPAddress:
+            return webob.Response(json=dict(message="Invalid IP address"),
+                                  status=400)
+        except exceptions.NotFound:
             return webob.Response(
-                json=dict(message="Invalid IP address"), status=400)
-
-        if ip_version == 4:
-            address_format = netifaces.AF_INET
-        elif ip_version == 6:
-            address_format = netifaces.AF_INET6
-        else:
-            return webob.Response(
-                json=dict(message="Bad IP address version"), status=400)
-
-        # We need to normalize the address as IPv6 has multiple representations
-        # fe80:0000:0000:0000:f816:3eff:fef2:2058 == fe80::f816:3eff:fef2:2058
-        normalized_addr = socket.inet_ntop(address_format,
-                                           socket.inet_pton(address_format,
-                                                            ip_addr))
-
-        with pyroute2.NetNS(consts.AMPHORA_NAMESPACE) as netns:
-            for addr in netns.get_addr():
-                # Save the interface index as IPv6 records don't list a
-                # textual interface
-                interface_idx = addr['index']
-                # Save the address family (IPv4/IPv6) for use normalizing
-                # the IP address for comparison
-                interface_af = addr['family']
-                # Search through the attributes of each address record
-                for attr in addr['attrs']:
-                    # Look for the attribute name/value pair for the address
-                    if attr[0] == 'IFA_ADDRESS':
-                        # Compare the normalized address with the address we
-                        # we are looking for.  Since we have matched the name
-                        # above, attr[1] is the address value
-                        if normalized_addr == socket.inet_ntop(
-                                interface_af,
-                                socket.inet_pton(interface_af, attr[1])):
-
-                            # Lookup the matching interface name by
-                            # getting the interface with the index we found
-                            # in the above address search
-                            lookup_int = netns.get_links(interface_idx)
-                            # Search through the attributes of the matching
-                            # interface record
-                            for int_attr in lookup_int[0]['attrs']:
-                                # Look for the attribute name/value pair
-                                # that includes the interface name
-                                if int_attr[0] == 'IFLA_IFNAME':
-                                    # Return the response with the matching
-                                    # interface name that is in int_attr[1]
-                                    # for the matching interface attribute
-                                    # name
-                                    return webob.Response(
-                                        json=dict(message='OK',
-                                                  interface=int_attr[1]),
-                                        status=200)
-
-        return webob.Response(
-            json=dict(message="Error interface not found for IP address"),
-            status=404)
+                json=dict(message="Error interface not found for IP address"),
+                status=404)
+        return webob.Response(json=dict(message='OK', interface=interface),
+                              status=200)

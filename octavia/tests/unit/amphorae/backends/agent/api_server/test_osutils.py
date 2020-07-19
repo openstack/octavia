@@ -18,6 +18,7 @@ import shutil
 
 import mock
 from oslo_config import fixture as oslo_fixture
+import six
 
 from octavia.amphorae.backends.agent.api_server import osutils
 from octavia.common import config
@@ -204,13 +205,13 @@ class TestOSUtils(base.TestCase):
         # matches the result of any arbitrary IPv4->prefixlen conversion
         SUBNET_CIDR_IPV6 = u'2001:db8::/70'
 
-        ip = ipaddress.ip_address(FIXED_IP)
+        ip = ipaddress.ip_address(six.text_type(FIXED_IP))
         network = ipaddress.ip_network(SUBNET_CIDR)
         broadcast = network.broadcast_address.exploded
         netmask = network.netmask.exploded
         netmask_prefix = utils.netmask_to_prefix(netmask)
 
-        ipv6 = ipaddress.ip_address(FIXED_IP_IPV6)
+        ipv6 = ipaddress.ip_address(six.text_type(FIXED_IP_IPV6))
         networkv6 = ipaddress.ip_network(SUBNET_CIDR_IPV6)
         broadcastv6 = networkv6.broadcast_address.exploded
         netmaskv6 = networkv6.prefixlen

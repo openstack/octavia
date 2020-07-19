@@ -79,6 +79,14 @@ class QosPolicyNotFound(NetworkException):
     pass
 
 
+class SecurityGroupNotFound(NetworkException):
+    pass
+
+
+class CreatePortException(NetworkException):
+    pass
+
+
 @six.add_metaclass(abc.ABCMeta)
 class AbstractNetworkDriver(object):
     """This class defines the methods for a fully functional network driver.
@@ -100,6 +108,24 @@ class AbstractNetworkDriver(object):
         """
 
     @abc.abstractmethod
+    def create_port(self, network_id, name=None, fixed_ips=(),
+                    secondary_ips=(), security_group_ids=(),
+                    admin_state_up=True, qos_policy_id=None):
+        """Creates a network port.
+
+        fixed_ips = [{'subnet_id': <id>, ('ip_address': <IP>')},]
+        ip_address is optional in the fixed_ips dictionary.
+
+        :param network_id: The network the port should be created on.
+        :param name: The name to apply to the port.
+        :param fixed_ips: A list of fixed IP dicts.
+        :param secondary_ips: A list of secondary IPs to add to the port.
+        :param security_group_ids: A list of security group IDs for the port.
+        :param qos_policy_id: The QoS policy ID to apply to the port.
+        :returns port: A port data model object.
+        """
+
+    @abc.abstractmethod
     def deallocate_vip(self, vip):
         """Removes any resources that reserved this virtual ip.
 
@@ -107,6 +133,14 @@ class AbstractNetworkDriver(object):
         :return: None
         :raises: DeallocateVIPException, VIPInUseException,
                  VIPConfiigurationNotFound
+        """
+
+    @abc.abstractmethod
+    def delete_port(self, port_id):
+        """Delete a network port.
+
+        :param port_id: The port ID to delete.
+        :returns: None
         """
 
     @abc.abstractmethod
@@ -253,6 +287,15 @@ class AbstractNetworkDriver(object):
         """
 
     @abc.abstractmethod
+    def get_security_group(self, sg_name):
+        """Retrieves the security group by it's name.
+
+        :param sg_name: The security group name.
+        :return: octavia.network.data_models.SecurityGroup, None if not enabled
+        :raises: NetworkException, SecurityGroupNotFound
+        """
+
+    @abc.abstractmethod
     def failover_preparation(self, amphora):
         """Prepare an amphora for failover.
 
@@ -347,4 +390,13 @@ class AbstractNetworkDriver(object):
         :param network: octavia.network.data_models.Network
         :return: octavia.network.data_models.Network_IP_Availability
         :raises: NetworkException, NetworkNotFound
+        """
+
+    @abc.abstractmethod
+    def set_port_admin_state_up(self, port_id, state):
+        """Set the admin state of a port. True is up, False is down.
+
+        :param port_id: The port ID to update.
+        :param state: True for up, False for down.
+        :returns: None
         """

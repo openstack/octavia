@@ -30,29 +30,35 @@ class KeepalivedAmphoraDriverMixin(driver_base.VRRPDriverMixin):
         # The Mixed class must define a self.client object for the
         # AmphoraApiClient
 
-    def update_vrrp_conf(self, loadbalancer, amphorae_network_config):
-        """Update amphorae of the loadbalancer with a new VRRP configuration
+    def update_vrrp_conf(self, loadbalancer, amphorae_network_config, amphora,
+                         timeout_dict=None):
+        """Update amphora of the loadbalancer with a new VRRP configuration
 
         :param loadbalancer: loadbalancer object
         :param amphorae_network_config: amphorae network configurations
+        :param amphora: The amphora object to update.
+        :param timeout_dict: Dictionary of timeout values for calls to the
+                             amphora. May contain: req_conn_timeout,
+                             req_read_timeout, conn_max_retries,
+                             conn_retry_interval
         """
+        if amphora.status != constants.AMPHORA_ALLOCATED:
+            LOG.debug('update_vrrp_conf called for un-allocated amphora %s. '
+                      'Ignoring.', amphora.id)
+            return
+
         templater = jinja_cfg.KeepalivedJinjaTemplater()
 
-        LOG.debug("Update loadbalancer %s amphora VRRP configuration.",
-                  loadbalancer.id)
+        LOG.debug("Update amphora %s VRRP configuration.", amphora.id)
 
-        for amp in six.moves.filter(
-            lambda amp: amp.status == constants.AMPHORA_ALLOCATED,
-                loadbalancer.amphorae):
+        self._populate_amphora_api_version(amphora)
+        # Get the VIP subnet prefix for the amphora
+        vip_cidr = amphorae_network_config[amphora.id].vip_subnet.cidr
 
-            self._populate_amphora_api_version(amp)
-            # Get the VIP subnet prefix for the amphora
-            vip_cidr = amphorae_network_config[amp.id].vip_subnet.cidr
-
-            # Generate Keepalived configuration from loadbalancer object
-            config = templater.build_keepalived_config(
-                loadbalancer, amp, vip_cidr)
-            self.clients[amp.api_version].upload_vrrp_config(amp, config)
+        # Generate Keepalived configuration from loadbalancer object
+        config = templater.build_keepalived_config(
+            loadbalancer, amphora, vip_cidr)
+        self.clients[amphora.api_version].upload_vrrp_config(amphora, config)
 
     def stop_vrrp_service(self, loadbalancer):
         """Stop the vrrp services running on the loadbalancer's amphorae
@@ -69,21 +75,25 @@ class KeepalivedAmphoraDriverMixin(driver_base.VRRPDriverMixin):
             self._populate_amphora_api_version(amp)
             self.clients[amp.api_version].stop_vrrp(amp)
 
-    def start_vrrp_service(self, loadbalancer):
-        """Start the VRRP services of all amphorae of the loadbalancer
+    def start_vrrp_service(self, amphora, timeout_dict=None):
+        """Start the VRRP services on an amphorae.
 
-        :param loadbalancer: loadbalancer object
+        :param amphora: amphora object
+        :param timeout_dict: Dictionary of timeout values for calls to the
+                             amphora. May contain: req_conn_timeout,
+                             req_read_timeout, conn_max_retries,
+                             conn_retry_interval
         """
-        LOG.info("Start loadbalancer %s amphora VRRP Service.",
-                 loadbalancer.id)
+        if amphora.status != constants.AMPHORA_ALLOCATED:
+            LOG.debug('start_vrrp_service called for un-allocated amphora %s. '
+                      'Ignoring.', amphora.id)
+            return
 
-        for amp in six.moves.filter(
-            lambda amp: amp.status == constants.AMPHORA_ALLOCATED,
-                loadbalancer.amphorae):
+        LOG.info("Start amphora %s VRRP Service.", amphora.id)
 
-            LOG.debug("Start VRRP Service on amphora %s .", amp.lb_network_ip)
-            self._populate_amphora_api_version(amp)
-            self.clients[amp.api_version].start_vrrp(amp)
+        self._populate_amphora_api_version(amphora)
+        self.clients[amphora.api_version].start_vrrp(amphora,
+                                                     timeout_dict=timeout_dict)
 
     def reload_vrrp_service(self, loadbalancer):
         """Reload the VRRP services of all amphorae of the loadbalancer
@@ -99,8 +109,3 @@ class KeepalivedAmphoraDriverMixin(driver_base.VRRPDriverMixin):
 
             self._populate_amphora_api_version(amp)
             self.clients[amp.api_version].reload_vrrp(amp)
-
-    def get_vrrp_interface(self, amphora, timeout_dict=None):
-        self._populate_amphora_api_version(amphora)
-        return self.clients[amphora.api_version].get_interface(
-            amphora, amphora.vrrp_ip, timeout_dict=timeout_dict)['interface']
