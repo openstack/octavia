@@ -64,6 +64,13 @@ class NoopManager(object):
             (loadbalancer.id, amphora.id)] = (loadbalancer, amphora,
                                               'start')
 
+    def reload(self, loadbalancer, amphora=None):
+        LOG.debug("Amphora %s no-op, reload listeners, lb %s, amp %s",
+                  self.__class__.__name__, loadbalancer.id, amphora)
+        self.amphoraconfig[
+            (loadbalancer.id, amphora.id)] = (loadbalancer, amphora,
+                                              'reload')
+
     def delete(self, listener):
         LOG.debug("Amphora %s no-op, delete listener %s, vip %s",
                   self.__class__.__name__,
@@ -140,6 +147,10 @@ class NoopAmphoraLoadBalancerDriver(
     def start(self, loadbalancer, amphora=None):
 
         self.driver.start(loadbalancer, amphora)
+
+    def reload(self, loadbalancer, amphora=None):
+
+        self.driver.reload(loadbalancer, amphora)
 
     def delete(self, listener):
 
