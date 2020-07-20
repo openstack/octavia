@@ -87,7 +87,9 @@ class BarbicanACLAuth(barbican_common.BarbicanAuth):
         user_auth = token.Token(auth_url=service_auth.auth_url,
                                 token=context.auth_token,
                                 project_id=context.project_id)
-        user_session = session.Session(auth=user_auth)
+        user_session = session.Session(
+            auth=user_auth,
+            verify=CONF.certificates.ca_certificates_file)
 
         # create a special barbican client with our user's session
         return barbican_client.Client(
