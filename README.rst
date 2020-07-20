@@ -16,11 +16,11 @@ Octavia
     :alt: Latest Version
 
 Octavia is an operator-grade open source scalable load balancer for use in
-large OpenStack deployments. It delivers load balancing services on `amphorae
-<https://docs.openstack.org/octavia/latest/reference/glossary.html>`_ and
-provides centralized command and control. Octavia is currently the reference
-backend for Neutron LBaaS. In the near future, Octavia is likely to become the
-standard OpenStack LBaaS API endpoint.
+large OpenStack deployments.
+
+Octavia provides the load balancing API for OpenStack. It supports multiple
+"provider drivers" that implement load balancing, including the "amphora"
+reference driver included with Octavia.
 
 Octavia is distributed under the terms of the Apache License, Version 2.0.
 The full terms and conditions of this license are detailed in the LICENSE
