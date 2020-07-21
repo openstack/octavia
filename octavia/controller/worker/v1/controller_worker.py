@@ -324,10 +324,11 @@ class ControllerWorker(base_taskflow.BaseTaskFlowEngine):
                  constants.LB_CREATE_NORMAL_PRIORITY,
                  constants.FLAVOR: flavor}
 
-        if not CONF.nova.enable_anti_affinity:
-            store[constants.SERVER_GROUP_ID] = None
-
         topology = lb.topology
+
+        if (not CONF.nova.enable_anti_affinity or
+                topology == constants.TOPOLOGY_SINGLE):
+            store[constants.SERVER_GROUP_ID] = None
 
         store[constants.UPDATE_DICT] = {
             constants.TOPOLOGY: topology

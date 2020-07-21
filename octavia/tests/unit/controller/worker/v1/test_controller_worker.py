@@ -366,12 +366,41 @@ class TestControllerWorker(base.TestCase):
 
         _flow_mock.run.assert_called_once_with()
 
+    def test_create_load_balancer_single_no_anti_affinity(
+            self, mock_api_get_session,
+            mock_dyn_log_listener, mock_taskflow_load, mock_pool_repo_get,
+            mock_member_repo_get, mock_l7rule_repo_get, mock_l7policy_repo_get,
+            mock_listener_repo_get, mock_lb_repo_get,
+            mock_health_mon_repo_get, mock_amp_repo_get):
+        # Test the code path with Nova anti-affinity disabled
+        self.conf.config(group="nova", enable_anti_affinity=False)
+        self._test_create_load_balancer_single(
+            mock_api_get_session,
+            mock_dyn_log_listener, mock_taskflow_load, mock_pool_repo_get,
+            mock_member_repo_get, mock_l7rule_repo_get,
+            mock_l7policy_repo_get, mock_listener_repo_get,
+            mock_lb_repo_get, mock_health_mon_repo_get, mock_amp_repo_get)
+
+    def test_create_load_balancer_single_anti_affinity(
+            self, mock_api_get_session,
+            mock_dyn_log_listener, mock_taskflow_load, mock_pool_repo_get,
+            mock_member_repo_get, mock_l7rule_repo_get, mock_l7policy_repo_get,
+            mock_listener_repo_get, mock_lb_repo_get,
+            mock_health_mon_repo_get, mock_amp_repo_get):
+        # Test the code path with Nova anti-affinity enabled
+        self.conf.config(group="nova", enable_anti_affinity=True)
+        self._test_create_load_balancer_single(
+            mock_api_get_session,
+            mock_dyn_log_listener, mock_taskflow_load, mock_pool_repo_get,
+            mock_member_repo_get, mock_l7rule_repo_get,
+            mock_l7policy_repo_get, mock_listener_repo_get,
+            mock_lb_repo_get, mock_health_mon_repo_get, mock_amp_repo_get)
+
     @mock.patch('octavia.controller.worker.v1.flows.load_balancer_flows.'
                 'LoadBalancerFlows.get_create_load_balancer_flow',
                 return_value=_flow_mock)
-    def test_create_load_balancer_single(
+    def _test_create_load_balancer_single(
             self,
-            mock_get_create_load_balancer_flow,
             mock_api_get_session,
             mock_dyn_log_listener,
             mock_taskflow_load,
@@ -382,7 +411,8 @@ class TestControllerWorker(base.TestCase):
             mock_listener_repo_get,
             mock_lb_repo_get,
             mock_health_mon_repo_get,
-            mock_amp_repo_get):
+            mock_amp_repo_get,
+            mock_get_create_load_balancer_flow):
 
         # Test the code path with an SINGLE topology
         self.conf.config(group="controller_worker",
