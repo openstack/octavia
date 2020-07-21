@@ -1,0 +1,5 @@
+---
+fixes:
+  - |
+    Fixed an issue where amphora load balancers fail to create when Nova
+    anti-affinity is enabled and topology is SINGLE.
