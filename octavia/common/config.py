@@ -600,7 +600,8 @@ nova_opts = [
                 help=_('Disable certificate validation on SSL connections')),
     cfg.BoolOpt('enable_anti_affinity', default=False,
                 help=_('Flag to indicate if nova anti-affinity feature is '
-                       'turned on.')),
+                       'turned on. This option is only used when creating '
+                       'amphorae in ACTIVE_STANDBY topology.')),
     cfg.StrOpt('anti_affinity_policy', default=constants.ANTI_AFFINITY,
                choices=[constants.ANTI_AFFINITY, constants.SOFT_ANTI_AFFINITY],
                help=_('Sets the anti-affinity policy for nova')),
