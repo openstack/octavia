@@ -122,8 +122,8 @@ class JinjaTemplater(object):
 
     def _format_log_string(self, load_balancer, protocol):
         log_format = CONF.haproxy_amphora.user_log_format.replace(
-            '{project_id}', load_balancer.project_id)
-        log_format = log_format.replace('{lb_id}', load_balancer.id)
+            '{{ project_id }}', load_balancer.project_id)
+        log_format = log_format.replace('{{ lb_id }}', load_balancer.id)
 
         # Order of these filters matter.
         # TODO(johnsom) Remove when HAProxy handles the format string
