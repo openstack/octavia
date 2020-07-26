@@ -332,8 +332,9 @@ haproxy_amphora_opts = [
                help=_('Size of the HAProxy stick table. Accepts k, m, g '
                       'suffixes.  Example: 10k')),
     cfg.StrOpt('user_log_format',
-               default='{project_id} {lb_id} %f %ci %cp %t %{+Q}r %ST %B %U '
-                       '%[ssl_c_verify] %{+Q}[ssl_c_s_dn] %b %s %Tt %tsc',
+               default='{{ project_id }} {{ lb_id }} %f %ci %cp %t %{+Q}r %ST '
+                       '%B %U %[ssl_c_verify] %{+Q}[ssl_c_s_dn] %b %s %Tt '
+                       '%tsc',
                help=_('Log format string for user flow logging.')),
 
     # REST server
