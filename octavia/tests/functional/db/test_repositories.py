@@ -612,6 +612,9 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
         l7rule = {'type': constants.L7RULE_TYPE_HOST_NAME,
                   'compare_type': constants.L7RULE_COMPARE_TYPE_EQUAL_TO,
                   'value': 'localhost'}
+        l7rule2 = {'type': constants.L7RULE_TYPE_PATH,
+                   'compare_type': constants.L7RULE_COMPARE_TYPE_CONTAINS,
+                   'value': 'abc'}
         r_health_monitor = {'type': constants.HEALTH_MONITOR_HTTP, 'delay': 1,
                             'timeout': 1, 'fall_threshold': 1,
                             'rise_threshold': 1, 'enabled': True}
@@ -629,11 +632,16 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
                     'redirect_pool_id': redirect_pool.get('id'),
                     'id': uuidutils.generate_uuid()}
         l7rule['l7policy_id'] = l7policy.get('id')
+        l7policy2 = {'name': 'l7policy2', 'enabled': True,
+                     'description': 'l7policy_description', 'position': 2,
+                     'action': constants.L7POLICY_ACTION_REJECT,
+                     'id': uuidutils.generate_uuid()}
+        l7rule2['l7policy_id'] = l7policy2.get('id')
         listener = {'project_id': project_id, 'name': 'listener1',
                     'description': 'listener_description',
                     'protocol': constants.PROTOCOL_HTTP, 'protocol_port': 80,
                     'connection_limit': 1, 'enabled': True,
-                    'default_pool': pool, 'l7policies': [l7policy],
+                    'default_pool': pool, 'l7policies': [l7policy, l7policy2],
                     'provisioning_status': constants.PENDING_CREATE,
                     'operating_status': constants.ONLINE,
                     'id': uuidutils.generate_uuid()}
@@ -646,6 +654,7 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
                      'operating_status': constants.ONLINE,
                      'id': uuidutils.generate_uuid()}
         l7policy['listener_id'] = listener.get('id')
+        l7policy2['listener_id'] = listener.get('id')
         vip = {'ip_address': '192.0.2.1', 'port_id': uuidutils.generate_uuid(),
                'subnet_id': uuidutils.generate_uuid()}
         lb = {'name': 'lb1', 'description': 'desc1', 'enabled': True,
@@ -661,6 +670,16 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
         pool['load_balancer_id'] = lb.get('id')
         redirect_pool['load_balancer_id'] = lb.get('id')
 
+        lb2_l7rule = {'type': constants.L7RULE_TYPE_HOST_NAME,
+                      'compare_type': constants.L7RULE_COMPARE_TYPE_EQUAL_TO,
+                      'value': 'localhost'}
+        lb2_l7policy = {'name': 'l7policy1', 'enabled': True,
+                        'description': 'l7policy_description', 'position': 1,
+                        'action': constants.L7POLICY_ACTION_REDIRECT_TO_URL,
+                        'redirect_url': 'www.example.com',
+                        'l7rules': [lb2_l7rule],
+                        'id': uuidutils.generate_uuid()}
+        lb2_l7rule['l7policy_id'] = lb2_l7policy.get('id')
         lb2_health_monitor = {'type': constants.HEALTH_MONITOR_HTTP,
                               'delay': 1, 'timeout': 1, 'fall_threshold': 1,
                               'rise_threshold': 1, 'enabled': True}
@@ -681,10 +700,11 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
                         'protocol': constants.PROTOCOL_HTTP,
                         'protocol_port': 83, 'connection_limit': 1,
                         'enabled': True,
-                        'default_pool': lb2_pool,
+                        'default_pool': lb2_pool, 'l7policies': [lb2_l7policy],
                         'provisioning_status': constants.PENDING_CREATE,
                         'operating_status': constants.ONLINE,
                         'id': uuidutils.generate_uuid()}
+        lb2_l7policy['listener_id'] = lb2_listener.get('id')
         lb2 = {'name': 'lb2', 'description': 'desc2', 'enabled': True,
                'topology': constants.TOPOLOGY_ACTIVE_STANDBY,
                'vrrp_group': None,
@@ -701,7 +721,9 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
                  'listener': 10,
                  'pool': 10,
                  'health_monitor': 10,
-                 'member': 10}
+                 'member': 10,
+                 'l7policy': 10,
+                 'l7rule': 10}
         self.repos.quotas.update(self.session, project_id, quota=quota)
         lock_session = db_api.get_session(autocommit=False)
         self.assertRaises(
@@ -716,7 +738,9 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
                  'listener': 0,
                  'pool': 10,
                  'health_monitor': 10,
-                 'member': 10}
+                 'member': 10,
+                 'l7policy': 10,
+                 'l7rule': 10}
         self.repos.quotas.update(self.session, project_id, quota=quota)
         lock_session = db_api.get_session(autocommit=False)
         self.assertRaises(
@@ -731,7 +755,9 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
                  'listener': 10,
                  'pool': 0,
                  'health_monitor': 10,
-                 'member': 10}
+                 'member': 10,
+                 'l7policy': 10,
+                 'l7rule': 10}
         self.repos.quotas.update(self.session, project_id, quota=quota)
         lock_session = db_api.get_session(autocommit=False)
         self.assertRaises(
@@ -746,7 +772,9 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
                  'listener': 10,
                  'pool': 10,
                  'health_monitor': 0,
-                 'member': 10}
+                 'member': 10,
+                 'l7policy': 10,
+                 'l7rule': 10}
         self.repos.quotas.update(self.session, project_id, quota=quota)
         lock_session = db_api.get_session(autocommit=False)
         self.assertRaises(
@@ -761,7 +789,43 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
                  'listener': 10,
                  'pool': 10,
                  'health_monitor': 10,
-                 'member': 0}
+                 'member': 0,
+                 'l7policy': 10,
+                 'l7rule': 10}
+        self.repos.quotas.update(self.session, project_id, quota=quota)
+        lock_session = db_api.get_session(autocommit=False)
+        self.assertRaises(
+            exceptions.QuotaException,
+            self.repos.create_load_balancer_tree,
+            self.session, lock_session, copy.deepcopy(lb))
+        # Make sure we didn't create the load balancer anyway
+        self.assertIsNone(self.repos.load_balancer.get(self.session,
+                                                       name='lb1'))
+
+        quota = {'load_balancer': 10,
+                 'listener': 10,
+                 'pool': 10,
+                 'health_monitor': 10,
+                 'member': 10,
+                 'l7policy': 0,
+                 'l7rule': 10}
+        self.repos.quotas.update(self.session, project_id, quota=quota)
+        lock_session = db_api.get_session(autocommit=False)
+        self.assertRaises(
+            exceptions.QuotaException,
+            self.repos.create_load_balancer_tree,
+            self.session, lock_session, copy.deepcopy(lb))
+        # Make sure we didn't create the load balancer anyway
+        self.assertIsNone(self.repos.load_balancer.get(self.session,
+                                                       name='lb1'))
+
+        quota = {'load_balancer': 10,
+                 'listener': 10,
+                 'pool': 10,
+                 'health_monitor': 10,
+                 'member': 10,
+                 'l7policy': 10,
+                 'l7rule': 0}
         self.repos.quotas.update(self.session, project_id, quota=quota)
         lock_session = db_api.get_session(autocommit=False)
         self.assertRaises(
@@ -777,7 +841,9 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
                  'listener': 10,
                  'pool': 1,
                  'health_monitor': 10,
-                 'member': 10}
+                 'member': 10,
+                 'l7policy': 10,
+                 'l7rule': 10}
         self.repos.quotas.update(self.session, project_id, quota=quota)
         lock_session = db_api.get_session(autocommit=False)
         self.assertRaises(
@@ -793,7 +859,9 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
                  'listener': 10,
                  'pool': 10,
                  'health_monitor': 1,
-                 'member': 10}
+                 'member': 10,
+                 'l7policy': 10,
+                 'l7rule': 10}
         self.repos.quotas.update(self.session, project_id, quota=quota)
         lock_session = db_api.get_session(autocommit=False)
         self.assertRaises(
@@ -809,7 +877,45 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
                  'listener': 10,
                  'pool': 10,
                  'health_monitor': 10,
-                 'member': 1}
+                 'member': 1,
+                 'l7policy': 10,
+                 'l7rule': 10}
+        self.repos.quotas.update(self.session, project_id, quota=quota)
+        lock_session = db_api.get_session(autocommit=False)
+        self.assertRaises(
+            exceptions.QuotaException,
+            self.repos.create_load_balancer_tree,
+            self.session, lock_session, copy.deepcopy(lb))
+        # Make sure we didn't create the load balancer anyway
+        self.assertIsNone(self.repos.load_balancer.get(self.session,
+                                                       name='lb1'))
+
+        # Test quota for l7policy
+        quota = {'load_balancer': 10,
+                 'listener': 10,
+                 'pool': 10,
+                 'health_monitor': 10,
+                 'member': 10,
+                 'l7policy': 1,
+                 'l7rule': 10}
+        self.repos.quotas.update(self.session, project_id, quota=quota)
+        lock_session = db_api.get_session(autocommit=False)
+        self.assertRaises(
+            exceptions.QuotaException,
+            self.repos.create_load_balancer_tree,
+            self.session, lock_session, copy.deepcopy(lb))
+        # Make sure we didn't create the load balancer anyway
+        self.assertIsNone(self.repos.load_balancer.get(self.session,
+                                                       name='lb1'))
+
+        # Test quota for l7rule
+        quota = {'load_balancer': 10,
+                 'listener': 10,
+                 'pool': 10,
+                 'health_monitor': 10,
+                 'member': 10,
+                 'l7policy': 10,
+                 'l7rule': 1}
         self.repos.quotas.update(self.session, project_id, quota=quota)
         lock_session = db_api.get_session(autocommit=False)
         self.assertRaises(
@@ -826,7 +932,9 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
                  'listener': 10,
                  'pool': 10,
                  'health_monitor': 10,
-                 'member': 10}
+                 'member': 10,
+                 'l7policy': 10,
+                 'l7rule': 10}
         self.repos.quotas.update(self.session, project_id, quota=quota)
         lock_session = db_api.get_session(autocommit=False)
         self.repos.create_load_balancer_tree(self.session, lock_session,
@@ -851,7 +959,9 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
                  'listener': 2,
                  'pool': 10,
                  'health_monitor': 10,
-                 'member': 10}
+                 'member': 10,
+                 'l7policy': 10,
+                 'l7rule': 10}
         self.repos.quotas.update(self.session, project_id, quota=quota)
         lock_session = db_api.get_session(autocommit=False)
         self.assertRaises(
@@ -869,7 +979,9 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
                  'listener': 10,
                  'pool': 2,
                  'health_monitor': 10,
-                 'member': 10}
+                 'member': 10,
+                 'l7policy': 10,
+                 'l7rule': 10}
         self.repos.quotas.update(self.session, project_id, quota=quota)
         lock_session = db_api.get_session(autocommit=False)
         self.assertRaises(
@@ -887,7 +999,9 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
                  'listener': 10,
                  'pool': 10,
                  'health_monitor': 1,
-                 'member': 10}
+                 'member': 10,
+                 'l7policy': 10,
+                 'l7rule': 10}
         self.repos.quotas.update(self.session, project_id, quota=quota)
         lock_session = db_api.get_session(autocommit=False)
         self.assertRaises(
@@ -905,7 +1019,49 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
                  'listener': 10,
                  'pool': 10,
                  'health_monitor': 10,
-                 'member': 2}
+                 'member': 2,
+                 'l7policy': 10,
+                 'l7rule': 10}
+        self.repos.quotas.update(self.session, project_id, quota=quota)
+        lock_session = db_api.get_session(autocommit=False)
+        self.assertRaises(
+            exceptions.QuotaException,
+            self.repos.create_load_balancer_tree,
+            self.session, lock_session, copy.deepcopy(lb2))
+        # Make sure we didn't create the load balancer anyway
+        self.assertIsNone(self.repos.load_balancer.get(self.session,
+                                                       name='lb2'))
+
+        # ### Test l7policy quota
+        # Create with custom quotas and limit to two l7policy (lb has two),
+        # expect error of too many l7policy/over quota
+        quota = {'load_balancer': 10,
+                 'listener': 10,
+                 'pool': 10,
+                 'health_monitor': 10,
+                 'member': 10,
+                 'l7policy': 2,
+                 'l7rule': 10}
+        self.repos.quotas.update(self.session, project_id, quota=quota)
+        lock_session = db_api.get_session(autocommit=False)
+        self.assertRaises(
+            exceptions.QuotaException,
+            self.repos.create_load_balancer_tree,
+            self.session, lock_session, copy.deepcopy(lb2))
+        # Make sure we didn't create the load balancer anyway
+        self.assertIsNone(self.repos.load_balancer.get(self.session,
+                                                       name='lb2'))
+
+        # ### Test l7rule quota
+        # Create with custom quotas and limit to two l7rule (lb has two),
+        # expect error of too many l7rule/over quota
+        quota = {'load_balancer': 10,
+                 'listener': 10,
+                 'pool': 10,
+                 'health_monitor': 10,
+                 'member': 10,
+                 'l7policy': 10,
+                 'l7rule': 2}
         self.repos.quotas.update(self.session, project_id, quota=quota)
         lock_session = db_api.get_session(autocommit=False)
         self.assertRaises(
@@ -1665,6 +1821,314 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
         self.assertEqual(2, self.repos.quotas.get(
             self.session, project_id=project_id).in_use_member)
 
+        # ### Test l7policy quota
+        # Test with no pre-existing quota record default 0
+        project_id = uuidutils.generate_uuid()
+        conf.config(group='quotas', default_l7policy_quota=0)
+        self.assertTrue(self.repos.check_quota_met(self.session,
+                                                   self.session,
+                                                   models.L7Policy,
+                                                   project_id))
+        self.assertIsNone(self.repos.quotas.get(
+            self.session, project_id=project_id).in_use_l7policy)
+
+        # Test with no pre-existing quota record default 1
+        project_id = uuidutils.generate_uuid()
+        conf.config(group='quotas', default_l7policy_quota=1)
+        self.assertFalse(self.repos.check_quota_met(self.session,
+                                                    self.session,
+                                                    models.L7Policy,
+                                                    project_id))
+        self.assertEqual(1, self.repos.quotas.get(
+            self.session, project_id=project_id).in_use_l7policy)
+        # Test above project is now at quota
+        self.assertTrue(self.repos.check_quota_met(self.session,
+                                                   self.session,
+                                                   models.L7Policy,
+                                                   project_id))
+        self.assertEqual(1, self.repos.quotas.get(
+            self.session, project_id=project_id).in_use_l7policy)
+
+        # Test with no pre-existing quota record default unlimited
+        project_id = uuidutils.generate_uuid()
+        conf.config(group='quotas',
+                    default_l7policy_quota=constants.QUOTA_UNLIMITED)
+        self.assertFalse(self.repos.check_quota_met(self.session,
+                                                    self.session,
+                                                    models.L7Policy,
+                                                    project_id))
+        self.assertEqual(1, self.repos.quotas.get(
+            self.session, project_id=project_id).in_use_l7policy)
+        # Test above project adding another l7policy
+        self.assertFalse(self.repos.check_quota_met(self.session,
+                                                    self.session,
+                                                    models.L7Policy,
+                                                    project_id))
+        self.assertEqual(2, self.repos.quotas.get(
+            self.session, project_id=project_id).in_use_l7policy)
+
+        # Test upgrade case with pre-quota l7policy
+        project_id = uuidutils.generate_uuid()
+        conf.config(group='quotas', default_l7policy_quota=1)
+        lb = self.repos.load_balancer.create(
+            self.session, id=uuidutils.generate_uuid(),
+            project_id=project_id, name="lb_name",
+            description="lb_description",
+            provisioning_status=constants.ACTIVE,
+            operating_status=constants.ONLINE,
+            enabled=True)
+        listener = self.repos.listener.create(
+            self.session, protocol=constants.PROTOCOL_HTTP, protocol_port=80,
+            enabled=True, provisioning_status=constants.ACTIVE,
+            operating_status=constants.ONLINE, project_id=project_id,
+            load_balancer_id=lb.id)
+        self.repos.l7policy.create(
+            self.session, name='l7policy', enabled=True, position=1,
+            action=constants.L7POLICY_ACTION_REJECT,
+            provisioning_status=constants.ACTIVE, listener_id=listener.id,
+            operating_status=constants.ONLINE, project_id=project_id,
+            id=uuidutils.generate_uuid())
+        self.assertTrue(self.repos.check_quota_met(self.session,
+                                                   self.session,
+                                                   models.L7Policy,
+                                                   project_id))
+
+        # Test upgrade case with pre-quota deleted l7policy
+        project_id = uuidutils.generate_uuid()
+        conf.config(group='quotas', default_l7policy_quota=1)
+        lb = self.repos.load_balancer.create(
+            self.session, id=uuidutils.generate_uuid(),
+            project_id=project_id, name="lb_name",
+            description="lb_description",
+            provisioning_status=constants.ACTIVE,
+            operating_status=constants.ONLINE,
+            enabled=True)
+        listener = self.repos.listener.create(
+            self.session, protocol=constants.PROTOCOL_HTTP, protocol_port=80,
+            enabled=True, provisioning_status=constants.ACTIVE,
+            operating_status=constants.ONLINE, project_id=project_id,
+            load_balancer_id=lb.id)
+        self.repos.l7policy.create(
+            self.session, name='l7policy', enabled=True, position=1,
+            action=constants.L7POLICY_ACTION_REJECT,
+            provisioning_status=constants.DELETED, listener_id=listener.id,
+            operating_status=constants.ONLINE, project_id=project_id,
+            id=uuidutils.generate_uuid())
+        self.assertFalse(self.repos.check_quota_met(self.session,
+                                                    self.session,
+                                                    models.L7Policy,
+                                                    project_id))
+        self.assertEqual(1, self.repos.quotas.get(
+            self.session, project_id=project_id).in_use_l7policy)
+
+        # Test pre-existing quota with quota of zero
+        project_id = uuidutils.generate_uuid()
+        conf.config(group='quotas', default_l7policy_quota=10)
+        quota = {'l7policy': 0}
+        self.repos.quotas.update(self.session, project_id, quota=quota)
+        self.assertTrue(self.repos.check_quota_met(self.session,
+                                                   self.session,
+                                                   models.L7Policy,
+                                                   project_id))
+
+        # Test pre-existing quota with quota of one
+        project_id = uuidutils.generate_uuid()
+        conf.config(group='quotas', default_l7policy_quota=0)
+        quota = {'l7policy': 1}
+        self.repos.quotas.update(self.session, project_id, quota=quota)
+        self.assertFalse(self.repos.check_quota_met(self.session,
+                                                    self.session,
+                                                    models.L7Policy,
+                                                    project_id))
+        self.assertEqual(1, self.repos.quotas.get(
+            self.session, project_id=project_id).in_use_l7policy)
+        # Test above project is now at quota
+        self.assertTrue(self.repos.check_quota_met(self.session,
+                                                   self.session,
+                                                   models.L7Policy,
+                                                   project_id))
+        self.assertEqual(1, self.repos.quotas.get(
+            self.session, project_id=project_id).in_use_l7policy)
+
+        # Test pre-existing quota with quota of unlimited
+        project_id = uuidutils.generate_uuid()
+        conf.config(group='quotas', default_l7policy_quota=0)
+        quota = {'l7policy': constants.QUOTA_UNLIMITED}
+        self.repos.quotas.update(self.session, project_id, quota=quota)
+        self.assertFalse(self.repos.check_quota_met(self.session,
+                                                    self.session,
+                                                    models.L7Policy,
+                                                    project_id))
+        self.assertEqual(1, self.repos.quotas.get(
+            self.session, project_id=project_id).in_use_l7policy)
+        # Test above project adding another l7policy
+        self.assertFalse(self.repos.check_quota_met(self.session,
+                                                    self.session,
+                                                    models.L7Policy,
+                                                    project_id))
+        self.assertEqual(2, self.repos.quotas.get(
+            self.session, project_id=project_id).in_use_l7policy)
+
+        # ### Test l7rule quota
+        # Test with no pre-existing quota record default 0
+        project_id = uuidutils.generate_uuid()
+        conf.config(group='quotas', default_l7rule_quota=0)
+        self.assertTrue(self.repos.check_quota_met(self.session,
+                                                   self.session,
+                                                   models.L7Rule,
+                                                   project_id))
+        self.assertIsNone(self.repos.quotas.get(
+            self.session, project_id=project_id).in_use_l7rule)
+
+        # Test with no pre-existing quota record default 1
+        project_id = uuidutils.generate_uuid()
+        conf.config(group='quotas', default_l7rule_quota=1)
+        self.assertFalse(self.repos.check_quota_met(self.session,
+                                                    self.session,
+                                                    models.L7Rule,
+                                                    project_id))
+        self.assertEqual(1, self.repos.quotas.get(
+            self.session, project_id=project_id).in_use_l7rule)
+        # Test above project is now at quota
+        self.assertTrue(self.repos.check_quota_met(self.session,
+                                                   self.session,
+                                                   models.L7Rule,
+                                                   project_id))
+        self.assertEqual(1, self.repos.quotas.get(
+            self.session, project_id=project_id).in_use_l7rule)
+
+        # Test with no pre-existing quota record default unlimited
+        project_id = uuidutils.generate_uuid()
+        conf.config(group='quotas',
+                    default_l7rule_quota=constants.QUOTA_UNLIMITED)
+        self.assertFalse(self.repos.check_quota_met(self.session,
+                                                    self.session,
+                                                    models.L7Rule,
+                                                    project_id))
+        self.assertEqual(1, self.repos.quotas.get(
+            self.session, project_id=project_id).in_use_l7rule)
+        # Test above project adding another l7rule
+        self.assertFalse(self.repos.check_quota_met(self.session,
+                                                    self.session,
+                                                    models.L7Rule,
+                                                    project_id))
+        self.assertEqual(2, self.repos.quotas.get(
+            self.session, project_id=project_id).in_use_l7rule)
+
+        # Test upgrade case with pre-quota l7rule
+        project_id = uuidutils.generate_uuid()
+        conf.config(group='quotas', default_l7rule_quota=1)
+        lb = self.repos.load_balancer.create(
+            self.session, id=uuidutils.generate_uuid(),
+            project_id=project_id, name="lb_name",
+            description="lb_description",
+            provisioning_status=constants.ACTIVE,
+            operating_status=constants.ONLINE,
+            enabled=True)
+        listener = self.repos.listener.create(
+            self.session, protocol=constants.PROTOCOL_HTTP, protocol_port=80,
+            enabled=True, provisioning_status=constants.ACTIVE,
+            operating_status=constants.ONLINE, project_id=project_id,
+            load_balancer_id=lb.id)
+        l7policy = self.repos.l7policy.create(
+            self.session, name='l7policy', enabled=True, position=1,
+            action=constants.L7POLICY_ACTION_REJECT,
+            provisioning_status=constants.ACTIVE, listener_id=listener.id,
+            operating_status=constants.ONLINE, project_id=project_id,
+            id=uuidutils.generate_uuid())
+        self.repos.l7rule.create(
+            self.session, id=uuidutils.generate_uuid(),
+            l7policy_id=l7policy.id, type=constants.L7RULE_TYPE_HOST_NAME,
+            compare_type=constants.L7RULE_COMPARE_TYPE_EQUAL_TO, enabled=True,
+            provisioning_status=constants.ACTIVE, value='hostname',
+            operating_status=constants.ONLINE, project_id=project_id)
+        self.assertTrue(self.repos.check_quota_met(self.session,
+                                                   self.session,
+                                                   models.L7Rule,
+                                                   project_id))
+
+        # Test upgrade case with pre-quota deleted l7rule
+        project_id = uuidutils.generate_uuid()
+        conf.config(group='quotas', default_l7policy_quota=1)
+        lb = self.repos.load_balancer.create(
+            self.session, id=uuidutils.generate_uuid(),
+            project_id=project_id, name="lb_name",
+            description="lb_description",
+            provisioning_status=constants.ACTIVE,
+            operating_status=constants.ONLINE,
+            enabled=True)
+        listener = self.repos.listener.create(
+            self.session, protocol=constants.PROTOCOL_HTTP, protocol_port=80,
+            enabled=True, provisioning_status=constants.ACTIVE,
+            operating_status=constants.ONLINE, project_id=project_id,
+            load_balancer_id=lb.id)
+        l7policy = self.repos.l7policy.create(
+            self.session, name='l7policy', enabled=True, position=1,
+            action=constants.L7POLICY_ACTION_REJECT,
+            provisioning_status=constants.ACTIVE, listener_id=listener.id,
+            operating_status=constants.ONLINE, project_id=project_id,
+            id=uuidutils.generate_uuid())
+        self.repos.l7rule.create(
+            self.session, id=uuidutils.generate_uuid(),
+            l7policy_id=l7policy.id, type=constants.L7RULE_TYPE_HOST_NAME,
+            compare_type=constants.L7RULE_COMPARE_TYPE_EQUAL_TO, enabled=True,
+            provisioning_status=constants.DELETED, value='hostname',
+            operating_status=constants.ONLINE, project_id=project_id)
+        self.assertFalse(self.repos.check_quota_met(self.session,
+                                                    self.session,
+                                                    models.L7Rule,
+                                                    project_id))
+        self.assertEqual(1, self.repos.quotas.get(
+            self.session, project_id=project_id).in_use_l7rule)
+
+        # Test pre-existing quota with quota of zero
+        project_id = uuidutils.generate_uuid()
+        conf.config(group='quotas', default_l7rule_quota=10)
+        quota = {'l7rule': 0}
+        self.repos.quotas.update(self.session, project_id, quota=quota)
+        self.assertTrue(self.repos.check_quota_met(self.session,
+                                                   self.session,
+                                                   models.L7Rule,
+                                                   project_id))
+
+        # Test pre-existing quota with quota of one
+        project_id = uuidutils.generate_uuid()
+        conf.config(group='quotas', default_l7rule_quota=0)
+        quota = {'l7rule': 1}
+        self.repos.quotas.update(self.session, project_id, quota=quota)
+        self.assertFalse(self.repos.check_quota_met(self.session,
+                                                    self.session,
+                                                    models.L7Rule,
+                                                    project_id))
+        self.assertEqual(1, self.repos.quotas.get(
+            self.session, project_id=project_id).in_use_l7rule)
+        # Test above project is now at quota
+        self.assertTrue(self.repos.check_quota_met(self.session,
+                                                   self.session,
+                                                   models.L7Rule,
+                                                   project_id))
+        self.assertEqual(1, self.repos.quotas.get(
+            self.session, project_id=project_id).in_use_l7rule)
+
+        # Test pre-existing quota with quota of unlimited
+        project_id = uuidutils.generate_uuid()
+        conf.config(group='quotas', default_l7rule_quota=0)
+        quota = {'l7rule': constants.QUOTA_UNLIMITED}
+        self.repos.quotas.update(self.session, project_id, quota=quota)
+        self.assertFalse(self.repos.check_quota_met(self.session,
+                                                    self.session,
+                                                    models.L7Rule,
+                                                    project_id))
+        self.assertEqual(1, self.repos.quotas.get(
+            self.session, project_id=project_id).in_use_l7rule)
+        # Test above project adding another l7rule
+        self.assertFalse(self.repos.check_quota_met(self.session,
+                                                    self.session,
+                                                    models.L7Rule,
+                                                    project_id))
+        self.assertEqual(2, self.repos.quotas.get(
+            self.session, project_id=project_id).in_use_l7rule)
+
     def test_decrement_quota(self):
         # Test decrement on non-existent quota with noauth
         project_id = uuidutils.generate_uuid()
@@ -1928,6 +2392,99 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
                                    project_id)
         self.assertEqual(0, self.repos.quotas.get(
             self.session, project_id=project_id).in_use_member)
+        conf.config(group='api_settings', auth_strategy=constants.TESTING)
+        # ### Test l7policy quota
+        # Test decrement on zero in use quota
+        project_id = uuidutils.generate_uuid()
+        quota = {'in_use_l7policy': 0}
+        self.repos.quotas.update(self.session, project_id, quota=quota)
+        self.repos.decrement_quota(self.session,
+                                   models.L7Policy,
+                                   project_id)
+        self.assertEqual(0, self.repos.quotas.get(
+            self.session, project_id=project_id).in_use_l7policy)
+
+        # Test decrement on zero in use quota with noauth
+        project_id = uuidutils.generate_uuid()
+        conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
+        conf.config(group='api_settings', auth_strategy=constants.NOAUTH)
+        quota = {'in_use_l7policy': 0}
+        self.repos.quotas.update(self.session, project_id, quota=quota)
+        self.repos.decrement_quota(self.session,
+                                   models.L7Policy,
+                                   project_id)
+        self.assertEqual(0, self.repos.quotas.get(
+            self.session, project_id=project_id).in_use_l7policy)
+        conf.config(group='api_settings', auth_strategy=constants.TESTING)
+
+        # Test decrement on in use quota
+        project_id = uuidutils.generate_uuid()
+        quota = {'in_use_l7policy': 1}
+        self.repos.quotas.update(self.session, project_id, quota=quota)
+        self.repos.decrement_quota(self.session,
+                                   models.L7Policy,
+                                   project_id)
+        self.assertEqual(0, self.repos.quotas.get(
+            self.session, project_id=project_id).in_use_l7policy)
+
+        # Test decrement on in use quota with noauth
+        project_id = uuidutils.generate_uuid()
+        conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
+        conf.config(group='api_settings', auth_strategy=constants.NOAUTH)
+        quota = {'in_use_l7policy': 1}
+        self.repos.quotas.update(self.session, project_id, quota=quota)
+        self.repos.decrement_quota(self.session,
+                                   models.L7Policy,
+                                   project_id)
+        self.assertEqual(0, self.repos.quotas.get(
+            self.session, project_id=project_id).in_use_l7policy)
+        conf.config(group='api_settings', auth_strategy=constants.TESTING)
+
+        # ### Test l7rule quota
+        # Test decrement on zero in use quota
+        project_id = uuidutils.generate_uuid()
+        quota = {'in_use_l7rule': 0}
+        self.repos.quotas.update(self.session, project_id, quota=quota)
+        self.repos.decrement_quota(self.session,
+                                   models.L7Rule,
+                                   project_id)
+        self.assertEqual(0, self.repos.quotas.get(
+            self.session, project_id=project_id).in_use_l7rule)
+
+        # Test decrement on zero in use quota with noauth
+        project_id = uuidutils.generate_uuid()
+        conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
+        conf.config(group='api_settings', auth_strategy=constants.NOAUTH)
+        quota = {'in_use_l7rule': 0}
+        self.repos.quotas.update(self.session, project_id, quota=quota)
+        self.repos.decrement_quota(self.session,
+                                   models.L7Rule,
+                                   project_id)
+        self.assertEqual(0, self.repos.quotas.get(
+            self.session, project_id=project_id).in_use_l7rule)
+        conf.config(group='api_settings', auth_strategy=constants.TESTING)
+
+        # Test decrement on in use quota
+        project_id = uuidutils.generate_uuid()
+        quota = {'in_use_l7rule': 1}
+        self.repos.quotas.update(self.session, project_id, quota=quota)
+        self.repos.decrement_quota(self.session,
+                                   models.L7Rule,
+                                   project_id)
+        self.assertEqual(0, self.repos.quotas.get(
+            self.session, project_id=project_id).in_use_l7rule)
+
+        # Test decrement on in use quota with noauth
+        project_id = uuidutils.generate_uuid()
+        conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
+        conf.config(group='api_settings', auth_strategy=constants.NOAUTH)
+        quota = {'in_use_l7rule': 1}
+        self.repos.quotas.update(self.session, project_id, quota=quota)
+        self.repos.decrement_quota(self.session,
+                                   models.L7Rule,
+                                   project_id)
+        self.assertEqual(0, self.repos.quotas.get(
+            self.session, project_id=project_id).in_use_l7rule)
         conf.config(group='api_settings', auth_strategy=constants.TESTING)
 
     def test_get_amphora_stats(self):
@@ -4347,12 +4904,14 @@ class TestQuotasRepository(BaseRepositoryTest):
         super(TestQuotasRepository, self).setUp()
 
     def update_quotas(self, project_id, load_balancer=20, listener=20, pool=20,
-                      health_monitor=20, member=20):
+                      health_monitor=20, member=20, l7policy=20, l7rule=20):
         quota = {'load_balancer': load_balancer,
                  'listener': listener,
                  'pool': pool,
                  'health_monitor': health_monitor,
-                 'member': member}
+                 'member': member,
+                 'l7policy': l7policy,
+                 'l7rule': l7rule}
         quotas = self.quota_repo.update(self.session, project_id, quota=quota)
         return quotas
 
@@ -4368,6 +4927,10 @@ class TestQuotasRepository(BaseRepositoryTest):
                          observed.health_monitor)
         self.assertEqual(expected.member,
                          observed.member)
+        self.assertEqual(expected.l7policy,
+                         observed.l7policy)
+        self.assertEqual(expected.l7rule,
+                         observed.l7rule)
 
     def test_get(self):
         expected = self.update_quotas(self.FAKE_UUID_1)
@@ -4404,6 +4967,8 @@ class TestQuotasRepository(BaseRepositoryTest):
         self.assertIsNone(observed.listener)
         self.assertIsNone(observed.member)
         self.assertIsNone(observed.pool)
+        self.assertIsNone(observed.l7policy)
+        self.assertIsNone(observed.l7rule)
 
     def test_delete_non_existent(self):
         self.assertRaises(exceptions.NotFound,

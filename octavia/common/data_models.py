@@ -756,22 +756,30 @@ class Quotas(BaseDataModel):
                  pool=None,
                  health_monitor=None,
                  member=None,
+                 l7policy=None,
+                 l7rule=None,
                  in_use_health_monitor=None,
                  in_use_listener=None,
                  in_use_load_balancer=None,
                  in_use_member=None,
-                 in_use_pool=None):
+                 in_use_pool=None,
+                 in_use_l7policy=None,
+                 in_use_l7rule=None):
         self.project_id = project_id
         self.health_monitor = health_monitor
         self.listener = listener
         self.load_balancer = load_balancer
         self.pool = pool
         self.member = member
+        self.l7policy = l7policy
+        self.l7rule = l7rule
         self.in_use_health_monitor = in_use_health_monitor
         self.in_use_listener = in_use_listener
         self.in_use_load_balancer = in_use_load_balancer
         self.in_use_member = in_use_member
         self.in_use_pool = in_use_pool
+        self.in_use_l7policy = in_use_l7policy
+        self.in_use_l7rule = in_use_l7rule
 
 
 class Flavor(BaseDataModel):

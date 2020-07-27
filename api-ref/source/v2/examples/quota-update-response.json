@@ -4,6 +4,8 @@
         "listener": -1,
         "member": 50,
         "pool": -1,
-        "healthmonitor": -1
+        "healthmonitor": -1,
+        "l7policy": 15,
+        "l7rule": 25
     }
 }

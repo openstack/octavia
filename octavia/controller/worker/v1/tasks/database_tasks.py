@@ -2688,6 +2688,142 @@ class CountPoolChildrenForQuota(BaseDatabaseTask):
         return {'HM': health_mon_count, 'member': member_count}
 
 
+class DecrementL7policyQuota(BaseDatabaseTask):
+    """Decrements the l7policy quota for a project.
+
+    Since sqlalchemy will likely retry by itself always revert if it fails
+    """
+
+    def execute(self, l7policy):
+        """Decrements the l7policy quota.
+
+        :param l7policy: The l7policy to decrement the quota on.
+        :returns: None
+        """
+
+        LOG.debug("Decrementing l7policy quota for "
+                  "project: %s ", l7policy.project_id)
+
+        lock_session = db_apis.get_session(autocommit=False)
+        try:
+            self.repos.decrement_quota(lock_session,
+                                       data_models.L7Policy,
+                                       l7policy.project_id)
+
+            if l7policy.l7rules:
+                self.repos.decrement_quota(lock_session,
+                                           data_models.L7Rule,
+                                           l7policy.project_id,
+                                           quantity=len(l7policy.l7rules))
+            lock_session.commit()
+        except Exception:
+            with excutils.save_and_reraise_exception():
+                LOG.error('Failed to decrement l7policy quota for project: '
+                          '%(proj)s the project may have excess quota in use.',
+                          {'proj': l7policy.project_id})
+                lock_session.rollback()
+
+    def revert(self, l7policy, result, *args, **kwargs):
+        """Re-apply the quota
+
+        :param l7policy: The l7policy to decrement the quota on.
+        :returns: None
+        """
+
+        LOG.warning('Reverting decrement quota for l7policy on project'
+                    ' %(proj)s Project quota counts may be incorrect.',
+                    {'proj': l7policy.project_id})
+
+        # Increment the quota back if this task wasn't the failure
+        if not isinstance(result, failure.Failure):
+
+            try:
+                session = db_apis.get_session()
+                lock_session = db_apis.get_session(autocommit=False)
+                try:
+                    self.repos.check_quota_met(session,
+                                               lock_session,
+                                               data_models.L7Policy,
+                                               l7policy.project_id)
+                    lock_session.commit()
+                except Exception:
+                    lock_session.rollback()
+
+                # Attempt to increment back the L7Rule quota
+                for i in range(len(l7policy.l7rules)):
+                    lock_session = db_apis.get_session(autocommit=False)
+                    try:
+                        self.repos.check_quota_met(session,
+                                                   lock_session,
+                                                   data_models.L7Rule,
+                                                   l7policy.project_id)
+                        lock_session.commit()
+                    except Exception:
+                        lock_session.rollback()
+            except Exception:
+                # Don't fail the revert flow
+                pass
+
+
+class DecrementL7ruleQuota(BaseDatabaseTask):
+    """Decrements the l7rule quota for a project.
+
+    Since sqlalchemy will likely retry by itself always revert if it fails
+    """
+
+    def execute(self, l7rule):
+        """Decrements the l7rule quota.
+
+        :param l7rule: The l7rule to decrement the quota on.
+        :returns: None
+        """
+
+        LOG.debug("Decrementing l7rule quota for "
+                  "project: %s ", l7rule.project_id)
+
+        lock_session = db_apis.get_session(autocommit=False)
+        try:
+            self.repos.decrement_quota(lock_session,
+                                       data_models.L7Rule,
+                                       l7rule.project_id)
+            lock_session.commit()
+        except Exception:
+            with excutils.save_and_reraise_exception():
+                LOG.error('Failed to decrement l7rule quota for project: '
+                          '%(proj)s the project may have excess quota in use.',
+                          {'proj': l7rule.project_id})
+                lock_session.rollback()
+
+    def revert(self, l7rule, result, *args, **kwargs):
+        """Re-apply the quota
+
+        :param l7rule: The l7rule to decrement the quota on.
+        :returns: None
+        """
+
+        LOG.warning('Reverting decrement quota for l7rule on project %(proj)s '
+                    'Project quota counts may be incorrect.',
+                    {'proj': l7rule.project_id})
+
+        # Increment the quota back if this task wasn't the failure
+        if not isinstance(result, failure.Failure):
+
+            try:
+                session = db_apis.get_session()
+                lock_session = db_apis.get_session(autocommit=False)
+                try:
+                    self.repos.check_quota_met(session,
+                                               lock_session,
+                                               data_models.L7Rule,
+                                               l7rule.project_id)
+                    lock_session.commit()
+                except Exception:
+                    lock_session.rollback()
+            except Exception:
+                # Don't fail the revert flow
+                pass
+
+
 class UpdatePoolMembersOperatingStatusInDB(BaseDatabaseTask):
     """Updates the members of a pool operating status.
 

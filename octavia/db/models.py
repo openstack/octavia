@@ -750,11 +750,15 @@ class Quotas(base_models.BASE):
     load_balancer = sa.Column(sa.Integer(), nullable=True)
     member = sa.Column(sa.Integer(), nullable=True)
     pool = sa.Column(sa.Integer(), nullable=True)
+    l7policy = sa.Column(sa.Integer(), nullable=True)
+    l7rule = sa.Column(sa.Integer(), nullable=True)
     in_use_health_monitor = sa.Column(sa.Integer(), nullable=True)
     in_use_listener = sa.Column(sa.Integer(), nullable=True)
     in_use_load_balancer = sa.Column(sa.Integer(), nullable=True)
     in_use_member = sa.Column(sa.Integer(), nullable=True)
     in_use_pool = sa.Column(sa.Integer(), nullable=True)
+    in_use_l7policy = sa.Column(sa.Integer(), nullable=True)
+    in_use_l7rule = sa.Column(sa.Integer(), nullable=True)
 
 
 class FlavorProfile(base_models.BASE, base_models.IdMixin,

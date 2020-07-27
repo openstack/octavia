@@ -499,6 +499,48 @@ class Repositories(object):
                     quotas.in_use_member = member_count
                     return False
                 return True
+            if _class == data_models.L7Policy:
+                # Decide which quota to use
+                if quotas.l7policy is None:
+                    l7policy_quota = CONF.quotas.default_l7policy_quota
+                else:
+                    l7policy_quota = quotas.l7policy
+                # Get the current in use count
+                if not quotas.in_use_l7policy:
+                    # This is to handle the upgrade case
+                    l7policy_count = session.query(models.L7Policy).filter(
+                        models.L7Policy.project_id == project_id,
+                        models.L7Policy.provisioning_status !=
+                        consts.DELETED).count() + count
+                else:
+                    l7policy_count = quotas.in_use_l7policy + count
+                # Decide if the quota is met
+                if (l7policy_count <= l7policy_quota or
+                        l7policy_quota == consts.QUOTA_UNLIMITED):
+                    quotas.in_use_l7policy = l7policy_count
+                    return False
+                return True
+            if _class == data_models.L7Rule:
+                # Decide which quota to use
+                if quotas.l7rule is None:
+                    l7rule_quota = CONF.quotas.default_l7rule_quota
+                else:
+                    l7rule_quota = quotas.l7rule
+                # Get the current in use count
+                if not quotas.in_use_l7rule:
+                    # This is to handle the upgrade case
+                    l7rule_count = session.query(models.L7Rule).filter(
+                        models.L7Rule.project_id == project_id,
+                        models.L7Rule.provisioning_status !=
+                        consts.DELETED).count() + count
+                else:
+                    l7rule_count = quotas.in_use_l7rule + count
+                # Decide if the quota is met
+                if (l7rule_count <= l7rule_quota or
+                        l7rule_quota == consts.QUOTA_UNLIMITED):
+                    quotas.in_use_l7rule = l7rule_count
+                    return False
+                return True
         except db_exception.DBDeadlock:
             LOG.warning('Quota project lock timed out for project: %(proj)s',
                         {'proj': project_id})
@@ -584,6 +626,28 @@ class Repositories(object):
                                     'project: %(proj)s that would cause a '
                                     'negative quota.',
                                     {'clss': type(_class), 'proj': project_id})
+            if _class == data_models.L7Policy:
+                if (quotas.in_use_l7policy is not None and
+                        quotas.in_use_l7policy > 0):
+                    quotas.in_use_l7policy = (
+                        quotas.in_use_l7policy - quantity)
+                else:
+                    if not CONF.api_settings.auth_strategy == consts.NOAUTH:
+                        LOG.warning('Quota decrement on %(clss)s called on '
+                                    'project: %(proj)s that would cause a '
+                                    'negative quota.',
+                                    {'clss': type(_class), 'proj': project_id})
+            if _class == data_models.L7Rule:
+                if (quotas.in_use_l7rule is not None and
+                        quotas.in_use_l7rule > 0):
+                    quotas.in_use_l7rule = (
+                        quotas.in_use_l7rule - quantity)
+                else:
+                    if not CONF.api_settings.auth_strategy == consts.NOAUTH:
+                        LOG.warning('Quota decrement on %(clss)s called on '
+                                    'project: %(proj)s that would cause a '
+                                    'negative quota.',
+                                    {'clss': type(_class), 'proj': project_id})
         except db_exception.DBDeadlock:
             LOG.warning('Quota project lock timed out for project: %(proj)s',
                         {'proj': project_id})
@@ -657,6 +721,13 @@ class Repositories(object):
                     self.sni.create(lock_session, **sni_container)
                 if l7policies_dict:
                     for policy_dict in l7policies_dict:
+                        # Add l7policy quota check
+                        if self.check_quota_met(session,
+                                                lock_session,
+                                                data_models.L7Policy,
+                                                lb_dict['project_id']):
+                            raise exceptions.QuotaException(
+                                resource=data_models.L7Policy._name())
                         l7rules_dict = policy_dict.pop('l7rules')
                         if policy_dict.get('redirect_pool'):
                             # Add pool quota check
@@ -711,6 +782,14 @@ class Repositories(object):
                         policy_dm = self.l7policy.create(lock_session,
                                                          **policy_dict)
                         for rule_dict in l7rules_dict:
+                            # Add l7rule quota check
+                            if self.check_quota_met(
+                                    session,
+                                    lock_session,
+                                    data_models.L7Rule,
+                                    lb_dict['project_id']):
+                                raise exceptions.QuotaException(
+                                    resource=data_models.L7Rule._name())
                             rule_dict['l7policy_id'] = policy_dm.id
                             self.l7rule.create(lock_session, **rule_dict)
             lock_session.commit()
@@ -1853,6 +1932,8 @@ class QuotasRepository(BaseRepository):
             quotas.listener = None
             quotas.member = None
             quotas.pool = None
+            quotas.l7policy = None
+            quotas.l7rule = None
             session.flush()
 
 

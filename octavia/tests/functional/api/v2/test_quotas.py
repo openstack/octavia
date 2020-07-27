@@ -54,6 +54,14 @@ class TestQuotas(base.BaseAPITest):
             group="quotas",
             default_health_monitor_quota=random.randrange(
                 constants.QUOTA_UNLIMITED, 9000))
+        conf.config(
+            group="quotas",
+            default_l7policy_quota=random.randrange(
+                constants.QUOTA_UNLIMITED, 9000))
+        conf.config(
+            group="quotas",
+            default_l7rule_quota=random.randrange(
+                constants.QUOTA_UNLIMITED, 9000))
 
         self.project_id = uuidutils.generate_uuid()
 
@@ -65,13 +73,17 @@ class TestQuotas(base.BaseAPITest):
                         'pool': CONF.quotas.default_pool_quota,
                         'health_monitor':
                         CONF.quotas.default_health_monitor_quota,
-                        'member': CONF.quotas.default_member_quota}
+                        'member': CONF.quotas.default_member_quota,
+                        'l7policy': CONF.quotas.default_l7policy_quota,
+                        'l7rule': CONF.quotas.default_l7rule_quota}
         self.assertEqual(expected['load_balancer'], observed['load_balancer'])
         self.assertEqual(expected['listener'], observed['listener'])
         self.assertEqual(expected['pool'], observed['pool'])
         self.assertEqual(expected['health_monitor'],
                          observed['health_monitor'])
         self.assertEqual(expected['member'], observed['member'])
+        self.assertEqual(expected['l7policy'], observed['l7policy'])
+        self.assertEqual(expected['l7rule'], observed['l7rule'])
 
     def test_get_all_quotas_no_quotas(self):
         response = self.get(self.QUOTAS_PATH)
@@ -83,12 +95,14 @@ class TestQuotas(base.BaseAPITest):
         project_id2 = uuidutils.generate_uuid()
         quota_path1 = self.QUOTA_PATH.format(project_id=project_id1)
         quota1 = {'load_balancer': constants.QUOTA_UNLIMITED, 'listener': 30,
-                  'pool': 30, 'health_monitor': 30, 'member': 30}
+                  'pool': 30, 'health_monitor': 30, 'member': 30,
+                  'l7policy': 30, 'l7rule': 30}
         body1 = {'quota': quota1}
         self.put(quota_path1, body1, status=202)
         quota_path2 = self.QUOTA_PATH.format(project_id=project_id2)
         quota2 = {'load_balancer': 50, 'listener': 50, 'pool': 50,
-                  'health_monitor': 50, 'member': 50}
+                  'health_monitor': 50, 'member': 50, 'l7policy': 50,
+                  'l7rule': 50}
         body2 = {'quota': quota2}
         self.put(quota_path2, body2, status=202)
 
@@ -111,12 +125,14 @@ class TestQuotas(base.BaseAPITest):
         project_id2 = uuidutils.generate_uuid()
         quota_path1 = self.QUOTA_PATH.format(project_id=project_id1)
         quota1 = {'load_balancer': constants.QUOTA_UNLIMITED, 'listener': 30,
-                  'pool': 30, 'health_monitor': 30, 'member': 30}
+                  'pool': 30, 'health_monitor': 30, 'member': 30,
+                  'l7policy': 30, 'l7rule': 30}
         body1 = {'quota': quota1}
         self.put(quota_path1, body1, status=202)
         quota_path2 = self.QUOTA_PATH.format(project_id=project_id2)
         quota2 = {'loadbalancer': 50, 'listener': 50, 'pool': 50,
-                  'healthmonitor': 50, 'member': 50}
+                  'healthmonitor': 50, 'member': 50, 'l7policy': 50,
+                  'l7rule': 50}
         body2 = {'quota': quota2}
         self.put(quota_path2, body2, status=202)
 
@@ -139,12 +155,14 @@ class TestQuotas(base.BaseAPITest):
         project_id2 = uuidutils.generate_uuid()
         quota_path1 = self.QUOTA_PATH.format(project_id=project_id1)
         quota1 = {'load_balancer': constants.QUOTA_UNLIMITED, 'listener': 30,
-                  'pool': 30, 'health_monitor': 30, 'member': 30}
+                  'pool': 30, 'health_monitor': 30, 'member': 30,
+                  'l7policy': 30, 'l7rule': 30}
         body1 = {'quota': quota1}
         self.put(quota_path1, body1, status=202)
         quota_path2 = self.QUOTA_PATH.format(project_id=project_id2)
         quota2 = {'load_balancer': 50, 'listener': 50, 'pool': 50,
-                  'health_monitor': 50, 'member': 50}
+                  'health_monitor': 50, 'member': 50, 'l7policy': 50,
+                  'l7rule': 50}
         body2 = {'quota': quota2}
         self.put(quota_path2, body2, status=202)
         self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
@@ -160,7 +178,8 @@ class TestQuotas(base.BaseAPITest):
         project_id1 = uuidutils.generate_uuid()
         quota_path1 = self.QUOTA_PATH.format(project_id=project_id1)
         quota1 = {'load_balancer': constants.QUOTA_UNLIMITED, 'listener': 30,
-                  'pool': 30, 'health_monitor': 30, 'member': 30}
+                  'pool': 30, 'health_monitor': 30, 'member': 30,
+                  'l7policy': 30, 'l7rule': 30}
         body1 = {'quota': quota1}
         self.put(quota_path1, body1, status=202)
         self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
@@ -193,12 +212,14 @@ class TestQuotas(base.BaseAPITest):
         project_id2 = uuidutils.generate_uuid()
         quota_path1 = self.QUOTA_PATH.format(project_id=project_id1)
         quota1 = {'load_balancer': constants.QUOTA_UNLIMITED, 'listener': 30,
-                  'pool': 30, 'health_monitor': 30, 'member': 30}
+                  'pool': 30, 'health_monitor': 30, 'member': 30,
+                  'l7policy': 30, 'l7rule': 30}
         body1 = {'quota': quota1}
         self.put(quota_path1, body1, status=202)
         quota_path2 = self.QUOTA_PATH.format(project_id=project_id2)
         quota2 = {'load_balancer': 50, 'listener': 50, 'pool': 50,
-                  'health_monitor': 50, 'member': 50}
+                  'health_monitor': 50, 'member': 50, 'l7policy': 50,
+                  'l7rule': 50}
         body2 = {'quota': quota2}
         self.put(quota_path2, body2, status=202)
         self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
@@ -701,7 +722,8 @@ class TestQuotas(base.BaseAPITest):
     def test_custom_quotas(self):
         quota_path = self.QUOTA_PATH.format(project_id=self.project_id)
         body = {'quota': {'load_balancer': 30, 'listener': 30, 'pool': 30,
-                          'health_monitor': 30, 'member': 30}}
+                          'health_monitor': 30, 'member': 30,
+                          'l7policy': 30, 'l7rule': 30}}
         self.put(quota_path, body, status=202)
         response = self.get(quota_path)
         quota_dict = response.json
@@ -710,7 +732,8 @@ class TestQuotas(base.BaseAPITest):
     def test_custom_quotas_quota_admin(self):
         quota_path = self.QUOTA_PATH.format(project_id=self.project_id)
         body = {'quota': {'load_balancer': 30, 'listener': 30, 'pool': 30,
-                          'health_monitor': 30, 'member': 30}}
+                          'health_monitor': 30, 'member': 30, 'l7policy': 30,
+                          'l7rule': 30}}
         self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
         auth_strategy = self.conf.conf.api_settings.get('auth_strategy')
         self.conf.config(group='api_settings', auth_strategy=constants.TESTING)
@@ -741,7 +764,8 @@ class TestQuotas(base.BaseAPITest):
     def test_custom_quotas_not_Authorized_member(self):
         quota_path = self.QUOTA_PATH.format(project_id=self.project_id)
         body = {'quota': {'load_balancer': 30, 'listener': 30, 'pool': 30,
-                          'health_monitor': 30, 'member': 30}}
+                          'health_monitor': 30, 'member': 30, 'l7policy': 30,
+                          'l7rule': 30}}
         self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
         auth_strategy = self.conf.conf.api_settings.get('auth_strategy')
         self.conf.config(group='api_settings', auth_strategy=constants.TESTING)
@@ -770,11 +794,12 @@ class TestQuotas(base.BaseAPITest):
     def test_custom_partial_quotas(self):
         quota_path = self.QUOTA_PATH.format(project_id=self.project_id)
         body = {'quota': {'load_balancer': 30, 'listener': None, 'pool': 30,
-                          'health_monitor': 30, 'member': 30}}
+                          'health_monitor': 30, 'member': 30, 'l7policy': 30,
+                          'l7rule': 30}}
         expected_body = {'quota': {
             'load_balancer': 30,
             'listener': CONF.quotas.default_listener_quota, 'pool': 30,
-            'health_monitor': 30, 'member': 30}}
+            'health_monitor': 30, 'member': 30, 'l7policy': 30, 'l7rule': 30}}
         self.put(quota_path, body, status=202)
         response = self.get(quota_path)
         quota_dict = response.json
@@ -784,11 +809,12 @@ class TestQuotas(base.BaseAPITest):
     def test_custom_missing_quotas(self):
         quota_path = self.QUOTA_PATH.format(project_id=self.project_id)
         body = {'quota': {'load_balancer': 30, 'pool': 30,
-                          'health_monitor': 30, 'member': 30}}
+                          'health_monitor': 30, 'member': 30,
+                          'l7policy': 30, 'l7rule': 30}}
         expected_body = {'quota': {
             'load_balancer': 30,
             'listener': CONF.quotas.default_listener_quota, 'pool': 30,
-            'health_monitor': 30, 'member': 30}}
+            'health_monitor': 30, 'member': 30, 'l7policy': 30, 'l7rule': 30}}
         self.put(quota_path, body, status=202)
         response = self.get(quota_path)
         quota_dict = response.json
@@ -798,7 +824,8 @@ class TestQuotas(base.BaseAPITest):
     def test_delete_custom_quotas(self):
         quota_path = self.QUOTA_PATH.format(project_id=self.project_id)
         body = {'quota': {'load_balancer': 30, 'listener': 30, 'pool': 30,
-                          'health_monitor': 30, 'member': 30}}
+                          'health_monitor': 30, 'member': 30, 'l7policy': 30,
+                          'l7rule': 30}}
         self.put(quota_path, body, status=202)
         response = self.get(quota_path)
         quota_dict = response.json
@@ -811,7 +838,8 @@ class TestQuotas(base.BaseAPITest):
     def test_delete_custom_quotas_admin(self):
         quota_path = self.QUOTA_PATH.format(project_id=self.project_id)
         body = {'quota': {'load_balancer': 30, 'listener': 30, 'pool': 30,
-                          'health_monitor': 30, 'member': 30}}
+                          'health_monitor': 30, 'member': 30, 'l7policy': 30,
+                          'l7rule': 30}}
         self.put(quota_path, body, status=202)
         response = self.get(quota_path)
         quota_dict = response.json
@@ -846,7 +874,8 @@ class TestQuotas(base.BaseAPITest):
     def test_delete_quotas_not_Authorized_member(self):
         quota_path = self.QUOTA_PATH.format(project_id=self.project_id)
         body = {'quota': {'load_balancer': 30, 'listener': 30, 'pool': 30,
-                          'health_monitor': 30, 'member': 30}}
+                          'health_monitor': 30, 'member': 30, 'l7policy': 30,
+                          'l7rule': 30}}
         self.put(quota_path, body, status=202)
         response = self.get(quota_path)
         quota_dict = response.json
