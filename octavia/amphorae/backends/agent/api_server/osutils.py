@@ -357,24 +357,30 @@ class RH(BaseOS):
         name = self._map_package_name(package_name)
         return "rpm -q --queryformat %{{VERSION}} {name}".format(name=name)
 
-    def get_network_interface_file(self, interface):
+    @staticmethod
+    def _get_network_interface_file(prefix, interface):
         if CONF.amphora_agent.agent_server_network_file:
             return CONF.amphora_agent.agent_server_network_file
         if CONF.amphora_agent.agent_server_network_dir:
-            return os.path.join(CONF.amphora_agent.agent_server_network_dir,
-                                'ifcfg-' + interface)
-        network_dir = consts.RH_AMP_NET_DIR_TEMPLATE.format(
-            netns=consts.AMPHORA_NAMESPACE)
-        return os.path.join(network_dir, 'ifcfg-' + interface)
+            network_dir = CONF.amphora_agent.agent_server_network_dir
+        else:
+            network_dir = consts.RH_AMP_NET_DIR_TEMPLATE.format(
+                netns=consts.AMPHORA_NAMESPACE)
+        return os.path.join(network_dir, prefix + interface)
+
+    def get_network_interface_file(self, interface):
+        return self._get_network_interface_file('ifcfg-', interface)
 
     def get_alias_network_interface_file(self, interface):
         return self.get_network_interface_file(interface + ':0')
 
-    def get_static_routes_interface_file(self, interface):
-        return self.get_network_interface_file('route-' + interface)
+    def get_static_routes_interface_file(self, interface, version):
+        route = 'route6-' if version == 6 else 'route-'
+        return self._get_network_interface_file(route, interface)
 
-    def get_route_rules_interface_file(self, interface):
-        return self.get_network_interface_file('rule-' + interface)
+    def get_route_rules_interface_file(self, interface, version):
+        rule = 'rule6-' if version == 6 else 'rule-'
+        return self._get_network_interface_file(rule, interface)
 
     def get_network_path(self):
         return '/etc/sysconfig/network-scripts'
@@ -432,7 +438,8 @@ class RH(BaseOS):
                 render_host_routes, template_vip_alias)
 
         routes_interface_file_path = (
-            self.get_static_routes_interface_file(primary_interface))
+            self.get_static_routes_interface_file(primary_interface,
+                                                  ip.version))
         template_routes = j2_env.get_template(self.ROUTE_ETH_X_CONF)
 
         self.write_static_routes_interface_file(
@@ -443,7 +450,8 @@ class RH(BaseOS):
         if (CONF.controller_worker.loadbalancer_topology ==
                 consts.TOPOLOGY_SINGLE):
             route_rules_interface_file_path = (
-                self.get_route_rules_interface_file(primary_interface))
+                self.get_route_rules_interface_file(primary_interface,
+                                                    ip.version))
             template_rules = j2_env.get_template(self.RULE_ETH_X_CONF)
 
             self.write_static_routes_interface_file(
@@ -493,16 +501,32 @@ class RH(BaseOS):
 
         if fixed_ips:
             host_routes = []
+            host_routes_ipv6 = []
             for fixed_ip in fixed_ips:
-                host_routes.extend(self.get_host_routes(fixed_ip))
+                ip_addr = fixed_ip['ip_address']
+                ip = ipaddress.ip_address(ip_addr if isinstance(
+                    ip_addr, six.text_type) else six.u(ip_addr))
+                if ip.version == 6:
+                    host_routes_ipv6.extend(self.get_host_routes(fixed_ip))
+                else:
+                    host_routes.extend(self.get_host_routes(fixed_ip))
 
             routes_interface_file_path = (
-                self.get_static_routes_interface_file(netns_interface))
+                self.get_static_routes_interface_file(netns_interface, 4))
             template_routes = j2_env.get_template(self.ROUTE_ETH_X_CONF)
 
             self.write_static_routes_interface_file(
                 routes_interface_file_path, netns_interface,
                 host_routes, template_routes, None, None, None)
+
+            routes_interface_file_path_ipv6 = (
+                self.get_static_routes_interface_file(netns_interface, 6))
+            template_routes = j2_env.get_template(self.ROUTE_ETH_X_CONF)
+
+            self.write_static_routes_interface_file(
+                routes_interface_file_path_ipv6, netns_interface,
+                host_routes_ipv6, template_routes, None, None, None)
+
             self._write_ifup_ifdown_local_scripts_if_possible()
 
     @classmethod
