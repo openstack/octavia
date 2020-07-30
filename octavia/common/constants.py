@@ -785,3 +785,8 @@ CIPHERS_OWASP_SUITE_B = ('TLS_AES_256_GCM_SHA384:TLS_CHACHA20_POLY1305_SHA256:'
                          'ECDHE-RSA-AES128-GCM-SHA256:DHE-RSA-AES256-SHA256:'
                          'DHE-RSA-AES128-SHA256:ECDHE-RSA-AES256-SHA384:'
                          'ECDHE-RSA-AES128-SHA256')
+
+# Sadly in the LBaaS v2 API, header insertions are on the listener objects
+# but they should be on the pool. Dealing with it until v3.
+LISTENER_PROTOCOLS_SUPPORTING_HEADER_INSERTION = [PROTOCOL_HTTP,
+                                                  PROTOCOL_TERMINATED_HTTPS]
