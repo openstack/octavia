@@ -671,13 +671,10 @@ class TestListener(base.BaseAPITest):
                     'protocol_port': 6666, 'connection_limit': 10,
                     'default_tls_container_ref': uuidutils.generate_uuid(),
                     'sni_container_refs': [sni1, sni2],
-                    'insert_headers': {
-                        "X-Forwarded-Port": "true",
-                        "X-Forwarded-For": "true"},
+                    'insert_headers': {},
                     'loadbalancer_id': self.lb_id}
-        expect_error_msg = (
-            "Validation failure: %s protocol listener does not support TLS or "
-            "header insertion.") % constants.PROTOCOL_UDP
+        expect_error_msg = ("Validation failure: %s protocol listener does "
+                            "not support TLS.") % constants.PROTOCOL_UDP
         res = self.post(self.LISTENERS_PATH, self._build_body(req_dict),
                         status=400, expect_errors=True)
         self.assertEqual(expect_error_msg, res.json['faultstring'])
@@ -1206,6 +1203,33 @@ class TestListener(base.BaseAPITest):
         allowed_cidrs = ['10.0.1.0/24', '10.0.2.0/24', '10.0.2.0/24']
         self.create_listener(constants.PROTOCOL_TCP, 80,
                              self.lb_id, allowed_cidrs=allowed_cidrs)
+
+    def _test_negative_create_with_headers(self, protocol):
+        req_dict = {'name': 'listener1', 'default_pool_id': None,
+                    'description': 'desc1',
+                    'admin_state_up': False,
+                    'protocol': protocol,
+                    'protocol_port': 6666, 'connection_limit': 10,
+                    'insert_headers': {
+                        "X-Forwarded-Port": "true",
+                        "X-Forwarded-For": "true"},
+                    'loadbalancer_id': self.lb_id}
+        res = self.post(self.LISTENERS_PATH, self._build_body(req_dict),
+                        status=400)
+        self.assertIn(protocol, res.json['faultstring'])
+        self.assert_correct_status(lb_id=self.lb_id)
+
+    def test_negative_create_HTTPS_with_headers(self):
+        self._test_negative_create_with_headers(constants.PROTOCOL_HTTPS)
+
+    def test_negative_create_PROXY_with_headers(self):
+        self._test_negative_create_with_headers(constants.PROTOCOL_PROXY)
+
+    def test_negative_create_TCP_with_headers(self):
+        self._test_negative_create_with_headers(constants.PROTOCOL_TCP)
+
+    def test_negative_create_UDP_with_headers(self):
+        self._test_negative_create_with_headers(constants.PROTOCOL_UDP)
 
     def test_update_allowed_cidrs(self):
         allowed_cidrs = ['10.0.1.0/24', '10.0.2.0/24']
@@ -2300,7 +2324,9 @@ class TestListener(base.BaseAPITest):
         lb_listener = {'protocol': 'HTTP',
                        'protocol_port': 80,
                        'loadbalancer_id': self.lb_id,
-                       'insert_headers': {'X-Forwarded-For': 'true'}}
+                       'insert_headers': {'X-Forwarded-For': 'true',
+                                          'X-Forwarded-Port': 'true',
+                                          'X-Forwarded-Proto': 'true'}}
         body = self._build_body(lb_listener)
         self.post(self.LISTENERS_PATH, body, status=201)
 
@@ -2345,7 +2371,9 @@ class TestListener(base.BaseAPITest):
             constants.PROTOCOL_HTTP, 80, self.lb_id)
         self.set_lb_status(self.lb_id)
         new_listener = self._build_body(
-            {'insert_headers': {'X-Forwarded-For': 'true'}})
+            {'insert_headers': {'X-Forwarded-For': 'true',
+                                'X-Forwarded-Port': 'true',
+                                'X-Forwarded-Proto': 'true'}})
         listener_path = self.LISTENER_PATH.format(
             listener_id=listener['listener'].get('id'))
         update_listener = self.put(
@@ -2395,6 +2423,35 @@ class TestListener(base.BaseAPITest):
         # as the order of output faultstring is not stable, so we just check
         # the status.
         self.put(listener_path, new_listener, status=400).json
+
+    def _test_update_protocol_insert_headers_mismatch(self, protocol):
+        listener = self.create_listener(
+            protocol, 80, self.lb_id)
+        self.set_lb_status(self.lb_id)
+        new_listener = self._build_body(
+            {'insert_headers': {'X-Forwarded-Port': 'true'}})
+        listener_path = self.LISTENER_PATH.format(
+            listener_id=listener['listener'].get('id'))
+        update_listener = self.put(
+            listener_path, new_listener, status=400).json
+        self.assertIn(protocol, update_listener['faultstring'])
+        self.assert_correct_status(lb_id=self.lb_id)
+
+    def test_update_protocol_HTTPS_insert_headers(self):
+        self._test_update_protocol_insert_headers_mismatch(
+            constants.PROTOCOL_HTTPS)
+
+    def test_update_protocol_PROXY_insert_headers(self):
+        self._test_update_protocol_insert_headers_mismatch(
+            constants.PROTOCOL_PROXY)
+
+    def test_update_protocol_TCP_insert_headers(self):
+        self._test_update_protocol_insert_headers_mismatch(
+            constants.PROTOCOL_TCP)
+
+    def test_update_protocol_UDP_insert_headers(self):
+        self._test_update_protocol_insert_headers_mismatch(
+            constants.PROTOCOL_UDP)
 
     def _getStats(self, listener_id):
         res = self.get(self.LISTENER_PATH.format(
