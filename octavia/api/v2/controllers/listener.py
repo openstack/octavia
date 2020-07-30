@@ -130,6 +130,11 @@ class ListenersController(base.BaseController):
                 listener_dict.get('insert_headers'))
 
     def _validate_insert_headers(self, insert_header_list, listener_protocol):
+        if (listener_protocol not in
+                constants.LISTENER_PROTOCOLS_SUPPORTING_HEADER_INSERTION):
+            raise exceptions.InvalidOption(
+                value='insert-headers',
+                option=('a %s protocol listener.' % listener_protocol))
         if list(set(insert_header_list) - (
                 set(constants.SUPPORTED_HTTP_HEADERS +
                     constants.SUPPORTED_SSL_HEADERS))):
@@ -173,9 +178,9 @@ class ListenersController(base.BaseController):
         # Check for UDP compatibility
         if (listener_protocol == constants.PROTOCOL_UDP and
                 self._is_tls_or_insert_header(listener_dict)):
-            raise exceptions.ValidationException(detail=_(
-                "%s protocol listener does not support TLS or header "
-                "insertion.") % constants.PROTOCOL_UDP)
+            raise exceptions.ValidationException(
+                detail=_("%s protocol listener does not "
+                         "support TLS.") % constants.PROTOCOL_UDP)
 
         # Check for TLS disabled
         if (not CONF.api_settings.allow_tls_terminated_listeners and

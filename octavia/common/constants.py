@@ -844,3 +844,8 @@ VIP_SECURITY_GROUP_PREFIX = 'lb-'
 
 AMP_BASE_PORT_PREFIX = 'octavia-lb-vrrp-'
 OCTAVIA_OWNED = 'octavia_owned'
+
+# Sadly in the LBaaS v2 API, header insertions are on the listener objects
+# but they should be on the pool. Dealing with it until v3.
+LISTENER_PROTOCOLS_SUPPORTING_HEADER_INSERTION = [PROTOCOL_HTTP,
+                                                  PROTOCOL_TERMINATED_HTTPS]
