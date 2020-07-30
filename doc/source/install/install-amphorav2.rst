@@ -3,8 +3,19 @@
 Additional configuration steps to configure amphorav2 provider
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-If you would like to use amphorav2 provider for load-balancer service the
-following additional steps are required.
+The amphorav2 provider driver improves control plane resiliency. Should a
+control plane host go down during a load balancer provisioning operation, an
+alternate controller can resume the in-process provisioning and complete the
+request. This solves the issue with resources stuck in PENDING_* states by
+writing info about task states in persistent backend and monitoring job claims
+via jobboard.
+
+If you would like to use amphorav2 provider with jobboard-based controller
+for load-balancer service the following additional steps are required.
+
+This provider driver can also run without jobboard and its dependencies (extra
+database, Redis/Zookeeper). This is the default setting while jobboard remains
+an experimental feature.
 
 
 Prerequisites
@@ -66,6 +77,7 @@ Additional configuration to octavia components
     .. code-block:: ini
 
         [task_flow]
+        jobboard_enabled = True
         jobboard_backend_driver = 'redis_taskflow_driver'
         jobboard_backend_hosts = KEYVALUE_HOST_IPS
         jobboard_backend_port = KEYVALUE_PORT

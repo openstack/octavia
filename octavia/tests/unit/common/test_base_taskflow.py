@@ -54,9 +54,9 @@ class TestBaseTaskFlowEngine(base.TestCase):
         concurrent.futures.ThreadPoolExecutor.assert_called_once_with(
             max_workers=MAX_WORKERS)
 
-        # Test _taskflow_load
+        # Test taskflow_load
 
-        base_taskflow_engine._taskflow_load('TEST')
+        base_taskflow_engine.taskflow_load('TEST')
 
         tf_engines.load.assert_called_once_with(
             'TEST',

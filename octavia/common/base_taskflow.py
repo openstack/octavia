@@ -60,7 +60,7 @@ class BaseTaskFlowEngine(object):
         self.executor = concurrent.futures.ThreadPoolExecutor(
             max_workers=CONF.task_flow.max_workers)
 
-    def _taskflow_load(self, flow, **kwargs):
+    def taskflow_load(self, flow, **kwargs):
         eng = engines.load(
             flow,
             engine=CONF.task_flow.engine,

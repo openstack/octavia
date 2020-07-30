@@ -509,6 +509,8 @@ task_flow_opts = [
                default='sqlite://',
                help='Persistence database, which will be used to store tasks '
                     'states. Database connection url with db name'),
+    cfg.BoolOpt('jobboard_enabled', default=False,
+                help=_('If True, enables TaskFlow jobboard.')),
     cfg.StrOpt('jobboard_backend_driver',
                default='redis_taskflow_driver',
                choices=['redis_taskflow_driver', 'zookeeper_taskflow_driver'],

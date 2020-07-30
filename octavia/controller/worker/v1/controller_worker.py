@@ -102,7 +102,7 @@ class ControllerWorker(base_taskflow.BaseTaskFlowEngine):
                 store[constants.AVAILABILITY_ZONE] = (
                     self._az_repo.get_availability_zone_metadata_dict(
                         db_apis.get_session(), availability_zone))
-            create_amp_tf = self._taskflow_load(
+            create_amp_tf = self.taskflow_load(
                 self._amphora_flows.get_create_amphora_flow(),
                 store=store)
             with tf_logging.DynamicLoggingListener(create_amp_tf, log=LOG):
@@ -139,7 +139,7 @@ class ControllerWorker(base_taskflow.BaseTaskFlowEngine):
         pool.health_monitor = health_mon
         load_balancer = pool.load_balancer
 
-        create_hm_tf = self._taskflow_load(
+        create_hm_tf = self.taskflow_load(
             self._health_monitor_flows.get_create_health_monitor_flow(),
             store={constants.HEALTH_MON: health_mon,
                    constants.POOL: pool,
@@ -163,7 +163,7 @@ class ControllerWorker(base_taskflow.BaseTaskFlowEngine):
         listeners = pool.listeners
         load_balancer = pool.load_balancer
 
-        delete_hm_tf = self._taskflow_load(
+        delete_hm_tf = self.taskflow_load(
             self._health_monitor_flows.get_delete_health_monitor_flow(),
             store={constants.HEALTH_MON: health_mon,
                    constants.POOL: pool,
@@ -198,7 +198,7 @@ class ControllerWorker(base_taskflow.BaseTaskFlowEngine):
         pool.health_monitor = health_mon
         load_balancer = pool.load_balancer
 
-        update_hm_tf = self._taskflow_load(
+        update_hm_tf = self.taskflow_load(
             self._health_monitor_flows.get_update_health_monitor_flow(),
             store={constants.HEALTH_MON: health_mon,
                    constants.POOL: pool,
@@ -234,12 +234,12 @@ class ControllerWorker(base_taskflow.BaseTaskFlowEngine):
         load_balancer = listener.load_balancer
         listeners = load_balancer.listeners
 
-        create_listener_tf = self._taskflow_load(self._listener_flows.
-                                                 get_create_listener_flow(),
-                                                 store={constants.LOADBALANCER:
-                                                        load_balancer,
-                                                        constants.LISTENERS:
-                                                            listeners})
+        create_listener_tf = self.taskflow_load(self._listener_flows.
+                                                get_create_listener_flow(),
+                                                store={constants.LOADBALANCER:
+                                                       load_balancer,
+                                                       constants.LISTENERS:
+                                                           listeners})
         with tf_logging.DynamicLoggingListener(create_listener_tf,
                                                log=LOG):
             create_listener_tf.run()
@@ -255,7 +255,7 @@ class ControllerWorker(base_taskflow.BaseTaskFlowEngine):
                                            id=listener_id)
         load_balancer = listener.load_balancer
 
-        delete_listener_tf = self._taskflow_load(
+        delete_listener_tf = self.taskflow_load(
             self._listener_flows.get_delete_listener_flow(),
             store={constants.LOADBALANCER: load_balancer,
                    constants.LISTENER: listener})
@@ -285,16 +285,16 @@ class ControllerWorker(base_taskflow.BaseTaskFlowEngine):
 
         load_balancer = listener.load_balancer
 
-        update_listener_tf = self._taskflow_load(self._listener_flows.
-                                                 get_update_listener_flow(),
-                                                 store={constants.LISTENER:
-                                                        listener,
-                                                        constants.LOADBALANCER:
-                                                            load_balancer,
-                                                        constants.UPDATE_DICT:
-                                                            listener_updates,
-                                                        constants.LISTENERS:
-                                                            [listener]})
+        update_listener_tf = self.taskflow_load(self._listener_flows.
+                                                get_update_listener_flow(),
+                                                store={constants.LISTENER:
+                                                       listener,
+                                                       constants.LOADBALANCER:
+                                                           load_balancer,
+                                                       constants.UPDATE_DICT:
+                                                           listener_updates,
+                                                       constants.LISTENERS:
+                                                           [listener]})
         with tf_logging.DynamicLoggingListener(update_listener_tf, log=LOG):
             update_listener_tf.run()
 
@@ -345,7 +345,7 @@ class ControllerWorker(base_taskflow.BaseTaskFlowEngine):
         create_lb_flow = self._lb_flows.get_create_load_balancer_flow(
             topology=topology, listeners=lb.listeners)
 
-        create_lb_tf = self._taskflow_load(create_lb_flow, store=store)
+        create_lb_tf = self.taskflow_load(create_lb_flow, store=store)
         with tf_logging.DynamicLoggingListener(create_lb_tf, log=LOG):
             create_lb_tf.run()
 
@@ -366,7 +366,7 @@ class ControllerWorker(base_taskflow.BaseTaskFlowEngine):
             (flow, store) = self._lb_flows.get_delete_load_balancer_flow(lb)
         store.update({constants.LOADBALANCER: lb,
                       constants.SERVER_GROUP_ID: lb.server_group_id})
-        delete_lb_tf = self._taskflow_load(flow, store=store)
+        delete_lb_tf = self.taskflow_load(flow, store=store)
 
         with tf_logging.DynamicLoggingListener(delete_lb_tf,
                                                log=LOG):
@@ -396,7 +396,7 @@ class ControllerWorker(base_taskflow.BaseTaskFlowEngine):
             db_apis.get_session(),
             load_balancer_id=load_balancer_id)
 
-        update_lb_tf = self._taskflow_load(
+        update_lb_tf = self.taskflow_load(
             self._lb_flows.get_update_load_balancer_flow(),
             store={constants.LOADBALANCER: lb,
                    constants.LISTENERS: listeners,
@@ -444,7 +444,7 @@ class ControllerWorker(base_taskflow.BaseTaskFlowEngine):
         else:
             store[constants.AVAILABILITY_ZONE] = {}
 
-        create_member_tf = self._taskflow_load(
+        create_member_tf = self.taskflow_load(
             self._member_flows.get_create_member_flow(),
             store=store)
         with tf_logging.DynamicLoggingListener(create_member_tf,
@@ -476,7 +476,7 @@ class ControllerWorker(base_taskflow.BaseTaskFlowEngine):
         else:
             store[constants.AVAILABILITY_ZONE] = {}
 
-        delete_member_tf = self._taskflow_load(
+        delete_member_tf = self.taskflow_load(
             self._member_flows.get_delete_member_flow(),
             store=store
         )
@@ -527,7 +527,7 @@ class ControllerWorker(base_taskflow.BaseTaskFlowEngine):
         else:
             store[constants.AVAILABILITY_ZONE] = {}
 
-        batch_update_members_tf = self._taskflow_load(
+        batch_update_members_tf = self.taskflow_load(
             self._member_flows.get_batch_update_members_flow(
                 old_members, new_members, updated_members),
             store=store)
@@ -571,7 +571,7 @@ class ControllerWorker(base_taskflow.BaseTaskFlowEngine):
         else:
             store[constants.AVAILABILITY_ZONE] = {}
 
-        update_member_tf = self._taskflow_load(
+        update_member_tf = self.taskflow_load(
             self._member_flows.get_update_member_flow(),
             store=store)
         with tf_logging.DynamicLoggingListener(update_member_tf,
@@ -603,13 +603,13 @@ class ControllerWorker(base_taskflow.BaseTaskFlowEngine):
         listeners = pool.listeners
         load_balancer = pool.load_balancer
 
-        create_pool_tf = self._taskflow_load(self._pool_flows.
-                                             get_create_pool_flow(),
-                                             store={constants.POOL: pool,
-                                                    constants.LISTENERS:
-                                                        listeners,
-                                                    constants.LOADBALANCER:
-                                                        load_balancer})
+        create_pool_tf = self.taskflow_load(self._pool_flows.
+                                            get_create_pool_flow(),
+                                            store={constants.POOL: pool,
+                                                   constants.LISTENERS:
+                                                       listeners,
+                                                   constants.LOADBALANCER:
+                                                       load_balancer})
         with tf_logging.DynamicLoggingListener(create_pool_tf,
                                                log=LOG):
             create_pool_tf.run()
@@ -627,7 +627,7 @@ class ControllerWorker(base_taskflow.BaseTaskFlowEngine):
         load_balancer = pool.load_balancer
         listeners = pool.listeners
 
-        delete_pool_tf = self._taskflow_load(
+        delete_pool_tf = self.taskflow_load(
             self._pool_flows.get_delete_pool_flow(),
             store={constants.POOL: pool, constants.LISTENERS: listeners,
                    constants.LOADBALANCER: load_balancer})
@@ -658,15 +658,15 @@ class ControllerWorker(base_taskflow.BaseTaskFlowEngine):
         listeners = pool.listeners
         load_balancer = pool.load_balancer
 
-        update_pool_tf = self._taskflow_load(self._pool_flows.
-                                             get_update_pool_flow(),
-                                             store={constants.POOL: pool,
-                                                    constants.LISTENERS:
-                                                        listeners,
-                                                    constants.LOADBALANCER:
-                                                        load_balancer,
-                                                    constants.UPDATE_DICT:
-                                                        pool_updates})
+        update_pool_tf = self.taskflow_load(self._pool_flows.
+                                            get_update_pool_flow(),
+                                            store={constants.POOL: pool,
+                                                   constants.LISTENERS:
+                                                       listeners,
+                                                   constants.LOADBALANCER:
+                                                       load_balancer,
+                                                   constants.UPDATE_DICT:
+                                                       pool_updates})
         with tf_logging.DynamicLoggingListener(update_pool_tf,
                                                log=LOG):
             update_pool_tf.run()
@@ -696,7 +696,7 @@ class ControllerWorker(base_taskflow.BaseTaskFlowEngine):
         listeners = [l7policy.listener]
         load_balancer = l7policy.listener.load_balancer
 
-        create_l7policy_tf = self._taskflow_load(
+        create_l7policy_tf = self.taskflow_load(
             self._l7policy_flows.get_create_l7policy_flow(),
             store={constants.L7POLICY: l7policy,
                    constants.LISTENERS: listeners,
@@ -718,7 +718,7 @@ class ControllerWorker(base_taskflow.BaseTaskFlowEngine):
         load_balancer = l7policy.listener.load_balancer
         listeners = [l7policy.listener]
 
-        delete_l7policy_tf = self._taskflow_load(
+        delete_l7policy_tf = self.taskflow_load(
             self._l7policy_flows.get_delete_l7policy_flow(),
             store={constants.L7POLICY: l7policy,
                    constants.LISTENERS: listeners,
@@ -750,7 +750,7 @@ class ControllerWorker(base_taskflow.BaseTaskFlowEngine):
         listeners = [l7policy.listener]
         load_balancer = l7policy.listener.load_balancer
 
-        update_l7policy_tf = self._taskflow_load(
+        update_l7policy_tf = self.taskflow_load(
             self._l7policy_flows.get_update_l7policy_flow(),
             store={constants.L7POLICY: l7policy,
                    constants.LISTENERS: listeners,
@@ -786,7 +786,7 @@ class ControllerWorker(base_taskflow.BaseTaskFlowEngine):
         listeners = [l7policy.listener]
         load_balancer = l7policy.listener.load_balancer
 
-        create_l7rule_tf = self._taskflow_load(
+        create_l7rule_tf = self.taskflow_load(
             self._l7rule_flows.get_create_l7rule_flow(),
             store={constants.L7RULE: l7rule,
                    constants.L7POLICY: l7policy,
@@ -809,7 +809,7 @@ class ControllerWorker(base_taskflow.BaseTaskFlowEngine):
         load_balancer = l7policy.listener.load_balancer
         listeners = [l7policy.listener]
 
-        delete_l7rule_tf = self._taskflow_load(
+        delete_l7rule_tf = self.taskflow_load(
             self._l7rule_flows.get_delete_l7rule_flow(),
             store={constants.L7RULE: l7rule,
                    constants.L7POLICY: l7policy,
@@ -843,7 +843,7 @@ class ControllerWorker(base_taskflow.BaseTaskFlowEngine):
         listeners = [l7policy.listener]
         load_balancer = l7policy.listener.load_balancer
 
-        update_l7rule_tf = self._taskflow_load(
+        update_l7rule_tf = self.taskflow_load(
             self._l7rule_flows.get_update_l7rule_flow(),
             store={constants.L7RULE: l7rule,
                    constants.L7POLICY: l7policy,
@@ -933,8 +933,8 @@ class ControllerWorker(base_taskflow.BaseTaskFlowEngine):
                              constants.LOADBALANCER_ID: lb_id,
                              constants.VIP: vip}
 
-            failover_amphora_tf = self._taskflow_load(amp_failover_flow,
-                                                      store=stored_params)
+            failover_amphora_tf = self.taskflow_load(amp_failover_flow,
+                                                     store=stored_params)
 
             with tf_logging.DynamicLoggingListener(failover_amphora_tf,
                                                    log=LOG):
@@ -1084,8 +1084,8 @@ class ControllerWorker(base_taskflow.BaseTaskFlowEngine):
             else:
                 stored_params[constants.AVAILABILITY_ZONE] = {}
 
-            failover_lb_tf = self._taskflow_load(lb_failover_flow,
-                                                 store=stored_params)
+            failover_lb_tf = self.taskflow_load(lb_failover_flow,
+                                                store=stored_params)
 
             with tf_logging.DynamicLoggingListener(failover_lb_tf, log=LOG):
                 failover_lb_tf.run()
@@ -1112,7 +1112,7 @@ class ControllerWorker(base_taskflow.BaseTaskFlowEngine):
                                      id=amphora_id)
         LOG.info("Start amphora cert rotation, amphora's id is: %s", amp.id)
 
-        certrotation_amphora_tf = self._taskflow_load(
+        certrotation_amphora_tf = self.taskflow_load(
             self._amphora_flows.cert_rotate_amphora_flow(),
             store={constants.AMPHORA: amp,
                    constants.AMPHORA_ID: amp.id})
@@ -1141,7 +1141,7 @@ class ControllerWorker(base_taskflow.BaseTaskFlowEngine):
             flavor = self._flavor_repo.get_flavor_metadata_dict(
                 db_apis.get_session(), lb.flavor_id)
 
-        update_amphora_tf = self._taskflow_load(
+        update_amphora_tf = self.taskflow_load(
             self._amphora_flows.update_amphora_config_flow(),
             store={constants.AMPHORA: amp,
                    constants.FLAVOR: flavor})

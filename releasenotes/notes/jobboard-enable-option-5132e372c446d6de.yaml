@@ -1,0 +1,8 @@
+---
+features:
+  - |
+    Added a new configuration setting (``[task_flow]/jobboard_enabled``) to
+    enable/disable jobboard functionality in the amphorav2 provider. When
+    disabled, the amphorav2 provider behaves similarly to the amphora v1
+    provider and does not require extra dependencies. The default setting is
+    jobboard disabled while jobboard remains an experimental feature.

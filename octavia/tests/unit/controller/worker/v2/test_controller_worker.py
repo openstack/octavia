@@ -116,6 +116,7 @@ class TestControllerWorker(base.TestCase):
     def setUp(self):
 
         self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
+        self.conf.config(group="task_flow", jobboard_enabled=True)
 
         _db_pool_mock.listeners = [_listener_mock]
         _db_pool_mock.load_balancer = _db_load_balancer_mock

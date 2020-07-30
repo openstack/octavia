@@ -91,7 +91,7 @@ class TestException(Exception):
             return_value=_member_mock)
 @mock.patch('octavia.db.repositories.PoolRepository.get',
             return_value=_pool_mock)
-@mock.patch('octavia.common.base_taskflow.BaseTaskFlowEngine._taskflow_load',
+@mock.patch('octavia.common.base_taskflow.BaseTaskFlowEngine.taskflow_load',
             return_value=_flow_mock)
 @mock.patch('taskflow.listeners.logging.DynamicLoggingListener')
 @mock.patch('octavia.db.api.get_session', return_value=_db_session)
@@ -142,7 +142,7 @@ class TestControllerWorker(base.TestCase):
         cw = controller_worker.ControllerWorker()
         amp = cw.create_amphora()
 
-        (base_taskflow.BaseTaskFlowEngine._taskflow_load.
+        (base_taskflow.BaseTaskFlowEngine.taskflow_load.
             assert_called_once_with(
                 'TEST',
                 store={constants.BUILD_TYPE_PRIORITY:
@@ -184,7 +184,7 @@ class TestControllerWorker(base.TestCase):
         cw = controller_worker.ControllerWorker()
         amp = cw.create_amphora(availability_zone=az)
         mock_get_az_metadata.assert_called_once_with(_db_session, az)
-        (base_taskflow.BaseTaskFlowEngine._taskflow_load.
+        (base_taskflow.BaseTaskFlowEngine.taskflow_load.
             assert_called_once_with(
                 'TEST',
                 store={constants.BUILD_TYPE_PRIORITY:
@@ -223,7 +223,7 @@ class TestControllerWorker(base.TestCase):
         cw = controller_worker.ControllerWorker()
         cw.create_health_monitor(_health_mon_mock)
 
-        (base_taskflow.BaseTaskFlowEngine._taskflow_load.
+        (base_taskflow.BaseTaskFlowEngine.taskflow_load.
             assert_called_once_with(_flow_mock,
                                     store={constants.HEALTH_MON:
                                            _health_mon_mock,
@@ -260,7 +260,7 @@ class TestControllerWorker(base.TestCase):
         cw = controller_worker.ControllerWorker()
         cw.delete_health_monitor(HM_ID)
 
-        (base_taskflow.BaseTaskFlowEngine._taskflow_load.
+        (base_taskflow.BaseTaskFlowEngine.taskflow_load.
             assert_called_once_with(_flow_mock,
                                     store={constants.HEALTH_MON:
                                            _health_mon_mock,
@@ -298,7 +298,7 @@ class TestControllerWorker(base.TestCase):
         cw.update_health_monitor(_health_mon_mock.id,
                                  HEALTH_UPDATE_DICT)
 
-        (base_taskflow.BaseTaskFlowEngine._taskflow_load.
+        (base_taskflow.BaseTaskFlowEngine.taskflow_load.
             assert_called_once_with(_flow_mock,
                                     store={constants.HEALTH_MON:
                                            _health_mon_mock,
@@ -336,7 +336,7 @@ class TestControllerWorker(base.TestCase):
         cw = controller_worker.ControllerWorker()
         cw.create_listener(LB_ID)
 
-        (base_taskflow.BaseTaskFlowEngine._taskflow_load.
+        (base_taskflow.BaseTaskFlowEngine.taskflow_load.
             assert_called_once_with(_flow_mock,
                                     store={constants.LOADBALANCER:
                                            _load_balancer_mock,
@@ -368,7 +368,7 @@ class TestControllerWorker(base.TestCase):
         cw = controller_worker.ControllerWorker()
         cw.delete_listener(LB_ID)
 
-        (base_taskflow.BaseTaskFlowEngine._taskflow_load.
+        (base_taskflow.BaseTaskFlowEngine.taskflow_load.
          assert_called_once_with(
              _flow_mock, store={constants.LISTENER: _listener_mock,
                                 constants.LOADBALANCER: _load_balancer_mock}))
@@ -398,7 +398,7 @@ class TestControllerWorker(base.TestCase):
         cw = controller_worker.ControllerWorker()
         cw.update_listener(LB_ID, LISTENER_UPDATE_DICT)
 
-        (base_taskflow.BaseTaskFlowEngine._taskflow_load.
+        (base_taskflow.BaseTaskFlowEngine.taskflow_load.
             assert_called_once_with(_flow_mock,
                                     store={constants.LISTENER: _listener_mock,
                                            constants.LOADBALANCER:
@@ -658,7 +658,7 @@ class TestControllerWorker(base.TestCase):
             _db_session,
             id=LB_ID)
 
-        (base_taskflow.BaseTaskFlowEngine._taskflow_load.
+        (base_taskflow.BaseTaskFlowEngine.taskflow_load.
             assert_called_once_with(_flow_mock,
                                     store={constants.LOADBALANCER:
                                            _load_balancer_mock,
@@ -696,7 +696,7 @@ class TestControllerWorker(base.TestCase):
             _db_session,
             id=LB_ID)
 
-        (base_taskflow.BaseTaskFlowEngine._taskflow_load.
+        (base_taskflow.BaseTaskFlowEngine.taskflow_load.
             assert_called_once_with(_flow_mock,
                                     store={constants.LOADBALANCER:
                                            _load_balancer_mock,
@@ -739,7 +739,7 @@ class TestControllerWorker(base.TestCase):
             _db_session,
             id=LB_ID)
 
-        (base_taskflow.BaseTaskFlowEngine._taskflow_load.
+        (base_taskflow.BaseTaskFlowEngine.taskflow_load.
             assert_called_once_with(_flow_mock,
                                     store={constants.UPDATE_DICT: change,
                                            constants.LOADBALANCER:
@@ -776,7 +776,7 @@ class TestControllerWorker(base.TestCase):
         cw = controller_worker.ControllerWorker()
         cw.create_member(MEMBER_ID)
 
-        (base_taskflow.BaseTaskFlowEngine._taskflow_load.
+        (base_taskflow.BaseTaskFlowEngine.taskflow_load.
             assert_called_once_with(
                 _flow_mock,
                 store={constants.MEMBER: _member_mock,
@@ -813,7 +813,7 @@ class TestControllerWorker(base.TestCase):
         cw = controller_worker.ControllerWorker()
         cw.delete_member(MEMBER_ID)
 
-        (base_taskflow.BaseTaskFlowEngine._taskflow_load.
+        (base_taskflow.BaseTaskFlowEngine.taskflow_load.
             assert_called_once_with(
                 _flow_mock, store={constants.MEMBER: _member_mock,
                                    constants.LISTENERS:
@@ -852,7 +852,7 @@ class TestControllerWorker(base.TestCase):
         cw = controller_worker.ControllerWorker()
         cw.update_member(MEMBER_ID, MEMBER_UPDATE_DICT)
 
-        (base_taskflow.BaseTaskFlowEngine._taskflow_load.
+        (base_taskflow.BaseTaskFlowEngine.taskflow_load.
             assert_called_once_with(_flow_mock,
                                     store={constants.MEMBER: _member_mock,
                                            constants.LISTENERS:
@@ -894,7 +894,7 @@ class TestControllerWorker(base.TestCase):
         cw = controller_worker.ControllerWorker()
         cw.batch_update_members([9], [11], [MEMBER_UPDATE_DICT])
 
-        (base_taskflow.BaseTaskFlowEngine._taskflow_load.
+        (base_taskflow.BaseTaskFlowEngine.taskflow_load.
             assert_called_once_with(_flow_mock,
                                     store={
                                         constants.LISTENERS: [_listener_mock],
@@ -929,7 +929,7 @@ class TestControllerWorker(base.TestCase):
         cw = controller_worker.ControllerWorker()
         cw.create_pool(POOL_ID)
 
-        (base_taskflow.BaseTaskFlowEngine._taskflow_load.
+        (base_taskflow.BaseTaskFlowEngine.taskflow_load.
             assert_called_once_with(_flow_mock,
                                     store={constants.POOL: _pool_mock,
                                            constants.LISTENERS:
@@ -962,7 +962,7 @@ class TestControllerWorker(base.TestCase):
         cw = controller_worker.ControllerWorker()
         cw.delete_pool(POOL_ID)
 
-        (base_taskflow.BaseTaskFlowEngine._taskflow_load.
+        (base_taskflow.BaseTaskFlowEngine.taskflow_load.
             assert_called_once_with(_flow_mock,
                                     store={constants.POOL: _pool_mock,
                                            constants.LISTENERS:
@@ -995,7 +995,7 @@ class TestControllerWorker(base.TestCase):
         cw = controller_worker.ControllerWorker()
         cw.update_pool(POOL_ID, POOL_UPDATE_DICT)
 
-        (base_taskflow.BaseTaskFlowEngine._taskflow_load.
+        (base_taskflow.BaseTaskFlowEngine.taskflow_load.
             assert_called_once_with(_flow_mock,
                                     store={constants.POOL: _pool_mock,
                                            constants.LISTENERS:
@@ -1030,7 +1030,7 @@ class TestControllerWorker(base.TestCase):
         cw = controller_worker.ControllerWorker()
         cw.create_l7policy(L7POLICY_ID)
 
-        (base_taskflow.BaseTaskFlowEngine._taskflow_load.
+        (base_taskflow.BaseTaskFlowEngine.taskflow_load.
             assert_called_once_with(_flow_mock,
                                     store={constants.L7POLICY: _l7policy_mock,
                                            constants.LISTENERS:
@@ -1063,7 +1063,7 @@ class TestControllerWorker(base.TestCase):
         cw = controller_worker.ControllerWorker()
         cw.delete_l7policy(L7POLICY_ID)
 
-        (base_taskflow.BaseTaskFlowEngine._taskflow_load.
+        (base_taskflow.BaseTaskFlowEngine.taskflow_load.
             assert_called_once_with(_flow_mock,
                                     store={constants.L7POLICY: _l7policy_mock,
                                            constants.LISTENERS:
@@ -1096,7 +1096,7 @@ class TestControllerWorker(base.TestCase):
         cw = controller_worker.ControllerWorker()
         cw.update_l7policy(L7POLICY_ID, L7POLICY_UPDATE_DICT)
 
-        (base_taskflow.BaseTaskFlowEngine._taskflow_load.
+        (base_taskflow.BaseTaskFlowEngine.taskflow_load.
             assert_called_once_with(_flow_mock,
                                     store={constants.L7POLICY: _l7policy_mock,
                                            constants.LISTENERS:
@@ -1131,7 +1131,7 @@ class TestControllerWorker(base.TestCase):
         cw = controller_worker.ControllerWorker()
         cw.create_l7rule(L7RULE_ID)
 
-        (base_taskflow.BaseTaskFlowEngine._taskflow_load.
+        (base_taskflow.BaseTaskFlowEngine.taskflow_load.
             assert_called_once_with(_flow_mock,
                                     store={constants.L7RULE: _l7rule_mock,
                                            constants.L7POLICY: _l7policy_mock,
@@ -1165,7 +1165,7 @@ class TestControllerWorker(base.TestCase):
         cw = controller_worker.ControllerWorker()
         cw.delete_l7rule(L7RULE_ID)
 
-        (base_taskflow.BaseTaskFlowEngine._taskflow_load.
+        (base_taskflow.BaseTaskFlowEngine.taskflow_load.
             assert_called_once_with(_flow_mock,
                                     store={constants.L7RULE: _l7rule_mock,
                                            constants.L7POLICY: _l7policy_mock,
@@ -1199,7 +1199,7 @@ class TestControllerWorker(base.TestCase):
         cw = controller_worker.ControllerWorker()
         cw.update_l7rule(L7RULE_ID, L7RULE_UPDATE_DICT)
 
-        (base_taskflow.BaseTaskFlowEngine._taskflow_load.
+        (base_taskflow.BaseTaskFlowEngine.taskflow_load.
             assert_called_once_with(_flow_mock,
                                     store={constants.L7RULE: _l7rule_mock,
                                            constants.L7POLICY: _l7policy_mock,
@@ -1242,7 +1242,7 @@ class TestControllerWorker(base.TestCase):
         cw = controller_worker.ControllerWorker()
         cw.failover_amphora(AMP_ID)
 
-        (base_taskflow.BaseTaskFlowEngine._taskflow_load.
+        (base_taskflow.BaseTaskFlowEngine.taskflow_load.
             assert_called_once_with(
                 _flow_mock,
                 store={constants.FLAVOR: {'loadbalancer_topology':
@@ -1297,7 +1297,7 @@ class TestControllerWorker(base.TestCase):
         cw = controller_worker.ControllerWorker()
         cw.failover_amphora(AMP_ID)
 
-        (base_taskflow.BaseTaskFlowEngine._taskflow_load.
+        (base_taskflow.BaseTaskFlowEngine.taskflow_load.
             assert_called_once_with(
                 _flow_mock,
                 store={constants.FLAVOR: {'loadbalancer_topology':
@@ -1352,7 +1352,7 @@ class TestControllerWorker(base.TestCase):
         cw = controller_worker.ControllerWorker()
         cw.failover_amphora(AMP_ID)
 
-        (base_taskflow.BaseTaskFlowEngine._taskflow_load.
+        (base_taskflow.BaseTaskFlowEngine.taskflow_load.
             assert_called_once_with(
                 _flow_mock,
                 store={constants.FLAVOR: {'loadbalancer_topology':
@@ -1407,7 +1407,7 @@ class TestControllerWorker(base.TestCase):
         cw = controller_worker.ControllerWorker()
         cw.failover_amphora(AMP_ID)
 
-        (base_taskflow.BaseTaskFlowEngine._taskflow_load.
+        (base_taskflow.BaseTaskFlowEngine.taskflow_load.
             assert_called_once_with(
                 _flow_mock,
                 store={constants.FLAVOR: {'loadbalancer_topology':
@@ -1465,7 +1465,7 @@ class TestControllerWorker(base.TestCase):
         cw = controller_worker.ControllerWorker()
         cw.failover_amphora(AMP_ID)
 
-        (base_taskflow.BaseTaskFlowEngine._taskflow_load.
+        (base_taskflow.BaseTaskFlowEngine.taskflow_load.
             assert_called_once_with(
                 _flow_mock,
                 store={constants.FLAVOR: {'loadbalancer_topology':
@@ -1567,7 +1567,7 @@ class TestControllerWorker(base.TestCase):
         cw.failover_amphora(AMP_ID)
 
         mock_get_failover_amp_flow.assert_called_once_with(mock_amphora, None)
-        (base_taskflow.BaseTaskFlowEngine._taskflow_load.
+        (base_taskflow.BaseTaskFlowEngine.taskflow_load.
             assert_called_once_with(FAKE_FLOW, store=expected_stored_params))
         _flow_mock.run.assert_called_once_with()
 
@@ -1604,7 +1604,7 @@ class TestControllerWorker(base.TestCase):
         cw = controller_worker.ControllerWorker()
         cw.failover_amphora(AMP_ID)
 
-        (base_taskflow.BaseTaskFlowEngine._taskflow_load.
+        (base_taskflow.BaseTaskFlowEngine.taskflow_load.
             assert_called_once_with(
                 _flow_mock,
                 store={constants.LOADBALANCER: None,
@@ -2065,7 +2065,7 @@ class TestControllerWorker(base.TestCase):
         cw = controller_worker.ControllerWorker()
         cw.failover_amphora(AMP_ID)
 
-        (base_taskflow.BaseTaskFlowEngine._taskflow_load.
+        (base_taskflow.BaseTaskFlowEngine.taskflow_load.
             assert_called_once_with(
                 _flow_mock,
                 store={constants.LOADBALANCER_ID: _load_balancer_mock.id,
@@ -2101,7 +2101,7 @@ class TestControllerWorker(base.TestCase):
         _flow_mock.reset_mock()
         cw = controller_worker.ControllerWorker()
         cw.amphora_cert_rotation(AMP_ID)
-        (base_taskflow.BaseTaskFlowEngine._taskflow_load.
+        (base_taskflow.BaseTaskFlowEngine.taskflow_load.
          assert_called_once_with(_flow_mock,
                                  store={constants.AMPHORA: _amphora_mock,
                                         constants.AMPHORA_ID:
@@ -2140,7 +2140,7 @@ class TestControllerWorker(base.TestCase):
         mock_amp_repo_get.assert_called_once_with(_db_session, id=AMP_ID)
         mock_get_lb_for_amp.assert_called_once_with(_db_session, AMP_ID)
         mock_flavor_meta.assert_called_once_with(_db_session, 'vanilla')
-        (base_taskflow.BaseTaskFlowEngine._taskflow_load.
+        (base_taskflow.BaseTaskFlowEngine.taskflow_load.
          assert_called_once_with(_flow_mock,
                                  store={constants.AMPHORA: _amphora_mock,
                                         constants.FLAVOR: {'test': 'dict'}}))
@@ -2151,13 +2151,13 @@ class TestControllerWorker(base.TestCase):
         mock_amp_repo_get.reset_mock()
         mock_get_lb_for_amp.reset_mock()
         mock_flavor_meta.reset_mock()
-        base_taskflow.BaseTaskFlowEngine._taskflow_load.reset_mock()
+        base_taskflow.BaseTaskFlowEngine.taskflow_load.reset_mock()
         mock_lb.flavor_id = None
         cw.update_amphora_agent_config(AMP_ID)
         mock_amp_repo_get.assert_called_once_with(_db_session, id=AMP_ID)
         mock_get_lb_for_amp.assert_called_once_with(_db_session, AMP_ID)
         mock_flavor_meta.assert_not_called()
-        (base_taskflow.BaseTaskFlowEngine._taskflow_load.
+        (base_taskflow.BaseTaskFlowEngine.taskflow_load.
          assert_called_once_with(_flow_mock,
                                  store={constants.AMPHORA: _amphora_mock,
                                         constants.FLAVOR: {}}))
