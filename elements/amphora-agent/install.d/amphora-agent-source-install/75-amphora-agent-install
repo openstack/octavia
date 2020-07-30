@@ -16,6 +16,12 @@ $AMP_VENV/bin/pip install pip --upgrade
 
 $AMP_VENV/bin/pip install -U -c /opt/upper-constraints.txt /opt/amphora-agent
 
+# Workaround https://github.com/svinota/pyroute2/issues/724
+# TODO(johnsom) Remove once a that is resolved and 0.5.13 has been blocked in
+# global requirements.
+$AMP_VENV/bin/pip uninstall -y pyroute2
+$AMP_VENV/bin/pip install pyroute2==0.5.12
+
 # Link the amphora-agent out to /usr/local/bin where the startup scripts look
 ln -s $AMP_VENV/bin/amphora-agent /usr/local/bin/amphora-agent || true
 
