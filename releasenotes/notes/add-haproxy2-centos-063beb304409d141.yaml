@@ -1,0 +1,6 @@
+---
+features:
+  - |
+    CentOS-based amphora images will now install HAProxy version 2.2 maintained
+    by CentOS NFV SIG. Other supported distributions (Ubuntu Bionic, RHEL 8)
+    remain untouched.
