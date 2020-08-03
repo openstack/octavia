@@ -477,7 +477,8 @@ class HaproxyAmphoraLoadBalancerDriver(
 
             if certs:
                 # Build and upload the crt-list file for haproxy
-                crt_list = "\n".join(cert_filename_list).encode('utf-8')
+                crt_list = "\n".join(cert_filename_list)
+                crt_list = f'{crt_list}\n'.encode('utf-8')
                 md5 = hashlib.md5(crt_list).hexdigest()  # nosec
                 name = '{id}.pem'.format(id=listener.id)
                 self._upload_cert(amphora, obj_id, crt_list, md5, name)
