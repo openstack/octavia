@@ -44,6 +44,7 @@
             "198.51.100.0/24"
         ],
         "tls_ciphers": "ECDHE-RSA-AES256-GCM-SHA384:ECDHE-RSA-AES128-GCM-SHA256",
-        "tls_versions": ["TLSv1.2", "TLSv1.3"]
+        "tls_versions": ["TLSv1.2", "TLSv1.3"],
+        "alpn_protocols": ["http/1.1", "http/1.0"]
     }
 }

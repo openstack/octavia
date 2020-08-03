@@ -113,6 +113,10 @@ def create_listener(listener_dict, lb_id):
                 listener_dict['tls_versions'] is None):
             listener_dict['tls_versions'] = (
                 CONF.api_settings.default_listener_tls_versions)
+        if ('alpn_protocols' not in listener_dict or
+                listener_dict['alpn_protocols'] is None):
+            listener_dict['alpn_protocols'] = (
+                CONF.api_settings.default_listener_alpn_protocols)
 
     return listener_dict
 

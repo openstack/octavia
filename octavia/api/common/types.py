@@ -18,6 +18,7 @@ from dateutil import parser
 import netaddr
 from wsme import types as wtypes
 
+from octavia.common import constants
 from octavia.common import exceptions
 from octavia.common import validate
 
@@ -53,6 +54,19 @@ class CidrType(wtypes.UserType):
         except (ValueError, netaddr.core.AddrFormatError) as e:
             error = 'Value should be IPv4 or IPv6 CIDR format'
             raise ValueError(error) from e
+
+
+class AlpnProtocolType(wtypes.UserType):
+    basetype = str
+    name = 'alpn_protocol'
+
+    @staticmethod
+    def validate(value):
+        """Validates whether value is a valid ALPN protocol ID."""
+        if value in constants.SUPPORTED_ALPN_PROTOCOLS:
+            return value
+        error = 'Value should be a valid ALPN protocol ID'
+        raise ValueError(error)
 
 
 class URLType(wtypes.UserType):

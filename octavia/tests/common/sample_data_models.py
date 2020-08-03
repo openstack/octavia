@@ -469,7 +469,9 @@ class SampleDriverDataModels(object):
             constants.CLIENT_CRL_CONTAINER_ID: self.client_crl_container_ref,
             lib_consts.ALLOWED_CIDRS: ['192.0.2.0/24', '198.51.100.0/24'],
             lib_consts.TLS_CIPHERS: constants.CIPHERS_OWASP_SUITE_B,
-            lib_consts.TLS_VERSIONS: constants.TLS_VERSIONS_OWASP_SUITE_B
+            lib_consts.TLS_VERSIONS: constants.TLS_VERSIONS_OWASP_SUITE_B,
+            lib_consts.ALPN_PROTOCOLS:
+                constants.AMPHORA_SUPPORTED_ALPN_PROTOCOLS
         }
 
         self.test_listener1_dict.update(self._common_test_dict)
@@ -509,6 +511,7 @@ class SampleDriverDataModels(object):
         self.provider_listener1_dict = {
             lib_consts.ADMIN_STATE_UP: True,
             lib_consts.ALLOWED_CIDRS: ['192.0.2.0/24', '198.51.100.0/24'],
+            lib_consts.ALPN_PROTOCOLS: [lib_consts.ALPN_PROTOCOL_HTTP_1_1],
             lib_consts.CONNECTION_LIMIT: 10000,
             lib_consts.DEFAULT_POOL: self.provider_pool1_dict,
             lib_consts.DEFAULT_POOL_ID: self.pool1_id,
@@ -538,7 +541,9 @@ class SampleDriverDataModels(object):
             lib_consts.CLIENT_CRL_CONTAINER_REF: self.client_crl_container_ref,
             lib_consts.CLIENT_CRL_CONTAINER_DATA: crl_file_content,
             lib_consts.TLS_CIPHERS: constants.CIPHERS_OWASP_SUITE_B,
-            lib_consts.TLS_VERSIONS: constants.TLS_VERSIONS_OWASP_SUITE_B
+            lib_consts.TLS_VERSIONS: constants.TLS_VERSIONS_OWASP_SUITE_B,
+            lib_consts.ALPN_PROTOCOLS:
+                constants.AMPHORA_SUPPORTED_ALPN_PROTOCOLS
         }
 
         self.provider_listener2_dict = copy.deepcopy(

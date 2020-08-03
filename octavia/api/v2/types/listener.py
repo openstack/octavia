@@ -65,6 +65,7 @@ class ListenerResponse(BaseListenerType):
     allowed_cidrs = wtypes.wsattr([types.CidrType()])
     tls_ciphers = wtypes.StringType()
     tls_versions = wtypes.wsattr(wtypes.ArrayType(wtypes.StringType()))
+    alpn_protocols = wtypes.wsattr(wtypes.ArrayType(types.AlpnProtocolType()))
 
     @classmethod
     def from_data_model(cls, data_model, children=False):
@@ -87,6 +88,7 @@ class ListenerResponse(BaseListenerType):
             l7policy_type.from_data_model(i) for i in data_model.l7policies]
 
         listener.tls_versions = data_model.tls_versions
+        listener.alpn_protocols = data_model.alpn_protocols
 
         return listener
 
@@ -158,6 +160,7 @@ class ListenerPOST(BaseListenerType):
     tls_ciphers = wtypes.StringType(max_length=2048)
     tls_versions = wtypes.wsattr(wtypes.ArrayType(wtypes.StringType(
         max_length=32)))
+    alpn_protocols = wtypes.wsattr(wtypes.ArrayType(types.AlpnProtocolType()))
 
 
 class ListenerRootPOST(types.BaseType):
@@ -198,6 +201,7 @@ class ListenerPUT(BaseListenerType):
     tls_ciphers = wtypes.StringType(max_length=2048)
     tls_versions = wtypes.wsattr(wtypes.ArrayType(wtypes.StringType(
         max_length=32)))
+    alpn_protocols = wtypes.wsattr(wtypes.ArrayType(types.AlpnProtocolType()))
 
 
 class ListenerRootPUT(types.BaseType):
@@ -251,6 +255,7 @@ class ListenerSingleCreate(BaseListenerType):
     tls_ciphers = wtypes.StringType(max_length=2048)
     tls_versions = wtypes.wsattr(wtypes.ArrayType(wtypes.StringType(
         max_length=32)))
+    alpn_protocols = wtypes.wsattr(wtypes.ArrayType(types.AlpnProtocolType()))
 
 
 class ListenerStatusResponse(BaseListenerType):

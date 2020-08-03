@@ -137,6 +137,13 @@ class TestListenerPOST(base.BaseTypesTest, TestListener):
         listener = wsme_json.fromjson(self._type, body)
         self.assertEqual(listener.project_id, body['project_id'])
 
+    def test_invalid_alpn_protocols(self):
+        body = {"protocol": constants.PROTOCOL_HTTP, "protocol_port": 80,
+                "loadbalancer_id": uuidutils.generate_uuid(),
+                "alpn_protocols": ["bad", "boy"]}
+        self.assertRaises(exc.InvalidInput, wsme_json.fromjson, self._type,
+                          body)
+
 
 class TestListenerPUT(base.BaseTypesTest, TestListener):
 
@@ -153,3 +160,8 @@ class TestListenerPUT(base.BaseTypesTest, TestListener):
                 "tags": ['test_tag']}
         listener = wsme_json.fromjson(self._type, body)
         self.assertEqual(wsme_types.Unset, listener.admin_state_up)
+
+    def test_invalid_alpn_protocols(self):
+        body = {"alpn_protocols": ["bad", "boy"]}
+        self.assertRaises(exc.InvalidInput, wsme_json.fromjson, self._type,
+                          body)

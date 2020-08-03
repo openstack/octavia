@@ -122,10 +122,23 @@ class TestAmphoraDriver(base.TestRpc):
     @mock.patch('oslo_messaging.RPCClient.cast')
     def test_listener_create(self, mock_cast):
         provider_listener = driver_dm.Listener(
-            listener_id=self.sample_data.listener1_id)
+            listener_id=self.sample_data.listener1_id,
+            alpn_protocols=consts.AMPHORA_SUPPORTED_ALPN_PROTOCOLS)
         self.amp_driver.listener_create(provider_listener)
         payload = {consts.LISTENER_ID: self.sample_data.listener1_id}
         mock_cast.assert_called_with({}, 'create_listener', **payload)
+
+    @mock.patch('oslo_messaging.RPCClient.cast')
+    def test_listener_create_unsupported_alpn(self, mock_cast):
+        provider_listener = driver_dm.Listener(
+            listener_id=self.sample_data.listener1_id)
+        # NOTE(cgoncalves): test will fail once HTTP/2 is supported
+        provider_listener.alpn_protocols = ['http/1.1', 'h2']
+        self.assertRaises(
+            exceptions.UnsupportedOptionError,
+            self.amp_driver.listener_create,
+            provider_listener)
+        mock_cast.assert_not_called()
 
     @mock.patch('oslo_messaging.RPCClient.cast')
     def test_listener_delete(self, mock_cast):
@@ -160,6 +173,20 @@ class TestAmphoraDriver(base.TestRpc):
         payload = {consts.LISTENER_ID: self.sample_data.listener1_id,
                    consts.LISTENER_UPDATES: listener_dict}
         mock_cast.assert_called_with({}, 'update_listener', **payload)
+
+    @mock.patch('oslo_messaging.RPCClient.cast')
+    def test_listener_update_unsupported_alpn(self, mock_cast):
+        old_provider_listener = driver_dm.Listener(
+            listener_id=self.sample_data.listener1_id)
+        # NOTE(cgoncalves): test will fail once HTTP/2 is supported
+        provider_listener = driver_dm.Listener(
+            listener_id=self.sample_data.listener1_id,
+            alpn_protocols=['http/1.1', 'h2'])
+        self.assertRaises(
+            exceptions.UnsupportedOptionError,
+            self.amp_driver.listener_update,
+            old_provider_listener,
+            provider_listener)
 
     # Pool
     @mock.patch('oslo_messaging.RPCClient.cast')

@@ -128,7 +128,12 @@ api_opts = [
     cfg.StrOpt('minimum_tls_version',
                default=None,
                choices=constants.TLS_ALL_VERSIONS + [None],
-               help=_('Minimum allowed TLS version for listeners and pools.'))
+               help=_('Minimum allowed TLS version for listeners and pools.')),
+    cfg.ListOpt('default_listener_alpn_protocols',
+                default=[lib_consts.ALPN_PROTOCOL_HTTP_1_1,
+                         lib_consts.ALPN_PROTOCOL_HTTP_1_0],
+                help=_('List of ALPN protocols to use for new TLS-enabled '
+                       'listeners.')),
 ]
 
 # Options only used by the amphora agent

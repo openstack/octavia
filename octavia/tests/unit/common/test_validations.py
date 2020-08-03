@@ -513,3 +513,17 @@ class TestValidations(base.TestCase):
                          'TLSv1', 'TLSv1.3'])
         self.assertRaises(exceptions.ValidationException,
                           validate.check_default_tls_versions_min_conflict)
+
+    def test_check_alpn_protocols(self):
+        # Test valid list
+        validate.check_alpn_protocols(['h2', 'http/1.1', 'http/1.0'])
+        # Test invalid list
+        self.assertRaises(
+            exceptions.ValidationException,
+            validate.check_alpn_protocols,
+            ['httpie', 'foobar/1.2.3'])
+        # Test empty list
+        self.assertRaises(
+            exceptions.ValidationException,
+            validate.check_alpn_protocols,
+            [])

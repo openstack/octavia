@@ -64,6 +64,19 @@ class AmphoraProviderDriver(driver_base.ProviderDriver):
                 user_fault_string=msg,
                 operator_fault_string=msg)
 
+    def _validate_alpn_protocols(self, listener):
+        if not listener.alpn_protocols:
+            return
+        supported = consts.AMPHORA_SUPPORTED_ALPN_PROTOCOLS
+        not_supported = set(listener.alpn_protocols) - set(supported)
+        if not_supported:
+            msg = ('Amphora provider does not support %s ALPN protocol(s). '
+                   'Supported: %s'
+                   % (", ".join(not_supported), ", ".join(supported)))
+            raise exceptions.UnsupportedOptionError(
+                user_fault_string=msg,
+                operator_fault_string=msg)
+
     # Load Balancer
     def create_vip_port(self, loadbalancer_id, project_id, vip_dictionary):
         vip_obj = driver_utils.provider_vip_dict_to_vip_obj(vip_dictionary)
@@ -136,6 +149,7 @@ class AmphoraProviderDriver(driver_base.ProviderDriver):
 
     # Listener
     def listener_create(self, listener):
+        self._validate_alpn_protocols(listener)
         payload = {consts.LISTENER: listener.to_dict()}
         self._encrypt_listener_dict(payload)
 
@@ -146,6 +160,7 @@ class AmphoraProviderDriver(driver_base.ProviderDriver):
         self.client.cast({}, 'delete_listener', **payload)
 
     def listener_update(self, old_listener, new_listener):
+        self._validate_alpn_protocols(new_listener)
         original_listener = old_listener.to_dict()
         listener_updates = new_listener.to_dict()
 

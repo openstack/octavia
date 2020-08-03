@@ -1,0 +1,9 @@
+---
+features:
+  - |
+    Added support for TLS extension Application Layer Protocol Negotiation
+    (ALPN) to TLS-terminated HTTPS load balancers. A new parameter
+    ``alpn_protocols`` was added to the Listener API.
+  - |
+    Octavia provider drivers can now offer HTTP/2 over TLS (protocol
+    negotiation via ALPN) to clients.

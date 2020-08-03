@@ -854,3 +854,10 @@ OCTAVIA_OWNED = 'octavia_owned'
 # but they should be on the pool. Dealing with it until v3.
 LISTENER_PROTOCOLS_SUPPORTING_HEADER_INSERTION = [PROTOCOL_HTTP,
                                                   PROTOCOL_TERMINATED_HTTPS]
+
+SUPPORTED_ALPN_PROTOCOLS = [lib_consts.ALPN_PROTOCOL_HTTP_2,
+                            lib_consts.ALPN_PROTOCOL_HTTP_1_1,
+                            lib_consts.ALPN_PROTOCOL_HTTP_1_0]
+
+AMPHORA_SUPPORTED_ALPN_PROTOCOLS = [lib_consts.ALPN_PROTOCOL_HTTP_1_1,
+                                    lib_consts.ALPN_PROTOCOL_HTTP_1_0]

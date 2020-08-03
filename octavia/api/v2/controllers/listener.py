@@ -298,6 +298,8 @@ class ListenersController(base.BaseController):
             validate.check_tls_version_list(listener_dict['tls_versions'])
             # Validate TLS versions against minimum
             validate.check_tls_version_min(listener_dict['tls_versions'])
+            # Validate ALPN protocol list
+            validate.check_alpn_protocols(listener_dict['alpn_protocols'])
 
         try:
             db_listener = self.repositories.listener.create(
@@ -511,6 +513,10 @@ class ListenersController(base.BaseController):
             # Validate TLS versions against minimum
             validate.check_tls_version_min(listener.tls_versions)
 
+        if listener.alpn_protocols is not wtypes.Unset:
+            # Validate ALPN protocol list
+            validate.check_alpn_protocols(listener.alpn_protocols)
+
     def _set_default_on_none(self, listener):
         """Reset settings to their default values if None/null was passed in
 
@@ -543,6 +549,9 @@ class ListenersController(base.BaseController):
         if listener.tls_versions is None:
             listener.tls_versions = (
                 CONF.api_settings.default_listener_tls_versions)
+        if listener.alpn_protocols is None:
+            listener.alpn_protocols = (
+                CONF.api_settings.default_listener_alpn_protocols)
 
     @wsme_pecan.wsexpose(listener_types.ListenerRootResponse, wtypes.text,
                          body=listener_types.ListenerRootPUT, status_code=200)

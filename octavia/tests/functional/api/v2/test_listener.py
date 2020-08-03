@@ -1755,6 +1755,8 @@ class TestListener(base.BaseAPITest):
         self.conf.config(group='api_settings',
                          default_listener_ciphers=(
                              constants.CIPHERS_OWASP_SUITE_B))
+        self.conf.config(group='api_settings',
+                         default_listener_alpn_protocols=['http/1.1'])
 
         self.cert_manager_mock().get_secret.side_effect = [
             sample_certs.X509_CA_CERT, sample_certs.X509_CA_CRL,
@@ -1781,7 +1783,8 @@ class TestListener(base.BaseAPITest):
             client_crl_container_ref=crl_tls_uuid,
             client_ca_tls_container_ref=ca_tls_uuid,
             tls_versions=[lib_consts.TLS_VERSION_1_3],
-            tls_ciphers='TLS_AES_256_GCM_SHA384').get(self.root_tag)
+            tls_ciphers='TLS_AES_256_GCM_SHA384',
+            alpn_protocols=['http/1.0']).get(self.root_tag)
         self.set_lb_status(self.lb_id)
         unset_params = {
             'name': None, 'description': None, 'connection_limit': None,
@@ -1791,7 +1794,7 @@ class TestListener(base.BaseAPITest):
             'timeout_tcp_inspect': None, 'client_ca_tls_container_ref': None,
             'client_authentication': None, 'default_pool_id': None,
             'client_crl_container_ref': None, 'tls_versions': None,
-            'tls_ciphers': None}
+            'tls_ciphers': None, 'alpn_protocols': None}
         body = self._build_body(unset_params)
         listener_path = self.LISTENER_PATH.format(
             listener_id=listener['id'])
@@ -1817,6 +1820,7 @@ class TestListener(base.BaseAPITest):
                          api_listener['tls_versions'])
         self.assertEqual(constants.CIPHERS_OWASP_SUITE_B,
                          api_listener['tls_ciphers'])
+        self.assertEqual(['http/1.1'], api_listener['alpn_protocols'])
 
     @mock.patch('octavia.common.tls_utils.cert_parser.load_certificates_data')
     def test_update_with_bad_ca_cert(self, mock_cert_data):
@@ -2402,6 +2406,95 @@ class TestListener(base.BaseAPITest):
             'The selected protocol is not allowed in this deployment: {0}'
             .format(constants.PROTOCOL_TERMINATED_HTTPS),
             listener.get('faultstring'))
+
+    # TODO(johnsom) Fix this when there is a noop certificate manager
+    @mock.patch('octavia.common.tls_utils.cert_parser.load_certificates_data')
+    def test_create_with_alpn(self, mock_cert_data):
+        cert1 = data_models.TLSContainer(certificate='cert 1')
+        mock_cert_data.return_value = {'tls_cert': cert1}
+        cert_id = uuidutils.generate_uuid()
+        alpn_protocols = [lib_consts.ALPN_PROTOCOL_HTTP_2,
+                          lib_consts.ALPN_PROTOCOL_HTTP_1_1]
+        listener = self.create_listener(constants.PROTOCOL_TERMINATED_HTTPS,
+                                        80, self.lb_id,
+                                        default_tls_container_ref=cert_id,
+                                        alpn_protocols=['h2', 'http/1.1'])
+        listener_path = self.LISTENER_PATH.format(
+            listener_id=listener['listener']['id'])
+        get_listener = self.get(listener_path).json['listener']
+        self.assertEqual(alpn_protocols, get_listener['alpn_protocols'])
+
+    # TODO(johnsom) Fix this when there is a noop certificate manager
+    @mock.patch('octavia.common.tls_utils.cert_parser.load_certificates_data')
+    def test_create_with_alpn_negative(self, mock_cert_data):
+        cert1 = data_models.TLSContainer(certificate='cert 1')
+        mock_cert_data.return_value = {'tls_cert': cert1}
+        cert_id = uuidutils.generate_uuid()
+        req_dict = {'protocol': constants.PROTOCOL_TERMINATED_HTTPS,
+                    'protocol_port': 80,
+                    'loadbalancer_id': self.lb_id,
+                    'default_tls_container_ref': cert_id,
+                    'alpn_protocols': [lib_consts.ALPN_PROTOCOL_HTTP_1_1,
+                                       'invalid-proto']}
+        res = self.post(self.LISTENERS_PATH, self._build_body(req_dict),
+                        status=400)
+        fault = res.json['faultstring']
+        self.assertIn(
+            'Invalid input for field/attribute alpn_protocols', fault)
+        self.assertIn('Value should be a valid ALPN protocol ID', fault)
+        self.assert_correct_status(lb_id=self.lb_id)
+
+    # TODO(johnsom) Fix this when there is a noop certificate manager
+    @mock.patch('octavia.common.tls_utils.cert_parser.load_certificates_data')
+    def test_update_with_alpn(self, mock_cert_data):
+        cert_id = uuidutils.generate_uuid()
+        cert1 = data_models.TLSContainer(certificate='cert 1')
+        mock_cert_data.return_value = {'tls_cert': cert1}
+        alpn_protocols_orig = [lib_consts.ALPN_PROTOCOL_HTTP_1_0]
+        alpn_protocols = [lib_consts.ALPN_PROTOCOL_HTTP_2,
+                          lib_consts.ALPN_PROTOCOL_HTTP_1_1]
+        listener = self.create_listener(
+            constants.PROTOCOL_TERMINATED_HTTPS, 80, self.lb_id,
+            default_tls_container_ref=cert_id,
+            alpn_protocols=alpn_protocols_orig)
+        self.set_lb_status(self.lb_id)
+        listener_path = self.LISTENER_PATH.format(
+            listener_id=listener['listener']['id'])
+        get_listener = self.get(listener_path).json['listener']
+        self.assertEqual(alpn_protocols_orig,
+                         get_listener.get('alpn_protocols'))
+        self.put(listener_path,
+                 self._build_body({'alpn_protocols': alpn_protocols}))
+        get_listener = self.get(listener_path).json['listener']
+        self.assertEqual(alpn_protocols, get_listener.get('alpn_protocols'))
+
+    # TODO(johnsom) Fix this when there is a noop certificate manager
+    @mock.patch('octavia.common.tls_utils.cert_parser.load_certificates_data')
+    def test_update_with_alpn_negative(self, mock_cert_data):
+        cert_id = uuidutils.generate_uuid()
+        cert1 = data_models.TLSContainer(certificate='cert 1')
+        mock_cert_data.return_value = {'tls_cert': cert1}
+        alpn_protocols_orig = [lib_consts.ALPN_PROTOCOL_HTTP_1_0]
+        listener = self.create_listener(
+            constants.PROTOCOL_TERMINATED_HTTPS, 80, self.lb_id,
+            default_tls_container_ref=cert_id,
+            alpn_protocols=alpn_protocols_orig)
+        self.set_lb_status(self.lb_id)
+        listener_path = self.LISTENER_PATH.format(
+            listener_id=listener['listener']['id'])
+        get_listener = self.get(listener_path).json['listener']
+        self.assertEqual(alpn_protocols_orig,
+                         get_listener.get('alpn_protocols'))
+
+        req_dict = {'alpn_protocols': [
+            lib_consts.ALPN_PROTOCOL_HTTP_1_1, 'invalid-proto']}
+        res = self.put(self.LISTENERS_PATH, self._build_body(req_dict),
+                       status=400)
+        fault = res.json['faultstring']
+        self.assertIn(
+            'Invalid input for field/attribute alpn_protocols', fault)
+        self.assertIn('Value should be a valid ALPN protocol ID', fault)
+        self.assert_correct_status(lb_id=self.lb_id)
 
     # TODO(johnsom) Fix this when there is a noop certificate manager
     @mock.patch('octavia.common.tls_utils.cert_parser.load_certificates_data')

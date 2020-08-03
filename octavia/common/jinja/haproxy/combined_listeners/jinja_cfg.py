@@ -289,6 +289,8 @@ class JinjaTemplater(object):
                 ret_value['tls_ciphers'] = listener.tls_ciphers
             if listener.tls_versions is not None:
                 ret_value['tls_versions'] = listener.tls_versions
+            if listener.alpn_protocols is not None:
+                ret_value['alpn_protocols'] = ",".join(listener.alpn_protocols)
 
         pools = []
         pool_gen = (pool for pool in listener.pools if

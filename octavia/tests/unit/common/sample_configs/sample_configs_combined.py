@@ -605,13 +605,16 @@ def sample_listener_tuple(proto=None, monitor=True, alloc_default_pool=True,
                           backend_tls_ciphers=None,
                           tls_versions=constants.TLS_VERSIONS_OWASP_SUITE_B,
                           backend_tls_versions=constants.
-                          TLS_VERSIONS_OWASP_SUITE_B):
+                          TLS_VERSIONS_OWASP_SUITE_B,
+                          alpn_protocols=constants.
+                          AMPHORA_SUPPORTED_ALPN_PROTOCOLS):
     proto = 'HTTP' if proto is None else proto
     if be_proto is None:
         be_proto = 'HTTP' if proto == 'TERMINATED_HTTPS' else proto
     if proto != constants.PROTOCOL_TERMINATED_HTTPS:
         tls_ciphers = None
         tls_versions = None
+        alpn_protocols = None
     if pool_cert is False:
         backend_tls_versions = None
     topology = 'SINGLE' if topology is None else topology
@@ -628,7 +631,7 @@ def sample_listener_tuple(proto=None, monitor=True, alloc_default_pool=True,
                     'timeout_tcp_inspect, client_ca_tls_certificate_id, '
                     'client_ca_tls_certificate, client_authentication, '
                     'client_crl_container_id, provisioning_status, '
-                    'tls_ciphers, tls_versions')
+                    'tls_ciphers, tls_versions, alpn_protocols')
     if l7:
         pools = [
             sample_pool_tuple(
@@ -747,7 +750,8 @@ def sample_listener_tuple(proto=None, monitor=True, alloc_default_pool=True,
         client_crl_container_id='cont_id_crl' if client_crl_cert else '',
         provisioning_status=provisioning_status,
         tls_ciphers=tls_ciphers,
-        tls_versions=tls_versions
+        tls_versions=tls_versions,
+        alpn_protocols=alpn_protocols
     )
     if recursive_nest:
         listener.load_balancer.listeners.append(listener)

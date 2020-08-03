@@ -17,6 +17,7 @@ import random
 from unittest import mock
 
 from octavia_lib.api.drivers import exceptions as lib_exceptions
+from octavia_lib.common import constants as lib_consts
 from oslo_config import cfg
 from oslo_config import fixture as oslo_fixture
 from oslo_utils import uuidutils
@@ -2623,7 +2624,8 @@ class TestLoadBalancerGraph(base.BaseAPITest):
             'client_crl_container_ref': None,
             'allowed_cidrs': None,
             'tls_ciphers': None,
-            'tls_versions': None
+            'tls_versions': None,
+            'alpn_protocols': None
         }
         if create_sni_containers:
             create_listener['sni_container_refs'] = create_sni_containers
@@ -2673,6 +2675,9 @@ class TestLoadBalancerGraph(base.BaseAPITest):
             expected_listener['tls_ciphers'] = constants.CIPHERS_OWASP_SUITE_B
             expected_listener['tls_versions'] = (
                 constants.TLS_VERSIONS_OWASP_SUITE_B)
+            expected_listener['alpn_protocols'] = (
+                [lib_consts.ALPN_PROTOCOL_HTTP_1_1,
+                 lib_consts.ALPN_PROTOCOL_HTTP_1_0])
 
         return create_listener, expected_listener
 

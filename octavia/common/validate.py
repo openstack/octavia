@@ -515,3 +515,21 @@ def check_default_tls_versions_min_conflict():
 
     check_tls_version_min(CONF.api_settings.default_pool_tls_versions,
                           message=pool_message)
+
+
+def check_alpn_protocols(protocols):
+    if protocols == []:
+        raise exceptions.ValidationException(
+            detail=_('Empty ALPN protocol list. Either specify at least one '
+                     'ALPN protocol or remove this parameter to use the '
+                     'default.'))
+
+    # Unset action
+    if protocols is None:
+        return
+
+    invalid_protocols = [p for p in protocols
+                         if p not in constants.SUPPORTED_ALPN_PROTOCOLS]
+    if invalid_protocols:
+        raise exceptions.ValidationException(
+            detail=_('Invalid ALPN protocol: ' + ', '.join(invalid_protocols)))
