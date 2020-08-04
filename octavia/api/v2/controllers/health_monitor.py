@@ -251,7 +251,8 @@ class HealthMonitorController(base.BaseController):
                 driver.name, driver.health_monitor_create, provider_healthmon)
 
             lock_session.commit()
-        except odb_exceptions.DBError:
+        except odb_exceptions.DBError as e:
+            LOG.exception(e)
             lock_session.rollback()
             raise exceptions.InvalidOption(
                 value=hm_dict.get('type'), option='type')
