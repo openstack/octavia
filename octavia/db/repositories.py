@@ -755,6 +755,7 @@ class LoadBalancerRepository(BaseRepository):
             session, pagination_helper=pagination_helper,
             query_options=query_options, **filters)
 
+    @oslo_db_api.wrap_db_retry(max_retries=5, retry_on_deadlock=True)
     def test_and_set_provisioning_status(self, session, id, status,
                                          raise_exception=False):
         """Tests and sets a load balancer and provisioning status.
