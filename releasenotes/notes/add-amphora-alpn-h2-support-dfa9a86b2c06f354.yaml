@@ -1,0 +1,6 @@
+---
+features:
+  - |
+    Added HTTP/2 over TLS support via ALPN protocol negotiation to the
+    amphora provider driver. Feature available in amphora images with HAProxy
+    2.0 or newer.
