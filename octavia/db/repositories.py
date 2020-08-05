@@ -109,8 +109,27 @@ class BaseRepository(object):
             if tags:
                 resource = session.query(self.model_class).get(id)
                 resource.tags = tags
-            session.query(self.model_class).filter_by(
-                id=id).update(model_kwargs)
+            model = session.query(self.model_class).filter_by(
+                id=id)
+
+            """ Only allow valid provision_status transitions:
+                ERROR -> PENDING_DELETE
+                ACTIVE -> PENDING_DELETE
+                ACTIVE -> PENDING_UPDATE
+                PENDING_CREATE -> ACTIVE
+                PENDING_UPDATE -> ACTIVE
+                PENDING_DELETE -> DELETED
+            """
+            provisioning_status = model_kwargs.get('provisioning_status', None)
+            if provisioning_status == consts.PENDING_DELETE:
+                model = model.filter(self.model_class.provisioning_status.in_([consts.ACTIVE, consts.ERROR]))
+            elif provisioning_status == consts.PENDING_UPDATE:
+                model = model.filter_by(provisioning_status = consts.ACTIVE)
+            elif provisioning_status == consts.ACTIVE:
+                model = model.filter(self.model_class.provisioning_status.in_([consts.PENDING_CREATE, consts.PENDING_UPDATE]))
+            elif provisioning_status == consts.DELETED:
+                model = model.filter_by(provisioning_status = consts.PENDING_DELETE)
+            model.update(model_kwargs, synchronize_session='fetch')
 
     def get(self, session, **filters):
         """Retrieves an entity from the database.
@@ -1061,6 +1080,27 @@ class ListenerRepository(BaseRepository):
                         models.SNI(listener_id=id,
                                    tls_container_id=container_ref)
                         for container_ref in containers]
+            """ Only allow valid provision_status transitions:
+                ERROR -> PENDING_DELETE
+                ACTIVE -> PENDING_DELETE
+                ACTIVE -> PENDING_UPDATE
+                PENDING_CREATE -> ACTIVE
+                PENDING_UPDATE -> ACTIVE
+                PENDING_DELETE -> DELETED
+            """
+            provisioning_status = model_kwargs.get('provisioning_status', None)
+            if provisioning_status == consts.PENDING_DELETE:
+                if not listener_db.provisioning_status in [consts.ACTIVE, consts.ERROR]:
+                    return
+            elif provisioning_status == consts.PENDING_UPDATE:
+                if listener_db.provisioning_status != consts.ACTIVE:
+                    return
+            elif provisioning_status == consts.ACTIVE:
+                if not listener_db.provisioning_status in [consts.PENDING_CREATE, consts.PENDING_UPDATE]:
+                    return
+            elif provisioning_status == consts.DELETED:
+                if listener_db.provisioning_status != consts.PENDING_DELETE:
+                    return
             listener_db.update(model_kwargs)
 
     def create(self, session, **model_kwargs):
@@ -1542,10 +1582,8 @@ class L7RuleRepository(BaseRepository):
                 l7rule_dict['key'] = None
                 model_kwargs.update({'key': None})
             validate.l7rule_data(self.model_class(**l7rule_dict))
-            l7rule_db.update(model_kwargs)
 
-        l7rule_db = self.get(session, id=id)
-        return l7rule_db
+        return super(L7RuleRepository, self).update(session, id, **model_kwargs)
 
     def create(self, session, **model_kwargs):
         with session.begin(subtransactions=True):
@@ -1671,7 +1709,7 @@ class L7PolicyRepository(BaseRepository):
                     model_kwargs.update(redirect_url=None)
                     model_kwargs.update(redirect_pool_id=None)
 
-            l7policy_db.update(model_kwargs)
+        super(L7PolicyRepository, self).update(session, id, **model_kwargs)
 
         # Position manipulation must happen outside the other alterations
         # in the previous transaction
