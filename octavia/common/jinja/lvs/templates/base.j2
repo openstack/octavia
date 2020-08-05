@@ -14,7 +14,11 @@
 #
 #}
 # Configuration for Loadbalancer {{ loadbalancer.id }}
+{% if loadbalancer.listener.enabled %}
 # Configuration for Listener {{ udp_listener_id }}
+{% else %}
+# Listener {{ udp_listener_id }} is disabled
+{% endif %}
 
 {% block global_definitions %}{% endblock global_definitions %}
 
