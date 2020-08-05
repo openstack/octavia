@@ -34,8 +34,8 @@ V6_VS_REGEX = re.compile(r"virtual_server\s([\w*:]+\b)\s(\d{1,5})")
 V6_RS_REGEX = re.compile(r"real_server\s([\w*:]+\b)\s(\d{1,5})")
 CONFIG_COMMENT_REGEX = re.compile(
     r"#\sConfiguration\sfor\s(\w+)\s(\w{8}-\w{4}-\w{4}-\w{4}-\w{12})")
-DISABLED_MEMBER_COMMENT_REGEX = re.compile(
-    r"#\sMember\s(\w{8}-\w{4}-\w{4}-\w{4}-\w{12}) is disabled")
+DISABLED_CONFIG_COMMENT_REGEX = re.compile(
+    r"#\s(\w+)\s(\w{8}-\w{4}-\w{4}-\w{4}-\w{12}) is disabled")
 
 CHECKER_REGEX = re.compile(r"(MISC_CHECK|HTTP_GET|TCP_CHECK)")
 
@@ -151,6 +151,14 @@ def get_udp_listener_resource_ipports_nsname(listener_id):
             listener_ip_port = V6_VS_REGEX.findall(cfg)
         listener_ip_port = listener_ip_port[0] if listener_ip_port else []
 
+        disabled_resource_ids = DISABLED_CONFIG_COMMENT_REGEX.findall(cfg)
+
+        listener_disabled = any(True
+                                for resource in disabled_resource_ids
+                                if resource[0] == 'Listener')
+        if listener_disabled:
+            return None, ns_name
+
         if not listener_ip_port:
             # If not get listener_ip_port from the lvs config file,
             # that means the udp listener's default pool have no enabled member
@@ -180,7 +188,11 @@ def get_udp_listener_resource_ipports_nsname(listener_id):
             elif resource_type == 'Members':
                 resource_ipport_mapping[resource_type].append(value)
 
-        disabled_member_ids = DISABLED_MEMBER_COMMENT_REGEX.findall(cfg)
+        disabled_member_ids = [
+            resource[1]
+            for resource in disabled_resource_ids
+            if resource[0] == 'Member'
+        ]
 
         resource_type = 'Members'
         for member_id in disabled_member_ids:
@@ -361,6 +373,10 @@ def get_udp_listeners_stats():
         #                            'HealthMonitor': {'id': healthmonitor-id}}
         (resource_ipport_mapping,
          ns_name) = get_udp_listener_resource_ipports_nsname(check_listener_id)
+
+        # Listener is disabled, we don't need to send an update
+        if resource_ipport_mapping is None:
+            continue
 
         # Since we found the keepalived running, acknowledge the listener
         # in the heartbeat. If this listener has a pool and members,

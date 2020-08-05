@@ -1,0 +1,6 @@
+---
+fixes:
+  - |
+    Fix operational status for disabled UDP listeners. The operating status of
+    disabled UDP listeners is now OFFLINE instead of ONLINE, the behavior is now
+    similary to the behavior of HTTP/HTTPS/TCP/... listeners.
