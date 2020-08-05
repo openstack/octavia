@@ -297,3 +297,18 @@ class TestLvsCfg(base.TestCase):
         ret = self.udp_jinja_cfg._transform_listener(in_listener)
         sample_configs_combined.RET_UDP_LISTENER.pop('connection_limit')
         self.assertEqual(sample_configs_combined.RET_UDP_LISTENER, ret)
+
+    def test_render_template_disabled_udp_listener(self):
+        exp = ("# Configuration for Loadbalancer sample_loadbalancer_id_1\n"
+               "# Listener sample_listener_id_1 is disabled\n\n"
+               "net_namespace amphora-haproxy\n\n")
+        rendered_obj = self.udp_jinja_cfg.render_loadbalancer_obj(
+            sample_configs_combined.sample_listener_tuple(
+                enabled=False,
+                proto=constants.PROTOCOL_UDP,
+                persistence_type=constants.SESSION_PERSISTENCE_SOURCE_IP,
+                persistence_timeout=33,
+                persistence_granularity='255.255.0.0',
+                monitor_proto=constants.HEALTH_MONITOR_UDP_CONNECT,
+                connection_limit=98))
+        self.assertEqual(exp, rendered_obj)
