@@ -86,3 +86,4 @@
         - publish-openstack-octavia-amphora-image-centos8:
             branches: ^(?!stable/.*).*$
         - octavia-amphora-image-build
+        - octavia-grenade-ffu
