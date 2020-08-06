@@ -455,6 +455,64 @@ class TestHealthMonitor(base.BaseAPITest):
         hm_id_names_asc = [(hm.get('id'), hm.get('name')) for hm in hms_asc]
         self.assertEqual(hm_id_names_asc, list(reversed(hm_id_names_desc)))
 
+    def test_get_all_sorted_by_max_retries(self):
+        pool1 = self.create_pool(
+            self.lb_id,
+            constants.PROTOCOL_HTTP,
+            constants.LB_ALGORITHM_ROUND_ROBIN,
+            name='pool1').get('pool')
+        self.set_lb_status(self.lb_id)
+        pool2 = self.create_pool(
+            self.lb_id,
+            constants.PROTOCOL_HTTP,
+            constants.LB_ALGORITHM_ROUND_ROBIN,
+            name='pool2').get('pool')
+        self.set_lb_status(self.lb_id)
+        pool3 = self.create_pool(
+            self.lb_id,
+            constants.PROTOCOL_HTTP,
+            constants.LB_ALGORITHM_ROUND_ROBIN,
+            name='pool3').get('pool')
+        self.set_lb_status(self.lb_id)
+        hm1 = self.create_health_monitor(
+            pool1.get('id'), constants.HEALTH_MONITOR_HTTP,
+            1, 1, 1, 2, name='hm1').get(self.root_tag)
+        self.set_lb_status(self.lb_id)
+        hm2 = self.create_health_monitor(
+            pool2.get('id'), constants.HEALTH_MONITOR_PING,
+            1, 1, 1, 1, name='hm2').get(self.root_tag)
+        self.set_lb_status(self.lb_id)
+        hm3 = self.create_health_monitor(
+            pool3.get('id'), constants.HEALTH_MONITOR_TCP,
+            1, 1, 1, 3, name='hm3').get(self.root_tag)
+        self.set_lb_status(self.lb_id)
+
+        response = self.get(self.HMS_PATH, params={'sort': 'max_retries:desc'})
+        hms_desc = response.json.get(self.root_tag_list)
+        response = self.get(self.HMS_PATH, params={'sort': 'max_retries:asc'})
+        hms_asc = response.json.get(self.root_tag_list)
+
+        self.assertEqual(3, len(hms_desc))
+        self.assertEqual(3, len(hms_asc))
+
+        hm_id_names_desc = [(hm.get('id'), hm.get('name')) for hm in hms_desc]
+        hm_id_names_asc = [(hm.get('id'), hm.get('name')) for hm in hms_asc]
+        self.assertEqual(hm_id_names_asc, list(reversed(hm_id_names_desc)))
+
+        self.assertEqual(hm2[constants.MAX_RETRIES],
+                         hms_asc[0][constants.MAX_RETRIES])
+        self.assertEqual(hm1[constants.MAX_RETRIES],
+                         hms_asc[1][constants.MAX_RETRIES])
+        self.assertEqual(hm3[constants.MAX_RETRIES],
+                         hms_asc[2][constants.MAX_RETRIES])
+
+        self.assertEqual(hm3[constants.MAX_RETRIES],
+                         hms_desc[0][constants.MAX_RETRIES])
+        self.assertEqual(hm1[constants.MAX_RETRIES],
+                         hms_desc[1][constants.MAX_RETRIES])
+        self.assertEqual(hm2[constants.MAX_RETRIES],
+                         hms_desc[2][constants.MAX_RETRIES])
+
     def test_get_all_limited(self):
         pool1 = self.create_pool(
             self.lb_id,
