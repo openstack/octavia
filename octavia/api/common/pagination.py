@@ -311,13 +311,26 @@ class PaginationHelper(object):
                     self.sort_keys.append((key, self.sort_dir))
 
             for current_sort_key, current_sort_dir in self.sort_keys:
+                # Translate sort_key from API standard to data model's name
+                current_sort_key = (
+                    model.__v2_wsme__.translate_key_to_data_model(
+                        current_sort_key))
                 sort_dir_func = {
                     constants.ASC: sqlalchemy.asc,
                     constants.DESC: sqlalchemy.desc,
                 }[current_sort_dir]
 
                 try:
-                    sort_key_attr = getattr(model, current_sort_key)
+                    # The translated object may be a nested parameter
+                    # such as vip.ip_address, so handle that case by
+                    # joining with the nested table.
+                    if '.' in current_sort_key:
+                        parent, child = current_sort_key.split('.')
+                        parent_obj = getattr(model, parent)
+                        query = query.join(parent_obj)
+                        sort_key_attr = child
+                    else:
+                        sort_key_attr = getattr(model, current_sort_key)
                 except AttributeError:
                     raise exceptions.InvalidSortKey(key=current_sort_key)
                 query = query.order_by(sort_dir_func(sort_key_attr))

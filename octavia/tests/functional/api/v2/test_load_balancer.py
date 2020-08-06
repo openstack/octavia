@@ -1310,6 +1310,41 @@ class TestLoadBalancer(base.BaseAPITest):
         lb_id_names_asc = [(lb.get('id'), lb.get('name')) for lb in lbs_asc]
         self.assertEqual(lb_id_names_asc, list(reversed(lb_id_names_desc)))
 
+    def test_get_all_sorted_by_vip_ip_address(self):
+        self.create_load_balancer(uuidutils.generate_uuid(),
+                                  name='lb1',
+                                  project_id=self.project_id,
+                                  vip_address='198.51.100.2')
+        self.create_load_balancer(uuidutils.generate_uuid(),
+                                  name='lb2',
+                                  project_id=self.project_id,
+                                  vip_address='198.51.100.1')
+        self.create_load_balancer(uuidutils.generate_uuid(),
+                                  name='lb3',
+                                  project_id=self.project_id,
+                                  vip_address='198.51.100.3')
+        response = self.get(self.LBS_PATH,
+                            params={'sort': 'vip_address:desc'})
+        lbs_desc = response.json.get(self.root_tag_list)
+        response = self.get(self.LBS_PATH,
+                            params={'sort': 'vip_address:asc'})
+        lbs_asc = response.json.get(self.root_tag_list)
+
+        self.assertEqual(3, len(lbs_desc))
+        self.assertEqual(3, len(lbs_asc))
+
+        lb_id_names_desc = [(lb.get('id'), lb.get('name')) for lb in lbs_desc]
+        lb_id_names_asc = [(lb.get('id'), lb.get('name')) for lb in lbs_asc]
+        self.assertEqual(lb_id_names_asc, list(reversed(lb_id_names_desc)))
+
+        self.assertEqual('198.51.100.1', lbs_asc[0][constants.VIP_ADDRESS])
+        self.assertEqual('198.51.100.2', lbs_asc[1][constants.VIP_ADDRESS])
+        self.assertEqual('198.51.100.3', lbs_asc[2][constants.VIP_ADDRESS])
+
+        self.assertEqual('198.51.100.3', lbs_desc[0][constants.VIP_ADDRESS])
+        self.assertEqual('198.51.100.2', lbs_desc[1][constants.VIP_ADDRESS])
+        self.assertEqual('198.51.100.1', lbs_desc[2][constants.VIP_ADDRESS])
+
     def test_get_all_limited(self):
         self.create_load_balancer(uuidutils.generate_uuid(),
                                   name='lb1',
