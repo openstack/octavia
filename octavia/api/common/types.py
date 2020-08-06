@@ -170,6 +170,14 @@ class BaseType(wtypes.Base):
             res[k] = v
         return res
 
+    @classmethod
+    def translate_key_to_data_model(cls, key):
+        """Translate the keys from wsme class type, to data_model."""
+        if not hasattr(cls, '_type_to_model_map') or (
+                key not in cls._type_to_model_map):
+            return key
+        return cls._type_to_model_map[key]
+
     def to_dict(self, render_unsets=False):
         """Converts Octavia WSME type to dictionary.
 
