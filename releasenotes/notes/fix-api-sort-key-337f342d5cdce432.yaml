@@ -1,0 +1,5 @@
+---
+fixes:
+  - |
+    Fixed an issue where some columns could not be used for sort keys in
+    API list calls.
