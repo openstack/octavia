@@ -218,6 +218,18 @@ DIB_REPOREF_amphora_agent
     - Example: stable/stein
     - Example: refs/changes/40/674140/7
 
+DIB_REPOLOCATION_octavia_lib
+    - Location of the octavia-lib code that will be installed in the image.
+    - Default: https://opendev.org/openstack/octavia-lib
+    - Example: /tmp/octavia-lib
+
+DIB_REPOREF_octavia_lib
+    - The Git reference to checkout for the octavia-lib code inside the
+      image.
+    - Default: master or stable branch for released OpenStack series installs.
+    - Example: stable/ussuri
+    - Example: refs/changes/19/744519/2
+
 DIB_REPOLOCATION_upper_constraints
     - Location of the upper-constraints.txt file used for the image.
     - Default: The upper-constraints.txt for the current branch

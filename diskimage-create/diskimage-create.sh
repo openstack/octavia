@@ -433,6 +433,7 @@ fi
 AMP_element_sequence="$AMP_element_sequence rebind-sshd"
 AMP_element_sequence="$AMP_element_sequence no-resolvconf"
 AMP_element_sequence="$AMP_element_sequence amphora-agent"
+AMP_element_sequence="$AMP_element_sequence octavia-lib"
 AMP_element_sequence="$AMP_element_sequence sos"
 AMP_element_sequence="$AMP_element_sequence cloud-init-datasources"
 AMP_element_sequence="$AMP_element_sequence remove-default-ints"
