@@ -30,6 +30,7 @@
 - job:
     name: octavia-grenade
     parent: grenade
+    nodeset: octavia-single-node-ubuntu-bionic
     required-projects:
       - opendev.org/openstack/grenade
       - opendev.org/openstack/octavia
