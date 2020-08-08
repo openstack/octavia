@@ -47,6 +47,8 @@ open-vm-tools:
 openssh-client:
 openssh-server:
 pollinate:
+ppc64-diag:
+  arch: ppc64le, ppc64el
 psmisc:
 rsyslog:
 screen:
