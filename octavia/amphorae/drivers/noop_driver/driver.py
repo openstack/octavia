@@ -58,7 +58,7 @@ class NoopManager(object):
                                               'active')
 
     def start(self, loadbalancer, amphora=None, timeout_dict=None):
-        LOG.debug("Amphora %s no-op, start listeners, lb %s, amp %s"
+        LOG.debug("Amphora %s no-op, start listeners, lb %s, amp %s "
                   "timeouts %s", self.__class__.__name__, loadbalancer.id,
                   amphora, timeout_dict)
         self.amphoraconfig[
