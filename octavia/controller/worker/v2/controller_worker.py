@@ -953,7 +953,8 @@ class ControllerWorker(object):
 
         amp = self._amphora_repo.get(db_apis.get_session(),
                                      id=amphora_id)
-        LOG.info("Start amphora cert rotation, amphora's id is: %s", amp.id)
+        LOG.info("Start amphora cert rotation, amphora's id is: %s",
+                 amphora_id)
 
         store = {constants.AMPHORA: amp.to_dict(),
                  constants.AMPHORA_ID: amphora_id}
@@ -961,6 +962,8 @@ class ControllerWorker(object):
         self.services_controller.run_poster(
             flow_utils.cert_rotate_amphora_flow,
             store=store)
+        LOG.info("Finished amphora cert rotation, amphora's id was: %s",
+                 amphora_id)
 
     def update_amphora_agent_config(self, amphora_id):
         """Update the amphora agent configuration.
@@ -988,3 +991,5 @@ class ControllerWorker(object):
         self.services_controller.run_poster(
             flow_utils.update_amphora_config_flow,
             store=store)
+        LOG.info("Finished amphora agent configuration update, amphora's id "
+                 "was: %s", amphora_id)
