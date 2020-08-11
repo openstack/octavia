@@ -1057,7 +1057,8 @@ class ControllerWorker(base_taskflow.BaseTaskFlowEngine):
 
         amp = self._amphora_repo.get(db_apis.get_session(),
                                      id=amphora_id)
-        LOG.info("Start amphora cert rotation, amphora's id is: %s", amp.id)
+        LOG.info("Start amphora cert rotation, amphora's id is: %s",
+                 amphora_id)
 
         certrotation_amphora_tf = self._taskflow_load(
             self._amphora_flows.cert_rotate_amphora_flow(),
@@ -1067,6 +1068,8 @@ class ControllerWorker(base_taskflow.BaseTaskFlowEngine):
         with tf_logging.DynamicLoggingListener(certrotation_amphora_tf,
                                                log=LOG):
             certrotation_amphora_tf.run()
+        LOG.info("Finished amphora cert rotation, amphora's id was: %s",
+                 amphora_id)
 
     def update_amphora_agent_config(self, amphora_id):
         """Update the amphora agent configuration.
@@ -1096,3 +1099,5 @@ class ControllerWorker(base_taskflow.BaseTaskFlowEngine):
         with tf_logging.DynamicLoggingListener(update_amphora_tf,
                                                log=LOG):
             update_amphora_tf.run()
+        LOG.info("Finished amphora agent configuration update, amphora's id "
+                 "was: %s", amphora_id)
