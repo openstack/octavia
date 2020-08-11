@@ -1,13 +1,13 @@
 amphora-agent:
   installtype: package
 build-essential:
-  installtype: source
+  build-only: True
 libffi-dev:
-  installtype: source
+  build-only: True
 libssl-dev:
-  installtype: source
+  build-only: True
 python-dev:
-  installtype: source
+  build-only: True
 
 acl:
 # Note: Red Hat family does not currently ship acpid for ppc64le.
