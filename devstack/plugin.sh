@@ -198,20 +198,14 @@ function create_octavia_accounts {
     if [[ "$WSGI_MODE" == "uwsgi" ]] && [[ "$OCTAVIA_NODE" == "main" ]] ; then
         get_or_create_endpoint $octavia_service \
             "$REGION_NAME" \
-            "$OCTAVIA_PROTOCOL://$SERVICE_HOST:$OCTAVIA_PORT/$OCTAVIA_SERVICE_TYPE" \
-            "$OCTAVIA_PROTOCOL://$SERVICE_HOST:$OCTAVIA_PORT/$OCTAVIA_SERVICE_TYPE" \
             "$OCTAVIA_PROTOCOL://$SERVICE_HOST:$OCTAVIA_PORT/$OCTAVIA_SERVICE_TYPE"
     elif [[ "$WSGI_MODE" == "uwsgi" ]]; then
         get_or_create_endpoint $octavia_service \
             "$REGION_NAME" \
-            "$OCTAVIA_PROTOCOL://$SERVICE_HOST/$OCTAVIA_SERVICE_TYPE" \
-            "$OCTAVIA_PROTOCOL://$SERVICE_HOST/$OCTAVIA_SERVICE_TYPE" \
             "$OCTAVIA_PROTOCOL://$SERVICE_HOST/$OCTAVIA_SERVICE_TYPE"
     else
         get_or_create_endpoint $octavia_service \
             "$REGION_NAME" \
-            "$OCTAVIA_PROTOCOL://$SERVICE_HOST:$OCTAVIA_PORT/" \
-            "$OCTAVIA_PROTOCOL://$SERVICE_HOST:$OCTAVIA_PORT/" \
             "$OCTAVIA_PROTOCOL://$SERVICE_HOST:$OCTAVIA_PORT/"
     fi
 }
