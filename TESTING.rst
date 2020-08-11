@@ -37,6 +37,39 @@ common configuration of Python 3.7 and PEP-8), list the environments with the
 
 See ``tox -l`` for the full list of available test environments.
 
+Structure of the Unit Test Tree
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The structure of the unit test tree should match the structure of the
+code tree, e.g. ::
+
+ - target module: octavia.common.utils
+
+ - test module: octavia.tests.unit.common.test_utils
+
+Unit test modules should have the same path under octavia/tests/unit/
+as the module they target has under octavia/, and their name should be
+the name of the target module prefixed by `test_`. This requirement
+is intended to make it easier for developers to find the unit tests
+for a given module.
+
+Similarly, when a test module targets a package, that module's name
+should be the name of the package prefixed by `test_` with the same
+path as when a test targets a module, e.g. ::
+
+ - target package: octavia.hacking
+
+ - test module: octavia.tests.unit.test_hacking
+
+The following command can be used to validate whether the unit test
+tree is structured according to the above requirements: ::
+
+    ./tools/check_unit_test_structure.sh
+
+Where appropriate, exceptions can be added to the above script. If
+code is not part of the Octavia namespace, for example, it's probably
+reasonable to exclude their unit tests from the check.
+
 Functional Testing
 ------------------
 
