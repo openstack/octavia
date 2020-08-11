@@ -624,7 +624,7 @@ HTTP just get redirected to the HTTPS listener), then please see `the example
 
 Deploy a load balancer with backend re-encryption
 -------------------------------------------------
-This example will demostrate how to enable TLS encryption from the load
+This example will demonstrate how to enable TLS encryption from the load
 balancer to the backend member servers. Typically this is used with TLS
 termination enabled on the listener, but, to simplify the example, we are going
 to use an unencrypted HTTP listener. For information on setting up a TLS
