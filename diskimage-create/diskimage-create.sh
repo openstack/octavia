@@ -477,6 +477,9 @@ if [ "$DIB_LOCAL_ELEMENTS" ]; then
     AMP_element_sequence="$AMP_element_sequence $DIB_LOCAL_ELEMENTS"
 fi
 
+# Set Grub timeout to 0 (no timeout) for fast boot times
+export DIB_GRUB_TIMEOUT=${DIB_GRUB_TIMEOUT:-0}
+
 # Build the image
 
 export DIB_CLOUD_INIT_DATASOURCES=$CLOUD_INIT_DATASOURCES
