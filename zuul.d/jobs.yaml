@@ -137,3 +137,24 @@
     vars:
         amphora_os: ubuntu
         amphora_os_release: bionic
+
+- job:
+    name: octavia-amphora-image-build-live-bionic
+    parent: octavia-amphora-image-build
+    description: |
+      Builds an Ubuntu Bionic amphora image using diskimage-builder from Git
+      master. This job does not publish the image.
+    required-projects:
+        - openstack/diskimage-builder
+
+- job:
+    name: octavia-amphora-image-build-live-centos8
+    parent: octavia-amphora-image-build
+    description: |
+      Builds a CentOS 8 amphora image using diskimage-builder from Git
+      master. This job does not publish the image.
+    required-projects:
+        - openstack/diskimage-builder
+    vars:
+        amphora_os: centos
+        amphora_os_release: 8
