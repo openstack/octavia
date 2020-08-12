@@ -248,6 +248,7 @@ class Repositories(object):
         self.flavor_profile = FlavorProfileRepository()
         self.spares_pool = SparesPoolRepository()
 
+    @oslo_db_api.wrap_db_retry(max_retries=5, retry_on_deadlock=True)
     def create_load_balancer_and_vip(self, session, lb_dict, vip_dict):
         """Inserts load balancer and vip entities into the database.
 
