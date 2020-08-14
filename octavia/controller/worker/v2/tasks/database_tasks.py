@@ -2872,27 +2872,27 @@ class DecrementL7policyQuota(BaseDatabaseTask):
         :param l7policy: The l7policy to decrement the quota on.
         :returns: None
         """
-
         LOG.debug("Decrementing l7policy quota for "
-                  "project: %s ", l7policy.project_id)
-
+                  "project: %s ", l7policy[constants.PROJECT_ID])
         lock_session = db_apis.get_session(autocommit=False)
         try:
             self.repos.decrement_quota(lock_session,
                                        data_models.L7Policy,
-                                       l7policy.project_id)
+                                       l7policy[constants.PROJECT_ID])
+            db_l7policy = self.l7policy_repo.get(
+                db_apis.get_session(), id=l7policy[constants.L7POLICY_ID])
 
-            if l7policy.l7rules:
+            if db_l7policy and db_l7policy.l7rules:
                 self.repos.decrement_quota(lock_session,
                                            data_models.L7Rule,
-                                           l7policy.project_id,
-                                           quantity=len(l7policy.l7rules))
+                                           l7policy[constants.PROJECT_ID],
+                                           quantity=len(db_l7policy.l7rules))
             lock_session.commit()
         except Exception:
             with excutils.save_and_reraise_exception():
                 LOG.error('Failed to decrement l7policy quota for project: '
                           '%(proj)s the project may have excess quota in use.',
-                          {'proj': l7policy.project_id})
+                          {'proj': l7policy[constants.L7POLICY_ID]})
                 lock_session.rollback()
 
     def revert(self, l7policy, result, *args, **kwargs):
@@ -2901,14 +2901,11 @@ class DecrementL7policyQuota(BaseDatabaseTask):
         :param l7policy: The l7policy to decrement the quota on.
         :returns: None
         """
-
         LOG.warning('Reverting decrement quota for l7policy on project'
                     ' %(proj)s Project quota counts may be incorrect.',
-                    {'proj': l7policy.project_id})
-
+                    {'proj': l7policy[constants.PROJECT_ID]})
         # Increment the quota back if this task wasn't the failure
         if not isinstance(result, failure.Failure):
-
             try:
                 session = db_apis.get_session()
                 lock_session = db_apis.get_session(autocommit=False)
@@ -2916,22 +2913,23 @@ class DecrementL7policyQuota(BaseDatabaseTask):
                     self.repos.check_quota_met(session,
                                                lock_session,
                                                data_models.L7Policy,
-                                               l7policy.project_id)
+                                               l7policy[constants.PROJECT_ID])
                     lock_session.commit()
                 except Exception:
                     lock_session.rollback()
-
-                # Attempt to increment back the L7Rule quota
-                for i in range(len(l7policy.l7rules)):
-                    lock_session = db_apis.get_session(autocommit=False)
-                    try:
-                        self.repos.check_quota_met(session,
-                                                   lock_session,
-                                                   data_models.L7Rule,
-                                                   l7policy.project_id)
-                        lock_session.commit()
-                    except Exception:
-                        lock_session.rollback()
+                db_l7policy = self.l7policy_repo.get(
+                    session, id=l7policy[constants.L7POLICY_ID])
+                if db_l7policy:
+                    # Attempt to increment back the L7Rule quota
+                    for i in range(len(db_l7policy.l7rules)):
+                        lock_session = db_apis.get_session(autocommit=False)
+                        try:
+                            self.repos.check_quota_met(
+                                session, lock_session, data_models.L7Rule,
+                                db_l7policy.project_id)
+                            lock_session.commit()
+                        except Exception:
+                            lock_session.rollback()
             except Exception:
                 # Don't fail the revert flow
                 pass
@@ -2951,19 +2949,19 @@ class DecrementL7ruleQuota(BaseDatabaseTask):
         """
 
         LOG.debug("Decrementing l7rule quota for "
-                  "project: %s ", l7rule.project_id)
+                  "project: %s ", l7rule[constants.PROJECT_ID])
 
         lock_session = db_apis.get_session(autocommit=False)
         try:
             self.repos.decrement_quota(lock_session,
                                        data_models.L7Rule,
-                                       l7rule.project_id)
+                                       l7rule[constants.PROJECT_ID])
             lock_session.commit()
         except Exception:
             with excutils.save_and_reraise_exception():
                 LOG.error('Failed to decrement l7rule quota for project: '
                           '%(proj)s the project may have excess quota in use.',
-                          {'proj': l7rule.project_id})
+                          {'proj': l7rule[constants.PROJECT_ID]})
                 lock_session.rollback()
 
     def revert(self, l7rule, result, *args, **kwargs):
@@ -2975,7 +2973,7 @@ class DecrementL7ruleQuota(BaseDatabaseTask):
 
         LOG.warning('Reverting decrement quota for l7rule on project %(proj)s '
                     'Project quota counts may be incorrect.',
-                    {'proj': l7rule.project_id})
+                    {'proj': l7rule[constants.PROJECT_ID]})
 
         # Increment the quota back if this task wasn't the failure
         if not isinstance(result, failure.Failure):
@@ -2987,7 +2985,7 @@ class DecrementL7ruleQuota(BaseDatabaseTask):
                     self.repos.check_quota_met(session,
                                                lock_session,
                                                data_models.L7Rule,
-                                               l7rule.project_id)
+                                               l7rule[constants.PROJECT_ID])
                     lock_session.commit()
                 except Exception:
                     lock_session.rollback()
