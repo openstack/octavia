@@ -161,6 +161,114 @@ class TestOSUtils(base.TestCase):
             get_network_interface_file(consts.NETNS_PRIMARY_INTERFACE))
         self.assertEqual(ubuntu_real_nic_path, ubuntu_interface_file)
 
+    def _test_RH_get_static_routes_interface_file(self, version):
+        conf = self.useFixture(oslo_fixture.Config(config.cfg.CONF))
+
+        fake_agent_server_network_dir = "/path/to/interface"
+        fake_agent_server_network_file = "/path/to/interfaces_file"
+
+        route = 'route6' if version == 6 else 'route'
+        rh_route_name = '{route}-{nic}'.format(
+            route=route, nic=consts.NETNS_PRIMARY_INTERFACE)
+        rh_fake_route_path = os.path.join(fake_agent_server_network_dir,
+                                          rh_route_name)
+        rh_real_route_path = os.path.join(
+            consts.RH_AMP_NET_DIR_TEMPLATE.format(
+                netns=consts.AMPHORA_NAMESPACE),
+            rh_route_name)
+
+        # Check that agent_server_network_file is returned, when provided
+        conf.config(group="amphora_agent",
+                    agent_server_network_file=fake_agent_server_network_file)
+
+        rh_route_file = (
+            self.rh_os_util.
+            get_static_routes_interface_file(consts.NETNS_PRIMARY_INTERFACE,
+                                             version))
+        self.assertEqual(fake_agent_server_network_file, rh_route_file)
+
+        # Check that agent_server_network_dir is used, when provided
+        conf.config(group="amphora_agent", agent_server_network_file=None)
+        conf.config(group="amphora_agent",
+                    agent_server_network_dir=fake_agent_server_network_dir)
+
+        rh_route_file = (
+            self.rh_os_util.
+            get_static_routes_interface_file(consts.NETNS_PRIMARY_INTERFACE,
+                                             version))
+        self.assertEqual(rh_fake_route_path, rh_route_file)
+
+        # Check When neither agent_server_network_dir or
+        # agent_server_network_file where provided.
+        conf.config(group="amphora_agent", agent_server_network_file=None)
+        conf.config(group="amphora_agent", agent_server_network_dir=None)
+
+        rh_route_file = (
+            self.rh_os_util.
+            get_static_routes_interface_file(consts.NETNS_PRIMARY_INTERFACE,
+                                             version))
+        self.assertEqual(rh_real_route_path, rh_route_file)
+
+    def test_RH_get_static_routes_interface_file(self):
+        self._test_RH_get_static_routes_interface_file(4)
+
+    def test_RH_get_static_routes_interface_file_ipv6(self):
+        self._test_RH_get_static_routes_interface_file(6)
+
+    def _test_RH_get_route_rules_interface_file(self, version):
+        conf = self.useFixture(oslo_fixture.Config(config.cfg.CONF))
+
+        fake_agent_server_network_dir = "/path/to/interface"
+        fake_agent_server_network_file = "/path/to/interfaces_file"
+
+        rule = 'rule6' if version == 6 else 'rule'
+        rh_route_rules_name = '{rule}-{nic}'.format(
+            rule=rule, nic=consts.NETNS_PRIMARY_INTERFACE)
+        rh_fake_route_rules_path = os.path.join(fake_agent_server_network_dir,
+                                                rh_route_rules_name)
+        rh_real_route_rules_path = os.path.join(
+            consts.RH_AMP_NET_DIR_TEMPLATE.format(
+                netns=consts.AMPHORA_NAMESPACE),
+            rh_route_rules_name)
+
+        # Check that agent_server_network_file is returned, when provided
+        conf.config(group="amphora_agent",
+                    agent_server_network_file=fake_agent_server_network_file)
+
+        rh_route_rules_file = (
+            self.rh_os_util.
+            get_route_rules_interface_file(consts.NETNS_PRIMARY_INTERFACE,
+                                           version))
+        self.assertEqual(fake_agent_server_network_file, rh_route_rules_file)
+
+        # Check that agent_server_network_dir is used, when provided
+        conf.config(group="amphora_agent", agent_server_network_file=None)
+        conf.config(group="amphora_agent",
+                    agent_server_network_dir=fake_agent_server_network_dir)
+
+        rh_route_rules_file = (
+            self.rh_os_util.
+            get_route_rules_interface_file(consts.NETNS_PRIMARY_INTERFACE,
+                                           version))
+        self.assertEqual(rh_fake_route_rules_path, rh_route_rules_file)
+
+        # Check When neither agent_server_network_dir or
+        # agent_server_network_file where provided.
+        conf.config(group="amphora_agent", agent_server_network_file=None)
+        conf.config(group="amphora_agent", agent_server_network_dir=None)
+
+        rh_route_rules_file = (
+            self.rh_os_util.
+            get_route_rules_interface_file(consts.NETNS_PRIMARY_INTERFACE,
+                                           version))
+        self.assertEqual(rh_real_route_rules_path, rh_route_rules_file)
+
+    def test_RH_get_route_rules_interface_file(self):
+        self._test_RH_get_route_rules_interface_file(4)
+
+    def test_RH_get_route_rules_interface_file_ipv6(self):
+        self._test_RH_get_route_rules_interface_file(6)
+
     def test_cmd_get_version_of_installed_package(self):
         package_name = 'foo'
         ubuntu_cmd = "dpkg-query -W -f=${{Version}} {name}".format(
@@ -295,13 +403,33 @@ class TestOSUtils(base.TestCase):
         )
 
     def test_write_port_interface_file(self):
+        FIXED_IP = u'192.0.2.2'
+        NEXTHOP = u'192.0.2.1'
+        DEST = u'198.51.100.0/24'
+        host_routes = [
+            {'nexthop': NEXTHOP,
+             'destination': str(ipaddress.ip_network(DEST))}
+        ]
+        FIXED_IP_IPV6 = u'2001:db8::2'
+        NEXTHOP_IPV6 = u'2001:db8::1'
+        DEST_IPV6 = u'2001:db8:51:100::/64'
+        host_routes_ipv6 = [
+            {'nexthop': NEXTHOP_IPV6,
+             'destination': str(ipaddress.ip_network(DEST_IPV6))}
+        ]
+        ip_addr = {'ip_address': FIXED_IP, 'host_routes': host_routes}
+        ipv6_addr = {'ip_address': FIXED_IP_IPV6,
+                     'host_routes': host_routes_ipv6}
+
         netns_interface = 'eth1234'
         MTU = 1450
-        fixed_ips = []
+        fixed_ips = [ip_addr, ipv6_addr]
         path = 'mypath'
         mock_template = mock.MagicMock()
         mock_open = self.useFixture(test_utils.OpenFixture(path)).mock_open
         mock_gen_text = mock.MagicMock()
+        mock_local_scripts = mock.MagicMock()
+        mock_wr_fi = mock.MagicMock()
 
         with mock.patch('os.open'), mock.patch.object(
                 os, 'fdopen', mock_open), mock.patch.object(
@@ -315,6 +443,51 @@ class TestOSUtils(base.TestCase):
 
         mock_gen_text.assert_called_once_with(
             netns_interface, fixed_ips, MTU, mock_template)
+
+        mock_gen_text.reset_mock()
+
+        with mock.patch('os.open'), mock.patch.object(
+                os, 'fdopen', mock_open), mock.patch.object(
+                osutils.BaseOS, '_generate_network_file_text',
+                mock_gen_text), mock.patch.object(
+                osutils.RH, '_write_ifup_ifdown_local_scripts_if_possible',
+                mock_local_scripts), mock.patch.object(
+                osutils.RH, 'write_static_routes_interface_file', mock_wr_fi):
+            self.rh_os_util.write_port_interface_file(
+                netns_interface=netns_interface,
+                fixed_ips=fixed_ips,
+                mtu=MTU,
+                interface_file_path=path,
+                template_port=mock_template)
+
+        rh_route_name = 'route-{nic}'.format(nic=netns_interface)
+        rh_real_route_path = os.path.join(
+            consts.RH_AMP_NET_DIR_TEMPLATE.format(
+                netns=consts.AMPHORA_NAMESPACE),
+            rh_route_name)
+        rh_route_name_ipv6 = 'route6-{nic}'.format(nic=netns_interface)
+        rh_real_route_path_ipv6 = os.path.join(
+            consts.RH_AMP_NET_DIR_TEMPLATE.format(
+                netns=consts.AMPHORA_NAMESPACE),
+            rh_route_name_ipv6)
+
+        exp_routes = [
+            {'network': ipaddress.ip_network(DEST), 'gw': NEXTHOP}
+        ]
+        exp_routes_ipv6 = [
+            {'network': ipaddress.ip_network(DEST_IPV6), 'gw': NEXTHOP_IPV6}
+        ]
+        expected_calls = [
+            mock.call(rh_real_route_path, netns_interface,
+                      exp_routes, mock.ANY, None, None, None),
+            mock.call(rh_real_route_path_ipv6, netns_interface,
+                      exp_routes_ipv6, mock.ANY, None, None, None)]
+
+        mock_gen_text.assert_called_once_with(
+            netns_interface, fixed_ips, MTU, mock_template)
+        self.assertEqual(2, mock_wr_fi.call_count)
+        mock_wr_fi.assert_has_calls(expected_calls)
+        mock_local_scripts.assert_called_once()
 
     @mock.patch('shutil.copy2')
     @mock.patch('os.makedirs')
