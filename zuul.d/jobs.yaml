@@ -1,29 +1,4 @@
 - job:
-    name: octavia-legacy-dsvm-base
-    parent: legacy-dsvm-base
-    timeout: 7800
-    required-projects:
-      - openstack/devstack-gate
-      - openstack/barbican
-      - openstack/diskimage-builder
-      - openstack/octavia
-      - openstack/octavia-lib
-      - openstack/python-barbicanclient
-      - openstack/python-octaviaclient
-      - openstack/tripleo-image-elements
-    irrelevant-files:
-      - ^.*\.rst$
-      - ^api-ref/.*$
-      - ^doc/.*$
-      - ^etc/.*$
-      - ^releasenotes/.*$
-    vars:
-      zuul_copy_output:
-        '/var/log/dib-build/': 'logs'
-        '/var/log/octavia-tenant-traffic.log': 'logs'
-        '/var/log/octavia-amphora.log': 'logs'
-
-- job:
     name: publish-openstack-octavia-amphora-image
     parent: publish-openstack-artifacts
     run: playbooks/image-build/run.yaml
@@ -54,16 +29,42 @@
 
 - job:
     name: octavia-grenade
-    parent: octavia-legacy-dsvm-base
-    run: playbooks/legacy/grenade-devstack-octavia/run.yaml
-    post-run: playbooks/legacy/grenade-devstack-octavia/post.yaml
+    parent: grenade
     required-projects:
-      - openstack/grenade
-      - openstack/devstack-gate
-      - openstack/octavia
-      - openstack/octavia-lib
-      - openstack/octavia-tempest-plugin
-      - openstack/python-octaviaclient
+      - opendev.org/openstack/grenade
+      - opendev.org/openstack/octavia
+      - opendev.org/openstack/octavia-lib
+      - opendev.org/openstack/octavia-tempest-plugin
+      - opendev.org/openstack/python-octaviaclient
+    vars:
+      devstack_localrc:
+        DIB_LOCAL_ELEMENTS: openstack-ci-mirrors
+        LIBVIRT_TYPE: kvm
+        LIBVIRT_CPU_MODE: host-passthrough
+      devstack_plugins:
+        octavia: https://opendev.org/openstack/octavia.git
+      devstack_services:
+        s-account: false
+        s-container: false
+        s-object: false
+        s-proxy: false
+        c-api: false
+        c-bak: false
+        c-vol: false
+        cinder: false
+        octavia: true
+        o-api: true
+        o-cw: true
+        o-hm: true
+        o-hk: true
+      tempest_plugins:
+        - octavia-tempest-plugin
+      tempest_test_regex: ^octavia_tempest_plugin.tests.scenario.v2.test_traffic_ops
+      tox_envlist: all
+      zuul_copy_output:
+        '/var/log/dib-build/': 'logs'
+        '/var/log/octavia-tenant-traffic.log': 'logs'
+        '/var/log/octavia-amphora.log': 'logs'
 
 - job:
     name: octavia-v2-dsvm-scenario-amphora-v2
