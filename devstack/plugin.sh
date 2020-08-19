@@ -206,9 +206,10 @@ function _stop_octavia_apache_wsgi {
 function create_octavia_accounts {
     create_service_user $OCTAVIA
 
-    # Increase the service account secgroups quota
+    # Increase the octavia account secgroups quota
     # This is imporant for concurrent tempest testing
-    openstack quota set --secgroups 100 $SERVICE_PROJECT_NAME
+    openstack quota set --secgroups 100 $OCTAVIA_PROJECT_NAME
+    openstack quota set --secgroup-rules 1000 $OCTAVIA_PROJECT_NAME
 
     octavia_service=$(get_or_create_service "octavia" \
         $OCTAVIA_SERVICE_TYPE "Octavia Load Balancing Service")
