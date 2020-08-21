@@ -22,7 +22,7 @@ import octavia.tests.unit.base as base
 class TestNetworkUtils(base.TestCase):
 
     def setUp(self):
-        super(TestNetworkUtils, self).setUp()
+        super().setUp()
 
     def test_find_interface(self):
         FAKE_INTERFACE = 'fake0'

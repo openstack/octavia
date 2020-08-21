@@ -97,7 +97,7 @@ class KeepalivedLvsTestCase(base.TestCase):
     TEST_URL = server.PATH_PREFIX + '/listeners/%s/%s/udp_listener'
 
     def setUp(self):
-        super(KeepalivedLvsTestCase, self).setUp()
+        super().setUp()
         self.app = flask.Flask(__name__)
         self.client = self.app.test_client()
         self._ctx = self.app.test_request_context()

@@ -58,7 +58,7 @@ class TestModel(data_models.BaseDataModel):
         self.enabled = enabled
 
     def to_dict(self):
-        result = super(TestModel, self).to_dict()
+        result = super().to_dict()
         result['child'] = self.child.to_dict()
         return result
 
@@ -66,7 +66,7 @@ class TestModel(data_models.BaseDataModel):
 class TestTypeDataModelRenames(base.TestCase):
 
     def setUp(self):
-        super(TestTypeDataModelRenames, self).setUp()
+        super().setUp()
         child_model = ChildTestModel(one='baby_turtle_one',
                                      two='baby_turtle_two')
         self.model = TestModel(id='1234', original='turtles',
@@ -163,7 +163,7 @@ class TestDataModelToDict(base.TestCase):
                          'children': []}
 
     def setUp(self):
-        super(TestDataModelToDict, self).setUp()
+        super().setUp()
         self.model = TestToDictModel('parent_text')
         self.model.set_child(TestToDictModel('child_text', self.model))
         self.model.set_children([TestToDictModel('child1_text', self.model),

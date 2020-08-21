@@ -149,7 +149,7 @@ IPVSADM_STATS_OUTPUT_TEMPLATE = (
 
 class LvsQueryTestCase(base.TestCase):
     def setUp(self):
-        super(LvsQueryTestCase, self).setUp()
+        super().setUp()
         self.listener_id_v4 = uuidutils.generate_uuid()
         self.pool_id_v4 = uuidutils.generate_uuid()
         self.member_id1_v4 = uuidutils.generate_uuid()

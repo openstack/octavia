@@ -41,7 +41,7 @@ CONF = cfg.CONF
 class AllowedAddressPairsDriver(neutron_base.BaseNeutronDriver):
 
     def __init__(self):
-        super(AllowedAddressPairsDriver, self).__init__()
+        super().__init__()
         self._check_aap_loaded()
         self.compute = stevedore_driver.DriverManager(
             namespace='octavia.compute.drivers',
@@ -95,15 +95,15 @@ class AllowedAddressPairsDriver(neutron_base.BaseNeutronDriver):
             LOG.debug('Created vip port: %(port_id)s for amphora: %(amp)s',
                       {'port_id': new_port.id, 'amp': amphora.id})
 
-        except Exception:
+        except Exception as e:
             message = _('Error creating the base (VRRP) port for the VIP with '
                         'port details: {}').format(port)
             LOG.exception(message)
-            raise base.PlugVIPException(message)
+            raise base.PlugVIPException(message) from e
 
         try:
             interface = self.plug_port(amphora, new_port)
-        except Exception:
+        except Exception as e:
             message = _('Error plugging amphora (compute_id: {compute_id}) '
                         'into vip network {network_id}.').format(
                             compute_id=amphora.compute_id,
@@ -119,7 +119,7 @@ class AllowedAddressPairsDriver(neutron_base.BaseNeutronDriver):
                               'plug_port failed. This resource is being '
                               'abandoned and should be manually deleted when '
                               'neutron is functional.', new_port.id)
-            raise base.PlugVIPException(message)
+            raise base.PlugVIPException(message) from e
         return interface
 
     def _add_vip_address_pair(self, port_id, vip_address):
@@ -127,12 +127,12 @@ class AllowedAddressPairsDriver(neutron_base.BaseNeutronDriver):
             self._add_allowed_address_pair_to_port(port_id, vip_address)
         except neutron_client_exceptions.PortNotFoundClient as e:
             raise base.PortNotFound(str(e))
-        except Exception:
+        except Exception as e:
             message = _('Error adding allowed address pair {ip} '
                         'to port {port_id}.').format(ip=vip_address,
                                                      port_id=port_id)
             LOG.exception(message)
-            raise base.PlugVIPException(message)
+            raise base.PlugVIPException(message) from e
 
     def _get_lb_security_group(self, load_balancer_id):
         sec_grp_name = common_utils.get_vip_security_group_name(
@@ -359,11 +359,11 @@ class AllowedAddressPairsDriver(neutron_base.BaseNeutronDriver):
                     neutron_client_exceptions.PortNotFoundClient):
                 LOG.debug('VIP port %s already deleted. Skipping.',
                           vip.port_id)
-            except Exception:
+            except Exception as e:
                 message = _('Error deleting VIP port_id {port_id} from '
                             'neutron').format(port_id=vip.port_id)
                 LOG.exception(message)
-                raise base.DeallocateVIPException(message)
+                raise base.DeallocateVIPException(message) from e
         elif port:
             LOG.info("Port %s will not be deleted by Octavia as it was "
                      "not created by Octavia.", vip.port_id)
@@ -543,12 +543,12 @@ class AllowedAddressPairsDriver(neutron_base.BaseNeutronDriver):
             }}
             self.neutron_client.update_port(interface.port_id,
                                             aap_update)
-        except Exception:
+        except Exception as e:
             message = _('Error unplugging VIP. Could not clear '
                         'allowed address pairs from port '
                         '{port_id}.').format(port_id=vip.port_id)
             LOG.exception(message)
-            raise base.UnplugVIPException(message)
+            raise base.UnplugVIPException(message) from e
 
         # Delete the VRRP port if we created it
         try:
@@ -566,11 +566,11 @@ class AllowedAddressPairsDriver(neutron_base.BaseNeutronDriver):
     def unplug_vip(self, load_balancer, vip):
         try:
             subnet = self.get_subnet(vip.subnet_id)
-        except base.SubnetNotFound:
+        except base.SubnetNotFound as e:
             msg = ("Can't unplug vip because vip subnet {0} was not "
                    "found").format(vip.subnet_id)
             LOG.exception(msg)
-            raise base.PluggedVIPNotFound(msg)
+            raise base.PluggedVIPNotFound(msg) from e
         for amphora in filter(
                 lambda amp: amp.status == constants.AMPHORA_ALLOCATED,
                 load_balancer.amphorae):
@@ -587,13 +587,13 @@ class AllowedAddressPairsDriver(neutron_base.BaseNeutronDriver):
             if 'Network' in str(e):
                 raise base.NetworkNotFound(str(e))
             raise base.PlugNetworkException(str(e))
-        except Exception:
+        except Exception as e:
             message = _('Error plugging amphora (compute_id: {compute_id}) '
                         'into network {network_id}.').format(
                             compute_id=compute_id,
                             network_id=network_id)
             LOG.exception(message)
-            raise base.PlugNetworkException(message)
+            raise base.PlugNetworkException(message) from e
 
         return self._nova_interface_to_octavia_interface(compute_id, interface)
 
@@ -647,8 +647,8 @@ class AllowedAddressPairsDriver(neutron_base.BaseNeutronDriver):
                     port.id, {constants.PORT: {'dns_name': ''}})
 
             except (neutron_client_exceptions.NotFound,
-                    neutron_client_exceptions.PortNotFoundClient):
-                raise base.PortNotFound()
+                    neutron_client_exceptions.PortNotFoundClient) as e:
+                raise base.PortNotFound() from e
 
     def plug_port(self, amphora, port):
         try:
@@ -671,14 +671,14 @@ class AllowedAddressPairsDriver(neutron_base.BaseNeutronDriver):
                 network_id=port.network_id,
                 port_id=port.id,
                 fixed_ips=port.fixed_ips)
-        except Exception:
+        except Exception as e:
             message = _('Error plugging amphora (compute_id: '
                         '{compute_id}) into port '
                         '{port_id}.').format(
                             compute_id=amphora.compute_id,
                             port_id=port.id)
             LOG.exception(message)
-            raise base.PlugNetworkException(message)
+            raise base.PlugNetworkException(message) from e
 
         return plugged_interface
 

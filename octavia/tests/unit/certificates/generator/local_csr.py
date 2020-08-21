@@ -54,7 +54,7 @@ class BaseLocalCSRTestCase(base.TestCase):
                 self.ca_private_key_passphrase),
         )
 
-        super(BaseLocalCSRTestCase, self).setUp()
+        super().setUp()
 
     def test_generate_csr(self):
         cn = 'testCN'

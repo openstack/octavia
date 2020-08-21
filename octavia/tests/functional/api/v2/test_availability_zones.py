@@ -31,7 +31,7 @@ class TestAvailabilityZones(base.BaseAPITest):
     root_tag_links = 'availability_zones_links'
 
     def setUp(self):
-        super(TestAvailabilityZones, self).setUp()
+        super().setUp()
         self.azp = self.create_availability_zone_profile(
             'test1', 'noop_driver', '{"compute_zone": "my_az_1"}')
 

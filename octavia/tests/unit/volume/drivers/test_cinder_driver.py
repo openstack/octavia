@@ -45,7 +45,7 @@ class TestCinderClient(base.TestCase):
         self.image_id = fake_uuid2
         self.volume_id = fake_uuid3
 
-        super(TestCinderClient, self).setUp()
+        super().setUp()
 
     def test_create_volume_from_image(self):
         self.conf.config(group="controller_worker",

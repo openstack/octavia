@@ -21,7 +21,7 @@ import octavia.tests.unit.base as base
 class TestNoopProviderAgent(base.TestCase):
 
     def setUp(self):
-        super(TestNoopProviderAgent, self).setUp()
+        super().setUp()
 
     @mock.patch('time.sleep')
     def test_noop_provider_agent(self, mock_sleep):

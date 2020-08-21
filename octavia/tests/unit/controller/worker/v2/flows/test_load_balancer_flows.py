@@ -30,7 +30,7 @@ import octavia.tests.unit.base as base
 class TestLoadBalancerFlows(base.TestCase):
 
     def setUp(self):
-        super(TestLoadBalancerFlows, self).setUp()
+        super().setUp()
         self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
         self.conf.config(
             group="controller_worker",

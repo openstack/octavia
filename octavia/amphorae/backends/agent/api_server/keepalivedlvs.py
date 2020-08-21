@@ -64,12 +64,12 @@ class KeepalivedLvs(udp_listener_base.UdpListenerApiServerBase):
                 assert True is os.path.exists(script_dir)
                 assert True is os.path.exists(os.path.join(
                     script_dir, CHECK_SCRIPT_NAME))
-            except Exception:
+            except Exception as e:
                 raise exceptions.Conflict(
                     description='%(file_name)s not Found for '
                                 'UDP Listener %(listener_id)s' %
                                 {'file_name': CHECK_SCRIPT_NAME,
-                                 'listener_id': listener_id})
+                                 'listener_id': listener_id}) from e
             os.makedirs(util.keepalived_backend_check_script_dir())
             shutil.copy2(os.path.join(script_dir, CHECK_SCRIPT_NAME),
                          util.keepalived_backend_check_script_path())

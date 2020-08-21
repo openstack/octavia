@@ -28,7 +28,7 @@ class NoopProvidesRequiresTask(task.Task):
     def __init__(self, name, provides_dicts=None, requires=None):
         if provides_dicts is None:
             provides_dicts = {}
-        super(NoopProvidesRequiresTask, self).__init__(
+        super().__init__(
             name=name,
             provides=list(provides_dicts),
             requires=requires)
@@ -40,7 +40,7 @@ class NoopProvidesRequiresTask(task.Task):
 
 class NoopManager(object):
     def __init__(self):
-        super(NoopManager, self).__init__()
+        super().__init__()
 
     def get_create_distributor_subflow(self):
         LOG.debug('Distributor %s create_distributor', self.__class__.__name__)
@@ -99,7 +99,7 @@ class NoopManager(object):
 
 class NoopDistributorDriver(driver_base.DistributorDriver):
     def __init__(self):
-        super(NoopDistributorDriver, self).__init__()
+        super().__init__()
         self.driver = NoopManager()
 
     def get_create_distributor_subflow(self):

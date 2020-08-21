@@ -35,7 +35,7 @@ class TestDriverUpdater(base.TestCase):
     def setUp(self, mock_get_session, mock_member_repo, mock_health_repo,
               mock_pool_repo, mock_l7r_repo, mock_l7p_repo, mock_list_repo,
               mock_lb_repo):
-        super(TestDriverUpdater, self).setUp()
+        super().setUp()
         self.mock_session = "FAKE_DB_SESSION"
         mock_get_session.return_value = self.mock_session
 

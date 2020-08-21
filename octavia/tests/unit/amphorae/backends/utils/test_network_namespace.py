@@ -22,7 +22,7 @@ import octavia.tests.unit.base as base
 class TestNetworkNamespace(base.TestCase):
 
     def setUp(self):
-        super(TestNetworkNamespace, self).setUp()
+        super().setUp()
 
     @mock.patch('ctypes.get_errno')
     @mock.patch('ctypes.CDLL')

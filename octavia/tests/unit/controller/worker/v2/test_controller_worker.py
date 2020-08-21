@@ -148,7 +148,7 @@ class TestControllerWorker(base.TestCase):
             constants.POOL_ID: POOL_ID
         }
 
-        super(TestControllerWorker, self).setUp()
+        super().setUp()
 
     @mock.patch('octavia.controller.worker.v2.flows.'
                 'amphora_flows.AmphoraFlows.get_create_amphora_flow',

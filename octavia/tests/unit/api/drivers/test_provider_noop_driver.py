@@ -22,7 +22,7 @@ import octavia.tests.unit.base as base
 class TestNoopProviderDriver(base.TestCase):
 
     def setUp(self):
-        super(TestNoopProviderDriver, self).setUp()
+        super().setUp()
         self.driver = driver.NoopProviderDriver()
 
         self.loadbalancer_id = uuidutils.generate_uuid()

@@ -171,7 +171,7 @@ class TestDatabaseTasks(base.TestCase):
         }
         _db_amphora_mock.to_dict.return_value = self.amphora
 
-        super(TestDatabaseTasks, self).setUp()
+        super().setUp()
 
     @mock.patch('octavia.db.repositories.AmphoraRepository.create',
                 return_value=_db_amphora_mock)

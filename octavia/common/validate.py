@@ -44,8 +44,8 @@ def url(url, require_scheme=True):
         if require_scheme:
             if p_url.scheme != 'http' and p_url.scheme != 'https':
                 raise exceptions.InvalidURL(url=url)
-    except Exception:
-        raise exceptions.InvalidURL(url=url)
+    except Exception as e:
+        raise exceptions.InvalidURL(url=url) from e
     return True
 
 
@@ -63,8 +63,8 @@ def url_path(url_path):
 
         if invalid_path:
             raise exceptions.InvalidURLPath(url_path=url_path)
-    except Exception:
-        raise exceptions.InvalidURLPath(url_path=url_path)
+    except Exception as e:
+        raise exceptions.InvalidURLPath(url_path=url_path) from e
     return True
 
 
@@ -317,8 +317,8 @@ def port_exists(port_id, context=None):
     network_driver = utils.get_network_driver()
     try:
         port = network_driver.get_port(port_id, context=context)
-    except Exception:
-        raise exceptions.InvalidSubresource(resource='Port', id=port_id)
+    except Exception as e:
+        raise exceptions.InvalidSubresource(resource='Port', id=port_id) from e
     return port
 
 
@@ -336,8 +336,9 @@ def subnet_exists(subnet_id, context=None):
     network_driver = utils.get_network_driver()
     try:
         subnet = network_driver.get_subnet(subnet_id, context=context)
-    except Exception:
-        raise exceptions.InvalidSubresource(resource='Subnet', id=subnet_id)
+    except Exception as e:
+        raise exceptions.InvalidSubresource(
+            resource='Subnet', id=subnet_id) from e
     return subnet
 
 
@@ -346,9 +347,9 @@ def qos_policy_exists(qos_policy_id):
     qos_extension_enabled(network_driver)
     try:
         qos_policy = network_driver.get_qos_policy(qos_policy_id)
-    except Exception:
-        raise exceptions.InvalidSubresource(resource='qos_policy',
-                                            id=qos_policy_id)
+    except Exception as e:
+        raise exceptions.InvalidSubresource(
+            resource='qos_policy', id=qos_policy_id) from e
     return qos_policy
 
 
@@ -367,8 +368,9 @@ def network_exists_optionally_contains_subnet(network_id, subnet_id=None,
     network_driver = utils.get_network_driver()
     try:
         network = network_driver.get_network(network_id, context=context)
-    except Exception:
-        raise exceptions.InvalidSubresource(resource='Network', id=network_id)
+    except Exception as e:
+        raise exceptions.InvalidSubresource(
+            resource='Network', id=network_id) from e
     if subnet_id:
         if not network.subnets or subnet_id not in network.subnets:
             raise exceptions.InvalidSubresource(resource='Subnet',
@@ -414,9 +416,9 @@ def check_session_persistence(SP_dict):
                 '"APP_COOKIE" session persistence type.'))
     except exceptions.ValidationException:
         raise
-    except Exception:
+    except Exception as e:
         raise exceptions.ValidationException(detail=_(
-            'Invalid session_persistence provided.'))
+            'Invalid session_persistence provided.')) from e
 
 
 def ip_not_reserved(ip_address):

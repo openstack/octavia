@@ -126,7 +126,7 @@ class TestDatabaseTasks(base.TestCase):
         self.l7rule_mock.id = L7RULE_ID
         self.l7rule_mock.l7policy = self.l7policy_mock
 
-        super(TestDatabaseTasks, self).setUp()
+        super().setUp()
 
     @mock.patch('octavia.db.repositories.AmphoraRepository.create',
                 return_value=_amphora_mock)

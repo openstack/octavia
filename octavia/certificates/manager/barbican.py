@@ -38,7 +38,7 @@ class BarbicanCertManager(cert_mgr.CertManager):
     """Certificate Manager that wraps the Barbican client API."""
 
     def __init__(self):
-        super(BarbicanCertManager, self).__init__()
+        super().__init__()
         self.auth = stevedore_driver.DriverManager(
             namespace='octavia.barbican_auth',
             name=cfg.CONF.certificates.barbican_auth,

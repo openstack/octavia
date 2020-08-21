@@ -40,7 +40,7 @@ class TestAmphoraInfo(base.TestCase):
     LB_ID_1 = uuidutils.generate_uuid()
 
     def setUp(self):
-        super(TestAmphoraInfo, self).setUp()
+        super().setUp()
         self.osutils_mock = mock.MagicMock()
         self.amp_info = amphora_info.AmphoraInfo(self.osutils_mock)
         self.udp_driver = mock.MagicMock()

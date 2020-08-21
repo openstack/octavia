@@ -20,7 +20,7 @@ from octavia.tests.unit import base
 
 class TestHouseKeepingCMD(base.TestCase):
     def setUp(self):
-        super(TestHouseKeepingCMD, self).setUp()
+        super().setUp()
 
     @mock.patch('octavia.cmd.house_keeping.spare_amp_thread_event')
     @mock.patch('octavia.controller.housekeeping.'

@@ -33,7 +33,7 @@ class TestQuotas(base.BaseAPITest):
     root_tag_links = 'quotas_links'
 
     def setUp(self):
-        super(TestQuotas, self).setUp()
+        super().setUp()
         conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
         conf.config(
             group="quotas",

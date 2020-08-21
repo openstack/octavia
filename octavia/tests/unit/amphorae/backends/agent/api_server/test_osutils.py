@@ -30,7 +30,7 @@ from octavia.tests.unit import base
 class TestOSUtils(base.TestCase):
 
     def setUp(self):
-        super(TestOSUtils, self).setUp()
+        super().setUp()
 
         self.base_os_util = osutils.BaseOS('unknown')
 

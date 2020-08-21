@@ -25,7 +25,7 @@ class TestHealthMonitorFlows(base.TestCase):
     def setUp(self):
         self.HealthMonitorFlow = health_monitor_flows.HealthMonitorFlows()
 
-        super(TestHealthMonitorFlows, self).setUp()
+        super().setUp()
 
     def test_get_create_health_monitor_flow(self):
 

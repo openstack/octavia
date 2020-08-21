@@ -193,18 +193,19 @@ class BaseNeutronDriver(base.AbstractNetworkDriver):
                                resource_type)(resource_id)
             return getattr(utils, 'convert_%s_dict_to_model' %
                            resource_type)(resource)
-        except neutron_client_exceptions.NotFound:
+        except neutron_client_exceptions.NotFound as e:
             message = _('{resource_type} not found '
                         '({resource_type} id: {resource_id}).').format(
                 resource_type=resource_type, resource_id=resource_id)
             raise getattr(base, '%sNotFound' % ''.join(
-                [w.capitalize() for w in resource_type.split('_')]))(message)
-        except Exception:
+                [w.capitalize() for w in resource_type.split('_')]
+            ))(message) from e
+        except Exception as e:
             message = _('Error retrieving {resource_type} '
                         '({resource_type} id: {resource_id}.').format(
                 resource_type=resource_type, resource_id=resource_id)
             LOG.exception(message)
-            raise base.NetworkException(message)
+            raise base.NetworkException(message) from e
 
     def _get_resources_by_filters(self, resource_type, unique_item=False,
                                   **filters):
@@ -226,18 +227,19 @@ class BaseNeutronDriver(base.AbstractNetworkDriver):
 
             return list(map(conversion_function,
                             resource['%ss' % resource_type]))
-        except neutron_client_exceptions.NotFound:
+        except neutron_client_exceptions.NotFound as e:
             message = _('{resource_type} not found '
                         '({resource_type} Filters: {filters}.').format(
                 resource_type=resource_type, filters=filters)
             raise getattr(base, '%sNotFound' % ''.join(
-                [w.capitalize() for w in resource_type.split('_')]))(message)
-        except Exception:
+                [w.capitalize() for w in resource_type.split('_')]
+            ))(message) from e
+        except Exception as e:
             message = _('Error retrieving {resource_type} '
                         '({resource_type} Filters: {filters}.').format(
                 resource_type=resource_type, filters=filters)
             LOG.exception(message)
-            raise base.NetworkException(message)
+            raise base.NetworkException(message) from e
 
     def get_network(self, network_id, context=None):
         return self._get_resource('network', network_id, context=context)

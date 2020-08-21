@@ -117,17 +117,17 @@ class LocalCertManager(cert_mgr.CertManager):
         try:
             with os.fdopen(os.open(filename_certificate, flags)) as cert_file:
                 cert_data['certificate'] = cert_file.read()
-        except IOError:
+        except IOError as e:
             LOG.error("Failed to read certificate for %s.", cert_ref)
             raise exceptions.CertificateStorageException(
-                msg="Certificate could not be read.")
+                msg="Certificate could not be read.") from e
         try:
             with os.fdopen(os.open(filename_private_key, flags)) as key_file:
                 cert_data['private_key'] = key_file.read()
-        except IOError:
+        except IOError as e:
             LOG.error("Failed to read private key for %s", cert_ref)
             raise exceptions.CertificateStorageException(
-                msg="Private Key could not be read.")
+                msg="Private Key could not be read.") from e
 
         try:
             with os.fdopen(os.open(filename_intermediates, flags)) as int_file:
@@ -204,8 +204,9 @@ class LocalCertManager(cert_mgr.CertManager):
         try:
             with os.fdopen(os.open(filename_secret, flags)) as secret_file:
                 secret_data = secret_file.read()
-        except IOError:
+        except IOError as e:
             LOG.error("Failed to read secret for %s.", secret_ref)
-            raise exceptions.CertificateRetrievalException(ref=secret_ref)
+            raise exceptions.CertificateRetrievalException(
+                ref=secret_ref) from e
 
         return secret_data

@@ -25,7 +25,7 @@ class TestNoopVolumeDriver(base.TestCase):
     FAKE_UUID_2 = uuidutils.generate_uuid()
 
     def setUp(self):
-        super(TestNoopVolumeDriver, self).setUp()
+        super().setUp()
         self.driver = driver.NoopVolumeDriver()
 
         self.image_id = self.FAKE_UUID_1

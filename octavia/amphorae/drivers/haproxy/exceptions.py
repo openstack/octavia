@@ -52,7 +52,7 @@ class APIException(exc.HTTPClientError):
 
     def __init__(self, **kwargs):
         self.msg = self.msg % kwargs
-        super(APIException, self).__init__(detail=self.msg)
+        super().__init__(detail=self.msg)
 
 
 class InvalidRequest(APIException):

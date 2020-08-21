@@ -25,7 +25,7 @@ AMP_ID = uuidutils.generate_uuid()
 
 class AgentJinjaTestCase(base.TestCase):
     def setUp(self):
-        super(AgentJinjaTestCase, self).setUp()
+        super().setUp()
 
         self.conf = oslo_fixture.Config(cfg.CONF)
         self.conf.config(debug=False)

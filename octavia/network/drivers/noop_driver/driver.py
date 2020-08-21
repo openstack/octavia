@@ -24,7 +24,7 @@ LOG = logging.getLogger(__name__)
 
 class NoopManager(object):
     def __init__(self):
-        super(NoopManager, self).__init__()
+        super().__init__()
         self.networkconfigconfig = {}
         self._qos_extension_enabled = True
 
@@ -338,7 +338,7 @@ class NoopManager(object):
 
 class NoopNetworkDriver(driver_base.AbstractNetworkDriver):
     def __init__(self):
-        super(NoopNetworkDriver, self).__init__()
+        super().__init__()
         self.driver = NoopManager()
 
     def allocate_vip(self, loadbalancer):

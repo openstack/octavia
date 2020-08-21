@@ -21,7 +21,7 @@ from octavia.tests.unit import base
 class TestUpgradeChecks(base.TestCase):
 
     def setUp(self):
-        super(TestUpgradeChecks, self).setUp()
+        super().setUp()
         self.cmd = status.Checks()
 
     def test__sample_check(self):

@@ -43,7 +43,7 @@ class L7PolicyController(base.BaseController):
     RBAC_TYPE = constants.RBAC_L7POLICY
 
     def __init__(self):
-        super(L7PolicyController, self).__init__()
+        super().__init__()
 
     @wsme_pecan.wsexpose(l7policy_types.L7PolicyRootResponse, wtypes.text,
                          [wtypes.text], ignore_extra_args=True)
@@ -103,13 +103,13 @@ class L7PolicyController(base.BaseController):
 
             return self.repositories.l7policy.create(lock_session,
                                                      **l7policy_dict)
-        except odb_exceptions.DBDuplicateEntry:
-            raise exceptions.IDAlreadyExists()
-        except odb_exceptions.DBError:
+        except odb_exceptions.DBDuplicateEntry as e:
+            raise exceptions.IDAlreadyExists() from e
+        except odb_exceptions.DBError as e:
             # TODO(blogan): will have to do separate validation protocol
             # before creation or update since the exception messages
             # do not give any information as to what constraint failed
-            raise exceptions.InvalidOption(value='', option='')
+            raise exceptions.InvalidOption(value='', option='') from e
 
     @wsme_pecan.wsexpose(l7policy_types.L7PolicyRootResponse,
                          body=l7policy_types.L7PolicyRootPOST, status_code=201)

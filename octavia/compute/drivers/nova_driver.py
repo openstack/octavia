@@ -61,7 +61,7 @@ class VirtualMachineManager(compute_base.ComputeBase):
     '''Compute implementation of virtual machines via nova.'''
 
     def __init__(self):
-        super(VirtualMachineManager, self).__init__()
+        super().__init__()
         # Must initialize nova api
         self._nova_client = clients.NovaAuth.get_nova_client(
             endpoint=CONF.nova.endpoint,
@@ -201,9 +201,9 @@ class VirtualMachineManager(compute_base.ComputeBase):
             amphora, fault = self.get_amphora(compute_id)
             if amphora and amphora.status == 'ACTIVE':
                 return constants.UP
-        except Exception:
+        except Exception as e:
             LOG.exception("Error retrieving nova virtual machine status.")
-            raise exceptions.ComputeStatusException()
+            raise exceptions.ComputeStatusException() from e
         return constants.DOWN
 
     def get_amphora(self, compute_id, management_network_id=None):
@@ -217,9 +217,9 @@ class VirtualMachineManager(compute_base.ComputeBase):
         # utilize nova client ServerManager 'get' method to retrieve info
         try:
             amphora = self.manager.get(compute_id)
-        except Exception:
+        except Exception as e:
             LOG.exception("Error retrieving nova virtual machine.")
-            raise exceptions.ComputeGetException()
+            raise exceptions.ComputeGetException() from e
         return self._translate_amphora(amphora, management_network_id)
 
     def _translate_amphora(self, nova_response, management_network_id=None):
@@ -307,9 +307,9 @@ class VirtualMachineManager(compute_base.ComputeBase):
         try:
             server_group_obj = self.server_groups.create(**kwargs)
             return server_group_obj
-        except Exception:
+        except Exception as e:
             LOG.exception("Error create server group instance.")
-            raise exceptions.ServerGroupObjectCreateException()
+            raise exceptions.ServerGroupObjectCreateException() from e
 
     def delete_server_group(self, server_group_id):
         """Delete a server group object
@@ -323,9 +323,9 @@ class VirtualMachineManager(compute_base.ComputeBase):
         except nova_exceptions.NotFound:
             LOG.warning("Server group instance with id: %s not found. "
                         "Assuming already deleted.", server_group_id)
-        except Exception:
+        except Exception as e:
             LOG.exception("Error delete server group instance.")
-            raise exceptions.ServerGroupObjectDeleteException()
+            raise exceptions.ServerGroupObjectDeleteException() from e
 
     def attach_network_or_port(self, compute_id, network_id=None,
                                ip_address=None, port_id=None):
@@ -409,10 +409,10 @@ class VirtualMachineManager(compute_base.ComputeBase):
         """
         try:
             self.flavor_manager.get(flavor_id)
-        except nova_exceptions.NotFound:
+        except nova_exceptions.NotFound as e:
             LOG.info('Flavor %s was not found in nova.', flavor_id)
             raise exceptions.InvalidSubresource(resource='Nova flavor',
-                                                id=flavor_id)
+                                                id=flavor_id) from e
         except Exception as e:
             LOG.exception('Nova reports a failure getting flavor details for '
                           'flavor ID %s: %s', flavor_id, e)

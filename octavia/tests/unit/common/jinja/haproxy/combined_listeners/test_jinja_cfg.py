@@ -29,7 +29,7 @@ CONF = cfg.CONF
 
 class TestHaproxyCfg(base.TestCase):
     def setUp(self):
-        super(TestHaproxyCfg, self).setUp()
+        super().setUp()
         self.jinja_cfg = jinja_cfg.JinjaTemplater(
             base_amp_path='/var/lib/octavia',
             base_crt_dir='/var/lib/octavia/certs')

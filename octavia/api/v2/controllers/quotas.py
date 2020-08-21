@@ -31,7 +31,7 @@ class QuotasController(base.BaseController):
     RBAC_TYPE = constants.RBAC_QUOTA
 
     def __init__(self):
-        super(QuotasController, self).__init__()
+        super().__init__()
 
     @wsme_pecan.wsexpose(quota_types.QuotaResponse, wtypes.text)
     def get(self, project_id):
@@ -103,7 +103,7 @@ class QuotasDefaultController(base.BaseController):
     RBAC_TYPE = constants.RBAC_QUOTA
 
     def __init__(self, project_id):
-        super(QuotasDefaultController, self).__init__()
+        super().__init__()
         self.project_id = project_id
 
     @wsme_pecan.wsexpose(quota_types.QuotaResponse, wtypes.text)

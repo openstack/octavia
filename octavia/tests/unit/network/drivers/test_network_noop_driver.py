@@ -30,7 +30,7 @@ class TestNoopNetworkDriver(base.TestCase):
     FAKE_UUID_6 = uuidutils.generate_uuid()
 
     def setUp(self):
-        super(TestNoopNetworkDriver, self).setUp()
+        super().setUp()
         self.driver = driver.NoopNetworkDriver()
         self.port = mock.MagicMock()
         self.port_id = 88

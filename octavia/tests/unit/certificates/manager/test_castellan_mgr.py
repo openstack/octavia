@@ -28,7 +28,7 @@ class TestCastellanCertManager(base.TestCase):
         self.certbag = mock.MagicMock()
         self.manager.get.return_value = self.certbag
 
-        super(TestCastellanCertManager, self).setUp()
+        super().setUp()
 
     @mock.patch('castellan.key_manager.API')
     def test_get_secret(self, mock_api):

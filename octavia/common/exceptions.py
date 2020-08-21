@@ -40,14 +40,14 @@ class OctaviaException(Exception):
                 self.message = args[0]
                 self.orig_msg = kwargs.get('orig_msg')
                 self.orig_code = kwargs.get('orig_code')
-            super(OctaviaException, self).__init__(self.message % kwargs)
+            super().__init__(self.message % kwargs)
             self.msg = self.message % kwargs
         except Exception:
             with excutils.save_and_reraise_exception() as ctxt:
                 if not self.use_fatal_exceptions():
                     ctxt.reraise = False
                     # at least get the core message out if something happened
-                    super(OctaviaException, self).__init__(self.message)
+                    super().__init__(self.message)
 
     def __unicode__(self):
         return self.msg
@@ -66,7 +66,7 @@ class APIException(exc.HTTPClientError):
 
     def __init__(self, **kwargs):
         self.msg = self.msg % kwargs
-        super(APIException, self).__init__(detail=self.msg)
+        super().__init__(detail=self.msg)
 
 
 class NotFound(APIException):

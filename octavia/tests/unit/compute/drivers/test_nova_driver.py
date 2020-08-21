@@ -141,7 +141,7 @@ class TestNovaClient(base.TestCase):
         self.mock_image_tag.return_value = 1
         self.addCleanup(self.mock_image_tag.stop)
 
-        super(TestNovaClient, self).setUp()
+        super().setUp()
 
     def test_build(self):
         amphora_id = self.manager.build(amphora_flavor=1, image_tag='stout',

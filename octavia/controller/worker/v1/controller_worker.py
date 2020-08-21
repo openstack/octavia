@@ -69,7 +69,7 @@ class ControllerWorker(base_taskflow.BaseTaskFlowEngine):
         self._flavor_repo = repo.FlavorRepository()
         self._az_repo = repo.AvailabilityZoneRepository()
 
-        super(ControllerWorker, self).__init__()
+        super().__init__()
 
     @tenacity.retry(
         retry=(

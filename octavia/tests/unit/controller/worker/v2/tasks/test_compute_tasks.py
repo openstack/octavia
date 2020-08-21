@@ -93,7 +93,7 @@ class TestComputeTasks(base.TestCase):
         logging_mock = mock.MagicMock()
         compute_tasks.LOG = logging_mock
 
-        super(TestComputeTasks, self).setUp()
+        super().setUp()
 
     @mock.patch('octavia.common.jinja.logging.logging_jinja_cfg.'
                 'LoggingJinjaTemplater.build_logging_config')

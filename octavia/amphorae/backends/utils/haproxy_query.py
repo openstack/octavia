@@ -47,8 +47,9 @@ class HAProxyQuery(object):
 
         try:
             sock.connect(self.socket)
-        except socket.error:
-            raise Exception(_("HAProxy '{0}' query failed.").format(query))
+        except socket.error as e:
+            raise Exception(
+                _("HAProxy '{0}' query failed.").format(query)) from e
 
         try:
             sock.send(octavia_utils.b(query + '\n'))

@@ -24,7 +24,7 @@ class KeepalivedLvsTestCase(base.TestCase):
     FAKE_ID = uuidutils.generate_uuid()
 
     def setUp(self):
-        super(KeepalivedLvsTestCase, self).setUp()
+        super().setUp()
         self.test_keepalivedlvs = keepalivedlvs.KeepalivedLvs()
 
     @mock.patch.object(keepalivedlvs, "webob")

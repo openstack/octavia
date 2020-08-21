@@ -76,7 +76,7 @@ class BaseTaskFlowEngine(object):
 class ExtendExpiryListener(base.Listener):
 
     def __init__(self, engine, job):
-        super(ExtendExpiryListener, self).__init__(engine)
+        super().__init__(engine)
         self.job = job
 
     def _task_receiver(self, state, details):
@@ -92,14 +92,14 @@ class ExtendExpiryListener(base.Listener):
 class DynamicLoggingConductor(impl_blocking.BlockingConductor):
 
     def _listeners_from_job(self, job, engine):
-        listeners = super(DynamicLoggingConductor, self)._listeners_from_job(
+        listeners = super()._listeners_from_job(
             job, engine)
         listeners.append(logging.DynamicLoggingListener(engine, log=LOG))
 
         return listeners
 
     def _on_job_done(self, job, fut):
-        super(DynamicLoggingConductor, self)._on_job_done(job, fut)
+        super()._on_job_done(job, fut)
         # Double check that job is complete.
         if (not CONF.task_flow.jobboard_save_logbook and
                 job.state == states.COMPLETE):
@@ -115,8 +115,7 @@ class DynamicLoggingConductor(impl_blocking.BlockingConductor):
 class RedisDynamicLoggingConductor(DynamicLoggingConductor):
 
     def _listeners_from_job(self, job, engine):
-        listeners = super(RedisDynamicLoggingConductor,
-                          self)._listeners_from_job(job, engine)
+        listeners = super()._listeners_from_job(job, engine)
         listeners.append(ExtendExpiryListener(engine, job))
         return listeners
 

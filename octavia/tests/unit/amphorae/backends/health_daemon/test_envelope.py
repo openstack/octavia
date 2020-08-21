@@ -21,7 +21,7 @@ from octavia.tests.unit import base
 
 class TestEnvelope(base.TestCase):
     def setUp(self):
-        super(TestEnvelope, self).setUp()
+        super().setUp()
 
     def test_message_hmac(self):
         seq = 42

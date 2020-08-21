@@ -53,7 +53,7 @@ class HaproxyAmphoraLoadBalancerDriver(
         vrrp_rest_driver.KeepalivedAmphoraDriverMixin):
 
     def __init__(self):
-        super(HaproxyAmphoraLoadBalancerDriver, self).__init__()
+        super().__init__()
         self.clients = {
             'base': AmphoraAPIClientBase(),
             '0.5': AmphoraAPIClient0_5(),
@@ -587,10 +587,10 @@ class HaproxyAmphoraLoadBalancerDriver(
             self._populate_amphora_api_version(amphora)
             self.clients[amphora.api_version].update_agent_config(
                 amphora, agent_config, timeout_dict=timeout_dict)
-        except exc.NotFound:
+        except exc.NotFound as e:
             LOG.debug('Amphora {} does not support the update_agent_config '
                       'API.'.format(amphora.id))
-            raise driver_except.AmpDriverNotImplementedError()
+            raise driver_except.AmpDriverNotImplementedError() from e
 
     def get_interface_from_ip(self, amphora, ip_address, timeout_dict=None):
         """Get the interface name for an IP address.
@@ -619,19 +619,17 @@ class HaproxyAmphoraLoadBalancerDriver(
 class CustomHostNameCheckingAdapter(requests.adapters.HTTPAdapter):
     def cert_verify(self, conn, url, verify, cert):
         conn.assert_hostname = self.uuid
-        return super(CustomHostNameCheckingAdapter,
-                     self).cert_verify(conn, url, verify, cert)
+        return super().cert_verify(conn, url, verify, cert)
 
     def init_poolmanager(self, *pool_args, **pool_kwargs):
         proto = CONF.amphora_agent.agent_tls_protocol.replace('.', '_')
         pool_kwargs['ssl_version'] = getattr(ssl, "PROTOCOL_%s" % proto)
-        return super(CustomHostNameCheckingAdapter,
-                     self).init_poolmanager(*pool_args, **pool_kwargs)
+        return super().init_poolmanager(*pool_args, **pool_kwargs)
 
 
 class AmphoraAPIClientBase(object):
     def __init__(self):
-        super(AmphoraAPIClientBase, self).__init__()
+        super().__init__()
 
         self.get = functools.partial(self.request, 'get')
         self.post = functools.partial(self.request, 'post')
@@ -753,7 +751,7 @@ class AmphoraAPIClientBase(object):
 
 class AmphoraAPIClient0_5(AmphoraAPIClientBase):
     def __init__(self):
-        super(AmphoraAPIClient0_5, self).__init__()
+        super().__init__()
 
         self.start_listener = functools.partial(self._action,
                                                 consts.AMP_ACTION_START)
@@ -868,7 +866,7 @@ class AmphoraAPIClient0_5(AmphoraAPIClientBase):
 
 class AmphoraAPIClient1_0(AmphoraAPIClientBase):
     def __init__(self):
-        super(AmphoraAPIClient1_0, self).__init__()
+        super().__init__()
 
         self.start_listener = functools.partial(self._action,
                                                 consts.AMP_ACTION_START)

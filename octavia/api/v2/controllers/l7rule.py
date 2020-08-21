@@ -39,7 +39,7 @@ class L7RuleController(base.BaseController):
     RBAC_TYPE = constants.RBAC_L7RULE
 
     def __init__(self, l7policy_id):
-        super(L7RuleController, self).__init__()
+        super().__init__()
         self.l7policy_id = l7policy_id
 
     @wsme_pecan.wsexpose(l7rule_types.L7RuleRootResponse, wtypes.text,
@@ -110,13 +110,13 @@ class L7RuleController(base.BaseController):
     def _validate_create_l7rule(self, lock_session, l7rule_dict):
         try:
             return self.repositories.l7rule.create(lock_session, **l7rule_dict)
-        except odb_exceptions.DBDuplicateEntry:
-            raise exceptions.IDAlreadyExists()
-        except odb_exceptions.DBError:
+        except odb_exceptions.DBDuplicateEntry as e:
+            raise exceptions.IDAlreadyExists() from e
+        except odb_exceptions.DBError as e:
             # TODO(blogan): will have to do separate validation protocol
             # before creation or update since the exception messages
             # do not give any information as to what constraint failed
-            raise exceptions.InvalidOption(value='', option='')
+            raise exceptions.InvalidOption(value='', option='') from e
 
     @wsme_pecan.wsexpose(l7rule_types.L7RuleRootResponse,
                          body=l7rule_types.L7RuleRootPOST, status_code=201)

@@ -20,7 +20,7 @@ LOG = logging.getLogger(__name__)
 
 class NoopManager(object):
     def __init__(self):
-        super(NoopManager, self).__init__()
+        super().__init__()
         self.volumeconfig = {}
 
     def create_volume_from_image(self, image_id):
@@ -45,7 +45,7 @@ class NoopManager(object):
 
 class NoopVolumeDriver(driver_base.VolumeBase):
     def __init__(self):
-        super(NoopVolumeDriver, self).__init__()
+        super().__init__()
         self.driver = NoopManager()
 
     def create_volume_from_image(self, image_id):

@@ -21,7 +21,7 @@ import octavia.tests.unit.base as base
 class TestHAProxyAmphoraDriver(base.TestCase):
 
     def setUp(self):
-        super(TestHAProxyAmphoraDriver, self).setUp()
+        super().setUp()
         self.driver = rest_api_driver.HaproxyAmphoraLoadBalancerDriver()
 
     @mock.patch('octavia.amphorae.drivers.haproxy.rest_api_driver.'

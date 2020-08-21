@@ -26,7 +26,7 @@ from octavia.tests.unit import base
 
 class TestAmphoraDriver(base.TestRpc):
     def setUp(self):
-        super(TestAmphoraDriver, self).setUp()
+        super().setUp()
         self.amp_driver = driver.AmphoraProviderDriver()
         self.sample_data = sample_data_models.SampleDriverDataModels()
 

@@ -21,7 +21,7 @@ from octavia.tests.unit import base
 class TestHAproxyVRRPCheckCMD(base.TestCase):
 
     def setUp(self):
-        super(TestHAproxyVRRPCheckCMD, self).setUp()
+        super().setUp()
 
     @mock.patch('socket.socket')
     def test_health_check(self, mock_socket):

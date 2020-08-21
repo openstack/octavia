@@ -47,7 +47,7 @@ class ListenersController(base.BaseController):
     RBAC_TYPE = constants.RBAC_LISTENER
 
     def __init__(self):
-        super(ListenersController, self).__init__()
+        super().__init__()
 
     @wsme_pecan.wsexpose(listener_types.ListenerRootResponse, wtypes.text,
                          [wtypes.text], ignore_extra_args=True)
@@ -323,9 +323,9 @@ class ListenersController(base.BaseController):
                 raise exceptions.DuplicateListenerEntry(
                     protocol=listener_dict.get('protocol'),
                     port=listener_dict.get('protocol_port'))
-        except odb_exceptions.DBError:
+        except odb_exceptions.DBError as e:
             raise exceptions.InvalidOption(value=listener_dict.get('protocol'),
-                                           option='protocol')
+                                           option='protocol') from e
 
     @wsme_pecan.wsexpose(listener_types.ListenerRootResponse,
                          body=listener_types.ListenerRootPOST, status_code=201)
@@ -647,7 +647,7 @@ class StatisticsController(base.BaseController, stats.StatsMixin):
     RBAC_TYPE = constants.RBAC_LISTENER
 
     def __init__(self, listener_id):
-        super(StatisticsController, self).__init__()
+        super().__init__()
         self.id = listener_id
 
     @wsme_pecan.wsexpose(listener_types.StatisticsRootResponse, wtypes.text,

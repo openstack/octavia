@@ -22,7 +22,7 @@ from octavia.tests.unit import base
 class TestHealthUpdateLogger(base.TestCase):
 
     def setUp(self):
-        super(TestHealthUpdateLogger, self).setUp()
+        super().setUp()
         self.logger = update_logging.HealthUpdateLogger()
 
     @mock.patch('octavia.controller.healthmanager.health_drivers'
@@ -34,7 +34,7 @@ class TestHealthUpdateLogger(base.TestCase):
 
 class TestStatsUpdateLogger(base.TestCase):
     def setUp(self):
-        super(TestStatsUpdateLogger, self).setUp()
+        super().setUp()
         self.logger = update_logging.StatsUpdateLogger()
 
     @mock.patch('octavia.controller.healthmanager.health_drivers'

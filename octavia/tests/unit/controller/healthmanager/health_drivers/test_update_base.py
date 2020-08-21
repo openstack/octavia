@@ -20,7 +20,7 @@ from octavia.tests.unit import base
 class TestHealthUpdateBase(base.TestCase):
 
     def setUp(self):
-        super(TestHealthUpdateBase, self).setUp()
+        super().setUp()
         self.logger = update_base.HealthUpdateBase()
 
     def test_update_health(self):
@@ -30,7 +30,7 @@ class TestHealthUpdateBase(base.TestCase):
 
 class TestStatsUpdateBase(base.TestCase):
     def setUp(self):
-        super(TestStatsUpdateBase, self).setUp()
+        super().setUp()
         self.logger = update_base.StatsUpdateBase()
 
     def test_update_stats(self):

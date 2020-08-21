@@ -44,7 +44,7 @@ RUN_CMD = ('runcmd:\n'
 
 class TestUserDataJinjaCfg(base.TestCase):
     def setUp(self):
-        super(TestUserDataJinjaCfg, self).setUp()
+        super().setUp()
 
     def test_build_user_data_config(self):
         udc = user_data_jinja_cfg.UserDataJinjaCfg()

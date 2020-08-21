@@ -32,7 +32,7 @@ LOG = logging.getLogger(__name__)
 class PolicyFileTestCase(base.TestCase):
 
     def setUp(self):
-        super(PolicyFileTestCase, self).setUp()
+        super().setUp()
 
         self.conf = self.useFixture(oslo_fixture.Config(CONF))
         policy.reset()
@@ -66,7 +66,7 @@ class PolicyFileTestCase(base.TestCase):
 class PolicyTestCase(base.TestCase):
 
     def setUp(self):
-        super(PolicyTestCase, self).setUp()
+        super().setUp()
 
         self.conf = self.useFixture(oslo_fixture.Config())
         # diltram: this one must be removed after fixing issue in oslo.config
@@ -175,7 +175,7 @@ class PolicyTestCase(base.TestCase):
 class IsAdminCheckTestCase(base.TestCase):
 
     def setUp(self):
-        super(IsAdminCheckTestCase, self).setUp()
+        super().setUp()
 
         self.conf = self.useFixture(oslo_fixture.Config())
         # diltram: this one must be removed after fixing issue in oslo.config
@@ -218,7 +218,7 @@ class IsAdminCheckTestCase(base.TestCase):
 class AdminRolePolicyTestCase(base.TestCase):
 
     def setUp(self):
-        super(AdminRolePolicyTestCase, self).setUp()
+        super().setUp()
 
         self.conf = self.useFixture(oslo_fixture.Config())
         # diltram: this one must be removed after fixing issue in oslo.config

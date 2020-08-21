@@ -96,7 +96,7 @@ class TestNetworkTasks(base.TestCase):
         conf = oslo_fixture.Config(cfg.CONF)
         conf.config(group="controller_worker", amp_boot_network_list=['netid'])
 
-        super(TestNetworkTasks, self).setUp()
+        super().setUp()
 
     @mock.patch('octavia.db.repositories.LoadBalancerRepository.get')
     @mock.patch('octavia.db.api.get_session', return_value=_session_mock)

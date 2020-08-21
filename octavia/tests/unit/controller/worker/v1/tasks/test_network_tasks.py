@@ -85,7 +85,7 @@ class TestNetworkTasks(base.TestCase):
         conf.config(group="controller_worker",
                     amp_boot_network_list=[self.boot_net_id])
         conf.config(group="networking", max_retries=1)
-        super(TestNetworkTasks, self).setUp()
+        super().setUp()
 
     def test_calculate_amphora_delta(self, mock_get_net_driver):
         DELETE_NETWORK_ID = uuidutils.generate_uuid()

@@ -21,7 +21,7 @@ from octavia.tests.unit.common.sample_configs import sample_configs_combined
 
 class HAProxyCompatTestCase(base.TestCase):
     def setUp(self):
-        super(HAProxyCompatTestCase, self).setUp()
+        super().setUp()
         self.old_haproxy_global = (
             "# Configuration for loadbalancer sample_loadbalancer_id_1\n"
             "global\n"

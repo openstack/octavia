@@ -25,7 +25,7 @@ from octavia.tests.unit import base
 class TestStatsMixin(base.TestCase):
 
     def setUp(self):
-        super(TestStatsMixin, self).setUp()
+        super().setUp()
         self.sm = stats.StatsMixin()
 
         self.session = mock.MagicMock()

@@ -21,7 +21,7 @@ from octavia.tests.unit import base
 class TestHealthManagerCMD(base.TestCase):
 
     def setUp(self):
-        super(TestHealthManagerCMD, self).setUp()
+        super().setUp()
 
     @mock.patch('multiprocessing.Event')
     @mock.patch('octavia.amphorae.drivers.health.'

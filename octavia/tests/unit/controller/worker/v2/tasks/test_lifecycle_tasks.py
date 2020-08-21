@@ -54,7 +54,7 @@ class TestLifecycleTasks(base.TestCase):
             constants.POOL_ID: self.POOL_ID,
         }
 
-        super(TestLifecycleTasks, self).setUp()
+        super().setUp()
 
     @mock.patch('octavia.controller.worker.task_utils.TaskUtils.'
                 'unmark_amphora_health_busy')

@@ -22,7 +22,7 @@ class BaseLifecycleTask(task.Task):
 
     def __init__(self, **kwargs):
         self.task_utils = task_utilities.TaskUtils()
-        super(BaseLifecycleTask, self).__init__(**kwargs)
+        super().__init__(**kwargs)
 
 
 class AmphoraIDToErrorOnRevertTask(BaseLifecycleTask):
@@ -42,7 +42,7 @@ class AmphoraToErrorOnRevertTask(AmphoraIDToErrorOnRevertTask):
         pass
 
     def revert(self, amphora, *args, **kwargs):
-        super(AmphoraToErrorOnRevertTask, self).revert(amphora.id)
+        super().revert(amphora.id)
 
 
 class HealthMonitorToErrorOnRevertTask(BaseLifecycleTask):
@@ -128,7 +128,7 @@ class LoadBalancerToErrorOnRevertTask(LoadBalancerIDToErrorOnRevertTask):
         pass
 
     def revert(self, loadbalancer, *args, **kwargs):
-        super(LoadBalancerToErrorOnRevertTask, self).revert(loadbalancer.id)
+        super().revert(loadbalancer.id)
 
 
 class MemberToErrorOnRevertTask(BaseLifecycleTask):

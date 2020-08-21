@@ -22,7 +22,7 @@ class OctaviaDBHealthcheck(pluginbase.HealthcheckBaseExtension):
     UNAVAILABLE_REASON = 'The Octavia database is unavailable.'
 
     def __init__(self, *args, **kwargs):
-        super(OctaviaDBHealthcheck, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
     def healthcheck(self, server_port):
         try:
@@ -44,4 +44,4 @@ class OctaviaDBCheckResult(pluginbase.HealthcheckResult):
     """Result sub-class to provide a unique name in detail reports."""
 
     def __init__(self, *args, **kwargs):
-        super(OctaviaDBCheckResult, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)

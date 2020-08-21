@@ -39,7 +39,7 @@ class BaseV2Controller(base.BaseController):
     quotas = None
 
     def __init__(self):
-        super(BaseV2Controller, self).__init__()
+        super().__init__()
         self.loadbalancers = load_balancer.LoadBalancersController()
         self.listeners = listener.ListenersController()
         self.pools = pool.PoolsController()
@@ -63,7 +63,7 @@ class OctaviaV2Controller(base.BaseController):
     amphorae = None
 
     def __init__(self):
-        super(OctaviaV2Controller, self).__init__()
+        super().__init__()
         self.amphorae = amphora.AmphoraController()
 
     @wsme_pecan.wsexpose(wtypes.text)
@@ -75,6 +75,6 @@ class V2Controller(BaseV2Controller):
     lbaas = None
 
     def __init__(self):
-        super(V2Controller, self).__init__()
+        super().__init__()
         self.lbaas = BaseV2Controller()
         self.octavia = OctaviaV2Controller()

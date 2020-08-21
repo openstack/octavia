@@ -41,7 +41,7 @@ class MemberController(base.BaseController):
     RBAC_TYPE = constants.RBAC_MEMBER
 
     def __init__(self, pool_id):
-        super(MemberController, self).__init__()
+        super().__init__()
         self.pool_id = pool_id
 
     @wsme_pecan.wsexpose(member_types.MemberRootResponse, wtypes.text,
@@ -129,11 +129,11 @@ class MemberController(base.BaseController):
                 raise exceptions.DuplicateMemberEntry(
                     ip_address=member_dict.get('ip_address'),
                     port=member_dict.get('protocol_port'))
-        except odb_exceptions.DBError:
+        except odb_exceptions.DBError as e:
             # TODO(blogan): will have to do separate validation protocol
             # before creation or update since the exception messages
             # do not give any information as to what constraint failed
-            raise exceptions.InvalidOption(value='', option='')
+            raise exceptions.InvalidOption(value='', option='') from e
 
     def _validate_pool_id(self, member_id, db_member_pool_id):
         if db_member_pool_id != self.pool_id:
@@ -319,7 +319,7 @@ class MemberController(base.BaseController):
 class MembersController(MemberController):
 
     def __init__(self, pool_id):
-        super(MembersController, self).__init__(pool_id)
+        super().__init__(pool_id)
 
     @wsme_pecan.wsexpose(None, wtypes.text,
                          body=member_types.MembersRootPUT, status_code=202)

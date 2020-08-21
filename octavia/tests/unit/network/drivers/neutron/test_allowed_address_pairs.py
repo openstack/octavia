@@ -57,7 +57,7 @@ class TestAllowedAddressPairsDriver(base.TestCase):
     DEVICE_ID = uuidutils.generate_uuid()
 
     def setUp(self):
-        super(TestAllowedAddressPairsDriver, self).setUp()
+        super().setUp()
         with mock.patch('octavia.common.clients.neutron_client.Client',
                         autospec=True) as neutron_client:
             with mock.patch('stevedore.driver.DriverManager.driver',

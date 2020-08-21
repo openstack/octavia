@@ -30,7 +30,7 @@ class TestValidations(base.TestCase):
     # functional tests elsewhere (ex. repository tests)
 
     def setUp(self):
-        super(TestValidations, self).setUp()
+        super().setUp()
         self.conf = oslo_fixture.Config(cfg.CONF)
 
     def test_validate_url(self):

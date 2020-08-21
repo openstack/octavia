@@ -50,7 +50,7 @@ FAKE_MEMBER_IP_PORT_NAME_2 = "10.0.0.11:1004"
 class TestHaproxyAmphoraLoadBalancerDriverTest(base.TestCase):
 
     def setUp(self):
-        super(TestHaproxyAmphoraLoadBalancerDriverTest, self).setUp()
+        super().setUp()
 
         DEST1 = '198.51.100.0/24'
         DEST2 = '203.0.113.0/24'
@@ -688,7 +688,7 @@ class TestHaproxyAmphoraLoadBalancerDriverTest(base.TestCase):
 class TestAmphoraAPIClientTest(base.TestCase):
 
     def setUp(self):
-        super(TestAmphoraAPIClientTest, self).setUp()
+        super().setUp()
         self.driver = driver.AmphoraAPIClient0_5()
         self.base_url = "https://192.0.2.77:9443/"
         self.base_url_ver = self.base_url + API_VERSION

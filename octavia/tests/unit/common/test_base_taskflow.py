@@ -37,7 +37,7 @@ class TestBaseTaskFlowEngine(base.TestCase):
         conf.config(group="task_flow", max_workers=MAX_WORKERS)
         conf.config(group="task_flow", engine=ENGINE)
         conf.config(group="task_flow", disable_revert=True)
-        super(TestBaseTaskFlowEngine, self).setUp()
+        super().setUp()
 
     @mock.patch('concurrent.futures.ThreadPoolExecutor',
                 return_value='TESTEXECUTOR')
@@ -83,7 +83,7 @@ class TestTaskFlowServiceController(base.TestCase):
             self.persistence_mock)
         self.service_controller = base_taskflow.TaskFlowServiceController(
             self.driver_mock)
-        super(TestTaskFlowServiceController, self).setUp()
+        super().setUp()
 
     @mock.patch('oslo_utils.uuidutils.generate_uuid', return_value=_mock_uuid)
     @mock.patch('taskflow.engines.save_factory_details')

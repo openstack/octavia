@@ -81,7 +81,7 @@ class TestAmphoraDriverTasks(base.TestCase):
                     active_connection_rety_interval=CONN_RETRY_INTERVAL)
         conf.config(group="controller_worker",
                     loadbalancer_topology=constants.TOPOLOGY_SINGLE)
-        super(TestAmphoraDriverTasks, self).setUp()
+        super().setUp()
 
     @mock.patch('octavia.db.repositories.LoadBalancerRepository.get')
     def test_amp_listener_update(self,

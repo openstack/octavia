@@ -53,7 +53,7 @@ class BaseDatabaseTask(task.Task):
         self.l7policy_repo = repo.L7PolicyRepository()
         self.l7rule_repo = repo.L7RuleRepository()
         self.task_utils = task_utilities.TaskUtils()
-        super(BaseDatabaseTask, self).__init__(**kwargs)
+        super().__init__(**kwargs)
 
     def _delete_from_amp_health(self, amphora_id):
         """Delete the amphora_health record for an amphora.
@@ -195,7 +195,7 @@ class DeleteHealthMonitorInDBByPool(DeleteHealthMonitorInDB):
         :param pool: A pool which health monitor should be deleted.
         :returns: None
         """
-        super(DeleteHealthMonitorInDBByPool, self).execute(
+        super().execute(
             pool.health_monitor)
 
     def revert(self, pool, *args, **kwargs):
@@ -204,7 +204,7 @@ class DeleteHealthMonitorInDBByPool(DeleteHealthMonitorInDB):
         :param pool: A pool which health monitor couldn't be deleted
         :returns: None
         """
-        super(DeleteHealthMonitorInDBByPool, self).revert(
+        super().revert(
             pool.health_monitor, *args, **kwargs)
 
 
@@ -968,7 +968,7 @@ class MarkLBActiveInDB(BaseDatabaseTask):
     """
 
     def __init__(self, mark_subobjects=False, **kwargs):
-        super(MarkLBActiveInDB, self).__init__(**kwargs)
+        super().__init__(**kwargs)
         self.mark_subobjects = mark_subobjects
 
     def execute(self, loadbalancer):

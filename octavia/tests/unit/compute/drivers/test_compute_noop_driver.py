@@ -27,7 +27,7 @@ class TestNoopComputeDriver(base.TestCase):
     FAKE_UUID_6 = uuidutils.generate_uuid()
 
     def setUp(self):
-        super(TestNoopComputeDriver, self).setUp()
+        super().setUp()
         self.driver = driver.NoopComputeDriver()
 
         self.name = "amphora_name"

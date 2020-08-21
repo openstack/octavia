@@ -36,7 +36,7 @@ class TaskUtils(object):
         self.amp_health_repo = repo.AmphoraHealthRepository()
         self.l7policy_repo = repo.L7PolicyRepository()
         self.l7rule_repo = repo.L7RuleRepository()
-        super(TaskUtils, self).__init__(**kwargs)
+        super().__init__(**kwargs)
 
     def unmark_amphora_health_busy(self, amphora_id):
         """Unmark the amphora_health record busy for an amphora.

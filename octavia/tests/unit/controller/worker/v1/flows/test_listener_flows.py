@@ -29,7 +29,7 @@ class TestListenerFlows(base.TestCase):
     def setUp(self):
         self.ListenerFlow = listener_flows.ListenerFlows()
 
-        super(TestListenerFlows, self).setUp()
+        super().setUp()
 
     def test_get_create_listener_flow(self, mock_get_net_driver):
 

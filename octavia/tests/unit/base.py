@@ -29,7 +29,7 @@ from octavia.common import config  # noqa: F401
 class TestCase(testtools.TestCase):
 
     def setUp(self):
-        super(TestCase, self).setUp()
+        super().setUp()
         config.register_cli_opts()
         self.addCleanup(mock.patch.stopall)
         self.addCleanup(self.clean_caches)
@@ -41,7 +41,7 @@ class TestCase(testtools.TestCase):
 
 class TestRpc(testtools.TestCase):
     def __init__(self, *args, **kwargs):
-        super(TestRpc, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self._buses = {}
 
     def _fake_create_transport(self, url):
@@ -52,7 +52,7 @@ class TestRpc(testtools.TestCase):
         return self._buses[url]
 
     def setUp(self):
-        super(TestRpc, self).setUp()
+        super().setUp()
         self.addCleanup(rpc.cleanup)
         self.messaging_conf = messaging_conffixture.ConfFixture(cfg.CONF)
         self.messaging_conf.transport_url = 'fake:/'

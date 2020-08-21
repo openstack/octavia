@@ -31,7 +31,7 @@ class TestRootController(base_db_test.OctaviaDBTestBase):
         return response
 
     def setUp(self):
-        super(TestRootController, self).setUp()
+        super().setUp()
         self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
         self.conf.config(group='api_settings', auth_strategy=constants.NOAUTH)
 

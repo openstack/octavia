@@ -44,7 +44,7 @@ class TestSpareCheck(base.TestCase):
     FAKE_CUR_SPAR2 = 3
 
     def setUp(self):
-        super(TestSpareCheck, self).setUp()
+        super().setUp()
         self.CONF = self.useFixture(oslo_fixture.Config(cfg.CONF))
         self.CONF.config(group="api_settings",
                          default_provider_driver='amphora')
@@ -143,7 +143,7 @@ class TestDatabaseCleanup(base.TestCase):
     FAKE_EXP_AGE = 60
 
     def setUp(self):
-        super(TestDatabaseCleanup, self).setUp()
+        super().setUp()
         self.dbclean = house_keeping.DatabaseCleanup()
         self.amp_health_repo = mock.MagicMock()
         self.amp_repo = mock.MagicMock()
@@ -254,7 +254,7 @@ class TestDatabaseCleanup(base.TestCase):
 
 class TestCertRotation(base.TestCase):
     def setUp(self):
-        super(TestCertRotation, self).setUp()
+        super().setUp()
         self.CONF = self.useFixture(oslo_fixture.Config(cfg.CONF))
 
     @mock.patch('octavia.controller.worker.v1.controller_worker.'

@@ -38,7 +38,7 @@ class TestListener(base.BaseAPITest):
     root_tag_links = 'listeners_links'
 
     def setUp(self):
-        super(TestListener, self).setUp()
+        super().setUp()
         self.lb = self.create_load_balancer(uuidutils.generate_uuid())
         self.lb_id = self.lb.get('loadbalancer').get('id')
         self.project_id = self.lb.get('loadbalancer').get('project_id')

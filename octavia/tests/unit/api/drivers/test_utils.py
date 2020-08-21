@@ -27,7 +27,7 @@ from octavia.tests.unit import base
 
 class TestUtils(base.TestCase):
     def setUp(self):
-        super(TestUtils, self).setUp()
+        super().setUp()
         self.sample_data = sample_data_models.SampleDriverDataModels()
 
     def test_call_provider(self):

@@ -26,7 +26,7 @@ LOG = logging.getLogger(__name__)
 class ConsumerService(cotyledon.Service):
 
     def __init__(self, worker_id, conf):
-        super(ConsumerService, self).__init__(worker_id)
+        super().__init__(worker_id)
         self.conf = conf
         self.topic = conf.oslo_messaging.topic
         self.server = conf.host
@@ -61,4 +61,4 @@ class ConsumerService(cotyledon.Service):
                     e.worker.executor.shutdown()
                 except AttributeError:
                     pass
-        super(ConsumerService, self).terminate()
+        super().terminate()

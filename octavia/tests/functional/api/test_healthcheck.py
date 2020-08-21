@@ -25,7 +25,7 @@ from octavia.tests.functional.db import base as base_db_test
 class TestHealthCheck(base_db_test.OctaviaDBTestBase):
 
     def setUp(self):
-        super(TestHealthCheck, self).setUp()
+        super().setUp()
 
         # We need to define these early as they are late loaded in oslo
         # middleware and our configuration overrides would not apply.

@@ -27,7 +27,7 @@ class BaseCertTask(task.Task):
     """Base task to load drivers common to the tasks."""
 
     def __init__(self, **kwargs):
-        super(BaseCertTask, self).__init__(**kwargs)
+        super().__init__(**kwargs)
         self.cert_generator = stevedore_driver.DriverManager(
             namespace='octavia.cert_generator',
             name=CONF.certificates.cert_generator,

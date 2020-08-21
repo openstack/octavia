@@ -26,7 +26,7 @@ CONF = cfg.CONF
 class TestDriverListener(base.TestCase):
 
     def setUp(self):
-        super(TestDriverListener, self).setUp()
+        super().setUp()
 
     @mock.patch('octavia.api.drivers.driver_agent.driver_listener.memoryview')
     def test_recv(self, mock_memoryview):

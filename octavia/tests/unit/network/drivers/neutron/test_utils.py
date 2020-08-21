@@ -19,7 +19,7 @@ from octavia.tests.unit import base
 class TestNeutronUtils(base.TestCase):
 
     def setUp(self):
-        super(TestNeutronUtils, self).setUp()
+        super().setUp()
 
     def _compare_ignore_value_none(self, obj1_in, obj2_in):
         obj1 = {key: obj1_in[key] for key in obj1_in

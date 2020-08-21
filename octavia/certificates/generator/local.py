@@ -46,20 +46,20 @@ class LocalCertGenerator(cert_gen.CertGenerator):
             LOG.info("Using CA Certificate from config.")
             try:
                 ca_cert = open(CONF.certificates.ca_certificate, 'rb').read()
-            except IOError:
+            except IOError as e:
                 raise exceptions.CertificateGenerationException(
                     msg="Failed to load CA Certificate {0}."
                         .format(CONF.certificates.ca_certificate)
-                )
+                ) from e
         if not ca_key:
             LOG.info("Using CA Private Key from config.")
             try:
                 ca_key = open(CONF.certificates.ca_private_key, 'rb').read()
-            except IOError:
+            except IOError as e:
                 raise exceptions.CertificateGenerationException(
                     msg="Failed to load CA Private Key {0}."
                         .format(CONF.certificates.ca_private_key)
-                )
+                ) from e
         if not ca_key_pass:
             ca_key_pass = CONF.certificates.ca_private_key_passphrase
             if ca_key_pass:
@@ -92,10 +92,10 @@ class LocalCertGenerator(cert_gen.CertGenerator):
             ca_digest = CONF.certificates.signing_digest
         try:
             algorithm = getattr(hashes, ca_digest.upper())()
-        except AttributeError:
+        except AttributeError as e:
             raise crypto_exceptions.UnsupportedAlgorithm(
                 "Supplied digest method not found: %s" % ca_digest
-            )
+            ) from e
 
         if not ca_cert:
             with open(CONF.certificates.ca_certificate, 'rb') as f:

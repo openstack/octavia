@@ -31,7 +31,7 @@ class TestNovaAuth(base.TestCase):
         clients.NovaAuth.nova_client = None
         keystone._SESSION = None
 
-        super(TestNovaAuth, self).setUp()
+        super().setUp()
 
     @mock.patch('keystoneauth1.session.Session', mock.Mock())
     def test_get_nova_client(self):
@@ -69,7 +69,7 @@ class TestNeutronAuth(base.TestCase):
         clients.NeutronAuth.neutron_client = None
         keystone._SESSION = None
 
-        super(TestNeutronAuth, self).setUp()
+        super().setUp()
 
     @mock.patch('keystoneauth1.session.Session', mock.Mock())
     def test_get_neutron_client(self):
@@ -107,7 +107,7 @@ class TestGlanceAuth(base.TestCase):
         clients.GlanceAuth.glance_client = None
         keystone._SESSION = None
 
-        super(TestGlanceAuth, self).setUp()
+        super().setUp()
 
     @mock.patch('keystoneauth1.session.Session', mock.Mock())
     def test_get_glance_client(self):
@@ -145,7 +145,7 @@ class TestCinderAuth(base.TestCase):
         clients.CinderAuth.cinder_client = None
         keystone._SESSION = None
 
-        super(TestCinderAuth, self).setUp()
+        super().setUp()
 
     @mock.patch('keystoneauth1.session.Session', mock.Mock())
     def test_get_cinder_client(self):

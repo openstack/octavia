@@ -36,7 +36,7 @@ class FlavorsController(base.BaseController):
     RBAC_TYPE = constants.RBAC_FLAVOR
 
     def __init__(self):
-        super(FlavorsController, self).__init__()
+        super().__init__()
 
     @wsme_pecan.wsexpose(flavor_types.FlavorRootResponse, wtypes.text,
                          [wtypes.text], ignore_extra_args=True)
@@ -90,10 +90,10 @@ class FlavorsController(base.BaseController):
             db_flavor = self.repositories.flavor.create(lock_session,
                                                         **flavor_dict)
             lock_session.commit()
-        except odb_exceptions.DBDuplicateEntry:
+        except odb_exceptions.DBDuplicateEntry as e:
             lock_session.rollback()
             raise exceptions.RecordAlreadyExists(field='flavor',
-                                                 name=flavor.name)
+                                                 name=flavor.name) from e
         except Exception:
             with excutils.save_and_reraise_exception():
                 lock_session.rollback()
@@ -147,12 +147,12 @@ class FlavorsController(base.BaseController):
             self.repositories.flavor.delete(serial_session, id=flavor_id)
             serial_session.commit()
         # Handle when load balancers still reference this flavor
-        except odb_exceptions.DBReferenceError:
+        except odb_exceptions.DBReferenceError as e:
             serial_session.rollback()
-            raise exceptions.ObjectInUse(object='Flavor', id=flavor_id)
-        except sa_exception.NoResultFound:
+            raise exceptions.ObjectInUse(object='Flavor', id=flavor_id) from e
+        except sa_exception.NoResultFound as e:
             serial_session.rollback()
-            raise exceptions.NotFound(resource='Flavor', id=flavor_id)
+            raise exceptions.NotFound(resource='Flavor', id=flavor_id) from e
         except Exception as e:
             with excutils.save_and_reraise_exception():
                 LOG.error('Unknown flavor delete exception: %s', str(e))

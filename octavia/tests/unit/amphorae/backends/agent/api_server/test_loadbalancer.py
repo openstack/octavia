@@ -31,7 +31,7 @@ LB_ID1 = uuidutils.generate_uuid()
 
 class ListenerTestCase(base.TestCase):
     def setUp(self):
-        super(ListenerTestCase, self).setUp()
+        super().setUp()
         self.mock_platform = mock.patch("distro.id").start()
         self.mock_platform.return_value = "ubuntu"
         self.test_loadbalancer = loadbalancer.Loadbalancer()

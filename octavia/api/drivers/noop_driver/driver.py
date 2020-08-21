@@ -23,7 +23,7 @@ LOG = logging.getLogger(__name__)
 
 class NoopManager(object):
     def __init__(self):
-        super(NoopManager, self).__init__()
+        super().__init__()
         self.driverconfig = {}
 
     # Load Balancer
@@ -262,7 +262,7 @@ class NoopManager(object):
 
 class NoopProviderDriver(driver_base.ProviderDriver):
     def __init__(self):
-        super(NoopProviderDriver, self).__init__()
+        super().__init__()
         self.driver = NoopManager()
 
     # Load Balancer

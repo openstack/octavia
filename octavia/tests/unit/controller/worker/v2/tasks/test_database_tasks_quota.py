@@ -31,7 +31,7 @@ class TestDatabaseTasksQuota(base.TestCase):
         self._tf_failure_mock = mock.Mock(spec=failure.Failure)
         self.zero_pool_child_count = {'HM': 0, 'member': 0}
 
-        super(TestDatabaseTasksQuota, self).setUp()
+        super().setUp()
 
     @mock.patch('octavia.db.repositories.L7PolicyRepository.get')
     @mock.patch('octavia.db.api.get_session', return_value='TEST')

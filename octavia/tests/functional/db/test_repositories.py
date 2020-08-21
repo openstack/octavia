@@ -48,7 +48,7 @@ class BaseRepositoryTest(base.OctaviaDBTestBase):
     FAKE_EXP_AGE = 10
 
     def setUp(self):
-        super(BaseRepositoryTest, self).setUp()
+        super().setUp()
         self.pool_repo = repo.PoolRepository()
         self.member_repo = repo.MemberRepository()
         self.lb_repo = repo.LoadBalancerRepository()
@@ -96,7 +96,7 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
     FAKE_IP = '192.0.2.44'
 
     def setUp(self):
-        super(AllRepositoriesTest, self).setUp()
+        super().setUp()
         self.repos = repo.Repositories()
         self.load_balancer = self.repos.load_balancer.create(
             self.session, id=self.FAKE_UUID_1, project_id=self.FAKE_UUID_2,
@@ -2665,7 +2665,7 @@ class PoolRepositoryTest(BaseRepositoryTest):
 class MemberRepositoryTest(BaseRepositoryTest):
 
     def setUp(self):
-        super(MemberRepositoryTest, self).setUp()
+        super().setUp()
         self.pool = self.pool_repo.create(
             self.session, id=self.FAKE_UUID_1, project_id=self.FAKE_UUID_2,
             name="pool_test", description="pool_description",
@@ -2753,7 +2753,7 @@ class MemberRepositoryTest(BaseRepositoryTest):
 class SessionPersistenceRepositoryTest(BaseRepositoryTest):
 
     def setUp(self):
-        super(SessionPersistenceRepositoryTest, self).setUp()
+        super().setUp()
         self.pool = self.pool_repo.create(
             self.session, id=self.FAKE_UUID_1, project_id=self.FAKE_UUID_2,
             name="pool_test", description="pool_description",
@@ -2804,7 +2804,7 @@ class SessionPersistenceRepositoryTest(BaseRepositoryTest):
 class TestListenerRepositoryTest(BaseRepositoryTest):
 
     def setUp(self):
-        super(TestListenerRepositoryTest, self).setUp()
+        super().setUp()
         self.load_balancer = self.lb_repo.create(
             self.session, id=self.FAKE_UUID_1, project_id=self.FAKE_UUID_2,
             name="lb_name", description="lb_description",
@@ -3096,7 +3096,7 @@ class TestListenerRepositoryTest(BaseRepositoryTest):
 class ListenerStatisticsRepositoryTest(BaseRepositoryTest):
 
     def setUp(self):
-        super(ListenerStatisticsRepositoryTest, self).setUp()
+        super().setUp()
         self.listener = self.listener_repo.create(
             self.session, id=self.FAKE_UUID_1, project_id=self.FAKE_UUID_2,
             name="listener_name", description="listener_description",
@@ -3273,7 +3273,7 @@ class ListenerStatisticsRepositoryTest(BaseRepositoryTest):
 class HealthMonitorRepositoryTest(BaseRepositoryTest):
 
     def setUp(self):
-        super(HealthMonitorRepositoryTest, self).setUp()
+        super().setUp()
         self.pool = self.pool_repo.create(
             self.session, id=self.FAKE_UUID_1, project_id=self.FAKE_UUID_2,
             name="pool_test", description="pool_description",
@@ -3637,7 +3637,7 @@ class LoadBalancerRepositoryTest(BaseRepositoryTest):
 class VipRepositoryTest(BaseRepositoryTest):
 
     def setUp(self):
-        super(VipRepositoryTest, self).setUp()
+        super().setUp()
         self.lb = self.lb_repo.create(
             self.session, id=self.FAKE_UUID_1, project_id=self.FAKE_UUID_2,
             name="lb_name", description="lb_description",
@@ -3701,7 +3701,7 @@ class VipRepositoryTest(BaseRepositoryTest):
 class SNIRepositoryTest(BaseRepositoryTest):
 
     def setUp(self):
-        super(SNIRepositoryTest, self).setUp()
+        super().setUp()
         self.listener = self.listener_repo.create(
             self.session, id=self.FAKE_UUID_1, project_id=self.FAKE_UUID_2,
             name="listener_name", description="listener_description",
@@ -3751,7 +3751,7 @@ class SNIRepositoryTest(BaseRepositoryTest):
 class AmphoraRepositoryTest(BaseRepositoryTest):
 
     def setUp(self):
-        super(AmphoraRepositoryTest, self).setUp()
+        super().setUp()
         self.lb = self.lb_repo.create(
             self.session, id=self.FAKE_UUID_1, project_id=self.FAKE_UUID_2,
             name="lb_name", description="lb_description",
@@ -4025,7 +4025,7 @@ class AmphoraRepositoryTest(BaseRepositoryTest):
 
 class AmphoraHealthRepositoryTest(BaseRepositoryTest):
     def setUp(self):
-        super(AmphoraHealthRepositoryTest, self).setUp()
+        super().setUp()
         self.amphora = self.amphora_repo.create(self.session,
                                                 id=self.FAKE_UUID_1,
                                                 compute_id=self.FAKE_UUID_3,
@@ -4132,7 +4132,7 @@ class AmphoraHealthRepositoryTest(BaseRepositoryTest):
 
 class VRRPGroupRepositoryTest(BaseRepositoryTest):
     def setUp(self):
-        super(VRRPGroupRepositoryTest, self).setUp()
+        super().setUp()
         self.lb = self.lb_repo.create(
             self.session, id=self.FAKE_UUID_1, project_id=self.FAKE_UUID_2,
             name="lb_name", description="lb_description",
@@ -4178,7 +4178,7 @@ class VRRPGroupRepositoryTest(BaseRepositoryTest):
 class L7PolicyRepositoryTest(BaseRepositoryTest):
 
     def setUp(self):
-        super(L7PolicyRepositoryTest, self).setUp()
+        super().setUp()
         self.pool = self.create_pool(self.FAKE_UUID_1)
         self.listener = self.create_listener(self.FAKE_UUID_1, 80)
 
@@ -4587,7 +4587,7 @@ class L7PolicyRepositoryTest(BaseRepositoryTest):
 class L7RuleRepositoryTest(BaseRepositoryTest):
 
     def setUp(self):
-        super(L7RuleRepositoryTest, self).setUp()
+        super().setUp()
         self.listener = self.listener_repo.create(
             self.session, id=uuidutils.generate_uuid(),
             project_id=self.FAKE_UUID_2,
@@ -4958,7 +4958,7 @@ class L7RuleRepositoryTest(BaseRepositoryTest):
 class TestQuotasRepository(BaseRepositoryTest):
 
     def setUp(self):
-        super(TestQuotasRepository, self).setUp()
+        super().setUp()
 
     def update_quotas(self, project_id, load_balancer=20, listener=20, pool=20,
                       health_monitor=20, member=20, l7policy=20, l7rule=20):

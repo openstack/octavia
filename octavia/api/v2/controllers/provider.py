@@ -34,7 +34,7 @@ class ProviderController(base.BaseController):
     RBAC_TYPE = constants.RBAC_PROVIDER
 
     def __init__(self):
-        super(ProviderController, self).__init__()
+        super().__init__()
 
     @wsme_pecan.wsexpose(provider_types.ProvidersRootResponse, [wtypes.text],
                          ignore_extra_args=True)
@@ -76,7 +76,7 @@ class FlavorCapabilitiesController(base.BaseController):
     RBAC_TYPE = constants.RBAC_PROVIDER_FLAVOR
 
     def __init__(self, provider):
-        super(FlavorCapabilitiesController, self).__init__()
+        super().__init__()
         self.provider = provider
 
     @wsme_pecan.wsexpose(provider_types.FlavorCapabilitiesResponse,
@@ -126,7 +126,7 @@ class AvailabilityZoneCapabilitiesController(base.BaseController):
     RBAC_TYPE = constants.RBAC_PROVIDER_AVAILABILITY_ZONE
 
     def __init__(self, provider):
-        super(AvailabilityZoneCapabilitiesController, self).__init__()
+        super().__init__()
         self.provider = provider
 
     @wsme_pecan.wsexpose(provider_types.AvailabilityZoneCapabilitiesResponse,

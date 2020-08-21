@@ -73,7 +73,7 @@ INFO_SOCKET_SAMPLE = (
 class QueryTestCase(base.TestCase):
     def setUp(self):
         self.q = query.HAProxyQuery('')
-        super(QueryTestCase, self).setUp()
+        super().setUp()
 
     @mock.patch('socket.socket')
     def test_query(self, mock_socket):

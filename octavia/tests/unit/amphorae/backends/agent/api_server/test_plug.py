@@ -37,7 +37,7 @@ FAKE_INTERFACE = 'eth33'
 
 class TestPlug(base.TestCase):
     def setUp(self):
-        super(TestPlug, self).setUp()
+        super().setUp()
         self.mock_platform = mock.patch("distro.id").start()
         self.mock_platform.return_value = "ubuntu"
         self.osutil = osutils.BaseOS.get_os_util()
@@ -210,7 +210,7 @@ class TestPlug(base.TestCase):
 
 class TestPlugNetwork(base.TestCase):
     def setUp(self):
-        super(TestPlugNetwork, self).setUp()
+        super().setUp()
         self.mock_platform = mock.patch("distro.id").start()
 
     def __generate_network_file_text_static_ip(self):

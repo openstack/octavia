@@ -541,10 +541,10 @@ class Repositories(object):
                     quotas.in_use_l7rule = l7rule_count
                     return False
                 return True
-        except db_exception.DBDeadlock:
+        except db_exception.DBDeadlock as e:
             LOG.warning('Quota project lock timed out for project: %(proj)s',
                         {'proj': project_id})
-            raise exceptions.ProjectBusyException()
+            raise exceptions.ProjectBusyException() from e
         return False
 
     def decrement_quota(self, lock_session, _class, project_id, quantity=1):
@@ -648,10 +648,10 @@ class Repositories(object):
                                     'project: %(proj)s that would cause a '
                                     'negative quota.',
                                     {'clss': type(_class), 'proj': project_id})
-        except db_exception.DBDeadlock:
+        except db_exception.DBDeadlock as e:
             LOG.warning('Quota project lock timed out for project: %(proj)s',
                         {'proj': project_id})
-            raise exceptions.ProjectBusyException()
+            raise exceptions.ProjectBusyException() from e
 
     def create_load_balancer_tree(self, session, lock_session, lb_dict):
         listener_dicts = lb_dict.pop('listeners', [])
@@ -855,7 +855,7 @@ class LoadBalancerRepository(BaseRepository):
             subqueryload(models.LoadBalancer._tags),
             noload('*'))
 
-        return super(LoadBalancerRepository, self).get_all(
+        return super().get_all(
             session, pagination_helper=pagination_helper,
             query_options=query_options, **filters)
 
@@ -952,7 +952,7 @@ class HealthMonitorRepository(BaseRepository):
             subqueryload(models.HealthMonitor._tags),
             noload('*'))
 
-        return super(HealthMonitorRepository, self).get_all(
+        return super().get_all(
             session, pagination_helper=pagination_helper,
             query_options=query_options, **filters)
 
@@ -1023,7 +1023,7 @@ class PoolRepository(BaseRepository):
             subqueryload(models.Pool._tags),
             noload('*'))
 
-        return super(PoolRepository, self).get_all(
+        return super().get_all(
             session, pagination_helper=pagination_helper,
             query_options=query_options, **filters)
 
@@ -1051,7 +1051,7 @@ class MemberRepository(BaseRepository):
             subqueryload(models.Member._tags),
             noload('*'))
 
-        return super(MemberRepository, self).get_all(
+        return super().get_all(
             session, pagination_helper=pagination_helper,
             query_options=query_options, **filters)
 
@@ -1098,7 +1098,7 @@ class ListenerRepository(BaseRepository):
             subqueryload(models.Listener.allowed_cidrs),
             noload('*'))
 
-        return super(ListenerRepository, self).get_all(
+        return super().get_all(
             session, pagination_helper=pagination_helper,
             query_options=query_options, **filters)
 
@@ -1282,7 +1282,7 @@ class AmphoraRepository(BaseRepository):
             subqueryload(models.Amphora.load_balancer),
             noload('*'))
 
-        return super(AmphoraRepository, self).get_all(
+        return super().get_all(
             session, pagination_helper=pagination_helper,
             query_options=query_options, **filters)
 
@@ -1691,7 +1691,7 @@ class L7RuleRepository(BaseRepository):
             subqueryload(models.L7Rule._tags),
             noload('*'))
 
-        return super(L7RuleRepository, self).get_all(
+        return super().get_all(
             session, pagination_helper=pagination_helper,
             query_options=query_options, **filters)
 

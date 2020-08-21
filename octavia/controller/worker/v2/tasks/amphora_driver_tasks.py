@@ -39,7 +39,7 @@ class BaseAmphoraTask(task.Task):
     """Base task to load drivers common to the tasks."""
 
     def __init__(self, **kwargs):
-        super(BaseAmphoraTask, self).__init__(**kwargs)
+        super().__init__(**kwargs)
         self.amphora_driver = stevedore_driver.DriverManager(
             namespace='octavia.amphora.drivers',
             name=CONF.controller_worker.amphora_driver,

@@ -61,7 +61,7 @@ class TestBarbicanManager(base.TestCase):
         self.context = mock.Mock()
         self.context.project_id = PROJECT_ID
 
-        super(TestBarbicanManager, self).setUp()
+        super().setUp()
 
     def test_store_cert(self):
         # Mock out the client

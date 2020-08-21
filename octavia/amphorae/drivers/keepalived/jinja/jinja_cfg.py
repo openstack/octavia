@@ -35,7 +35,7 @@ class KeepalivedJinjaTemplater(object):
 
         :param keepalived_template: Absolute path to keepalived Jinja template
         """
-        super(KeepalivedJinjaTemplater, self).__init__()
+        super().__init__()
         self.keepalived_template = (keepalived_template if
                                     keepalived_template else
                                     KEEPALIVED_TEMPLATE)

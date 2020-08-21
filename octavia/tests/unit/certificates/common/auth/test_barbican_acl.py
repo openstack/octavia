@@ -29,7 +29,7 @@ CONF = cfg.CONF
 class TestBarbicanACLAuth(base.TestCase):
 
     def setUp(self):
-        super(TestBarbicanACLAuth, self).setUp()
+        super().setUp()
         # Reset the client
         keystone._SESSION = None
         self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))

@@ -99,7 +99,7 @@ class BaseAPITest(base_db_test.OctaviaDBTestBase):
         'faultstring': 'Policy does not allow this request to be performed.'}
 
     def setUp(self):
-        super(BaseAPITest, self).setUp()
+        super().setUp()
         self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
         self.conf.config(group="controller_worker",
                          network_driver='network_noop_driver')

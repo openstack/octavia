@@ -271,7 +271,7 @@ class PoolModelTest(base.OctaviaDBTestBase, ModelTestMixin):
 class MemberModelTest(base.OctaviaDBTestBase, ModelTestMixin):
 
     def setUp(self):
-        super(MemberModelTest, self).setUp()
+        super().setUp()
         self.pool = self.create_pool(self.session)
 
     def test_create(self):
@@ -317,7 +317,7 @@ class MemberModelTest(base.OctaviaDBTestBase, ModelTestMixin):
 class SessionPersistenceModelTest(base.OctaviaDBTestBase, ModelTestMixin):
 
     def setUp(self):
-        super(SessionPersistenceModelTest, self).setUp()
+        super().setUp()
         self.pool = self.create_pool(self.session)
 
     def test_create(self):
@@ -449,7 +449,7 @@ class ListenerModelTest(base.OctaviaDBTestBase, ModelTestMixin):
 class ListenerStatisticsModelTest(base.OctaviaDBTestBase, ModelTestMixin):
 
     def setUp(self):
-        super(ListenerStatisticsModelTest, self).setUp()
+        super().setUp()
         self.listener = self.create_listener(self.session)
         self.amphora = self.create_amphora(self.session)
 
@@ -486,7 +486,7 @@ class ListenerStatisticsModelTest(base.OctaviaDBTestBase, ModelTestMixin):
 class HealthMonitorModelTest(base.OctaviaDBTestBase, ModelTestMixin):
 
     def setUp(self):
-        super(HealthMonitorModelTest, self).setUp()
+        super().setUp()
         self.pool = self.create_pool(self.session)
 
     def test_create(self):
@@ -577,7 +577,7 @@ class LoadBalancerModelTest(base.OctaviaDBTestBase, ModelTestMixin):
 class VipModelTest(base.OctaviaDBTestBase, ModelTestMixin):
 
     def setUp(self):
-        super(VipModelTest, self).setUp()
+        super().setUp()
         self.load_balancer = self.create_load_balancer(self.session)
 
     def test_create(self):
@@ -610,7 +610,7 @@ class VipModelTest(base.OctaviaDBTestBase, ModelTestMixin):
 class SNIModelTest(base.OctaviaDBTestBase, ModelTestMixin):
 
     def setUp(self):
-        super(SNIModelTest, self).setUp()
+        super().setUp()
         self.listener = self.create_listener(self.session)
 
     def test_create(self):
@@ -643,7 +643,7 @@ class SNIModelTest(base.OctaviaDBTestBase, ModelTestMixin):
 class AmphoraModelTest(base.OctaviaDBTestBase, ModelTestMixin):
 
     def setUp(self):
-        super(AmphoraModelTest, self).setUp()
+        super().setUp()
         self.load_balancer = self.create_load_balancer(self.session)
 
     def test_create(self):
@@ -678,7 +678,7 @@ class AmphoraModelTest(base.OctaviaDBTestBase, ModelTestMixin):
 
 class AmphoraHealthModelTest(base.OctaviaDBTestBase, ModelTestMixin):
     def setUp(self):
-        super(AmphoraHealthModelTest, self).setUp()
+        super().setUp()
         self.amphora = self.create_amphora(self.session)
 
     def test_create(self):
@@ -708,7 +708,7 @@ class AmphoraHealthModelTest(base.OctaviaDBTestBase, ModelTestMixin):
 
 class L7PolicyModelTest(base.OctaviaDBTestBase, ModelTestMixin):
     def setUp(self):
-        super(L7PolicyModelTest, self).setUp()
+        super().setUp()
         self.listener = self.create_listener(self.session)
 
     def test_create(self):
@@ -826,7 +826,7 @@ class L7PolicyModelTest(base.OctaviaDBTestBase, ModelTestMixin):
 class L7RuleModelTest(base.OctaviaDBTestBase, ModelTestMixin):
 
     def setUp(self):
-        super(L7RuleModelTest, self).setUp()
+        super().setUp()
         self.listener = self.create_listener(self.session)
         self.l7policy = self.create_l7policy(self.session, self.listener.id)
 
@@ -872,7 +872,7 @@ class L7RuleModelTest(base.OctaviaDBTestBase, ModelTestMixin):
 class TestDataModelConversionTest(base.OctaviaDBTestBase, ModelTestMixin):
 
     def setUp(self):
-        super(TestDataModelConversionTest, self).setUp()
+        super().setUp()
         self.lb = self.create_load_balancer(self.session)
         self.amphora = self.create_amphora(self.session)
         self.associate_amphora(self.lb, self.amphora)
@@ -1329,7 +1329,7 @@ class TestDataModelConversionTest(base.OctaviaDBTestBase, ModelTestMixin):
 class TestDataModelManipulations(base.OctaviaDBTestBase, ModelTestMixin):
 
     def setUp(self):
-        super(TestDataModelManipulations, self).setUp()
+        super().setUp()
         self.lb = self.create_load_balancer(self.session)
         self.amphora = self.create_amphora(self.session)
         self.associate_amphora(self.lb, self.amphora)
@@ -1748,7 +1748,7 @@ class TestDataModelManipulations(base.OctaviaDBTestBase, ModelTestMixin):
 class FlavorModelTest(base.OctaviaDBTestBase, ModelTestMixin):
 
     def setUp(self):
-        super(FlavorModelTest, self).setUp()
+        super().setUp()
         self.profile = self.create_flavor_profile(self.session)
 
     def test_create(self):

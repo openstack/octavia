@@ -69,8 +69,8 @@ def get_interface_name(ip_address, net_ns=None):
     # fe80:0000:0000:0000:f816:3eff:fef2:2058 == fe80::f816:3eff:fef2:2058
     try:
         normalized_addr = ipaddress.ip_address(ip_address).compressed
-    except ValueError:
-        raise exceptions.InvalidIPAddress(ip_addr=ip_address)
+    except ValueError as e:
+        raise exceptions.InvalidIPAddress(ip_addr=ip_address) from e
 
     if net_ns:
         with pyroute2.NetNS(net_ns) as rtnl_api:

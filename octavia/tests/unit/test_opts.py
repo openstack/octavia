@@ -19,7 +19,7 @@ import octavia.tests.unit.base as base
 class TestOpts(base.TestCase):
 
     def setUp(self):
-        super(TestOpts, self).setUp()
+        super().setUp()
 
     def test_list_opts(self):
         opts_list = opts.list_opts()[0]

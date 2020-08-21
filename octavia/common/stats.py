@@ -24,7 +24,7 @@ LOG = logging.getLogger(__name__)
 class StatsMixin(object):
 
     def __init__(self):
-        super(StatsMixin, self).__init__()
+        super().__init__()
         self.listener_stats_repo = repo.ListenerStatisticsRepository()
         self.repo_amphora = repo.AmphoraRepository()
         self.repo_loadbalancer = repo.LoadBalancerRepository()

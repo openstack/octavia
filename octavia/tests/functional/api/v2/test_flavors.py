@@ -31,7 +31,7 @@ class TestFlavors(base.BaseAPITest):
     root_tag_links = 'flavors_links'
 
     def setUp(self):
-        super(TestFlavors, self).setUp()
+        super().setUp()
         self.fp = self.create_flavor_profile('test1', 'noop_driver',
                                              '{"image": "ubuntu"}')
 

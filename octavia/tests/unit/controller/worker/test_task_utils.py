@@ -37,7 +37,7 @@ class TestTaskUtils(base.TestCase):
         self.MEMBER_ID = uuidutils.generate_uuid()
         self.POOL_ID = uuidutils.generate_uuid()
 
-        super(TestTaskUtils, self).setUp()
+        super().setUp()
 
     @mock.patch('octavia.db.api.get_session', return_value=TEST_SESSION)
     @mock.patch('octavia.db.repositories.AmphoraRepository.update')

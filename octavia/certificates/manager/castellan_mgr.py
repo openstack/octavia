@@ -32,7 +32,7 @@ class CastellanCertManager(cert_mgr.CertManager):
     """Certificate Manager for the Castellan library."""
 
     def __init__(self):
-        super(CastellanCertManager, self).__init__()
+        super().__init__()
         self.manager = key_manager.API()
 
     def store_cert(self, context, certificate, private_key, intermediates=None,

@@ -42,7 +42,7 @@ class HealthMonitorController(base.BaseController):
     RBAC_TYPE = consts.RBAC_HEALTHMONITOR
 
     def __init__(self):
-        super(HealthMonitorController, self).__init__()
+        super().__init__()
 
     @wsme_pecan.wsexpose(hm_types.HealthMonitorRootResponse, wtypes.text,
                          [wtypes.text], ignore_extra_args=True)
@@ -156,13 +156,13 @@ class HealthMonitorController(base.BaseController):
         try:
             return self.repositories.health_monitor.create(
                 lock_session, **hm_dict)
-        except odb_exceptions.DBDuplicateEntry:
-            raise exceptions.DuplicateHealthMonitor()
-        except odb_exceptions.DBError:
+        except odb_exceptions.DBDuplicateEntry as e:
+            raise exceptions.DuplicateHealthMonitor() from e
+        except odb_exceptions.DBError as e:
             # TODO(blogan): will have to do separate validation protocol
             # before creation or update since the exception messages
             # do not give any information as to what constraint failed
-            raise exceptions.InvalidOption(value='', option='')
+            raise exceptions.InvalidOption(value='', option='') from e
 
     def _validate_healthmonitor_request_for_udp(self, request):
         if request.type not in (
@@ -248,10 +248,10 @@ class HealthMonitorController(base.BaseController):
                 driver.name, driver.health_monitor_create, provider_healthmon)
 
             lock_session.commit()
-        except odb_exceptions.DBError:
+        except odb_exceptions.DBError as e:
             lock_session.rollback()
             raise exceptions.InvalidOption(
-                value=hm_dict.get('type'), option='type')
+                value=hm_dict.get('type'), option='type') from e
         except Exception:
             with excutils.save_and_reraise_exception():
                 lock_session.rollback()

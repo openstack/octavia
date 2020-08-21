@@ -55,7 +55,7 @@ class DriverAgentTest(base.OctaviaDBTestBase):
         # Note that because the driver agent is a multi-process
         # agent we must use a sqlite file rather than an
         # in-memory instance.
-        super(DriverAgentTest, self).setUp(
+        super().setUp(
             connection_string=sqlite_db_connection)
 
         conf = self.useFixture(oslo_fixture.Config(config.cfg.CONF))

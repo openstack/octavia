@@ -22,7 +22,7 @@ import octavia.tests.unit.base as base
 
 class KeepalivedTestCase(base.TestCase):
     def setUp(self):
-        super(KeepalivedTestCase, self).setUp()
+        super().setUp()
         self.app = flask.Flask(__name__)
         self.client = self.app.test_client()
         self._ctx = self.app.test_request_context()

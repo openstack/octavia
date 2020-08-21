@@ -138,7 +138,7 @@ class TestDataModels(base.TestCase):
             in_use_l7rule=None
         )
 
-        super(TestDataModels, self).setUp()
+        super().setUp()
 
     def test_LoadBalancer_update(self):
 

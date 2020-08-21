@@ -45,7 +45,7 @@ class TestVRRPRestDriver(base.TestCase):
         vip_subnet.cidr = '192.0.2.0/24'
         self.amphorae_network_config[self.amphora_mock.id] = vip_subnet
 
-        super(TestVRRPRestDriver, self).setUp()
+        super().setUp()
 
     @mock.patch('octavia.amphorae.drivers.keepalived.jinja.'
                 'jinja_cfg.KeepalivedJinjaTemplater.build_keepalived_config')

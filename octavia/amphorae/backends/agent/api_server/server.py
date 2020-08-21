@@ -186,9 +186,9 @@ class Server(object):
             assert 'subnet_cidr' in net_info
             assert 'gateway' in net_info
             assert 'mac_address' in net_info
-        except Exception:
+        except Exception as e:
             raise exceptions.BadRequest(
-                description='Invalid subnet information')
+                description='Invalid subnet information') from e
         return self._plug.plug_vip(vip,
                                    net_info['subnet_cidr'],
                                    net_info['gateway'],
@@ -202,8 +202,9 @@ class Server(object):
             port_info = flask.request.get_json()
             assert type(port_info) is dict
             assert 'mac_address' in port_info
-        except Exception:
-            raise exceptions.BadRequest(description='Invalid port information')
+        except Exception as e:
+            raise exceptions.BadRequest(
+                description='Invalid port information') from e
         return self._plug.plug_network(port_info['mac_address'],
                                        port_info.get('fixed_ips'),
                                        port_info.get('mtu'))

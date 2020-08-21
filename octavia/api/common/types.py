@@ -36,9 +36,9 @@ class IPAddressType(wtypes.UserType):
             try:
                 wtypes.IPv6AddressType.validate(value)
                 return value
-            except ValueError:
+            except ValueError as e:
                 error = 'Value should be IPv4 or IPv6 format'
-                raise ValueError(error)
+                raise ValueError(error) from e
 
 
 class CidrType(wtypes.UserType):
@@ -50,9 +50,9 @@ class CidrType(wtypes.UserType):
         """Validates whether value is an IPv4 or IPv6 CIDR."""
         try:
             return str(netaddr.IPNetwork(value).cidr)
-        except (ValueError, netaddr.core.AddrFormatError):
+        except (ValueError, netaddr.core.AddrFormatError) as e:
             error = 'Value should be IPv4 or IPv6 CIDR format'
-            raise ValueError(error)
+            raise ValueError(error) from e
 
 
 class URLType(wtypes.UserType):
@@ -60,15 +60,15 @@ class URLType(wtypes.UserType):
     name = 'url'
 
     def __init__(self, require_scheme=True):
-        super(URLType, self).__init__()
+        super().__init__()
         self.require_scheme = require_scheme
 
     def validate(self, value):
         try:
             validate.url(value, require_scheme=self.require_scheme)
-        except exceptions.InvalidURL:
+        except exceptions.InvalidURL as e:
             error = 'Value must be a valid URL string'
-            raise ValueError(error)
+            raise ValueError(error) from e
         return value
 
 
@@ -80,9 +80,9 @@ class URLPathType(wtypes.UserType):
     def validate(value):
         try:
             validate.url_path(value)
-        except exceptions.InvalidURLPath:
+        except exceptions.InvalidURLPath as e:
             error = 'Value must be a valid URL Path string'
-            raise ValueError(error)
+            raise ValueError(error) from e
         return value
 
 

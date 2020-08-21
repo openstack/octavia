@@ -47,7 +47,7 @@ AMPHORA_SUPPORTED_LB_ALGORITHMS = [
 
 class AmphoraProviderDriver(driver_base.ProviderDriver):
     def __init__(self):
-        super(AmphoraProviderDriver, self).__init__()
+        super().__init__()
         self.target = messaging.Target(
             namespace=consts.RPC_NAMESPACE_CONTROLLER_AGENT,
             topic=consts.TOPIC_AMPHORA_V2, version="2.0", fanout=False)

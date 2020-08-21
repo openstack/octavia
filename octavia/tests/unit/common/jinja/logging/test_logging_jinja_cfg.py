@@ -22,7 +22,7 @@ import octavia.tests.unit.base as base
 
 class LoggingJinjaTestCase(base.TestCase):
     def setUp(self):
-        super(LoggingJinjaTestCase, self).setUp()
+        super().setUp()
 
         self.conf = oslo_fixture.Config(cfg.CONF)
         self.conf.config(debug=False)

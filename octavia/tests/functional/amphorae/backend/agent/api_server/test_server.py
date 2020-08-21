@@ -46,7 +46,7 @@ class TestServerTestCase(base.TestCase):
     app = None
 
     def setUp(self):
-        super(TestServerTestCase, self).setUp()
+        super().setUp()
         self.conf = self.useFixture(oslo_fixture.Config(config.cfg.CONF))
         self.conf.config(group="haproxy_amphora", base_path='/var/lib/octavia')
         self.conf.config(group="controller_worker",

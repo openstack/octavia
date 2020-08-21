@@ -35,7 +35,7 @@ class TestPool(base.BaseAPITest):
     root_tag_links = 'pools_links'
 
     def setUp(self):
-        super(TestPool, self).setUp()
+        super().setUp()
 
         self.lb = self.create_load_balancer(
             uuidutils.generate_uuid()).get('loadbalancer')

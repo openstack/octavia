@@ -32,7 +32,7 @@ class BarbicanCertManager(cert_mgr.CertManager):
     """Certificate Manager that wraps the Barbican client API."""
 
     def __init__(self, auth=None):
-        super(BarbicanCertManager, self).__init__()
+        super().__init__()
         if auth:
             self.auth = auth
         else:

@@ -24,7 +24,7 @@ API_VERSION = constants.API_VERSION
 
 class KeepalivedAmphoraDriverMixin(driver_base.VRRPDriverMixin):
     def __init__(self):
-        super(KeepalivedAmphoraDriverMixin, self).__init__()
+        super().__init__()
 
         # The Mixed class must define a self.client object for the
         # AmphoraApiClient

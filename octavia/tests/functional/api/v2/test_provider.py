@@ -30,7 +30,7 @@ class TestProvider(base.BaseAPITest):
     root_tag_list = 'providers'
 
     def setUp(self):
-        super(TestProvider, self).setUp()
+        super().setUp()
 
     def test_get_all_providers(self):
         octavia_dict = {u'description': u'Octavia driver.',
@@ -60,7 +60,7 @@ class TestFlavorCapabilities(base.BaseAPITest):
     root_tag = 'flavor_capabilities'
 
     def setUp(self):
-        super(TestFlavorCapabilities, self).setUp()
+        super().setUp()
 
     def test_nonexistent_provider(self):
         self.get(self.FLAVOR_CAPABILITIES_PATH.format(provider='bogus'),
@@ -178,7 +178,7 @@ class TestAvailabilityZoneCapabilities(base.BaseAPITest):
     root_tag = 'availability_zone_capabilities'
 
     def setUp(self):
-        super(TestAvailabilityZoneCapabilities, self).setUp()
+        super().setUp()
 
     def test_nonexistent_provider(self):
         self.get(self.AVAILABILITY_ZONE_CAPABILITIES_PATH.format(

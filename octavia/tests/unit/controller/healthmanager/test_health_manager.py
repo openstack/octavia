@@ -40,7 +40,7 @@ class TestException(Exception):
 class TestHealthManager(base.TestCase):
 
     def setUp(self):
-        super(TestHealthManager, self).setUp()
+        super().setUp()
 
     @mock.patch('octavia.db.api.wait_for_connection')
     @mock.patch('octavia.controller.worker.v1.controller_worker.'

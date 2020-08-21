@@ -27,7 +27,7 @@ CONF = cfg.CONF
 class TestDriverAgentCMD(base.TestCase):
 
     def setUp(self):
-        super(TestDriverAgentCMD, self).setUp()
+        super().setUp()
         self.CONF = self.useFixture(oslo_fixture.Config(cfg.CONF))
 
     @mock.patch('os.kill')

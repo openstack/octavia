@@ -32,7 +32,7 @@ class TestL7Rule(base.BaseAPITest):
     root_tag_links = 'rules_links'
 
     def setUp(self):
-        super(TestL7Rule, self).setUp()
+        super().setUp()
         self.lb = self.create_load_balancer(uuidutils.generate_uuid())
         self.lb_id = self.lb.get('loadbalancer').get('id')
         self.project_id = self.lb.get('loadbalancer').get('project_id')

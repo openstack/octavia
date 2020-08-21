@@ -26,7 +26,7 @@ class TestObjectUpdateTasks(base.TestCase):
         self.listener_mock = mock.MagicMock()
         self.listener_mock.name = 'TEST'
 
-        super(TestObjectUpdateTasks, self).setUp()
+        super().setUp()
 
     def test_delete_model_object(self):
 

@@ -44,7 +44,7 @@ STATS_DRIVER = 'stats_logger'
 class TestHeartbeatUDP(base.TestCase):
 
     def setUp(self):
-        super(TestHeartbeatUDP, self).setUp()
+        super().setUp()
         self.health_update = mock.Mock()
         self.stats_update = mock.Mock()
 

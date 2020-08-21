@@ -33,7 +33,7 @@ class TestAmphora(base.BaseAPITest):
     root_tag_stats = 'amphora_stats'
 
     def setUp(self):
-        super(TestAmphora, self).setUp()
+        super().setUp()
         self.lb = self.create_load_balancer(
             uuidutils.generate_uuid()).get('loadbalancer')
         self.lb_id = self.lb.get('id')

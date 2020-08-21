@@ -34,7 +34,7 @@ class AvailabilityZonesController(base.BaseController):
     RBAC_TYPE = constants.RBAC_AVAILABILITY_ZONE
 
     def __init__(self):
-        super(AvailabilityZonesController, self).__init__()
+        super().__init__()
 
     @wsme_pecan.wsexpose(availability_zone_types.AvailabilityZoneRootResponse,
                          wtypes.text, [wtypes.text], ignore_extra_args=True)
@@ -93,10 +93,10 @@ class AvailabilityZonesController(base.BaseController):
             db_availability_zone = self.repositories.availability_zone.create(
                 lock_session, **availability_zone_dict)
             lock_session.commit()
-        except odb_exceptions.DBDuplicateEntry:
+        except odb_exceptions.DBDuplicateEntry as e:
             lock_session.rollback()
-            raise exceptions.RecordAlreadyExists(field='availability zone',
-                                                 name=availability_zone.name)
+            raise exceptions.RecordAlreadyExists(
+                field='availability zone', name=availability_zone.name) from e
         except Exception:
             with excutils.save_and_reraise_exception():
                 lock_session.rollback()
@@ -159,14 +159,14 @@ class AvailabilityZonesController(base.BaseController):
                 serial_session, name=availability_zone_name)
             serial_session.commit()
         # Handle when load balancers still reference this availability_zone
-        except odb_exceptions.DBReferenceError:
+        except odb_exceptions.DBReferenceError as e:
             serial_session.rollback()
             raise exceptions.ObjectInUse(object='Availability Zone',
-                                         id=availability_zone_name)
-        except sa_exception.NoResultFound:
+                                         id=availability_zone_name) from e
+        except sa_exception.NoResultFound as e:
             serial_session.rollback()
             raise exceptions.NotFound(resource='Availability Zone',
-                                      id=availability_zone_name)
+                                      id=availability_zone_name) from e
         except Exception as e:
             with excutils.save_and_reraise_exception():
                 LOG.error(

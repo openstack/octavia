@@ -36,7 +36,7 @@ class BaseController(pecan_rest.RestController):
     RBAC_TYPE = None
 
     def __init__(self):
-        super(BaseController, self).__init__()
+        super().__init__()
         self.cert_manager = stevedore_driver.DriverManager(
             namespace='octavia.cert_manager',
             name=CONF.certificates.cert_manager,

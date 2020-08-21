@@ -31,7 +31,7 @@ CONF = cfg.CONF
 class ConsumerService(cotyledon.Service):
 
     def __init__(self, worker_id, conf):
-        super(ConsumerService, self).__init__(worker_id)
+        super().__init__(worker_id)
         self.conf = conf
         self.topic = constants.TOPIC_AMPHORA_V2
         self.server = conf.host
@@ -71,4 +71,4 @@ class ConsumerService(cotyledon.Service):
                     e.worker.executor.shutdown()
                 except AttributeError:
                     pass
-        super(ConsumerService, self).terminate()
+        super().terminate()

@@ -25,7 +25,7 @@ LOG = logging.getLogger(__name__)
 
 class NoopManager(object):
     def __init__(self):
-        super(NoopManager, self).__init__()
+        super().__init__()
         self.computeconfig = {}
 
     def build(self, name="amphora_name", amphora_flavor=None,
@@ -120,7 +120,7 @@ class NoopManager(object):
 
 class NoopComputeDriver(driver_base.ComputeBase):
     def __init__(self):
-        super(NoopComputeDriver, self).__init__()
+        super().__init__()
         self.driver = NoopManager()
 
     def build(self, name="amphora_name", amphora_flavor=None,

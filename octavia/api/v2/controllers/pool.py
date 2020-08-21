@@ -46,7 +46,7 @@ class PoolsController(base.BaseController):
     RBAC_TYPE = constants.RBAC_POOL
 
     def __init__(self):
-        super(PoolsController, self).__init__()
+        super().__init__()
 
     @wsme_pecan.wsexpose(pool_types.PoolRootResponse, wtypes.text,
                          [wtypes.text], ignore_extra_args=True)
@@ -141,13 +141,13 @@ class PoolsController(base.BaseController):
             return self.repositories.create_pool_on_load_balancer(
                 lock_session, pool_dict,
                 listener_id=listener_id)
-        except odb_exceptions.DBDuplicateEntry:
-            raise exceptions.IDAlreadyExists()
-        except odb_exceptions.DBError:
+        except odb_exceptions.DBDuplicateEntry as e:
+            raise exceptions.IDAlreadyExists() from e
+        except odb_exceptions.DBError as e:
             # TODO(blogan): will have to do separate validation protocol
             # before creation or update since the exception messages
             # do not give any information as to what constraint failed
-            raise exceptions.InvalidOption(value='', option='')
+            raise exceptions.InvalidOption(value='', option='') from e
 
     def _is_only_specified_in_request(self, request, **kwargs):
         request_attrs = []

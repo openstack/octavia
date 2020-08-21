@@ -21,7 +21,7 @@ from octavia import version
 class TestVersion(base.TestCase):
 
     def setUp(self):
-        super(TestVersion, self).setUp()
+        super().setUp()
 
     def test_vendor_str(self):
         self.assertEqual("OpenStack Foundation", version.vendor_string())

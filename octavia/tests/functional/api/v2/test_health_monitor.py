@@ -33,7 +33,7 @@ class TestHealthMonitor(base.BaseAPITest):
     root_tag_links = 'healthmonitors_links'
 
     def setUp(self):
-        super(TestHealthMonitor, self).setUp()
+        super().setUp()
         self.lb = self.create_load_balancer(
             uuidutils.generate_uuid()).get('loadbalancer')
         self.lb_id = self.lb.get('id')

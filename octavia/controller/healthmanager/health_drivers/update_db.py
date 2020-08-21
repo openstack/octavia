@@ -35,7 +35,7 @@ LOG = logging.getLogger(__name__)
 
 class UpdateHealthDb(update_base.HealthUpdateBase):
     def __init__(self):
-        super(UpdateHealthDb, self).__init__()
+        super().__init__()
         # first setup repo for amphora, listener,member(nodes),pool repo
         self.amphora_repo = repo.AmphoraRepository()
         self.amphora_health_repo = repo.AmphoraHealthRepository()

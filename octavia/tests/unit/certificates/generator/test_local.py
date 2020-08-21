@@ -25,7 +25,7 @@ from octavia.tests.unit.certificates.generator import local_csr
 
 class TestLocalGenerator(local_csr.BaseLocalCSRTestCase):
     def setUp(self):
-        super(TestLocalGenerator, self).setUp()
+        super().setUp()
         self.signing_digest = "sha256"
 
         # Setup CA data

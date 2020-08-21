@@ -25,7 +25,7 @@ from octavia.tests.unit import base
 class TestEndpoints(base.TestCase):
 
     def setUp(self):
-        super(TestEndpoints, self).setUp()
+        super().setUp()
 
         conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
         conf.config(octavia_plugins='hot_plug_plugin')

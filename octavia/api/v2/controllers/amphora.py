@@ -36,7 +36,7 @@ class AmphoraController(base.BaseController):
     RBAC_TYPE = constants.RBAC_AMPHORA
 
     def __init__(self):
-        super(AmphoraController, self).__init__()
+        super().__init__()
 
     @wsme_pecan.wsexpose(amp_types.AmphoraRootResponse, wtypes.text,
                          [wtypes.text], ignore_extra_args=True)
@@ -97,7 +97,7 @@ class FailoverController(base.BaseController):
     RBAC_TYPE = constants.RBAC_AMPHORA
 
     def __init__(self, amp_id):
-        super(FailoverController, self).__init__()
+        super().__init__()
         if CONF.api_settings.default_provider_driver == constants.AMPHORAV2:
             topic = constants.TOPIC_AMPHORA_V2
             version = "2.0"
@@ -147,7 +147,7 @@ class AmphoraUpdateController(base.BaseController):
     RBAC_TYPE = constants.RBAC_AMPHORA
 
     def __init__(self, amp_id):
-        super(AmphoraUpdateController, self).__init__()
+        super().__init__()
 
         if CONF.api_settings.default_provider_driver == constants.AMPHORAV2:
             topic = constants.TOPIC_AMPHORA_V2
@@ -194,7 +194,7 @@ class AmphoraStatsController(base.BaseController):
     RBAC_TYPE = constants.RBAC_AMPHORA
 
     def __init__(self, amp_id):
-        super(AmphoraStatsController, self).__init__()
+        super().__init__()
         self.amp_id = amp_id
 
     @wsme_pecan.wsexpose(amp_types.StatisticsRootResponse, wtypes.text,

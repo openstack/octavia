@@ -31,7 +31,7 @@ class RootController(object):
     """The controller with which the pecan wsgi app should be created."""
 
     def __init__(self):
-        super(RootController, self).__init__()
+        super().__init__()
         setattr(self, 'v2.0', v2_controller.V2Controller())
         setattr(self, 'v2', v2_controller.V2Controller())
         if CONF.api_settings.healthcheck_enabled:

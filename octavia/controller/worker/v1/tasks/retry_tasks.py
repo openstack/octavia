@@ -53,7 +53,7 @@ class SleepingRetryTimesController(retry.Times):
 
     def __init__(self, attempts=1, name=None, provides=None, requires=None,
                  auto_extract=True, rebind=None, revert_all=False, interval=1):
-        super(SleepingRetryTimesController, self).__init__(
+        super().__init__(
             attempts, name, provides, requires, auto_extract, rebind,
             revert_all)
         self._interval = interval

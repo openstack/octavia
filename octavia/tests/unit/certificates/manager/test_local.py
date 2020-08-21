@@ -38,7 +38,7 @@ class TestLocalManager(base.TestCase):
         conf = oslo_fixture.Config(cfg.CONF)
         conf.config(group="certificates", storage_path="/tmp/")
 
-        super(TestLocalManager, self).setUp()
+        super().setUp()
 
     def _store_cert(self):
         fd_mock = mock.mock_open()

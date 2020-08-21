@@ -33,7 +33,7 @@ AUTH_VERSION = '2'
 class TestAmphoraFlows(base.TestCase):
 
     def setUp(self):
-        super(TestAmphoraFlows, self).setUp()
+        super().setUp()
         self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
         self.conf.config(
             group="controller_worker",

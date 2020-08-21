@@ -35,7 +35,7 @@ LB_ID1 = uuidutils.generate_uuid()
 
 class TestUtil(base.TestCase):
     def setUp(self):
-        super(TestUtil, self).setUp()
+        super().setUp()
         self.CONF = self.useFixture(oslo_fixture.Config(cfg.CONF))
         self.listener_id = uuidutils.generate_uuid()
         self.jinja_cfg = jinja_cfg.JinjaTemplater(

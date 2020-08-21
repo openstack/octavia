@@ -37,7 +37,7 @@ class AvailabilityZoneProfileController(base.BaseController):
     RBAC_TYPE = constants.RBAC_AVAILABILITY_ZONE_PROFILE
 
     def __init__(self):
-        super(AvailabilityZoneProfileController, self).__init__()
+        super().__init__()
 
     @wsme_pecan.wsexpose(profile_types.AvailabilityZoneProfileRootResponse,
                          wtypes.text, [wtypes.text], ignore_extra_args=True)
@@ -94,10 +94,10 @@ class AvailabilityZoneProfileController(base.BaseController):
         try:
             availability_zone_data_dict = jsonutils.loads(
                 availability_zone_profile.availability_zone_data)
-        except Exception:
+        except Exception as e:
             raise exceptions.InvalidOption(
                 value=availability_zone_profile.availability_zone_data,
-                option=constants.AVAILABILITY_ZONE_DATA)
+                option=constants.AVAILABILITY_ZONE_DATA) from e
 
         # Validate that the provider driver supports the metadata
         driver = driver_factory.get_driver(
@@ -115,9 +115,9 @@ class AvailabilityZoneProfileController(base.BaseController):
                 self.repositories.availability_zone_profile.create(
                     lock_session, **availability_zone_profile_dict))
             lock_session.commit()
-        except odb_exceptions.DBDuplicateEntry:
+        except odb_exceptions.DBDuplicateEntry as e:
             lock_session.rollback()
-            raise exceptions.IDAlreadyExists()
+            raise exceptions.IDAlreadyExists() from e
         except Exception:
             with excutils.save_and_reraise_exception():
                 lock_session.rollback()
@@ -170,10 +170,10 @@ class AvailabilityZoneProfileController(base.BaseController):
             try:
                 availability_zone_data_dict = jsonutils.loads(
                     availability_zone_profile.availability_zone_data)
-            except Exception:
+            except Exception as e:
                 raise exceptions.InvalidOption(
                     value=availability_zone_profile.availability_zone_data,
-                    option=constants.FLAVOR_DATA)
+                    option=constants.FLAVOR_DATA) from e
 
             if isinstance(availability_zone_profile.provider_name,
                           wtypes.UnsetType):
@@ -232,6 +232,6 @@ class AvailabilityZoneProfileController(base.BaseController):
         try:
             self.repositories.availability_zone_profile.delete(
                 context.session, id=availability_zone_profile_id)
-        except sa_exception.NoResultFound:
+        except sa_exception.NoResultFound as e:
             raise exceptions.NotFound(resource='Availability Zone Profile',
-                                      id=availability_zone_profile_id)
+                                      id=availability_zone_profile_id) from e

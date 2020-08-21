@@ -25,7 +25,7 @@ class TestPoolFlows(base.TestCase):
     def setUp(self):
         self.PoolFlow = pool_flows.PoolFlows()
 
-        super(TestPoolFlows, self).setUp()
+        super().setUp()
 
     def test_get_create_pool_flow(self):
 

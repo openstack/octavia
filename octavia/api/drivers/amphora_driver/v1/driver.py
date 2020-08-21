@@ -46,7 +46,7 @@ AMPHORA_SUPPORTED_LB_ALGORITHMS = [
 
 class AmphoraProviderDriver(driver_base.ProviderDriver):
     def __init__(self):
-        super(AmphoraProviderDriver, self).__init__()
+        super().__init__()
         topic = cfg.CONF.oslo_messaging.topic
         self.target = messaging.Target(
             namespace=consts.RPC_NAMESPACE_CONTROLLER_AGENT,

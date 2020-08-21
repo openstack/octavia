@@ -77,4 +77,4 @@ class SkippingAuthProtocol(auth_token.AuthProtocol):
                       'authentication', path)
             return None  # return NONE to reach actual logic
 
-        return super(SkippingAuthProtocol, self).process_request(request)
+        return super().process_request(request)

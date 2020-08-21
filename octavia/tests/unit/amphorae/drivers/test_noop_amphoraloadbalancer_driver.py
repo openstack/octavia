@@ -27,7 +27,7 @@ FAKE_UUID_1 = uuidutils.generate_uuid()
 
 class TestLoggingUpdate(base.TestCase):
     def setUp(self):
-        super(TestLoggingUpdate, self).setUp()
+        super().setUp()
         self.mixin = driver.LoggingUpdate()
 
     def test_update_stats(self):
@@ -43,7 +43,7 @@ class TestNoopAmphoraLoadBalancerDriver(base.TestCase):
     FAKE_UUID_1 = uuidutils.generate_uuid()
 
     def setUp(self):
-        super(TestNoopAmphoraLoadBalancerDriver, self).setUp()
+        super().setUp()
         self.driver = driver.NoopAmphoraLoadBalancerDriver()
         self.listener = data_models.Listener()
         self.listener.id = uuidutils.generate_uuid()

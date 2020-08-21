@@ -41,7 +41,7 @@ class TestBaseNeutronNetworkDriver(base.TestCase):
         return impl_class()
 
     def setUp(self):
-        super(TestBaseNeutronNetworkDriver, self).setUp()
+        super().setUp()
         with mock.patch('octavia.common.clients.neutron_client.Client',
                         autospec=True) as neutron_client:
             client = neutron_client(clients.NEUTRON_VERSION)

@@ -25,7 +25,7 @@ from octavia.tests.unit import base
 class TestConsumer(base.TestRpc):
 
     def setUp(self):
-        super(TestConsumer, self).setUp()
+        super().setUp()
         conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
         conf.config(group="oslo_messaging", topic='foo_topic')
         conf.config(host='test-hostname')

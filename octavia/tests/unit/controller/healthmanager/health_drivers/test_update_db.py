@@ -40,7 +40,7 @@ class TestUpdateHealthDb(base.TestCase):
     FAKE_UUID_1 = uuidutils.generate_uuid()
 
     def setUp(self):
-        super(TestUpdateHealthDb, self).setUp()
+        super().setUp()
 
         session_patch = mock.patch('octavia.db.api.get_session')
         self.addCleanup(session_patch.stop)
@@ -1344,7 +1344,7 @@ class TestUpdateHealthDb(base.TestCase):
 class TestUpdateStatsDb(base.TestCase):
 
     def setUp(self):
-        super(TestUpdateStatsDb, self).setUp()
+        super().setUp()
 
         self.sm = update_db.UpdateStatsDb()
 

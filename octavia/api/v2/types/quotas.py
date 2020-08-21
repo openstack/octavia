@@ -42,7 +42,7 @@ class QuotaBase(base.BaseType):
         minimum=consts.MIN_QUOTA, maximum=consts.MAX_QUOTA))
 
     def to_dict(self, render_unsets=False):
-        quota_dict = super(QuotaBase, self).to_dict(render_unsets)
+        quota_dict = super().to_dict(render_unsets)
         if 'loadbalancer' in quota_dict:
             quota_dict['load_balancer'] = quota_dict.pop('loadbalancer')
         if 'healthmonitor' in quota_dict:

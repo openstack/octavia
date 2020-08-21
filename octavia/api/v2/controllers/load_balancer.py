@@ -52,7 +52,7 @@ class LoadBalancersController(base.BaseController):
     RBAC_TYPE = constants.RBAC_LOADBALANCER
 
     def __init__(self):
-        super(LoadBalancersController, self).__init__()
+        super().__init__()
 
     @wsme_pecan.wsexpose(lb_types.LoadBalancerRootResponse, wtypes.text,
                          [wtypes.text], ignore_extra_args=True)
@@ -293,9 +293,9 @@ class LoadBalancersController(base.BaseController):
             try:
                 provider = self.repositories.flavor.get_flavor_provider(
                     session, load_balancer.flavor_id)
-            except sa_exception.NoResultFound:
+            except sa_exception.NoResultFound as e:
                 raise exceptions.ValidationException(
-                    detail=_("Invalid flavor_id."))
+                    detail=_("Invalid flavor_id.")) from e
 
         # No provider specified and no flavor specified, use conf default
         if (isinstance(load_balancer.provider, wtypes.UnsetType) and
@@ -322,9 +322,9 @@ class LoadBalancersController(base.BaseController):
                 flavor_dict = (
                     self.repositories.flavor.get_flavor_metadata_dict(
                         lock_session, lb_dict['flavor_id']))
-            except sa_exception.NoResultFound:
+            except sa_exception.NoResultFound as e:
                 raise exceptions.ValidationException(
-                    detail=_("Invalid flavor_id."))
+                    detail=_("Invalid flavor_id.")) from e
 
         # Make sure the driver will still accept the flavor metadata
         if flavor_dict:
@@ -361,9 +361,9 @@ class LoadBalancersController(base.BaseController):
                     self.repositories.availability_zone
                     .get_availability_zone_metadata_dict(lock_session, az.name)
                 )
-            except sa_exception.NoResultFound:
+            except sa_exception.NoResultFound as e:
                 raise exceptions.ValidationException(
-                    detail=_("Invalid availability_zone."))
+                    detail=_("Invalid availability_zone.")) from e
 
         # Make sure the driver will still accept the availability zone metadata
         if az_dict:
@@ -371,10 +371,10 @@ class LoadBalancersController(base.BaseController):
                 driver_utils.call_provider(driver.name,
                                            driver.validate_availability_zone,
                                            az_dict)
-            except NotImplementedError:
+            except NotImplementedError as e:
                 raise exceptions.ProviderNotImplementedError(
                     prov=driver.name, user_msg="This provider does not support"
-                                               " availability zones.")
+                                               " availability zones.") from e
 
         return az_dict
 
@@ -513,9 +513,9 @@ class LoadBalancersController(base.BaseController):
                 driver_dm.LoadBalancer.from_dict(driver_lb_dict))
 
             lock_session.commit()
-        except odb_exceptions.DBDuplicateEntry:
+        except odb_exceptions.DBDuplicateEntry as e:
             lock_session.rollback()
-            raise exceptions.IDAlreadyExists()
+            raise exceptions.IDAlreadyExists() from e
         except Exception:
             with excutils.save_and_reraise_exception():
                 lock_session.rollback()
@@ -758,7 +758,7 @@ class StatusController(base.BaseController):
     RBAC_TYPE = constants.RBAC_LOADBALANCER
 
     def __init__(self, lb_id):
-        super(StatusController, self).__init__()
+        super().__init__()
         self.id = lb_id
 
     @wsme_pecan.wsexpose(lb_types.StatusRootResponse, wtypes.text,
@@ -786,7 +786,7 @@ class StatisticsController(base.BaseController, stats.StatsMixin):
     RBAC_TYPE = constants.RBAC_LOADBALANCER
 
     def __init__(self, lb_id):
-        super(StatisticsController, self).__init__()
+        super().__init__()
         self.id = lb_id
 
     @wsme_pecan.wsexpose(lb_types.StatisticsRootResponse, wtypes.text,
@@ -814,7 +814,7 @@ class StatisticsController(base.BaseController, stats.StatsMixin):
 class FailoverController(LoadBalancersController):
 
     def __init__(self, lb_id):
-        super(FailoverController, self).__init__()
+        super().__init__()
         self.lb_id = lb_id
 
     @wsme_pecan.wsexpose(None, wtypes.text, status_code=202)

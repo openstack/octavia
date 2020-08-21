@@ -77,8 +77,8 @@ class PaginationHelper(object):
             # Otherwise, we need to compare against the max
             else:
                 limit = min(int(limit), page_max_limit)
-        except ValueError:
-            raise exceptions.InvalidLimit(key=limit)
+        except ValueError as e:
+            raise exceptions.InvalidLimit(key=limit) from e
         return limit
 
     def _parse_sort_keys(self, params):
@@ -318,8 +318,9 @@ class PaginationHelper(object):
 
                 try:
                     sort_key_attr = getattr(model, current_sort_key)
-                except AttributeError:
-                    raise exceptions.InvalidSortKey(key=current_sort_key)
+                except AttributeError as e:
+                    raise exceptions.InvalidSortKey(
+                        key=current_sort_key) from e
                 query = query.order_by(sort_dir_func(sort_key_attr))
 
         # Add pagination

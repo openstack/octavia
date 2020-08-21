@@ -38,7 +38,7 @@ class FlavorProfileController(base.BaseController):
     RBAC_TYPE = constants.RBAC_FLAVOR_PROFILE
 
     def __init__(self):
-        super(FlavorProfileController, self).__init__()
+        super().__init__()
 
     @wsme_pecan.wsexpose(profile_types.FlavorProfileRootResponse, wtypes.text,
                          [wtypes.text], ignore_extra_args=True)
@@ -87,10 +87,10 @@ class FlavorProfileController(base.BaseController):
         # Do a basic JSON validation on the metadata
         try:
             flavor_data_dict = jsonutils.loads(flavorprofile.flavor_data)
-        except Exception:
+        except Exception as e:
             raise exceptions.InvalidOption(
                 value=flavorprofile.flavor_data,
-                option=constants.FLAVOR_DATA)
+                option=constants.FLAVOR_DATA) from e
 
         # Validate that the provider driver supports the metadata
         driver = driver_factory.get_driver(flavorprofile.provider_name)
@@ -104,9 +104,9 @@ class FlavorProfileController(base.BaseController):
             db_flavor_profile = self.repositories.flavor_profile.create(
                 lock_session, **flavorprofile_dict)
             lock_session.commit()
-        except odb_exceptions.DBDuplicateEntry:
+        except odb_exceptions.DBDuplicateEntry as e:
             lock_session.rollback()
-            raise exceptions.IDAlreadyExists()
+            raise exceptions.IDAlreadyExists() from e
         except Exception:
             with excutils.save_and_reraise_exception():
                 lock_session.rollback()
@@ -151,10 +151,10 @@ class FlavorProfileController(base.BaseController):
             # Do a basic JSON validation on the metadata
             try:
                 flavor_data_dict = jsonutils.loads(flavorprofile.flavor_data)
-            except Exception:
+            except Exception as e:
                 raise exceptions.InvalidOption(
                     value=flavorprofile.flavor_data,
-                    option=constants.FLAVOR_DATA)
+                    option=constants.FLAVOR_DATA) from e
 
             if isinstance(flavorprofile.provider_name, wtypes.UnsetType):
                 db_flavor_profile = self._get_db_flavor_profile(
@@ -207,6 +207,6 @@ class FlavorProfileController(base.BaseController):
         try:
             self.repositories.flavor_profile.delete(context.session,
                                                     id=flavor_profile_id)
-        except sa_exception.NoResultFound:
-            raise exceptions.NotFound(resource='Flavor profile',
-                                      id=flavor_profile_id)
+        except sa_exception.NoResultFound as e:
+            raise exceptions.NotFound(
+                resource='Flavor profile', id=flavor_profile_id) from e

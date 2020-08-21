@@ -19,7 +19,7 @@ from octavia.tests.unit import base
 class TestAmphoraAgentCMD(base.TestCase):
 
     def setUp(self):
-        super(TestAmphoraAgentCMD, self).setUp()
+        super().setUp()
 
     @mock.patch('octavia.cmd.agent.AmphoraAgent')
     @mock.patch('octavia.amphorae.backends.agent.api_server.server.Server')

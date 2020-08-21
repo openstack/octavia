@@ -81,7 +81,7 @@ class TestAmphoraDriverTasks(base.TestCase):
                              constants.REQ_READ_TIMEOUT: 2,
                              constants.CONN_MAX_RETRIES: 3,
                              constants.CONN_RETRY_INTERVAL: 4}
-        super(TestAmphoraDriverTasks, self).setUp()
+        super().setUp()
 
     def test_amp_listeners_update(self,
                                   mock_driver,

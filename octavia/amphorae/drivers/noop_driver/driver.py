@@ -34,7 +34,7 @@ class LoggingUpdate(object):
 class NoopManager(object):
 
     def __init__(self):
-        super(NoopManager, self).__init__()
+        super().__init__()
         self.amphoraconfig = {}
 
     def update_amphora_listeners(self, loadbalancer, amphora, timeout_dict):
@@ -135,7 +135,7 @@ class NoopAmphoraLoadBalancerDriver(
     driver_base.AmphoraLoadBalancerDriver,
         driver_base.VRRPDriverMixin):
     def __init__(self):
-        super(NoopAmphoraLoadBalancerDriver, self).__init__()
+        super().__init__()
         self.driver = NoopManager()
 
     def update_amphora_listeners(self, loadbalancer, amphora, timeout_dict):

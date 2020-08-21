@@ -26,7 +26,7 @@ BASE_PATH = '/var/lib/octavia'
 
 class TestLvsCfg(base.TestCase):
     def setUp(self):
-        super(TestLvsCfg, self).setUp()
+        super().setUp()
         self.udp_jinja_cfg = jinja_cfg.LvsJinjaTemplater()
         conf = oslo_fixture.Config(cfg.CONF)
         conf.config(group="haproxy_amphora", base_path=BASE_PATH)

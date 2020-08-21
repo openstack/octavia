@@ -32,7 +32,7 @@ class VolumeManager(volume_base.VolumeBase):
     '''Volume implementation of virtual machines via cinder.'''
 
     def __init__(self):
-        super(VolumeManager, self).__init__()
+        super().__init__()
         # Must initialize cinder api
         self._cinder_client = clients.CinderAuth.get_cinder_client(
             service_name=CONF.cinder.service_name,
@@ -93,10 +93,10 @@ class VolumeManager(volume_base.VolumeBase):
             try:
                 instance_volume.delete()
                 LOG.debug("Deleted volume %s", volume_id)
-            except Exception:
+            except Exception as e:
                 LOG.exception("Error deleting cinder volume %s",
                               volume_id)
-                raise exceptions.VolumeDeleteException()
+                raise exceptions.VolumeDeleteException() from e
         except cinder_exceptions.NotFound:
             LOG.warning("Volume %s not found: assuming already deleted",
                         volume_id)
@@ -112,9 +112,9 @@ class VolumeManager(volume_base.VolumeBase):
         LOG.debug('Get glance image for volume %s', volume_id)
         try:
             instance_volume = self.manager.get(volume_id)
-        except cinder_exceptions.NotFound:
+        except cinder_exceptions.NotFound as e:
             LOG.exception("Volume %s not found", volume_id)
-            raise exceptions.VolumeGetException()
+            raise exceptions.VolumeGetException() from e
         if hasattr(instance_volume, 'volume_image_metadata'):
             image_id = instance_volume.volume_image_metadata.get("image_id")
         else:

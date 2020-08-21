@@ -40,7 +40,7 @@ class BaseComputeTask(task.Task):
     """Base task to load drivers common to the tasks."""
 
     def __init__(self, **kwargs):
-        super(BaseComputeTask, self).__init__(**kwargs)
+        super().__init__(**kwargs)
         self.compute = stevedore_driver.DriverManager(
             namespace='octavia.compute.drivers',
             name=CONF.controller_worker.compute_driver,
@@ -172,7 +172,7 @@ class CertComputeCreate(ComputeCreate):
             '/etc/octavia/certs/server.pem': fer.decrypt(
                 server_pem.encode("utf-8")),
             '/etc/octavia/certs/client_ca.pem': ca}
-        return super(CertComputeCreate, self).execute(
+        return super().execute(
             amphora_id, config_drive_files=config_drive_files,
             build_type_priority=build_type_priority,
             server_group_id=server_group_id, ports=ports, flavor=flavor,

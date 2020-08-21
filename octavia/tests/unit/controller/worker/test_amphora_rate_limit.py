@@ -28,7 +28,7 @@ USED_BUILD_SLOTS = 0
 class TestAmphoraBuildRateLimit(base.TestCase):
 
     def setUp(self):
-        super(TestAmphoraBuildRateLimit, self).setUp()
+        super().setUp()
         self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
 
         self.rate_limit = amphora_rate_limit.AmphoraBuildRateLimit()

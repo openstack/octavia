@@ -20,7 +20,7 @@ import octavia.tests.unit.base as base
 class TestHAProxyExceptions(base.TestCase):
 
     def setUp(self):
-        super(TestHAProxyExceptions, self).setUp()
+        super().setUp()
 
     @mock.patch('octavia.amphorae.drivers.haproxy.exceptions.LOG')
     def test_check_exception(self, mock_logger):

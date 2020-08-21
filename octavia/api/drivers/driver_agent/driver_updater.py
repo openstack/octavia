@@ -34,7 +34,7 @@ class DriverUpdater(object):
         self.listener_stats_repo = repo.ListenerStatisticsRepository()
 
         self.db_session = db_apis.get_session()
-        super(DriverUpdater, self).__init__(**kwargs)
+        super().__init__(**kwargs)
 
     def _check_for_lb_vip_deallocate(self, repo, lb_id):
         lb = repo.get(self.db_session, id=lb_id)

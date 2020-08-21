@@ -26,7 +26,7 @@ import octavia.tests.unit.base as base
 class TestVRRPRestDriver(base.TestCase):
 
     def setUp(self):
-        super(TestVRRPRestDriver, self).setUp()
+        super().setUp()
         conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
         conf.config(group="haproxy_amphora", base_path='/tmp/test')
         conf.config(group="keepalived_vrrp", vrrp_garp_refresh_interval=5)

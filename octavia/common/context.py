@@ -31,7 +31,7 @@ class Context(common_context.RequestContext):
         if project_id:
             kwargs['tenant'] = project_id
 
-        super(Context, self).__init__(**kwargs)
+        super().__init__(**kwargs)
 
         self.is_admin = (policy.get_enforcer().check_is_admin(self) or
                          CONF.api_settings.auth_strategy == constants.NOAUTH)

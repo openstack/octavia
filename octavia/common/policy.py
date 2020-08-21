@@ -63,8 +63,8 @@ class Policy(oslo_policy.Enforcer):
                               rules from config file.
         """
 
-        super(Policy, self).__init__(conf, policy_file, rules, default_rule,
-                                     use_conf, overwrite)
+        super().__init__(conf, policy_file, rules, default_rule, use_conf,
+                         overwrite)
 
         self.register_defaults(policies.list_rules())
 
@@ -107,7 +107,7 @@ class Policy(oslo_policy.Enforcer):
             exc = exceptions.PolicyForbidden
 
         try:
-            return super(Policy, self).authorize(
+            return super().authorize(
                 action, target, credentials, do_raise=do_raise, exc=exc)
         except oslo_policy.PolicyNotRegistered:
             with excutils.save_and_reraise_exception():
@@ -139,7 +139,7 @@ class IsAdminCheck(oslo_policy.Check):
 
         self.expected = match.lower() == 'true'
 
-        super(IsAdminCheck, self).__init__(kind, str(self.expected))
+        super().__init__(kind, str(self.expected))
 
     def __call__(self, target, creds, enforcer):
         """Determine whether is_admin matches the requested value."""

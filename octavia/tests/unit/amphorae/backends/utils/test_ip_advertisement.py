@@ -24,7 +24,7 @@ import octavia.tests.unit.base as base
 class TestIPAdvertisement(base.TestCase):
 
     def setUp(self):
-        super(TestIPAdvertisement, self).setUp()
+        super().setUp()
 
     @mock.patch('octavia.amphorae.backends.utils.network_namespace.'
                 'NetworkNamespace')

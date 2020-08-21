@@ -36,7 +36,7 @@ class TestMember(base.BaseAPITest):
     root_tag_links = 'members_links'
 
     def setUp(self):
-        super(TestMember, self).setUp()
+        super().setUp()
         vip_subnet_id = uuidutils.generate_uuid()
         self.lb = self.create_load_balancer(vip_subnet_id)
         self.lb_id = self.lb.get('loadbalancer').get('id')

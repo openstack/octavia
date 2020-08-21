@@ -25,7 +25,7 @@ class TestL7PolicyFlows(base.TestCase):
     def setUp(self):
         self.L7PolicyFlow = l7policy_flows.L7PolicyFlows()
 
-        super(TestL7PolicyFlows, self).setUp()
+        super().setUp()
 
     def test_get_create_l7policy_flow(self):
 

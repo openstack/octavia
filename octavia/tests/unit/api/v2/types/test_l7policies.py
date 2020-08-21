@@ -27,7 +27,7 @@ class TestL7PolicyPOST(base.BaseTypesTest):
     _type = l7policy_type.L7PolicyPOST
 
     def setUp(self):
-        super(TestL7PolicyPOST, self).setUp()
+        super().setUp()
         self.listener_id = uuidutils.generate_uuid()
 
     def test_l7policy(self):

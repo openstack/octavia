@@ -51,7 +51,7 @@ class TestLifecycleTasks(base.TestCase):
         self.POOL_ID = uuidutils.generate_uuid()
         self.POOL.id = self.POOL_ID
 
-        super(TestLifecycleTasks, self).setUp()
+        super().setUp()
 
     @mock.patch('octavia.controller.worker.task_utils.TaskUtils.'
                 'unmark_amphora_health_busy')

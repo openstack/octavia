@@ -23,7 +23,7 @@ class TestLocalCommon(base.TestCase):
         self.private_key = "My Private Key"
         self.private_key_passphrase = "My Private Key Passphrase"
 
-        super(TestLocalCommon, self).setUp()
+        super().setUp()
 
     def test_local_cert(self):
         # Create a cert

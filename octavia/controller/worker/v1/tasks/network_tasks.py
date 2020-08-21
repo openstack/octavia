@@ -37,7 +37,7 @@ class BaseNetworkTask(task.Task):
     """Base task to load drivers common to the tasks."""
 
     def __init__(self, **kwargs):
-        super(BaseNetworkTask, self).__init__(**kwargs)
+        super().__init__(**kwargs)
         self._network_driver = None
         self.task_utils = task_utils.TaskUtils()
         self.lb_repo = repositories.LoadBalancerRepository()

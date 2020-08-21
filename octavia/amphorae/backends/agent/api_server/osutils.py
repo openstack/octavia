@@ -284,7 +284,7 @@ class Ubuntu(BaseOS):
             network_dir = self.get_network_path()
         if not ignore:
             ignore = shutil.ignore_patterns('eth0*', 'openssh*')
-        super(Ubuntu, self).create_netns_dir(
+        super().create_netns_dir(
             network_dir, netns_network_dir, ignore)
 
     def write_interfaces_file(self):
@@ -307,7 +307,7 @@ class Ubuntu(BaseOS):
                                  render_host_routes, template_vip=None):
         if not template_vip:
             template_vip = j2_env.get_template(self.ETH_X_VIP_CONF)
-        super(Ubuntu, self).write_vip_interface_file(
+        super().write_vip_interface_file(
             interface_file_path, primary_interface, vip, ip, broadcast,
             netmask, gateway, mtu, vrrp_ip, vrrp_version, render_host_routes,
             template_vip)
@@ -320,7 +320,7 @@ class Ubuntu(BaseOS):
                 netns_interface)
         if not template_port:
             template_port = j2_env.get_template(self.ETH_X_PORT_CONF)
-        super(Ubuntu, self).write_port_interface_file(
+        super().write_port_interface_file(
             netns_interface, fixed_ips, mtu, interface_file_path,
             template_port)
 
@@ -391,7 +391,7 @@ class RH(BaseOS):
             network_dir = self.get_network_path()
         if not ignore:
             ignore = shutil.ignore_patterns('ifcfg-eth0*', 'ifcfg-lo*')
-        super(RH, self).create_netns_dir(
+        super().create_netns_dir(
             network_dir, netns_network_dir, ignore)
 
         # Copy /etc/sysconfig/network file
@@ -410,7 +410,7 @@ class RH(BaseOS):
                                  render_host_routes, template_vip=None):
         if not template_vip:
             template_vip = j2_env.get_template(self.ETH_X_VIP_CONF)
-        super(RH, self).write_vip_interface_file(
+        super().write_vip_interface_file(
             interface_file_path, primary_interface, vip, ip, broadcast,
             netmask, gateway, mtu, vrrp_ip, vrrp_version, render_host_routes,
             template_vip)
@@ -423,7 +423,7 @@ class RH(BaseOS):
             alias_interface_file_path = self.get_alias_network_interface_file(
                 primary_interface)
             template_vip_alias = j2_env.get_template(self.ETH_X_ALIAS_VIP_CONF)
-            super(RH, self).write_vip_interface_file(
+            super().write_vip_interface_file(
                 alias_interface_file_path, primary_interface, vip, ip,
                 broadcast, netmask, gateway, mtu, vrrp_ip, vrrp_version,
                 render_host_routes, template_vip_alias)
@@ -486,7 +486,7 @@ class RH(BaseOS):
                 netns_interface)
         if not template_port:
             template_port = j2_env.get_template(self.ETH_X_PORT_CONF)
-        super(RH, self).write_port_interface_file(
+        super().write_port_interface_file(
             netns_interface, fixed_ips, mtu, interface_file_path,
             template_port)
 
@@ -573,7 +573,7 @@ class RH(BaseOS):
 class CentOS(RH):
 
     def __init__(self, os_name):
-        super(CentOS, self).__init__(os_name)
+        super().__init__(os_name)
         if distro.version() == '7':
             self.package_name_map.update({'haproxy': 'haproxy18'})
 

@@ -587,7 +587,7 @@ class TestLoadBalancer(base.BaseAPITest):
 
         class TestNeutronException(network_base.AllocateVIPException):
             def __init__(self, message, orig_msg, orig_code):
-                super(TestNeutronException, self).__init__(
+                super().__init__(
                     message, orig_msg=orig_msg, orig_code=orig_code,
                 )
 
@@ -2472,7 +2472,7 @@ class TestLoadBalancerGraph(base.BaseAPITest):
     root_tag = 'loadbalancer'
 
     def setUp(self):
-        super(TestLoadBalancerGraph, self).setUp()
+        super().setUp()
         self._project_id = uuidutils.generate_uuid()
 
     def _build_body(self, json):

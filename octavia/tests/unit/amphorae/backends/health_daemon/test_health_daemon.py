@@ -155,7 +155,7 @@ SAMPLE_MSG_HAPROXY_RESTART = {
 class TestHealthDaemon(base.TestCase):
 
     def setUp(self):
-        super(TestHealthDaemon, self).setUp()
+        super().setUp()
         conf = oslo_fixture.Config(cfg.CONF)
         conf.config(group="haproxy_amphora", base_path=BASE_PATH)
         conf.config(group="amphora_agent", amphora_id=AMPHORA_ID)

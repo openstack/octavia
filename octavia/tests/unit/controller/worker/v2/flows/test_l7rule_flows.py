@@ -25,7 +25,7 @@ class TestL7RuleFlows(base.TestCase):
     def setUp(self):
         self.L7RuleFlow = l7rule_flows.L7RuleFlows()
 
-        super(TestL7RuleFlows, self).setUp()
+        super().setUp()
 
     def test_get_create_l7rule_flow(self):
 

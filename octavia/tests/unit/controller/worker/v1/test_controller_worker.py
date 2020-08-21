@@ -118,7 +118,7 @@ class TestControllerWorker(base.TestCase):
         _health_mon_mock.pool_id = POOL_ID
         _health_mon_mock.id = HM_ID
 
-        super(TestControllerWorker, self).setUp()
+        super().setUp()
 
     @mock.patch('octavia.controller.worker.v1.flows.'
                 'amphora_flows.AmphoraFlows.get_create_amphora_flow',

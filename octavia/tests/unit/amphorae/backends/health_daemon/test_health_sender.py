@@ -37,7 +37,7 @@ SAMPLE_MSG_BIN = binascii.unhexlify('78daab562a492d2ec94ead54b252500a710d0e51a'
 class TestHealthSender(base.TestCase):
 
     def setUp(self):
-        super(TestHealthSender, self).setUp()
+        super().setUp()
         self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
         self.conf.config(group="health_manager",
                          controller_ip_port_list=IP_PORT)

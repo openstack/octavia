@@ -29,7 +29,7 @@ class TestMemberFlows(base.TestCase):
     def setUp(self):
         self.MemberFlow = member_flows.MemberFlows()
 
-        super(TestMemberFlows, self).setUp()
+        super().setUp()
 
     def test_get_create_member_flow(self, mock_get_net_driver):
 

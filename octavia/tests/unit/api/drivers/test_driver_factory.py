@@ -22,7 +22,7 @@ import octavia.tests.unit.base as base
 class TestDriverFactory(base.TestCase):
 
     def setUp(self):
-        super(TestDriverFactory, self).setUp()
+        super().setUp()
 
     @mock.patch('stevedore.driver.DriverManager')
     def test_driver_factory_no_provider(self, mock_drivermgr):
