@@ -1,0 +1,5 @@
+---
+fixes:
+  - |
+    Fixed an issue where listener "insert_headers" parameter was accepted for
+    protocols that do not support header insertion.
