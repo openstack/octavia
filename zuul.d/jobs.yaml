@@ -24,7 +24,6 @@
       Publish CentOS 8 based amphora image to tarballs.o.o.
     vars:
         amphora_os: centos
-        amphora_image_size: 3
         amphora_os_release: 8
 
 - job:
