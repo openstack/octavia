@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 
 saveenv=$-
-set -e
+set -ex
+
 
 # devstack plugin for octavia
 
@@ -817,4 +818,9 @@ if [[ $saveenv =~ e ]]; then
     set -e
 else
     set +e
+fi
+if [[ $saveenv =~ x ]]; then
+    set -x
+else
+    set +x
 fi
