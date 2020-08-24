@@ -217,8 +217,14 @@ frontend {{ listener.id }}
     {% else %}
         {% set persistence_opt = "" %}
     {% endif %}
-    {% if pool.proxy_protocol %}
+    {% if pool.proxy_protocol == 1 %}
         {% set proxy_protocol_opt = " send-proxy" %}
+    {% elif pool.proxy_protocol == 2 %}
+        {% if pool.listener_tls_enabled %}
+            {% set proxy_protocol_opt = " send-proxy-v2-ssl-cn" %}
+        {% else %}
+            {% set proxy_protocol_opt = " send-proxy-v2" %}
+        {% endif %}
     {% else %}
         {% set proxy_protocol_opt = "" %}
     {% endif %}
@@ -288,7 +294,7 @@ frontend {{ listener.id }}
 
 {% macro backend_macro(constants, lib_consts, listener, pool, loadbalancer) %}
 backend {{ pool.id }}:{{ listener.id }}
-    {% if pool.protocol.lower() == constants.PROTOCOL_PROXY.lower() %}
+    {% if pool.proxy_protocol is not none %}
     mode {{ listener.protocol_mode }}
     {% else %}
     mode {{ pool.protocol }}

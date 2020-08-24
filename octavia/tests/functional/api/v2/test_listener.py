@@ -2849,23 +2849,29 @@ class TestListener(base.BaseAPITest):
         for listener_proto in invalid_map:
             for pool_proto in invalid_map[listener_proto]:
                 port = port + 1
-                pool = self.create_pool(
-                    self.lb_id, pool_proto,
-                    constants.LB_ALGORITHM_ROUND_ROBIN).get('pool')
-                self.set_object_status(self.lb_repo, self.lb_id)
-                expect_error_msg = ("Validation failure: The pool protocol "
-                                    "'%s' is invalid while the listener "
-                                    "protocol is '%s'.") % (pool_proto,
-                                                            listener_proto)
-                listener = {'protocol': listener_proto,
-                            'protocol_port': port,
-                            'loadbalancer_id': self.lb_id,
-                            'default_pool_id': pool.get('id')}
-                body = self._build_body(listener)
-                res = self.post(self.LISTENERS_PATH, body,
-                                status=400, expect_errors=True)
-                self.assertEqual(expect_error_msg, res.json['faultstring'])
-                self.assert_correct_status(lb_id=self.lb_id)
+                if pool_proto == constants.PROTOCOL_TERMINATED_HTTPS:
+                    pool = self.create_pool(
+                        self.lb_id, pool_proto,
+                        constants.LB_ALGORITHM_ROUND_ROBIN, status=400)
+                    self.assertIn("Invalid input", pool['faultstring'])
+                else:
+                    pool = self.create_pool(
+                        self.lb_id, pool_proto,
+                        constants.LB_ALGORITHM_ROUND_ROBIN).get('pool')
+                    self.set_object_status(self.lb_repo, self.lb_id)
+                    expect_error_msg = (
+                        "Validation failure: The pool protocol '%s' is "
+                        "invalid while the listener protocol is '%s'.") % (
+                        pool_proto, listener_proto)
+                    listener = {'protocol': listener_proto,
+                                'protocol_port': port,
+                                'loadbalancer_id': self.lb_id,
+                                'default_pool_id': pool.get('id')}
+                    body = self._build_body(listener)
+                    res = self.post(self.LISTENERS_PATH, body,
+                                    status=400, expect_errors=True)
+                    self.assertEqual(expect_error_msg, res.json['faultstring'])
+                    self.assert_correct_status(lb_id=self.lb_id)
 
     @mock.patch('octavia.common.tls_utils.cert_parser.load_certificates_data')
     def test_listener_pool_protocol_map_put(self, mock_cert_data):
@@ -2907,13 +2913,20 @@ class TestListener(base.BaseAPITest):
                                     "'%s' is invalid while the listener "
                                     "protocol is '%s'.") % (pool_proto,
                                                             listener_proto)
-                pool = self.create_pool(
-                    self.lb_id, pool_proto,
-                    constants.LB_ALGORITHM_ROUND_ROBIN).get('pool')
-                self.set_object_status(self.lb_repo, self.lb_id)
-                new_listener = {'default_pool_id': pool.get('id')}
-                res = self.put(
-                    self.LISTENER_PATH.format(listener_id=listener.get('id')),
-                    self._build_body(new_listener), status=400)
-                self.assertEqual(expect_error_msg, res.json['faultstring'])
-                self.assert_correct_status(lb_id=self.lb_id)
+                if pool_proto == constants.PROTOCOL_TERMINATED_HTTPS:
+                    pool = self.create_pool(
+                        self.lb_id, pool_proto,
+                        constants.LB_ALGORITHM_ROUND_ROBIN, status=400)
+                    self.assertIn("Invalid input", pool['faultstring'])
+                else:
+                    pool = self.create_pool(
+                        self.lb_id, pool_proto,
+                        constants.LB_ALGORITHM_ROUND_ROBIN).get('pool')
+                    self.set_object_status(self.lb_repo, self.lb_id)
+                    new_listener = {'default_pool_id': pool.get('id')}
+                    res = self.put(
+                        self.LISTENER_PATH.format(
+                            listener_id=listener.get('id')),
+                        self._build_body(new_listener), status=400)
+                    self.assertEqual(expect_error_msg, res.json['faultstring'])
+                    self.assert_correct_status(lb_id=self.lb_id)

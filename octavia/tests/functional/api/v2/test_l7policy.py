@@ -1303,21 +1303,27 @@ class TestL7Policy(base.BaseAPITest):
             self.set_object_status(self.lb_repo, self.lb_id)
             port = port + 1
             for pool_proto in invalid_map[listener_proto]:
-                pool = self.create_pool(
-                    self.lb_id, pool_proto,
-                    constants.LB_ALGORITHM_ROUND_ROBIN).get('pool')
-                self.set_object_status(self.lb_repo, self.lb_id)
+                if pool_proto == constants.PROTOCOL_TERMINATED_HTTPS:
+                    pool = self.create_pool(
+                        self.lb_id, pool_proto,
+                        constants.LB_ALGORITHM_ROUND_ROBIN, status=400)
+                    self.assertIn("Invalid input", pool['faultstring'])
+                else:
+                    pool = self.create_pool(
+                        self.lb_id, pool_proto,
+                        constants.LB_ALGORITHM_ROUND_ROBIN).get('pool')
+                    self.set_object_status(self.lb_repo, self.lb_id)
 
-                l7policy['listener_id'] = listener.get('id')
-                l7policy['redirect_pool_id'] = pool.get('id')
-                expect_error_msg = ("Validation failure: The pool protocol "
-                                    "'%s' is invalid while the listener "
-                                    "protocol is '%s'.") % (pool_proto,
-                                                            listener_proto)
-                res = self.post(self.L7POLICIES_PATH,
-                                self._build_body(l7policy), status=400)
-                self.assertEqual(expect_error_msg, res.json['faultstring'])
-                self.assert_correct_status(lb_id=self.lb_id)
+                    l7policy['listener_id'] = listener.get('id')
+                    l7policy['redirect_pool_id'] = pool.get('id')
+                    expect_error_msg = (
+                        "Validation failure: The pool protocol '%s' is "
+                        "invalid while the listener protocol is '%s'.") % (
+                        pool_proto, listener_proto)
+                    res = self.post(self.L7POLICIES_PATH,
+                                    self._build_body(l7policy), status=400)
+                    self.assertEqual(expect_error_msg, res.json['faultstring'])
+                    self.assert_correct_status(lb_id=self.lb_id)
 
     @mock.patch('octavia.common.tls_utils.cert_parser.load_certificates_data')
     def test_listener_pool_protocol_map_put(self, mock_cert_data):
@@ -1361,21 +1367,27 @@ class TestL7Policy(base.BaseAPITest):
             self.set_object_status(self.lb_repo, self.lb_id)
             port = port + 1
             for pool_proto in invalid_map[listener_proto]:
-                pool = self.create_pool(
-                    self.lb_id, pool_proto,
-                    constants.LB_ALGORITHM_ROUND_ROBIN).get('pool')
-                self.set_object_status(self.lb_repo, self.lb_id)
-                l7policy = self.create_l7policy(
-                    listener.get('id'),
-                    constants.L7POLICY_ACTION_REJECT).get(self.root_tag)
-                self.set_object_status(self.lb_repo, self.lb_id)
-                new_l7policy['redirect_pool_id'] = pool.get('id')
-                expect_error_msg = ("Validation failure: The pool protocol "
-                                    "'%s' is invalid while the listener "
-                                    "protocol is '%s'.") % (pool_proto,
-                                                            listener_proto)
-                res = self.put(self.L7POLICY_PATH.format(
-                    l7policy_id=l7policy.get('id')),
-                    self._build_body(new_l7policy), status=400)
-                self.assertEqual(expect_error_msg, res.json['faultstring'])
-                self.assert_correct_status(lb_id=self.lb_id)
+                if pool_proto == constants.PROTOCOL_TERMINATED_HTTPS:
+                    pool = self.create_pool(
+                        self.lb_id, pool_proto,
+                        constants.LB_ALGORITHM_ROUND_ROBIN, status=400)
+                    self.assertIn("Invalid input", pool['faultstring'])
+                else:
+                    pool = self.create_pool(
+                        self.lb_id, pool_proto,
+                        constants.LB_ALGORITHM_ROUND_ROBIN).get('pool')
+                    self.set_object_status(self.lb_repo, self.lb_id)
+                    l7policy = self.create_l7policy(
+                        listener.get('id'),
+                        constants.L7POLICY_ACTION_REJECT).get(self.root_tag)
+                    self.set_object_status(self.lb_repo, self.lb_id)
+                    new_l7policy['redirect_pool_id'] = pool.get('id')
+                    expect_error_msg = (
+                        "Validation failure: The pool protocol '%s' is "
+                        "invalid while the listener protocol is '%s'.") % (
+                        pool_proto, listener_proto)
+                    res = self.put(self.L7POLICY_PATH.format(
+                        l7policy_id=l7policy.get('id')),
+                        self._build_body(new_l7policy), status=400)
+                    self.assertEqual(expect_error_msg, res.json['faultstring'])
+                    self.assert_correct_status(lb_id=self.lb_id)

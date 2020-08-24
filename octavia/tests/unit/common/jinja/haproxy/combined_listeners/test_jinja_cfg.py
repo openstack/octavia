@@ -1288,18 +1288,18 @@ class TestHaproxyCfg(base.TestCase):
 
     def test_transform_pool(self):
         in_pool = sample_configs_combined.sample_pool_tuple()
-        ret = self.jinja_cfg._transform_pool(in_pool, {})
+        ret = self.jinja_cfg._transform_pool(in_pool, {}, False)
         self.assertEqual(sample_configs_combined.RET_POOL_1, ret)
 
     def test_transform_pool_2(self):
         in_pool = sample_configs_combined.sample_pool_tuple(sample_pool=2)
-        ret = self.jinja_cfg._transform_pool(in_pool, {})
+        ret = self.jinja_cfg._transform_pool(in_pool, {}, False)
         self.assertEqual(sample_configs_combined.RET_POOL_2, ret)
 
     def test_transform_pool_http_reuse(self):
         in_pool = sample_configs_combined.sample_pool_tuple(sample_pool=2)
         ret = self.jinja_cfg._transform_pool(
-            in_pool, {constants.HTTP_REUSE: True})
+            in_pool, {constants.HTTP_REUSE: True}, False)
         expected_config = copy.copy(sample_configs_combined.RET_POOL_2)
         expected_config[constants.HTTP_REUSE] = True
         self.assertEqual(expected_config, ret)
@@ -1309,7 +1309,7 @@ class TestHaproxyCfg(base.TestCase):
         cert_path = os.path.join(self.jinja_cfg.base_crt_dir,
                                  'test_listener_id', 'pool_cert.pem')
         ret = self.jinja_cfg._transform_pool(
-            in_pool, {}, pool_tls_certs={'client_cert': cert_path})
+            in_pool, {}, False, pool_tls_certs={'client_cert': cert_path})
         expected_config = copy.copy(sample_configs_combined.RET_POOL_1)
         expected_config['client_cert'] = cert_path
         self.assertEqual(expected_config, ret)
@@ -1383,25 +1383,25 @@ class TestHaproxyCfg(base.TestCase):
     def test_transform_l7policy(self):
         in_l7policy = sample_configs_combined.sample_l7policy_tuple(
             'sample_l7policy_id_1')
-        ret = self.jinja_cfg._transform_l7policy(in_l7policy, {})
+        ret = self.jinja_cfg._transform_l7policy(in_l7policy, {}, False)
         self.assertEqual(sample_configs_combined.RET_L7POLICY_1, ret)
 
     def test_transform_l7policy_2_8(self):
         in_l7policy = sample_configs_combined.sample_l7policy_tuple(
             'sample_l7policy_id_2', sample_policy=2)
-        ret = self.jinja_cfg._transform_l7policy(in_l7policy, {})
+        ret = self.jinja_cfg._transform_l7policy(in_l7policy, {}, False)
         self.assertEqual(sample_configs_combined.RET_L7POLICY_2, ret)
 
         # test invalid action without redirect_http_code
         in_l7policy = sample_configs_combined.sample_l7policy_tuple(
             'sample_l7policy_id_8', sample_policy=2, redirect_http_code=None)
-        ret = self.jinja_cfg._transform_l7policy(in_l7policy, {})
+        ret = self.jinja_cfg._transform_l7policy(in_l7policy, {}, False)
         self.assertEqual(sample_configs_combined.RET_L7POLICY_8, ret)
 
     def test_transform_l7policy_disabled_rule(self):
         in_l7policy = sample_configs_combined.sample_l7policy_tuple(
             'sample_l7policy_id_6', sample_policy=6)
-        ret = self.jinja_cfg._transform_l7policy(in_l7policy, {})
+        ret = self.jinja_cfg._transform_l7policy(in_l7policy, {}, False)
         self.assertEqual(sample_configs_combined.RET_L7POLICY_6, ret)
 
     def test_escape_haproxy_config_string(self):

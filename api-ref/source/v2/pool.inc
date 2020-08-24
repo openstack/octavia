@@ -102,7 +102,8 @@ is ready for further configuration.
 At a minimum, you must specify these pool attributes:
 
 - ``protocol`` The protocol for which this pool and its members
-  listen. A valid value is ``HTTP``, ``HTTPS``, ``PROXY``, ``TCP``, or ``UDP``.
+  listen. A valid value is ``HTTP``, ``HTTPS``, ``PROXY``, ``PROXYV2``,
+  ``TCP``, or ``UDP``.
 
 - ``lb_algorithm`` The load-balancer algorithm, such as
   ``ROUND_ROBIN``, ``LEAST_CONNECTIONS``, ``SOURCE_IP`` and ``SOURCE_IP_PORT``,

@@ -14,6 +14,7 @@
 
 from unittest import mock
 
+from octavia_lib.common import constants as lib_constants
 from oslo_config import cfg
 from oslo_config import fixture as oslo_fixture
 from oslo_utils import uuidutils
@@ -757,6 +758,30 @@ class TestPool(base.BaseAPITest):
             pool_op_status=constants.OFFLINE)
         self.set_lb_status(self.lb_id)
         self.assertEqual(constants.PROTOCOL_PROXY, api_pool.get('protocol'))
+        self.assertEqual(constants.LB_ALGORITHM_ROUND_ROBIN,
+                         api_pool.get('lb_algorithm'))
+        self.assertIsNotNone(api_pool.get('created_at'))
+        self.assertIsNone(api_pool.get('updated_at'))
+        self.assert_correct_status(
+            lb_id=self.lb_id, listener_id=self.listener_id,
+            pool_id=api_pool.get('id'))
+
+    def test_create_with_proxy_v2_protocol(self):
+        api_pool = self.create_pool(
+            self.lb_id,
+            lib_constants.PROTOCOL_PROXYV2,
+            constants.LB_ALGORITHM_ROUND_ROBIN,
+            listener_id=self.listener_id).get(self.root_tag)
+        self.assert_correct_status(
+            lb_id=self.lb_id, listener_id=self.listener_id,
+            pool_id=api_pool.get('id'),
+            lb_prov_status=constants.PENDING_UPDATE,
+            listener_prov_status=constants.PENDING_UPDATE,
+            pool_prov_status=constants.PENDING_CREATE,
+            pool_op_status=constants.OFFLINE)
+        self.set_lb_status(self.lb_id)
+        self.assertEqual(lib_constants.PROTOCOL_PROXYV2,
+                         api_pool.get('protocol'))
         self.assertEqual(constants.LB_ALGORITHM_ROUND_ROBIN,
                          api_pool.get('lb_algorithm'))
         self.assertIsNotNone(api_pool.get('created_at'))
@@ -2382,5 +2407,10 @@ class TestPool(base.BaseAPITest):
                     lb_pool['listener_id'] = listener.get('id')
                     res = self.post(self.POOLS_PATH, self._build_body(lb_pool),
                                     status=400, expect_errors=True)
-                    self.assertEqual(expect_error_msg, res.json['faultstring'])
+                    if pool_proto == constants.PROTOCOL_TERMINATED_HTTPS:
+                        self.assertIn('Invalid input',
+                                      res.json['faultstring'])
+                    else:
+                        self.assertEqual(expect_error_msg,
+                                         res.json['faultstring'])
                     self.assert_correct_status(lb_id=self.lb_id)
