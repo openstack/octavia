@@ -440,14 +440,16 @@ compute-id:
 connection_limit:
   description: |
     The maximum number of connections permitted for this listener. Default
-    value is -1 which represents infinite connections.
+    value is -1 which represents infinite connections or a default value
+    defined by the provider driver.
   in: body
   required: true
   type: integer
 connection_limit-optional:
   description: |
     The maximum number of connections permitted for this listener. Default
-    value is -1 which represents infinite connections.
+    value is -1 which represents infinite connections or a default value
+    defined by the provider driver.
   in: body
   required: false
   type: integer

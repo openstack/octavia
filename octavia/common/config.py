@@ -415,6 +415,11 @@ haproxy_amphora_opts = [
     cfg.IntOpt('api_db_commit_retry_max', default=5,
                help=_('The maximum amount of time to wait between retry '
                       'attempts.')),
+    cfg.IntOpt('default_connection_limit',
+               default=constants.HAPROXY_DEFAULT_MAXCONN,
+               help=_('Default connection_limit for listeners, used when '
+                      'setting "-1" or when unsetting connection_limit with '
+                      'the listener API.')),
 ]
 
 controller_worker_opts = [
