@@ -18,8 +18,10 @@ from oslo_log import log as logging
 from oslo_utils import excutils
 from sqlalchemy.orm import exc as db_exceptions
 from stevedore import driver as stevedore_driver
+from taskflow.listeners import logging as tf_logging
 import tenacity
 
+from octavia.amphorae.driver_exceptions import exceptions
 from octavia.api.drivers import utils as provider_utils
 from octavia.common import base_taskflow
 from octavia.common import constants
@@ -35,6 +37,18 @@ RETRY_ATTEMPTS = 15
 RETRY_INITIAL_DELAY = 1
 RETRY_BACKOFF = 1
 RETRY_MAX = 5
+
+
+# We do not need to log retry exception information. Warning "Could not connect
+#  to instance" will be logged as usual.
+def retryMaskFilter(record):
+    if record.exc_info is not None and isinstance(
+            record.exc_info[1], exceptions.AmpConnectionRetry):
+        return False
+    return True
+
+
+LOG.logger.addFilter(retryMaskFilter)
 
 
 def _is_provisioning_status_pending_update(lb_obj):
@@ -57,13 +71,16 @@ class ControllerWorker(object):
         self._flavor_repo = repo.FlavorRepository()
         self._az_repo = repo.AvailabilityZoneRepository()
 
-        persistence = tsk_driver.MysqlPersistenceDriver()
+        if CONF.task_flow.jobboard_enabled:
+            persistence = tsk_driver.MysqlPersistenceDriver()
 
-        self.jobboard_driver = stevedore_driver.DriverManager(
-            namespace='octavia.worker.jobboard_driver',
-            name=CONF.task_flow.jobboard_backend_driver,
-            invoke_args=(persistence,),
-            invoke_on_load=True).driver
+            self.jobboard_driver = stevedore_driver.DriverManager(
+                namespace='octavia.worker.jobboard_driver',
+                name=CONF.task_flow.jobboard_backend_driver,
+                invoke_args=(persistence,),
+                invoke_on_load=True).driver
+        else:
+            self.tf_engine = base_taskflow.BaseTaskFlowEngine()
 
     @tenacity.retry(
         retry=(
@@ -79,6 +96,15 @@ class ControllerWorker(object):
     @property
     def services_controller(self):
         return base_taskflow.TaskFlowServiceController(self.jobboard_driver)
+
+    def run_flow(self, func, *args, **kwargs):
+        if CONF.task_flow.jobboard_enabled:
+            self.services_controller.run_poster(func, *args, **kwargs)
+        else:
+            tf = self.tf_engine.taskflow_load(
+                func(*args), **kwargs)
+            with tf_logging.DynamicLoggingListener(tf, log=LOG):
+                tf.run()
 
     def create_amphora(self, availability_zone=None):
         """Creates an Amphora.
@@ -96,11 +122,9 @@ class ControllerWorker(object):
                 store[constants.AVAILABILITY_ZONE] = (
                     self._az_repo.get_availability_zone_metadata_dict(
                         db_apis.get_session(), availability_zone))
-            job_id = self.services_controller.run_poster(
+            self.run_flow(
                 flow_utils.get_create_amphora_flow,
                 store=store, wait=True)
-
-            return job_id
         except Exception as e:
             LOG.error('Failed to create an amphora due to: {}'.format(str(e)))
 
@@ -114,7 +138,7 @@ class ControllerWorker(object):
         amphora = self._amphora_repo.get(db_apis.get_session(),
                                          id=amphora_id)
         store = {constants.AMPHORA: amphora.to_dict()}
-        self.services_controller.run_poster(
+        self.run_flow(
             flow_utils.get_delete_amphora_flow,
             store=store)
 
@@ -149,7 +173,7 @@ class ControllerWorker(object):
                  constants.LISTENERS: listeners_dicts,
                  constants.LOADBALANCER_ID: load_balancer.id,
                  constants.LOADBALANCER: provider_lb}
-        self.services_controller.run_poster(
+        self.run_flow(
             flow_utils.get_create_health_monitor_flow,
             store=store)
 
@@ -179,7 +203,7 @@ class ControllerWorker(object):
                  constants.LOADBALANCER_ID: load_balancer.id,
                  constants.LOADBALANCER: provider_lb,
                  constants.PROJECT_ID: load_balancer.project_id}
-        self.services_controller.run_poster(
+        self.run_flow(
             flow_utils.get_delete_health_monitor_flow,
             store=store)
 
@@ -220,7 +244,7 @@ class ControllerWorker(object):
                  constants.LOADBALANCER_ID: load_balancer.id,
                  constants.LOADBALANCER: provider_lb,
                  constants.UPDATE_DICT: health_monitor_updates}
-        self.services_controller.run_poster(
+        self.run_flow(
             flow_utils.get_update_health_monitor_flow,
             store=store)
 
@@ -257,7 +281,7 @@ class ControllerWorker(object):
                  constants.LOADBALANCER: provider_lb,
                  constants.LOADBALANCER_ID: load_balancer.id}
 
-        self.services_controller.run_poster(
+        self.run_flow(
             flow_utils.get_create_listener_flow,
             store=store)
 
@@ -276,7 +300,7 @@ class ControllerWorker(object):
                  constants.LOADBALANCER_ID:
                      listener[constants.LOADBALANCER_ID],
                  constants.PROJECT_ID: lb.project_id}
-        self.services_controller.run_poster(
+        self.run_flow(
             flow_utils.get_delete_listener_flow,
             store=store)
 
@@ -294,7 +318,7 @@ class ControllerWorker(object):
                  constants.UPDATE_DICT: listener_updates,
                  constants.LOADBALANCER_ID: db_lb.id,
                  constants.LISTENERS: [listener]}
-        self.services_controller.run_poster(
+        self.run_flow(
             flow_utils.get_update_listener_flow,
             store=store)
 
@@ -341,7 +365,7 @@ class ControllerWorker(object):
         store[constants.UPDATE_DICT] = {
             constants.TOPOLOGY: topology
         }
-        self.services_controller.run_poster(
+        self.run_flow(
             flow_utils.get_create_load_balancer_flow,
             topology, listeners=listeners_dicts,
             store=store)
@@ -361,11 +385,11 @@ class ControllerWorker(object):
         if cascade:
             store.update(flow_utils.get_delete_pools_store(db_lb))
             store.update(flow_utils.get_delete_listeners_store(db_lb))
-            self.services_controller.run_poster(
+            self.run_flow(
                 flow_utils.get_cascade_delete_load_balancer_flow,
                 load_balancer, store=store)
         else:
-            self.services_controller.run_poster(
+            self.run_flow(
                 flow_utils.get_delete_load_balancer_flow,
                 load_balancer, store=store)
 
@@ -383,7 +407,7 @@ class ControllerWorker(object):
                      original_load_balancer[constants.LOADBALANCER_ID],
                  constants.UPDATE_DICT: load_balancer_updates}
 
-        self.services_controller.run_poster(
+        self.run_flow(
             flow_utils.get_update_load_balancer_flow,
             store=store)
 
@@ -417,7 +441,7 @@ class ControllerWorker(object):
         else:
             store[constants.AVAILABILITY_ZONE] = {}
 
-        self.services_controller.run_poster(
+        self.run_flow(
             flow_utils.get_create_member_flow,
             store=store)
 
@@ -453,7 +477,7 @@ class ControllerWorker(object):
         else:
             store[constants.AVAILABILITY_ZONE] = {}
 
-        self.services_controller.run_poster(
+        self.run_flow(
             flow_utils.get_delete_member_flow,
             store=store)
 
@@ -501,7 +525,7 @@ class ControllerWorker(object):
         else:
             store[constants.AVAILABILITY_ZONE] = {}
 
-        self.services_controller.run_poster(
+        self.run_flow(
             flow_utils.get_batch_update_members_flow,
             provider_old_members, new_members, updated_members,
             store=store)
@@ -539,7 +563,7 @@ class ControllerWorker(object):
         else:
             store[constants.AVAILABILITY_ZONE] = {}
 
-        self.services_controller.run_poster(
+        self.run_flow(
             flow_utils.get_update_member_flow,
             store=store)
 
@@ -577,7 +601,7 @@ class ControllerWorker(object):
                  constants.LISTENERS: listeners_dicts,
                  constants.LOADBALANCER_ID: load_balancer.id,
                  constants.LOADBALANCER: provider_lb}
-        self.services_controller.run_poster(
+        self.run_flow(
             flow_utils.get_create_pool_flow,
             store=store)
 
@@ -604,7 +628,7 @@ class ControllerWorker(object):
                  constants.LOADBALANCER: provider_lb,
                  constants.LOADBALANCER_ID: load_balancer.id,
                  constants.PROJECT_ID: db_pool.project_id}
-        self.services_controller.run_poster(
+        self.run_flow(
             flow_utils.get_delete_pool_flow,
             store=store)
 
@@ -640,7 +664,7 @@ class ControllerWorker(object):
                  constants.LOADBALANCER: provider_lb,
                  constants.LOADBALANCER_ID: load_balancer.id,
                  constants.UPDATE_DICT: pool_updates}
-        self.services_controller.run_poster(
+        self.run_flow(
             flow_utils.get_update_pool_flow,
             store=store)
 
@@ -662,7 +686,7 @@ class ControllerWorker(object):
                  constants.LISTENERS: listeners_dicts,
                  constants.LOADBALANCER_ID: db_listener.load_balancer.id
                  }
-        self.services_controller.run_poster(
+        self.run_flow(
             flow_utils.get_create_l7policy_flow,
             store=store)
 
@@ -683,7 +707,7 @@ class ControllerWorker(object):
                  constants.LISTENERS: listeners_dicts,
                  constants.LOADBALANCER_ID: db_listener.load_balancer.id
                  }
-        self.services_controller.run_poster(
+        self.run_flow(
             flow_utils.get_delete_l7policy_flow,
             store=store)
 
@@ -706,7 +730,7 @@ class ControllerWorker(object):
                  constants.LISTENERS: listeners_dicts,
                  constants.LOADBALANCER_ID: db_listener.load_balancer.id,
                  constants.UPDATE_DICT: l7policy_updates}
-        self.services_controller.run_poster(
+        self.run_flow(
             flow_utils.get_update_l7policy_flow,
             store=store)
 
@@ -734,7 +758,7 @@ class ControllerWorker(object):
                  constants.LISTENERS: listeners_dicts,
                  constants.LOADBALANCER_ID: load_balancer.id
                  }
-        self.services_controller.run_poster(
+        self.run_flow(
             flow_utils.get_create_l7rule_flow,
             store=store)
 
@@ -760,7 +784,7 @@ class ControllerWorker(object):
                  constants.L7POLICY_ID: db_l7policy.id,
                  constants.LOADBALANCER_ID: load_balancer.id
                  }
-        self.services_controller.run_poster(
+        self.run_flow(
             flow_utils.get_delete_l7rule_flow,
             store=store)
 
@@ -788,7 +812,7 @@ class ControllerWorker(object):
                  constants.L7POLICY_ID: db_l7policy.id,
                  constants.LOADBALANCER_ID: load_balancer.id,
                  constants.UPDATE_DICT: l7rule_updates}
-        self.services_controller.run_poster(
+        self.run_flow(
             flow_utils.get_update_l7rule_flow,
             store=store)
 
@@ -855,7 +879,7 @@ class ControllerWorker(object):
         else:
             stored_params[constants.AVAILABILITY_ZONE] = {}
 
-        self.services_controller.run_poster(
+        self.run_flow(
             flow_utils.get_failover_flow,
             role=amp.role, load_balancer=provider_lb,
             store=stored_params, wait=True)
@@ -958,7 +982,7 @@ class ControllerWorker(object):
         store = {constants.AMPHORA: amp.to_dict(),
                  constants.AMPHORA_ID: amphora_id}
 
-        self.services_controller.run_poster(
+        self.run_flow(
             flow_utils.cert_rotate_amphora_flow,
             store=store)
 
@@ -985,6 +1009,6 @@ class ControllerWorker(object):
         store = {constants.AMPHORA: amp.to_dict(),
                  constants.FLAVOR: flavor}
 
-        self.services_controller.run_poster(
+        self.run_flow(
             flow_utils.update_amphora_config_flow,
             store=store)
