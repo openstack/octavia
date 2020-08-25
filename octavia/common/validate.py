@@ -468,6 +468,11 @@ def check_tls_version_list(versions):
         raise exceptions.ValidationException(
             detail=_('Empty TLS version list. Either specify at least one TLS '
                      'version or remove this parameter to use the default.'))
+
+    # Unset action
+    if versions is None:
+        return
+
     invalid_versions = [v for v in versions
                         if v not in constants.TLS_ALL_VERSIONS]
     if invalid_versions:

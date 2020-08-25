@@ -538,6 +538,11 @@ class ListenersController(base.BaseController):
                 CONF.haproxy_amphora.timeout_tcp_inspect)
         if listener.client_authentication is None:
             listener.client_authentication = constants.CLIENT_AUTH_NONE
+        if listener.tls_ciphers is None:
+            listener.tls_ciphers = CONF.api_settings.default_listener_ciphers
+        if listener.tls_versions is None:
+            listener.tls_versions = (
+                CONF.api_settings.default_listener_tls_versions)
 
     @wsme_pecan.wsexpose(listener_types.ListenerRootResponse, wtypes.text,
                          body=listener_types.ListenerRootPUT, status_code=200)

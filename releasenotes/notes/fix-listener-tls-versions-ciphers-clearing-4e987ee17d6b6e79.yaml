@@ -1,0 +1,8 @@
+---
+fixes:
+  - |
+    Fixed an issue where clearing listener TLS versions resulted in a
+    server-side error.
+  - |
+    Fixed an issue where when clearing listener TLS versions and ciphers would
+    not apply the default values per defined in the API configuration settings.
