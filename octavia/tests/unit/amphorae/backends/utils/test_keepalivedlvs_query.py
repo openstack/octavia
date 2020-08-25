@@ -126,6 +126,11 @@ CFG_FILE_TEMPLATE_v6 = (
     "    # Member %(member_id4)s is disabled\n\n"
     "}")
 
+CFG_FILE_TEMPLATE_DISABLED_LISTENER = (
+    "# Listener %(listener_id)s is disabled \n\n"
+    "net_namespace %(ns_name)s\n\n"
+)
+
 IPVSADM_OUTPUT_TEMPLATE = (
     "IP Virtual Server version 1.2.1 (size=4096)\n"
     "Prot LocalAddress:Port Scheduler Flags\n"
@@ -162,6 +167,7 @@ class LvsQueryTestCase(base.TestCase):
         self.member_id2_v6 = uuidutils.generate_uuid()
         self.member_id3_v6 = uuidutils.generate_uuid()
         self.member_id4_v6 = uuidutils.generate_uuid()
+        self.disabled_listener_id = uuidutils.generate_uuid()
         cfg_content_v4 = CFG_FILE_TEMPLATE_v4 % {
             'listener_id': self.listener_id_v4,
             'ns_name': constants.AMPHORA_NAMESPACE,
@@ -180,10 +186,19 @@ class LvsQueryTestCase(base.TestCase):
             'member_id3': self.member_id3_v6,
             'member_id4': self.member_id4_v6
         }
+        cfg_content_disabled_listener = (
+            CFG_FILE_TEMPLATE_DISABLED_LISTENER % {
+                'listener_id': self.listener_id_v6,
+                'ns_name': constants.AMPHORA_NAMESPACE,
+            }
+        )
         self.useFixture(test_utils.OpenFixture(
             util.keepalived_lvs_cfg_path(self.listener_id_v4), cfg_content_v4))
         self.useFixture(test_utils.OpenFixture(
             util.keepalived_lvs_cfg_path(self.listener_id_v6), cfg_content_v6))
+        self.useFixture(test_utils.OpenFixture(
+            util.keepalived_lvs_cfg_path(self.disabled_listener_id),
+            cfg_content_disabled_listener))
 
     @mock.patch('subprocess.check_output')
     def test_get_listener_realserver_mapping(self, mock_check_output):
@@ -277,6 +292,11 @@ class LvsQueryTestCase(base.TestCase):
                 {'id': self.member_id4_v6,
                  'ipport': None}]}
         self.assertEqual((expected, constants.AMPHORA_NAMESPACE), res)
+
+        # disabled
+        res = lvs_query.get_udp_listener_resource_ipports_nsname(
+            self.disabled_listener_id)
+        self.assertEqual((None, constants.AMPHORA_NAMESPACE), res)
 
     @mock.patch('subprocess.check_output')
     def test_get_udp_listener_pool_status(self, mock_check_output):
@@ -454,5 +474,16 @@ class LvsQueryTestCase(base.TestCase):
         # if no udp listener need to be collected.
         # Then this function will return nothing.
         mock_is_running.return_value = False
+        res = lvs_query.get_udp_listeners_stats()
+        self.assertEqual({}, res)
+
+    @mock.patch('subprocess.check_output')
+    @mock.patch("octavia.amphorae.backends.agent.api_server.util."
+                "is_udp_listener_running", return_value=True)
+    @mock.patch("octavia.amphorae.backends.agent.api_server.util."
+                "get_udp_listeners")
+    def test_get_udp_listeners_stats_disabled_listener(
+            self, mock_get_listener, mock_is_running, mock_check_output):
+        mock_get_listener.return_value = [self.disabled_listener_id]
         res = lvs_query.get_udp_listeners_stats()
         self.assertEqual({}, res)
