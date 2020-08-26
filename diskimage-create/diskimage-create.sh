@@ -255,8 +255,8 @@ AMP_ENABLE_FULL_MAC_SECURITY=${AMP_ENABLE_FULL_MAC_SECURITY:-0}
 
 AMP_DISABLE_TMP_FS=${AMP_DISABLE_TMP_FS:-""}
 
-if [[ "$AMP_BASEOS" =~ ^(rhel|centos-minimal|fedora)$ ]] && [[ "$AMP_IMAGESIZE" -lt 3 ]]; then
-    echo "RHEL/CentOS based amphora requires an image size of at least 3GB"
+if [[ "$AMP_BASEOS" =~ ^(rhel|fedora)$ ]] && [[ "$AMP_IMAGESIZE" -lt 3 ]]; then
+    echo "RHEL/Fedora based amphora requires an image size of at least 3GB"
     exit 1
 fi
 
