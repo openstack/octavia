@@ -713,16 +713,20 @@ class TestAmphoraDriver(base.TestRpc):
 
     def test_validate_availability_zone(self):
         # Test compute zone
-        ref_dict = {consts.COMPUTE_ZONE: 'my_compute_zone'}
-        self.amp_driver.validate_availability_zone(ref_dict)
+        with mock.patch('stevedore.driver.DriverManager.driver') as m_driver:
+            m_driver.validate_availability_zone.return_value = None
+            ref_dict = {consts.COMPUTE_ZONE: 'my_compute_zone'}
+            self.amp_driver.validate_availability_zone(ref_dict)
 
-        # Test vip networks
-        ref_dict = {consts.VALID_VIP_NETWORKS: ['my_vip_net']}
-        self.amp_driver.validate_availability_zone(ref_dict)
+        with mock.patch('octavia.common.utils.get_network_driver') as m_driver:
+            # Test vip networks
+            m_driver.get_network.return_value = None
+            ref_dict = {consts.VALID_VIP_NETWORKS: ['my_vip_net']}
+            self.amp_driver.validate_availability_zone(ref_dict)
 
-        # Test management network
-        ref_dict = {consts.MANAGEMENT_NETWORK: 'my_management_net'}
-        self.amp_driver.validate_availability_zone(ref_dict)
+            # Test management network
+            ref_dict = {consts.MANAGEMENT_NETWORK: 'my_management_net'}
+            self.amp_driver.validate_availability_zone(ref_dict)
 
         # Test bad availability zone metadata key
         ref_dict = {'bogus': 'bogus'}
