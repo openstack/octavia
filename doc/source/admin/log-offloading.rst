@@ -39,7 +39,7 @@ Administrative Logs
 The administrative log offloading feature of the :term:`Amphora` covers all of
 the system logging inside the :term:`Amphora` except for the tenant flow logs.
 Tenant flow logs can be sent to and processed by the same syslog receiver used
-by the administrative logs, but they are configured seperately.
+by the administrative logs, but they are configured separately.
 
 All administrative log messages will be sent using the native log format
 for the application sending the message.
