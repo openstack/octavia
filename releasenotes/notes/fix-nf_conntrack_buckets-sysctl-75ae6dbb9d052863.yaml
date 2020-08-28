@@ -1,0 +1,5 @@
+---
+fixes:
+  - |
+    Fix nf_conntrack_buckets sysctl in the Amphora, its value was incorrectly
+    set.
