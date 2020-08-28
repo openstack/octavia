@@ -10,6 +10,10 @@ RemainAfterExit=yes
 ExecStart=-/sbin/ip netns add {{ amphora_nsname }}
 # Load the system sysctl into the new namespace
 ExecStart=-/sbin/ip netns exec {{ amphora_nsname }} sysctl --system
+# Set nf_conntrack_buckets sysctl in the main namespace (nf_conntrack_buckets
+# cannot be set in another net namespace, but its value is inherited from the
+# main namespace)
+ExecStart=-/sbin/sysctl -w net.netfilter.nf_conntrack_buckets=125000
 # Enable kernel module ip_vs for lvs function in amphora network namespace
 ExecStart=-/sbin/ip netns exec {{ amphora_nsname }} modprobe ip_vs
 # Enable ip_forward and conntrack kernel configuration

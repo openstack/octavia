@@ -16,7 +16,6 @@ sysctl-write-value fs.file-max 2097152
 sysctl-write-value fs.nr_open 2097152
 
 # It's ok for these to fail if conntrack module isn't loaded
-sysctl-write-value net.netfilter.nf_conntrack_buckets 125000 || true
 sysctl-write-value net.netfilter.nf_conntrack_tcp_timeout_time_wait 5 || true
 sysctl-write-value net.netfilter.nf_conntrack_tcp_timeout_fin_wait 5 || true
 
