@@ -152,7 +152,7 @@ class PoolsController(base.BaseController):
     def _is_only_specified_in_request(self, request, **kwargs):
         request_attrs = []
         check_attrs = kwargs['check_exist_attrs']
-        escaped_attrs = ['from_data_model',
+        escaped_attrs = ['from_data_model', 'translate_key_to_data_model',
                          'translate_dict_keys_to_data_model', 'to_dict']
 
         for attr in dir(request):
