@@ -701,8 +701,10 @@ class TestAmphoraDriver(base.TestRpc):
                 self.amp_driver.get_supported_availability_zone_metadata)
 
     def test_validate_availability_zone(self):
-        ref_dict = {consts.COMPUTE_ZONE: 'my_compute_zone'}
-        self.amp_driver.validate_availability_zone(ref_dict)
+        with mock.patch('stevedore.driver.DriverManager.driver') as m_driver:
+            m_driver.validate_availability_zone.return_value = None
+            ref_dict = {consts.COMPUTE_ZONE: 'my_compute_zone'}
+            self.amp_driver.validate_availability_zone(ref_dict)
 
         # Test bad availability zone metadata key
         ref_dict = {'bogus': 'bogus'}

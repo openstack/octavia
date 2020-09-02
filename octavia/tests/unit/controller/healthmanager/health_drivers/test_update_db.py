@@ -1238,7 +1238,9 @@ class TestUpdateHealthDb(base.TestCase):
         }
         self.hm.amphora_repo.get_lb_for_health_update.return_value = {}
 
-        self.hm.update_health(health, '192.0.2.1')
+        with mock.patch('stevedore.driver.DriverManager.driver') as m_driver:
+            self.hm.update_health(health, '192.0.2.1')
+            self.assertTrue(m_driver.delete.called)
 
         self.assertTrue(self.amphora_repo.get_lb_for_health_update.called)
         self.assertFalse(self.amphora_health_repo.replace.called)

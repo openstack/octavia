@@ -1,0 +1,6 @@
+---
+upgrade:
+  - |
+    The default drivers have been switched to live from noop drivers for the
+    most part. Volume and distributor remain set to noop drivers as those are
+    experimental features. Operators do not need to make configuration changes.
