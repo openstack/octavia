@@ -448,7 +448,7 @@ class AmphoraComputeConnectivityWait(BaseAmphoraTask):
 
 
 class AmphoraConfigUpdate(BaseAmphoraTask):
-    """Task to push a new amphora agent configuration to the amphroa."""
+    """Task to push a new amphora agent configuration to the amphora."""
 
     def execute(self, amphora, flavor):
         # Extract any flavor based settings
@@ -464,7 +464,7 @@ class AmphoraConfigUpdate(BaseAmphoraTask):
             amphora.get(constants.ID), topology)
         db_amp = self.amphora_repo.get(db_apis.get_session(),
                                        id=amphora[constants.ID])
-        # Push the new configuration to the amphroa
+        # Push the new configuration to the amphora
         try:
             self.amphora_driver.update_amphora_agent_config(db_amp,
                                                             agent_config)
