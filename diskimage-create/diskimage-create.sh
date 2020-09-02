@@ -505,3 +505,4 @@ if [ -z "$DIB_REPOREF_amphora_agent" ]; then
 else
     echo "Successfully built the amphora using the $DIB_REPOREF_amphora_agent amphora-agent."
 fi
+echo "Amphora image size: `stat -c "%n %s" $AMP_OUTPUTFILENAME`"
