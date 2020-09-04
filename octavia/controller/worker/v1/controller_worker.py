@@ -112,6 +112,26 @@ class ControllerWorker(base_taskflow.BaseTaskFlowEngine):
         except Exception as e:
             LOG.error('Failed to create an amphora due to: {}'.format(str(e)))
 
+    def delete_amphora(self, amphora_id):
+        """Deletes an existing Amphora.
+
+        :param amphora_id: ID of the amphora to delete
+        :returns: None
+        :raises AmphoraNotFound: The referenced Amphora was not found
+        """
+        try:
+            amphora = self._amphora_repo.get(db_apis.get_session(),
+                                             id=amphora_id)
+            delete_amp_tf = self.taskflow_load(
+                self._amphora_flows.get_delete_amphora_flow(amphora))
+            with tf_logging.DynamicLoggingListener(delete_amp_tf, log=LOG):
+                delete_amp_tf.run()
+        except Exception as e:
+            LOG.error('Failed to delete a amphora {0} due to: {1}'.format(
+                amphora_id, str(e)))
+            return
+        LOG.info('Finished deleting amphora %s.', amphora_id)
+
     @tenacity.retry(
         retry=tenacity.retry_if_exception_type(db_exceptions.NoResultFound),
         wait=tenacity.wait_incrementing(

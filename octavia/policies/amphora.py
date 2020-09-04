@@ -32,6 +32,13 @@ rules = [
     ),
     policy.DocumentedRuleDefault(
         '{rbac_obj}{action}'.format(rbac_obj=constants.RBAC_AMPHORA,
+                                    action=constants.RBAC_DELETE),
+        constants.RULE_API_ADMIN,
+        "Delete an Amphora",
+        [{'method': 'DELETE', 'path': '/v2/octavia/amphorae/{amphora_id}'}]
+    ),
+    policy.DocumentedRuleDefault(
+        '{rbac_obj}{action}'.format(rbac_obj=constants.RBAC_AMPHORA,
                                     action=constants.RBAC_PUT_CONFIG),
         constants.RULE_API_ADMIN,
         "Update Amphora Agent Configuration",

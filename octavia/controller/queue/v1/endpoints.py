@@ -154,3 +154,7 @@ class Endpoints(object):
         LOG.info('Updating amphora \'%s\' agent configuration...',
                  amphora_id)
         self.worker.update_amphora_agent_config(amphora_id)
+
+    def delete_amphora(self, context, amphora_id):
+        LOG.info('Deleting amphora \'%s\'...', amphora_id)
+        self.worker.delete_amphora(amphora_id)

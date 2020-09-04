@@ -128,6 +128,102 @@ class TestAmphora(base.BaseAPITest):
         self._assert_amp_equal(self.amp_args, response)
 
     @mock.patch('oslo_messaging.RPCClient.cast')
+    def test_delete(self, mock_cast):
+        self.amp_args = {
+            'status': constants.AMPHORA_READY,
+        }
+        amp = self.amphora_repo.create(self.session, **self.amp_args)
+
+        self.delete(self.AMPHORA_PATH.format(
+            amphora_id=amp.id), status=204)
+
+        response = self.get(self.AMPHORA_PATH.format(
+            amphora_id=amp.id)).json.get(self.root_tag)
+
+        self.assertEqual(constants.PENDING_DELETE, response[constants.STATUS])
+
+        payload = {constants.AMPHORA_ID: amp.id}
+        mock_cast.assert_called_with({}, 'delete_amphora', **payload)
+
+    @mock.patch('oslo_messaging.RPCClient.cast')
+    def test_delete_not_found(self, mock_cast):
+        self.delete(self.AMPHORA_PATH.format(amphora_id='bogus-id'),
+                    status=404)
+        mock_cast.assert_not_called()
+
+    @mock.patch('oslo_messaging.RPCClient.cast')
+    def test_delete_immutable(self, mock_cast):
+        self.amp_args = {
+            'status': constants.AMPHORA_ALLOCATED,
+        }
+        amp = self.amphora_repo.create(self.session, **self.amp_args)
+
+        self.delete(self.AMPHORA_PATH.format(
+            amphora_id=amp.id), status=409)
+
+        mock_cast.assert_not_called()
+
+    @mock.patch('oslo_messaging.RPCClient.cast')
+    def test_delete_authorized(self, mock_cast):
+        self.amp_args = {
+            'status': constants.AMPHORA_READY,
+        }
+        amp = self.amphora_repo.create(self.session, **self.amp_args)
+
+        self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
+        auth_strategy = self.conf.conf.api_settings.get('auth_strategy')
+        self.conf.config(group='api_settings', auth_strategy=constants.TESTING)
+        with mock.patch.object(octavia.common.context.Context, 'project_id',
+                               self.project_id):
+            override_credentials = {
+                'service_user_id': None,
+                'user_domain_id': None,
+                'is_admin_project': True,
+                'service_project_domain_id': None,
+                'service_project_id': None,
+                'roles': ['load-balancer_member'],
+                'user_id': None,
+                'is_admin': True,
+                'service_user_domain_id': None,
+                'project_domain_id': None,
+                'service_roles': [],
+                'project_id': self.project_id}
+            with mock.patch(
+                    "oslo_context.context.RequestContext.to_policy_values",
+                    return_value=override_credentials):
+                self.delete(self.AMPHORA_PATH.format(amphora_id=amp.id),
+                            status=204)
+        # Reset api auth setting
+        self.conf.config(group='api_settings', auth_strategy=auth_strategy)
+
+        response = self.get(self.AMPHORA_PATH.format(
+            amphora_id=amp.id)).json.get(self.root_tag)
+
+        self.assertEqual(constants.PENDING_DELETE, response[constants.STATUS])
+
+        payload = {constants.AMPHORA_ID: amp.id}
+        mock_cast.assert_called_with({}, 'delete_amphora', **payload)
+
+    @mock.patch('oslo_messaging.RPCClient.cast')
+    def test_delete_not_authorized(self, mock_cast):
+        self.amp_args = {
+            'status': constants.AMPHORA_READY,
+        }
+        amp = self.amphora_repo.create(self.session, **self.amp_args)
+
+        self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
+        auth_strategy = self.conf.conf.api_settings.get('auth_strategy')
+        self.conf.config(group='api_settings', auth_strategy=constants.TESTING)
+        with mock.patch.object(octavia.common.context.Context, 'project_id',
+                               self.project_id):
+            self.delete(self.AMPHORA_PATH.format(amphora_id=amp.id),
+                        status=403)
+        # Reset api auth setting
+        self.conf.config(group='api_settings', auth_strategy=auth_strategy)
+
+        mock_cast.assert_not_called()
+
+    @mock.patch('oslo_messaging.RPCClient.cast')
     def test_failover(self, mock_cast):
         self.put(self.AMPHORA_FAILOVER_PATH.format(
             amphora_id=self.amp_id), body={}, status=202)
