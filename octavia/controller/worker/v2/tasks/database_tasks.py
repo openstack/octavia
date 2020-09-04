@@ -280,6 +280,7 @@ class DeleteListenerInDB(BaseDatabaseTask):
         :returns: None
         """
 
+        # TODO(johnsom) Fix this, it doesn't revert anything
         LOG.warning("Reverting mark listener delete in DB for listener id %s",
                     listener[constants.LISTENER_ID])
 
@@ -490,22 +491,26 @@ class UpdateAmphoraVIPData(BaseDatabaseTask):
 class UpdateAmpFailoverDetails(BaseDatabaseTask):
     """Update amphora failover details in the database."""
 
-    def execute(self, amphora, amp_data):
+    def execute(self, amphora, vip, base_port):
         """Update amphora failover details in the database.
 
         :param amphora: The amphora to update
-        :param amp_data: data_models.Amphora object with update data
+        :param vip: The VIP object associated with this amphora.
+        :param base_port: The base port object associated with the amphora.
         :returns: None
         """
         # role and vrrp_priority will be updated later.
         self.repos.amphora.update(
             db_apis.get_session(),
             amphora.get(constants.ID),
-            vrrp_ip=amp_data[constants.VRRP_IP],
-            ha_ip=amp_data[constants.HA_IP],
-            vrrp_port_id=amp_data[constants.VRRP_PORT_ID],
-            ha_port_id=amp_data[constants.HA_PORT_ID],
-            vrrp_id=amp_data[constants.VRRP_ID])
+            # TODO(johnsom) We should do a better job getting the fixed_ip
+            #               as this could be a problem with dual stack.
+            #               Fix this during the multi-vip patch.
+            vrrp_ip=base_port[constants.FIXED_IPS][0][constants.IP_ADDRESS],
+            ha_ip=vip[constants.IP_ADDRESS],
+            vrrp_port_id=base_port[constants.ID],
+            ha_port_id=vip[constants.PORT_ID],
+            vrrp_id=1)
 
 
 class AssociateFailoverAmphoraWithLBID(BaseDatabaseTask):
@@ -595,27 +600,25 @@ class MapLoadbalancerToAmphora(BaseDatabaseTask):
 class _MarkAmphoraRoleAndPriorityInDB(BaseDatabaseTask):
     """Alter the amphora role and priority in DB."""
 
-    def _execute(self, amphora, amp_role, vrrp_priority):
+    def _execute(self, amphora_id, amp_role, vrrp_priority):
         """Alter the amphora role and priority in DB.
 
-        :param amphora: Amphora to update.
+        :param amphora_id: Amphora ID to update.
         :param amp_role: Amphora role to be set.
         :param vrrp_priority: VRRP priority to set.
         :returns: None
         """
         LOG.debug("Mark %(role)s in DB for amphora: %(amp)s",
-                  {constants.ROLE: amp_role, 'amp': amphora[constants.ID]})
-        self.amphora_repo.update(db_apis.get_session(),
-                                 amphora[constants.ID],
-                                 role=amp_role,
-                                 vrrp_priority=vrrp_priority)
+                  {constants.ROLE: amp_role, 'amp': amphora_id})
+        self.amphora_repo.update(db_apis.get_session(), amphora_id,
+                                 role=amp_role, vrrp_priority=vrrp_priority)
 
-    def _revert(self, result, amphora, *args, **kwargs):
+    def _revert(self, result, amphora_id, *args, **kwargs):
         """Removes role and vrrp_priority association.
 
         :param result: Result of the association.
-        :param amphora: Amphora which role/vrrp_priority association
-               failed.
+        :param amphora_id: Amphora ID which role/vrrp_priority association
+                           failed.
         :returns: None
         """
 
@@ -623,17 +626,14 @@ class _MarkAmphoraRoleAndPriorityInDB(BaseDatabaseTask):
             return
 
         LOG.warning("Reverting amphora role in DB for amp id %(amp)s",
-                    {'amp': amphora[constants.ID]})
+                    {'amp': amphora_id})
         try:
-            self.amphora_repo.update(db_apis.get_session(),
-                                     amphora[constants.ID],
-                                     role=None,
-                                     vrrp_priority=None)
+            self.amphora_repo.update(db_apis.get_session(), amphora_id,
+                                     role=None, vrrp_priority=None)
         except Exception as e:
             LOG.error("Failed to update amphora %(amp)s "
                       "role and vrrp_priority to None due to: "
-                      "%(except)s", {'amp': amphora[constants.ID],
-                                     'except': e})
+                      "%(except)s", {'amp': amphora_id, 'except': e})
 
 
 class MarkAmphoraMasterInDB(_MarkAmphoraRoleAndPriorityInDB):
@@ -646,7 +646,8 @@ class MarkAmphoraMasterInDB(_MarkAmphoraRoleAndPriorityInDB):
         :returns: None
         """
         amp_role = constants.ROLE_MASTER
-        self._execute(amphora, amp_role, constants.ROLE_MASTER_PRIORITY)
+        self._execute(amphora[constants.ID], amp_role,
+                      constants.ROLE_MASTER_PRIORITY)
 
     def revert(self, result, amphora, *args, **kwargs):
         """Removes amphora role association.
@@ -654,7 +655,7 @@ class MarkAmphoraMasterInDB(_MarkAmphoraRoleAndPriorityInDB):
         :param amphora: Amphora to update role.
         :returns: None
         """
-        self._revert(result, amphora, *args, **kwargs)
+        self._revert(result, amphora[constants.ID], *args, **kwargs)
 
 
 class MarkAmphoraBackupInDB(_MarkAmphoraRoleAndPriorityInDB):
@@ -667,7 +668,8 @@ class MarkAmphoraBackupInDB(_MarkAmphoraRoleAndPriorityInDB):
         :returns: None
         """
         amp_role = constants.ROLE_BACKUP
-        self._execute(amphora, amp_role, constants.ROLE_BACKUP_PRIORITY)
+        self._execute(amphora[constants.ID], amp_role,
+                      constants.ROLE_BACKUP_PRIORITY)
 
     def revert(self, result, amphora, *args, **kwargs):
         """Removes amphora role association.
@@ -675,7 +677,7 @@ class MarkAmphoraBackupInDB(_MarkAmphoraRoleAndPriorityInDB):
         :param amphora: Amphora to update role.
         :returns: None
         """
-        self._revert(result, amphora, *args, **kwargs)
+        self._revert(result, amphora[constants.ID], *args, **kwargs)
 
 
 class MarkAmphoraStandAloneInDB(_MarkAmphoraRoleAndPriorityInDB):
@@ -688,7 +690,7 @@ class MarkAmphoraStandAloneInDB(_MarkAmphoraRoleAndPriorityInDB):
         :returns: None
         """
         amp_role = constants.ROLE_STANDALONE
-        self._execute(amphora, amp_role, None)
+        self._execute(amphora[constants.ID], amp_role, None)
 
     def revert(self, result, amphora, *args, **kwargs):
         """Removes amphora role association.
@@ -696,7 +698,7 @@ class MarkAmphoraStandAloneInDB(_MarkAmphoraRoleAndPriorityInDB):
         :param amphora: Amphora to update role.
         :returns: None
         """
-        self._revert(result, amphora, *args, **kwargs)
+        self._revert(result, amphora[constants.ID], *args, **kwargs)
 
 
 class MarkAmphoraAllocatedInDB(BaseDatabaseTask):
@@ -809,10 +811,10 @@ class MarkAmphoraDeletedInDB(BaseDatabaseTask):
 
         LOG.debug("Mark DELETED in DB for amphora: %(amp)s with "
                   "compute id %(comp)s",
-                  {'amp': amphora.get(constants.ID),
+                  {'amp': amphora[constants.ID],
                    'comp': amphora[constants.COMPUTE_ID]})
         self.amphora_repo.update(db_apis.get_session(),
-                                 amphora.get(constants.ID),
+                                 amphora[constants.ID],
                                  status=constants.DELETED)
 
     def revert(self, amphora, *args, **kwargs):
@@ -824,10 +826,10 @@ class MarkAmphoraDeletedInDB(BaseDatabaseTask):
 
         LOG.warning("Reverting mark amphora deleted in DB "
                     "for amp id %(amp)s and compute id %(comp)s",
-                    {'amp': amphora.get(constants.ID),
+                    {'amp': amphora[constants.ID],
                      'comp': amphora[constants.COMPUTE_ID]})
 
-        self.task_utils.mark_amphora_status_error(amphora.get(constants.ID))
+        self.task_utils.mark_amphora_status_error(amphora[constants.ID])
 
 
 class MarkAmphoraPendingDeleteInDB(BaseDatabaseTask):
@@ -845,10 +847,10 @@ class MarkAmphoraPendingDeleteInDB(BaseDatabaseTask):
 
         LOG.debug("Mark PENDING DELETE in DB for amphora: %(amp)s "
                   "with compute id %(id)s",
-                  {'amp': amphora.get(constants.ID),
+                  {'amp': amphora[constants.ID],
                    'id': amphora[constants.COMPUTE_ID]})
         self.amphora_repo.update(db_apis.get_session(),
-                                 amphora.get(constants.ID),
+                                 amphora[constants.ID],
                                  status=constants.PENDING_DELETE)
 
     def revert(self, amphora, *args, **kwargs):
@@ -860,9 +862,9 @@ class MarkAmphoraPendingDeleteInDB(BaseDatabaseTask):
 
         LOG.warning("Reverting mark amphora pending delete in DB "
                     "for amp id %(amp)s and compute id %(comp)s",
-                    {'amp': amphora.get(constants.ID),
+                    {'amp': amphora[constants.ID],
                      'comp': amphora[constants.COMPUTE_ID]})
-        self.task_utils.mark_amphora_status_error(amphora.get(constants.ID))
+        self.task_utils.mark_amphora_status_error(amphora[constants.ID])
 
 
 class MarkAmphoraPendingUpdateInDB(BaseDatabaseTask):
@@ -1111,7 +1113,7 @@ class MarkLBActiveInDB(BaseDatabaseTask):
 
     def _mark_member_status(self, member, status):
         self.member_repo.update(
-            db_apis.get_session(), member[constants.MEMBER_ID],
+            db_apis.get_session(), member.id,
             provisioning_status=status)
 
     def revert(self, loadbalancer, *args, **kwargs):
@@ -1691,17 +1693,17 @@ class GetAmphoraDetails(BaseDatabaseTask):
 
 
 class GetAmphoraeFromLoadbalancer(BaseDatabaseTask):
-    """Task to pull the listeners from a loadbalancer."""
+    """Task to pull the amphorae from a loadbalancer."""
 
-    def execute(self, loadbalancer):
+    def execute(self, loadbalancer_id):
         """Pull the amphorae from a loadbalancer.
 
-        :param loadbalancer: Load balancer which listeners are required
+        :param loadbalancer_id: Load balancer ID to get amphorae from
         :returns: A list of Listener objects
         """
         amphorae = []
-        db_lb = self.repos.load_balancer.get(
-            db_apis.get_session(), id=loadbalancer[constants.LOADBALANCER_ID])
+        db_lb = self.repos.load_balancer.get(db_apis.get_session(),
+                                             id=loadbalancer_id)
         for amp in db_lb.amphorae:
             a = self.amphora_repo.get(db_apis.get_session(), id=amp.id,
                                       show_deleted=False)
@@ -1746,29 +1748,45 @@ class GetVipFromLoadbalancer(BaseDatabaseTask):
         return db_lb.vip.to_dict(recurse=True)
 
 
+class GetLoadBalancer(BaseDatabaseTask):
+    """Get an load balancer object from the database."""
+
+    def execute(self, loadbalancer_id, *args, **kwargs):
+        """Get an load balancer object from the database.
+
+        :param loadbalancer_id: The load balancer ID to lookup
+        :returns: The load balancer object
+        """
+
+        LOG.debug("Get load balancer from DB for load balancer id: %s",
+                  loadbalancer_id)
+        db_lb = self.loadbalancer_repo.get(db_apis.get_session(),
+                                           id=loadbalancer_id)
+        provider_lb = provider_utils.db_loadbalancer_to_provider_loadbalancer(
+            db_lb)
+        return provider_lb.to_dict()
+
+
 class CreateVRRPGroupForLB(BaseDatabaseTask):
     """Create a VRRP group for a load balancer."""
 
-    def execute(self, loadbalancer):
+    def execute(self, loadbalancer_id):
         """Create a VRRP group for a load balancer.
 
-        :param loadbalancer: Load balancer for which a VRRP group
+        :param loadbalancer_id: Load balancer ID for which a VRRP group
                should be created
-        :returns: Updated load balancer
         """
         try:
             self.repos.vrrpgroup.create(
                 db_apis.get_session(),
-                load_balancer_id=loadbalancer[constants.LOADBALANCER_ID],
-                vrrp_group_name=str(
-                    loadbalancer[constants.LOADBALANCER_ID]).replace('-', ''),
+                load_balancer_id=loadbalancer_id,
+                vrrp_group_name=str(loadbalancer_id).replace('-', ''),
                 vrrp_auth_type=constants.VRRP_AUTH_DEFAULT,
                 vrrp_auth_pass=uuidutils.generate_uuid().replace('-', '')[0:7],
                 advert_int=CONF.keepalived_vrrp.vrrp_advert_int)
         except odb_exceptions.DBDuplicateEntry:
             LOG.debug('VRRP_GROUP entry already exists for load balancer, '
                       'skipping create.')
-        return loadbalancer
 
 
 class DisableAmphoraHealthMonitoring(BaseDatabaseTask):
@@ -1784,7 +1802,7 @@ class DisableAmphoraHealthMonitoring(BaseDatabaseTask):
         :param amphora: The amphora to disable health monitoring for
         :returns: None
         """
-        self._delete_from_amp_health(amphora.get(constants.ID))
+        self._delete_from_amp_health(amphora[constants.ID])
 
 
 class DisableLBAmphoraeHealthMonitoring(BaseDatabaseTask):
@@ -1819,7 +1837,7 @@ class MarkAmphoraHealthBusy(BaseDatabaseTask):
         :param amphora: The amphora to mark amphora health busy
         :returns: None
         """
-        self._mark_amp_health_busy(amphora.get(constants.ID))
+        self._mark_amp_health_busy(amphora[constants.ID])
 
 
 class MarkLBAmphoraeHealthBusy(BaseDatabaseTask):

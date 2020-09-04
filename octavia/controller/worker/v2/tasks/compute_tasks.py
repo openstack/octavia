@@ -21,6 +21,7 @@ from oslo_log import log as logging
 from stevedore import driver as stevedore_driver
 from taskflow import task
 from taskflow.types import failure
+import tenacity
 
 from octavia.amphorae.backends.agent import agent_jinja_cfg
 from octavia.common import constants
@@ -53,10 +54,9 @@ class BaseComputeTask(task.Task):
 class ComputeCreate(BaseComputeTask):
     """Create the compute instance for a new amphora."""
 
-    def execute(self, amphora_id, config_drive_files=None,
+    def execute(self, amphora_id, server_group_id, config_drive_files=None,
                 build_type_priority=constants.LB_CREATE_NORMAL_PRIORITY,
-                server_group_id=None, ports=None, flavor=None,
-                availability_zone=None):
+                ports=None, flavor=None, availability_zone=None):
         """Create an amphora
 
         :param availability_zone: availability zone metadata dictionary
@@ -154,10 +154,9 @@ class ComputeCreate(BaseComputeTask):
 
 
 class CertComputeCreate(ComputeCreate):
-    def execute(self, amphora_id, server_pem,
+    def execute(self, amphora_id, server_pem, server_group_id,
                 build_type_priority=constants.LB_CREATE_NORMAL_PRIORITY,
-                server_group_id=None, ports=None, flavor=None,
-                availability_zone=None):
+                ports=None, flavor=None, availability_zone=None):
         """Create an amphora
 
         :param availability_zone: availability zone metadata dictionary
@@ -202,16 +201,53 @@ class DeleteAmphoraeOnLoadBalancer(BaseComputeTask):
 
 
 class ComputeDelete(BaseComputeTask):
-    def execute(self, amphora):
-        LOG.debug("Compute Delete execute for amphora with id %s",
-                  amphora.get(constants.ID))
+    @tenacity.retry(retry=tenacity.retry_if_exception_type(),
+                    stop=tenacity.stop_after_attempt(CONF.compute.max_retries),
+                    wait=tenacity.wait_exponential(
+                        multiplier=CONF.compute.retry_backoff,
+                        min=CONF.compute.retry_interval,
+                        max=CONF.compute.retry_max), reraise=True)
+    def execute(self, amphora, passive_failure=False):
+
+        amphora_id = amphora.get(constants.ID)
+        compute_id = amphora[constants.COMPUTE_ID]
+
+        if self.execute.retry.statistics.get(constants.ATTEMPT_NUMBER, 1) == 1:
+            LOG.debug('Compute delete execute for amphora with ID %s and '
+                      'compute ID: %s', amphora_id, compute_id)
+        else:
+            LOG.warning('Retrying compute delete of %s attempt %s of %s.',
+                        compute_id,
+                        self.execute.retry.statistics[
+                            constants.ATTEMPT_NUMBER],
+                        self.execute.retry.stop.max_attempt_number)
+        # Let the Taskflow engine know we are working and alive
+        # Don't use get with a default for 'attempt_number', we need to fail
+        # if that number is missing.
+        self.update_progress(
+            self.execute.retry.statistics[constants.ATTEMPT_NUMBER] /
+            self.execute.retry.stop.max_attempt_number)
 
         try:
-            self.compute.delete(amphora[constants.COMPUTE_ID])
+            self.compute.delete(compute_id)
         except Exception:
-            LOG.exception("Compute delete for amphora id: %s failed",
-                          amphora.get(constants.ID))
-            raise
+            if (self.execute.retry.statistics[constants.ATTEMPT_NUMBER] !=
+                    self.execute.retry.stop.max_attempt_number):
+                LOG.warning('Compute delete for amphora id: %s failed. '
+                            'Retrying.', amphora_id)
+                raise
+            if passive_failure:
+                LOG.exception('Compute delete for compute ID: %s on amphora '
+                              'ID: %s failed. This resource will be abandoned '
+                              'and should manually be cleaned up once the '
+                              'compute service is functional.',
+                              compute_id, amphora_id)
+            else:
+                LOG.exception('Compute delete for compute ID: %s on amphora '
+                              'ID: %s failed. The compute service has failed. '
+                              'Aborting and reverting.', compute_id,
+                              amphora_id)
+                raise
 
 
 class ComputeActiveWait(BaseComputeTask):
@@ -284,3 +320,33 @@ class NovaServerGroupDelete(BaseComputeTask):
             self.compute.delete_server_group(server_group_id)
         else:
             return
+
+
+class AttachPort(BaseComputeTask):
+    def execute(self, amphora, port):
+        """Attach a port to an amphora instance.
+
+        :param amphora: The amphora to attach the port to.
+        :param port: The port to attach to the amphora.
+        :returns: None
+        """
+        LOG.debug('Attaching port: %s to compute: %s',
+                  port[constants.ID], amphora[constants.COMPUTE_ID])
+        self.compute.attach_network_or_port(amphora[constants.COMPUTE_ID],
+                                            port_id=port[constants.ID])
+
+    def revert(self, amphora, port, *args, **kwargs):
+        """Revert our port attach.
+
+        :param amphora: The amphora to detach the port from.
+        :param port: The port to attach to the amphora.
+        """
+        LOG.warning('Reverting port: %s attach to compute: %s',
+                    port[constants.ID], amphora[constants.COMPUTE_ID])
+        try:
+            self.compute.detach_port(amphora[constants.COMPUTE_ID],
+                                     port[constants.ID])
+        except Exception as e:
+            LOG.error('Failed to detach port %s from compute %s for revert '
+                      'due to %s.', port[constants.ID],
+                      amphora[constants.COMPUTE_ID], str(e))

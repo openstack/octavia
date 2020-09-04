@@ -12,11 +12,14 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 #
+import time
 
 from oslo_config import cfg
 from oslo_log import log as logging
+from oslo_utils import excutils
 from taskflow import task
 from taskflow.types import failure
+import tenacity
 
 from octavia.common import constants
 from octavia.common import data_models
@@ -52,21 +55,27 @@ class CalculateAmphoraDelta(BaseNetworkTask):
 
     default_provides = constants.DELTA
 
-    def execute(self, loadbalancer, amphora, availability_zone):
+    def execute(self, loadbalancer, amphora, availability_zone,
+                vrrp_port=None):
         LOG.debug("Calculating network delta for amphora id: %s",
                   amphora.get(constants.ID))
 
+        if vrrp_port is None:
+            vrrp_port = self.network_driver.get_port(
+                amphora[constants.VRRP_PORT_ID])
+            vrrp_port_network_id = vrrp_port.network_id
+        else:
+            vrrp_port_network_id = vrrp_port[constants.NETWORK_ID]
+
         # Figure out what networks we want
         # seed with lb network(s)
-        vrrp_port = self.network_driver.get_port(
-            amphora[constants.VRRP_PORT_ID])
         if availability_zone:
             management_nets = (
                 [availability_zone.get(constants.MANAGEMENT_NETWORK)] or
                 CONF.controller_worker.amp_boot_network_list)
         else:
             management_nets = CONF.controller_worker.amp_boot_network_list
-        desired_network_ids = {vrrp_port.network_id}.union(management_nets)
+        desired_network_ids = {vrrp_port_network_id}.union(management_nets)
         db_lb = self.loadbalancer_repo.get(
             db_apis.get_session(), id=loadbalancer[constants.LOADBALANCER_ID])
         for pool in db_lb.pools:
@@ -84,7 +93,7 @@ class CalculateAmphoraDelta(BaseNetworkTask):
 
         del_ids = set(actual_network_nics) - desired_network_ids
         delete_nics = list(
-            actual_network_nics[net_id] for net_id in del_ids)
+            n_data_models.Interface(network_id=net_id) for net_id in del_ids)
 
         add_ids = desired_network_ids - set(actual_network_nics)
         add_nics = list(n_data_models.Interface(
@@ -353,7 +362,8 @@ class PlugVIP(BaseNetworkTask):
         LOG.debug("Plumbing VIP for loadbalancer id: %s",
                   loadbalancer[constants.LOADBALANCER_ID])
         db_lb = self.loadbalancer_repo.get(
-            db_apis.get_session(), id=loadbalancer[constants.LOADBALANCER_ID])
+            db_apis.get_session(),
+            id=loadbalancer[constants.LOADBALANCER_ID])
         amps_data = self.network_driver.plug_vip(db_lb,
                                                  db_lb.vip)
         return [amp.to_dict() for amp in amps_data]
@@ -367,7 +377,8 @@ class PlugVIP(BaseNetworkTask):
                     loadbalancer[constants.LOADBALANCER_ID])
 
         db_lb = self.loadbalancer_repo.get(
-            db_apis.get_session(), id=loadbalancer[constants.LOADBALANCER_ID])
+            db_apis.get_session(),
+            id=loadbalancer[constants.LOADBALANCER_ID])
         try:
             # Make sure we have the current port IDs for cleanup
             for amp_data in result:
@@ -388,13 +399,12 @@ class PlugVIP(BaseNetworkTask):
 class UpdateVIPSecurityGroup(BaseNetworkTask):
     """Task to setup SG for LB."""
 
-    def execute(self, loadbalancer):
+    def execute(self, loadbalancer_id):
         """Task to setup SG for LB."""
 
-        LOG.debug("Setup SG for loadbalancer id: %s",
-                  loadbalancer[constants.LOADBALANCER_ID])
+        LOG.debug("Setup SG for loadbalancer id: %s", loadbalancer_id)
         db_lb = self.loadbalancer_repo.get(
-            db_apis.get_session(), id=loadbalancer[constants.LOADBALANCER_ID])
+            db_apis.get_session(), id=loadbalancer_id)
         self.network_driver.update_vip_sg(db_lb, db_lb.vip)
 
 
@@ -411,7 +421,7 @@ class GetSubnetFromVIP(BaseNetworkTask):
             loadbalancer['vip_subnet_id']).to_dict()
 
 
-class PlugVIPAmpphora(BaseNetworkTask):
+class PlugVIPAmphora(BaseNetworkTask):
     """Task to plumb a VIP."""
 
     def execute(self, loadbalancer, amphora, subnet):
@@ -561,13 +571,29 @@ class GetAmphoraNetworkConfigs(BaseNetworkTask):
         return provider_dict
 
 
+class GetAmphoraNetworkConfigsByID(BaseNetworkTask):
+    """Task to retrieve amphora network details."""
+
+    def execute(self, loadbalancer_id, amphora_id=None):
+        LOG.debug("Retrieving vip network details.")
+        loadbalancer = self.loadbalancer_repo.get(db_apis.get_session(),
+                                                  id=loadbalancer_id)
+        amphora = self.amphora_repo.get(db_apis.get_session(), id=amphora_id)
+        db_configs = self.network_driver.get_network_configs(loadbalancer,
+                                                             amphora=amphora)
+        provider_dict = {}
+        for amp_id, amp_conf in db_configs.items():
+            provider_dict[amp_id] = amp_conf.to_dict(recurse=True)
+        return provider_dict
+
+
 class GetAmphoraeNetworkConfigs(BaseNetworkTask):
     """Task to retrieve amphorae network details."""
 
-    def execute(self, loadbalancer):
+    def execute(self, loadbalancer_id):
         LOG.debug("Retrieving vip network details.")
         db_lb = self.loadbalancer_repo.get(
-            db_apis.get_session(), id=loadbalancer[constants.LOADBALANCER_ID])
+            db_apis.get_session(), id=loadbalancer_id)
         db_configs = self.network_driver.get_network_configs(db_lb)
         provider_dict = {}
         for amp_id, amp_conf in db_configs.items():
@@ -625,56 +651,13 @@ class PlugPorts(BaseNetworkTask):
             self.network_driver.plug_port(db_amp, port)
 
 
-class PlugVIPPort(BaseNetworkTask):
-    """Task to plug a VIP into a compute instance."""
-
-    def execute(self, amphora, amphorae_network_config):
-        vrrp_port = amphorae_network_config.get(
-            amphora.get(constants.ID))[constants.VRRP_PORT]
-        LOG.debug('Plugging VIP VRRP port ID: %(port_id)s into compute '
-                  'instance: %(compute_id)s.',
-                  {constants.PORT_ID: vrrp_port.get(constants.ID),
-                   constants.COMPUTE_ID: amphora[constants.COMPUTE_ID]})
-        db_vrrp_port = self.network_driver.get_port(
-            vrrp_port.get(constants.ID))
-        db_amp = self.amphora_repo.get(db_apis.get_session(),
-                                       id=amphora[constants.ID])
-        self.network_driver.plug_port(db_amp, db_vrrp_port)
-
-    def revert(self, result, amphora, amphorae_network_config,
-               *args, **kwargs):
-        vrrp_port = None
-        try:
-            vrrp_port = amphorae_network_config.get(
-                amphora.get(constants.ID))[constants.VRRP_PORT]
-            db_vrrp_port = self.network_driver.get_port(
-                vrrp_port.get(constants.ID))
-            db_amp = self.amphora_repo.get(db_apis.get_session(),
-                                           id=amphora[constants.ID])
-            self.network_driver.unplug_port(db_amp, db_vrrp_port)
-        except Exception:
-            LOG.warning('Failed to unplug vrrp port: %(port)s from amphora: '
-                        '%(amp)s',
-                        {'port': vrrp_port, 'amp': amphora[constants.ID]})
-
-
-class WaitForPortDetach(BaseNetworkTask):
-    """Task to wait for the neutron ports to detach from an amphora."""
-
-    def execute(self, amphora):
-        LOG.debug('Waiting for ports to detach from amphora: %(amp_id)s.',
-                  {'amp_id': amphora.get(constants.ID)})
-        db_amp = self.amphora_repo.get(db_apis.get_session(),
-                                       id=amphora.get(constants.ID))
-        self.network_driver.wait_for_port_detach(db_amp)
-
-
 class ApplyQos(BaseNetworkTask):
     """Apply Quality of Services to the VIP"""
 
     def _apply_qos_on_vrrp_ports(self, loadbalancer, amps_data, qos_policy_id,
                                  is_revert=False, request_qos_id=None):
         """Call network driver to apply QoS Policy on the vrrp ports."""
+
         if not amps_data:
             db_lb = self.loadbalancer_repo.get(
                 db_apis.get_session(),
@@ -688,12 +671,21 @@ class ApplyQos(BaseNetworkTask):
 
     def execute(self, loadbalancer, amps_data=None, update_dict=None):
         """Apply qos policy on the vrrp ports which are related with vip."""
-        qos_policy_id = loadbalancer['vip_qos_policy_id']
+        db_lb = self.loadbalancer_repo.get(
+            db_apis.get_session(),
+            id=loadbalancer[constants.LOADBALANCER_ID])
+
+        qos_policy_id = db_lb.vip.qos_policy_id
         if not qos_policy_id and (
             not update_dict or (
                 'vip' not in update_dict or
                 'qos_policy_id' not in update_dict[constants.VIP])):
             return
+        if update_dict and update_dict.get(constants.VIP):
+            vip_dict = update_dict[constants.VIP]
+            if vip_dict.get(constants.QOS_POLICY_ID):
+                qos_policy_id = vip_dict[constants.QOS_POLICY_ID]
+
         self._apply_qos_on_vrrp_ports(loadbalancer, amps_data, qos_policy_id)
 
     def revert(self, result, loadbalancer, amps_data=None, update_dict=None,
@@ -756,3 +748,147 @@ class ApplyQosAmphora(BaseNetworkTask):
             LOG.error('Failed to remove QoS policy: %s from port: %s due '
                       'to error: %s', orig_qos_id,
                       amp_data[constants.VRRP_PORT_ID], e)
+
+
+class DeletePort(BaseNetworkTask):
+    """Task to delete a network port."""
+
+    @tenacity.retry(retry=tenacity.retry_if_exception_type(),
+                    stop=tenacity.stop_after_attempt(
+                        CONF.networking.max_retries),
+                    wait=tenacity.wait_exponential(
+                        multiplier=CONF.networking.retry_backoff,
+                        min=CONF.networking.retry_interval,
+                        max=CONF.networking.retry_max), reraise=True)
+    def execute(self, port_id, passive_failure=False):
+        """Delete the network port."""
+        if port_id is None:
+            return
+        if self.execute.retry.statistics.get(constants.ATTEMPT_NUMBER, 1) == 1:
+            LOG.debug("Deleting network port %s", port_id)
+        else:
+            LOG.warning('Retrying network port %s delete attempt %s of %s.',
+                        port_id,
+                        self.execute.retry.statistics[
+                            constants.ATTEMPT_NUMBER],
+                        self.execute.retry.stop.max_attempt_number)
+        # Let the Taskflow engine know we are working and alive
+        # Don't use get with a default for 'attempt_number', we need to fail
+        # if that number is missing.
+        self.update_progress(
+            self.execute.retry.statistics[constants.ATTEMPT_NUMBER] /
+            self.execute.retry.stop.max_attempt_number)
+        try:
+            self.network_driver.delete_port(port_id)
+        except Exception:
+            if (self.execute.retry.statistics[constants.ATTEMPT_NUMBER] !=
+                    self.execute.retry.stop.max_attempt_number):
+                LOG.warning('Network port delete for port id: %s failed. '
+                            'Retrying.', port_id)
+                raise
+            if passive_failure:
+                LOG.exception('Network port delete for port ID: %s failed. '
+                              'This resource will be abandoned and should '
+                              'manually be cleaned up once the '
+                              'network service is functional.', port_id)
+                # Let's at least attempt to disable it so if the instance
+                # comes back from the dead it doesn't conflict with anything.
+                try:
+                    self.network_driver.admin_down_port(port_id)
+                    LOG.info('Successfully disabled (admin down) network port '
+                             '%s that failed to delete.', port_id)
+                except Exception:
+                    LOG.warning('Attempt to disable (admin down) network port '
+                                '%s failed. The network service has failed. '
+                                'Continuing.', port_id)
+            else:
+                LOG.exception('Network port delete for port ID: %s failed. '
+                              'The network service has failed. '
+                              'Aborting and reverting.', port_id)
+                raise
+
+
+class CreateVIPBasePort(BaseNetworkTask):
+    """Task to create the VIP base port for an amphora."""
+
+    @tenacity.retry(retry=tenacity.retry_if_exception_type(),
+                    stop=tenacity.stop_after_attempt(
+                        CONF.networking.max_retries),
+                    wait=tenacity.wait_exponential(
+                        multiplier=CONF.networking.retry_backoff,
+                        min=CONF.networking.retry_interval,
+                        max=CONF.networking.retry_max), reraise=True)
+    def execute(self, vip, vip_sg_id, amphora_id):
+        port_name = constants.AMP_BASE_PORT_PREFIX + amphora_id
+        fixed_ips = [{constants.SUBNET_ID: vip[constants.SUBNET_ID]}]
+        sg_id = []
+        if vip_sg_id:
+            sg_id = [vip_sg_id]
+        port = self.network_driver.create_port(
+            vip[constants.NETWORK_ID], name=port_name, fixed_ips=fixed_ips,
+            secondary_ips=[vip[constants.IP_ADDRESS]],
+            security_group_ids=sg_id,
+            qos_policy_id=vip[constants.QOS_POLICY_ID])
+        LOG.info('Created port %s with ID %s for amphora %s',
+                 port_name, port.id, amphora_id)
+        return port.to_dict(recurse=True)
+
+    def revert(self, result, vip, vip_sg_id, amphora_id, *args, **kwargs):
+        if isinstance(result, failure.Failure):
+            return
+        try:
+            port_name = constants.AMP_BASE_PORT_PREFIX + amphora_id
+            for port in result:
+                self.network_driver.delete_port(port.id)
+                LOG.info('Deleted port %s with ID %s for amphora %s due to a '
+                         'revert.', port_name, port.id, amphora_id)
+        except Exception as e:
+            LOG.error('Failed to delete port %s. Resources may still be in '
+                      'use for a port intended for amphora %s due to error '
+                      '%s. Search for a port named %s',
+                      result, amphora_id, str(e), port_name)
+
+
+class AdminDownPort(BaseNetworkTask):
+
+    def execute(self, port_id):
+        try:
+            self.network_driver.set_port_admin_state_up(port_id, False)
+        except base.PortNotFound:
+            return
+        for i in range(CONF.networking.max_retries):
+            port = self.network_driver.get_port(port_id)
+            if port.status == constants.DOWN:
+                LOG.debug('Disabled port: %s', port_id)
+                return
+            LOG.debug('Port %s is %s instead of DOWN, waiting.',
+                      port_id, port.status)
+            time.sleep(CONF.networking.retry_interval)
+        LOG.error('Port %s failed to go DOWN. Port status is still %s. '
+                  'Ignoring and continuing.', port_id, port.status)
+
+    def revert(self, result, port_id, *args, **kwargs):
+        if isinstance(result, failure.Failure):
+            return
+        try:
+            self.network_driver.set_port_admin_state_up(port_id, True)
+        except Exception as e:
+            LOG.error('Failed to bring port %s admin up on revert due to: %s.',
+                      port_id, str(e))
+
+
+class GetVIPSecurityGroupID(BaseNetworkTask):
+
+    def execute(self, loadbalancer_id):
+        sg_name = utils.get_vip_security_group_name(loadbalancer_id)
+        try:
+            security_group = self.network_driver.get_security_group(sg_name)
+            if security_group:
+                return security_group.id
+        except base.SecurityGroupNotFound:
+            with excutils.save_and_reraise_exception() as ctxt:
+                if self.network_driver.sec_grp_enabled:
+                    LOG.error('VIP security group %s was not found.', sg_name)
+                else:
+                    ctxt.reraise = False
+        return None

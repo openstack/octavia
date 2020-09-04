@@ -315,21 +315,9 @@ class TestAmphoraFlows(base.TestCase):
 
         self.assertIsInstance(amp_flow, flow.Flow)
 
-        # TODO(johnsom) Uncomment after amphora failover builds a replacement
-        #               amphora.
-        # self.assertIn(constants.AVAILABILITY_ZONE, amp_flow.requires)
-        # self.assertIn(constants.BUILD_TYPE_PRIORITY, amp_flow.requires)
-        # self.assertIn(constants.FLAVOR, amp_flow.requires)
-        # self.assertEqual(5, len(amp_flow.requires))
         self.assertIn(constants.LOADBALANCER_ID, amp_flow.requires)
 
-        # self.assertIn(constants.AMPHORA, amp_flow.provides)
-        # self.assertIn(constants.AMPHORA_ID, amp_flow.provides)
-        # self.assertIn(constants.COMPUTE_ID, amp_flow.provides)
-        # self.assertIn(constants.COMPUTE_OBJ, amp_flow.provides)
-        # self.assertIn(constants.SERVER_PEM, amp_flow.provides)
-        # self.assertIn(constants.VIP_SG_ID, amp_flow.provides)
-        # self.assertEqual(6, len(amp_flow.provides))
+        self.assertIn(constants.VIP_SG_ID, amp_flow.provides)
 
         self.assertEqual(1, len(amp_flow.requires))
         self.assertEqual(1, len(amp_flow.provides))
@@ -340,13 +328,9 @@ class TestAmphoraFlows(base.TestCase):
 
         self.assertIsInstance(amp_flow, flow.Flow)
 
-        # TODO(johnsom) Uncomment after amphora failover builds a replacement
-        #               amphora.
-        # self.assertIn(constants.AVAILABILITY_ZONE, amp_flow.requires)
-        # self.assertIn(constants.BUILD_TYPE_PRIORITY, amp_flow.requires)
-        # self.assertEqual(5, len(amp_flow.requires))
-        # self.assertEqual(6, len(amp_flow.provides))
         self.assertIn(constants.LOADBALANCER_ID, amp_flow.requires)
+
+        self.assertIn(constants.VIP_SG_ID, amp_flow.provides)
 
         self.assertEqual(1, len(amp_flow.requires))
         self.assertEqual(1, len(amp_flow.provides))

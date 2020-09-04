@@ -122,7 +122,7 @@ class ListenersStart(BaseAmphoraTask):
 class AmphoraIndexListenersReload(BaseAmphoraTask):
     """Task to reload all listeners on an amphora."""
 
-    def execute(self, loadbalancer, amphorae, amphora_index,
+    def execute(self, loadbalancer, amphora_index, amphorae,
                 timeout_dict=None):
         """Execute listener reload routines for listeners on an amphora."""
         if loadbalancer.listeners:
@@ -304,7 +304,7 @@ class AmphoraUpdateVRRPInterface(BaseAmphoraTask):
 class AmphoraIndexUpdateVRRPInterface(BaseAmphoraTask):
     """Task to get and update the VRRP interface device name from amphora."""
 
-    def execute(self, amphorae, amphora_index, timeout_dict=None):
+    def execute(self, amphora_index, amphorae, timeout_dict=None):
         amphora_id = amphorae[amphora_index].id
         try:
             interface = self.amphora_driver.get_interface_from_ip(
@@ -374,15 +374,6 @@ class AmphoraIndexVRRPUpdate(BaseAmphoraTask):
                                      status=constants.ERROR)
 
         LOG.debug("Uploaded VRRP configuration of amphora %s.", amphora_id)
-
-
-class AmphoraVRRPStop(BaseAmphoraTask):
-    """Task to stop keepalived of all amphorae of a LB."""
-
-    def execute(self, loadbalancer):
-        self.amphora_driver.stop_vrrp_service(loadbalancer)
-        LOG.debug("Stopped VRRP of loadbalancer %s amphorae",
-                  loadbalancer.id)
 
 
 class AmphoraVRRPStart(BaseAmphoraTask):

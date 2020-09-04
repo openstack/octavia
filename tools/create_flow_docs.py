@@ -21,6 +21,7 @@ import os
 import graphviz
 from taskflow import engines
 
+from octavia.api.drivers import utils
 from octavia.common import constants
 from octavia.tests.common import data_model_helpers as dmh
 
@@ -56,6 +57,9 @@ def generate(flow_list, output_directory):
                 amp1 = dmh.generate_amphora()
                 amp2 = dmh.generate_amphora()
                 lb = dmh.generate_load_balancer(amphorae=[amp1, amp2])
+                if 'v2' in current_tuple[0]:
+                    lb = utils.lb_dict_to_provider_dict(lb.to_dict())
+                    amp1 = amp1.to_dict()
                 current_engine = engines.load(
                     get_flow_method(amp1, 2))
             elif (current_tuple[1] == 'LoadBalancerFlows' and
@@ -66,12 +70,28 @@ def generate(flow_list, output_directory):
             elif (current_tuple[1] == 'LoadBalancerFlows' and
                   current_tuple[2] == 'get_delete_load_balancer_flow'):
                 lb = dmh.generate_load_balancer()
-                delete_flow, store = get_flow_method(lb)
+                if 'v2' in current_tuple[0]:
+                    lb = utils.lb_dict_to_provider_dict(lb.to_dict())
+                    delete_flow = get_flow_method(lb)
+                else:
+                    delete_flow, store = get_flow_method(lb)
                 current_engine = engines.load(delete_flow)
             elif (current_tuple[1] == 'LoadBalancerFlows' and
                   current_tuple[2] == 'get_cascade_delete_load_balancer_flow'):
+                listeners = [{constants.LISTENER_ID:
+                              '368dffc7-7440-4ee0-aca5-11052d001b05'},
+                             {constants.LISTENER_ID:
+                              'd9c45ec4-9dbe-491b-9f21-6886562348bf'}]
+                pools = [{constants.POOL_ID:
+                          '6886a40b-1f2a-41a3-9ece-5c51845a7ac4'},
+                         {constants.POOL_ID:
+                          '08ada7a2-3eff-42c6-bdd8-b6f2ecd73358'}]
                 lb = dmh.generate_load_balancer()
-                delete_flow, store = get_flow_method(lb)
+                if 'v2' in current_tuple[0]:
+                    lb = utils.lb_dict_to_provider_dict(lb.to_dict())
+                    delete_flow = get_flow_method(lb, listeners, pools)
+                else:
+                    delete_flow, store = get_flow_method(lb)
                 current_engine = engines.load(delete_flow)
             elif (current_tuple[1] == 'LoadBalancerFlows' and
                     current_tuple[2] == 'get_failover_LB_flow'):
@@ -80,6 +100,13 @@ def generate(flow_list, output_directory):
                 lb = dmh.generate_load_balancer(
                     amphorae=[amp1, amp2],
                     topology=constants.TOPOLOGY_ACTIVE_STANDBY)
+                if 'v2' in current_tuple[0]:
+                    lb = utils.lb_dict_to_provider_dict(lb.to_dict())
+                    flavor = {constants.LOADBALANCER_TOPOLOGY:
+                              constants.TOPOLOGY_ACTIVE_STANDBY}
+                    lb[constants.FLAVOR] = flavor
+                    amp1 = amp1.to_dict()
+                    amp2 = amp2.to_dict()
                 current_engine = engines.load(
                     get_flow_method([amp1, amp2], lb))
             elif (current_tuple[1] == 'MemberFlows' and

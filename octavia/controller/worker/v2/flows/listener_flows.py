@@ -83,24 +83,26 @@ class ListenerFlows(object):
 
         return delete_listener_flow
 
-    def get_delete_listener_internal_flow(self, listener_name):
+    def get_delete_listener_internal_flow(self, listener):
         """Create a flow to delete a listener and l7policies internally
 
            (will skip deletion on the amp and marking LB active)
 
         :returns: The flow for deleting a listener
         """
-        delete_listener_flow = linear_flow.Flow(constants.DELETE_LISTENER_FLOW)
+        listener_id = listener[constants.LISTENER_ID]
+        delete_listener_flow = linear_flow.Flow(
+            constants.DELETE_LISTENER_FLOW + '-' + listener_id)
         # Should cascade delete all L7 policies
         delete_listener_flow.add(network_tasks.UpdateVIPForDelete(
-            name='delete_update_vip_' + listener_name,
+            name='delete_update_vip_' + listener_id,
             requires=constants.LOADBALANCER_ID))
         delete_listener_flow.add(database_tasks.DeleteListenerInDB(
-            name='delete_listener_in_db_' + listener_name,
+            name='delete_listener_in_db_' + listener_id,
             requires=constants.LISTENER,
-            rebind={constants.LISTENER: listener_name}))
+            inject={constants.LISTENER: listener}))
         delete_listener_flow.add(database_tasks.DecrementListenerQuota(
-            name='decrement_listener_quota_' + listener_name,
+            name='decrement_listener_quota_' + listener_id,
             requires=constants.PROJECT_ID))
 
         return delete_listener_flow

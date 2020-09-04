@@ -11,7 +11,7 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-from octavia.common import constants
+from octavia.api.drivers import utils as provider_utils
 from octavia.controller.worker.v2.flows import amphora_flows
 from octavia.controller.worker.v2.flows import health_monitor_flows
 from octavia.controller.worker.v2.flows import l7policy_flows
@@ -41,16 +41,36 @@ def get_delete_load_balancer_flow(lb):
     return LB_FLOWS.get_delete_load_balancer_flow(lb)
 
 
-def get_delete_listeners_store(lb):
-    return LB_FLOWS.get_delete_listeners_store(lb)
+def get_listeners_on_lb(db_lb):
+    """Get a list of the listeners on a load balancer.
+
+    :param db_lb: A load balancer database model object.
+    :returns: A list of provider dict format listeners.
+    """
+    listener_dicts = []
+    for listener in db_lb.listeners:
+        prov_listener = provider_utils.db_listener_to_provider_listener(
+            listener)
+        listener_dicts.append(prov_listener.to_dict())
+    return listener_dicts
 
 
-def get_delete_pools_store(lb):
-    return LB_FLOWS.get_delete_pools_store(lb)
+def get_pools_on_lb(db_lb):
+    """Get a list of the pools on a load balancer.
+
+    :param db_lb: A load balancer database model object.
+    :returns: A list of provider dict format pools.
+    """
+    pool_dicts = []
+    for pool in db_lb.pools:
+        prov_pool = provider_utils.db_pool_to_provider_pool(pool)
+        pool_dicts.append(prov_pool.to_dict())
+    return pool_dicts
 
 
-def get_cascade_delete_load_balancer_flow(lb):
-    return LB_FLOWS.get_cascade_delete_load_balancer_flow(lb)
+def get_cascade_delete_load_balancer_flow(lb, listeners=(), pools=()):
+    return LB_FLOWS.get_cascade_delete_load_balancer_flow(lb, listeners,
+                                                          pools)
 
 
 def get_update_load_balancer_flow():
@@ -61,12 +81,17 @@ def get_create_amphora_flow():
     return AMP_FLOWS.get_create_amphora_flow()
 
 
-def get_delete_amphora_flow():
-    return AMP_FLOWS.get_delete_amphora_flow()
+def get_delete_amphora_flow(amphora, retry_attempts=None, retry_interval=None):
+    return AMP_FLOWS.get_delete_amphora_flow(amphora, retry_attempts,
+                                             retry_interval)
 
 
-def get_failover_flow(role=constants.ROLE_STANDALONE, load_balancer=None):
-    return AMP_FLOWS.get_failover_flow(role=role, load_balancer=load_balancer)
+def get_failover_LB_flow(amps, lb):
+    return LB_FLOWS.get_failover_LB_flow(amps, lb)
+
+
+def get_failover_amphora_flow(amphora_dict, lb_amp_count):
+    return AMP_FLOWS.get_failover_amphora_flow(amphora_dict, lb_amp_count)
 
 
 def cert_rotate_amphora_flow():

@@ -18,6 +18,7 @@ from cryptography import fernet
 from oslo_config import cfg
 from oslo_config import fixture as oslo_fixture
 from oslo_utils import uuidutils
+import tenacity
 
 from octavia.common import constants
 from octavia.common import exceptions
@@ -178,7 +179,8 @@ class TestComputeTasks(base.TestCase):
 
         mock_driver.build.return_value = COMPUTE_ID
         # Test execute()
-        compute_id = createcompute.execute(_db_amphora_mock.id, ports=[_port])
+        compute_id = createcompute.execute(_db_amphora_mock.id, ports=[_port],
+                                           server_group_id=None)
 
         # Validate that the build method was called properly
         mock_driver.build.assert_called_once_with(
@@ -508,19 +510,53 @@ class TestComputeTasks(base.TestCase):
     def test_delete_amphorae_on_load_balancer(self, mock_lb_get, mock_session,
                                               mock_driver):
 
+        mock_driver.delete.side_effect = [mock.DEFAULT,
+                                          exceptions.OctaviaException('boom')]
         delete_amps = compute_tasks.DeleteAmphoraeOnLoadBalancer()
+
         mock_lb_get.return_value = _db_load_balancer_mock
         delete_amps.execute(_load_balancer_mock)
 
         mock_driver.delete.assert_called_once_with(COMPUTE_ID)
 
+        # Test compute driver exception is raised
+        self.assertRaises(exceptions.OctaviaException, delete_amps.execute,
+                          _load_balancer_mock)
+
     @mock.patch('stevedore.driver.DriverManager.driver')
     def test_compute_delete(self, mock_driver):
+        mock_driver.delete.side_effect = [
+            mock.DEFAULT, exceptions.OctaviaException('boom'),
+            mock.DEFAULT, exceptions.OctaviaException('boom'),
+            exceptions.OctaviaException('boom'),
+            exceptions.OctaviaException('boom'),
+            exceptions.OctaviaException('boom')]
 
         delete_compute = compute_tasks.ComputeDelete()
+
+        # Limit the retry attempts for the test run to save time
+        delete_compute.execute.retry.stop = tenacity.stop_after_attempt(2)
+
         delete_compute.execute(_amphora_mock)
 
         mock_driver.delete.assert_called_once_with(COMPUTE_ID)
+
+        # Test retry after a compute exception
+        mock_driver.reset_mock()
+        delete_compute.execute(_amphora_mock)
+        mock_driver.delete.assert_has_calls([mock.call(COMPUTE_ID),
+                                            mock.call(COMPUTE_ID)])
+
+        # Test passive failure
+        mock_driver.reset_mock()
+        delete_compute.execute(_amphora_mock, passive_failure=True)
+        mock_driver.delete.assert_has_calls([mock.call(COMPUTE_ID),
+                                            mock.call(COMPUTE_ID)])
+
+        # Test non-passive failure
+        mock_driver.reset_mock()
+        self.assertRaises(exceptions.OctaviaException, delete_compute.execute,
+                          _amphora_mock, passive_failure=False)
 
     @mock.patch('stevedore.driver.DriverManager.driver')
     def test_nova_server_group_create(self, mock_driver):
@@ -567,3 +603,32 @@ class TestComputeTasks(base.TestCase):
         sg_id = None
         nova_sever_group_obj.execute(sg_id)
         self.assertFalse(mock_driver.delete_server_group.called, sg_id)
+
+    @mock.patch('stevedore.driver.DriverManager.driver')
+    def test_attach_port(self, mock_driver):
+        COMPUTE_ID = uuidutils.generate_uuid()
+        PORT_ID = uuidutils.generate_uuid()
+        amphora_dict = {constants.COMPUTE_ID: COMPUTE_ID}
+        port_dict = {constants.ID: PORT_ID}
+
+        attach_port_obj = compute_tasks.AttachPort()
+
+        # Test execute
+        attach_port_obj.execute(amphora_dict, port_dict)
+
+        mock_driver.attach_network_or_port.assert_called_once_with(
+            COMPUTE_ID, port_id=PORT_ID)
+
+        # Test revert
+        mock_driver.reset_mock()
+
+        attach_port_obj.revert(amphora_dict, port_dict)
+
+        mock_driver.detach_port.assert_called_once_with(COMPUTE_ID, PORT_ID)
+
+        # Test rever exception
+        mock_driver.reset_mock()
+        mock_driver.detach_port.side_effect = [Exception('boom')]
+
+        # should not raise
+        attach_port_obj.revert(amphora_dict, port_dict)
