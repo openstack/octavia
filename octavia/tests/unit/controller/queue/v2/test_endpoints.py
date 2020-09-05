@@ -189,3 +189,8 @@ class TestEndpoints(base.TestCase):
         self.ep.update_amphora_agent_config(self.context, self.resource)
         self.ep.worker.update_amphora_agent_config.assert_called_once_with(
             self.resource)
+
+    def test_delete_amphora(self):
+        self.ep.delete_amphora(self.context, self.resource_id)
+        self.ep.worker.delete_amphora.assert_called_once_with(
+            self.resource_id)
