@@ -132,8 +132,7 @@ class TestAmphoraDriver(base.TestRpc):
     def test_listener_create_unsupported_alpn(self, mock_cast):
         provider_listener = driver_dm.Listener(
             listener_id=self.sample_data.listener1_id)
-        # NOTE(cgoncalves): test will fail once HTTP/2 is supported
-        provider_listener.alpn_protocols = ['http/1.1', 'h2']
+        provider_listener.alpn_protocols = ['http/1.1', 'eureka']
         self.assertRaises(
             exceptions.UnsupportedOptionError,
             self.amp_driver.listener_create,
@@ -178,10 +177,9 @@ class TestAmphoraDriver(base.TestRpc):
     def test_listener_update_unsupported_alpn(self, mock_cast):
         old_provider_listener = driver_dm.Listener(
             listener_id=self.sample_data.listener1_id)
-        # NOTE(cgoncalves): test will fail once HTTP/2 is supported
         provider_listener = driver_dm.Listener(
             listener_id=self.sample_data.listener1_id,
-            alpn_protocols=['http/1.1', 'h2'])
+            alpn_protocols=['http/1.1', 'eureka'])
         self.assertRaises(
             exceptions.UnsupportedOptionError,
             self.amp_driver.listener_update,
