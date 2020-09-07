@@ -117,8 +117,9 @@ RET_MEMBER_3 = {
 RET_POOL_1 = {
     'id': 'sample_pool_id_1',
     'protocol': 'http',
-    'proxy_protocol': False,
+    'proxy_protocol': None,
     'lb_algorithm': 'roundrobin',
+    'listener_tls_enabled': False,
     'members': [RET_MEMBER_1, RET_MEMBER_2],
     'health_monitor': RET_MONITOR_1,
     'session_persistence': RET_PERSISTENCE,
@@ -134,8 +135,9 @@ RET_POOL_1 = {
 RET_POOL_2 = {
     'id': 'sample_pool_id_2',
     'protocol': 'http',
-    'proxy_protocol': False,
+    'proxy_protocol': None,
     'lb_algorithm': 'roundrobin',
+    'listener_tls_enabled': False,
     'members': [RET_MEMBER_3],
     'health_monitor': RET_MONITOR_2,
     'session_persistence': RET_PERSISTENCE,

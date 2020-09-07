@@ -11,6 +11,7 @@
 #    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 #    License for the specific language governing permissions and limitations
 #    under the License.
+from octavia_lib.common import constants as lib_constants
 
 from octavia.common import constants
 
@@ -280,4 +281,5 @@ INVALID_LISTENER_POOL_PROTOCOL_MAP = {
                              constants.PROTOCOL_HTTP,
                              constants.PROTOCOL_HTTPS,
                              constants.PROTOCOL_TERMINATED_HTTPS,
-                             constants.PROTOCOL_PROXY]}
+                             constants.PROTOCOL_PROXY,
+                             lib_constants.PROTOCOL_PROXYV2]}

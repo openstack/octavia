@@ -284,7 +284,9 @@ class JinjaTemplater(object):
                     os.path.join(self.base_crt_dir, loadbalancer.id,
                                  tls_certs[listener.client_crl_container_id]))
 
+        tls_enabled = False
         if listener.protocol == constants.PROTOCOL_TERMINATED_HTTPS:
+            tls_enabled = True
             if listener.tls_ciphers is not None:
                 ret_value['tls_ciphers'] = listener.tls_ciphers
             if listener.tls_versions is not None:
@@ -300,7 +302,7 @@ class JinjaTemplater(object):
             if tls_certs is not None and tls_certs.get(pool.id):
                 kwargs = {'pool_tls_certs': tls_certs.get(pool.id)}
             pools.append(self._transform_pool(
-                pool, feature_compatibility, **kwargs))
+                pool, feature_compatibility, tls_enabled, **kwargs))
         ret_value['pools'] = pools
         policy_gen = (policy for policy in listener.l7policies if
                       policy.provisioning_status != constants.PENDING_DELETE)
@@ -311,21 +313,27 @@ class JinjaTemplater(object):
                     break
 
         l7policies = [self._transform_l7policy(
-                      x, feature_compatibility, tls_certs)
+                      x, feature_compatibility, tls_enabled, tls_certs)
                       for x in policy_gen]
         ret_value['l7policies'] = l7policies
         return ret_value
 
     def _transform_pool(self, pool, feature_compatibility,
-                        pool_tls_certs=None):
+                        listener_tls_enabled, pool_tls_certs=None):
         """Transforms a pool into an object that will
 
             be processed by the templating system
         """
+        proxy_protocol_version = None
+        if pool.protocol == constants.PROTOCOL_PROXY:
+            proxy_protocol_version = 1
+        if pool.protocol == lib_consts.PROTOCOL_PROXYV2:
+            proxy_protocol_version = 2
         ret_value = {
             'id': pool.id,
             'protocol': PROTOCOL_MAP[pool.protocol],
-            'proxy_protocol': pool.protocol == constants.PROTOCOL_PROXY,
+            'proxy_protocol': proxy_protocol_version,
+            'listener_tls_enabled': listener_tls_enabled,
             'lb_algorithm': BALANCE_MAP.get(pool.lb_algorithm, 'roundrobin'),
             'members': [],
             'health_monitor': '',
@@ -425,7 +433,7 @@ class JinjaTemplater(object):
         }
 
     def _transform_l7policy(self, l7policy, feature_compatibility,
-                            tls_certs=None):
+                            listener_tls_enabled, tls_certs=None):
         """Transforms an L7 policy into an object that will
 
             be processed by the templating system
@@ -446,7 +454,8 @@ class JinjaTemplater(object):
                 kwargs = {'pool_tls_certs':
                           tls_certs.get(l7policy.redirect_pool.id)}
             ret_value['redirect_pool'] = self._transform_pool(
-                l7policy.redirect_pool, feature_compatibility, **kwargs)
+                l7policy.redirect_pool, feature_compatibility,
+                listener_tls_enabled, **kwargs)
         else:
             ret_value['redirect_pool'] = None
         if (l7policy.action in [constants.L7POLICY_ACTION_REDIRECT_TO_URL,

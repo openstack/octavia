@@ -128,6 +128,9 @@ class RootController(object):
         self._add_a_version(versions, 'v2.20', 'v2', 'SUPPORTED',
                             '2020-08-02T00:00:00Z', host_url)
         # Amphora delete
-        self._add_a_version(versions, 'v2.21', 'v2', 'CURRENT',
+        self._add_a_version(versions, 'v2.21', 'v2', 'SUPPORTED',
                             '2020-09-03T00:00:00Z', host_url)
+        # Add PROXYV2 pool protocol
+        self._add_a_version(versions, 'v2.22', 'v2', 'CURRENT',
+                            '2020-09-04T00:00:00Z', host_url)
         return {'versions': versions}

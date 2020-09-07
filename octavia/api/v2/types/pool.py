@@ -12,6 +12,7 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+from octavia_lib.common import constants as lib_constants
 from wsme import types as wtypes
 
 from octavia.api.common import types
@@ -146,8 +147,9 @@ class PoolPOST(BasePoolType):
     admin_state_up = wtypes.wsattr(bool, default=True)
     listener_id = wtypes.wsattr(wtypes.UuidType())
     loadbalancer_id = wtypes.wsattr(wtypes.UuidType())
-    protocol = wtypes.wsattr(wtypes.Enum(str, *constants.SUPPORTED_PROTOCOLS),
-                             mandatory=True)
+    protocol = wtypes.wsattr(
+        wtypes.Enum(str, *lib_constants.POOL_SUPPORTED_PROTOCOLS),
+        mandatory=True)
     lb_algorithm = wtypes.wsattr(
         wtypes.Enum(str, *constants.SUPPORTED_LB_ALGORITHMS),
         mandatory=True)
@@ -198,7 +200,8 @@ class PoolSingleCreate(BasePoolType):
     name = wtypes.wsattr(wtypes.StringType(max_length=255))
     description = wtypes.wsattr(wtypes.StringType(max_length=255))
     admin_state_up = wtypes.wsattr(bool, default=True)
-    protocol = wtypes.wsattr(wtypes.Enum(str, *constants.SUPPORTED_PROTOCOLS))
+    protocol = wtypes.wsattr(
+        wtypes.Enum(str, *lib_constants.POOL_SUPPORTED_PROTOCOLS))
     lb_algorithm = wtypes.wsattr(
         wtypes.Enum(str, *constants.SUPPORTED_LB_ALGORITHMS))
     session_persistence = wtypes.wsattr(SessionPersistencePOST)

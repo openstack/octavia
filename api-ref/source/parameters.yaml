@@ -1236,7 +1236,7 @@ protocol:
 protocol-pools:
   description: |
     The protocol for the resource. One of ``HTTP``, ``HTTPS``, ``PROXY``,
-    ``TCP``, or ``UDP``.
+    ``PROXYV2``, ``TCP``, or ``UDP``.
   in: body
   required: true
   type: string
