@@ -19,6 +19,7 @@ from oslo_upgradecheck.upgradecheck import Code
 
 from octavia.cmd import status
 from octavia.common import constants
+from octavia.common import policy
 from octavia.tests.unit import base
 
 
@@ -124,3 +125,19 @@ class TestUpgradeChecks(base.TestCase):
         check_result = self.cmd._check_amphorav2()
         self.assertEqual(
             Code.FAILURE, check_result.code)
+
+    def test__check_yaml_policy(self):
+        policy.Policy()
+        self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
+
+        self.conf.config(group='oslo_policy', policy_file='test.yaml')
+        check_result = self.cmd._check_yaml_policy()
+        self.assertEqual(Code.SUCCESS, check_result.code)
+
+        self.conf.config(group='oslo_policy', policy_file='test.json')
+        check_result = self.cmd._check_yaml_policy()
+        self.assertEqual(Code.WARNING, check_result.code)
+
+        self.conf.config(group='oslo_policy', policy_file='test')
+        check_result = self.cmd._check_yaml_policy()
+        self.assertEqual(Code.FAILURE, check_result.code)

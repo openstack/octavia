@@ -21,6 +21,7 @@ from stevedore import driver as stevedore_driver
 # Need to import to load config
 from octavia.common import config  # noqa: F401 pylint: disable=unused-import
 from octavia.common import constants
+from octavia.common import policy
 from octavia.controller.worker.v2 import taskflow_jobboard_driver as tsk_driver
 from octavia.i18n import _
 
@@ -86,12 +87,37 @@ class Checks(upgradecheck.UpgradeCommands):
         return upgradecheck.Result(upgradecheck.Code.SUCCESS,
                                    _('AmphoraV2 provider is not enabled.'))
 
+    def _check_yaml_policy(self):
+        if CONF.oslo_policy.policy_file.lower().endswith('yaml'):
+            return upgradecheck.Result(upgradecheck.Code.SUCCESS,
+                                       _('The [oslo_policy] policy_file '
+                                         'setting is configured for YAML '
+                                         'policy file format.'))
+        if CONF.oslo_policy.policy_file.lower().endswith('json'):
+            return upgradecheck.Result(
+                upgradecheck.Code.WARNING,
+                _('The [oslo_policy] policy_file setting is configured for '
+                  'JSON policy file format. JSON format policy files have '
+                  'been deprecated by oslo policy. Please use the oslo policy '
+                  'tool to convert your policy file to YAML format. See this '
+                  'patch for more information: '
+                  'https://review.opendev.org/733650'))
+        return upgradecheck.Result(upgradecheck.Code.FAILURE,
+                                   _('Unable to determine the [oslo_policy] '
+                                     'policy_file setting file format. '
+                                     'Please make sure your policy file is '
+                                     'in YAML format and has the suffix of '
+                                     '.yaml for the filename. Oslo policy '
+                                     'has deprecated the JSON file format.'))
+
     _upgrade_checks = (
         (_('AmphoraV2 Check'), _check_amphorav2),
+        (_('YAML Policy File'), _check_yaml_policy),
     )
 
 
 def main():
+    policy.Policy()
     return upgradecheck.main(
         CONF, project='octavia', upgrade_command=Checks())
 
