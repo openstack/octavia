@@ -1,0 +1,15 @@
+#!/bin/bash
+
+if [ ${DIB_DEBUG_TRACE:-0} -gt 0 ]; then
+    set -x
+fi
+set -eu
+set -o pipefail
+
+AMP_VENV=/opt/amphora-agent-venv
+
+sed -i 's|octavia-lib|#octavia-lib|' /opt/upper-constraints.txt
+$AMP_VENV/bin/pip install -U -c /opt/upper-constraints.txt /opt/octavia-lib
+
+# Let's capture the git reference we installed in the venv
+git  --git-dir=/opt/octavia-lib/.git rev-parse HEAD >> /opt/octavia-lib.gitref

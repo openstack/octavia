@@ -1,0 +1,2 @@
+# This is used for source-based builds
+octavia-lib git /opt/octavia-lib https://opendev.org/openstack/octavia-lib

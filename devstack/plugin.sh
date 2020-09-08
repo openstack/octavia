@@ -34,6 +34,8 @@ function octavia_lib_install {
     if use_library_from_git "octavia-lib"; then
         git_clone_by_name "octavia-lib"
         setup_dev_lib "octavia-lib"
+        export DIB_REPOLOCATION_octavia_lib=${GITDIR["octavia-lib"]}
+        export DIB_REPOREF_octavia_lib=$(git --git-dir="${GITDIR["octavia-lib"]}/.git" log -1 --pretty="format:%H")
     else
         pip_install_gr octavia-lib
     fi
