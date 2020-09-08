@@ -115,7 +115,9 @@ L7 policies with ``action`` of ``REDIRECT_TO_URL`` will return the default HTTP
 L7 policies with ``action`` of ``REJECT`` will return a ``Forbidden (403)``
 response code to the requester.
 
-.. note:: Pools of type ``UDP`` cannot be used in L7 policies at this time.
+.. note::
+    Pools of type ``SCTP``, ``TCP`` or ``UDP`` cannot be used in L7
+    policies at this time.
 
 .. rest_status_code:: success ../http-status.yaml
 

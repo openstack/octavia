@@ -14,6 +14,7 @@
 #    under the License.
 
 from octavia_lib.api.drivers import data_models as driver_dm
+from octavia_lib.common import constants as lib_consts
 from oslo_config import cfg
 from oslo_db import exception as odb_exceptions
 from oslo_log import log as logging
@@ -175,12 +176,13 @@ class ListenersController(base.BaseController):
             self._validate_insert_headers(
                 listener_dict['insert_headers'].keys(), listener_protocol)
 
-        # Check for UDP compatibility
-        if (listener_protocol == constants.PROTOCOL_UDP and
+        # Check for UDP/SCTP compatibility
+        if (listener_protocol in (constants.PROTOCOL_UDP,
+                                  lib_consts.PROTOCOL_SCTP) and
                 self._is_tls_or_insert_header(listener_dict)):
             raise exceptions.ValidationException(
                 detail=_("%s protocol listener does not "
-                         "support TLS.") % constants.PROTOCOL_UDP)
+                         "support TLS.") % listener_protocol)
 
         # Check for TLS disabled
         if (not CONF.api_settings.allow_tls_terminated_listeners and
@@ -251,8 +253,8 @@ class ListenersController(base.BaseController):
                 listener_dict.get('client_ca_tls_certificate_id'),
                 listener_dict.get('client_crl_container_id', None))
 
-        # Validate that the L4 protocol (UDP or TCP) is not already used for
-        # the specified protocol_port in this load balancer
+        # Validate that the L4 protocol (UDP, TCP or SCTP) is not already used
+        # for the specified protocol_port in this load balancer
         pcontext = pecan_request.context
         query_filter = {
             'project_id': listener_dict['project_id'],
@@ -435,12 +437,13 @@ class ListenersController(base.BaseController):
             raise exceptions.ValidationException(
                 detail='No listener object supplied.')
 
-        # Check for UDP compatibility
-        if (db_listener.protocol == constants.PROTOCOL_UDP and
+        # Check for UDP/SCTP compatibility
+        if (db_listener.protocol in (constants.PROTOCOL_UDP,
+                                     lib_consts.PROTOCOL_SCTP) and
                 self._is_tls_or_insert_header(listener.to_dict())):
             raise exceptions.ValidationException(detail=_(
                 "%s protocol listener does not support TLS or header "
-                "insertion.") % constants.PROTOCOL_UDP)
+                "insertion.") % db_listener.protocol)
 
         # Check for certs when not TERMINATED_HTTPS
         if (db_listener.protocol != constants.PROTOCOL_TERMINATED_HTTPS and

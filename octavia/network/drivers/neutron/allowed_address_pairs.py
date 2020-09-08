@@ -16,6 +16,7 @@ import time
 
 from neutronclient.common import exceptions as neutron_client_exceptions
 from novaclient import exceptions as nova_client_exceptions
+from octavia_lib.common import constants as lib_consts
 from oslo_config import cfg
 from oslo_log import log as logging
 from stevedore import driver as stevedore_driver
@@ -159,6 +160,8 @@ class AllowedAddressPairsDriver(neutron_base.BaseNeutronDriver):
             protocol = constants.PROTOCOL_TCP.lower()
             if listener.protocol == constants.PROTOCOL_UDP:
                 protocol = constants.PROTOCOL_UDP.lower()
+            elif listener.protocol == lib_consts.PROTOCOL_SCTP:
+                protocol = lib_consts.PROTOCOL_SCTP.lower()
 
             if listener.allowed_cidrs:
                 for ac in listener.allowed_cidrs:
@@ -183,7 +186,8 @@ class AllowedAddressPairsDriver(neutron_base.BaseNeutronDriver):
             # None ports with the egress rules.  VRRP uses protocol 51 and 112
             if (rule.get('direction') == 'egress' or
                 rule.get('protocol').upper() not in
-                    [constants.PROTOCOL_TCP, constants.PROTOCOL_UDP]):
+                    [constants.PROTOCOL_TCP, constants.PROTOCOL_UDP,
+                     lib_consts.PROTOCOL_SCTP]):
                 continue
             old_ports.append((rule.get('port_range_max'),
                               rule.get('protocol').lower(),

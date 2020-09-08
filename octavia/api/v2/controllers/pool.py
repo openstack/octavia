@@ -14,6 +14,7 @@
 #    under the License.
 
 from octavia_lib.api.drivers import data_models as driver_dm
+from octavia_lib.common import constants as lib_consts
 from oslo_config import cfg
 from oslo_db import exception as odb_exceptions
 from oslo_log import log as logging
@@ -165,7 +166,7 @@ class PoolsController(base.BaseController):
                 return False
         return True
 
-    def _validate_pool_request_for_udp(self, request):
+    def _validate_pool_request_for_udp_sctp(self, request):
         if request.session_persistence:
             if (request.session_persistence.type ==
                     constants.SESSION_PERSISTENCE_SOURCE_IP and
@@ -174,14 +175,15 @@ class PoolsController(base.BaseController):
                         check_exist_attrs=['type', 'persistence_timeout',
                                            'persistence_granularity'])):
                 raise exceptions.ValidationException(detail=_(
-                    "session_persistence %s type for UDP protocol "
+                    "session_persistence %s type for UDP and SCTP protocols "
                     "only accepts: type, persistence_timeout, "
                     "persistence_granularity.") % (
                         constants.SESSION_PERSISTENCE_SOURCE_IP))
             if request.session_persistence.cookie_name:
                 raise exceptions.ValidationException(detail=_(
                     "Cookie names are not supported for %s pools.") %
-                    constants.PROTOCOL_UDP)
+                    "/".join((constants.PROTOCOL_UDP,
+                              lib_consts.PROTOCOL_SCTP)))
             if request.session_persistence.type in [
                 constants.SESSION_PERSISTENCE_HTTP_COOKIE,
                     constants.SESSION_PERSISTENCE_APP_COOKIE]:
@@ -189,7 +191,8 @@ class PoolsController(base.BaseController):
                     "Session persistence of type %(type)s is not supported "
                     "for %(protocol)s protocol pools.") % {
                     'type': request.session_persistence.type,
-                    'protocol': constants.PROTOCOL_UDP})
+                    'protocol': "/".join((constants.PROTOCOL_UDP,
+                                          lib_consts.PROTOCOL_SCTP))})
 
     @wsme_pecan.wsexpose(pool_types.PoolRootResponse,
                          body=pool_types.PoolRootPOST, status_code=201)
@@ -226,15 +229,16 @@ class PoolsController(base.BaseController):
         if pool.listener_id and listener:
             self._validate_protocol(listener.protocol, pool.protocol)
 
-        if pool.protocol == constants.PROTOCOL_UDP:
-            self._validate_pool_request_for_udp(pool)
+        if pool.protocol in (constants.PROTOCOL_UDP,
+                             lib_consts.PROTOCOL_SCTP):
+            self._validate_pool_request_for_udp_sctp(pool)
         else:
             if (pool.session_persistence and (
                     pool.session_persistence.persistence_timeout or
                     pool.session_persistence.persistence_granularity)):
                 raise exceptions.ValidationException(detail=_(
                     "persistence_timeout and persistence_granularity "
-                    "is only for UDP protocol pools."))
+                    "is only for UDP and SCTP protocol pools."))
 
         if pool.session_persistence:
             sp_dict = pool.session_persistence.to_dict(render_unsets=False)
@@ -311,16 +315,20 @@ class PoolsController(base.BaseController):
             hm[constants.PROJECT_ID] = db_pool.project_id
             new_hm = health_monitor.HealthMonitorController()._graph_create(
                 lock_session, hm)
-            if db_pool.protocol == constants.PROTOCOL_UDP:
+            if db_pool.protocol in (constants.PROTOCOL_UDP,
+                                    lib_consts.PROTOCOL_SCTP):
                 health_monitor.HealthMonitorController(
-                )._validate_healthmonitor_request_for_udp(new_hm)
+                )._validate_healthmonitor_request_for_udp_sctp(new_hm,
+                                                               db_pool)
             else:
-                if new_hm.type == constants.HEALTH_MONITOR_UDP_CONNECT:
+                if new_hm.type in (constants.HEALTH_MONITOR_UDP_CONNECT,
+                                   lib_consts.HEALTH_MONITOR_SCTP):
                     raise exceptions.ValidationException(detail=_(
                         "The %(type)s type is only supported for pools of "
                         "type %(protocol)s.") % {
                             'type': new_hm.type,
-                            'protocol': constants.PROTOCOL_UDP})
+                            'protocol': '/'.join((constants.PROTOCOL_UDP,
+                                                  lib_consts.PROTOCOL_SCTP))})
             db_pool.health_monitor = new_hm
 
         # Now check quotas for members
@@ -344,8 +352,9 @@ class PoolsController(base.BaseController):
 
     def _validate_pool_PUT(self, pool, db_pool):
 
-        if db_pool.protocol == constants.PROTOCOL_UDP:
-            self._validate_pool_request_for_udp(pool)
+        if db_pool.protocol in (constants.PROTOCOL_UDP,
+                                lib_consts.PROTOCOL_SCTP):
+            self._validate_pool_request_for_udp_sctp(pool)
         else:
             if (pool.session_persistence and (
                     pool.session_persistence.persistence_timeout or

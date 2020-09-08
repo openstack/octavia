@@ -14,6 +14,7 @@
 #    under the License.
 
 from octavia_lib.api.drivers import data_models as driver_dm
+from octavia_lib.common import constants as lib_consts
 from oslo_config import cfg
 from oslo_db import exception as odb_exceptions
 from oslo_log import log as logging
@@ -164,16 +165,19 @@ class HealthMonitorController(base.BaseController):
             # do not give any information as to what constraint failed
             raise exceptions.InvalidOption(value='', option='') from e
 
-    def _validate_healthmonitor_request_for_udp(self, request):
+    def _validate_healthmonitor_request_for_udp_sctp(self, request,
+                                                     pool_protocol):
         if request.type not in (
                 consts.HEALTH_MONITOR_UDP_CONNECT,
+                lib_consts.HEALTH_MONITOR_SCTP,
                 consts.HEALTH_MONITOR_TCP,
                 consts.HEALTH_MONITOR_HTTP):
             raise exceptions.ValidationException(detail=_(
                 "The associated pool protocol is %(pool_protocol)s, so only "
                 "a %(types)s health monitor is supported.") % {
-                    'pool_protocol': consts.PROTOCOL_UDP,
+                    'pool_protocol': pool_protocol,
                     'types': '/'.join((consts.HEALTH_MONITOR_UDP_CONNECT,
+                                       lib_consts.HEALTH_MONITOR_SCTP,
                                        consts.HEALTH_MONITOR_TCP,
                                        consts.HEALTH_MONITOR_HTTP))})
         # check the delay value if the HM type is UDP-CONNECT
@@ -209,14 +213,19 @@ class HealthMonitorController(base.BaseController):
             raise exceptions.DisabledOption(
                 option='type', value=consts.HEALTH_MONITOR_PING)
 
-        if pool.protocol == consts.PROTOCOL_UDP:
-            self._validate_healthmonitor_request_for_udp(health_monitor)
+        if pool.protocol in (lib_consts.PROTOCOL_UDP,
+                             lib_consts.PROTOCOL_SCTP):
+            self._validate_healthmonitor_request_for_udp_sctp(health_monitor,
+                                                              pool.protocol)
         else:
-            if health_monitor.type == consts.HEALTH_MONITOR_UDP_CONNECT:
+            if health_monitor.type in (consts.HEALTH_MONITOR_UDP_CONNECT,
+                                       lib_consts.HEALTH_MONITOR_SCTP):
                 raise exceptions.ValidationException(detail=_(
                     "The %(type)s type is only supported for pools of type "
-                    "%(protocol)s.") % {'type': health_monitor.type,
-                                        'protocol': consts.PROTOCOL_UDP})
+                    "%(protocols)s.") % {
+                        'type': health_monitor.type,
+                        'protocols': '/'.join((consts.PROTOCOL_UDP,
+                                               lib_consts.PROTOCOL_SCTP))})
 
         # Load the driver early as it also provides validation
         driver = driver_factory.get_driver(provider)
@@ -342,11 +351,12 @@ class HealthMonitorController(base.BaseController):
         self._auth_validate_action(context, project_id, consts.RBAC_PUT)
 
         self._validate_update_hm(db_hm, health_monitor)
-        # Validate health monitor update options for UDP-CONNECT type.
-        if (pool.protocol == consts.PROTOCOL_UDP and
-                db_hm.type == consts.HEALTH_MONITOR_UDP_CONNECT):
+        # Validate health monitor update options for UDP/SCTP
+        if pool.protocol in (lib_consts.PROTOCOL_UDP,
+                             lib_consts.PROTOCOL_SCTP):
             health_monitor.type = db_hm.type
-            self._validate_healthmonitor_request_for_udp(health_monitor)
+            self._validate_healthmonitor_request_for_udp_sctp(health_monitor,
+                                                              pool.protocol)
 
         self._set_default_on_none(health_monitor)
 

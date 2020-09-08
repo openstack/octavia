@@ -856,8 +856,8 @@ generates the health check in your web application:
 
 Other health monitors
 ---------------------
-Other health monitor types include ``PING``, ``TCP``, ``HTTPS``, ``TLS-HELLO``,
-and ``UDP-CONNECT``.
+Other health monitor types include ``PING``, ``TCP``, ``HTTPS``, ``SCTP``,
+``TLS-HELLO``, and ``UDP-CONNECT``.
 
 ``PING`` health monitors send periodic ICMP PING requests to the back-end
 servers. Obviously, your back-end servers must be configured to allow PINGs in
@@ -880,6 +880,13 @@ TCP handshake without sending any data.
 ssl back-end servers. Unfortunately, this causes problems if the servers are
 performing client certificate validation, as HAProxy won't have a valid cert.
 In this case, using ``TLS-HELLO`` type monitoring is an alternative.
+
+``SCTP`` health monitors send an INIT packet to the back-end server's port.
+If an application is listening on this port, the Operating System should reply
+with an INIT ACK packet, but if the port is closed, it replies with an ABORT
+packet.
+If the health monitor receives an INIT ACK packet, it immediatly closes the
+connection with an ABORT packet, and considers that the server is ONLINE.
 
 ``TLS-HELLO`` health monitors simply ensure the back-end server responds to
 SSLv3 client hello messages. It will not check any other health metrics, like

@@ -24,6 +24,7 @@ from octavia.common import data_models
 from octavia.common import exceptions
 from octavia.db import repositories
 from octavia.tests.functional.api.v2 import base
+from octavia_lib.common import constants as lib_consts
 
 
 class TestHealthMonitor(base.BaseAPITest):
@@ -56,6 +57,7 @@ class TestHealthMonitor(base.BaseAPITest):
         self.set_lb_status(self.lb_id)
         self.pool_repo = repositories.PoolRepository()
         self._setup_udp_lb_resources()
+        self._setup_sctp_lb_resources()
 
     def _setup_udp_lb_resources(self):
         self.udp_lb = self.create_load_balancer(uuidutils.generate_uuid()).get(
@@ -79,6 +81,25 @@ class TestHealthMonitor(base.BaseAPITest):
         self.conf.config(
             group='api_settings',
             udp_connect_min_interval_health_monitor='3')
+
+    def _setup_sctp_lb_resources(self):
+        self.sctp_lb = self.create_load_balancer(
+            uuidutils.generate_uuid()).get('loadbalancer')
+        self.sctp_lb_id = self.sctp_lb.get('id')
+        self.set_lb_status(self.sctp_lb_id)
+
+        self.sctp_listener = self.create_listener(
+            lib_consts.PROTOCOL_SCTP, 8888,
+            self.sctp_lb_id).get('listener')
+        self.sctp_listener_id = self.sctp_listener.get('id')
+        self.set_lb_status(self.sctp_lb_id)
+
+        self.sctp_pool_with_listener = self.create_pool(
+            None, lib_consts.PROTOCOL_SCTP, constants.LB_ALGORITHM_ROUND_ROBIN,
+            listener_id=self.sctp_listener_id)
+        self.sctp_pool_with_listener_id = (
+            self.sctp_pool_with_listener.get('pool').get('id'))
+        self.set_lb_status(self.sctp_lb_id)
 
     def test_get(self):
         api_hm = self.create_health_monitor(
@@ -936,6 +957,32 @@ class TestHealthMonitor(base.BaseAPITest):
         self.assertEqual('/test.html', api_hm.get('url_path'))
         self.assertEqual('200-201', api_hm.get('expected_codes'))
 
+    def test_create_udp_case_with_sctp_type(self):
+        # create with SCTP type
+        api_hm = self.create_health_monitor(
+            self.udp_pool_with_listener_id,
+            lib_consts.HEALTH_MONITOR_SCTP,
+            3, 1, 1, 1).get(self.root_tag)
+        self.assert_correct_status(
+            lb_id=self.udp_lb_id, listener_id=self.udp_listener_id,
+            pool_id=self.udp_pool_with_listener_id, hm_id=api_hm.get('id'),
+            lb_prov_status=constants.PENDING_UPDATE,
+            listener_prov_status=constants.PENDING_UPDATE,
+            pool_prov_status=constants.PENDING_UPDATE,
+            hm_prov_status=constants.PENDING_CREATE,
+            hm_op_status=constants.OFFLINE)
+        self.set_lb_status(self.udp_lb_id)
+        self.assertEqual(lib_consts.HEALTH_MONITOR_SCTP,
+                         api_hm.get('type'))
+        self.assertEqual(3, api_hm.get('delay'))
+        self.assertEqual(1, api_hm.get('timeout'))
+        self.assertEqual(1, api_hm.get('max_retries_down'))
+        self.assertEqual(1, api_hm.get('max_retries'))
+        # Verify the L7 fields is None
+        self.assertIsNone(api_hm.get('http_method'))
+        self.assertIsNone(api_hm.get('url_path'))
+        self.assertIsNone(api_hm.get('expected_codes'))
+
     def test_udp_case_when_udp_connect_min_interval_health_monitor_set(self):
         # negative case first
         req_dict = {'pool_id': self.udp_pool_with_listener_id,
@@ -981,6 +1028,7 @@ class TestHealthMonitor(base.BaseAPITest):
                             "monitor is supported.") % {
             'pool_protocol': constants.PROTOCOL_UDP,
             'types': '/'.join([constants.HEALTH_MONITOR_UDP_CONNECT,
+                               lib_consts.HEALTH_MONITOR_SCTP,
                                constants.HEALTH_MONITOR_TCP,
                                constants.HEALTH_MONITOR_HTTP])}
 
@@ -1005,7 +1053,8 @@ class TestHealthMonitor(base.BaseAPITest):
                             "supported for pools of type "
                             "%(protocol)s.") % {
             'type': constants.HEALTH_MONITOR_UDP_CONNECT,
-            'protocol': constants.PROTOCOL_UDP}
+            'protocol': '/'.join((constants.PROTOCOL_UDP,
+                                  lib_consts.PROTOCOL_SCTP))}
         res = self.post(self.HMS_PATH, self._build_body(req_dict),
                         status=400,
                         expect_errors=True)
@@ -1013,6 +1062,108 @@ class TestHealthMonitor(base.BaseAPITest):
         self.assert_correct_status(
             lb_id=self.udp_lb_id, listener_id=self.udp_listener_id,
             pool_id=self.udp_pool_with_listener_id)
+
+    def test_create_sctp_case_with_udp_connect_type(self):
+        # create with UDP-CONNECT type
+        api_hm = self.create_health_monitor(
+            self.sctp_pool_with_listener_id,
+            constants.HEALTH_MONITOR_UDP_CONNECT,
+            3, 1, 1, 1).get(self.root_tag)
+        self.assert_correct_status(
+            lb_id=self.sctp_lb_id, listener_id=self.sctp_listener_id,
+            pool_id=self.sctp_pool_with_listener_id, hm_id=api_hm.get('id'),
+            lb_prov_status=constants.PENDING_UPDATE,
+            listener_prov_status=constants.PENDING_UPDATE,
+            pool_prov_status=constants.PENDING_UPDATE,
+            hm_prov_status=constants.PENDING_CREATE,
+            hm_op_status=constants.OFFLINE)
+        self.set_lb_status(self.sctp_lb_id)
+        self.assertEqual(constants.HEALTH_MONITOR_UDP_CONNECT,
+                         api_hm.get('type'))
+        self.assertEqual(3, api_hm.get('delay'))
+        self.assertEqual(1, api_hm.get('timeout'))
+        self.assertEqual(1, api_hm.get('max_retries_down'))
+        self.assertEqual(1, api_hm.get('max_retries'))
+        # Verify the L7 fields is None
+        self.assertIsNone(api_hm.get('http_method'))
+        self.assertIsNone(api_hm.get('url_path'))
+        self.assertIsNone(api_hm.get('expected_codes'))
+
+    def test_create_sctp_case_with_tcp_type(self):
+        # create with TCP type
+        api_hm = self.create_health_monitor(
+            self.sctp_pool_with_listener_id, constants.HEALTH_MONITOR_TCP,
+            3, 1, 1, 1).get(self.root_tag)
+        self.assert_correct_status(
+            lb_id=self.sctp_lb_id, listener_id=self.sctp_listener_id,
+            pool_id=self.sctp_pool_with_listener_id, hm_id=api_hm.get('id'),
+            lb_prov_status=constants.PENDING_UPDATE,
+            listener_prov_status=constants.PENDING_UPDATE,
+            pool_prov_status=constants.PENDING_UPDATE,
+            hm_prov_status=constants.PENDING_CREATE,
+            hm_op_status=constants.OFFLINE)
+        self.set_lb_status(self.sctp_lb_id)
+        self.assertEqual(constants.HEALTH_MONITOR_TCP, api_hm.get('type'))
+        self.assertEqual(3, api_hm.get('delay'))
+        self.assertEqual(1, api_hm.get('timeout'))
+        self.assertEqual(1, api_hm.get('max_retries_down'))
+        self.assertEqual(1, api_hm.get('max_retries'))
+        self.assertIsNone(api_hm.get('http_method'))
+        self.assertIsNone(api_hm.get('url_path'))
+        self.assertIsNone(api_hm.get('expected_codes'))
+
+    def test_create_sctp_case_with_http_type(self):
+        # create with HTTP type
+        api_hm = self.create_health_monitor(
+            self.sctp_pool_with_listener_id, constants.HEALTH_MONITOR_HTTP,
+            3, 1, 1, 1, url_path='/test.html',
+            http_method=constants.HEALTH_MONITOR_HTTP_METHOD_GET,
+            expected_codes='200-201').get(self.root_tag)
+        self.assert_correct_status(
+            lb_id=self.sctp_lb_id, listener_id=self.sctp_listener_id,
+            pool_id=self.sctp_pool_with_listener_id, hm_id=api_hm.get('id'),
+            lb_prov_status=constants.PENDING_UPDATE,
+            listener_prov_status=constants.PENDING_UPDATE,
+            pool_prov_status=constants.PENDING_UPDATE,
+            hm_prov_status=constants.PENDING_CREATE,
+            hm_op_status=constants.OFFLINE)
+        self.set_lb_status(self.sctp_lb_id)
+        self.assertEqual(constants.HEALTH_MONITOR_HTTP, api_hm.get('type'))
+        self.assertEqual(3, api_hm.get('delay'))
+        self.assertEqual(1, api_hm.get('timeout'))
+        self.assertEqual(1, api_hm.get('max_retries_down'))
+        self.assertEqual(1, api_hm.get('max_retries'))
+        self.assertEqual(3, api_hm.get('delay'))
+        self.assertEqual(constants.HEALTH_MONITOR_HTTP_METHOD_GET,
+                         api_hm.get('http_method'))
+        self.assertEqual('/test.html', api_hm.get('url_path'))
+        self.assertEqual('200-201', api_hm.get('expected_codes'))
+
+    def test_create_sctp_case_with_sctp_type(self):
+        # create with SCTP type
+        api_hm = self.create_health_monitor(
+            self.sctp_pool_with_listener_id,
+            lib_consts.HEALTH_MONITOR_SCTP,
+            3, 1, 1, 1).get(self.root_tag)
+        self.assert_correct_status(
+            lb_id=self.sctp_lb_id, listener_id=self.sctp_listener_id,
+            pool_id=self.sctp_pool_with_listener_id, hm_id=api_hm.get('id'),
+            lb_prov_status=constants.PENDING_UPDATE,
+            listener_prov_status=constants.PENDING_UPDATE,
+            pool_prov_status=constants.PENDING_UPDATE,
+            hm_prov_status=constants.PENDING_CREATE,
+            hm_op_status=constants.OFFLINE)
+        self.set_lb_status(self.sctp_lb_id)
+        self.assertEqual(lib_consts.HEALTH_MONITOR_SCTP,
+                         api_hm.get('type'))
+        self.assertEqual(3, api_hm.get('delay'))
+        self.assertEqual(1, api_hm.get('timeout'))
+        self.assertEqual(1, api_hm.get('max_retries_down'))
+        self.assertEqual(1, api_hm.get('max_retries'))
+        # Verify the L7 fields is None
+        self.assertIsNone(api_hm.get('http_method'))
+        self.assertIsNone(api_hm.get('url_path'))
+        self.assertIsNone(api_hm.get('expected_codes'))
 
     def test_ensure_L7_fields_filled_during_create(self):
         # Create a health monitor with a load balancer pool

@@ -760,8 +760,8 @@ healthmonitor-timeout-optional:
   type: integer
 healthmonitor-type:
   description: |
-    The type of health monitor.  One of ``HTTP``, ``HTTPS``, ``PING``, ``TCP``,
-    ``TLS-HELLO``, or ``UDP-CONNECT``.
+    The type of health monitor.  One of ``HTTP``, ``HTTPS``, ``PING``,
+    ``SCTP``, ``TCP``, ``TLS-HELLO``, or ``UDP-CONNECT``.
   in: body
   required: true
   type: string
@@ -1228,15 +1228,15 @@ project_id-optional-deprecated:
   type: string
 protocol:
   description: |
-    The protocol for the resource. One of ``HTTP``, ``HTTPS``, ``TCP``,
-    ``TERMINATED_HTTPS``, or ``UDP``.
+    The protocol for the resource. One of ``HTTP``, ``HTTPS``, ``SCTP``,
+    ``TCP``, ``TERMINATED_HTTPS``, or ``UDP``.
   in: body
   required: true
   type: string
 protocol-pools:
   description: |
     The protocol for the resource. One of ``HTTP``, ``HTTPS``, ``PROXY``,
-    ``PROXYV2``, ``TCP``, or ``UDP``.
+    ``PROXYV2``, ``SCTP``, ``TCP``, or ``UDP``.
   in: body
   required: true
   type: string
@@ -1421,18 +1421,18 @@ session_persistence_cookie:
   type: string
 session_persistence_granularity:
   description: |
-    The netmask used to determine UDP session persistence. Currently only
-    valid for UDP pools with session persistence of SOURCE_IP. Default netmask
-    is 255.255.255.255, meaning per client full IP.
+    The netmask used to determine SCTP or UDP session persistence. Currently
+    only valid for SCTP or UDP pools with session persistence of SOURCE_IP.
+    Default netmask is 255.255.255.255, meaning per client full IP.
   in: body
   min_version: 2.2
   required: false
   type: string
 session_persistence_timeout:
   description: |
-    The timeout, in seconds, after which a UDP flow may be rescheduled to a
-    different member. Currently only applies to UDP pools with session
-    persistence of SOURCE_IP. Default is 360.
+    The timeout, in seconds, after which a SCTP or UDP flow may be rescheduled
+    to a different member. Currently only applies to SCTP or UDP pools with
+    session persistence of SOURCE_IP. Default is 360.
   in: body
   min_version: 2.2
   required: false

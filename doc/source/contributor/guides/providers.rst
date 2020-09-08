@@ -1201,7 +1201,7 @@ and validated with the following exceptions:
 |                       |        | be less than the delay value.            |
 +-----------------------+--------+------------------------------------------+
 | type                  | string | The type of health monitor. One of HTTP, |
-|                       |        | HTTPS, PING, TCP, TLS-HELLO or           |
+|                       |        | HTTPS, PING, SCTP, TCP, TLS-HELLO or     |
 |                       |        | UDP-CONNECT.                             |
 +-----------------------+--------+------------------------------------------+
 | url_path              | string | The HTTP URL path of the request sent by |

@@ -27,6 +27,7 @@ from octavia.db import api as db_api
 from octavia.tests.common import constants as c_const
 from octavia.tests.common import sample_certs
 from octavia.tests.functional.api.v2 import base
+from octavia_lib.common import constants as lib_consts
 
 
 class TestPool(base.BaseAPITest):
@@ -1026,7 +1027,9 @@ class TestPool(base.BaseAPITest):
             'lb_algorithm': constants.LB_ALGORITHM_ROUND_ROBIN,
             'session_persistence': sp}
         expect_error_msg = ("Validation failure: Cookie names are not "
-                            "supported for %s pools.") % constants.PROTOCOL_UDP
+                            "supported for %s pools.") % (
+                                "/".join((constants.PROTOCOL_UDP,
+                                          lib_consts.PROTOCOL_SCTP)))
         res = self.post(self.POOLS_PATH, self._build_body(req_dict),
                         status=400, expect_errors=True)
         self.assertEqual(expect_error_msg, res.json['faultstring'])
@@ -1047,7 +1050,10 @@ class TestPool(base.BaseAPITest):
                      constants.SESSION_PERSISTENCE_APP_COOKIE]:
             expect_error_msg = ("Validation failure: Session persistence of "
                                 "type %s is not supported for %s protocol "
-                                "pools.") % (type, constants.PROTOCOL_UDP)
+                                "pools.") % (
+                                    type,
+                                    "/".join((constants.PROTOCOL_UDP,
+                                              lib_consts.PROTOCOL_SCTP)))
             sp.update({'type': type})
             req_dict['session_persistence'] = sp
             res = self.post(self.POOLS_PATH, self._build_body(req_dict),
@@ -1070,9 +1076,11 @@ class TestPool(base.BaseAPITest):
             'session_persistence': sp}
         expect_error_msg = (
             "Validation failure: session_persistence %s type for %s "
-            "protocol only accepts: type, persistence_timeout, "
+            "protocols only accepts: type, persistence_timeout, "
             "persistence_granularity.") % (
-            constants.SESSION_PERSISTENCE_SOURCE_IP, constants.PROTOCOL_UDP)
+            constants.SESSION_PERSISTENCE_SOURCE_IP,
+            " and ".join((constants.PROTOCOL_UDP,
+                          lib_consts.PROTOCOL_SCTP)))
         res = self.post(self.POOLS_PATH, self._build_body(req_dict),
                         status=400, expect_errors=True)
         self.assertEqual(expect_error_msg, res.json['faultstring'])
@@ -1092,7 +1100,9 @@ class TestPool(base.BaseAPITest):
             'lb_algorithm': constants.LB_ALGORITHM_ROUND_ROBIN}
         expect_error_msg = ("Validation failure: persistence_timeout and "
                             "persistence_granularity is only for %s protocol "
-                            "pools.") % constants.PROTOCOL_UDP
+                            "pools.") % (
+                                " and ".join((constants.PROTOCOL_UDP,
+                                              lib_consts.PROTOCOL_SCTP)))
         for s in sps:
             req_dict.update({'session_persistence': s})
             res = self.post(self.POOLS_PATH, self._build_body(req_dict),
@@ -1320,7 +1330,8 @@ class TestPool(base.BaseAPITest):
         # Error during update pool with non-UDP type and cookie_name.
         expect_error_msg = (
             "Validation failure: Cookie names are not supported for %s"
-            " pools.") % constants.PROTOCOL_UDP
+            " pools.") % ("/".join((constants.PROTOCOL_UDP,
+                                    lib_consts.PROTOCOL_SCTP)))
         sess_p['type'] = constants.SESSION_PERSISTENCE_HTTP_COOKIE
         sess_p['cookie_name'] = 'test-cookie-name'
         new_pool = {'session_persistence': sess_p}
@@ -1333,10 +1344,11 @@ class TestPool(base.BaseAPITest):
 
         # Error during update pool with source ip type and more options.
         expect_error_msg = (
-            "Validation failure: session_persistence %s type for %s protocol "
+            "Validation failure: session_persistence %s type for %s protocols "
             "only accepts: type, persistence_timeout, "
             "persistence_granularity.") % (
-            constants.SESSION_PERSISTENCE_SOURCE_IP, constants.PROTOCOL_UDP)
+            constants.SESSION_PERSISTENCE_SOURCE_IP,
+            " and ".join((constants.PROTOCOL_UDP, lib_consts.PROTOCOL_SCTP)))
         sess_p['type'] = constants.SESSION_PERSISTENCE_SOURCE_IP
         sess_p['cookie_name'] = 'test-cookie-name'
         sess_p['persistence_timeout'] = 4
@@ -1354,7 +1366,10 @@ class TestPool(base.BaseAPITest):
                    constants.SESSION_PERSISTENCE_HTTP_COOKIE]:
             expect_error_msg = ("Validation failure: Session persistence of "
                                 "type %s is not supported for %s protocol "
-                                "pools.") % (ty, constants.PROTOCOL_UDP)
+                                "pools.") % (
+                                    ty,
+                                    "/".join((constants.PROTOCOL_UDP,
+                                              lib_consts.PROTOCOL_SCTP)))
             sess_p['type'] = ty
             res = self.put(self.POOL_PATH.format(pool_id=api_pool.get('id')),
                            self._build_body(new_pool), status=400,

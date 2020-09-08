@@ -1,0 +1,5 @@
+---
+features:
+  - |
+    Add support for SCTP protocol. SCTP support has been added in the Octavia
+    API for listener, pool, and health-monitor resources.
