@@ -16,7 +16,12 @@ import sys
 
 from oslo_config import cfg
 from oslo_upgradecheck import upgradecheck
+from stevedore import driver as stevedore_driver
 
+# Need to import to load config
+from octavia.common import config  # noqa: F401 pylint: disable=unused-import
+from octavia.common import constants
+from octavia.controller.worker.v2 import taskflow_jobboard_driver as tsk_driver
 from octavia.i18n import _
 
 CONF = cfg.CONF
@@ -30,17 +35,59 @@ class Checks(upgradecheck.UpgradeCommands):
     and added to _upgrade_checks tuple.
     """
 
-    def _sample_check(self):
-        """This is sample check added to test the upgrade check framework
+    def _check_persistence(self):
+        try:
+            pers_driver = tsk_driver.MysqlPersistenceDriver()
+            with pers_driver.get_persistence() as pers:
+                if pers.engine.dialect.name == 'sqlite':
+                    return upgradecheck.Result(
+                        upgradecheck.Code.WARNING,
+                        _('Persistence database is using sqlite backend. '
+                          'Verification required if persistence_connecton URL '
+                          'has been set properly.'))
+                return pers
+        except Exception:
+            return upgradecheck.Result(upgradecheck.Code.FAILURE,
+                                       _('Failed to connect to persistence '
+                                         'backend for AmphoraV2 provider.'))
 
-        It needs to be removed after adding any real upgrade check
-        """
-        return upgradecheck.Result(upgradecheck.Code.SUCCESS, 'Sample detail')
+    def _check_jobboard(self, persistence):
+        try:
+            jobboard_driver = stevedore_driver.DriverManager(
+                namespace='octavia.worker.jobboard_driver',
+                name=CONF.task_flow.jobboard_backend_driver,
+                invoke_args=(persistence,),
+                invoke_on_load=True).driver
+            with jobboard_driver.job_board(persistence) as jb:
+                if jb.connected:
+                    return upgradecheck.Result(
+                        upgradecheck.Code.SUCCESS,
+                        _('Persistence database and Jobboard backend for '
+                          'AmphoraV2 provider configured.'))
+        except Exception:
+            # Return FAILURE later
+            pass
+
+        return upgradecheck.Result(
+            upgradecheck.Code.FAILURE,
+            _('Failed to connect to jobboard backend for AmphoraV2 provider. '
+              'Check jobboard configuration options in task_flow config '
+              'section.'))
+
+    def _check_amphorav2(self):
+        default_provider_driver = CONF.api_settings.default_provider_driver
+        enabled_provider_drivers = CONF.api_settings.enabled_provider_drivers
+        if (default_provider_driver == constants.AMPHORAV2 or
+                constants.AMPHORAV2 in enabled_provider_drivers):
+            persistence = self._check_persistence()
+            if isinstance(persistence, upgradecheck.Result):
+                return persistence
+            return self._check_jobboard(persistence)
+        return upgradecheck.Result(upgradecheck.Code.SUCCESS,
+                                   _('AmphoraV2 provider is not enabled.'))
 
     _upgrade_checks = (
-        # Sample check added for now.
-        # Whereas in future real checks must be added here in tuple
-        (_('Sample Check'), _sample_check),
+        (_('AmphoraV2 Check'), _check_amphorav2),
     )
 
 
