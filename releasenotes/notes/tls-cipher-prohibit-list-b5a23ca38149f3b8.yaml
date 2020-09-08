@@ -1,0 +1,6 @@
+---
+features:
+  - |
+    Added ``tls_cipher_prohibit_list`` to ``octavia.conf``. Listeners, pools,
+    and the default values for either will be blocked from using any of these
+    ciphers. By default, no ciphers are prohibited.
