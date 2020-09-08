@@ -1,0 +1,6 @@
+---
+other:
+  - |
+    Though the current HAProxy version 1.8 used in some distributions
+    support HTTP/2, we highly recommend using HAProxy version 2.0 or newer
+    in the amphora image when using HTTP/2.
