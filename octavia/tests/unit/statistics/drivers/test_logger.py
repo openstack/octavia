@@ -15,30 +15,20 @@
 
 from unittest import mock
 
-from octavia.controller.healthmanager.health_drivers import update_logging
+from oslo_utils import uuidutils
+
+from octavia.common import data_models
+from octavia.statistics.drivers import logger
 from octavia.tests.unit import base
-
-
-class TestHealthUpdateLogger(base.TestCase):
-
-    def setUp(self):
-        super().setUp()
-        self.logger = update_logging.HealthUpdateLogger()
-
-    @mock.patch('octavia.controller.healthmanager.health_drivers'
-                '.update_logging.LOG')
-    def test_update_health(self, mock_log):
-        self.logger.update_health({'id': 1}, '192.0.2.1')
-        self.assertEqual(1, mock_log.info.call_count)
 
 
 class TestStatsUpdateLogger(base.TestCase):
     def setUp(self):
         super().setUp()
-        self.logger = update_logging.StatsUpdateLogger()
+        self.logger = logger.StatsLogger()
+        self.amphora_id = uuidutils.generate_uuid()
 
-    @mock.patch('octavia.controller.healthmanager.health_drivers'
-                '.update_logging.LOG')
+    @mock.patch('octavia.statistics.drivers.logger.LOG')
     def test_update_stats(self, mock_log):
-        self.logger.update_stats({'id': 1}, '192.0.2.1')
+        self.logger.update_stats([data_models.ListenerStatistics()])
         self.assertEqual(1, mock_log.info.call_count)

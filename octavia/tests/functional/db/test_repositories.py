@@ -3174,17 +3174,21 @@ class ListenerStatisticsRepositoryTest(BaseRepositoryTest):
         request_errors = random.randrange(1000000000)
         self.assertIsNone(self.listener_stats_repo.get(
             self.session, listener_id=self.listener.id))
-        self.listener_stats_repo.replace(self.session, self.listener.id,
-                                         self.amphora.id,
-                                         bytes_in=bytes_in,
-                                         bytes_out=bytes_out,
-                                         active_connections=active_conns,
-                                         total_connections=total_conns,
-                                         request_errors=request_errors)
+        stats_obj = data_models.ListenerStatistics(
+            listener_id=self.listener.id,
+            amphora_id=self.amphora.id,
+            bytes_in=bytes_in,
+            bytes_out=bytes_out,
+            active_connections=active_conns,
+            total_connections=total_conns,
+            request_errors=request_errors
+        )
+        self.listener_stats_repo.replace(self.session, stats_obj)
         obj = self.listener_stats_repo.get(self.session,
                                            listener_id=self.listener.id)
         self.assertIsNotNone(obj)
         self.assertEqual(self.listener.id, obj.listener_id)
+        self.assertEqual(self.amphora.id, obj.amphora_id)
         self.assertEqual(bytes_in, obj.bytes_in)
         self.assertEqual(bytes_out, obj.bytes_out)
         self.assertEqual(active_conns, obj.active_connections)
@@ -3197,22 +3201,48 @@ class ListenerStatisticsRepositoryTest(BaseRepositoryTest):
         active_conns_2 = random.randrange(1000000000)
         total_conns_2 = random.randrange(1000000000)
         request_errors_2 = random.randrange(1000000000)
-        self.listener_stats_repo.replace(self.session, self.listener.id,
-                                         self.amphora.id,
-                                         bytes_in=bytes_in_2,
-                                         bytes_out=bytes_out_2,
-                                         active_connections=active_conns_2,
-                                         total_connections=total_conns_2,
-                                         request_errors=request_errors_2)
+        stats_obj_2 = data_models.ListenerStatistics(
+            listener_id=self.listener.id,
+            amphora_id=self.amphora.id,
+            bytes_in=bytes_in_2,
+            bytes_out=bytes_out_2,
+            active_connections=active_conns_2,
+            total_connections=total_conns_2,
+            request_errors=request_errors_2
+        )
+        self.listener_stats_repo.replace(self.session, stats_obj_2)
         obj = self.listener_stats_repo.get(self.session,
                                            listener_id=self.listener.id)
         self.assertIsNotNone(obj)
         self.assertEqual(self.listener.id, obj.listener_id)
+        self.assertEqual(self.amphora.id, obj.amphora_id)
         self.assertEqual(bytes_in_2, obj.bytes_in)
         self.assertEqual(bytes_out_2, obj.bytes_out)
         self.assertEqual(active_conns_2, obj.active_connections)
         self.assertEqual(total_conns_2, obj.total_connections)
         self.assertEqual(request_errors_2, obj.request_errors)
+
+        # Test uses listener_id as amphora_id if not passed
+        stats_obj = data_models.ListenerStatistics(
+            listener_id=self.listener.id,
+            bytes_in=bytes_in,
+            bytes_out=bytes_out,
+            active_connections=active_conns,
+            total_connections=total_conns,
+            request_errors=request_errors
+        )
+        self.listener_stats_repo.replace(self.session, stats_obj)
+        obj = self.listener_stats_repo.get(self.session,
+                                           listener_id=self.listener.id,
+                                           amphora_id=self.listener.id)
+        self.assertIsNotNone(obj)
+        self.assertEqual(self.listener.id, obj.listener_id)
+        self.assertEqual(self.listener.id, obj.amphora_id)
+        self.assertEqual(bytes_in, obj.bytes_in)
+        self.assertEqual(bytes_out, obj.bytes_out)
+        self.assertEqual(active_conns, obj.active_connections)
+        self.assertEqual(total_conns, obj.total_connections)
+        self.assertEqual(request_errors, obj.request_errors)
 
     def test_increment(self):
         # Test the create path
@@ -3237,6 +3267,7 @@ class ListenerStatisticsRepositoryTest(BaseRepositoryTest):
                                            listener_id=self.listener.id)
         self.assertIsNotNone(obj)
         self.assertEqual(self.listener.id, obj.listener_id)
+        self.assertEqual(self.amphora.id, obj.amphora_id)
         self.assertEqual(bytes_in, obj.bytes_in)
         self.assertEqual(bytes_out, obj.bytes_out)
         self.assertEqual(active_conns, obj.active_connections)
@@ -3263,11 +3294,34 @@ class ListenerStatisticsRepositoryTest(BaseRepositoryTest):
                                            listener_id=self.listener.id)
         self.assertIsNotNone(obj)
         self.assertEqual(self.listener.id, obj.listener_id)
+        self.assertEqual(self.amphora.id, obj.amphora_id)
         self.assertEqual(bytes_in + bytes_in_2, obj.bytes_in)
         self.assertEqual(bytes_out + bytes_out_2, obj.bytes_out)
         self.assertEqual(active_conns_2, obj.active_connections)  # not a delta
         self.assertEqual(total_conns + total_conns_2, obj.total_connections)
         self.assertEqual(request_errors + request_errors_2, obj.request_errors)
+
+        # Test uses listener_id as amphora_id if not passed
+        stats_obj = data_models.ListenerStatistics(
+            listener_id=self.listener.id,
+            bytes_in=bytes_in,
+            bytes_out=bytes_out,
+            active_connections=active_conns,
+            total_connections=total_conns,
+            request_errors=request_errors
+        )
+        self.listener_stats_repo.increment(self.session, stats_obj)
+        obj = self.listener_stats_repo.get(self.session,
+                                           listener_id=self.listener.id,
+                                           amphora_id=self.listener.id)
+        self.assertIsNotNone(obj)
+        self.assertEqual(self.listener.id, obj.listener_id)
+        self.assertEqual(self.listener.id, obj.amphora_id)
+        self.assertEqual(bytes_in, obj.bytes_in)
+        self.assertEqual(bytes_out, obj.bytes_out)
+        self.assertEqual(active_conns, obj.active_connections)
+        self.assertEqual(total_conns, obj.total_connections)
+        self.assertEqual(request_errors, obj.request_errors)
 
 
 class HealthMonitorRepositoryTest(BaseRepositoryTest):

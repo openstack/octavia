@@ -32,7 +32,7 @@ def list_opts():
         ('networking', octavia.common.config.networking_opts),
         ('oslo_messaging', octavia.common.config.oslo_messaging_opts),
         ('haproxy_amphora', octavia.common.config.haproxy_amphora_opts),
-        ('health_manager', octavia.common.config.healthmanager_opts),
+        ('health_manager', octavia.common.config.health_manager_opts),
         ('controller_worker', octavia.common.config.controller_worker_opts),
         ('task_flow', octavia.common.config.task_flow_opts),
         ('certificates', itertools.chain(
