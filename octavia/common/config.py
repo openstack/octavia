@@ -544,6 +544,8 @@ task_flow_opts = [
     cfg.StrOpt('jobboard_backend_namespace', default='octavia_jobboard',
                help='Jobboard name that should be used to store taskflow '
                     'job id and claims for it.'),
+    cfg.StrOpt('jobboard_redis_sentinel', default=None,
+               help='Sentinel name if it is used for Redis.'),
     cfg.DictOpt('jobboard_redis_backend_ssl_options',
                 help='Redis jobboard backend ssl configuration options.',
                 default={'ssl': False,

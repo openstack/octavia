@@ -93,6 +93,7 @@ class RedisTaskFlowDriver(JobboardTaskFlowDriver):
             'port': CONF.task_flow.jobboard_backend_port,
             'password': CONF.task_flow.jobboard_backend_password,
             'namespace': CONF.task_flow.jobboard_backend_namespace,
+            'sentinel': CONF.task_flow.jobboard_redis_sentinel,
         }
         jobboard_backend_conf.update(
             CONF.task_flow.jobboard_redis_backend_ssl_options)
