@@ -594,9 +594,17 @@ certificate_opts = [
 
 house_keeping_opts = [
     cfg.IntOpt('spare_check_interval',
+               deprecated_for_removal=True,
+               deprecated_since='Victoria',
+               deprecated_reason='Spares Pool support will be removed in the '
+                                 'X release.',
                default=30,
                help=_('Spare check interval in seconds')),
     cfg.IntOpt('spare_amphora_pool_size',
+               deprecated_for_removal=True,
+               deprecated_since='Victoria',
+               deprecated_reason='Spares Pool support will be removed in the '
+                                 'X release.',
                default=0,
                help=_('Number of spare amphorae')),
     cfg.IntOpt('cleanup_interval',

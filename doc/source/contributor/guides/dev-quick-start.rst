@@ -376,6 +376,11 @@ You must:
 
 Spares pool considerations
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. warning::
+
+    Spares pool support is deprecated as of the Victoria release.
+
 One configuration directive deserves some extra consideration in this document:
 
 Depending on the specifics of your production environment, you may decide to
