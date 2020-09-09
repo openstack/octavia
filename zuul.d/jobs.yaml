@@ -41,6 +41,12 @@
         DIB_LOCAL_ELEMENTS: openstack-ci-mirrors
         LIBVIRT_TYPE: kvm
         LIBVIRT_CPU_MODE: host-passthrough
+      devstack_local_conf:
+        test-config:
+          "$TEMPEST_CONFIG":
+            load_balancer:
+              check_interval: 1
+              check_timeout: 180
       devstack_plugins:
         octavia: https://opendev.org/openstack/octavia.git
       devstack_services:
@@ -59,7 +65,7 @@
         o-hk: true
       tempest_plugins:
         - octavia-tempest-plugin
-      tempest_test_regex: ^octavia_tempest_plugin.tests.scenario.v2.test_traffic_ops
+      tempest_test_regex: ^octavia_tempest_plugin.tests.scenario.v2.test_traffic_ops.TrafficOperationsScenarioTest.test_basic_http_traffic
       tox_envlist: all
       zuul_copy_output:
         '/var/log/dib-build/': 'logs'
