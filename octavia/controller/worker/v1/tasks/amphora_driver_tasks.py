@@ -126,15 +126,16 @@ class AmphoraIndexListenersReload(BaseAmphoraTask):
                 timeout_dict=None):
         """Execute listener reload routines for listeners on an amphora."""
         if loadbalancer.listeners:
-            self.amphora_driver.reload(
-                loadbalancer, amphorae[amphora_index], timeout_dict)
-
-    def revert(self, loadbalancer, *args, **kwargs):
-        """Handle failed listeners reloads."""
-
-        LOG.warning("Reverting listener reload.")
-        for listener in loadbalancer.listeners:
-            self.task_utils.mark_listener_prov_status_error(listener.id)
+            try:
+                self.amphora_driver.reload(
+                    loadbalancer, amphorae[amphora_index], timeout_dict)
+            except Exception as e:
+                amphora_id = amphorae[amphora_index].id
+                LOG.warning('Failed to reload listeners on amphora %s. '
+                            'Skipping this amphora as it is failing to '
+                            'reload due to: %s', amphora_id, str(e))
+                self.amphora_repo.update(db_apis.get_session(), amphora_id,
+                                         status=constants.ERROR)
 
 
 class ListenerDelete(BaseAmphoraTask):
@@ -372,7 +373,7 @@ class AmphoraIndexVRRPUpdate(BaseAmphoraTask):
                       'to: %s', amphora_id, str(e))
             self.amphora_repo.update(db_apis.get_session(), amphora_id,
                                      status=constants.ERROR)
-
+            return
         LOG.debug("Uploaded VRRP configuration of amphora %s.", amphora_id)
 
 
@@ -394,8 +395,17 @@ class AmphoraIndexVRRPStart(BaseAmphoraTask):
     """
 
     def execute(self, amphora_index, amphorae, timeout_dict=None):
-        self.amphora_driver.start_vrrp_service(amphorae[amphora_index],
-                                               timeout_dict)
+        amphora_id = amphorae[amphora_index].id
+        try:
+            self.amphora_driver.start_vrrp_service(amphorae[amphora_index],
+                                                   timeout_dict)
+        except Exception as e:
+            LOG.error('Failed to start VRRP on amphora %s. '
+                      'Skipping this amphora as it is failing to start due '
+                      'to: %s', amphora_id, str(e))
+            self.amphora_repo.update(db_apis.get_session(), amphora_id,
+                                     status=constants.ERROR)
+            return
         LOG.debug("Started VRRP on amphora %s.", amphorae[amphora_index].id)
 
 

@@ -1,0 +1,5 @@
+---
+fixes:
+  - |
+    Fixed an issue with failing over an amphora if the pair amphora in an
+    active/standby pair had a missing VRRP port in neutron.

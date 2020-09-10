@@ -1243,12 +1243,19 @@ class TestAllowedAddressPairsDriver(base.TestCase):
 
     def test_get_network_configs(self):
         amphora_mock = mock.MagicMock()
+        amphora2_mock = mock.MagicMock()
         load_balancer_mock = mock.MagicMock()
         vip_mock = mock.MagicMock()
         amphora_mock.status = constants.DELETED
         load_balancer_mock.amphorae = [amphora_mock]
         show_port = self.driver.neutron_client.show_port
-        show_port.return_value = t_constants.MOCK_NEUTRON_PORT
+        show_port.side_effect = [
+            t_constants.MOCK_NEUTRON_PORT, t_constants.MOCK_NEUTRON_PORT,
+            t_constants.MOCK_NEUTRON_PORT, t_constants.MOCK_NEUTRON_PORT,
+            t_constants.MOCK_NEUTRON_PORT, t_constants.MOCK_NEUTRON_PORT,
+            t_constants.MOCK_NEUTRON_PORT, t_constants.MOCK_NEUTRON_PORT,
+            t_constants.MOCK_NEUTRON_PORT, t_constants.MOCK_NEUTRON_PORT,
+            Exception('boom')]
         fake_subnet = {'subnet': {
             'id': t_constants.MOCK_SUBNET_ID,
             'gateway_ip': t_constants.MOCK_IP_ADDRESS,
@@ -1265,7 +1272,12 @@ class TestAllowedAddressPairsDriver(base.TestCase):
         amphora_mock.vrrp_ip = "10.0.0.1"
         amphora_mock.ha_port_id = 3
         amphora_mock.ha_ip = "10.0.0.2"
-        load_balancer_mock.amphorae = [amphora_mock]
+        amphora2_mock.id = 333
+        amphora2_mock.status = constants.ACTIVE
+        amphora2_mock.vrrp_port_id = 3
+        amphora2_mock.vrrp_ip = "10.0.0.2"
+        amphora2_mock.ha_port_id = 4
+        amphora2_mock.ha_ip = "10.0.0.3"
 
         configs = self.driver.get_network_configs(load_balancer_mock)
         self.assertEqual(1, len(configs))
@@ -1281,6 +1293,29 @@ class TestAllowedAddressPairsDriver(base.TestCase):
         expected_subnet_id = fake_subnet['subnet']['id']
         self.assertEqual(expected_subnet_id, config.ha_subnet.id)
         self.assertEqual(expected_subnet_id, config.vrrp_subnet.id)
+
+        # Test with a specific amphora
+        configs = self.driver.get_network_configs(load_balancer_mock,
+                                                  amphora_mock)
+        self.assertEqual(1, len(configs))
+        config = configs[222]
+        # TODO(ptoohill): find a way to return different items for multiple
+        # calls to the same method, right now each call to show subnet
+        # will return the same values if a method happens to call it
+        # multiple times for different subnets. We should be able to verify
+        # different requests get different expected data.
+        expected_port_id = t_constants.MOCK_NEUTRON_PORT['port']['id']
+        self.assertEqual(expected_port_id, config.ha_port.id)
+        self.assertEqual(expected_port_id, config.vrrp_port.id)
+        expected_subnet_id = fake_subnet['subnet']['id']
+        self.assertEqual(expected_subnet_id, config.ha_subnet.id)
+        self.assertEqual(expected_subnet_id, config.vrrp_subnet.id)
+
+        # Test with a load balancer with two amphora, one that has a
+        # neutron problem.
+        load_balancer_mock.amphorae = [amphora_mock, amphora2_mock]
+        configs = self.driver.get_network_configs(load_balancer_mock)
+        self.assertEqual(1, len(configs))
 
     @mock.patch('time.sleep')
     def test_wait_for_port_detach(self, mock_sleep):
