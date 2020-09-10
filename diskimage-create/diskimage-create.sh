@@ -289,6 +289,9 @@ else
     export ELEMENTS_PATH=$OCTAVIA_ELEMENTS_PATH
 fi
 
+# Make sure we have a value set for DIB_OCTAVIA_AMP_USE_NFTABLES
+export DIB_OCTAVIA_AMP_USE_NFTABLES=${DIB_OCTAVIA_AMP_USE_NFTABLES:-False}
+
 export CLOUD_INIT_DATASOURCES=${CLOUD_INIT_DATASOURCES:-"ConfigDrive"}
 
 # Additional RHEL environment checks

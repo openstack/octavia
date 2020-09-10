@@ -1,0 +1,4 @@
+---
+features:
+  - |
+    Added support for nftables to the devstack plugin and the amphora.

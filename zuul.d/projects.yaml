@@ -90,3 +90,6 @@
             branches: ^(?!stable/.*).*$
         - octavia-amphora-image-build
         - octavia-grenade-ffu
+    experimental:
+      jobs:
+        - octavia-v2-dsvm-scenario-nftables
