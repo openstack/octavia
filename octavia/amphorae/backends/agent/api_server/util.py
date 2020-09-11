@@ -347,6 +347,13 @@ def vrrp_check_script_update(lb_id, action):
         if not udp_ids:
             with open(haproxy_check_script_path(), 'w') as text_file:
                 text_file.write('exit 1')
+        else:
+            try:
+                LOG.debug("Attempting to remove old haproxy check script...")
+                os.remove(haproxy_check_script_path())
+                LOG.debug("Finished removing old haproxy check script.")
+            except FileNotFoundError:
+                LOG.debug("No haproxy check script to remove.")
         return
     if action == consts.AMP_ACTION_STOP:
         lb_ids.remove(lb_id)
