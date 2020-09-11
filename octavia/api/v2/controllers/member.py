@@ -145,19 +145,20 @@ class MemberController(base.BaseController):
         member = member_.member
         context = pecan.request.context.get('octavia_context')
 
+        validate.ip_not_reserved(member.address)
+
+        # Validate member subnet
+        """ CCloud: disable subnet validation since it's not used by the f5 backend driver and just impose
+            a risk of failure due to failed keystone / neutron calls """
+        #if (member.subnet_id and
+        #        not validate.subnet_exists(member.subnet_id, context=context)):
+        #    raise exceptions.NotFound(resource='Subnet', id=member.subnet_id)
         pool = self.repositories.pool.get(context.session, id=self.pool_id)
         member.project_id, provider = self._get_lb_project_id_provider(
             context.session, pool.load_balancer_id)
 
         self._auth_validate_action(context, member.project_id,
                                    constants.RBAC_POST)
-
-        validate.ip_not_reserved(member.address)
-
-        # Validate member subnet
-        if (member.subnet_id and
-                not validate.subnet_exists(member.subnet_id, context=context)):
-            raise exceptions.NotFound(resource='Subnet', id=member.subnet_id)
 
         # Load the driver early as it also provides validation
         driver = driver_factory.get_driver(provider)
