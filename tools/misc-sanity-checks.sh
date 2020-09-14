@@ -32,34 +32,8 @@ check_pot_files_errors () {
     fi
 }
 
-check_identical_policy_files () {
-    # For unit tests, we maintain their own policy.yaml file to make test suite
-    # independent of whether it's executed from the octavia source tree or from
-    # site-packages installation path. We don't want two copies of the same
-    # file to diverge, so checking that they are identical
-    diff etc/policy.yaml octavia/tests/etc/policy.yaml 2>&1 > /dev/null
-    if [ "$?" -ne 0 ]; then
-        echo "policy.yaml files must be identical!" >>$FAILURES
-    fi
-}
-
-check_no_duplicate_api_test_idempotent_ids() {
-    # For API tests, an idempotent ID is assigned to each single API test,
-    # those IDs should be unique
-    output=$(check-uuid --package octavia.tests.tempest)
-    if [ "$?" -ne 0 ]; then
-        echo "There are duplicate idempotent ids in the API tests" >>$FAILURES
-        echo "please, assign unique uuids to each API test:" >>$FAILURES
-        echo "$output" >>$FAILURES
-    fi
-}
-
 # Add your checks here...
 check_pot_files_errors
-# TODO(johnsom) Uncomment when we have policies to test
-# check_identical_policy_files
-# TODO(johnsom) Uncomment when we have idempotent ids
-# check_no_duplicate_api_test_idempotent_ids
 
 # Fail, if there are emitted failures
 if [ -f $FAILURES ]; then
