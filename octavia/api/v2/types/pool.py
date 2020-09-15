@@ -86,6 +86,7 @@ class PoolResponse(BasePoolType):
     tls_enabled = wtypes.wsattr(bool)
     tls_ciphers = wtypes.wsattr(wtypes.StringType())
     tls_versions = wtypes.wsattr(wtypes.ArrayType(wtypes.StringType()))
+    alpn_protocols = wtypes.wsattr(wtypes.ArrayType(types.AlpnProtocolType()))
 
     @classmethod
     def from_data_model(cls, data_model, children=False):
@@ -118,6 +119,7 @@ class PoolResponse(BasePoolType):
             member_model.from_data_model(i) for i in data_model.members]
 
         pool.tls_versions = data_model.tls_versions
+        pool.alpn_protocols = data_model.alpn_protocols
 
         return pool
 
@@ -167,6 +169,7 @@ class PoolPOST(BasePoolType):
     tls_ciphers = wtypes.wsattr(wtypes.StringType(max_length=2048))
     tls_versions = wtypes.wsattr(wtypes.ArrayType(wtypes.StringType(
         max_length=32)))
+    alpn_protocols = wtypes.wsattr(wtypes.ArrayType(types.AlpnProtocolType()))
 
 
 class PoolRootPOST(types.BaseType):
@@ -189,6 +192,7 @@ class PoolPUT(BasePoolType):
     tls_ciphers = wtypes.wsattr(wtypes.StringType(max_length=2048))
     tls_versions = wtypes.wsattr(wtypes.ArrayType(wtypes.StringType(
         max_length=32)))
+    alpn_protocols = wtypes.wsattr(wtypes.ArrayType(types.AlpnProtocolType()))
 
 
 class PoolRootPut(types.BaseType):
@@ -215,6 +219,7 @@ class PoolSingleCreate(BasePoolType):
     tls_ciphers = wtypes.wsattr(wtypes.StringType(max_length=2048))
     tls_versions = wtypes.wsattr(wtypes.ArrayType(wtypes.StringType(
         max_length=32)))
+    alpn_protocols = wtypes.wsattr(wtypes.ArrayType(types.AlpnProtocolType()))
 
 
 class PoolStatusResponse(BasePoolType):

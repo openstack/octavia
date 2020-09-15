@@ -607,7 +607,9 @@ def sample_listener_tuple(proto=None, monitor=True, alloc_default_pool=True,
                           alpn_protocols=constants.
                           AMPHORA_SUPPORTED_ALPN_PROTOCOLS,
                           sample_default_pool=1,
-                          pool_enabled=True):
+                          pool_enabled=True,
+                          backend_alpn_protocols=constants.
+                          AMPHORA_SUPPORTED_ALPN_PROTOCOLS):
     proto = 'HTTP' if proto is None else proto
     if be_proto is None:
         be_proto = 'HTTP' if proto == 'TERMINATED_HTTPS' else proto
@@ -645,7 +647,8 @@ def sample_listener_tuple(proto=None, monitor=True, alloc_default_pool=True,
                 listener_id='sample_listener_id_1',
                 tls_ciphers=backend_tls_ciphers,
                 tls_versions=backend_tls_versions,
-                enabled=pool_enabled),
+                enabled=pool_enabled,
+                alpn_protocols=backend_alpn_protocols),
             sample_pool_tuple(
                 proto=be_proto, monitor=monitor, persistence=persistence,
                 persistence_type=persistence_type,
@@ -657,7 +660,8 @@ def sample_listener_tuple(proto=None, monitor=True, alloc_default_pool=True,
                 listener_id='sample_listener_id_1',
                 tls_ciphers=backend_tls_ciphers,
                 tls_versions=None,
-                enabled=pool_enabled)]
+                enabled=pool_enabled,
+                alpn_protocols=backend_alpn_protocols)]
         l7policies = [
             sample_l7policy_tuple('sample_l7policy_id_1', sample_policy=1),
             sample_l7policy_tuple('sample_l7policy_id_2', sample_policy=2),
@@ -683,7 +687,8 @@ def sample_listener_tuple(proto=None, monitor=True, alloc_default_pool=True,
                 listener_id='sample_listener_id_1',
                 tls_ciphers=backend_tls_ciphers,
                 tls_versions=backend_tls_versions,
-                enabled=pool_enabled)]
+                enabled=pool_enabled,
+                alpn_protocols=backend_alpn_protocols)]
         l7policies = []
     listener = in_listener(
         id=id,
@@ -799,18 +804,21 @@ def sample_pool_tuple(listener_id=None, proto=None, monitor=True,
                       tls_ciphers=constants.CIPHERS_OWASP_SUITE_B,
                       tls_versions=constants.TLS_VERSIONS_OWASP_SUITE_B,
                       lb_algorithm=constants.LB_ALGORITHM_ROUND_ROBIN,
-                      enabled=True):
+                      enabled=True,
+                      alpn_protocols=constants.
+                      AMPHORA_SUPPORTED_ALPN_PROTOCOLS):
     proto = 'HTTP' if proto is None else proto
     if not tls_enabled:
         tls_ciphers = None
         tls_versions = None
+        alpn_protocols = None
     monitor_proto = proto if monitor_proto is None else monitor_proto
     in_pool = collections.namedtuple(
         'pool', 'id, protocol, lb_algorithm, members, health_monitor, '
                 'session_persistence, enabled, operating_status, '
                 'tls_certificate_id, ca_tls_certificate_id, '
                 'crl_container_id, tls_enabled, tls_ciphers, '
-                'tls_versions, provisioning_status, ' +
+                'tls_versions, provisioning_status, alpn_protocols, ' +
                 constants.HTTP_REUSE)
     if (proto == constants.PROTOCOL_UDP and
             persistence_type == constants.SESSION_PERSISTENCE_SOURCE_IP):
@@ -867,7 +875,8 @@ def sample_pool_tuple(listener_id=None, proto=None, monitor=True,
         tls_enabled=tls_enabled,
         tls_ciphers=tls_ciphers,
         tls_versions=tls_versions,
-        provisioning_status=provisioning_status)
+        provisioning_status=provisioning_status,
+        alpn_protocols=alpn_protocols)
 
 
 def sample_member_tuple(id, ip, enabled=True, operating_status='ACTIVE',

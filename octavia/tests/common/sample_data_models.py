@@ -249,7 +249,9 @@ class SampleDriverDataModels(object):
             constants.CRL_CONTAINER_ID: self.pool_crl_container_ref,
             lib_consts.TLS_ENABLED: True,
             lib_consts.TLS_CIPHERS: None,
-            lib_consts.TLS_VERSIONS: None
+            lib_consts.TLS_VERSIONS: None,
+            lib_consts.ALPN_PROTOCOLS:
+                constants.AMPHORA_SUPPORTED_ALPN_PROTOCOLS
         }
 
         self.test_pool1_dict.update(self._common_test_dict)
@@ -300,6 +302,8 @@ class SampleDriverDataModels(object):
             lib_consts.TLS_ENABLED: True,
             lib_consts.TLS_CIPHERS: None,
             lib_consts.TLS_VERSIONS: None,
+            lib_consts.ALPN_PROTOCOLS:
+                constants.AMPHORA_SUPPORTED_ALPN_PROTOCOLS
         }
 
         self.provider_pool2_dict = copy.deepcopy(self.provider_pool1_dict)

@@ -353,6 +353,7 @@ class Pool(base_models.BASE, base_models.IdMixin, base_models.ProjectMixin,
     tls_enabled = sa.Column(sa.Boolean, default=False, nullable=False)
     tls_ciphers = sa.Column(sa.String(2048), nullable=True)
     tls_versions = sa.Column(ScalarListType(), nullable=True)
+    alpn_protocols = sa.Column(ScalarListType(), nullable=True)
 
     # This property should be a unique list of any listeners that reference
     # this pool as its default_pool and any listeners referenced by enabled

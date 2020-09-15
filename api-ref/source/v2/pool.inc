@@ -46,6 +46,7 @@ Response Parameters
 .. rest_parameters:: ../parameters.yaml
 
    - admin_state_up: admin_state_up
+   - alpn_protocols: alpn_protocols-pool
    - ca_tls_container_ref: ca_tls_container_ref
    - created_at: created_at
    - crl_container_ref: crl_container_ref
@@ -170,6 +171,7 @@ Request
 .. rest_parameters:: ../parameters.yaml
 
    - admin_state_up: admin_state_up-default-optional
+   - alpn_protocols: alpn_protocols-pool-optional
    - ca_tls_container_ref: ca_tls_container_ref-optional
    - crl_container_ref: crl_container_ref-optional
    - description: description-optional
@@ -247,6 +249,7 @@ Response Parameters
 .. rest_parameters:: ../parameters.yaml
 
    - admin_state_up: admin_state_up
+   - alpn_protocols: alpn_protocols-pool
    - ca_tls_container_ref: ca_tls_container_ref
    - created_at: created_at
    - crl_container_ref: crl_container_ref
@@ -320,6 +323,7 @@ Response Parameters
 .. rest_parameters:: ../parameters.yaml
 
    - admin_state_up: admin_state_up
+   - alpn_protocols: alpn_protocols-pool
    - ca_tls_container_ref: ca_tls_container_ref
    - created_at: created_at
    - crl_container_ref: crl_container_ref
@@ -383,6 +387,7 @@ Request
 .. rest_parameters:: ../parameters.yaml
 
    - admin_state_up: admin_state_up-default-optional
+   - alpn_protocols: alpn_protocols-pool-optional
    - ca_tls_container_ref: ca_tls_container_ref-optional
    - crl_container_ref: crl_container_ref-optional
    - description: description-optional
@@ -414,6 +419,7 @@ Response Parameters
 .. rest_parameters:: ../parameters.yaml
 
    - admin_state_up: admin_state_up
+   - alpn_protocols: alpn_protocols-pool
    - ca_tls_container_ref: ca_tls_container_ref
    - created_at: created_at
    - crl_container_ref: crl_container_ref

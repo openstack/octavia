@@ -2623,3 +2623,73 @@ class TestPool(base.BaseAPITest):
                         self.assertEqual(expect_error_msg,
                                          res.json['faultstring'])
                     self.assert_correct_status(lb_id=self.lb_id)
+
+    def test_create_with_alpn(self):
+        alpn_protocols = [lib_constants.ALPN_PROTOCOL_HTTP_2,
+                          lib_constants.ALPN_PROTOCOL_HTTP_1_1]
+        api_pool = self.create_pool(
+            self.lb_id,
+            constants.PROTOCOL_HTTP,
+            constants.LB_ALGORITHM_ROUND_ROBIN,
+            listener_id=self.listener_id,
+            tls_enabled=True,
+            alpn_protocols=alpn_protocols).get(self.root_tag)
+        self.assertEqual(alpn_protocols, api_pool['alpn_protocols'])
+
+    def test_create_with_alpn_negative(self):
+        req_dict = {'protocol': constants.PROTOCOL_HTTP,
+                    'lb_algorithm': constants.LB_ALGORITHM_ROUND_ROBIN,
+                    'listener_id': self.listener_id,
+                    'tls_enabled': True,
+                    'alpn_protocols': [lib_constants.ALPN_PROTOCOL_HTTP_1_1,
+                                       'invalid-proto']}
+        res = self.post(self.POOLS_PATH, self._build_body(req_dict),
+                        status=400)
+        fault = res.json['faultstring']
+        self.assertIn(
+            'Invalid input for field/attribute alpn_protocols', fault)
+        self.assertIn('Value should be a valid ALPN protocol ID', fault)
+        self.assert_correct_status(lb_id=self.lb_id)
+
+    def test_update_with_alpn(self):
+        alpn_protocols_orig = [lib_constants.ALPN_PROTOCOL_HTTP_1_0]
+        alpn_protocols = [lib_constants.ALPN_PROTOCOL_HTTP_2,
+                          lib_constants.ALPN_PROTOCOL_HTTP_1_1]
+        pool = self.create_pool(
+            self.lb_id,
+            constants.PROTOCOL_HTTP,
+            constants.LB_ALGORITHM_ROUND_ROBIN,
+            listener_id=self.listener_id,
+            tls_enabled=True,
+            alpn_protocols=alpn_protocols_orig)
+        self.set_lb_status(self.lb_id)
+        pool_path = self.POOL_PATH.format(pool_id=pool['pool']['id'])
+        get_pool = self.get(pool_path).json['pool']
+        self.assertEqual(alpn_protocols_orig, get_pool.get('alpn_protocols'))
+        self.put(pool_path,
+                 self._build_body({'alpn_protocols': alpn_protocols}))
+        get_pool = self.get(pool_path).json['pool']
+        self.assertEqual(alpn_protocols, get_pool.get('alpn_protocols'))
+
+    def test_update_with_alpn_negative(self):
+        alpn_protocols_orig = [lib_constants.ALPN_PROTOCOL_HTTP_1_0]
+        pool = self.create_pool(
+            self.lb_id,
+            constants.PROTOCOL_HTTP,
+            constants.LB_ALGORITHM_ROUND_ROBIN,
+            listener_id=self.listener_id,
+            tls_enabled=True,
+            alpn_protocols=alpn_protocols_orig)
+        self.set_lb_status(self.lb_id)
+        pool_path = self.POOL_PATH.format(pool_id=pool['pool']['id'])
+        get_pool = self.get(pool_path).json['pool']
+        self.assertEqual(alpn_protocols_orig, get_pool.get('alpn_protocols'))
+
+        req_dict = {'alpn_protocols': [
+            lib_constants.ALPN_PROTOCOL_HTTP_1_1, 'invalid-proto']}
+        res = self.put(self.POOLS_PATH, self._build_body(req_dict), status=400)
+        fault = res.json['faultstring']
+        self.assertIn(
+            'Invalid input for field/attribute alpn_protocols', fault)
+        self.assertIn('Value should be a valid ALPN protocol ID', fault)
+        self.assert_correct_status(lb_id=self.lb_id)

@@ -137,6 +137,8 @@ class PoolsController(base.BaseController):
             validate.check_tls_version_list(pool_dict['tls_versions'])
             # Validate TLS versions against minimum
             validate.check_tls_version_min(pool_dict['tls_versions'])
+            # Validate ALPN protocol list
+            validate.check_alpn_protocols(pool_dict['alpn_protocols'])
 
         try:
             return self.repositories.create_pool_on_load_balancer(
@@ -419,6 +421,10 @@ class PoolsController(base.BaseController):
             validate.check_tls_version_list(pool.tls_versions)
             # Validate TLS version against minimum
             validate.check_tls_version_min(pool.tls_versions)
+
+        if pool.alpn_protocols is not wtypes.Unset:
+            # Validate ALPN protocol list
+            validate.check_alpn_protocols(pool.alpn_protocols)
 
     @wsme_pecan.wsexpose(pool_types.PoolRootResponse, wtypes.text,
                          body=pool_types.PoolRootPut, status_code=200)

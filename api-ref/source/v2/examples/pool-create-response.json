@@ -33,6 +33,7 @@
         "crl_container_ref": "http://198.51.100.10:9311/v1/containers/6faf0a01-6892-454c-aaac-650282820c0b",
         "tls_enabled": true,
         "tls_ciphers": "ECDHE-RSA-AES256-GCM-SHA384:ECDHE-RSA-AES128-GCM-SHA256",
-        "tls_versions": ["TLSv1.2", "TLSv1.3"]
+        "tls_versions": ["TLSv1.2", "TLSv1.3"],
+        "alpn_protocols": ["http/1.1", "http/1.0"]
     }
 }

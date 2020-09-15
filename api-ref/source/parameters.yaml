@@ -183,7 +183,7 @@ allowed_cidrs-optional:
   min_version: 2.12
   required: false
   type: array
-alpn_protocols:
+alpn_protocols-listener:
   description: |
     A list of ALPN protocols.
     Available protocols: http/1.0, http/1.1, h2
@@ -191,12 +191,28 @@ alpn_protocols:
   min_version: 2.20
   required: true
   type: array
-alpn_protocols-optional:
+alpn_protocols-listener-optional:
   description: |
     A list of ALPN protocols.
     Available protocols: http/1.0, http/1.1, h2
   in: body
   min_version: 2.20
+  required: false
+  type: array
+alpn_protocols-pool:
+  description: |
+    A list of ALPN protocols.
+    Available protocols: http/1.0, http/1.1, h2
+  in: body
+  min_version: 2.24
+  required: true
+  type: array
+alpn_protocols-pool-optional:
+  description: |
+    A list of ALPN protocols.
+    Available protocols: http/1.0, http/1.1, h2
+  in: body
+  min_version: 2.24
   required: false
   type: array
 amphora-id:

@@ -184,6 +184,9 @@ def create_pool(pool_dict, lb_id=None):
         if pool_dict['tls_versions'] is None:
             pool_dict['tls_versions'] = (
                 CONF.api_settings.default_pool_tls_versions)
+        if pool_dict['alpn_protocols'] is None:
+            pool_dict['alpn_protocols'] = (
+                CONF.api_settings.default_pool_alpn_protocols)
     pool_dict[constants.PROVISIONING_STATUS] = constants.PENDING_CREATE
     pool_dict[constants.OPERATING_STATUS] = constants.OFFLINE
     return pool_dict

@@ -206,9 +206,10 @@ class TestAmphoraDriver(base.TestRpc):
     def test_pool_create(self, mock_cast):
         provider_pool = driver_dm.Pool(
             pool_id=self.sample_data.pool1_id,
-            lb_algorithm=consts.LB_ALGORITHM_ROUND_ROBIN)
+            lb_algorithm=consts.LB_ALGORITHM_ROUND_ROBIN,
+            alpn_protocols=consts.AMPHORA_SUPPORTED_ALPN_PROTOCOLS)
         self.amp_driver.pool_create(provider_pool)
-        payload = {consts.POOL: provider_pool.to_dict()}
+        payload = {consts.POOL: provider_pool.to_dict(recurse=True)}
         mock_cast.assert_called_with({}, 'create_pool', **payload)
 
     @mock.patch('oslo_messaging.RPCClient.cast')
@@ -216,6 +217,16 @@ class TestAmphoraDriver(base.TestRpc):
         provider_pool = driver_dm.Pool(
             pool_id=self.sample_data.pool1_id)
         provider_pool.lb_algorithm = 'foo'
+        self.assertRaises(
+            exceptions.UnsupportedOptionError,
+            self.amp_driver.pool_create,
+            provider_pool)
+        mock_cast.assert_not_called()
+
+    @mock.patch('oslo_messaging.RPCClient.cast')
+    def test_pool_create_unsupported_alpn(self, mock_cast):
+        provider_pool = driver_dm.Pool(pool_id=self.sample_data.pool1_id)
+        provider_pool.alpn_protocols = ['http/1.1', 'eureka']
         self.assertRaises(
             exceptions.UnsupportedOptionError,
             self.amp_driver.pool_create,
@@ -270,6 +281,18 @@ class TestAmphoraDriver(base.TestRpc):
             old_provider_pool,
             provider_pool)
         mock_cast.assert_not_called()
+
+    @mock.patch('oslo_messaging.RPCClient.cast')
+    def test_pool_update_unsupported_alpn(self, mock_cast):
+        old_provider_pool = driver_dm.Pool(pool_id=self.sample_data.pool1_id)
+        provider_pool = driver_dm.Pool(
+            listener_id=self.sample_data.pool1_id,
+            alpn_protocols=['http/1.1', 'eureka'])
+        self.assertRaises(
+            exceptions.UnsupportedOptionError,
+            self.amp_driver.pool_update,
+            old_provider_pool,
+            provider_pool)
 
     # Member
     @mock.patch('octavia.db.api.get_session')

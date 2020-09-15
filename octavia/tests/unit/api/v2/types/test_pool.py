@@ -145,6 +145,13 @@ class TestPoolPOST(base.BaseTypesTest):
         self.assertRaises(exc.InvalidInput, wsme_json.fromjson, self._type,
                           body)
 
+    def test_invalid_alpn_protocols(self):
+        body = {"protocol": constants.PROTOCOL_HTTP,
+                "loadbalancer_id": uuidutils.generate_uuid(),
+                "alpn_protocols": ["bad", "boy"]}
+        self.assertRaises(exc.InvalidInput, wsme_json.fromjson, self._type,
+                          body)
+
 
 class TestPoolPUT(base.BaseTypesTest):
 
@@ -185,6 +192,11 @@ class TestPoolPUT(base.BaseTypesTest):
         self.assertRaises(ValueError, wsme_json.fromjson, self._type,
                           body)
         body = {"tags": [1, 2]}
+        self.assertRaises(exc.InvalidInput, wsme_json.fromjson, self._type,
+                          body)
+
+    def test_invalid_alpn_protocols(self):
+        body = {"alpn_protocols": ["bad", "boy"]}
         self.assertRaises(exc.InvalidInput, wsme_json.fromjson, self._type,
                           body)
 

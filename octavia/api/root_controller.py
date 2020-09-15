@@ -124,7 +124,7 @@ class RootController(object):
         # Add quota support to octavia's l7policy and l7rule
         self._add_a_version(versions, 'v2.19', 'v2', 'SUPPORTED',
                             '2020-05-12T00:00:00Z', host_url)
-        # ALPN protocols
+        # ALPN protocols (listener)
         self._add_a_version(versions, 'v2.20', 'v2', 'SUPPORTED',
                             '2020-08-02T00:00:00Z', host_url)
         # Amphora delete
@@ -134,6 +134,9 @@ class RootController(object):
         self._add_a_version(versions, 'v2.22', 'v2', 'SUPPORTED',
                             '2020-09-04T00:00:00Z', host_url)
         # SCTP protocol
-        self._add_a_version(versions, 'v2.23', 'v2', 'CURRENT',
+        self._add_a_version(versions, 'v2.23', 'v2', 'SUPPORTED',
                             '2020-09-07T00:00:00Z', host_url)
+        # ALPN protocols (pool)
+        self._add_a_version(versions, 'v2.24', 'v2', 'CURRENT',
+                            '2020-10-15T00:00:00Z', host_url)
         return {'versions': versions}

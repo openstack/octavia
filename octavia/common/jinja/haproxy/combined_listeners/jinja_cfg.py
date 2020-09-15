@@ -369,6 +369,8 @@ class JinjaTemplater(object):
                 ret_value['tls_ciphers'] = pool.tls_ciphers
             if pool.tls_versions is not None:
                 ret_value['tls_versions'] = pool.tls_versions
+            if pool.alpn_protocols is not None:
+                ret_value['alpn_protocols'] = ",".join(pool.alpn_protocols)
         if (pool.ca_tls_certificate_id and pool_tls_certs and
                 pool_tls_certs.get('ca_cert')):
             ret_value['ca_cert'] = pool_tls_certs.get('ca_cert')

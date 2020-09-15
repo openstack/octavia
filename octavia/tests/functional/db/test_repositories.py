@@ -186,7 +186,8 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
                 'tags': ['test_tag'],
                 'tls_certificate_id': uuidutils.generate_uuid(),
                 'tls_enabled': False, 'tls_ciphers': None,
-                'tls_versions': None}
+                'tls_versions': None,
+                'alpn_protocols': None}
         pool_dm = self.repos.create_pool_on_load_balancer(
             self.session, pool, listener_id=self.listener.id)
         pool_dm_dict = pool_dm.to_dict()
@@ -220,7 +221,8 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
                 'tls_certificate_id': uuidutils.generate_uuid(),
                 'tls_enabled': False,
                 'tls_ciphers': None,
-                'tls_versions': None}
+                'tls_versions': None,
+                'alpn_protocols': None}
         sp = {'type': constants.SESSION_PERSISTENCE_HTTP_COOKIE,
               'cookie_name': 'cookie_monster',
               'pool_id': pool['id'],
@@ -265,7 +267,8 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
                 'provisioning_status': constants.ACTIVE,
                 'tags': ['test_tag'], 'tls_enabled': False,
                 'tls_ciphers': None,
-                'tls_versions': None}
+                'tls_versions': None,
+                'alpn_protocols': None}
         pool_dm = self.repos.create_pool_on_load_balancer(
             self.session, pool, listener_id=self.listener.id)
         update_pool = {'protocol': constants.PROTOCOL_TCP, 'name': 'up_pool'}
@@ -301,7 +304,8 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
                 'tags': ['test_tag'],
                 'tls_certificate_id': uuidutils.generate_uuid(),
                 'tls_enabled': False, 'tls_ciphers': None,
-                'tls_versions': None}
+                'tls_versions': None,
+                'alpn_protocols': None}
         sp = {'type': constants.SESSION_PERSISTENCE_HTTP_COOKIE,
               'cookie_name': 'cookie_monster',
               'pool_id': pool['id'],
@@ -406,7 +410,8 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
                 'id': uuidutils.generate_uuid(),
                 'provisioning_status': constants.ACTIVE,
                 'tls_enabled': False, 'tls_ciphers': None,
-                'tls_versions': None}
+                'tls_versions': None,
+                'alpn_protocols': None}
         pool_dm = self.repos.create_pool_on_load_balancer(
             self.session, pool, listener_id=self.listener.id)
         update_pool = {'tls_certificate_id': uuidutils.generate_uuid()}

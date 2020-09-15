@@ -134,6 +134,11 @@ api_opts = [
                          lib_consts.ALPN_PROTOCOL_HTTP_1_0],
                 help=_('List of ALPN protocols to use for new TLS-enabled '
                        'listeners.')),
+    cfg.ListOpt('default_pool_alpn_protocols',
+                default=[lib_consts.ALPN_PROTOCOL_HTTP_1_1,
+                         lib_consts.ALPN_PROTOCOL_HTTP_1_0],
+                help=_('List of ALPN protocols to use for new TLS-enabled '
+                       'pools.')),
 ]
 
 # Options only used by the amphora agent
