@@ -177,3 +177,17 @@
     vars:
       devstack_localrc:
         OCTAVIA_AMP_USE_NFTABLES: True
+
+- job:
+    name: openstack-tox-pip-check-reqs
+    parent: openstack-tox
+    description: |
+      Run pip-missing-reqs and pip-extra-reqs tests to check for missing or
+      extra requirements.txt entries.
+
+      Uses tox with the ``pip-missing-reqs``  and ``pip-extra-reqs``
+      environments.
+    required-projects:
+        - openstack/octavia
+    vars:
+      tox_envlist: pip-missing-reqs,pip-extra-reqs
