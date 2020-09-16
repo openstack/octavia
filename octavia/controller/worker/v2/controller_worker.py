@@ -137,12 +137,18 @@ class ControllerWorker(object):
         :returns: None
         :raises AmphoraNotFound: The referenced Amphora was not found
         """
-        amphora = self._amphora_repo.get(db_apis.get_session(),
-                                         id=amphora_id)
-        store = {constants.AMPHORA: amphora.to_dict()}
-        self.run_flow(
-            flow_utils.get_delete_amphora_flow,
-            store=store)
+        try:
+            amphora = self._amphora_repo.get(db_apis.get_session(),
+                                             id=amphora_id)
+            store = {constants.AMPHORA: amphora.to_dict()}
+            self.run_flow(
+                flow_utils.get_delete_amphora_flow,
+                store=store)
+        except Exception as e:
+            LOG.error('Failed to delete a amphora {0} due to: {1}'.format(
+                amphora_id, str(e)))
+            return
+        LOG.info('Finished deleting amphora %s.', amphora_id)
 
     @tenacity.retry(
         retry=tenacity.retry_if_exception_type(db_exceptions.NoResultFound),
