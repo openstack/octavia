@@ -27,6 +27,7 @@ from octavia.amphorae.driver_exceptions import exceptions as driver_except
 from octavia.amphorae.drivers.haproxy import exceptions as exc
 from octavia.amphorae.drivers.haproxy import rest_api_driver as driver
 from octavia.common import constants
+from octavia.common import data_models
 from octavia.db import models
 from octavia.network import data_models as network_models
 from octavia.tests.unit import base
@@ -400,13 +401,14 @@ class TestHaproxyAmphoraLoadBalancerDriverTest(base.TestCase):
         conf.config(group="haproxy_amphora", base_cert_dir=fake_cert_dir)
         sample_listener = sample_configs_split.sample_listener_tuple(
             pool_cert=True, pool_ca_cert=True, pool_crl=True)
-        cert_data_mock = mock.MagicMock()
-        cert_data_mock.id = uuidutils.generate_uuid()
-        mock_load_certs.return_value = cert_data_mock
+        pool_cert = data_models.TLSContainer(
+            id=uuidutils.generate_uuid(), certificate='pool cert')
+        pool_data = {'tls_cert': pool_cert, 'sni_certs': []}
+        mock_load_certs.return_value = pool_data
         fake_pem = b'fake pem'
         mock_build_pem.return_value = fake_pem
         ref_md5 = hashlib.md5(fake_pem).hexdigest()  # nosec
-        ref_name = '{id}.pem'.format(id=cert_data_mock.id)
+        ref_name = '{id}.pem'.format(id=pool_cert.id)
         ref_path = '{cert_dir}/{list_id}/{name}'.format(
             cert_dir=fake_cert_dir, list_id=sample_listener.id, name=ref_name)
         ref_ca_name = 'fake_ca.pem'
@@ -433,7 +435,7 @@ class TestHaproxyAmphoraLoadBalancerDriverTest(base.TestCase):
                       sample_listener.default_pool.crl_container_id,
                       self.amp, sample_listener.load_balancer.id)]
 
-        mock_build_pem.assert_called_once_with(cert_data_mock)
+        mock_build_pem.assert_called_once_with(pool_cert)
         mock_upload_cert.assert_called_once_with(
             self.amp, sample_listener.load_balancer.id, pem=fake_pem,
             md5=ref_md5, name=ref_name)
