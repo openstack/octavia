@@ -287,14 +287,14 @@ class TestHaproxyAmphoraLoadBalancerDriverTest(base.TestCase):
         self.driver.clients[API_VERSION].get_cert_md5sum.side_effect = [
             exc.NotFound, 'Fake_MD5', 'aaaaa', 'aaaaaaaa']
         self.driver._process_tls_certificates(
-            sample_listener, self.amp, sample_listener.load_balancer.id)
+            sample_listener, self.amp, sample_listener.id)
         gcm_calls = [
-            mock.call(self.amp, self.lb.id,
+            mock.call(self.amp, sample_listener.id,
                       self.sl.default_tls_container.id + '.pem',
                       ignore=(404,)),
-            mock.call(self.amp, self.lb.id,
+            mock.call(self.amp, sample_listener.id,
                       sconts[0].id + '.pem', ignore=(404,)),
-            mock.call(self.amp, self.lb.id,
+            mock.call(self.amp, sample_listener.id,
                       sconts[1].id + '.pem', ignore=(404,))
         ]
         self.driver.clients[API_VERSION].get_cert_md5sum.assert_has_calls(
@@ -309,11 +309,11 @@ class TestHaproxyAmphoraLoadBalancerDriverTest(base.TestCase):
                           sample_certs.X509_CERT_KEY_3,
                           sample_certs.X509_IMDS]) + b'\n'
         ucp_calls = [
-            mock.call(self.amp, self.lb.id,
+            mock.call(self.amp, sample_listener.id,
                       self.sl.default_tls_container.id + '.pem', fp1),
-            mock.call(self.amp, self.lb.id,
+            mock.call(self.amp, sample_listener.id,
                       sconts[0].id + '.pem', fp2),
-            mock.call(self.amp, self.lb.id,
+            mock.call(self.amp, sample_listener.id,
                       sconts[1].id + '.pem', fp3)
         ]
         self.driver.clients[API_VERSION].upload_cert_pem.assert_has_calls(
@@ -374,13 +374,13 @@ class TestHaproxyAmphoraLoadBalancerDriverTest(base.TestCase):
                          'sample_pool_id_2': ref_pool_cert_2}
 
         result = self.driver._process_listener_pool_certs(
-            sample_listener, self.amp, sample_listener.load_balancer.id)
+            sample_listener, self.amp, sample_listener.id)
 
         pool_certs_calls = [
             mock.call(sample_listener, sample_listener.default_pool,
-                      self.amp, sample_listener.load_balancer.id),
+                      self.amp, sample_listener.id),
             mock.call(sample_listener, sample_listener.pools[1],
-                      self.amp, sample_listener.load_balancer.id)
+                      self.amp, sample_listener.id)
         ]
 
         mock_pool_cert.assert_has_calls(pool_certs_calls, any_order=True)
@@ -424,19 +424,19 @@ class TestHaproxyAmphoraLoadBalancerDriverTest(base.TestCase):
 
         result = self.driver._process_pool_certs(
             sample_listener, sample_listener.default_pool, self.amp,
-            sample_listener.load_balancer.id)
+            sample_listener.id)
 
         secret_calls = [
             mock.call(sample_listener,
                       sample_listener.default_pool.ca_tls_certificate_id,
-                      self.amp, sample_listener.load_balancer.id),
+                      self.amp, sample_listener.id),
             mock.call(sample_listener,
                       sample_listener.default_pool.crl_container_id,
-                      self.amp, sample_listener.load_balancer.id)]
+                      self.amp, sample_listener.id)]
 
         mock_build_pem.assert_called_once_with(pool_cert)
         mock_upload_cert.assert_called_once_with(
-            self.amp, sample_listener.load_balancer.id, pem=fake_pem,
+            self.amp, sample_listener.id, pem=fake_pem,
             md5=ref_md5, name=ref_name)
         mock_secret.assert_has_calls(secret_calls)
         self.assertEqual(ref_result, result)
