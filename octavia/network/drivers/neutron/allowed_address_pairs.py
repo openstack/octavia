@@ -716,8 +716,13 @@ class AllowedAddressPairsDriver(neutron_base.BaseNeutronDriver):
                                       vip_subnet, vip_port)
         else:
             for amp in loadbalancer.amphorae:
-                self._get_amp_net_configs(amp, amp_configs,
-                                          vip_subnet, vip_port)
+                try:
+                    self._get_amp_net_configs(amp, amp_configs,
+                                              vip_subnet, vip_port)
+                except Exception as e:
+                    LOG.warning('Getting network configurations for amphora '
+                                '%(amp)s failed due to %(err)s.',
+                                {'amp': amp.id, 'err': str(e)})
         return amp_configs
 
     # TODO(johnsom) This may be dead code now. Remove in failover for v2 patch
