@@ -261,6 +261,50 @@ class TestPool(base.BaseAPITest):
         self.assertIn((pool3.get('id'), pool3.get('protocol')),
                       pool_id_protocols)
 
+    def test_get_all_unscoped_token(self):
+        project_id = uuidutils.generate_uuid()
+        lb1 = self.create_load_balancer(uuidutils.generate_uuid(), name='lb1',
+                                        project_id=project_id)
+        lb1_id = lb1.get('loadbalancer').get('id')
+        self.set_lb_status(lb1_id)
+        self.create_pool(
+            lb1_id, constants.PROTOCOL_HTTP,
+            constants.LB_ALGORITHM_ROUND_ROBIN).get(self.root_tag)
+        self.set_lb_status(lb1_id)
+        self.create_pool(
+            lb1_id, constants.PROTOCOL_HTTPS,
+            constants.LB_ALGORITHM_ROUND_ROBIN).get(self.root_tag)
+        self.set_lb_status(lb1_id)
+        self.create_pool(
+            self.lb_id, constants.PROTOCOL_TCP,
+            constants.LB_ALGORITHM_ROUND_ROBIN).get(self.root_tag)
+        self.set_lb_status(self.lb_id)
+
+        auth_strategy = self.conf.conf.api_settings.get('auth_strategy')
+        self.conf.config(group='api_settings',
+                         auth_strategy=constants.KEYSTONE)
+        with mock.patch.object(octavia.common.context.Context, 'project_id',
+                               None):
+            override_credentials = {
+                'service_user_id': None,
+                'user_domain_id': None,
+                'is_admin_project': True,
+                'service_project_domain_id': None,
+                'service_project_id': None,
+                'roles': ['load-balancer_member'],
+                'user_id': None,
+                'is_admin': False,
+                'service_user_domain_id': None,
+                'project_domain_id': None,
+                'service_roles': [],
+                'project_id': None}
+            with mock.patch(
+                    "oslo_context.context.RequestContext.to_policy_values",
+                    return_value=override_credentials):
+                result = self.get(self.POOLS_PATH, status=403).json
+        self.conf.config(group='api_settings', auth_strategy=auth_strategy)
+        self.assertEqual(self.NOT_AUTHORIZED_BODY, result)
+
     def test_get_all_non_admin_global_observer(self):
         project_id = uuidutils.generate_uuid()
         lb1 = self.create_load_balancer(uuidutils.generate_uuid(), name='lb1',
