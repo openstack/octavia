@@ -561,6 +561,57 @@ authentication.
     openstack loadbalancer member create --subnet-id private-subnet --address 192.0.2.10 --protocol-port 80 pool1
     openstack loadbalancer member create --subnet-id private-subnet --address 192.0.2.11 --protocol-port 80 pool1
 
+Deploy a secure HTTP/2 load balancer with ALPN TLS extension
+------------------------------------------------------------
+This example is exactly like :ref:`basic-tls-terminated-listener`, except that
+we would like to enable HTTP/2 load balancing. The load balancer negotiates
+HTTP/2 with clients as part of the TLS handshake via the Application-Layer
+Protocol Negotiation (ALPN) TLS extension.
+
+**Scenario description**:
+
+* Back-end servers 192.0.2.10 and 192.0.2.11 on subnet *private-subnet* have
+  been configured with regular HTTP application on TCP port 80.
+* Subnet *public-subnet* is a shared external subnet created by the cloud
+  operator which is reachable from the internet.
+* A TLS certificate, key, and intermediate certificate chain for
+  www.example.com have been obtained from an external certificate authority.
+  These now exist in the files server.crt, server.key, and ca-chain.crt in the
+  current directory. The key and certificate are PEM-encoded, and the
+  intermediate certificate chain is multiple PEM-encoded certs concatenated
+  together. The key is not encrypted with a passphrase.
+* We want to configure a TLS-terminated HTTP/2 load balancer that is accessible
+  from the internet using the key and certificate mentioned above, which
+  distributes requests to the back-end servers over the non-encrypted HTTP
+  protocol.
+* Octavia is configured to use barbican for key management.
+
+**Solution**:
+
+1. Combine the individual cert/key/intermediates to a single PKCS12 file.
+2. Create a barbican *secret* resource for the PKCS12 file. We will call
+   this *tls_secret1*.
+3. Create load balancer *lb1* on subnet *public-subnet*.
+4. Create listener *listener1* as a TERMINATED_HTTPS listener referencing
+   *tls_secret1* as its default TLS container, and *h2* ALPN protocol ID and
+   *http/1.1* as fall-back protocol should the client not support HTTP/2.
+5. Create pool *pool1* as *listener1*'s default pool.
+6. Add members 192.0.2.10 and 192.0.2.11 on *private-subnet* to *pool1*.
+
+**CLI commands**:
+
+::
+
+    openssl pkcs12 -export -inkey server.key -in server.crt -certfile ca-chain.crt -passout pass: -out server.p12
+    openstack secret store --name='tls_secret1' -t 'application/octet-stream' -e 'base64' --payload="$(base64 < server.p12)"
+    openstack loadbalancer create --name lb1 --vip-subnet-id public-subnet
+    # Re-run the following until lb1 shows ACTIVE and ONLINE statuses:
+    openstack loadbalancer show lb1
+    openstack loadbalancer listener create --protocol-port 443 --protocol TERMINATED_HTTPS --alpn-protocol h2 --alpn-protocol http/1.1 --name listener1 --default-tls-container=$(openstack secret list | awk '/ tls_secret1 / {print $2}') lb1
+    openstack loadbalancer pool create --name pool1 --lb-algorithm ROUND_ROBIN --listener listener1 --protocol HTTP
+    openstack loadbalancer member create --subnet-id private-subnet --address 192.0.2.10 --protocol-port 80 pool1
+    openstack loadbalancer member create --subnet-id private-subnet --address 192.0.2.11 --protocol-port 80 pool1
+
 Deploy HTTP and TLS-terminated HTTPS load balancing on the same IP and backend
 ------------------------------------------------------------------------------
 This example is exactly like :ref:`basic-tls-terminated-listener`, except that
