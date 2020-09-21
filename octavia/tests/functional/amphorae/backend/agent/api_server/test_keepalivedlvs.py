@@ -172,6 +172,10 @@ class KeepalivedLvsTestCase(base.TestCase):
             self.assertEqual(200, res.status_code)
 
     @mock.patch('octavia.amphorae.backends.agent.api_server.util.'
+                'get_udp_listeners')
+    @mock.patch('octavia.amphorae.backends.agent.api_server.util.'
+                'get_loadbalancers')
+    @mock.patch('octavia.amphorae.backends.agent.api_server.util.'
                 'run_systemctl_command')
     @mock.patch('octavia.amphorae.backends.agent.api_server.util.'
                 'install_netns_systemd_service')
@@ -187,8 +191,10 @@ class KeepalivedLvsTestCase(base.TestCase):
     def test_upload_udp_listener_config_with_vrrp_check_dir(
             self, m_check_output, m_os_rm, m_os_mkdir, m_exists, m_os_chmod,
             m_os_sysinit, m_copy2, mock_netns, mock_install_netns,
-            mock_systemctl):
+            mock_systemctl, mock_get_lbs, mock_get_udp_listeners):
         m_exists.side_effect = [False, False, True, True, False, False, False]
+        mock_get_lbs.return_value = []
+        mock_get_udp_listeners.return_value = [self.FAKE_ID]
         cfg_path = util.keepalived_lvs_cfg_path(self.FAKE_ID)
         m = self.useFixture(test_utils.OpenFixture(cfg_path)).mock_open
 
@@ -237,6 +243,8 @@ class KeepalivedLvsTestCase(base.TestCase):
             m_fdopen.assert_any_call('TEST-WRITE-CFG', 'wb')
             m_fdopen.assert_any_call('TEST-WRITE-SYSINIT', 'w')
             m_fdopen.assert_any_call('TEST-WRITE-UDP-VRRP-CHECK', 'w')
+
+            m_os_rm.assert_called_once_with(util.haproxy_check_script_path())
             self.assertEqual(200, res.status_code)
 
     @mock.patch('octavia.amphorae.backends.agent.api_server.util.'
