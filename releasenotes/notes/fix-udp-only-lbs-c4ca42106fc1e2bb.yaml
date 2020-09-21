@@ -1,0 +1,5 @@
+---
+fixes:
+  - |
+    Fixed an issue where UDP only load balancers would not bring up the VIP
+    address.
