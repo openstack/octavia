@@ -211,6 +211,45 @@ class TestMember(base.BaseAPITest):
         for m in [api_m_1, api_m_2]:
             self.assertIn(m, response)
 
+    def test_get_all_unscoped_token(self):
+        api_m_1 = self.create_member(
+            self.pool_id, '192.0.2.1', 80).get(self.root_tag)
+        self.set_lb_status(self.lb_id)
+        api_m_2 = self.create_member(
+            self.pool_id, '192.0.2.2', 80).get(self.root_tag)
+        self.set_lb_status(self.lb_id)
+        # Original objects didn't have the updated operating/provisioning
+        # status that exists in the DB.
+        for m in [api_m_1, api_m_2]:
+            m['operating_status'] = constants.ONLINE
+            m['provisioning_status'] = constants.ACTIVE
+            m.pop('updated_at')
+
+        self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
+        auth_strategy = self.conf.conf.api_settings.get('auth_strategy')
+        self.conf.config(group='api_settings', auth_strategy=constants.TESTING)
+        with mock.patch.object(octavia.common.context.Context, 'project_id',
+                               None):
+            override_credentials = {
+                'service_user_id': None,
+                'user_domain_id': None,
+                'is_admin_project': True,
+                'service_project_domain_id': None,
+                'service_project_id': None,
+                'roles': ['load-balancer_member'],
+                'user_id': None,
+                'is_admin': False,
+                'service_user_domain_id': None,
+                'project_domain_id': None,
+                'service_roles': [],
+                'project_id': None}
+            with mock.patch(
+                    "oslo_context.context.RequestContext.to_policy_values",
+                    return_value=override_credentials):
+                result = self.get(self.members_path, status=403).json
+        self.conf.config(group='api_settings', auth_strategy=auth_strategy)
+        self.assertEqual(self.NOT_AUTHORIZED_BODY, result)
+
     def test_get_all_not_authorized(self):
         api_m_1 = self.create_member(
             self.pool_id, '192.0.2.1', 80).get(self.root_tag)
