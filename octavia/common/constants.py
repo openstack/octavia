@@ -677,3 +677,8 @@ CLIENT_AUTH_OPTIONAL = 'OPTIONAL'
 CLIENT_AUTH_MANDATORY = 'MANDATORY'
 SUPPORTED_CLIENT_AUTH_MODES = [CLIENT_AUTH_NONE, CLIENT_AUTH_OPTIONAL,
                                CLIENT_AUTH_MANDATORY]
+
+# Sadly in the LBaaS v2 API, header insertions are on the listener objects
+# but they should be on the pool. Dealing with it until v3.
+LISTENER_PROTOCOLS_SUPPORTING_HEADER_INSERTION = [PROTOCOL_HTTP,
+                                                  PROTOCOL_TERMINATED_HTTPS]
