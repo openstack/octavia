@@ -1,0 +1,4 @@
+---
+fixes:
+  - |
+    Fixed an issue where TLS-enabled pools would fail to provision.
