@@ -232,6 +232,10 @@ class BaseController(pecan_rest.RestController):
             if project_id is None:
                 project_id = context.project_id
 
+            # If we still don't know who it is, reject it.
+            if project_id is None:
+                raise exceptions.PolicyForbidden()
+
             # Check authorization to list objects under this project
             self._auth_validate_action(context, project_id,
                                        constants.RBAC_GET_ALL)

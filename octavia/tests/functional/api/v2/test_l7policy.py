@@ -224,6 +224,58 @@ class TestL7Policy(base.BaseAPITest):
         self.assertIn((api_l7p_c.get('id'), api_l7p_c.get('action')),
                       policy_id_actions)
 
+    def test_get_all_unscoped_token(self):
+        project_id = uuidutils.generate_uuid()
+        lb1 = self.create_load_balancer(uuidutils.generate_uuid(), name='lb1',
+                                        project_id=project_id)
+        lb1_id = lb1.get('loadbalancer').get('id')
+        self.set_lb_status(lb1_id)
+        listener1 = self.create_listener(constants.PROTOCOL_HTTP, 80,
+                                         lb1_id)
+        listener1_id = listener1.get('listener').get('id')
+        self.set_lb_status(lb1_id)
+        pool1 = self.create_pool(lb1_id, constants.PROTOCOL_HTTP,
+                                 constants.LB_ALGORITHM_ROUND_ROBIN)
+        pool1_id = pool1.get('pool').get('id')
+        self.set_lb_status(lb1_id)
+        self.create_l7policy(
+            listener1_id,
+            constants.L7POLICY_ACTION_REJECT).get(self.root_tag)
+        self.set_lb_status(lb1_id)
+        self.create_l7policy(
+            listener1_id, constants.L7POLICY_ACTION_REDIRECT_TO_POOL,
+            position=2, redirect_pool_id=pool1_id).get(self.root_tag)
+        self.set_lb_status(lb1_id)
+        self.create_l7policy(
+            self.listener_id, constants.L7POLICY_ACTION_REDIRECT_TO_URL,
+            redirect_url='http://localhost/').get(self.root_tag)
+        self.set_lb_status(lb1_id)
+
+        auth_strategy = self.conf.conf.api_settings.get('auth_strategy')
+        self.conf.config(group='api_settings',
+                         auth_strategy=constants.KEYSTONE)
+        with mock.patch.object(octavia.common.context.Context, 'project_id',
+                               None):
+            override_credentials = {
+                'service_user_id': None,
+                'user_domain_id': None,
+                'is_admin_project': True,
+                'service_project_domain_id': None,
+                'service_project_id': None,
+                'roles': ['load-balancer_member'],
+                'user_id': None,
+                'is_admin': False,
+                'service_user_domain_id': None,
+                'project_domain_id': None,
+                'service_roles': [],
+                'project_id': None}
+            with mock.patch(
+                    "oslo_context.context.RequestContext.to_policy_values",
+                    return_value=override_credentials):
+                result = self.get(self.L7POLICIES_PATH, status=403).json
+        self.conf.config(group='api_settings', auth_strategy=auth_strategy)
+        self.assertEqual(self.NOT_AUTHORIZED_BODY, result)
+
     def test_get_all_non_admin_global_observer(self):
         project_id = uuidutils.generate_uuid()
         lb1 = self.create_load_balancer(uuidutils.generate_uuid(), name='lb1',

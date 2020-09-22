@@ -194,6 +194,42 @@ class TestL7Rule(base.BaseAPITest):
         self.assertIn((api_l7r_b.get('id'), api_l7r_b.get('type')),
                       rule_id_types)
 
+    def test_get_all_unscoped_token(self):
+        self.create_l7rule(
+            self.l7policy_id, constants.L7RULE_TYPE_PATH,
+            constants.L7RULE_COMPARE_TYPE_STARTS_WITH,
+            '/api').get(self.root_tag)
+        self.set_lb_status(self.lb_id)
+        self.create_l7rule(
+            self.l7policy_id, constants.L7RULE_TYPE_COOKIE,
+            constants.L7RULE_COMPARE_TYPE_CONTAINS, 'some-value',
+            key='some-cookie').get(self.root_tag)
+        self.set_lb_status(self.lb_id)
+        self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
+        auth_strategy = self.conf.conf.api_settings.get('auth_strategy')
+        self.conf.config(group='api_settings', auth_strategy=constants.TESTING)
+        with mock.patch.object(octavia.common.context.Context, 'project_id',
+                               None):
+            override_credentials = {
+                'service_user_id': None,
+                'user_domain_id': None,
+                'is_admin_project': True,
+                'service_project_domain_id': None,
+                'service_project_id': None,
+                'roles': ['load-balancer_member'],
+                'user_id': None,
+                'is_admin': False,
+                'service_user_domain_id': None,
+                'project_domain_id': None,
+                'service_roles': [],
+                'project_id': None}
+            with mock.patch(
+                    "oslo_context.context.RequestContext.to_policy_values",
+                    return_value=override_credentials):
+                result = self.get(self.l7rules_path, status=403).json
+        self.conf.config(group='api_settings', auth_strategy=auth_strategy)
+        self.assertEqual(self.NOT_AUTHORIZED_BODY, result)
+
     def test_get_all_not_authorized(self):
         self.create_l7rule(
             self.l7policy_id, constants.L7RULE_TYPE_PATH,

@@ -1,0 +1,10 @@
+---
+security:
+  - |
+    If you are using the admin_or_owner-policy.yaml policy override file
+    you should upgrade your API processes to include the unscoped token fix.
+    The default policies are not affected by this issue.
+fixes:
+  - |
+    Fixes an issue when using the admin_or_owner-policy.yaml policy override
+    file and unscoped tokens.
