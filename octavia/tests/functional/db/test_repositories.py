@@ -3285,6 +3285,18 @@ class AmphoraRepositoryTest(BaseRepositoryTest):
         self.assertEqual(cert_expired_amphora.cert_expiration, expiration)
         self.assertEqual(cert_expired_amphora.id, amphora2.id)
 
+    def test_get_cert_expired_amphora_deleted(self):
+        amphora = self.create_amphora(self.FAKE_UUID_3)
+        expiration = datetime.datetime.utcnow() + datetime.timedelta(seconds=1)
+        self.amphora_repo.update(self.session, amphora.id,
+                                 status=constants.DELETED,
+                                 cert_expiration=expiration)
+
+        cert_expired_amphora = self.amphora_repo.get_cert_expiring_amphora(
+            self.session)
+
+        self.assertIsNone(cert_expired_amphora)
+
     def test_get_lb_for_health_update(self):
         amphora1 = self.create_amphora(self.FAKE_UUID_1)
         amphora2 = self.create_amphora(self.FAKE_UUID_3)
