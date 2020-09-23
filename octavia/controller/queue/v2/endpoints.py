@@ -95,19 +95,19 @@ class Endpoints(object):
 
     def create_health_monitor(self, context, health_monitor):
         LOG.info('Creating health monitor \'%s\'...', health_monitor.get(
-            constants.ID))
+            constants.HEALTHMONITOR_ID))
         self.worker.create_health_monitor(health_monitor)
 
     def update_health_monitor(self, context, original_health_monitor,
                               health_monitor_updates):
         LOG.info('Updating health monitor \'%s\'...',
-                 original_health_monitor.get(constants.ID))
+                 original_health_monitor.get(constants.HEALTHMONITOR_ID))
         self.worker.update_health_monitor(original_health_monitor,
                                           health_monitor_updates)
 
     def delete_health_monitor(self, context, health_monitor):
         LOG.info('Deleting health monitor \'%s\'...', health_monitor.get(
-            constants.ID))
+            constants.HEALTHMONITOR_ID))
         self.worker.delete_health_monitor(health_monitor)
 
     def create_member(self, context, member):
