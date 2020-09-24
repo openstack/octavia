@@ -52,6 +52,8 @@ function install_diskimage_builder {
         GITBRANCH["diskimage-builder"]=$DISKIMAGE_BUILDER_REPO_REF
         git_clone_by_name "diskimage-builder"
         setup_dev_lib -bindep "diskimage-builder"
+    else
+        pip_install -r $OCTAVIA_DIR/diskimage-create/requirements.txt
     fi
 }
 
