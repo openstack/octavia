@@ -12,6 +12,14 @@
       - octavia-tox-tips
     check:
       jobs:
+        - openstack-tox-pip-check-reqs:
+            irrelevant-files:
+              - ^.*\.rst$
+              - ^api-ref/.*$
+              - ^doc/.*$
+              - ^etc/.*$
+              - ^octavia/tests/.*$
+              - ^releasenotes/.*$
         - openstack-tox-functional-py36:
             irrelevant-files:
               - ^.*\.rst$
@@ -68,6 +76,14 @@
       fail-fast: true
       queue: octavia
       jobs:
+        - openstack-tox-pip-check-reqs:
+            irrelevant-files:
+              - ^.*\.rst$
+              - ^api-ref/.*$
+              - ^doc/.*$
+              - ^etc/.*$
+              - ^octavia/tests/.*$
+              - ^releasenotes/.*$
         - openstack-tox-functional-py36:
             irrelevant-files:
               - ^.*\.rst$
