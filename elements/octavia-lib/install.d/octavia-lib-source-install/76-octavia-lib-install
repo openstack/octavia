@@ -6,6 +6,8 @@ fi
 set -eu
 set -o pipefail
 
+[ "${DIB_INSTALLTYPE_amphora_agent:-}" = "package" ] && exit 0
+
 AMP_VENV=/opt/amphora-agent-venv
 
 sed -i 's|octavia-lib|#octavia-lib|' /opt/upper-constraints.txt
