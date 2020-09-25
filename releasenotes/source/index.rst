@@ -19,6 +19,7 @@ Octavia Release Notes
    :maxdepth: 1
 
    unreleased
+   victoria
    ussuri
    train
    stein
