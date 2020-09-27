@@ -1,0 +1,5 @@
+---
+fixes:
+  - |
+    Fixed the healthcheck endpoint always querying the backends by caching
+    results for a configurable time. The default is five seconds.

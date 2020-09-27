@@ -105,6 +105,9 @@ api_opts = [
     cfg.BoolOpt('healthcheck_enabled', default=False,
                 help=_("When True, the oslo middleware healthcheck endpoint "
                        "is enabled in the Octavia API.")),
+    cfg.IntOpt('healthcheck_refresh_interval', default=5,
+               help=_("The interval healthcheck plugins should cache results, "
+                      "in seconds.")),
     cfg.StrOpt('default_listener_ciphers',
                default=constants.CIPHERS_OWASP_SUITE_B,
                help=_("Default OpenSSL cipher string (colon-separated) for "
