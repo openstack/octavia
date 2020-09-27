@@ -49,6 +49,7 @@ class TestHealthCheck(base_db_test.OctaviaDBTestBase):
 
         self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
         self.conf.config(group='healthcheck', backends=['octavia_db_check'])
+        self.conf.config(group='api_settings', healthcheck_refresh_interval=5)
         self.UNAVAILABLE = (healthcheck_plugins.OctaviaDBHealthcheck.
                             UNAVAILABLE_REASON)
 
@@ -144,6 +145,14 @@ class TestHealthCheck(base_db_test.OctaviaDBTestBase):
         self.assertEqual(200, response.status_code)
         self.assertIn('OK', response.text)
         self.assertIn('Garbage collector', response.text)
+
+    def test_healthcheck_get_text_cached(self):
+        self.conf.config(group='healthcheck', detailed=False)
+        app = self._get_enabled_app()
+        for i in range(10):
+            response = self._get(app, '/healthcheck')
+            self.assertEqual(200, response.status_code)
+            self.assertEqual('OK', response.text)
 
     def test_healthcheck_disabled_get(self):
         self._get(self._get_disabled_app(), '/healthcheck', status=404)
