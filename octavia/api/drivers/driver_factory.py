@@ -21,6 +21,7 @@ from octavia.common import exceptions
 
 CONF = cfg.CONF
 LOG = logging.getLogger(__name__)
+PROVIDER_CACHE = dict()
 
 
 def get_driver(provider):
@@ -37,12 +38,16 @@ def get_driver(provider):
                     "configuration file.", provider)
         raise exceptions.ProviderNotEnabled(prov=provider)
 
+    if provider in PROVIDER_CACHE:
+        return PROVIDER_CACHE[provider]
+
     try:
         driver = stevedore_driver.DriverManager(
             namespace='octavia.api.drivers',
             name=provider,
             invoke_on_load=True).driver
         driver.name = provider
+        PROVIDER_CACHE[provider] = driver
     except Exception as e:
         LOG.error('Unable to load provider driver %s due to: %s',
                   provider, str(e))
