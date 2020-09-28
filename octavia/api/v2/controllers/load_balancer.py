@@ -14,6 +14,7 @@
 #    under the License.
 
 from oslo_config import cfg
+from oslo_db import api as oslo_db_api
 from oslo_db import exception as odb_exceptions
 from oslo_log import log as logging
 from oslo_utils import excutils
@@ -363,10 +364,19 @@ class LoadBalancersController(base.BaseController):
         # Load the driver early as it also provides validation
         driver = driver_factory.get_driver(provider)
 
+        lb_id = self._create_loadbalancer(load_balancer, driver, context.session)
+        db_lb = self._get_db_lb(context.session, lb_id)
+
+        result = self._convert_db_to_type(
+            db_lb, lb_types.LoadBalancerFullResponse)
+        return lb_types.LoadBalancerFullRootResponse(loadbalancer=result)
+
+    @oslo_db_api.wrap_db_retry(retry_on_deadlock=True)
+    def _create_loadbalancer(self, load_balancer, driver, session):
         lock_session = db_api.get_session(autocommit=False)
         try:
             if self.repositories.check_quota_met(
-                    context.session,
+                    session,
                     lock_session,
                     data_models.LoadBalancer,
                     load_balancer.project_id):
@@ -425,7 +435,7 @@ class LoadBalancersController(base.BaseController):
 
             if listeners or pools:
                 db_pools, db_lists = self._graph_create(
-                    context.session, lock_session, db_lb, listeners, pools)
+                    session, lock_session, db_lb, listeners, pools)
 
             # Prepare the data for the driver data model
             driver_lb_dict = driver_utils.lb_dict_to_provider_dict(
@@ -439,18 +449,13 @@ class LoadBalancersController(base.BaseController):
                 driver_dm.LoadBalancer.from_dict(driver_lb_dict))
 
             lock_session.commit()
+            return db_lb.id
         except odb_exceptions.DBDuplicateEntry:
             lock_session.rollback()
             raise exceptions.IDAlreadyExists()
         except Exception:
             with excutils.save_and_reraise_exception():
                 lock_session.rollback()
-
-        db_lb = self._get_db_lb(context.session, db_lb.id)
-
-        result = self._convert_db_to_type(
-            db_lb, lb_types.LoadBalancerFullResponse)
-        return lb_types.LoadBalancerFullRootResponse(loadbalancer=result)
 
     def _graph_create(self, session, lock_session, db_lb, listeners, pools):
         # Track which pools must have a full specification
