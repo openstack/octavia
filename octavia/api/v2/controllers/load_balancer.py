@@ -16,6 +16,7 @@ import ipaddress
 
 from octavia_lib.api.drivers import data_models as driver_dm
 from oslo_config import cfg
+from oslo_db import api as oslo_db_api
 from oslo_db import exception as odb_exceptions
 from oslo_log import log as logging
 from oslo_utils import excutils
@@ -478,6 +479,16 @@ class LoadBalancersController(base.BaseController):
         # Load the driver early as it also provides validation
         driver = driver_factory.get_driver(provider)
 
+        lb_id = self._create_loadbalancer(load_balancer, driver, context)
+        with context.session.begin():
+            db_lb = self._get_db_lb(context.session, lb_id)
+
+        result = self._convert_db_to_type(
+            db_lb, lb_types.LoadBalancerFullResponse)
+        return lb_types.LoadBalancerFullRootResponse(loadbalancer=result)
+
+    @oslo_db_api.wrap_db_retry(retry_on_deadlock=True)
+    def _create_loadbalancer(self, load_balancer, driver, context):
         lock_session = context.session
         lock_session.begin()
         try:
@@ -602,19 +613,13 @@ class LoadBalancersController(base.BaseController):
                 driver_dm.LoadBalancer.from_dict(driver_lb_dict))
 
             lock_session.commit()
+            return db_lb.id
         except odb_exceptions.DBDuplicateEntry as e:
             lock_session.rollback()
             raise exceptions.IDAlreadyExists() from e
         except Exception:
             with excutils.save_and_reraise_exception():
                 lock_session.rollback()
-
-        with context.session.begin():
-            db_lb = self._get_db_lb(context.session, db_lb.id)
-
-        result = self._convert_db_to_type(
-            db_lb, lb_types.LoadBalancerFullResponse)
-        return lb_types.LoadBalancerFullRootResponse(loadbalancer=result)
 
     def _graph_create(self, session, db_lb, listeners, pools):
         # Track which pools must have a full specification
