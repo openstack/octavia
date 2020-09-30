@@ -16,6 +16,9 @@
 import concurrent.futures
 import datetime
 
+# work around for https://bugs.python.org/issue7980
+import _strptime  # noqa: F401 pylint: disable=unused-import
+
 from oslo_config import cfg
 from taskflow import engines as tf_engines
 
