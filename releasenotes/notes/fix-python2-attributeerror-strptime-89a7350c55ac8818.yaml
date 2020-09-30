@@ -1,0 +1,6 @@
+---
+fixes:
+  - |
+    Fix a potential AttributeError exception at init time in the housekeeping
+    service when using python2 because of an issue with thread safety when
+    calling strptime for the first time.
