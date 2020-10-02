@@ -106,7 +106,7 @@ class BaseRepository(object):
         """
         with session.begin(subtransactions=True):
             tags = model_kwargs.pop('tags', None)
-            if tags:
+            if tags is not None:
                 resource = session.query(self.model_class).get(id)
                 resource.tags = tags
             model = session.query(self.model_class).filter_by(
@@ -1061,7 +1061,7 @@ class ListenerRepository(BaseRepository):
     def update(self, session, id, **model_kwargs):
         with session.begin(subtransactions=True):
             tags = model_kwargs.pop('tags', None)
-            if tags:
+            if tags is not None:
                 resource = session.query(self.model_class).get(id)
                 resource.tags = tags
             listener_db = session.query(self.model_class).filter_by(
