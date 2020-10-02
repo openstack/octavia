@@ -1780,6 +1780,21 @@ class TestLoadBalancer(base.BaseAPITest):
         self.assert_correct_lb_status(api_lb.get('id'), constants.ONLINE,
                                       constants.PENDING_UPDATE)
 
+    def test_update_delete_tag(self):
+        project_id = uuidutils.generate_uuid()
+        lb = self.create_load_balancer(uuidutils.generate_uuid(),
+                                       name='lb1',
+                                       project_id=project_id,
+                                       admin_state_up=False,
+                                       tags=['test_tag1'],)
+        lb_dict = lb.get(self.root_tag)
+        lb_json = self._build_body({'tags': []})
+        self.set_lb_status(lb_dict.get('id'))
+        response = self.put(self.LB_PATH.format(lb_id=lb_dict.get('id')),
+                            lb_json)
+        api_lb = response.json.get(self.root_tag)
+        self.assertEqual([], api_lb.get('tags'))
+
     def test_update_with_vip(self):
         project_id = uuidutils.generate_uuid()
         lb = self.create_load_balancer(uuidutils.generate_uuid(),
