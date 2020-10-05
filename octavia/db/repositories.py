@@ -112,23 +112,24 @@ class BaseRepository(object):
             model = session.query(self.model_class).filter_by(
                 id=id)
 
-            """ Only allow valid provision_status transitions:
-                ERROR -> PENDING_DELETE
-                ACTIVE -> PENDING_DELETE
-                ACTIVE -> PENDING_UPDATE
-                PENDING_CREATE -> ACTIVE
-                PENDING_UPDATE -> ACTIVE
-                PENDING_DELETE -> DELETED
-            """
-            provisioning_status = model_kwargs.get('provisioning_status', None)
-            if provisioning_status == consts.PENDING_DELETE:
-                model = model.filter(self.model_class.provisioning_status.in_([consts.ACTIVE, consts.ERROR]))
-            elif provisioning_status == consts.PENDING_UPDATE:
-                model = model.filter_by(provisioning_status = consts.ACTIVE)
-            elif provisioning_status == consts.ACTIVE:
-                model = model.filter(self.model_class.provisioning_status.in_([consts.PENDING_CREATE, consts.PENDING_UPDATE]))
-            elif provisioning_status == consts.DELETED:
-                model = model.filter_by(provisioning_status = consts.PENDING_DELETE)
+            if not model_kwargs.pop('force_provisioning_status', False):
+                """ Only allow valid provision_status transitions:
+                    ERROR -> PENDING_DELETE
+                    ACTIVE -> PENDING_DELETE
+                    ACTIVE -> PENDING_UPDATE
+                    PENDING_CREATE -> ACTIVE
+                    PENDING_UPDATE -> ACTIVE
+                    PENDING_DELETE -> DELETED
+                """
+                provisioning_status = model_kwargs.get('provisioning_status', None)
+                if provisioning_status == consts.PENDING_DELETE:
+                    model = model.filter(self.model_class.provisioning_status.in_([consts.ACTIVE, consts.ERROR]))
+                elif provisioning_status == consts.PENDING_UPDATE:
+                    model = model.filter_by(provisioning_status = consts.ACTIVE)
+                elif provisioning_status == consts.ACTIVE:
+                    model = model.filter(self.model_class.provisioning_status.in_([consts.PENDING_CREATE, consts.PENDING_UPDATE]))
+                elif provisioning_status == consts.DELETED:
+                    model = model.filter_by(provisioning_status = consts.PENDING_DELETE)
             model.update(model_kwargs, synchronize_session='fetch')
 
     def get(self, session, **filters):
@@ -1080,27 +1081,28 @@ class ListenerRepository(BaseRepository):
                         models.SNI(listener_id=id,
                                    tls_container_id=container_ref)
                         for container_ref in containers]
-            """ Only allow valid provision_status transitions:
-                ERROR -> PENDING_DELETE
-                ACTIVE -> PENDING_DELETE
-                ACTIVE -> PENDING_UPDATE
-                PENDING_CREATE -> ACTIVE
-                PENDING_UPDATE -> ACTIVE
-                PENDING_DELETE -> DELETED
-            """
-            provisioning_status = model_kwargs.get('provisioning_status', None)
-            if provisioning_status == consts.PENDING_DELETE:
-                if not listener_db.provisioning_status in [consts.ACTIVE, consts.ERROR]:
-                    return
-            elif provisioning_status == consts.PENDING_UPDATE:
-                if listener_db.provisioning_status != consts.ACTIVE:
-                    return
-            elif provisioning_status == consts.ACTIVE:
-                if not listener_db.provisioning_status in [consts.PENDING_CREATE, consts.PENDING_UPDATE]:
-                    return
-            elif provisioning_status == consts.DELETED:
-                if listener_db.provisioning_status != consts.PENDING_DELETE:
-                    return
+            if not model_kwargs.pop('force_provisioning_status', False):
+                """ Only allow valid provision_status transitions:
+                    ERROR -> PENDING_DELETE
+                    ACTIVE -> PENDING_DELETE
+                    ACTIVE -> PENDING_UPDATE
+                    PENDING_CREATE -> ACTIVE
+                    PENDING_UPDATE -> ACTIVE
+                    PENDING_DELETE -> DELETED
+                """
+                provisioning_status = model_kwargs.get('provisioning_status', None)
+                if provisioning_status == consts.PENDING_DELETE:
+                    if not listener_db.provisioning_status in [consts.ACTIVE, consts.ERROR]:
+                        return
+                elif provisioning_status == consts.PENDING_UPDATE:
+                    if listener_db.provisioning_status != consts.ACTIVE:
+                        return
+                elif provisioning_status == consts.ACTIVE:
+                    if not listener_db.provisioning_status in [consts.PENDING_CREATE, consts.PENDING_UPDATE]:
+                        return
+                elif provisioning_status == consts.DELETED:
+                    if listener_db.provisioning_status != consts.PENDING_DELETE:
+                        return
             listener_db.update(model_kwargs)
 
     def create(self, session, **model_kwargs):
@@ -1562,6 +1564,7 @@ class L7RuleRepository(BaseRepository):
             query_options=query_options, **filters)
 
     def update(self, session, id, **model_kwargs):
+        force_prov_status = model_kwargs.pop('force_provisioning_status', False)
         with session.begin(subtransactions=True):
             l7rule_db = session.query(self.model_class).filter_by(
                 id=id).first()
@@ -1583,6 +1586,7 @@ class L7RuleRepository(BaseRepository):
                 model_kwargs.update({'key': None})
             validate.l7rule_data(self.model_class(**l7rule_dict))
 
+        model_kwargs.update(force_provisioning_status=force_prov_status)
         return super(L7RuleRepository, self).update(session, id, **model_kwargs)
 
     def create(self, session, **model_kwargs):
@@ -1677,6 +1681,8 @@ class L7PolicyRepository(BaseRepository):
                 raise exceptions.NotFound(
                     resource=data_models.L7Policy._name(), id=id)
 
+            force_prov_status = model_kwargs.pop('force_provisioning_status', False)
+
             # Necessary to work around unexpected / idiotic behavior of
             # the SQLAlchemy Orderinglist extension if the position changes.
             position = model_kwargs.pop('position', None)
@@ -1709,6 +1715,7 @@ class L7PolicyRepository(BaseRepository):
                     model_kwargs.update(redirect_url=None)
                     model_kwargs.update(redirect_pool_id=None)
 
+        model_kwargs.update(force_provisioning_status=force_prov_status)
         super(L7PolicyRepository, self).update(session, id, **model_kwargs)
 
         # Position manipulation must happen outside the other alterations

@@ -1,0 +1,9 @@
+export DEBIAN_FRONTEND=noninteractive && \
+export UPPER_CONSTRAINTS_FILE=https://raw.githubusercontent.com/sapcc/requirements/stable/stein-m3/upper-constraints.txt && \
+apt-get update && \
+apt-get install -y build-essential python-pip python-dev python3-dev git libpcre++-dev gettext && \
+pip install tox && \
+git clone -b stable/stein-m3 --single-branch https://github.com/sapcc/octavia.git --depth=1 && \
+cd octavia && \
+tox -e py27,functional -- --black-regex "octavia.tests.functional.api.v2.test_load_balancer.TestLoadBalancer.test_create_provider_octavia"
+

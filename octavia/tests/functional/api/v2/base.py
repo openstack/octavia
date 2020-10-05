@@ -445,7 +445,8 @@ class BaseAPITest(base_db_test.OctaviaDBTestBase):
                           operating_status=constants.ONLINE):
         repo.update(db_api.get_session(), id_,
                     provisioning_status=provisioning_status,
-                    operating_status=operating_status)
+                    operating_status=operating_status,
+                    force_provisioning_status=True)
 
     def assert_final_listener_statuses(self, lb_id, listener_id, delete=False):
         expected_prov_status = constants.ACTIVE
