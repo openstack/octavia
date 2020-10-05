@@ -480,7 +480,8 @@ class BaseAPITest(base_db_test.OctaviaDBTestBase):
         session = db_api.get_session()
         repo.update(session, id_,
                     provisioning_status=provisioning_status,
-                    operating_status=operating_status)
+                    operating_status=operating_status,
+                    force_provisioning_status=True)
         session.commit()
 
     def assert_final_listener_statuses(self, lb_id, listener_id, delete=False):

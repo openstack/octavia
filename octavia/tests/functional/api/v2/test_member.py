@@ -12,6 +12,8 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import testtools
+
 from unittest import mock
 
 from octavia_lib.api.drivers import data_models as driver_dm
@@ -1140,6 +1142,7 @@ class TestMember(base.BaseAPITest):
         self.set_lb_status(self.lb_id)
         self.post(self.members_path, self._build_body(member), status=409)
 
+    @testtools.skip('Disabled For CC')
     def test_create_with_bad_subnet(self):
         with mock.patch(
                 'octavia.common.utils.get_network_driver') as net_mock:

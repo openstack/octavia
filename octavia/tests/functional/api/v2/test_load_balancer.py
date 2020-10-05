@@ -12,6 +12,8 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import testtools
+
 import copy
 import random
 from unittest import mock
@@ -1027,6 +1029,7 @@ class TestLoadBalancer(base.BaseAPITest):
         self.conf.config(group='api_settings', auth_strategy=auth_strategy)
         self.assertEqual(self.NOT_AUTHORIZED_BODY, api_lb)
 
+    @testtools.skip('Disabled For CC')
     def test_create_provider_octavia(self, **optionals):
         lb_json = {'name': 'test1',
                    'vip_subnet_id': uuidutils.generate_uuid(),
@@ -1046,8 +1049,9 @@ class TestLoadBalancer(base.BaseAPITest):
             response = self.post(self.LBS_PATH, body)
         api_lb = response.json.get(self.root_tag)
         self._assert_request_matches_response(lb_json, api_lb)
-        return api_lb
+        return
 
+    @testtools.skip('Disabled For CC')
     def test_create_provider_octavia_no_port_sec(self, **optionals):
         lb_json = {'name': 'test1',
                    'vip_subnet_id': uuidutils.generate_uuid(),
