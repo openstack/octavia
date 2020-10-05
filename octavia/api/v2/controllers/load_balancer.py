@@ -41,6 +41,7 @@ from octavia.db import api as db_api
 from octavia.db import prepare as db_prepare
 from octavia.i18n import _
 from octavia.network import base as network_base
+from octavia.f5_extensions import workarounds as f5_workarounds
 
 
 CONF = cfg.CONF
@@ -427,6 +428,8 @@ class LoadBalancersController(base.BaseController):
                 # we created the VIP
                 if 'port_id' not in vip_dict or not vip_dict['port_id']:
                     octavia_owned = True
+
+            f5_workarounds.check_loadbalancer_for_invalid_ip(lock_session, self.repositories, vip)
 
             self.repositories.vip.update(
                 lock_session, db_lb.id, ip_address=vip.ip_address,
