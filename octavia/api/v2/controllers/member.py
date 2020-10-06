@@ -31,7 +31,6 @@ from octavia.common import exceptions
 import octavia.common.validate as validate
 from octavia.db import api as db_api
 from octavia.db import prepare as db_prepare
-from octavia.f5_extensions import workarounds as f5_workarounds
 
 
 LOG = logging.getLogger(__name__)
@@ -166,9 +165,6 @@ class MemberController(base.BaseController):
 
         lock_session = db_api.get_session(autocommit=False)
         try:
-            f5_workarounds.check_member_for_invalid_ip(lock_session, self.repositories,
-                                                       member.address, pool.load_balancer)
-
             if self.repositories.check_quota_met(
                     context.session,
                     lock_session,
