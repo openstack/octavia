@@ -1,0 +1,5 @@
+---
+fixes:
+  - |
+    Fixed an issue that could cause load balancers, with multiple amphora
+    in a failed state, to be unable to complete a failover.
