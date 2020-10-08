@@ -172,7 +172,7 @@ class ControllerWorker(object):
         if not db_health_monitor:
             LOG.warning('Failed to fetch %s %s from DB. Retrying for up to '
                         '60 seconds.', 'healthmonitor',
-                        db_health_monitor[constants.HEALTHMONITOR_ID])
+                        health_monitor[constants.HEALTHMONITOR_ID])
             raise db_exceptions.NoResultFound
 
         pool = db_health_monitor.pool
@@ -922,7 +922,7 @@ class ControllerWorker(object):
                              constants.LOADBALANCER_ID: lb_id,
                              constants.VIP: vip_dict}
 
-            self.services_controller.run_poster(
+            self.run_flow(
                 flow_utils.get_failover_amphora_flow,
                 amphora.to_dict(), lb_amp_count,
                 store=stored_params, wait=True)
@@ -1074,7 +1074,7 @@ class ControllerWorker(object):
             else:
                 stored_params[constants.AVAILABILITY_ZONE] = {}
 
-            self.services_controller.run_poster(
+            self.run_flow(
                 flow_utils.get_failover_LB_flow, amps, provider_lb_dict,
                 store=stored_params, wait=True)
 
