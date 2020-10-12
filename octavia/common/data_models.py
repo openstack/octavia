@@ -17,9 +17,12 @@
 import datetime
 import re
 
+from oslo_log import log as logging
 from sqlalchemy.orm import collections
 
 from octavia.common import constants
+
+LOG = logging.getLogger(__name__)
 
 
 class BaseDataModel(object):
@@ -329,7 +332,11 @@ class Pool(BaseDataModel):
                     break
         for pool in self.load_balancer.pools:
             if pool.id == self.id:
-                self.load_balancer.pools.remove(pool)
+                try:
+                    self.load_balancer.pools.remove(pool)
+                except ValueError:
+                    LOG.debug("Pool %s has already been removed from load "
+                              "balancer pools list.", pool.id)
                 break
         for l7policy in self.l7policies:
             if l7policy.redirect_pool_id == self.id:
