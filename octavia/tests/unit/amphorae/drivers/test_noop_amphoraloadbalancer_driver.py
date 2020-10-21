@@ -145,8 +145,10 @@ class TestNoopAmphoraLoadBalancerDriver(base.TestCase):
                 self.amphora.id, self.pem_file)])
 
     def test_update_agent_config(self):
-        self.driver.update_agent_config(self.amphora, self.agent_config)
+        self.driver.update_amphora_agent_config(self.amphora,
+                                                self.agent_config)
         self.assertEqual(
-            (self.amphora.id, self.agent_config, 'update_agent_config'),
+            (self.amphora.id, self.agent_config,
+             'update_amphora_agent_config'),
             self.driver.driver.amphoraconfig[(
                 self.amphora.id, self.agent_config)])
