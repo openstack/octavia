@@ -1148,6 +1148,9 @@ class ListenerRepository(BaseRepository):
                 resource.tags = tags
             listener_db = session.query(self.model_class).filter_by(
                 id=id).first()
+            if not listener_db:
+                raise exceptions.NotFound(
+                    resource=data_models.Listener._name(), id=id)
             # Verify any newly specified default_pool_id exists
             default_pool_id = model_kwargs.get('default_pool_id')
             if default_pool_id:
