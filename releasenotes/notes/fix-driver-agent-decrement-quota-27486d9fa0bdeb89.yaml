@@ -1,0 +1,5 @@
+---
+fixes:
+  - |
+    Fixes an issue where provider drivers may not decrement the load
+    balancer objects quota on delete.
