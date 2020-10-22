@@ -30,6 +30,7 @@ from oslo_utils import uuidutils
 from sqlalchemy.orm import joinedload
 from sqlalchemy.orm import noload
 from sqlalchemy.orm import subqueryload
+from sqlalchemy.sql.expression import false
 from sqlalchemy.sql import func
 
 from octavia.common import constants as consts
@@ -1225,9 +1226,12 @@ class AmphoraRepository(BaseRepository):
             seconds=expired_seconds)
 
         with session.begin(subtransactions=True):
-            amp = session.query(self.model_class).with_for_update().filter_by(
-                cert_busy=False).filter(
-                self.model_class.cert_expiration < expired_date).first()
+            amp = session.query(self.model_class).with_for_update().filter(
+                self.model_class.status.notin_(
+                    [consts.DELETED, consts.PENDING_DELETE]),
+                self.model_class.cert_busy == false(),
+                self.model_class.cert_expiration < expired_date
+            ).first()
 
             if amp is None:
                 return None
