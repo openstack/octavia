@@ -16,10 +16,13 @@ from unittest import mock
 
 from mock import call
 
-from octavia.api.drivers.driver_agent import driver_updater
-import octavia.tests.unit.base as base
 from octavia_lib.api.drivers import exceptions as driver_exceptions
 from octavia_lib.common import constants as lib_consts
+from oslo_utils import uuidutils
+
+from octavia.api.drivers.driver_agent import driver_updater
+from octavia.common import exceptions
+import octavia.tests.unit.base as base
 
 
 class TestDriverUpdater(base.TestCase):
@@ -63,6 +66,15 @@ class TestDriverUpdater(base.TestCase):
         self.driver_updater = driver_updater.DriverUpdater()
         self.ref_ok_response = {lib_consts.STATUS_CODE:
                                 lib_consts.DRVR_STATUS_CODE_OK}
+        mock_lb = mock.MagicMock()
+        self.lb_id = uuidutils.generate_uuid()
+        self.lb_project_id = uuidutils.generate_uuid()
+        mock_lb.id = self.lb_id
+        mock_lb.project_id = self.lb_project_id
+        mock_lb.provisioning_status = lib_consts.ACTIVE
+        self.lb_data_model = 'FakeLBDataModel'
+        self.mock_lb_repo.model_class.__data_model__ = self.lb_data_model
+        self.mock_lb_repo.get.return_value = mock_lb
 
     @mock.patch('octavia.common.utils.get_network_driver')
     def test_check_for_lb_vip_deallocate(self, mock_get_net_drvr):
@@ -83,9 +95,56 @@ class TestDriverUpdater(base.TestCase):
         self.driver_updater._check_for_lb_vip_deallocate(mock_repo, 'bogus_id')
         mock_net_drvr.deallocate_vip.assert_not_called()
 
+    @mock.patch('octavia.db.repositories.Repositories.decrement_quota')
+    @mock.patch('octavia.db.api.get_session')
+    def test_decrement_quota(self, mock_get_session, mock_dec_quota):
+        mock_session = mock.MagicMock()
+        mock_get_session.return_value = mock_session
+        mock_dec_quota.side_effect = [mock.DEFAULT,
+                                      exceptions.OctaviaException('Boom')]
+
+        self.driver_updater._decrement_quota(self.mock_lb_repo,
+                                             'FakeName', self.lb_id)
+        mock_dec_quota.assert_called_once_with(
+            mock_session, self.mock_lb_repo.model_class.__data_model__,
+            self.lb_project_id)
+        mock_session.commit.assert_called_once()
+        mock_session.rollback.assert_not_called()
+
+        # Test exception path
+        mock_dec_quota.reset_mock()
+        mock_session.reset_mock()
+        self.assertRaises(exceptions.OctaviaException,
+                          self.driver_updater._decrement_quota,
+                          self.mock_lb_repo, 'FakeName', self.lb_id)
+        mock_dec_quota.assert_called_once_with(
+            mock_session, self.mock_lb_repo.model_class.__data_model__,
+            self.lb_project_id)
+        mock_session.commit.assert_not_called()
+        mock_session.rollback.assert_called_once()
+
+        # Test already deleted path
+        mock_dec_quota.reset_mock()
+        mock_session.reset_mock()
+        # Create a local mock LB and LB_repo for this test
+        mock_lb = mock.MagicMock()
+        mock_lb.id = self.lb_id
+        mock_lb.provisioning_status = lib_consts.DELETED
+        mock_lb_repo = mock.MagicMock()
+        mock_lb_repo.model_class.__data_model__ = self.lb_data_model
+        mock_lb_repo.get.return_value = mock_lb
+        self.driver_updater._decrement_quota(mock_lb_repo,
+                                             'FakeName', self.lb_id)
+        mock_dec_quota.assert_not_called()
+        mock_session.commit.assert_not_called()
+        mock_session.rollback.assert_called_once()
+
+    @mock.patch('octavia.api.drivers.driver_agent.driver_updater.'
+                'DriverUpdater._decrement_quota')
     @mock.patch('octavia.api.drivers.driver_agent.driver_updater.'
                 'DriverUpdater._check_for_lb_vip_deallocate')
-    def test_process_status_update(self, mock_deallocate):
+    def test_process_status_update(self, mock_deallocate,
+                                   mock_decrement_quota):
         mock_repo = mock.MagicMock()
         list_dict = {"id": 2,
                      lib_consts.PROVISIONING_STATUS: lib_consts.ACTIVE,
@@ -130,6 +189,7 @@ class TestDriverUpdater(base.TestCase):
             self.mock_session, 2, provisioning_status=lib_consts.DELETED,
             operating_status=lib_consts.ONLINE)
         mock_repo.delete.assert_not_called()
+        mock_decrement_quota.assert_called_once_with(mock_repo, 'FakeName', 2)
 
         # Test with an empty update
         mock_repo.reset_mock()
@@ -139,17 +199,22 @@ class TestDriverUpdater(base.TestCase):
         mock_repo.delete.assert_not_called()
 
         # Test with deleted and delete_record True
+        mock_decrement_quota.reset_mock()
         mock_repo.reset_mock()
         self.driver_updater._process_status_update(
             mock_repo, 'FakeName', list_deleted_dict, delete_record=True)
         mock_repo.delete.assert_called_once_with(self.mock_session, id=2)
         mock_repo.update.assert_not_called()
+        mock_decrement_quota.assert_called_once_with(mock_repo, 'FakeName', 2)
 
         # Test with LB Delete
+        mock_decrement_quota.reset_mock()
         mock_repo.reset_mock()
         self.driver_updater._process_status_update(
             mock_repo, lib_consts.LOADBALANCERS, list_deleted_dict)
         mock_deallocate.assert_called_once_with(mock_repo, 2)
+        mock_decrement_quota.assert_called_once_with(
+            mock_repo, lib_consts.LOADBALANCERS, 2)
 
         # Test with an exception
         mock_repo.reset_mock()
