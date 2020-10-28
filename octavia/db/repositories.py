@@ -775,6 +775,53 @@ class LoadBalancerRepository(BaseRepository):
             session, pagination_helper=pagination_helper,
             query_options=query_options, **filters)
 
+    def update(self, session, id, **model_kwargs):
+        """Updates an entity in the database.
+
+        Special handling for provisioning_status if final state is ACTIVE/DELETED.
+        Then we use test_and_set_provisioning_status_pending with table locking
+        to mitigate any race conditions.
+
+        :param session: A Sql Alchemy database session.
+        :param model_kwargs: Entity attributes that should be updates.
+        :returns: octavia.common.data_model
+        """
+        if not model_kwargs.pop('force_provisioning_status', False):
+            provisioning_status = model_kwargs.get('provisioning_status', None)
+            if provisioning_status in (consts.ACTIVE, consts.DELETED):
+                self.test_and_set_provisioning_status_pending(session, id, provisioning_status)
+                model_kwargs.pop('provisioning_status', None)
+
+        super(LoadBalancerRepository, self).update(session, id, **model_kwargs)
+
+    @oslo_db_api.wrap_db_retry(max_retries=5, retry_on_deadlock=True)
+    def test_and_set_provisioning_status_pending(self, session, id, status):
+        """Tests and sets a load balancer and provisioning status.
+
+        Works like test_and_set_provisioning_status but with the difference
+        that is specifically only allow PENDING_ states to
+        transition to the correct end-state:
+
+                    PENDING_CREATE -> ACTIVE
+                    PENDING_UPDATE -> ACTIVE
+                    PENDING_DELETE -> DELETED
+
+        :param session: A Sql Alchemy database session.
+        :param id: id of Load Balancer
+        :param status: Status to set Load Balancer if check passes.
+        """
+        lb = (session.query(self.model_class)
+              .with_for_update()
+              .filter_by(id=id).one())
+        is_deleted = status == consts.DELETED
+        acceptable_statuses = (
+            (consts.PENDING_DELETE,)
+            if is_deleted else (consts.PENDING_CREATE, consts.PENDING_UPDATE)
+        )
+        if lb.provisioning_status in acceptable_statuses:
+            lb.provisioning_status = status
+            session.add(lb)
+
     @oslo_db_api.wrap_db_retry(max_retries=5, retry_on_deadlock=True)
     def test_and_set_provisioning_status(self, session, id, status,
                                          raise_exception=False):
