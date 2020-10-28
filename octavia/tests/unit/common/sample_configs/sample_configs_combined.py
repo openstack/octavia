@@ -495,20 +495,18 @@ RET_UDP_LISTENER = {
 
 
 def sample_listener_loadbalancer_tuple(
-        proto=None, topology=None, enabled=True, pools=None):
-    proto = 'HTTP' if proto is None else proto
+        topology=None, enabled=True, pools=None):
     if topology and topology in ['ACTIVE_STANDBY', 'ACTIVE_ACTIVE']:
         more_amp = True
     else:
         more_amp = False
         topology = constants.TOPOLOGY_SINGLE
     in_lb = collections.namedtuple(
-        'load_balancer', 'id, name, protocol, vip, amphorae, topology, '
+        'load_balancer', 'id, name, vip, amphorae, topology, '
         'pools, listeners, enabled, project_id')
     return in_lb(
         id='sample_loadbalancer_id_1',
         name='test-lb',
-        protocol=proto,
         vip=sample_vip_tuple(),
         amphorae=[sample_amphora_tuple(role=constants.ROLE_MASTER),
                   sample_amphora_tuple(
@@ -526,8 +524,7 @@ def sample_listener_loadbalancer_tuple(
 
 
 def sample_lb_with_udp_listener_tuple(
-        proto=None, topology=None, enabled=True, pools=None):
-    proto = 'HTTP' if proto is None else proto
+        topology=None, enabled=True, pools=None):
     if topology and topology in ['ACTIVE_STANDBY', 'ACTIVE_ACTIVE']:
         more_amp = True
     else:
@@ -541,12 +538,11 @@ def sample_lb_with_udp_listener_tuple(
         monitor_proto=constants.HEALTH_MONITOR_UDP_CONNECT)]
 
     in_lb = collections.namedtuple(
-        'load_balancer', 'id, name, protocol, vip, amphorae, topology, '
+        'load_balancer', 'id, name, vip, amphorae, topology, '
         'pools, enabled, project_id, listeners')
     return in_lb(
         id='sample_loadbalancer_id_1',
         name='test-lb',
-        protocol=proto,
         vip=sample_vip_tuple(),
         amphorae=[sample_amphora_tuple(role=constants.ROLE_MASTER),
                   sample_amphora_tuple(
@@ -690,7 +686,7 @@ def sample_listener_tuple(proto=None, monitor=True, alloc_default_pool=True,
         protocol_port=port,
         protocol=proto,
         load_balancer=sample_listener_loadbalancer_tuple(
-            proto=proto, topology=topology, pools=pools),
+            topology=topology, pools=pools),
         peer_port=peer_port,
         default_pool=sample_pool_tuple(
             listener_id='sample_listener_id_1',
