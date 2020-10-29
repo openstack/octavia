@@ -235,8 +235,19 @@ class TestAmphoraDriver(base.TestRpc):
         old_provider_pool = driver_dm.Pool(
             pool_id=self.sample_data.pool1_id)
         provider_pool = driver_dm.Pool(
-            pool_id=self.sample_data.pool1_id, admin_state_up=True)
-        pool_dict = {'enabled': True}
+            pool_id=self.sample_data.pool1_id, admin_state_up=True,
+            ca_tls_container_data='CA DATA', ca_tls_container_ref='CA REF',
+            crl_container_data='CRL DATA', crl_container_ref='CRL REF',
+            description='TEST DESCRIPTION', name='TEST NAME',
+            lb_algorithm=consts.LB_ALGORITHM_SOURCE_IP,
+            session_persistence='FAKE SP', tls_container_data='TLS DATA',
+            tls_container_ref='TLS REF', tls_enabled=False)
+        pool_dict = {'description': 'TEST DESCRIPTION',
+                     'lb_algorithm': 'SOURCE_IP', 'name': 'TEST NAME',
+                     'session_persistence': 'FAKE SP', 'tls_enabled': False,
+                     'enabled': True, 'tls_certificate_id': 'TLS REF',
+                     'ca_tls_certificate_id': 'CA REF',
+                     'crl_container_id': 'CRL REF'}
         self.amp_driver.pool_update(old_provider_pool, provider_pool)
         payload = {consts.ORIGINAL_POOL: old_provider_pool.to_dict(),
                    consts.POOL_UPDATES: pool_dict}
