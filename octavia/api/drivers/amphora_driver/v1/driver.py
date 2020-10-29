@@ -164,16 +164,16 @@ class AmphoraProviderDriver(driver_base.ProviderDriver):
             pool_dict['enabled'] = pool_dict.pop('admin_state_up')
         pool_id = pool_dict.pop('pool_id')
         if 'tls_container_ref' in pool_dict:
-            pool_dict['tls_container_id'] = pool_dict.pop('tls_container_ref')
+            pool_dict['tls_certificate_id'] = pool_dict.pop(
+                'tls_container_ref')
         pool_dict.pop('tls_container_data', None)
         if 'ca_tls_container_ref' in pool_dict:
             pool_dict['ca_tls_certificate_id'] = pool_dict.pop(
                 'ca_tls_container_ref')
         pool_dict.pop('ca_tls_container_data', None)
-        if 'client_crl_container_ref' in pool_dict:
-            pool_dict['client_crl_container_id'] = pool_dict.pop(
-                'client_crl_container_ref')
-        pool_dict.pop('client_crl_container_data', None)
+        if 'crl_container_ref' in pool_dict:
+            pool_dict['crl_container_id'] = pool_dict.pop('crl_container_ref')
+        pool_dict.pop('crl_container_data', None)
 
         payload = {consts.POOL_ID: pool_id,
                    consts.POOL_UPDATES: pool_dict}
