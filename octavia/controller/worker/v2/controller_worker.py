@@ -434,6 +434,14 @@ class ControllerWorker(object):
             flow_utils.get_update_load_balancer_flow,
             store=store)
 
+    @tenacity.retry(
+        retry=tenacity.retry_if_exception_type(db_exceptions.NoResultFound),
+        wait=tenacity.wait_incrementing(
+            CONF.haproxy_amphora.api_db_commit_retry_initial_delay,
+            CONF.haproxy_amphora.api_db_commit_retry_backoff,
+            CONF.haproxy_amphora.api_db_commit_retry_max),
+        stop=tenacity.stop_after_attempt(
+            CONF.haproxy_amphora.api_db_commit_retry_attempts))
     def create_member(self, member):
         """Creates a pool member.
 
@@ -693,6 +701,14 @@ class ControllerWorker(object):
             flow_utils.get_update_pool_flow,
             store=store)
 
+    @tenacity.retry(
+        retry=tenacity.retry_if_exception_type(db_exceptions.NoResultFound),
+        wait=tenacity.wait_incrementing(
+            CONF.haproxy_amphora.api_db_commit_retry_initial_delay,
+            CONF.haproxy_amphora.api_db_commit_retry_backoff,
+            CONF.haproxy_amphora.api_db_commit_retry_max),
+        stop=tenacity.stop_after_attempt(
+            CONF.haproxy_amphora.api_db_commit_retry_attempts))
     def create_l7policy(self, l7policy):
         """Creates an L7 Policy.
 
@@ -759,6 +775,14 @@ class ControllerWorker(object):
             flow_utils.get_update_l7policy_flow,
             store=store)
 
+    @tenacity.retry(
+        retry=tenacity.retry_if_exception_type(db_exceptions.NoResultFound),
+        wait=tenacity.wait_incrementing(
+            CONF.haproxy_amphora.api_db_commit_retry_initial_delay,
+            CONF.haproxy_amphora.api_db_commit_retry_backoff,
+            CONF.haproxy_amphora.api_db_commit_retry_max),
+        stop=tenacity.stop_after_attempt(
+            CONF.haproxy_amphora.api_db_commit_retry_attempts))
     def create_l7rule(self, l7rule):
         """Creates an L7 Rule.
 
@@ -920,7 +944,8 @@ class ControllerWorker(object):
                              constants.LOADBALANCER: provider_lb_dict,
                              constants.SERVER_GROUP_ID: server_group_id,
                              constants.LOADBALANCER_ID: lb_id,
-                             constants.VIP: vip_dict}
+                             constants.VIP: vip_dict,
+                             constants.AMPHORA_ID: amphora_id}
 
             self.run_flow(
                 flow_utils.get_failover_amphora_flow,
