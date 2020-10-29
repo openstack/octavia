@@ -1,0 +1,5 @@
+---
+fixes:
+  - |
+    Fixed an issue were updating a CRL or client certificate on a pool would
+    cause the pool to go into ERROR.
