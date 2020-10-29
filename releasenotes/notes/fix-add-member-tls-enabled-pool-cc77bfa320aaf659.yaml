@@ -1,0 +1,5 @@
+---
+fixes:
+  - |
+    Fixed an issue where members added to TLS-enabled pools would go to ERROR
+    provisioning status.

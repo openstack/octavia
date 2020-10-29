@@ -410,15 +410,16 @@ class TestHaproxyAmphoraLoadBalancerDriverTest(base.TestCase):
         mock_build_pem.return_value = fake_pem
         ref_md5 = hashlib.md5(fake_pem).hexdigest()  # nosec
         ref_name = '{id}.pem'.format(id=pool_cert.id)
-        ref_path = '{cert_dir}/{list_id}/{name}'.format(
-            cert_dir=fake_cert_dir, list_id=sample_listener.id, name=ref_name)
+        ref_path = '{cert_dir}/{lb_id}/{name}'.format(
+            cert_dir=fake_cert_dir, lb_id=sample_listener.load_balancer.id,
+            name=ref_name)
         ref_ca_name = 'fake_ca.pem'
-        ref_ca_path = '{cert_dir}/{list_id}/{name}'.format(
-            cert_dir=fake_cert_dir, list_id=sample_listener.id,
+        ref_ca_path = '{cert_dir}/{lb_id}/{name}'.format(
+            cert_dir=fake_cert_dir, lb_id=sample_listener.load_balancer.id,
             name=ref_ca_name)
         ref_crl_name = 'fake_crl.pem'
-        ref_crl_path = '{cert_dir}/{list_id}/{name}'.format(
-            cert_dir=fake_cert_dir, list_id=sample_listener.id,
+        ref_crl_path = '{cert_dir}/{lb_id}/{name}'.format(
+            cert_dir=fake_cert_dir, lb_id=sample_listener.load_balancer.id,
             name=ref_crl_name)
         ref_result = {'client_cert': ref_path, 'ca_cert': ref_ca_path,
                       'crl': ref_crl_path}
