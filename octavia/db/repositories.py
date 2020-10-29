@@ -786,7 +786,7 @@ class LoadBalancerRepository(BaseRepository):
         :param model_kwargs: Entity attributes that should be updates.
         :returns: octavia.common.data_model
         """
-        if not model_kwargs.pop('force_provisioning_status', False):
+        if not model_kwargs.get('force_provisioning_status', False):
             provisioning_status = model_kwargs.get('provisioning_status', None)
             if provisioning_status in (consts.ACTIVE, consts.DELETED):
                 self.test_and_set_provisioning_status_pending(session, id, provisioning_status)
