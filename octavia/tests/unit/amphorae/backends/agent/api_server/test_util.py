@@ -147,7 +147,7 @@ class TestUtil(base.TestCase):
         mock_jinja_env.get_template.assert_called_once_with(
             consts.AMP_NETNS_SVC_PREFIX + '.systemd.j2')
         mock_template.render.assert_called_once_with(
-            amphora_nsname=consts.AMPHORA_NAMESPACE, HasIFUPAll=True)
+            amphora_nsname=consts.AMPHORA_NAMESPACE)
         handle = m()
         handle.write.assert_called_with('script')
 

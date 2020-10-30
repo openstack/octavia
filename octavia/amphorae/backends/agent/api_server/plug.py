@@ -30,9 +30,6 @@ from octavia.common import constants as consts
 
 CONF = cfg.CONF
 
-ETH_X_VIP_CONF = 'plug_vip_ethX.conf.j2'
-ETH_X_PORT_CONF = 'plug_port_ethX.conf.j2'
-
 LOG = logging.getLogger(__name__)
 
 
@@ -40,26 +37,20 @@ class Plug(object):
     def __init__(self, osutils):
         self._osutils = osutils
 
+    def plug_lo(self):
+        self._osutils.write_interface_file(
+            interface="lo",
+            ip_address="127.0.0.1",
+            prefixlen=8)
+
     def plug_vip(self, vip, subnet_cidr, gateway,
                  mac_address, mtu=None, vrrp_ip=None, host_routes=None):
         # Validate vip and subnet_cidr, calculate broadcast address and netmask
         try:
-            render_host_routes = []
             ip = ipaddress.ip_address(vip)
             network = ipaddress.ip_network(subnet_cidr)
             vip = ip.exploded
-            broadcast = network.broadcast_address.exploded
-            netmask = (network.prefixlen if ip.version == 6
-                       else network.netmask.exploded)
-            vrrp_version = None
-            if vrrp_ip:
-                vrrp_ip_obj = ipaddress.ip_address(vrrp_ip)
-                vrrp_version = vrrp_ip_obj.version
-            if host_routes:
-                for hr in host_routes:
-                    network = ipaddress.ip_network(hr['destination'])
-                    render_host_routes.append({'network': network,
-                                               'gw': hr['nexthop']})
+            prefixlen = network.prefixlen
         except ValueError:
             return webob.Response(json=dict(message="Invalid VIP"),
                                   status=400)
@@ -76,27 +67,16 @@ class Plug(object):
 
         # Always put the VIP interface as eth1
         primary_interface = consts.NETNS_PRIMARY_INTERFACE
-        secondary_interface = "{interface}:0".format(
-            interface=primary_interface)
 
-        interface_file_path = self._osutils.get_network_interface_file(
-            primary_interface)
-
-        self._osutils.create_netns_dir()
-
-        self._osutils.write_interfaces_file()
         self._osutils.write_vip_interface_file(
-            interface_file_path=interface_file_path,
-            primary_interface=primary_interface,
+            interface=primary_interface,
             vip=vip,
-            ip=ip,
-            broadcast=broadcast,
-            netmask=netmask,
+            ip_version=ip.version,
+            prefixlen=prefixlen,
             gateway=gateway,
             mtu=mtu,
             vrrp_ip=vrrp_ip,
-            vrrp_version=vrrp_version,
-            render_host_routes=render_host_routes)
+            host_routes=host_routes)
 
         # Update the list of interfaces to add to the namespace
         # This is used in the amphora reboot case to re-establish the namespace
@@ -136,13 +116,8 @@ class Plug(object):
             ipr.link('set', index=idx, net_ns_fd=consts.AMPHORA_NAMESPACE,
                      IFLA_IFNAME=primary_interface)
 
-        # In an ha amphora, keepalived should bring the VIP interface up
-        if (CONF.controller_worker.loadbalancer_topology ==
-                consts.TOPOLOGY_ACTIVE_STANDBY):
-            secondary_interface = None
         # bring interfaces up
-        self._osutils.bring_interfaces_up(
-            ip, primary_interface, secondary_interface)
+        self._osutils.bring_interfaces_up(ip, primary_interface)
 
         return webob.Response(json=dict(
             message="OK",
@@ -189,13 +164,10 @@ class Plug(object):
         LOG.info('Plugged interface %s will become %s in the namespace %s',
                  default_netns_interface, netns_interface,
                  consts.AMPHORA_NAMESPACE)
-        interface_file_path = self._osutils.get_network_interface_file(
-            netns_interface)
         self._osutils.write_port_interface_file(
-            netns_interface=netns_interface,
+            interface=netns_interface,
             fixed_ips=fixed_ips,
-            mtu=mtu,
-            interface_file_path=interface_file_path)
+            mtu=mtu)
 
         # Update the list of interfaces to add to the namespace
         self._update_plugged_interfaces_file(netns_interface, mac_address)

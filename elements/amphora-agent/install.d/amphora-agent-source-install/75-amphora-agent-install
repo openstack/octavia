@@ -27,6 +27,9 @@ ln -s $AMP_VENV/bin/haproxy-vrrp-* /usr/local/bin/ || true
 # Link heath checker script
 ln -s $AMP_VENV/bin/amphora-health-checker /usr/local/bin/amphora-health-checker || true
 
+# Link amphora interface script
+ln -s $AMP_VENV/bin/amphora-interface /usr/local/bin/amphora-interface || true
+
 mkdir /etc/octavia
 # we assume certs, etc will come in through the config drive
 mkdir /etc/octavia/certs
