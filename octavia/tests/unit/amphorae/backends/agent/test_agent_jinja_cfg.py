@@ -55,8 +55,6 @@ class AgentJinjaTestCase(base.TestCase):
     def test_build_agent_config(self):
         ajc = agent_jinja_cfg.AgentJinjaTemplater()
         # Test execution order could influence this with the test below
-        self.conf.config(group='amphora_agent',
-                         agent_server_network_file=None)
         self.conf.config(group="amphora_agent",
                          administrative_log_facility=1)
         self.conf.config(group="amphora_agent", user_log_facility=0)
@@ -98,8 +96,6 @@ class AgentJinjaTestCase(base.TestCase):
 
     def test_build_agent_config_with_interfaces_file(self):
         ajc = agent_jinja_cfg.AgentJinjaTemplater()
-        self.conf.config(group="amphora_agent",
-                         agent_server_network_file='/etc/network/interfaces')
         self.conf.config(group="haproxy_amphora", use_upstart='False')
         self.conf.config(group="amphora_agent",
                          administrative_log_facility=1)
@@ -130,8 +126,6 @@ class AgentJinjaTestCase(base.TestCase):
                            '/etc/octavia/certs/server.pem\n'
                            'agent_server_network_dir = '
                            '/etc/network/interfaces.d/\n'
-                           'agent_server_network_file = '
-                           '/etc/network/interfaces\n'
                            'agent_request_read_timeout = 180\n'
                            'amphora_id = ' + AMP_ID + '\n'
                            'amphora_udp_driver = keepalived_lvs\n'
@@ -145,8 +139,6 @@ class AgentJinjaTestCase(base.TestCase):
 
     def test_build_agent_config_with_new_udp_driver(self):
         ajc = agent_jinja_cfg.AgentJinjaTemplater()
-        self.conf.config(group='amphora_agent',
-                         agent_server_network_file=None)
         self.conf.config(group="amphora_agent",
                          amphora_udp_driver='new_udp_driver')
         self.conf.config(group="amphora_agent",

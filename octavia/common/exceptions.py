@@ -414,3 +414,8 @@ class NetworkServiceError(OctaviaException):
 class InvalidIPAddress(APIException):
     msg = _('The IP Address %(ip_addr)s is invalid.')
     code = 400
+
+
+class AmphoraNetworkConfigException(OctaviaException):
+    message = _('Cannot configure network resource in the amphora: '
+                '%(detail)s')

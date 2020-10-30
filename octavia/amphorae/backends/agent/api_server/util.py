@@ -22,7 +22,6 @@ import jinja2
 from oslo_config import cfg
 from oslo_log import log as logging
 
-from octavia.amphorae.backends.agent.api_server import osutils
 from octavia.amphorae.backends.utils import ip_advertisement
 from octavia.amphorae.backends.utils import network_utils
 from octavia.common import constants as consts
@@ -241,8 +240,6 @@ def get_os_init_system():
 
 
 def install_netns_systemd_service():
-    os_utils = osutils.BaseOS.get_os_util()
-
     flags = os.O_WRONLY | os.O_CREAT | os.O_TRUNC
     # mode 00644
     mode = (stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IROTH)
@@ -261,8 +258,7 @@ def install_netns_systemd_service():
         with os.fdopen(os.open(netns_path, flags, mode), 'w') as text_file:
             text = jinja_env.get_template(
                 consts.AMP_NETNS_SVC_PREFIX + '.systemd.j2').render(
-                    amphora_nsname=consts.AMPHORA_NAMESPACE,
-                    HasIFUPAll=os_utils.has_ifup_all())
+                    amphora_nsname=consts.AMPHORA_NAMESPACE)
             text_file.write(text)
 
 

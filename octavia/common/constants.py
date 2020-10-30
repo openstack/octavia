@@ -713,8 +713,6 @@ NOAUTH = 'noauth'
 TESTING = 'testing'
 
 # Amphora distro-specific data
-UBUNTU_AMP_NET_DIR_TEMPLATE = '/etc/netns/{netns}/network/interfaces.d/'
-RH_AMP_NET_DIR_TEMPLATE = '/etc/netns/{netns}/sysconfig/network-scripts/'
 UBUNTU = 'ubuntu'
 CENTOS = 'centos'
 
@@ -894,3 +892,38 @@ SUPPORTED_ALPN_PROTOCOLS = [lib_consts.ALPN_PROTOCOL_HTTP_2,
 AMPHORA_SUPPORTED_ALPN_PROTOCOLS = [lib_consts.ALPN_PROTOCOL_HTTP_2,
                                     lib_consts.ALPN_PROTOCOL_HTTP_1_1,
                                     lib_consts.ALPN_PROTOCOL_HTTP_1_0]
+
+# Amphora interface fields
+MTU = 'mtu'
+ADDRESSES = 'addresses'
+ROUTES = 'routes'
+RULES = 'rules'
+SCRIPTS = 'scripts'
+
+# pyroute2 fields
+STATE = 'state'
+
+FAMILY = 'family'
+ADDRESS = 'address'
+PREFIXLEN = 'prefixlen'
+DHCP = 'dhcp'
+IPV6AUTO = 'ipv6auto'
+
+DST = 'dst'
+PREFSRC = 'prefsrc'
+GATEWAY = 'gateway'
+FLAGS = 'flags'
+ONLINK = 'onlink'
+TABLE = 'table'
+SCOPE = 'scope'
+
+SRC = 'src'
+SRC_LEN = 'src_len'
+
+IFACE_UP = 'up'
+IFACE_DOWN = 'down'
+
+COMMAND = 'command'
+
+# Amphora network directory
+AMP_NET_DIR_TEMPLATE = '/etc/octavia/interfaces/'
