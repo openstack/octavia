@@ -2575,7 +2575,7 @@ class TestListener(base.BaseAPITest):
         self.put(listener_path,
                  self._build_body({'sni_container_refs': [sni_id1, sni_id2]}))
         get_listener = self.get(listener_path).json['listener']
-        self.assertItemsEqual([sni_id1, sni_id2],
+        self.assertCountEqual([sni_id1, sni_id2],
                               get_listener.get('sni_container_refs'))
 
     # TODO(johnsom) Fix this when there is a noop certificate manager
