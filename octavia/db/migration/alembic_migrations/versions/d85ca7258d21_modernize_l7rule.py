@@ -50,7 +50,9 @@ def upgrade():
     # Add enabled
     op.add_column(
         u'l7rule',
-        sa.Column(u'enabled', sa.Boolean(), nullable=False)
+        sa.Column(u'enabled', sa.Boolean(),
+                  server_default=sa.sql.expression.true(),
+                  nullable=False)
     )
 
     # Add new operating_status column, setting existing rows to ONLINE
