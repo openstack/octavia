@@ -256,7 +256,8 @@ class BaseAPITest(base_db_test.OctaviaDBTestBase):
     def _set_lb_and_children_statuses(self, lb_id, prov_status, op_status):
         self.lb_repo.update(db_api.get_session(), lb_id,
                             provisioning_status=prov_status,
-                            operating_status=op_status)
+                            operating_status=op_status,
+                            force_provisioning_status=True)
         lb_listeners, _ = self.listener_repo.get_all(
             db_api.get_session(), load_balancer_id=lb_id)
         for listener in lb_listeners:
