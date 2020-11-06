@@ -787,10 +787,11 @@ class LoadBalancerRepository(BaseRepository):
         :returns: octavia.common.data_model
         """
         if not model_kwargs.get('force_provisioning_status', False):
-            provisioning_status = model_kwargs.get('provisioning_status', None)
+            provisioning_status = model_kwargs.pop('provisioning_status', None)
             if provisioning_status in (consts.ACTIVE, consts.DELETED):
                 self.test_and_set_provisioning_status_pending(session, id, provisioning_status)
-                model_kwargs.pop('provisioning_status', None)
+            elif provisioning_status: # PENDING_*
+                self.test_and_set_provisioning_status(session, id, provisioning_status)
 
         super(LoadBalancerRepository, self).update(session, id, **model_kwargs)
 
