@@ -110,17 +110,24 @@ class TestAmphoraDriverTasks(base.TestCase):
         mock_amphora_repo_update.assert_called_once_with(
             _session_mock, AMP_ID, status=constants.ERROR)
 
-    def test_amphorae_listeners_update(
-            self, mock_driver, mock_generate_uuid, mock_log, mock_get_session,
-            mock_listener_repo_get, mock_listener_repo_update,
-            mock_amphora_repo_update):
+    @mock.patch('octavia.db.repositories.LoadBalancerRepository.get')
+    def test_amphorae_listeners_update(self,
+                                       mock_lb_repo_get,
+                                       mock_driver,
+                                       mock_generate_uuid,
+                                       mock_log,
+                                       mock_get_session,
+                                       mock_listener_repo_get,
+                                       mock_listener_repo_update,
+                                       mock_amphora_repo_update):
 
+        mock_lb_repo_get.return_value = _LB_mock
         amp_list_update_obj = amphora_driver_tasks.AmphoraIndexListenerUpdate()
         amp_list_update_obj.execute(_load_balancer_mock, 0,
                                     [_amphora_mock], self.timeout_dict)
 
         mock_driver.update_amphora_listeners.assert_called_once_with(
-            _load_balancer_mock, _amphora_mock, self.timeout_dict)
+            _LB_mock, _amphora_mock, self.timeout_dict)
 
         mock_driver.update_amphora_listeners.side_effect = Exception('boom')
 
