@@ -75,6 +75,9 @@ class AmphoraIndexListenerUpdate(BaseAmphoraTask):
         # in a failover flow with both amps failing. Skip it and let
         # health manager fix it.
         try:
+            # Make sure we have a fresh load balancer object
+            loadbalancer = self.loadbalancer_repo.get(db_apis.get_session(),
+                                                      id=loadbalancer.id)
             self.amphora_driver.update_amphora_listeners(
                 loadbalancer, amphorae[amphora_index], timeout_dict)
         except Exception as e:
