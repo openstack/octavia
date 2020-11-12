@@ -451,6 +451,6 @@ class AmphoraConfigUpdate(BaseAmphoraTask):
             self.amphora_driver.update_amphora_agent_config(amphora,
                                                             agent_config)
         except driver_except.AmpDriverNotImplementedError:
-            LOG.error('Amphora {} does not support agent configuration '
+            LOG.error('Amphora %s does not support agent configuration '
                       'update. Please update the amphora image for this '
-                      'amphora. Skipping.'.format(amphora.id))
+                      'amphora. Skipping.', amphora.id)

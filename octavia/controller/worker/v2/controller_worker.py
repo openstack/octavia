@@ -128,7 +128,7 @@ class ControllerWorker(object):
                 flow_utils.get_create_amphora_flow,
                 store=store, wait=True)
         except Exception as e:
-            LOG.error('Failed to create an amphora due to: {}'.format(str(e)))
+            LOG.error('Failed to create an amphora due to: %s', str(e))
 
     def delete_amphora(self, amphora_id):
         """Deletes an existing Amphora.
@@ -145,8 +145,8 @@ class ControllerWorker(object):
                 flow_utils.get_delete_amphora_flow,
                 store=store)
         except Exception as e:
-            LOG.error('Failed to delete a amphora {0} due to: {1}'.format(
-                amphora_id, str(e)))
+            LOG.error('Failed to delete a amphora %s due to: %s',
+                      amphora_id, str(e))
             return
         LOG.info('Finished deleting amphora %s.', amphora_id)
 
@@ -1084,7 +1084,7 @@ class ControllerWorker(object):
         except Exception as e:
             with excutils.save_and_reraise_exception(reraise=False):
                 LOG.exception("LB %(lbid)s failover exception: %(exc)s",
-                              {'lbid': load_balancer_id, 'exc': e})
+                              {'lbid': load_balancer_id, 'exc': str(e)})
                 self._lb_repo.update(
                     db_apis.get_session(), load_balancer_id,
                     provisioning_status=constants.ERROR)
