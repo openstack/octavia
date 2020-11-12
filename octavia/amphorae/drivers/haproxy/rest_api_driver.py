@@ -203,9 +203,9 @@ class HaproxyAmphoraLoadBalancerDriver(
                     else:
                         listeners_to_update.append(listener)
                 except Exception as e:
-                    LOG.exception('Unable to update listener {0} due to '
-                                  '"{1}". Skipping this listener.'.format(
-                                      listener.id, e))
+                    LOG.exception('Unable to update listener %s due to '
+                                  '"%s". Skipping this listener.',
+                                  listener.id, str(e))
                     listener_repo = repo.ListenerRepository()
                     listener_repo.update(db_apis.get_session(), listener.id,
                                          provisioning_status=consts.ERROR,
@@ -588,8 +588,8 @@ class HaproxyAmphoraLoadBalancerDriver(
             self.clients[amphora.api_version].update_agent_config(
                 amphora, agent_config, timeout_dict=timeout_dict)
         except exc.NotFound as e:
-            LOG.debug('Amphora {} does not support the update_agent_config '
-                      'API.'.format(amphora.id))
+            LOG.debug('Amphora %s does not support the update_agent_config '
+                      'API.', amphora.id)
             raise driver_except.AmpDriverNotImplementedError() from e
 
     def get_interface_from_ip(self, amphora, ip_address, timeout_dict=None):

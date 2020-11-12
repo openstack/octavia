@@ -39,9 +39,9 @@ class TestProvider(base.BaseAPITest):
         noop_dict = {u'description': u'NoOp driver.', u'name': u'noop_driver'}
         providers = self.get(self.PROVIDERS_PATH).json.get(self.root_tag_list)
         self.assertEqual(4, len(providers))
-        self.assertTrue(octavia_dict in providers)
-        self.assertTrue(amphora_dict in providers)
-        self.assertTrue(noop_dict in providers)
+        self.assertIn(octavia_dict, providers)
+        self.assertIn(amphora_dict, providers)
+        self.assertIn(noop_dict, providers)
 
     def test_get_all_providers_fields(self):
         octavia_dict = {u'name': u'octavia'}
@@ -50,9 +50,9 @@ class TestProvider(base.BaseAPITest):
         providers = self.get(self.PROVIDERS_PATH, params={'fields': ['name']})
         providers_list = providers.json.get(self.root_tag_list)
         self.assertEqual(4, len(providers_list))
-        self.assertTrue(octavia_dict in providers_list)
-        self.assertTrue(amphora_dict in providers_list)
-        self.assertTrue(noop_dict in providers_list)
+        self.assertIn(octavia_dict, providers_list)
+        self.assertIn(amphora_dict, providers_list)
+        self.assertIn(noop_dict, providers_list)
 
 
 class TestFlavorCapabilities(base.BaseAPITest):

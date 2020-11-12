@@ -90,7 +90,7 @@ class BarbicanCertManager(cert_mgr.CertManager):
             return certificate_secret.secret_ref
         except Exception as e:
             with excutils.save_and_reraise_exception():
-                LOG.error('Error storing certificate data: %s', e)
+                LOG.error('Error storing certificate data: %s', str(e))
 
     def get_cert(self, context, cert_ref, resource_ref=None, check_only=False,
                  service_name=None):

@@ -294,7 +294,7 @@ class NovaServerGroupCreate(BaseComputeTask):
             LOG.error("Failed to delete server group.  Resources may "
                       "still be in use for server group: %(sg)s due to "
                       "error: %(except)s",
-                      {'sg': server_group_id, 'except': e})
+                      {'sg': server_group_id, 'except': str(e)})
 
 
 class NovaServerGroupDelete(BaseComputeTask):

@@ -349,9 +349,9 @@ class AllowedAddressPairsDriver(neutron_base.BaseNeutronDriver):
         try:
             port = self.get_port(vip.port_id)
         except base.PortNotFound:
-            LOG.warning("Can't deallocate VIP because the vip port {0} "
+            LOG.warning("Can't deallocate VIP because the vip port %s "
                         "cannot be found in neutron. "
-                        "Continuing cleanup.".format(vip.port_id))
+                        "Continuing cleanup.", vip.port_id)
             port = None
 
         self._delete_security_group(vip, port)
@@ -565,7 +565,7 @@ class AllowedAddressPairsDriver(neutron_base.BaseNeutronDriver):
         except Exception as e:
             LOG.error('Failed to delete port.  Resources may still be in '
                       'use for port: %(port)s due to error: %(except)s',
-                      {constants.PORT: amphora.vrrp_port_id, 'except': e})
+                      {constants.PORT: amphora.vrrp_port_id, 'except': str(e)})
 
     def unplug_vip(self, load_balancer, vip):
         try:
@@ -623,9 +623,8 @@ class AllowedAddressPairsDriver(neutron_base.BaseNeutronDriver):
             raise exceptions.MissingVIPSecurityGroup(lb_id=load_balancer.id)
         else:
             LOG.warning('VIP security group missing when updating the VIP for '
-                        'delete on load balancer: {lb_id}. Skipping update '
-                        'because this is for delete.'.format(
-                            lb_id=load_balancer.id))
+                        'delete on load balancer: %s. Skipping update '
+                        'because this is for delete.', load_balancer.id)
 
     def failover_preparation(self, amphora):
         if self.dns_integration_enabled:

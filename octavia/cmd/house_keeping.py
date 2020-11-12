@@ -48,7 +48,7 @@ def spare_amphora_check():
             spare_amp.spare_check()
         except Exception as e:
             LOG.debug('spare_amphora caught the following exception and '
-                      'is restarting: {}'.format(e))
+                      'is restarting: %s', str(e))
         spare_amp_thread_event.wait(interval)
 
 
@@ -70,7 +70,7 @@ def db_cleanup():
             db_cleanup.cleanup_load_balancers()
         except Exception as e:
             LOG.debug('db_cleanup caught the following exception and '
-                      'is restarting: {}'.format(e))
+                      'is restarting: %s', str(e))
         db_cleanup_thread_event.wait(interval)
 
 
@@ -86,7 +86,7 @@ def cert_rotation():
             cert_rotate.rotate()
         except Exception as e:
             LOG.debug('cert_rotation caught the following exception and '
-                      'is restarting: {}'.format(e))
+                      'is restarting: %s', str(e))
         cert_rotate_thread_event.wait(interval)
 
 

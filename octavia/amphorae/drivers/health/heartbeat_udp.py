@@ -98,7 +98,7 @@ class UDPStatusGetter(object):
         except Exception as e:
             LOG.warning('Health Manager experienced an exception processing a '
                         'heartbeat message from %s. Ignoring this packet. '
-                        'Exception: %s', srcaddr, e)
+                        'Exception: %s', srcaddr, str(e))
             raise exceptions.InvalidHMACException()
         obj['recv_time'] = time.time()
         return obj, srcaddr[0]
@@ -115,7 +115,7 @@ class UDPStatusGetter(object):
         except Exception as e:
             LOG.warning('Health Manager experienced an exception processing a '
                         'heartbeat packet. Ignoring this packet. '
-                        'Exception: %s', e)
+                        'Exception: %s', str(e))
         else:
             self.health_executor.submit(self.health_updater.update_health,
                                         obj, srcaddr)
@@ -241,7 +241,7 @@ class UpdateHealthDb:
         except Exception as e:
             LOG.exception('Health update for amphora %(amp)s encountered '
                           'error %(err)s. Skipping health update.',
-                          {'amp': health['id'], 'err': e})
+                          {'amp': health['id'], 'err': str(e)})
         # TODO(johnsom) We need to set a warning threshold here
         LOG.debug('Health Update finished in: %s seconds',
                   timeit.default_timer() - start_time)
@@ -385,7 +385,7 @@ class UpdateHealthDb:
                     return
                 except Exception as e:
                     LOG.info("Error deleting amp %s with IP %s Error: %s",
-                             health['id'], srcaddr, e)
+                             health['id'], srcaddr, str(e))
             expected_listener_count = 0
 
         listeners = health['listeners']
