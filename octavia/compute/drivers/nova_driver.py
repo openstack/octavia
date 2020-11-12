@@ -186,7 +186,8 @@ class VirtualMachineManager(compute_base.ComputeBase):
             if (CONF.controller_worker.volume_driver !=
                     constants.VOLUME_NOOP_DRIVER):
                 self.volume_driver.delete_volume(volume_id)
-            LOG.exception("Nova failed to build the instance due to: %s", e)
+            LOG.exception("Nova failed to build the instance due to: %s",
+                          str(e))
             raise exceptions.ComputeBuildException(fault=e)
 
     def delete(self, compute_id):
@@ -427,7 +428,7 @@ class VirtualMachineManager(compute_base.ComputeBase):
                                                 id=flavor_id)
         except Exception as e:
             LOG.exception('Nova reports a failure getting flavor details for '
-                          'flavor ID %s: %s', flavor_id, e)
+                          'flavor ID %s: %s', flavor_id, str(e))
             raise
 
     def validate_availability_zone(self, availability_zone):
@@ -448,5 +449,5 @@ class VirtualMachineManager(compute_base.ComputeBase):
                     resource='Nova availability zone', id=availability_zone)
         except Exception as e:
             LOG.exception('Nova reports a failure getting listing '
-                          'availability zones: %s', e)
+                          'availability zones: %s', str(e))
             raise

@@ -147,7 +147,7 @@ class KeepalivedLvs(udp_listener_base.UdpListenerApiServerBase):
             except subprocess.CalledProcessError as e:
                 LOG.debug('Failed to enable '
                           'octavia-keepalivedlvs service: '
-                          '%(err)s', {'err': e})
+                          '%(err)s', {'err': str(e)})
                 return webob.Response(json=dict(
                     message="Error enabling "
                             "octavia-keepalivedlvs service",
@@ -222,7 +222,7 @@ class KeepalivedLvs(udp_listener_base.UdpListenerApiServerBase):
             subprocess.check_output(cmd.split(), stderr=subprocess.STDOUT)
         except subprocess.CalledProcessError as e:
             LOG.debug('Failed to %s keepalivedlvs listener %s',
-                      listener_id + ' : ' + action, e)
+                      listener_id + ' : ' + action, str(e))
             return webob.Response(json=dict(
                 message=("Failed to {0} keepalivedlvs listener {1}"
                          .format(action, listener_id)),
@@ -283,7 +283,7 @@ class KeepalivedLvs(udp_listener_base.UdpListenerApiServerBase):
             try:
                 subprocess.check_output(cmd.split(), stderr=subprocess.STDOUT)
             except subprocess.CalledProcessError as e:
-                LOG.error("Failed to stop keepalivedlvs service: %s", e)
+                LOG.error("Failed to stop keepalivedlvs service: %s", str(e))
                 return webob.Response(json=dict(
                     message="Error stopping keepalivedlvs",
                     details=e.output), status=500)
@@ -316,7 +316,7 @@ class KeepalivedLvs(udp_listener_base.UdpListenerApiServerBase):
             except subprocess.CalledProcessError as e:
                 LOG.error("Failed to disable "
                           "octavia-keepalivedlvs-%(list)s service: "
-                          "%(err)s", {'list': listener_id, 'err': e})
+                          "%(err)s", {'list': listener_id, 'err': str(e)})
                 return webob.Response(json=dict(
                     message=(
                         "Error disabling octavia-keepalivedlvs-"

@@ -104,7 +104,7 @@ class ControllerWorker(object):
 
             return job_id
         except Exception as e:
-            LOG.error('Failed to create an amphora due to: {}'.format(str(e)))
+            LOG.error('Failed to create an amphora due to: %s', str(e))
 
     def delete_amphora(self, amphora_id):
         """Deletes an existing Amphora.
@@ -1047,7 +1047,7 @@ class ControllerWorker(object):
         except Exception as e:
             with excutils.save_and_reraise_exception(reraise=False):
                 LOG.exception("LB %(lbid)s failover exception: %(exc)s",
-                              {'lbid': load_balancer_id, 'exc': e})
+                              {'lbid': load_balancer_id, 'exc': str(e)})
                 self._lb_repo.update(
                     db_apis.get_session(), load_balancer_id,
                     provisioning_status=constants.ERROR)

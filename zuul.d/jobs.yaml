@@ -43,6 +43,7 @@
         LIBVIRT_CPU_MODE: host-passthrough
       devstack_plugins:
         octavia: https://opendev.org/openstack/octavia.git
+        octavia-tempest-plugin: https://opendev.org/openstack/octavia-tempest-plugin.git
       devstack_services:
         s-account: false
         s-container: false

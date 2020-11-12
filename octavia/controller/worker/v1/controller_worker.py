@@ -110,7 +110,7 @@ class ControllerWorker(base_taskflow.BaseTaskFlowEngine):
 
             return create_amp_tf.storage.fetch('amphora')
         except Exception as e:
-            LOG.error('Failed to create an amphora due to: {}'.format(str(e)))
+            LOG.error('Failed to create an amphora due to: %s', str(e))
 
     @tenacity.retry(
         retry=tenacity.retry_if_exception_type(db_exceptions.NoResultFound),
@@ -1095,7 +1095,7 @@ class ControllerWorker(base_taskflow.BaseTaskFlowEngine):
         except Exception as e:
             with excutils.save_and_reraise_exception(reraise=False):
                 LOG.exception("LB %(lbid)s failover exception: %(exc)s",
-                              {'lbid': load_balancer_id, 'exc': e})
+                              {'lbid': load_balancer_id, 'exc': str(e)})
                 self._lb_repo.update(
                     db_apis.get_session(), load_balancer_id,
                     provisioning_status=constants.ERROR)

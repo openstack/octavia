@@ -236,8 +236,8 @@ class Server(object):
 
             CONF.mutate_config_files()
         except Exception as e:
-            LOG.error("Unable to update amphora-agent configuration: "
-                      "{}".format(str(e)))
+            LOG.error("Unable to update amphora-agent configuration: %s",
+                      str(e))
             return webob.Response(json=dict(
                 message="Unable to update amphora-agent configuration.",
                 details=str(e)), status=500)

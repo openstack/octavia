@@ -192,7 +192,7 @@ class UDPStatusGetter(object):
         except Exception as e:
             LOG.warning('Health Manager experienced an exception processing a '
                         'heartbeat message from %s. Ignoring this packet. '
-                        'Exception: %s', srcaddr, e)
+                        'Exception: %s', srcaddr, str(e))
             raise exceptions.InvalidHMACException()
         obj['recv_time'] = time.time()
         return obj, srcaddr[0]
@@ -209,7 +209,7 @@ class UDPStatusGetter(object):
         except Exception as e:
             LOG.warning('Health Manager experienced an exception processing a '
                         'heartbeat packet. Ignoring this packet. '
-                        'Exception: %s', e)
+                        'Exception: %s', str(e))
         else:
             self.health_executor.submit(update_health, obj, srcaddr)
             self.stats_executor.submit(update_stats, obj, srcaddr)

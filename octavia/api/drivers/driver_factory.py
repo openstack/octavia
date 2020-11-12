@@ -45,6 +45,6 @@ def get_driver(provider):
         driver.name = provider
     except Exception as e:
         LOG.error('Unable to load provider driver %s due to: %s',
-                  provider, e)
+                  provider, str(e))
         raise exceptions.ProviderNotFound(prov=provider)
     return driver

@@ -113,7 +113,7 @@ class BarbicanCertManager(cert_mgr.CertManager):
                                     'rollback. This might not be a problem.',
                                     i.name, old_ref)
             with excutils.save_and_reraise_exception():
-                LOG.error('Error storing certificate data: %s', e)
+                LOG.error('Error storing certificate data: %s', str(e))
 
     def get_cert(self, context, cert_ref, resource_ref=None, check_only=False,
                  service_name=None):
@@ -181,7 +181,7 @@ class BarbicanCertManager(cert_mgr.CertManager):
         except Exception as e:
             with excutils.save_and_reraise_exception():
                 LOG.error('Error deregistering as a consumer of %s: %s',
-                          cert_ref, e)
+                          cert_ref, str(e))
 
     def set_acls(self, context, cert_ref):
         connection = self.auth.get_barbican_client(context.project_id)

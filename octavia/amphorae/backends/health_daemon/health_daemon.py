@@ -84,10 +84,11 @@ def run_sender(cmd_queue):
                           'skipping health heartbeat.')
             else:
                 LOG.error('Failed to check keepalived and haproxy status due '
-                          'to exception %s, skipping health heartbeat.', e)
+                          'to exception %s, skipping health heartbeat.',
+                          str(e))
         except Exception as e:
             LOG.error('Failed to check keepalived and haproxy status due to '
-                      'exception %s, skipping health heartbeat.', e)
+                      'exception %s, skipping health heartbeat.', str(e))
 
         try:
             cmd = cmd_queue.get_nowait()

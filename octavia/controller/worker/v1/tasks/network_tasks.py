@@ -361,7 +361,7 @@ class PlugVIP(BaseNetworkTask):
         except Exception as e:
             LOG.error("Failed to unplug VIP.  Resources may still "
                       "be in use from vip: %(vip)s due to error: %(except)s",
-                      {'vip': loadbalancer.vip.ip_address, 'except': e})
+                      {'vip': loadbalancer.vip.ip_address, 'except': str(e)})
 
 
 class UpdateVIPSecurityGroup(BaseNetworkTask):
@@ -422,7 +422,8 @@ class PlugVIPAmpphora(BaseNetworkTask):
                                                 amphora, subnet)
         except Exception as e:
             LOG.error('Failed to unplug AAP port. Resources may still be in '
-                      'use for VIP: %s due to error: %s', loadbalancer.vip, e)
+                      'use for VIP: %s due to error: %s', loadbalancer.vip,
+                      str(e))
 
 
 class UnplugVIP(BaseNetworkTask):
@@ -465,7 +466,7 @@ class AllocateVIP(BaseNetworkTask):
         except Exception as e:
             LOG.error("Failed to deallocate VIP.  Resources may still "
                       "be in use from vip: %(vip)s due to error: %(except)s",
-                      {'vip': vip.ip_address, 'except': e})
+                      {'vip': vip.ip_address, 'except': str(e)})
 
 
 class DeallocateVIP(BaseNetworkTask):
@@ -661,7 +662,8 @@ class ApplyQosAmphora(BaseNetworkTask):
                                              request_qos_id=request_qos_id)
         except Exception as e:
             LOG.error('Failed to remove QoS policy: %s from port: %s due '
-                      'to error: %s', orig_qos_id, amp_data.vrrp_port_id, e)
+                      'to error: %s', orig_qos_id, amp_data.vrrp_port_id,
+                      str(e))
 
 
 class DeletePort(BaseNetworkTask):

@@ -131,7 +131,7 @@ class CreateAmphoraInDB(BaseDatabaseTask):
         except Exception as e:
             LOG.error("Failed to delete amphora %(amp)s "
                       "in the database due to: "
-                      "%(except)s", {'amp': result, 'except': e})
+                      "%(except)s", {'amp': result, 'except': str(e)})
 
 
 class MarkLBAmphoraeDeletedInDB(BaseDatabaseTask):
@@ -256,7 +256,7 @@ class DeleteMemberInDB(BaseDatabaseTask):
         except Exception as e:
             LOG.error("Failed to update member %(mem)s "
                       "provisioning_status to ERROR due to: %(except)s",
-                      {'mem': member[constants.MEMBER_ID], 'except': e})
+                      {'mem': member[constants.MEMBER_ID], 'except': str(e)})
 
 
 class DeleteListenerInDB(BaseDatabaseTask):
@@ -315,7 +315,7 @@ class DeletePoolInDB(BaseDatabaseTask):
         except Exception as e:
             LOG.error("Failed to update pool %(pool)s "
                       "provisioning_status to ERROR due to: %(except)s",
-                      {'pool': pool_id, 'except': e})
+                      {'pool': pool_id, 'except': str(e)})
 
 
 class DeleteL7PolicyInDB(BaseDatabaseTask):
@@ -353,7 +353,7 @@ class DeleteL7PolicyInDB(BaseDatabaseTask):
             LOG.error("Failed to update l7policy %(l7policy)s "
                       "provisioning_status to ERROR due to: %(except)s",
                       {'l7policy': l7policy[constants.L7POLICY_ID],
-                       'except': e})
+                       'except': str(e)})
 
 
 class DeleteL7RuleInDB(BaseDatabaseTask):
@@ -390,7 +390,8 @@ class DeleteL7RuleInDB(BaseDatabaseTask):
         except Exception as e:
             LOG.error("Failed to update l7rule %(l7rule)s "
                       "provisioning_status to ERROR due to: %(except)s",
-                      {'l7rule': l7rule[constants.L7RULE_ID], 'except': e})
+                      {'l7rule': l7rule[constants.L7RULE_ID],
+                       'except': str(e)})
 
 
 class ReloadAmphora(BaseDatabaseTask):
@@ -541,7 +542,7 @@ class AssociateFailoverAmphoraWithLBID(BaseDatabaseTask):
         except Exception as e:
             LOG.error("Failed to update amphora %(amp)s "
                       "load balancer id to None due to: "
-                      "%(except)s", {'amp': amphora_id, 'except': e})
+                      "%(except)s", {'amp': amphora_id, 'except': str(e)})
 
 
 class MapLoadbalancerToAmphora(BaseDatabaseTask):
@@ -633,7 +634,7 @@ class _MarkAmphoraRoleAndPriorityInDB(BaseDatabaseTask):
         except Exception as e:
             LOG.error("Failed to update amphora %(amp)s "
                       "role and vrrp_priority to None due to: "
-                      "%(except)s", {'amp': amphora_id, 'except': e})
+                      "%(except)s", {'amp': amphora_id, 'except': str(e)})
 
 
 class MarkAmphoraMasterInDB(_MarkAmphoraRoleAndPriorityInDB):
@@ -793,7 +794,7 @@ class MarkAmphoraBootingInDB(BaseDatabaseTask):
         except Exception as e:
             LOG.error("Failed to update amphora %(amp)s "
                       "status to ERROR due to: "
-                      "%(except)s", {'amp': amphora_id, 'except': e})
+                      "%(except)s", {'amp': amphora_id, 'except': str(e)})
 
 
 class MarkAmphoraDeletedInDB(BaseDatabaseTask):
@@ -949,7 +950,7 @@ class MarkAmphoraReadyInDB(BaseDatabaseTask):
             LOG.error("Failed to update amphora %(amp)s "
                       "status to ERROR due to: "
                       "%(except)s", {'amp': amphora.get(constants.ID),
-                                     'except': e})
+                                     'except': str(e)})
 
 
 class UpdateAmphoraComputeId(BaseDatabaseTask):
@@ -1218,7 +1219,7 @@ class UpdateLBServerGroupInDB(BaseDatabaseTask):
         except Exception as e:
             LOG.error("Failed to update load balancer %(lb)s "
                       "server_group_id to None due to: "
-                      "%(except)s", {'lb': loadbalancer_id, 'except': e})
+                      "%(except)s", {'lb': loadbalancer_id, 'except': str(e)})
 
 
 class MarkLBDeletedInDB(BaseDatabaseTask):
@@ -1483,7 +1484,7 @@ class UpdateHealthMonInDB(BaseDatabaseTask):
             LOG.error("Failed to update health monitor %(hm)s "
                       "provisioning_status to ERROR due to: %(except)s",
                       {'hm': health_mon[constants.HEALTHMONITOR_ID],
-                       'except': e})
+                       'except': str(e)})
 
 
 class UpdateListenerInDB(BaseDatabaseTask):
@@ -1554,7 +1555,8 @@ class UpdateMemberInDB(BaseDatabaseTask):
         except Exception as e:
             LOG.error("Failed to update member %(member)s provisioning_status "
                       "to ERROR due to: %(except)s",
-                      {'member': member[constants.MEMBER_ID], 'except': e})
+                      {'member': member[constants.MEMBER_ID],
+                       'except': str(e)})
 
 
 class UpdatePoolInDB(BaseDatabaseTask):
@@ -1590,7 +1592,7 @@ class UpdatePoolInDB(BaseDatabaseTask):
         except Exception as e:
             LOG.error("Failed to update pool %(pool)s provisioning_status to "
                       "ERROR due to: %(except)s", {'pool': pool_id,
-                                                   'except': e})
+                                                   'except': str(e)})
 
 
 class UpdateL7PolicyInDB(BaseDatabaseTask):
@@ -1629,7 +1631,8 @@ class UpdateL7PolicyInDB(BaseDatabaseTask):
         except Exception as e:
             LOG.error("Failed to update l7policy %(l7p)s provisioning_status "
                       "to ERROR due to: %(except)s",
-                      {'l7p': l7policy[constants.L7POLICY_ID], 'except': e})
+                      {'l7p': l7policy[constants.L7POLICY_ID],
+                       'except': str(e)})
 
 
 class UpdateL7RuleInDB(BaseDatabaseTask):
@@ -1667,7 +1670,7 @@ class UpdateL7RuleInDB(BaseDatabaseTask):
         except Exception as e:
             LOG.error("Failed to update L7rule %(l7r)s provisioning_status to "
                       "ERROR due to: %(except)s",
-                      {'l7r': l7rule[constants.L7POLICY_ID], 'except': e})
+                      {'l7r': l7rule[constants.L7POLICY_ID], 'except': str(e)})
 
 
 class GetAmphoraDetails(BaseDatabaseTask):

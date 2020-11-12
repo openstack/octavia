@@ -36,7 +36,7 @@ class TestAvailabilityZones(base.BaseAPITest):
             'test1', 'noop_driver', '{"compute_zone": "my_az_1"}')
 
     def _assert_request_matches_response(self, req, resp, **optionals):
-        self.assertTrue('id' not in resp)  # AZs do not expose an ID
+        self.assertNotIn('id', resp)  # AZs do not expose an ID
         req_description = req.get('description')
         self.assertEqual(req.get('name'), resp.get('name'))
         if not req_description:
