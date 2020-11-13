@@ -37,6 +37,7 @@
           export DEVSTACK_PROJECT_FROM_GIT="python-octaviaclient $DEVSTACK_PROJECT_FROM_GIT"
 
           export GRENADE_PLUGINRC="enable_grenade_plugin octavia https://opendev.org/openstack/octavia"
+          export DEVSTACK_LOCAL_CONFIG+=$'\n'"enable_plugin octavia-tempest-plugin https://opendev.org/openstack/octavia-tempest-plugin"
           export DEVSTACK_LOCAL_CONFIG+=$'\n'"export TEMPEST_PLUGINS='/opt/stack/new/octavia-tempest-plugin'"
           export DEVSTACK_LOCAL_CONFIG+=$'\n'"[[post-config|/etc/octavia/octavia.conf]]"$'\n'"[DEFAULT]"$'\n'"debug = True"
 
