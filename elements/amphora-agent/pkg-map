@@ -34,7 +34,7 @@
       "acpid-ppc64le": "",
       "netcat-openbsd": "nmap-ncat",
       "netbase": "",
-      "cron": "",
+      "cron": "cronie",
       "ifenslave": "",
       "iputils-tracepath": "",
       "cloud-guest-utils": "",
