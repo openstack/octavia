@@ -15,7 +15,7 @@
       "amphora-agent": "openstack-octavia-amphora-agent",
       "netcat-openbsd": "nmap-ncat",
       "netbase": "",
-      "cron": "",
+      "cron": "cronie",
       "ifenslave": "",
       "iputils-tracepath": "",
       "cloud-guest-utils": "",
