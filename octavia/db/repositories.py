@@ -372,6 +372,116 @@ class Repositories(object):
                                  provisioning_status=lb_prov_status)
         return success
 
+    @oslo_db_api.wrap_db_retry(retry_on_deadlock=True)
+    def _do_quota_check(self, session, lock_session, _class, project_id,
+                        count=1):
+        quotas = lock_session.query(models.Quotas).filter_by(
+            project_id=project_id).with_for_update().first()
+        if _class == data_models.LoadBalancer:
+            # Decide which quota to use
+            if quotas.load_balancer is None:
+                lb_quota = CONF.quotas.default_load_balancer_quota
+            else:
+                lb_quota = quotas.load_balancer
+            # Get the current in use count
+            if not quotas.in_use_load_balancer:
+                # This is to handle the upgrade case
+                lb_count = session.query(models.LoadBalancer).filter(
+                    models.LoadBalancer.project_id == project_id,
+                    models.LoadBalancer.provisioning_status !=
+                    consts.DELETED).count() + count
+            else:
+                lb_count = quotas.in_use_load_balancer + count
+            # Decide if the quota is met
+            if lb_count <= lb_quota or lb_quota == consts.QUOTA_UNLIMITED:
+                quotas.in_use_load_balancer = lb_count
+                return False
+            return True
+        elif _class == data_models.Listener:
+            # Decide which quota to use
+            if quotas.listener is None:
+                listener_quota = CONF.quotas.default_listener_quota
+            else:
+                listener_quota = quotas.listener
+            # Get the current in use count
+            if not quotas.in_use_listener:
+                # This is to handle the upgrade case
+                listener_count = session.query(models.Listener).filter(
+                    models.Listener.project_id == project_id,
+                    models.Listener.provisioning_status !=
+                    consts.DELETED).count() + count
+            else:
+                listener_count = quotas.in_use_listener + count
+            # Decide if the quota is met
+            if (listener_count <= listener_quota or
+                    listener_quota == consts.QUOTA_UNLIMITED):
+                quotas.in_use_listener = listener_count
+                return False
+            return True
+        elif _class == data_models.Pool:
+            # Decide which quota to use
+            if quotas.pool is None:
+                pool_quota = CONF.quotas.default_pool_quota
+            else:
+                pool_quota = quotas.pool
+            # Get the current in use count
+            if not quotas.in_use_pool:
+                # This is to handle the upgrade case
+                pool_count = session.query(models.Pool).filter(
+                    models.Pool.project_id == project_id,
+                    models.Pool.provisioning_status !=
+                    consts.DELETED).count() + count
+            else:
+                pool_count = quotas.in_use_pool + count
+            # Decide if the quota is met
+            if (pool_count <= pool_quota or
+                    pool_quota == consts.QUOTA_UNLIMITED):
+                quotas.in_use_pool = pool_count
+                return False
+            return True
+        elif _class == data_models.HealthMonitor:
+            # Decide which quota to use
+            if quotas.health_monitor is None:
+                hm_quota = CONF.quotas.default_health_monitor_quota
+            else:
+                hm_quota = quotas.health_monitor
+            # Get the current in use count
+            if not quotas.in_use_health_monitor:
+                # This is to handle the upgrade case
+                hm_count = session.query(models.HealthMonitor).filter(
+                    models.HealthMonitor.project_id == project_id,
+                    models.HealthMonitor.provisioning_status !=
+                    consts.DELETED).count() + count
+            else:
+                hm_count = quotas.in_use_health_monitor + count
+            # Decide if the quota is met
+            if (hm_count <= hm_quota or
+                    hm_quota == consts.QUOTA_UNLIMITED):
+                quotas.in_use_health_monitor = hm_count
+                return False
+            return True
+        elif _class == data_models.Member:
+            # Decide which quota to use
+            if quotas.member is None:
+                member_quota = CONF.quotas.default_member_quota
+            else:
+                member_quota = quotas.member
+            # Get the current in use count
+            if not quotas.in_use_member:
+                # This is to handle the upgrade case
+                member_count = session.query(models.Member).filter(
+                    models.Member.project_id == project_id,
+                    models.Member.provisioning_status !=
+                    consts.DELETED).count() + count
+            else:
+                member_count = quotas.in_use_member + count
+            # Decide if the quota is met
+            if (member_count <= member_quota or
+                    member_quota == consts.QUOTA_UNLIMITED):
+                quotas.in_use_member = member_count
+                return False
+            return True
+
     def check_quota_met(self, session, lock_session, _class, project_id,
                         count=1):
         """Checks and updates object quotas.
@@ -410,112 +520,7 @@ class Repositories(object):
         # Note: You cannot just use the current count as the in-use
         # value as we don't want to lock the whole resource table
         try:
-            quotas = lock_session.query(models.Quotas).filter_by(
-                project_id=project_id).with_for_update().first()
-            if _class == data_models.LoadBalancer:
-                # Decide which quota to use
-                if quotas.load_balancer is None:
-                    lb_quota = CONF.quotas.default_load_balancer_quota
-                else:
-                    lb_quota = quotas.load_balancer
-                # Get the current in use count
-                if not quotas.in_use_load_balancer:
-                    # This is to handle the upgrade case
-                    lb_count = session.query(models.LoadBalancer).filter(
-                        models.LoadBalancer.project_id == project_id,
-                        models.LoadBalancer.provisioning_status !=
-                        consts.DELETED).count() + count
-                else:
-                    lb_count = quotas.in_use_load_balancer + count
-                # Decide if the quota is met
-                if lb_count <= lb_quota or lb_quota == consts.QUOTA_UNLIMITED:
-                    quotas.in_use_load_balancer = lb_count
-                    return False
-                return True
-            elif _class == data_models.Listener:
-                # Decide which quota to use
-                if quotas.listener is None:
-                    listener_quota = CONF.quotas.default_listener_quota
-                else:
-                    listener_quota = quotas.listener
-                # Get the current in use count
-                if not quotas.in_use_listener:
-                    # This is to handle the upgrade case
-                    listener_count = session.query(models.Listener).filter(
-                        models.Listener.project_id == project_id,
-                        models.Listener.provisioning_status !=
-                        consts.DELETED).count() + count
-                else:
-                    listener_count = quotas.in_use_listener + count
-                # Decide if the quota is met
-                if (listener_count <= listener_quota or
-                        listener_quota == consts.QUOTA_UNLIMITED):
-                    quotas.in_use_listener = listener_count
-                    return False
-                return True
-            elif _class == data_models.Pool:
-                # Decide which quota to use
-                if quotas.pool is None:
-                    pool_quota = CONF.quotas.default_pool_quota
-                else:
-                    pool_quota = quotas.pool
-                # Get the current in use count
-                if not quotas.in_use_pool:
-                    # This is to handle the upgrade case
-                    pool_count = session.query(models.Pool).filter(
-                        models.Pool.project_id == project_id,
-                        models.Pool.provisioning_status !=
-                        consts.DELETED).count() + count
-                else:
-                    pool_count = quotas.in_use_pool + count
-                # Decide if the quota is met
-                if (pool_count <= pool_quota or
-                        pool_quota == consts.QUOTA_UNLIMITED):
-                    quotas.in_use_pool = pool_count
-                    return False
-                return True
-            elif _class == data_models.HealthMonitor:
-                # Decide which quota to use
-                if quotas.health_monitor is None:
-                    hm_quota = CONF.quotas.default_health_monitor_quota
-                else:
-                    hm_quota = quotas.health_monitor
-                # Get the current in use count
-                if not quotas.in_use_health_monitor:
-                    # This is to handle the upgrade case
-                    hm_count = session.query(models.HealthMonitor).filter(
-                        models.HealthMonitor.project_id == project_id,
-                        models.HealthMonitor.provisioning_status !=
-                        consts.DELETED).count() + count
-                else:
-                    hm_count = quotas.in_use_health_monitor + count
-                # Decide if the quota is met
-                if (hm_count <= hm_quota or
-                        hm_quota == consts.QUOTA_UNLIMITED):
-                    quotas.in_use_health_monitor = hm_count
-                    return False
-                return True
-            elif _class == data_models.Member:
-                # Decide which quota to use
-                if quotas.member is None:
-                    member_quota = CONF.quotas.default_member_quota
-                else:
-                    member_quota = quotas.member
-                # Get the current in use count
-                if not quotas.in_use_member:
-                    # This is to handle the upgrade case
-                    member_count = session.query(models.Member).filter(
-                        models.Member.project_id == project_id,
-                        models.Member.provisioning_status !=
-                        consts.DELETED).count() + count
-                else:
-                    member_count = quotas.in_use_member + count
-                # Decide if the quota is met
-                if (member_count <= member_quota or
-                        member_quota == consts.QUOTA_UNLIMITED):
-                    quotas.in_use_member = member_count
-                    return False
-                return True
+            return self._do_quota_check(session, lock_session, _class, project_id, count)
         except db_exception.DBDeadlock:
             LOG.warning('Quota project lock timed out for project: %(proj)s',
                         {'proj': project_id})
@@ -834,7 +839,7 @@ class LoadBalancerRepository(BaseRepository):
         :param status: Status to set Load Balancer if check passes.
         """
         with session.begin(subtransactions=True):
-            lb = session.query(self.model_class).with_for_update().filter_by(
+            lb = session.query(self.model_class).populate_existing().with_for_update().filter_by(
                 id=id).one()
             is_deleted = status == consts.DELETED
             acceptable_statuses = (
@@ -862,7 +867,7 @@ class LoadBalancerRepository(BaseRepository):
         :returns: bool
         """
         with session.begin(subtransactions=True):
-            lb = session.query(self.model_class).with_for_update().filter_by(
+            lb = session.query(self.model_class).populate_existing().with_for_update().filter_by(
                 id=id).one()
             is_delete = status == consts.PENDING_DELETE
             acceptable_statuses = (
