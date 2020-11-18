@@ -662,7 +662,8 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
                 for fut in futs:
                     fut.result()
 
-    def test_check_quota_met(self):
+    @mock.patch('oslo_db.api.wrap_db_retry')
+    def test_check_quota_met(self, _):
 
         project_id = uuidutils.generate_uuid()
 
