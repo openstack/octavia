@@ -1,0 +1,6 @@
+---
+fixes:
+  - |
+    Fix an issue when updating ``tls_versions`` and ``tls_ciphers`` in Pools
+    with empty (None) values, unsetting theses parameters now resets their
+    values to the default values.
