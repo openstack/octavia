@@ -109,3 +109,10 @@
     experimental:
       jobs:
         - octavia-v2-dsvm-scenario-nftables
+        - octavia-v2-dsvm-noop-api-amphora-v2
+        - octavia-v2-dsvm-tls-barbican-amphora-v2
+        - octavia-v2-dsvm-spare-pool-amphora-v2
+        - octavia-v2-act-stdby-dsvm-scenario-amphora-v2
+        - octavia-grenade-amphora-v2
+        - octavia-v2-dsvm-cinder-amphora-v2
+        - octavia-v2-dsvm-scenario-two-node-amphora-v2
