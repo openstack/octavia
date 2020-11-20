@@ -1,0 +1,5 @@
+---
+fixes:
+  - |
+    Fix an incorrect  ``operating_status`` with empty UDP pools. A UDP pool
+    without any member is now ``ONLINE`` instead of ``OFFLINE``.
