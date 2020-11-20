@@ -65,13 +65,7 @@ MISC_CHECK {
 {% endmacro %}
 
 {% macro virtualserver_macro(constants, listener, lb_vip_address, default_pool) %}
-{% set need_render = [] %}
-{% if default_pool and default_pool.enabled and default_pool.members %}
-    {% for member in default_pool.members %}
-        {% do need_render.append(member.enabled) %}
-    {% endfor %}
-{% endif %}
-{% if need_render|length > 0 %}
+{% if default_pool %}
 virtual_server {{ lb_vip_address }} {{ listener.protocol_port }} {
     {{ lb_algo_macro(default_pool) }}
     lb_kind NAT
@@ -93,7 +87,11 @@ virtual_server {{ lb_vip_address }} {{ listener.protocol_port }} {
 {{ health_monitor_vs_macro(default_pool) }}
 
 {% if default_pool.protocol.lower() == "udp" %}
+    {% if default_pool.enabled %}
     # Configuration for Pool {{ default_pool.id }}
+    {% else %}
+    # Pool {{ default_pool.id }} is disabled
+    {% endif %}
     {% if default_pool.health_monitor and default_pool.health_monitor.enabled %}
     # Configuration for HealthMonitor {{ default_pool.health_monitor.id }}
     {% endif %}

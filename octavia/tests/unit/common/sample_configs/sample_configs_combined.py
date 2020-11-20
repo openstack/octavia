@@ -593,7 +593,9 @@ def sample_listener_tuple(proto=None, monitor=True, alloc_default_pool=True,
                           ssl_type_l7=False, pool_cert=False,
                           pool_ca_cert=False, pool_crl=False,
                           tls_enabled=False, hm_host_http_check=False,
-                          id='sample_listener_id_1', recursive_nest=False):
+                          id='sample_listener_id_1', recursive_nest=False,
+                          sample_default_pool=1,
+                          pool_enabled=True):
     proto = 'HTTP' if proto is None else proto
     if be_proto is None:
         be_proto = 'HTTP' if proto is 'TERMINATED_HTTPS' else proto
@@ -621,7 +623,8 @@ def sample_listener_tuple(proto=None, monitor=True, alloc_default_pool=True,
                 pool_cert=pool_cert, pool_ca_cert=pool_ca_cert,
                 pool_crl=pool_crl, tls_enabled=tls_enabled,
                 hm_host_http_check=hm_host_http_check,
-                listener_id='sample_listener_id_1'),
+                listener_id='sample_listener_id_1',
+                enabled=pool_enabled),
             sample_pool_tuple(
                 proto=be_proto, monitor=monitor, persistence=persistence,
                 persistence_type=persistence_type,
@@ -630,7 +633,8 @@ def sample_listener_tuple(proto=None, monitor=True, alloc_default_pool=True,
                 pool_cert=pool_cert, pool_ca_cert=pool_ca_cert,
                 pool_crl=pool_crl, tls_enabled=tls_enabled,
                 hm_host_http_check=hm_host_http_check,
-                listener_id='sample_listener_id_1')]
+                listener_id='sample_listener_id_1',
+                enabled=pool_enabled)]
         l7policies = [
             sample_l7policy_tuple('sample_l7policy_id_1', sample_policy=1),
             sample_l7policy_tuple('sample_l7policy_id_2', sample_policy=2),
@@ -653,7 +657,8 @@ def sample_listener_tuple(proto=None, monitor=True, alloc_default_pool=True,
                 pool_cert=pool_cert, pool_ca_cert=pool_ca_cert,
                 pool_crl=pool_crl, tls_enabled=tls_enabled,
                 hm_host_http_check=hm_host_http_check,
-                listener_id='sample_listener_id_1')]
+                listener_id='sample_listener_id_1',
+                enabled=pool_enabled)]
         l7policies = []
     listener = in_listener(
         id=id,
@@ -676,7 +681,9 @@ def sample_listener_tuple(proto=None, monitor=True, alloc_default_pool=True,
             pool_ca_cert=pool_ca_cert,
             pool_crl=pool_crl,
             tls_enabled=tls_enabled,
-            hm_host_http_check=hm_host_http_check
+            hm_host_http_check=hm_host_http_check,
+            sample_pool=sample_default_pool,
+            enabled=pool_enabled
         ) if alloc_default_pool else '',
         connection_limit=connection_limit,
         tls_certificate_id='cont_id_1' if tls else '',
@@ -757,7 +764,8 @@ def sample_pool_tuple(listener_id=None, proto=None, monitor=True,
                       has_http_reuse=True, pool_cert=False, pool_ca_cert=False,
                       pool_crl=False, tls_enabled=False,
                       hm_host_http_check=False,
-                      provisioning_status=constants.ACTIVE):
+                      provisioning_status=constants.ACTIVE,
+                      enabled=True):
     proto = 'HTTP' if proto is None else proto
     monitor_proto = proto if monitor_proto is None else monitor_proto
     in_pool = collections.namedtuple(
@@ -776,7 +784,13 @@ def sample_pool_tuple(listener_id=None, proto=None, monitor=True,
                   'persistence_cookie': persistence_cookie}
     persis = sample_session_persistence_tuple(**kwargs)
     mon = None
-    if sample_pool == 1:
+    if sample_pool == 0:
+        id = 'sample_pool_id_0'
+        members = []
+        if monitor is True:
+            mon = sample_health_monitor_tuple(
+                proto=monitor_proto, host_http_check=hm_host_http_check)
+    elif sample_pool == 1:
         id = 'sample_pool_id_1'
         members = [sample_member_tuple('sample_member_id_1', '10.0.0.99',
                                        monitor_ip_port=monitor_ip_port),
@@ -802,7 +816,7 @@ def sample_pool_tuple(listener_id=None, proto=None, monitor=True,
         members=members,
         health_monitor=mon,
         session_persistence=persis if persistence is True else None,
-        enabled=True,
+        enabled=enabled,
         operating_status='ACTIVE', has_http_reuse=has_http_reuse,
         tls_certificate_id='pool_cont_1' if pool_cert else None,
         ca_tls_certificate_id='pool_ca_1' if pool_ca_cert else None,
