@@ -331,7 +331,7 @@ class LvsQueryTestCase(base.TestCase):
         # the returned resource_ipport_mapping doesn't contains the 'Members'
         # resources, that means the pool of listener doesn't have a enabled
         # pool resource, so the pool is not usable, then the pool status will
-        # return DOWN.
+        # return UP.
         mock_get_resource_ipports.return_value = (
             {
                 'Listener': {'id': self.listener_id_v4,
@@ -341,7 +341,7 @@ class LvsQueryTestCase(base.TestCase):
         res = lvs_query.get_udp_listener_pool_status(self.listener_id_v4)
         expected = {'lvs': {
             'uuid': self.pool_id_v4,
-            'status': constants.DOWN,
+            'status': constants.UP,
             'members': {}
         }}
         self.assertEqual(expected, res)
