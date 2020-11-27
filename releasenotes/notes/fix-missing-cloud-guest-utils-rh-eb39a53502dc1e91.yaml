@@ -1,0 +1,4 @@
+---
+fixes:
+  - |
+    Add missing cloud-utils-growpart RPM to Red Hat based amphora images.
