@@ -15,6 +15,7 @@
 import sys
 
 from oslo_config import cfg
+from oslo_upgradecheck import common_checks
 from oslo_upgradecheck import upgradecheck
 from stevedore import driver as stevedore_driver
 
@@ -113,6 +114,8 @@ class Checks(upgradecheck.UpgradeCommands):
     _upgrade_checks = (
         (_('AmphoraV2 Check'), _check_amphorav2),
         (_('YAML Policy File'), _check_yaml_policy),
+        (_('Policy File JSON to YAML Migration'),
+         (common_checks.check_policy_json, {'conf': CONF})),
     )
 
 

@@ -27,6 +27,7 @@ from oslo_config import cfg
 from oslo_db import options as db_options
 from oslo_log import log as logging
 import oslo_messaging as messaging
+from oslo_policy import opts as policy_opts
 
 from octavia.certificates.common import local
 from octavia.common import constants
@@ -979,3 +980,19 @@ def setup_remote_debugger():
                       {'debug-host': debugger_host,
                        'debug-port': debugger_port})
         raise
+
+
+def set_lib_defaults():
+    """Update default value for configuration options from other namespace.
+
+    Example, oslo lib config options. This is needed for
+    config generator tool to pick these default value changes.
+    https://docs.openstack.org/oslo.config/latest/cli/
+    generator.html#modifying-defaults-from-other-namespaces
+    """
+
+    # TODO(gmann): Remove setting the default value of config policy_file
+    # once oslo_policy change the default value to 'policy.yaml'.
+    # https://github.com/openstack/oslo.policy/blob/a626ad12fe5a3abd49d70e3e5b95589d279ab578/oslo_policy/opts.py#L49
+    # Update default value of oslo.policy policy_file config option.
+    policy_opts.set_defaults(cfg.CONF, 'policy.yaml')

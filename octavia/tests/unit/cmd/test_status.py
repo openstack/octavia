@@ -127,8 +127,9 @@ class TestUpgradeChecks(base.TestCase):
             Code.FAILURE, check_result.code)
 
     def test__check_yaml_policy(self):
-        policy.Policy()
         self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
+        self.conf.conf(args=[], project='octavia')
+        policy.Policy()
 
         self.conf.config(group='oslo_policy', policy_file='test.yaml')
         check_result = self.cmd._check_yaml_policy()

@@ -2,6 +2,14 @@
 Octavia Policies
 ================
 
+.. warning::
+
+   JSON formatted policy file is deprecated since Octavia 8.0.0 (Wallaby).
+   This `oslopolicy-convert-json-to-yaml`__ tool will migrate your existing
+   JSON-formatted policy file to YAML in a backward-compatible way.
+
+.. __: https://docs.openstack.org/oslo.policy/latest/cli/oslopolicy-convert-json-to-yaml.html
+
 .. _Keystone Default Roles: https://docs.openstack.org/keystone/latest/admin/service-api-protection.html
 
 Octavia Advanced Role Based Access Control (RBAC)
