@@ -221,7 +221,8 @@ class TestAmphoraDriverTasks(base.TestCase):
         mock_driver.reload.assert_called_once_with(mock_lb, amphora_mock,
                                                    self.timeout_dict)
         mock_amphora_repo_update.assert_called_once_with(
-            _session_mock, amphora_mock.id, status=constants.ERROR)
+            _session_mock, amphora_mock[constants.ID],
+            status=constants.ERROR)
 
     @mock.patch('octavia.controller.worker.task_utils.TaskUtils.'
                 'mark_listener_prov_status_error')
