@@ -27,7 +27,6 @@ from octavia.db import api as db_api
 from octavia.tests.common import constants as c_const
 from octavia.tests.common import sample_certs
 from octavia.tests.functional.api.v2 import base
-from octavia_lib.common import constants as lib_consts
 
 
 class TestPool(base.BaseAPITest):
@@ -1073,7 +1072,7 @@ class TestPool(base.BaseAPITest):
         expect_error_msg = ("Validation failure: Cookie names are not "
                             "supported for %s pools.") % (
                                 "/".join((constants.PROTOCOL_UDP,
-                                          lib_consts.PROTOCOL_SCTP)))
+                                          lib_constants.PROTOCOL_SCTP)))
         res = self.post(self.POOLS_PATH, self._build_body(req_dict),
                         status=400, expect_errors=True)
         self.assertEqual(expect_error_msg, res.json['faultstring'])
@@ -1097,7 +1096,7 @@ class TestPool(base.BaseAPITest):
                                 "pools.") % (
                                     type,
                                     "/".join((constants.PROTOCOL_UDP,
-                                              lib_consts.PROTOCOL_SCTP)))
+                                              lib_constants.PROTOCOL_SCTP)))
             sp.update({'type': type})
             req_dict['session_persistence'] = sp
             res = self.post(self.POOLS_PATH, self._build_body(req_dict),
@@ -1124,7 +1123,7 @@ class TestPool(base.BaseAPITest):
             "persistence_granularity.") % (
             constants.SESSION_PERSISTENCE_SOURCE_IP,
             " and ".join((constants.PROTOCOL_UDP,
-                          lib_consts.PROTOCOL_SCTP)))
+                          lib_constants.PROTOCOL_SCTP)))
         res = self.post(self.POOLS_PATH, self._build_body(req_dict),
                         status=400, expect_errors=True)
         self.assertEqual(expect_error_msg, res.json['faultstring'])
@@ -1146,7 +1145,7 @@ class TestPool(base.BaseAPITest):
                             "persistence_granularity is only for %s protocol "
                             "pools.") % (
                                 " and ".join((constants.PROTOCOL_UDP,
-                                              lib_consts.PROTOCOL_SCTP)))
+                                              lib_constants.PROTOCOL_SCTP)))
         for s in sps:
             req_dict.update({'session_persistence': s})
             res = self.post(self.POOLS_PATH, self._build_body(req_dict),
@@ -1375,7 +1374,7 @@ class TestPool(base.BaseAPITest):
         expect_error_msg = (
             "Validation failure: Cookie names are not supported for %s"
             " pools.") % ("/".join((constants.PROTOCOL_UDP,
-                                    lib_consts.PROTOCOL_SCTP)))
+                                    lib_constants.PROTOCOL_SCTP)))
         sess_p['type'] = constants.SESSION_PERSISTENCE_HTTP_COOKIE
         sess_p['cookie_name'] = 'test-cookie-name'
         new_pool = {'session_persistence': sess_p}
@@ -1392,7 +1391,8 @@ class TestPool(base.BaseAPITest):
             "only accepts: type, persistence_timeout, "
             "persistence_granularity.") % (
             constants.SESSION_PERSISTENCE_SOURCE_IP,
-            " and ".join((constants.PROTOCOL_UDP, lib_consts.PROTOCOL_SCTP)))
+            " and ".join((constants.PROTOCOL_UDP,
+                          lib_constants.PROTOCOL_SCTP)))
         sess_p['type'] = constants.SESSION_PERSISTENCE_SOURCE_IP
         sess_p['cookie_name'] = 'test-cookie-name'
         sess_p['persistence_timeout'] = 4
@@ -1413,7 +1413,7 @@ class TestPool(base.BaseAPITest):
                                 "pools.") % (
                                     ty,
                                     "/".join((constants.PROTOCOL_UDP,
-                                              lib_consts.PROTOCOL_SCTP)))
+                                              lib_constants.PROTOCOL_SCTP)))
             sess_p['type'] = ty
             res = self.put(self.POOL_PATH.format(pool_id=api_pool.get('id')),
                            self._build_body(new_pool), status=400,
@@ -1845,8 +1845,8 @@ class TestPool(base.BaseAPITest):
         self.assertIsNone(update_pool.get('crl_container_ref'))
 
     def test_update_with_tls_versions(self):
-        tls_versions = [lib_consts.TLS_VERSION_1_3,
-                        lib_consts.TLS_VERSION_1_2]
+        tls_versions = [lib_constants.TLS_VERSION_1_3,
+                        lib_constants.TLS_VERSION_1_2]
         api_pool = self.create_pool(
             self.lb_id,
             constants.PROTOCOL_HTTP,
@@ -1859,7 +1859,7 @@ class TestPool(base.BaseAPITest):
         self.assertCountEqual(tls_versions,
                               api_pool['tls_versions'])
 
-        new_pool = {'tls_versions': [lib_consts.TLS_VERSION_1_3]}
+        new_pool = {'tls_versions': [lib_constants.TLS_VERSION_1_3]}
         self.put(self.POOL_PATH.format(pool_id=api_pool.get('id')),
                  self._build_body(new_pool))
         self.assert_correct_status(
@@ -1871,7 +1871,7 @@ class TestPool(base.BaseAPITest):
         self.set_lb_status(self.lb_id)
         response = self.get(self.POOL_PATH.format(
             pool_id=api_pool.get('id'))).json.get(self.root_tag)
-        self.assertCountEqual([lib_consts.TLS_VERSION_1_3],
+        self.assertCountEqual([lib_constants.TLS_VERSION_1_3],
                               response['tls_versions'])
         self.assertIsNotNone(response.get('created_at'))
         self.assertIsNotNone(response.get('updated_at'))
@@ -1880,13 +1880,13 @@ class TestPool(base.BaseAPITest):
             pool_id=response.get('id'))
 
     def test_update_with_empty_tls_versions(self):
-        default_pool_tls_versions = [lib_consts.TLS_VERSION_1_3,
-                                     lib_consts.TLS_VERSION_1_2]
+        default_pool_tls_versions = [lib_constants.TLS_VERSION_1_3,
+                                     lib_constants.TLS_VERSION_1_2]
         self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
         self.conf.config(group='api_settings',
                          default_pool_tls_versions=default_pool_tls_versions)
 
-        tls_versions = [lib_consts.TLS_VERSION_1_3]
+        tls_versions = [lib_constants.TLS_VERSION_1_3]
         api_pool = self.create_pool(
             self.lb_id,
             constants.PROTOCOL_HTTP,
