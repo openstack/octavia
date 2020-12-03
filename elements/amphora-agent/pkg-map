@@ -18,7 +18,7 @@
       "cron": "cronie",
       "ifenslave": "",
       "iputils-tracepath": "",
-      "cloud-guest-utils": "",
+      "cloud-guest-utils": "cloud-utils-growpart",
       "apparmor": "",
       "dmeventd": "",
       "isc-dhcp-client": "dhclient",
