@@ -1,0 +1,4 @@
+---
+fixes:
+  - |
+    Add missing cronie RPM to Red Hat based amphora images.
