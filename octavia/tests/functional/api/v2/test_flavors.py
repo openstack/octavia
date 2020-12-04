@@ -290,7 +290,6 @@ class TestFlavors(base.BaseAPITest):
         flavor2 = self.create_flavor('name2', 'description', self.fp.get('id'),
                                      True)
         self.assertTrue(uuidutils.is_uuid_like(flavor2.get('id')))
-        response = self.get(self.FLAVORS_PATH)
 
         self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
         auth_strategy = self.conf.conf.api_settings.get('auth_strategy')
@@ -314,6 +313,7 @@ class TestFlavors(base.BaseAPITest):
             with mock.patch(
                     "oslo_context.context.RequestContext.to_policy_values",
                     return_value=override_credentials):
+                response = self.get(self.FLAVORS_PATH)
                 api_list = response.json.get(self.root_tag_list)
         self.conf.config(group='api_settings', auth_strategy=auth_strategy)
         self.assertEqual(2, len(api_list))
