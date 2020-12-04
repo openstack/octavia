@@ -498,8 +498,7 @@ class HaproxyAmphoraLoadBalancerDriver(
                 amphora, obj_id, pem=secret, md5=md5, name=name)
         return name
 
-    def _process_listener_pool_certs(self, listener, amphora=None,
-                                     obj_id=None):
+    def _process_listener_pool_certs(self, listener, amphora, obj_id):
         #     {'POOL-ID': {
         #         'client_cert': client_full_filename,
         #         'ca_cert': ca_cert_full_filename,
@@ -517,7 +516,7 @@ class HaproxyAmphoraLoadBalancerDriver(
                                              amphora, obj_id))
         return pool_certs_dict
 
-    def _process_pool_certs(self, listener, pool, amphora=None, obj_id=None):
+    def _process_pool_certs(self, listener, pool, amphora, obj_id):
         pool_cert_dict = dict()
 
         # Handle the client cert(s) and key
@@ -534,17 +533,17 @@ class HaproxyAmphoraLoadBalancerDriver(
             if amphora and obj_id:
                 self._upload_cert(amphora, obj_id, pem=pem, md5=md5, name=name)
             pool_cert_dict['client_cert'] = os.path.join(
-                CONF.haproxy_amphora.base_cert_dir, listener.id, name)
+                CONF.haproxy_amphora.base_cert_dir, obj_id, name)
         if pool.ca_tls_certificate_id:
             name = self._process_secret(listener, pool.ca_tls_certificate_id,
                                         amphora, obj_id)
             pool_cert_dict['ca_cert'] = os.path.join(
-                CONF.haproxy_amphora.base_cert_dir, listener.id, name)
+                CONF.haproxy_amphora.base_cert_dir, obj_id, name)
         if pool.crl_container_id:
             name = self._process_secret(listener, pool.crl_container_id,
                                         amphora, obj_id)
             pool_cert_dict['crl'] = os.path.join(
-                CONF.haproxy_amphora.base_cert_dir, listener.id, name)
+                CONF.haproxy_amphora.base_cert_dir, obj_id, name)
 
         return pool_cert_dict
 
