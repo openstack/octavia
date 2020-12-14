@@ -1,0 +1,5 @@
+---
+fixes:
+  - |
+    Add a validation step in the Octavia Amphora driver to ensure that the
+    port_security_enabled parameter is set on the VIP network.

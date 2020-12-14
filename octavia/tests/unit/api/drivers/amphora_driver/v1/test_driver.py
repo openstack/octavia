@@ -43,6 +43,21 @@ class TestAmphoraDriver(base.TestRpc):
         self.assertEqual(self.sample_data.provider_vip_dict, provider_vip_dict)
 
     @mock.patch('octavia.common.utils.get_network_driver')
+    def test_create_vip_port_without_port_security_enabled(
+            self, mock_get_net_driver):
+        mock_net_driver = mock.MagicMock()
+        mock_get_net_driver.return_value = mock_net_driver
+        network = mock.MagicMock()
+        network.port_security_enabled = False
+        mock_net_driver.get_network.return_value = network
+        mock_net_driver.allocate_vip.return_value = self.sample_data.db_vip
+
+        self.assertRaises(exceptions.DriverError,
+                          self.amp_driver.create_vip_port,
+                          self.sample_data.lb_id, self.sample_data.project_id,
+                          self.sample_data.provider_vip_dict)
+
+    @mock.patch('octavia.common.utils.get_network_driver')
     def test_create_vip_port_failed(self, mock_get_net_driver):
         mock_net_driver = mock.MagicMock()
         mock_get_net_driver.return_value = mock_net_driver
