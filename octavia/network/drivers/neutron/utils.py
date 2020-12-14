@@ -67,7 +67,8 @@ def convert_network_dict_to_model(network_dict):
         provider_network_type=nw.get('provider:network_type'),
         provider_physical_network=nw.get('provider:physical_network'),
         provider_segmentation_id=nw.get('provider:segmentation_id'),
-        router_external=nw.get('router:external')
+        router_external=nw.get('router:external'),
+        port_security_enabled=nw.get('port_security_enabled')
     )
 
 
