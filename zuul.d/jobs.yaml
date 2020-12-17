@@ -19,6 +19,7 @@
 
 - job:
     name: publish-openstack-octavia-amphora-image-centos8
+    nodeset: centos-8
     parent: publish-openstack-octavia-amphora-image
     description: |
       Publish CentOS 8 based amphora image to tarballs.o.o.
@@ -163,6 +164,7 @@
 - job:
     name: octavia-amphora-image-build-live-centos8
     parent: octavia-amphora-image-build
+    nodeset: centos-8
     description: |
       Builds a CentOS 8 amphora image using diskimage-builder from Git
       master. This job does not publish the image.
