@@ -220,7 +220,7 @@ class PaginationHelper(object):
 
     @staticmethod
     def _prepare_tags_list(param):
-        """Split comma seperated tags and return a flat list of tags."""
+        """Split comma separated tags and return a flat list of tags."""
         if not isinstance(param, list):
             param = [param]
         return list(itertools.chain.from_iterable(
