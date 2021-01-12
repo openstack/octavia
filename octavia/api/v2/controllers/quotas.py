@@ -93,8 +93,11 @@ class QuotasController(base.BaseController):
     @pecan.expose()
     def _lookup(self, project_id, *remainder):
         """Overridden pecan _lookup method for routing default endpoint."""
-        if project_id and remainder and remainder[0] == 'default':
-            return QuotasDefaultController(project_id), ''
+        if project_id and remainder:
+            if remainder[0] == 'default':
+                return QuotasDefaultController(project_id), ''
+            if remainder[0] == 'usages':
+                return QuotasUsagesController(project_id), ''
         return None
 
 
@@ -118,3 +121,21 @@ class QuotasDefaultController(base.BaseController):
 
         quotas = self._get_default_quotas(self.project_id)
         return self._convert_db_to_type(quotas, quota_types.QuotaResponse)
+
+
+class QuotasUsagesController(base.BaseController):
+    RBAC_TYPE = constants.RBAC_QUOTA
+
+    def __init__(self, project_id):
+        super(QuotasUsagesController, self).__init__()
+        self.project_id = project_id
+
+    @wsme_pecan.wsexpose(quota_types.QuotaUsagesResponse, wtypes.text)
+    def get(self):
+        # """Get a project's quota usages details."""
+        context = pecan.request.context.get('octavia_context')
+        self._auth_validate_action(context, self.project_id,
+                                   constants.RBAC_USAGES)
+        db_quota = self._get_db_quotas(context.session, self.project_id)
+        quota_usages = self._to_quota_usages_list(db_quota)
+        return quota_types.QuotaUsagesResponse.from_data_model(quota_usages)

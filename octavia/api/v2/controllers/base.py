@@ -197,6 +197,21 @@ class BaseController(pecan.rest.RestController):
                 db_quotas.member = CONF.quotas.default_member_quota
         return db_quotas
 
+    @staticmethod
+    def _to_quota_usages_list(db_quota):
+        """convert quota usages list format"""
+        quota_usages_list = []
+        db_quota_dict = db_quota.to_dict()
+        # delete project_id key from dict
+        del db_quota_dict['project_id']
+        for key in db_quota_dict:
+            if not key.startswith('in_use_'):
+                quota_usages_list.append(data_models.QuotaUsages(
+                    key, db_quota_dict.get(key),
+                    db_quota_dict.get('in_use_%s' % key)
+                ))
+        return quota_usages_list
+
     def _auth_get_all(self, context, project_id):
         # Check authorization to list objects under all projects
         action = '{rbac_obj}{action}'.format(

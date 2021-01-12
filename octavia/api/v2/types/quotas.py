@@ -102,3 +102,33 @@ class QuotaAllResponse(base.BaseType):
 class QuotaPUT(base.BaseType):
     """Overall object for quota PUT request."""
     quota = wtypes.wsattr(QuotaBase)
+
+
+class QuotaUsagesBase(base.BaseType):
+    name = wtypes.wsattr(wtypes.StringType(max_length=255))
+    total = wtypes.wsattr(wtypes.IntegerType(
+        minimum=consts.MIN_QUOTA, maximum=consts.MAX_QUOTA))
+    used = wtypes.wsattr(wtypes.IntegerType(
+        minimum=consts.MIN_QUOTA, maximum=consts.MAX_QUOTA))
+
+    @classmethod
+    def from_data_model(cls, data_model, children=False):
+        quota = super(QuotaUsagesBase, cls).from_data_model(
+            data_model, children=children)
+        if quota.name == 'healthmonitor':
+            quota.name = 'health_monitor'
+        elif quota.name == 'loadbalancer':
+            quota.name = 'load_balancer'
+        return quota
+
+
+class QuotaUsagesResponse(base.BaseType):
+    quota = wtypes.wsattr([QuotaUsagesBase])
+
+    @classmethod
+    def from_data_model(cls, data_model, children=False):
+        quota_usages_list = QuotaUsagesResponse()
+        quota_usages_list.quota = [
+            QuotaUsagesBase.from_data_model(obj)
+            for obj in data_model]
+        return quota_usages_list

@@ -774,6 +774,14 @@ class Quotas(BaseDataModel):
         self.in_use_pool = in_use_pool
 
 
+class QuotaUsages(BaseDataModel):
+
+    def __init__(self, name=None, total=None, used=None):
+        self.name = name
+        self.total = total
+        self.used = used
+
+
 class Flavor(BaseDataModel):
 
     def __init__(self, id=None, name=None,

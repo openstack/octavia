@@ -995,9 +995,12 @@ class MarkLBActiveInDB(BaseDatabaseTask):
             self._mark_pool_status(listener.default_pool, status)
 
     def _mark_l7policy_status(self, l7policy, status):
+        op_status = (constants.ONLINE if l7policy.enabled
+                     else constants.OFFLINE)
         self.l7policy_repo.update(
             db_apis.get_session(), l7policy.id,
-            provisioning_status=status)
+            provisioning_status=status,
+            operating_status=op_status)
 
         LOG.debug("Marking all l7rules of l7policy %s %s",
                   l7policy.id, status)
@@ -1010,9 +1013,12 @@ class MarkLBActiveInDB(BaseDatabaseTask):
             self._mark_pool_status(l7policy.redirect_pool, status)
 
     def _mark_l7rule_status(self, l7rule, status):
+        op_status = (constants.ONLINE if l7rule.enabled
+                     else constants.OFFLINE)
         self.l7rule_repo.update(
             db_apis.get_session(), l7rule.id,
-            provisioning_status=status)
+            provisioning_status=status,
+            operating_status=op_status)
 
     def _mark_pool_status(self, pool, status):
         self.pool_repo.update(
@@ -1027,9 +1033,12 @@ class MarkLBActiveInDB(BaseDatabaseTask):
             self._mark_member_status(member, status)
 
     def _mark_hm_status(self, hm, status):
+        op_status = (constants.ONLINE if hm.enabled
+                     else constants.OFFLINE)
         self.health_mon_repo.update(
             db_apis.get_session(), hm.id,
-            provisioning_status=status)
+            provisioning_status=status,
+            operating_status=op_status)
 
     def _mark_member_status(self, member, status):
         self.member_repo.update(

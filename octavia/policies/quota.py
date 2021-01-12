@@ -62,6 +62,14 @@ rules = [
         [{'method': 'GET',
           'path': '/v2/lbaas/quotas/{project_id}/default'}]
     ),
+    policy.DocumentedRuleDefault(
+        '{rbac_obj}{action}'.format(rbac_obj=constants.RBAC_QUOTA,
+                                    action=constants.RBAC_USAGES),
+        constants.RULE_API_READ_QUOTA,
+        "Show Usages Quota for a Project",
+        [{'method': 'GET',
+          'path': '/v2/lbaas/quotas/{project_id}/usages'}]
+    ),
 ]
 
 

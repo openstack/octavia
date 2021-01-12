@@ -725,6 +725,8 @@ RBAC_GET_ALL_GLOBAL = 'get_all-global'
 RBAC_GET_DEFAULTS = 'get_defaults'
 RBAC_GET_STATS = 'get_stats'
 RBAC_GET_STATUS = 'get_status'
+RBAC_USAGES = 'get_usages'
+
 
 # PROVIDERS
 OCTAVIA = 'octavia'
