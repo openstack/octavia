@@ -2952,6 +2952,10 @@ class TestListenerRepositoryTest(BaseRepositoryTest):
         new_listener = self.listener_repo.get(self.session, id=listener.id)
         self.assertIn(container1_dm, new_listener.sni_containers)
 
+    def test_update_bad_id(self):
+        self.assertRaises(exceptions.NotFound, self.listener_repo.update,
+                          self.session, id=uuidutils.generate_uuid())
+
     def test_delete(self):
         listener = self.create_listener(self.FAKE_UUID_1, 80)
         self.listener_repo.delete(self.session, id=listener.id)
