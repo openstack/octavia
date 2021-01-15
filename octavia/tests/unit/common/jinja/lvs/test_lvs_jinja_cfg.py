@@ -222,6 +222,50 @@ class TestLvsCfg(base.TestCase):
                 persistence=False, alloc_default_pool=False))
         self.assertEqual(exp, rendered_obj)
 
+    def test_render_template_udp_with_pool_no_member(self):
+        exp = ("# Configuration for Loadbalancer sample_loadbalancer_id_1\n"
+               "# Configuration for Listener sample_listener_id_1\n\n"
+               "net_namespace amphora-haproxy\n\n"
+               "virtual_server 10.0.0.2 80 {\n"
+               "    lb_algo rr\n"
+               "    lb_kind NAT\n"
+               "    protocol UDP\n\n\n"
+               "    # Configuration for Pool sample_pool_id_0\n"
+               "}\n\n")
+
+        rendered_obj = self.udp_jinja_cfg.render_loadbalancer_obj(
+            sample_configs_combined.sample_listener_tuple(
+                proto=constants.PROTOCOL_UDP, monitor=False,
+                persistence=False, alloc_default_pool=True,
+                sample_default_pool=0))
+        self.assertEqual(exp, rendered_obj)
+
+    def test_render_template_udp_with_disabled_pool(self):
+        exp = ("# Configuration for Loadbalancer sample_loadbalancer_id_1\n"
+               "# Configuration for Listener sample_listener_id_1\n\n"
+               "net_namespace amphora-haproxy\n\n"
+               "virtual_server 10.0.0.2 80 {\n"
+               "    lb_algo rr\n"
+               "    lb_kind NAT\n"
+               "    protocol UDP\n\n\n"
+               "    # Pool sample_pool_id_1 is disabled\n"
+               "    # Configuration for Member sample_member_id_1\n"
+               "    real_server 10.0.0.99 82 {\n"
+               "        weight 13\n\n"
+               "    }\n\n"
+               "    # Configuration for Member sample_member_id_2\n"
+               "    real_server 10.0.0.98 82 {\n"
+               "        weight 13\n\n"
+               "    }\n\n"
+               "}\n\n")
+
+        rendered_obj = self.udp_jinja_cfg.render_loadbalancer_obj(
+            sample_configs_combined.sample_listener_tuple(
+                proto=constants.PROTOCOL_UDP, monitor=False,
+                persistence=False, alloc_default_pool=True,
+                pool_enabled=False))
+        self.assertEqual(exp, rendered_obj)
+
     def test_udp_transform_session_persistence(self):
         persistence_src_ip = (
             sample_configs_combined.sample_session_persistence_tuple(

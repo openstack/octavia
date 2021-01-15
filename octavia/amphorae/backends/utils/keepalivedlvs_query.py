@@ -234,7 +234,7 @@ def get_udp_listener_pool_status(listener_id):
     if 'Members' not in resource_ipport_mapping:
         return {'lvs': {
             'uuid': resource_ipport_mapping['Pool']['id'],
-            'status': constants.DOWN,
+            'status': constants.UP,
             'members': {}
         }}
 
