@@ -11,6 +11,7 @@
 # under the License.
 
 import ipaddress
+import os
 import re
 import subprocess
 
@@ -237,6 +238,20 @@ def get_udp_listener_pool_status(listener_id):
             'members': {}
         }}
 
+    config_path = util.keepalived_lvs_cfg_path(listener_id)
+    pids_pathes = util.keepalived_lvs_pids_path(listener_id)
+
+    config_stat = os.stat(config_path)
+    check_pid_stat = os.stat(pids_pathes[2])
+
+    # Indicates that keepalived configuration has been updated but the service
+    # has yet to be restarted.
+    # NOTE: It only works if we are doing a RESTART on configuration change,
+    # Iaa34db6cb1dfed98e96a585c5d105e263c7efa65 forces a RESTART instead of a
+    # RELOAD, we need to be careful if we want to switch back to RELOAD after
+    # updating to a recent keepalived release.
+    restarting = config_stat.st_mtime > check_pid_stat.st_mtime
+
     with open(util.keepalived_lvs_cfg_path(listener_id), 'r') as f:
         cfg = f.read()
         hm_enabled = len(CHECKER_REGEX.findall(cfg)) > 0
@@ -260,7 +275,8 @@ def get_udp_listener_pool_status(listener_id):
             if member_ip_port is None:
                 status = constants.MAINT
             elif member_ip_port in down_member_ip_port_set:
-                status = constants.DOWN
+                status = (
+                    constants.RESTARTING if restarting else constants.DOWN)
             elif int(realserver_result[member_ip_port]['Weight']) == 0:
                 status = constants.DRAIN
             else:
@@ -276,7 +292,8 @@ def get_udp_listener_pool_status(listener_id):
             if member['ipport'] is None:
                 member_results[member['id']] = constants.MAINT
             elif hm_enabled:
-                member_results[member['id']] = constants.DOWN
+                member_results[member['id']] = (
+                    constants.RESTARTING if restarting else constants.DOWN)
             else:
                 member_results[member['id']] = constants.NO_CHECK
 

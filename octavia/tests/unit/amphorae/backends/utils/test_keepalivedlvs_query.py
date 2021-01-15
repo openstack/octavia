@@ -298,8 +298,15 @@ class LvsQueryTestCase(base.TestCase):
             self.disabled_listener_id)
         self.assertEqual((None, constants.AMPHORA_NAMESPACE), res)
 
+    @mock.patch('os.stat')
     @mock.patch('subprocess.check_output')
-    def test_get_udp_listener_pool_status(self, mock_check_output):
+    def test_get_udp_listener_pool_status(self, mock_check_output,
+                                          mock_os_stat):
+        mock_os_stat.side_effect = (
+            mock.Mock(st_mtime=1234),
+            mock.Mock(st_mtime=1234),
+        )
+
         # test with ipv4 and ipv6
         mock_check_output.return_value = KERNAL_FILE_SAMPLE_V4
         res = lvs_query.get_udp_listener_pool_status(self.listener_id_v4)
@@ -313,6 +320,11 @@ class LvsQueryTestCase(base.TestCase):
                          self.member_id4_v4: constants.MAINT}}}
         self.assertEqual(expected, res)
 
+        mock_os_stat.side_effect = (
+            mock.Mock(st_mtime=1234),
+            mock.Mock(st_mtime=1234),
+        )
+
         mock_check_output.return_value = KERNAL_FILE_SAMPLE_V6
         res = lvs_query.get_udp_listener_pool_status(self.listener_id_v6)
         expected = {
@@ -323,6 +335,28 @@ class LvsQueryTestCase(base.TestCase):
                          self.member_id2_v6: constants.UP,
                          self.member_id3_v6: constants.DOWN,
                          self.member_id4_v6: constants.MAINT}}}
+        self.assertEqual(expected, res)
+
+    @mock.patch('os.stat')
+    @mock.patch('subprocess.check_output')
+    def test_get_udp_listener_pool_status_restarting(self, mock_check_output,
+                                                     mock_os_stat):
+        mock_os_stat.side_effect = (
+            mock.Mock(st_mtime=1234),  # config file
+            mock.Mock(st_mtime=1220),  # pid file
+        )
+
+        # test with ipv4 and ipv6
+        mock_check_output.return_value = KERNAL_FILE_SAMPLE_V4
+        res = lvs_query.get_udp_listener_pool_status(self.listener_id_v4)
+        expected = {
+            'lvs':
+            {'uuid': self.pool_id_v4,
+             'status': constants.UP,
+             'members': {self.member_id1_v4: constants.UP,
+                         self.member_id2_v4: constants.UP,
+                         self.member_id3_v4: constants.RESTARTING,
+                         self.member_id4_v4: constants.MAINT}}}
         self.assertEqual(expected, res)
 
     @mock.patch('octavia.amphorae.backends.utils.keepalivedlvs_query.'
@@ -366,14 +400,19 @@ class LvsQueryTestCase(base.TestCase):
         }}
         self.assertEqual(expected, res)
 
+    @mock.patch('os.stat')
     @mock.patch('octavia.amphorae.backends.utils.keepalivedlvs_query.'
                 'get_listener_realserver_mapping')
     def test_get_udp_listener_pool_status_when_not_get_realserver_result(
-            self, mock_get_mapping):
+            self, mock_get_mapping, mock_os_stat):
         # This will hit if the kernel lvs file (/proc/net/ip_vs)
         # lose its content. So at this moment, eventhough we configure the
         # pool and member into udp keepalived config file, we have to set
         # ths status of pool and its members to DOWN.
+        mock_os_stat.side_effect = (
+            mock.Mock(st_mtime=1234),
+            mock.Mock(st_mtime=1234),
+        )
         mock_get_mapping.return_value = (False, {})
         res = lvs_query.get_udp_listener_pool_status(self.listener_id_v4)
         expected = {
