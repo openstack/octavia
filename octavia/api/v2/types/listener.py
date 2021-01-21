@@ -28,6 +28,7 @@ class BaseListenerType(types.BaseType):
     _type_to_model_map = {
         'admin_state_up': 'enabled',
         'default_tls_container_ref': 'tls_certificate_id',
+        'sni_container_refs': 'sni_containers',
         'client_ca_tls_container_ref': 'client_ca_tls_certificate_id',
         'client_crl_container_ref': 'client_crl_container_id'}
     _child_map = {}
