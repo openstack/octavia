@@ -1,0 +1,12 @@
+---
+fixes:
+  - |
+    The haproxy log in the amphora image is now rotated when it grows past a
+    size limit, as well as daily, and logrotate runs every minute instead of
+    once a day. Before, a busy load balancer could fill the amphora disk
+    between daily rotations. The limit and the number of kept logs are set
+    at first boot from the free disk space, so the haproxy logs use at most
+    about half of it, and larger flavor disks keep more logs. Rebuild the
+    amphora image to get this fix. Load balancers with very high traffic
+    should still use log offloading with
+    ``[amphora_agent] disable_local_log_storage = True``.
