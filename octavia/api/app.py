@@ -44,6 +44,11 @@ CONF = cfg.CONF
 watcher_errors = importutils.try_import('watcher.errors')
 watcher_middleware = importutils.try_import('watcher.watcher')
 
+# OSProfiler tracing
+profiler_initializer = importutils.try_import('osprofiler.initializer')
+profiler_opts = importutils.try_import('osprofiler.opts')
+profiler_web = importutils.try_import('osprofiler.web')
+
 
 def get_pecan_config():
     """Returns the pecan config."""
@@ -110,6 +115,21 @@ def _wrap_app(app):
                 file_name=CONF.watcher.config_file,
                 reason=e
             )
+
+    # OSProfiler tracing middleware
+    if profiler_initializer and profiler_opts and profiler_web and CONF.profiler.enabled:
+        LOG.info("OSProfiler Middleware activated")
+        profiler_opts.set_defaults(CONF)
+        profiler_initializer.init_from_conf(
+            conf=CONF,
+            context={}, # must not be None
+            project="octavia",
+            service="octavia-api",  # The name of the octavia API binary
+            host=CONF.host
+        )
+        profiler_factory = profiler_web.WsgiMiddleware.factory(None, hmac_keys=CONF.profiler.hmac_keys, enabled=True)
+        app = profiler_factory(app)
+
 
     if cfg.CONF.api_settings.auth_strategy == constants.KEYSTONE:
         app = keystone.SkippingAuthProtocol(app, {})
