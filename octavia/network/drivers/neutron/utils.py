@@ -14,6 +14,12 @@
 
 
 from octavia.network import data_models as network_models
+from oslo_config import cfg
+from oslo_utils import importutils
+
+profiler = importutils.try_import('osprofiler.profiler')
+
+CONF = cfg.CONF
 
 
 def convert_subnet_dict_to_model(subnet_dict):
@@ -103,3 +109,20 @@ def convert_network_ip_availability_dict_to_model(
     ip_avail = network_models.Network_IP_Availability.from_dict(nw_ip_avail)
     ip_avail.subnet_ip_availability = nw_ip_avail.get('subnet_ip_availability')
     return ip_avail
+
+class Profiler:
+    @staticmethod
+    def trace_cls(name, **kwargs):
+        """Wrap the OSProfiler trace_cls decorator so that it will not try to
+        patch the class unless OSProfiler is present and enabled in the config
+        :param name: The name of action. E.g. wsgi, rpc, db, etc..
+        :param kwargs: Any other keyword args used by profiler.trace_cls
+        """
+
+        def decorator(cls):
+            if profiler and 'profiler' in CONF and CONF.profiler.enabled:
+                trace_decorator = profiler.trace_cls(name, kwargs)
+                return trace_decorator(cls)
+            return cls
+
+        return decorator
