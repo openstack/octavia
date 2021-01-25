@@ -112,7 +112,7 @@ def _wrap_app(app):
             )
 
     # OSProfiler tracing middleware
-    if CONF.profiler.enabled and profiler_initializer and profiler_opts and profiler_web:
+    if profiler_initializer and profiler_opts and profiler_web and CONF.profiler.enabled:
         LOG.info("OSProfiler Middleware activated")
         profiler_opts.set_defaults(CONF)
         profiler_initializer.init_from_conf(
