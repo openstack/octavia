@@ -22,7 +22,7 @@ from octavia.i18n import _
 from octavia.network import base
 from octavia.network import data_models as network_models
 from octavia.network.drivers.neutron import utils
-
+from octavia.network.drivers.neutron.utils import Profiler as profiler
 
 LOG = logging.getLogger(__name__)
 DNS_INT_EXT_ALIAS = 'dns-integration'
@@ -32,6 +32,7 @@ QOS_EXT_ALIAS = 'qos'
 CONF = cfg.CONF
 
 
+@profiler.trace_cls("neutron_api")
 class BaseNeutronDriver(base.AbstractNetworkDriver):
 
     def __init__(self):
