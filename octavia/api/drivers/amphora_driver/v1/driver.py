@@ -103,6 +103,13 @@ class AmphoraProviderDriver(driver_base.ProviderDriver):
                                           project_id=project_id, vip=vip_obj)
 
         network_driver = utils.get_network_driver()
+        vip_network = network_driver.get_network(
+            vip_dictionary[lib_consts.VIP_NETWORK_ID])
+        if not vip_network.port_security_enabled:
+            message = "Port security must be enabled on the VIP network."
+            raise exceptions.DriverError(user_fault_string=message,
+                                         operator_fault_string=message)
+
         try:
             vip = network_driver.allocate_vip(lb_obj)
         except network_base.AllocateVIPException as e:
