@@ -117,7 +117,8 @@ You can also specify the ``provider`` attribute when you create a
 load balancer. The ``provider`` attribute specifies which backend should
 be used to create the load balancer.  This could be the default provider
 (``octavia``) or a vendor supplied ``provider`` if one has been installed.
-Setting both a flavor_id and a provider will result in a conflict error.
+Setting both a flavor_id and a provider will result in a conflict error if
+the provider does not match the provider of the configured flavor profiles.
 
 Specifying a Virtual IP (VIP) is mandatory. There are three ways to specify
 a VIP network for the load balancer:
