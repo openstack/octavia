@@ -1,0 +1,5 @@
+---
+fixes:
+  - |
+    Fix a bug that allowed a user to create a load balancer on a
+    ``vip_subnet_id`` that belongs to another user using the subnet UUID.
