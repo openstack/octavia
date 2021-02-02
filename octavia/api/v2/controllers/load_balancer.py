@@ -264,7 +264,7 @@ class LoadBalancersController(base.BaseController):
         # Validate just the subnet id
         elif load_balancer.vip_subnet_id:
             subnet = validate.subnet_exists(
-                subnet_id=load_balancer.vip_subnet_id)
+                subnet_id=load_balancer.vip_subnet_id, context=context)
             load_balancer.vip_network_id = subnet.network_id
         if load_balancer.vip_qos_policy_id:
             validate.qos_policy_exists(
