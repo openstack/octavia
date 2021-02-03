@@ -38,17 +38,6 @@
             voting: false
         - octavia-v2-dsvm-py2-scenario-two-node:
             voting: false
-        - octavia-grenade:
-            irrelevant-files:
-              - ^.*\.rst$
-              - ^api-ref/.*$
-              - ^doc/.*$
-              - ^octavia/tests/unit/.*$
-              - ^releasenotes/.*$
-              - ^setup.cfg$
-              - ^tools/.*$
-              - ^(test-|)requirements.txt$
-              - ^tox.ini$
         - octavia-v2-dsvm-tls-barbican:
             irrelevant-files:
               - ^.*\.rst$
@@ -92,17 +81,6 @@
         - octavia-v2-dsvm-noop-api
         - octavia-v2-dsvm-noop-py2-api
         - octavia-v2-dsvm-scenario
-        - octavia-grenade:
-            irrelevant-files:
-              - ^.*\.rst$
-              - ^api-ref/.*$
-              - ^doc/.*$
-              - ^octavia/tests/unit/.*$
-              - ^releasenotes/.*$
-              - ^setup.cfg$
-              - ^tools/.*$
-              - ^(test-|)requirements.txt$
-              - ^tox.ini$
     periodic:
       jobs:
         - publish-openstack-octavia-amphora-image-xenial:

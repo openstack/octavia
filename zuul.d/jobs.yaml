@@ -70,19 +70,6 @@
         amphora_os_release: 28
 
 - job:
-    name: octavia-grenade
-    parent: octavia-legacy-dsvm-base
-    run: playbooks/legacy/grenade-devstack-octavia/run.yaml
-    post-run: playbooks/legacy/grenade-devstack-octavia/post.yaml
-    required-projects:
-      - openstack/grenade
-      - openstack/devstack-gate
-      - openstack/octavia
-      - openstack/octavia-lib
-      - openstack/octavia-tempest-plugin
-      - openstack/python-octaviaclient
-
-- job:
     name: octavia-v2-dsvm-scenario-amphora-v2
     parent: octavia-v2-dsvm-scenario
     vars:
