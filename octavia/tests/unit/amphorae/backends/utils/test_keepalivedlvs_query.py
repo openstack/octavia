@@ -48,6 +48,8 @@ KERNAL_FILE_SAMPLE_V6 = (
     "  -> [fd79:35e2:9963:0000:f816:3eff:feca:b7bf]:08AE      "
     "Masq    3      0          0\n"
     "  -> [fd79:35e2:9963:0000:f816:3eff:fe9d:94df]:0D05      "
+    "Masq    2      0          0\n"
+    "  -> [fd79:35e2::8f3f]:115C       "
     "Masq    2      0          0")
 
 CFG_FILE_TEMPLATE_v4 = (
@@ -124,6 +126,14 @@ CFG_FILE_TEMPLATE_v6 = (
     "        }\n\n"
     "    }\n\n"
     "    # Member %(member_id4)s is disabled\n\n"
+    "    # Configuration for Member %(member_id5)s\n"
+    "    real_server fd79:35e2:0:0:0:0:0:8f3f 4444 {\n"
+    "        weight 2\n"
+    "        MISC_CHECK {\n\n"
+    "            misc_path \"/usr/bin/check_script.sh\"\n\n"
+    "            misc_timeout 5\n\n"
+    "        }\n\n"
+    "    }\n\n"
     "}")
 
 CFG_FILE_TEMPLATE_DISABLED_LISTENER = (
@@ -167,6 +177,7 @@ class LvsQueryTestCase(base.TestCase):
         self.member_id2_v6 = uuidutils.generate_uuid()
         self.member_id3_v6 = uuidutils.generate_uuid()
         self.member_id4_v6 = uuidutils.generate_uuid()
+        self.member_id5_v6 = uuidutils.generate_uuid()
         self.disabled_listener_id = uuidutils.generate_uuid()
         cfg_content_v4 = CFG_FILE_TEMPLATE_v4 % {
             'listener_id': self.listener_id_v4,
@@ -184,7 +195,8 @@ class LvsQueryTestCase(base.TestCase):
             'member_id1': self.member_id1_v6,
             'member_id2': self.member_id2_v6,
             'member_id3': self.member_id3_v6,
-            'member_id4': self.member_id4_v6
+            'member_id4': self.member_id4_v6,
+            'member_id5': self.member_id5_v6
         }
         cfg_content_disabled_listener = (
             CFG_FILE_TEMPLATE_DISABLED_LISTENER % {
@@ -234,6 +246,12 @@ class LvsQueryTestCase(base.TestCase):
                      'ActiveConn': '0',
                      'InActConn': '0'},
                     '[fd79:35e2:9963:0:f816:3eff:fe9d:94df]:3333':
+                        {'status': constants.UP,
+                         'Forward': 'Masq',
+                         'Weight': '2',
+                         'ActiveConn': '0',
+                         'InActConn': '0'},
+                    '[fd79:35e2::8f3f]:4444':
                         {'status': constants.UP,
                          'Forward': 'Masq',
                          'Weight': '2',
@@ -289,6 +307,8 @@ class LvsQueryTestCase(base.TestCase):
                  'ipport': '[fd79:35e2:9963:0:f816:3eff:fe9d:94df]:3333'},
                 {'id': self.member_id3_v6,
                  'ipport': '[fd79:35e2:9963:0:f816:3eff:fe9d:8f3f]:4444'},
+                {'id': self.member_id5_v6,
+                 'ipport': '[fd79:35e2::8f3f]:4444'},
                 {'id': self.member_id4_v6,
                  'ipport': None}]}
         self.assertEqual((expected, constants.AMPHORA_NAMESPACE), res)
@@ -334,7 +354,8 @@ class LvsQueryTestCase(base.TestCase):
              'members': {self.member_id1_v6: constants.UP,
                          self.member_id2_v6: constants.UP,
                          self.member_id3_v6: constants.DOWN,
-                         self.member_id4_v6: constants.MAINT}}}
+                         self.member_id4_v6: constants.MAINT,
+                         self.member_id5_v6: constants.UP}}}
         self.assertEqual(expected, res)
 
     @mock.patch('os.stat')
