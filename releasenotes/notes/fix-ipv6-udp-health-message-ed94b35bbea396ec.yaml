@@ -1,0 +1,5 @@
+---
+fixes:
+  - |
+    Some IPv6 UDP members were incorrectly marked in ERROR status, because of
+    a formatting issue while generating the health message in the amphora.
