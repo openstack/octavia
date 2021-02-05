@@ -207,19 +207,21 @@ def get_udp_listener_resource_ipports_nsname(listener_id):
         if rs_ip_port_list:
             rs_ip_port_count = len(rs_ip_port_list)
             for index in range(rs_ip_port_count):
-                if ipaddress.ip_address(
-                        six.text_type(rs_ip_port_list[index][0])).version == 6:
+                member_ip = ipaddress.ip_address(
+                    six.text_type(rs_ip_port_list[index][0]))
+                if member_ip.version == 6:
                     rs_ip_port_list[index] = (
-                        '[' + rs_ip_port_list[index][0] + ']',
+                        '[' + member_ip.compressed + ']',
                         rs_ip_port_list[index][1])
                 resource_ipport_mapping['Members'][index]['ipport'] = (
                     rs_ip_port_list[index][0] + ':' +
                     rs_ip_port_list[index][1])
 
-        if ipaddress.ip_address(
-                six.text_type(listener_ip_port[0])).version == 6:
+        listener_ip = ipaddress.ip_address(
+            six.text_type(listener_ip_port[0]))
+        if listener_ip.version == 6:
             listener_ip_port = (
-                '[' + listener_ip_port[0] + ']', listener_ip_port[1])
+                '[' + listener_ip.compressed + ']', listener_ip_port[1])
         resource_ipport_mapping['Listener']['ipport'] = (
             listener_ip_port[0] + ':' + listener_ip_port[1])
 
