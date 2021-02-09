@@ -714,8 +714,6 @@ function octavia_init {
         create_octavia_accounts
 
         add_load-balancer_roles
-
-        configure_rsyslog
     elif [ $OCTAVIA_NODE == 'api' ] ; then
         create_octavia_accounts
 
@@ -726,6 +724,7 @@ function octavia_init {
         create_mgmt_network_interface
         create_amphora_flavor
         configure_lb_mgmt_sec_grp
+        configure_rsyslog
     fi
 
     if ! [ "$DISABLE_AMP_IMAGE_BUILD" == 'True' ]; then
