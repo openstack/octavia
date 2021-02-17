@@ -1,0 +1,24 @@
+---
+features:
+  - |
+    Added support for keystone default roles and system token scopes.
+upgrade:
+  - |
+    Legacy Octavia Advanced RBAC policies will continue to function as before
+    as long as the [oslo_policy] enforce_scope = False and
+    enforce_new_defaults = False settings are present (this is the current
+    oslo.policy default). However, we highly recommend you update your
+    user roles to follow the new keystone default roles and start using scoped
+    tokens as appropriate.
+    See the `Octavia Policies
+    <https://docs.openstack.org/octavia/latest/configuration/policy.html>`_
+    administration guide for more information.
+deprecations:
+  - |
+    Legacy Octavia Advanced RBAC policies without the keystone default roles
+    and/or token scoping are deprecated as of the Wallaby release.
+    The oslo.policy project may change the default settings requiring the
+    keystone default roles and scoped tokens in a future release. Please see
+    the upgrade section in these release notes and the `Octavia Policies
+    <https://docs.openstack.org/octavia/latest/configuration/policy.html>`_
+    administration guide for more information.

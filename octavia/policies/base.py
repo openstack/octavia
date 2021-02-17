@@ -10,9 +10,61 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+from oslo_log import versionutils
 from oslo_policy import policy
 
+from octavia.common import constants
+
+deprecated_context_is_admin = policy.DeprecatedRule(
+    name='context_is_admin',
+    check_str='role:admin or '
+              'role:load-balancer_admin'
+)
+deprecated_observer_and_owner = policy.DeprecatedRule(
+    name='load-balancer:observer_and_owner',
+    check_str='role:load-balancer_observer and '
+              'rule:load-balancer:owner'
+)
+deprecated_member_and_owner = policy.DeprecatedRule(
+    name='load-balancer:member_and_owner',
+    check_str='role:load-balancer_member and '
+              'rule:load-balancer:owner'
+)
+
 rules = [
+
+    # OpenStack wide scoped rules
+
+    # System scoped Administrator
+    policy.RuleDefault(
+        name='system-admin',
+        check_str='role:admin and '
+                  'system_scope:all',
+        scope_types=[constants.RBAC_SCOPE_SYSTEM]),
+
+    # System scoped Reader
+    policy.RuleDefault(
+        name='system-reader',
+        check_str='role:reader and '
+                  'system_scope:all',
+        scope_types=[constants.RBAC_SCOPE_SYSTEM]),
+
+    # Project scoped Member
+    policy.RuleDefault(
+        name='project-member',
+        check_str='role:member and '
+                  'project_id:%(project_id)s',
+        scope_types=[constants.RBAC_SCOPE_PROJECT]),
+
+    # Project scoped Reader
+    policy.RuleDefault(
+        name='project-reader',
+        check_str='role:reader and '
+                  'project_id:%(project_id)s',
+        scope_types=[constants.RBAC_SCOPE_PROJECT]),
+
+    # Octavia specific Advanced RBAC rules
+
     # The default is to not allow access unless the auth_strategy is 'noauth'.
     # Users must be a member of one of the following roles to have access to
     # the load-balancer API:
@@ -25,66 +77,107 @@ rules = [
     # role:load-balancer_member
     #     User has access to load-balancer read and write APIs
     # role:load-balancer_admin
-    #     User is considered an admin for all load-balnacer APIs including
+    #     User is considered an admin for all load-balancer APIs including
     #     resources owned by others.
-    # role:admin
-    #     User is admin to all APIs
+    # role:admin and system_scope:all
+    #     User is admin to all service APIs, including Octavia.
 
-    policy.RuleDefault('context_is_admin',
-                       'role:admin or role:load-balancer_admin'),
+    policy.RuleDefault(
+        name='context_is_admin',
+        check_str='role:load-balancer_admin or '
+                  'rule:system-admin',
+        deprecated_rule=deprecated_context_is_admin,
+        deprecated_reason=constants.RBAC_ROLES_DEPRECATED_REASON,
+        deprecated_since=versionutils.deprecated.WALLABY,
+        scope_types=[constants.RBAC_SCOPE_SYSTEM]),
 
     # Note: 'is_admin:True' is a policy rule that takes into account the
     # auth_strategy == noauth configuration setting.
     # It is equivalent to 'rule:context_is_admin or {auth_strategy == noauth}'
 
-    policy.RuleDefault('load-balancer:owner', 'project_id:%(project_id)s'),
+    policy.RuleDefault(
+        name='load-balancer:owner',
+        check_str='project_id:%(project_id)s',
+        scope_types=[constants.RBAC_SCOPE_PROJECT]),
 
     # API access roles
-    policy.RuleDefault('load-balancer:admin', 'is_admin:True or '
-                                              'role:admin or '
-                                              'role:load-balancer_admin'),
+    policy.RuleDefault(
+        name='load-balancer:observer_and_owner',
+        check_str='role:load-balancer_observer and '
+                  'rule:project-reader',
+        deprecated_rule=deprecated_observer_and_owner,
+        deprecated_reason=constants.RBAC_ROLES_DEPRECATED_REASON,
+        deprecated_since=versionutils.deprecated.WALLABY,
+        scope_types=[constants.RBAC_SCOPE_PROJECT]),
 
-    policy.RuleDefault('load-balancer:observer_and_owner',
-                       'role:load-balancer_observer and '
-                       'rule:load-balancer:owner'),
+    policy.RuleDefault(
+        name='load-balancer:global_observer',
+        check_str='role:load-balancer_global_observer or '
+                  'rule:system-reader',
+        scope_types=[constants.RBAC_SCOPE_SYSTEM]),
 
-    policy.RuleDefault('load-balancer:global_observer',
-                       'role:load-balancer_global_observer'),
-
-    policy.RuleDefault('load-balancer:member_and_owner',
-                       'role:load-balancer_member and '
-                       'rule:load-balancer:owner'),
+    policy.RuleDefault(
+        name='load-balancer:member_and_owner',
+        check_str='role:load-balancer_member and '
+                  'rule:project-member',
+        deprecated_rule=deprecated_member_and_owner,
+        deprecated_reason=constants.RBAC_ROLES_DEPRECATED_REASON,
+        deprecated_since=versionutils.deprecated.WALLABY,
+        scope_types=[constants.RBAC_SCOPE_PROJECT]),
 
     # API access methods
-    policy.RuleDefault('load-balancer:read',
-                       'rule:load-balancer:observer_and_owner or '
-                       'rule:load-balancer:global_observer or '
-                       'rule:load-balancer:member_and_owner or '
-                       'rule:load-balancer:admin'),
 
-    policy.RuleDefault('load-balancer:read-global',
-                       'rule:load-balancer:global_observer or '
-                       'rule:load-balancer:admin'),
+    policy.RuleDefault(
+        name='load-balancer:admin',
+        check_str='is_admin:True or '
+                  'role:load-balancer_admin or '
+                  'rule:system-admin',
+        scope_types=[constants.RBAC_SCOPE_SYSTEM]),
 
-    policy.RuleDefault('load-balancer:write',
-                       'rule:load-balancer:member_and_owner or '
-                       'rule:load-balancer:admin'),
+    policy.RuleDefault(
+        name='load-balancer:read',
+        check_str='rule:load-balancer:observer_and_owner or '
+                  'rule:load-balancer:global_observer or '
+                  'rule:load-balancer:member_and_owner or '
+                  'rule:load-balancer:admin',
+        scope_types=[constants.RBAC_SCOPE_PROJECT,
+                     constants.RBAC_SCOPE_SYSTEM]),
 
-    policy.RuleDefault('load-balancer:read-quota',
-                       'rule:load-balancer:observer_and_owner or '
-                       'rule:load-balancer:global_observer or '
-                       'rule:load-balancer:member_and_owner or '
-                       'role:load-balancer_quota_admin or '
-                       'rule:load-balancer:admin'),
+    policy.RuleDefault(
+        name='load-balancer:read-global',
+        check_str='rule:load-balancer:global_observer or '
+                  'rule:load-balancer:admin',
+        scope_types=[constants.RBAC_SCOPE_SYSTEM]),
 
-    policy.RuleDefault('load-balancer:read-quota-global',
-                       'rule:load-balancer:global_observer or '
-                       'role:load-balancer_quota_admin or '
-                       'rule:load-balancer:admin'),
+    policy.RuleDefault(
+        name='load-balancer:write',
+        check_str='rule:load-balancer:member_and_owner or '
+                  'rule:load-balancer:admin',
+        scope_types=[constants.RBAC_SCOPE_PROJECT,
+                     constants.RBAC_SCOPE_SYSTEM]),
 
-    policy.RuleDefault('load-balancer:write-quota',
-                       'role:load-balancer_quota_admin or '
-                       'rule:load-balancer:admin'),
+    policy.RuleDefault(
+        name='load-balancer:read-quota',
+        check_str='rule:load-balancer:observer_and_owner or '
+                  'rule:load-balancer:global_observer or '
+                  'rule:load-balancer:member_and_owner or '
+                  'role:load-balancer_quota_admin or '
+                  'rule:load-balancer:admin',
+        scope_types=[constants.RBAC_SCOPE_PROJECT,
+                     constants.RBAC_SCOPE_SYSTEM]),
+
+    policy.RuleDefault(
+        name='load-balancer:read-quota-global',
+        check_str='rule:load-balancer:global_observer or '
+                  'role:load-balancer_quota_admin or '
+                  'rule:load-balancer:admin',
+        scope_types=[constants.RBAC_SCOPE_SYSTEM]),
+
+    policy.RuleDefault(
+        name='load-balancer:write-quota',
+        check_str='role:load-balancer_quota_admin or '
+                  'rule:load-balancer:admin',
+        scope_types=[constants.RBAC_SCOPE_SYSTEM]),
 ]
 
 
