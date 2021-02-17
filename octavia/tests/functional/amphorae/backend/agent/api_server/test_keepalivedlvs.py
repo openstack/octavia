@@ -106,7 +106,7 @@ class KeepalivedLvsTestCase(base.TestCase):
         self.app.add_url_rule(
             rule=self.TEST_URL % ('<amphora_id>', '<listener_id>'),
             view_func=(lambda amphora_id, listener_id:
-                       self.test_keepalivedlvs.upload_udp_listener_config(
+                       self.test_keepalivedlvs.upload_lvs_listener_config(
                            listener_id)),
             methods=['PUT'])
 
@@ -123,7 +123,7 @@ class KeepalivedLvsTestCase(base.TestCase):
     @mock.patch('os.makedirs')
     @mock.patch('os.remove')
     @mock.patch('subprocess.check_output')
-    def test_upload_udp_listener_config_no_vrrp_check_dir(
+    def test_upload_lvs_listener_config_no_vrrp_check_dir(
             self, m_check_output, m_os_rm, m_os_mkdir, m_exists, m_os_chmod,
             m_os_sysinit, m_copy2, mock_netns, mock_install_netns,
             mock_systemctl):
@@ -172,7 +172,7 @@ class KeepalivedLvsTestCase(base.TestCase):
             self.assertEqual(200, res.status_code)
 
     @mock.patch('octavia.amphorae.backends.agent.api_server.util.'
-                'get_udp_listeners')
+                'get_lvs_listeners')
     @mock.patch('octavia.amphorae.backends.agent.api_server.util.'
                 'get_loadbalancers')
     @mock.patch('octavia.amphorae.backends.agent.api_server.util.'
@@ -188,13 +188,13 @@ class KeepalivedLvsTestCase(base.TestCase):
     @mock.patch('os.makedirs')
     @mock.patch('os.remove')
     @mock.patch('subprocess.check_output')
-    def test_upload_udp_listener_config_with_vrrp_check_dir(
+    def test_upload_lvs_listener_config_with_vrrp_check_dir(
             self, m_check_output, m_os_rm, m_os_mkdir, m_exists, m_os_chmod,
             m_os_sysinit, m_copy2, mock_netns, mock_install_netns,
-            mock_systemctl, mock_get_lbs, mock_get_udp_listeners):
+            mock_systemctl, mock_get_lbs, mock_get_lvs_listeners):
         m_exists.side_effect = [False, False, True, True, False, False, False]
         mock_get_lbs.return_value = []
-        mock_get_udp_listeners.return_value = [self.FAKE_ID]
+        mock_get_lvs_listeners.return_value = [self.FAKE_ID]
         cfg_path = util.keepalived_lvs_cfg_path(self.FAKE_ID)
         m = self.useFixture(test_utils.OpenFixture(cfg_path)).mock_open
 
@@ -259,7 +259,7 @@ class KeepalivedLvsTestCase(base.TestCase):
     @mock.patch('os.makedirs')
     @mock.patch('os.remove')
     @mock.patch('subprocess.check_output')
-    def test_upload_udp_listener_config_start_service_failure(
+    def test_upload_lvs_listener_config_start_service_failure(
             self, m_check_output, m_os_rm, m_os_mkdir, m_exists, m_os_chmod,
             m_os_sysinit, m_copy2, mock_install_netns, mock_systemctl):
         m_exists.side_effect = [False, False, True, True, False]
@@ -307,9 +307,9 @@ class KeepalivedLvsTestCase(base.TestCase):
     @mock.patch('subprocess.check_output')
     @mock.patch('octavia.amphorae.backends.agent.api_server.'
                 'keepalivedlvs.KeepalivedLvs.'
-                '_check_udp_listener_exists')
-    def test_manage_udp_listener(self, mock_udp_exist, mock_check_output):
-        res = self.test_keepalivedlvs.manage_udp_listener(self.FAKE_ID,
+                '_check_lvs_listener_exists')
+    def test_manage_lvs_listener(self, mock_lvs_exist, mock_check_output):
+        res = self.test_keepalivedlvs.manage_lvs_listener(self.FAKE_ID,
                                                           'start')
         cmd = ("/usr/sbin/service octavia-keepalivedlvs-{listener_id}"
                " {action}".format(listener_id=self.FAKE_ID, action='start'))
@@ -317,19 +317,19 @@ class KeepalivedLvsTestCase(base.TestCase):
                                                   stderr=subprocess.STDOUT)
         self.assertEqual(202, res.status_code)
 
-        res = self.test_keepalivedlvs.manage_udp_listener(self.FAKE_ID,
+        res = self.test_keepalivedlvs.manage_lvs_listener(self.FAKE_ID,
                                                           'restart')
         self.assertEqual(400, res.status_code)
 
         mock_check_output.side_effect = subprocess.CalledProcessError(1,
                                                                       'blah!')
 
-        res = self.test_keepalivedlvs.manage_udp_listener(self.FAKE_ID,
+        res = self.test_keepalivedlvs.manage_lvs_listener(self.FAKE_ID,
                                                           'start')
         self.assertEqual(500, res.status_code)
 
     @mock.patch('octavia.amphorae.backends.agent.api_server.util.'
-                'get_udp_listeners', return_value=[LISTENER_ID])
+                'get_lvs_listeners', return_value=[LISTENER_ID])
     @mock.patch('octavia.amphorae.backends.agent.api_server.util.'
                 'get_os_init_system', return_value=consts.INIT_SYSTEMD)
     @mock.patch('octavia.amphorae.backends.agent.api_server.util.'
@@ -337,10 +337,10 @@ class KeepalivedLvsTestCase(base.TestCase):
     @mock.patch('subprocess.check_output')
     @mock.patch('os.remove')
     @mock.patch('os.path.exists')
-    def test_delete_udp_listener(self, m_exist, m_remove, m_check_output,
-                                 mget_pid, m_init_sys, mget_udp_listeners):
+    def test_delete_lvs_listener(self, m_exist, m_remove, m_check_output,
+                                 mget_pid, m_init_sys, mget_lvs_listeners):
         m_exist.return_value = True
-        res = self.test_keepalivedlvs.delete_udp_listener(self.FAKE_ID)
+        res = self.test_keepalivedlvs.delete_lvs_listener(self.FAKE_ID)
 
         cmd1 = ("/usr/sbin/service "
                 "octavia-keepalivedlvs-{0} stop".format(self.FAKE_ID))
@@ -355,9 +355,9 @@ class KeepalivedLvsTestCase(base.TestCase):
 
     @mock.patch.object(keepalivedlvs, "webob")
     @mock.patch('os.path.exists')
-    def test_delete_udp_listener_not_exist(self, m_exist, m_webob):
+    def test_delete_lvs_listener_not_exist(self, m_exist, m_webob):
         m_exist.return_value = False
-        self.test_keepalivedlvs.delete_udp_listener(self.FAKE_ID)
+        self.test_keepalivedlvs.delete_lvs_listener(self.FAKE_ID)
         calls = [
             mock.call(
                 json=dict(message='UDP Listener Not Found',
@@ -371,12 +371,12 @@ class KeepalivedLvsTestCase(base.TestCase):
                 'get_keepalivedlvs_pid', return_value="12345")
     @mock.patch('subprocess.check_output')
     @mock.patch('os.path.exists')
-    def test_delete_udp_listener_stop_service_fail(self, m_exist,
+    def test_delete_lvs_listener_stop_service_fail(self, m_exist,
                                                    m_check_output, mget_pid):
         m_exist.return_value = True
         m_check_output.side_effect = subprocess.CalledProcessError(1,
                                                                    'Woops!')
-        res = self.test_keepalivedlvs.delete_udp_listener(self.FAKE_ID)
+        res = self.test_keepalivedlvs.delete_lvs_listener(self.FAKE_ID)
         self.assertEqual(500, res.status_code)
         self.assertEqual({'message': 'Error stopping keepalivedlvs',
                           'details': None}, res.json)
@@ -388,14 +388,15 @@ class KeepalivedLvsTestCase(base.TestCase):
     @mock.patch('subprocess.check_output')
     @mock.patch('os.remove')
     @mock.patch('os.path.exists')
-    def test_delete_udp_listener_disable_service_fail(self, m_exist, m_remove,
-                                                      m_check_output, mget_pid,
+    def test_delete_lvs_listener_disable_service_fail(self, m_exist, m_remove,
+                                                      m_check_output,
+                                                      mget_pid,
                                                       m_init_sys):
         m_exist.return_value = True
         m_check_output.side_effect = [True,
                                       subprocess.CalledProcessError(
                                           1, 'Woops!')]
-        res = self.test_keepalivedlvs.delete_udp_listener(self.FAKE_ID)
+        res = self.test_keepalivedlvs.delete_lvs_listener(self.FAKE_ID)
         self.assertEqual(500, res.status_code)
         self.assertEqual({
             'message': 'Error disabling '
@@ -409,10 +410,11 @@ class KeepalivedLvsTestCase(base.TestCase):
     @mock.patch('subprocess.check_output')
     @mock.patch('os.remove')
     @mock.patch('os.path.exists')
-    def test_delete_udp_listener_unsupported_sysinit(self, m_exist, m_remove,
+    def test_delete_lvs_listener_unsupported_sysinit(self, m_exist, m_remove,
                                                      m_check_output, mget_pid,
                                                      m_init_sys):
         m_exist.return_value = True
         self.assertRaises(
-            util.UnknownInitError, self.test_keepalivedlvs.delete_udp_listener,
+            util.UnknownInitError,
+            self.test_keepalivedlvs.delete_lvs_listener,
             self.FAKE_ID)

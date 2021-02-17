@@ -399,7 +399,7 @@ class TestServerTestCase(base.TestCase):
         self._test_info(consts.CENTOS)
 
     @mock.patch('octavia.amphorae.backends.agent.api_server.amphora_info.'
-                'AmphoraInfo._get_extend_body_from_udp_driver',
+                'AmphoraInfo._get_extend_body_from_lvs_driver',
                 return_value={})
     @mock.patch('socket.gethostname')
     @mock.patch('subprocess.check_output')
@@ -422,7 +422,7 @@ class TestServerTestCase(base.TestCase):
             jsonutils.loads(rv.data.decode('utf-8')))
 
     @mock.patch('octavia.amphorae.backends.agent.api_server.util.'
-                'get_protocol_for_lb_object', return_value='TCP')
+                'get_backend_for_lb_object', return_value='HAPROXY')
     @mock.patch('octavia.amphorae.backends.agent.api_server.util.'
                 'get_os_init_system', return_value=consts.INIT_SYSTEMD)
     def test_delete_ubuntu_listener_systemd(self, mock_init_system,
@@ -431,7 +431,7 @@ class TestServerTestCase(base.TestCase):
                                    mock_init_system)
 
     @mock.patch('octavia.amphorae.backends.agent.api_server.util.'
-                'get_protocol_for_lb_object', return_value='TCP')
+                'get_backend_for_lb_object', return_value='HAPROXY')
     @mock.patch('octavia.amphorae.backends.agent.api_server.util.'
                 'get_os_init_system', return_value=consts.INIT_SYSTEMD)
     def test_delete_centos_listener_systemd(self, mock_init_system,
@@ -440,7 +440,7 @@ class TestServerTestCase(base.TestCase):
                                    mock_init_system)
 
     @mock.patch('octavia.amphorae.backends.agent.api_server.util.'
-                'get_protocol_for_lb_object', return_value='TCP')
+                'get_backend_for_lb_object', return_value='HAPROXY')
     @mock.patch('octavia.amphorae.backends.agent.api_server.util.'
                 'get_os_init_system', return_value=consts.INIT_SYSVINIT)
     def test_delete_ubuntu_listener_sysvinit(self, mock_init_system,
@@ -449,7 +449,7 @@ class TestServerTestCase(base.TestCase):
                                    mock_init_system)
 
     @mock.patch('octavia.amphorae.backends.agent.api_server.util.'
-                'get_protocol_for_lb_object', return_value='TCP')
+                'get_backend_for_lb_object', return_value='HAPROXY')
     @mock.patch('octavia.amphorae.backends.agent.api_server.util.'
                 'get_os_init_system', return_value=consts.INIT_UPSTART)
     def test_delete_ubuntu_listener_upstart(self, mock_init_system,
@@ -1178,9 +1178,9 @@ class TestServerTestCase(base.TestCase):
                     'address 10.0.0.5\nbroadcast 10.0.0.255\n'
                     'netmask 255.255.255.0\n'
                     'mtu 1450\n'
-                    'post-up /usr/local/bin/udp-masquerade.sh add ipv4 '
+                    'post-up /usr/local/bin/lvs-masquerade.sh add ipv4 '
                     'eth{int}\n'
-                    'post-down /usr/local/bin/udp-masquerade.sh delete ipv4 '
+                    'post-down /usr/local/bin/lvs-masquerade.sh delete ipv4 '
                     'eth{int}\n'.format(int=test_int_num))
             elif distro == consts.CENTOS:
                 handle.write.assert_any_call(
@@ -1253,9 +1253,9 @@ class TestServerTestCase(base.TestCase):
                     'address 2001:0db8:0000:0000:0000:0000:0000:0002\n'
                     'broadcast 2001:0db8:ffff:ffff:ffff:ffff:ffff:ffff\n'
                     'netmask 32\nmtu 1450\n'
-                    'post-up /usr/local/bin/udp-masquerade.sh add ipv6 '
+                    'post-up /usr/local/bin/lvs-masquerade.sh add ipv6 '
                     'eth{int}\n'
-                    'post-down /usr/local/bin/udp-masquerade.sh delete ipv6 '
+                    'post-down /usr/local/bin/lvs-masquerade.sh delete ipv6 '
                     'eth{int}\n'.format(int=test_int_num))
             elif distro == consts.CENTOS:
                 handle.write.assert_any_call(
@@ -1441,9 +1441,9 @@ class TestServerTestCase(base.TestCase):
                     ' dev ' + consts.NETNS_PRIMARY_INTERFACE + '\n'
                     'down route del -host ' + DEST2 + ' gw ' + NEXTHOP +
                     ' dev ' + consts.NETNS_PRIMARY_INTERFACE + '\n' +
-                    'post-up /usr/local/bin/udp-masquerade.sh add ipv4 ' +
+                    'post-up /usr/local/bin/lvs-masquerade.sh add ipv4 ' +
                     consts.NETNS_PRIMARY_INTERFACE + '\n' +
-                    'post-down /usr/local/bin/udp-masquerade.sh delete ipv4 ' +
+                    'post-down /usr/local/bin/lvs-masquerade.sh delete ipv4 ' +
                     consts.NETNS_PRIMARY_INTERFACE + '\n')
             elif distro == consts.CENTOS:
                 handle.write.assert_any_call(
@@ -1701,8 +1701,8 @@ class TestServerTestCase(base.TestCase):
                     'priority 100\n'
                     'post-down /sbin/ip rule del from 203.0.113.2/32 table 1 '
                     'priority 100\n\n'
-                    'post-up /usr/local/bin/udp-masquerade.sh add ipv4 eth1\n'
-                    'post-down /usr/local/bin/udp-masquerade.sh delete ipv4 '
+                    'post-up /usr/local/bin/lvs-masquerade.sh add ipv4 eth1\n'
+                    'post-down /usr/local/bin/lvs-masquerade.sh delete ipv4 '
                     'eth1'.format(netns_int=consts.NETNS_PRIMARY_INTERFACE))
             elif distro == consts.CENTOS:
                 handle.write.assert_any_call(
@@ -1806,8 +1806,8 @@ class TestServerTestCase(base.TestCase):
                     'priority 100\n'
                     'post-down /sbin/ip rule del from 203.0.113.2/32 table 1 '
                     'priority 100\n\n'
-                    'post-up /usr/local/bin/udp-masquerade.sh add ipv4 eth1\n'
-                    'post-down /usr/local/bin/udp-masquerade.sh delete ipv4 '
+                    'post-up /usr/local/bin/lvs-masquerade.sh add ipv4 eth1\n'
+                    'post-down /usr/local/bin/lvs-masquerade.sh delete ipv4 '
                     'eth1'.format(netns_int=consts.NETNS_PRIMARY_INTERFACE))
             elif distro == consts.CENTOS:
                 handle.write.assert_any_call(
@@ -2056,8 +2056,8 @@ class TestServerTestCase(base.TestCase):
                     'post-down /sbin/ip -6 rule del from '
                     '2001:0db8:0000:0000:0000:0000:0000:0002/128 table 1 '
                     'priority 100\n\n'
-                    'post-up /usr/local/bin/udp-masquerade.sh add ipv6 eth1\n'
-                    'post-down /usr/local/bin/udp-masquerade.sh delete ipv6 '
+                    'post-up /usr/local/bin/lvs-masquerade.sh add ipv6 eth1\n'
+                    'post-down /usr/local/bin/lvs-masquerade.sh delete ipv6 '
                     'eth1'.format(netns_int=consts.NETNS_PRIMARY_INTERFACE))
             elif distro == consts.CENTOS:
                 handle.write.assert_any_call(
@@ -2161,8 +2161,8 @@ class TestServerTestCase(base.TestCase):
                     'post-down /sbin/ip -6 rule del from '
                     '2001:0db8:0000:0000:0000:0000:0000:0002/128 table 1 '
                     'priority 100\n\n'
-                    'post-up /usr/local/bin/udp-masquerade.sh add ipv6 eth1\n'
-                    'post-down /usr/local/bin/udp-masquerade.sh delete ipv6 '
+                    'post-up /usr/local/bin/lvs-masquerade.sh add ipv6 eth1\n'
+                    'post-down /usr/local/bin/lvs-masquerade.sh delete ipv6 '
                     'eth1'.format(netns_int=consts.NETNS_PRIMARY_INTERFACE))
             elif distro == consts.CENTOS:
                 handle.write.assert_any_call(
@@ -2413,18 +2413,18 @@ class TestServerTestCase(base.TestCase):
         self._test_details(consts.CENTOS)
 
     @mock.patch('octavia.amphorae.backends.agent.api_server.util.'
-                'get_udp_listeners',
+                'get_lvs_listeners',
                 return_value=[])
     @mock.patch('octavia.amphorae.backends.agent.api_server.'
                 'amphora_info.AmphoraInfo.'
-                '_get_extend_body_from_udp_driver',
+                '_get_extend_body_from_lvs_driver',
                 return_value={
                     "keepalived_version": '1.1.11-1',
                     "ipvsadm_version": '2.2.22-2'
                 })
     @mock.patch('octavia.amphorae.backends.agent.api_server.'
                 'amphora_info.AmphoraInfo.'
-                '_count_udp_listener_processes', return_value=0)
+                '_count_lvs_listener_processes', return_value=0)
     @mock.patch('octavia.amphorae.backends.agent.api_server.amphora_info.'
                 'AmphoraInfo._count_haproxy_processes')
     @mock.patch('octavia.amphorae.backends.agent.api_server.amphora_info.'
@@ -2443,8 +2443,8 @@ class TestServerTestCase(base.TestCase):
     def _test_details(self, distro, mock_subbprocess, mock_hostname,
                       mock_get_listeners, mock_get_mem, mock_cpu,
                       mock_statvfs, mock_load, mock_get_nets,
-                      mock_count_haproxy, mock_count_udp_listeners,
-                      mock_get_ext_from_udp_driver, mock_get_udp_listeners):
+                      mock_count_haproxy, mock_count_lvs_listeners,
+                      mock_get_ext_from_lvs_driver, mock_get_lvs_listeners):
 
         self.assertIn(distro, [consts.UBUNTU, consts.CENTOS])
 
@@ -2559,7 +2559,7 @@ class TestServerTestCase(base.TestCase):
                          'packages': {},
                          'topology': consts.TOPOLOGY_SINGLE,
                          'topology_status': consts.TOPOLOGY_STATUS_OK,
-                         'udp_listener_process_count': 0}
+                         'lvs_listener_process_count': 0}
 
         if distro == consts.UBUNTU:
             rv = self.ubuntu_app.get('/' + api_server.VERSION + '/details')

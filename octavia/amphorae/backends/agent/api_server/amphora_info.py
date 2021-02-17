@@ -31,11 +31,11 @@ class AmphoraInfo(object):
     def __init__(self, osutils):
         self._osutils = osutils
 
-    def compile_amphora_info(self, extend_udp_driver=None):
+    def compile_amphora_info(self, extend_lvs_driver=None):
         extend_body = {}
-        if extend_udp_driver:
-            extend_body = self._get_extend_body_from_udp_driver(
-                extend_udp_driver)
+        if extend_lvs_driver:
+            extend_body = self._get_extend_body_from_lvs_driver(
+                extend_lvs_driver)
         body = {'hostname': socket.gethostname(),
                 'haproxy_version':
                     self._get_version_of_installed_package('haproxy'),
@@ -44,17 +44,18 @@ class AmphoraInfo(object):
             body.update(extend_body)
         return webob.Response(json=body)
 
-    def compile_amphora_details(self, extend_udp_driver=None):
+    def compile_amphora_details(self, extend_lvs_driver=None):
         haproxy_listener_list = sorted(util.get_listeners())
         extend_body = {}
-        udp_listener_list = []
-        if extend_udp_driver:
-            udp_listener_list = util.get_udp_listeners()
-            extend_data = self._get_extend_body_from_udp_driver(
-                extend_udp_driver)
-            udp_count = self._count_udp_listener_processes(extend_udp_driver,
-                                                           udp_listener_list)
-            extend_body['udp_listener_process_count'] = udp_count
+        lvs_listener_list = []
+        if extend_lvs_driver:
+            lvs_listener_list = util.get_lvs_listeners()
+            extend_data = self._get_extend_body_from_lvs_driver(
+                extend_lvs_driver)
+            lvs_count = self._count_lvs_listener_processes(
+                extend_lvs_driver,
+                lvs_listener_list)
+            extend_body['lvs_listener_process_count'] = lvs_count
             extend_body.update(extend_data)
         meminfo = self._get_meminfo()
         cpu = self._cpu()
@@ -87,8 +88,8 @@ class AmphoraInfo(object):
                 'topology': consts.TOPOLOGY_SINGLE,
                 'topology_status': consts.TOPOLOGY_STATUS_OK,
                 'listeners': sorted(list(
-                    set(haproxy_listener_list + udp_listener_list)))
-                if udp_listener_list else haproxy_listener_list,
+                    set(haproxy_listener_list + lvs_listener_list)))
+                if lvs_listener_list else haproxy_listener_list,
                 'packages': {}}
         if extend_body:
             body.update(extend_body)
@@ -108,16 +109,16 @@ class AmphoraInfo(object):
                 num += 1
         return num
 
-    def _count_udp_listener_processes(self, udp_driver, listener_list):
+    def _count_lvs_listener_processes(self, lvs_driver, listener_list):
         num = 0
         for listener_id in listener_list:
-            if udp_driver.is_listener_running(listener_id):
+            if lvs_driver.is_listener_running(listener_id):
                 # optional check if it's still running
                 num += 1
         return num
 
-    def _get_extend_body_from_udp_driver(self, extend_udp_driver):
-        extend_info = extend_udp_driver.get_subscribed_amp_compile_info()
+    def _get_extend_body_from_lvs_driver(self, extend_lvs_driver):
+        extend_info = extend_lvs_driver.get_subscribed_amp_compile_info()
         extend_data = {}
         for extend in extend_info:
             package_version = self._get_version_of_installed_package(extend)

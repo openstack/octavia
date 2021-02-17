@@ -25,11 +25,13 @@ from octavia.amphorae.backends.agent import api_server
 from octavia.amphorae.backends.agent.api_server import amphora_info
 from octavia.amphorae.backends.agent.api_server import certificate_update
 from octavia.amphorae.backends.agent.api_server import keepalived
+from octavia.amphorae.backends.agent.api_server import keepalivedlvs
 from octavia.amphorae.backends.agent.api_server import loadbalancer
 from octavia.amphorae.backends.agent.api_server import osutils
 from octavia.amphorae.backends.agent.api_server import plug
-from octavia.amphorae.backends.agent.api_server import udp_listener_base
 from octavia.amphorae.backends.agent.api_server import util
+from octavia.common import constants as consts
+
 
 BUFFER = 1024
 CONF = cfg.CONF
@@ -56,8 +58,7 @@ class Server(object):
         self._osutils = osutils.BaseOS.get_os_util()
         self._keepalived = keepalived.Keepalived()
         self._loadbalancer = loadbalancer.Loadbalancer()
-        self._udp_listener = (udp_listener_base.UdpListenerApiServerBase.
-                              get_server_driver())
+        self._lvs_listener = keepalivedlvs.KeepalivedLvs()
         self._plug = plug.Plug(self._osutils)
         self._amphora_info = amphora_info.AmphoraInfo(self._osutils)
 
@@ -69,18 +70,22 @@ class Server(object):
                               '/loadbalancer/<amphora_id>/<lb_id>/haproxy',
                               view_func=self.upload_haproxy_config,
                               methods=['PUT'])
+        # TODO(gthiemonge) rename 'udp_listener' endpoint to 'lvs_listener'
+        # when api_version is bumped
         self.app.add_url_rule(rule=PATH_PREFIX +
                               '/listeners/<amphora_id>/<listener_id>'
                               '/udp_listener',
-                              view_func=self.upload_udp_listener_config,
+                              view_func=self.upload_lvs_listener_config,
                               methods=['PUT'])
         self.app.add_url_rule(rule=PATH_PREFIX +
                               '/loadbalancer/<lb_id>/haproxy',
                               view_func=self.get_haproxy_config,
                               methods=['GET'])
+        # TODO(gthiemonge) rename 'udp_listener' endpoint to 'lvs_listener'
+        # when api_version is bumped
         self.app.add_url_rule(rule=PATH_PREFIX +
                               '/listeners/<listener_id>/udp_listener',
-                              view_func=self.get_udp_listener_config,
+                              view_func=self.get_lvs_listener_config,
                               methods=['GET'])
         self.app.add_url_rule(rule=PATH_PREFIX +
                               '/loadbalancer/<object_id>/<action>',
@@ -134,40 +139,40 @@ class Server(object):
     def upload_haproxy_config(self, amphora_id, lb_id):
         return self._loadbalancer.upload_haproxy_config(amphora_id, lb_id)
 
-    def upload_udp_listener_config(self, amphora_id, listener_id):
-        return self._udp_listener.upload_udp_listener_config(listener_id)
+    def upload_lvs_listener_config(self, amphora_id, listener_id):
+        return self._lvs_listener.upload_lvs_listener_config(listener_id)
 
     def get_haproxy_config(self, lb_id):
         return self._loadbalancer.get_haproxy_config(lb_id)
 
-    def get_udp_listener_config(self, listener_id):
-        return self._udp_listener.get_udp_listener_config(listener_id)
+    def get_lvs_listener_config(self, listener_id):
+        return self._lvs_listener.get_lvs_listener_config(listener_id)
 
     def start_stop_lb_object(self, object_id, action):
-        protocol = util.get_protocol_for_lb_object(object_id)
-        if protocol == 'UDP':
-            return self._udp_listener.manage_udp_listener(
+        backend = util.get_backend_for_lb_object(object_id)
+        if backend == consts.LVS_BACKEND:
+            return self._lvs_listener.manage_lvs_listener(
                 listener_id=object_id, action=action)
         return self._loadbalancer.start_stop_lb(lb_id=object_id, action=action)
 
     def delete_lb_object(self, object_id):
-        protocol = util.get_protocol_for_lb_object(object_id)
-        if protocol == 'UDP':
-            return self._udp_listener.delete_udp_listener(object_id)
+        backend = util.get_backend_for_lb_object(object_id)
+        if backend == consts.LVS_BACKEND:
+            return self._lvs_listener.delete_lvs_listener(object_id)
         return self._loadbalancer.delete_lb(object_id)
 
     def get_details(self):
         return self._amphora_info.compile_amphora_details(
-            extend_udp_driver=self._udp_listener)
+            extend_lvs_driver=self._lvs_listener)
 
     def get_info(self):
         return self._amphora_info.compile_amphora_info(
-            extend_udp_driver=self._udp_listener)
+            extend_lvs_driver=self._lvs_listener)
 
     def get_all_listeners_status(self):
-        udp_listeners = self._udp_listener.get_all_udp_listeners_status()
+        lvs_listeners = self._lvs_listener.get_all_lvs_listeners_status()
         return self._loadbalancer.get_all_listeners_status(
-            other_listeners=udp_listeners)
+            other_listeners=lvs_listeners)
 
     def upload_certificate(self, lb_id, filename):
         return self._loadbalancer.upload_certificate(lb_id, filename)

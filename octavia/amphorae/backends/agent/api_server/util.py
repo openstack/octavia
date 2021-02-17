@@ -204,7 +204,7 @@ def is_lb_running(lb_id):
         os.path.join('/proc', get_haproxy_pid(lb_id)))
 
 
-def get_udp_listeners():
+def get_lvs_listeners():
     result = []
     if os.path.exists(keepalived_lvs_dir()):
         for f in os.listdir(keepalived_lvs_dir()):
@@ -216,7 +216,7 @@ def get_udp_listeners():
     return result
 
 
-def is_udp_listener_running(listener_id):
+def is_lvs_listener_running(listener_id):
     pid_file = keepalived_lvs_pids_path(listener_id)[0]
     return os.path.exists(pid_file) and os.path.exists(
         os.path.join('/proc', get_keepalivedlvs_pid(listener_id)))
@@ -275,20 +275,20 @@ def run_systemctl_command(command, service):
                                       'err': e, 'out': e.output})
 
 
-def get_protocol_for_lb_object(object_id):
-    """Returns the L4 protocol for a listener.
+def get_backend_for_lb_object(object_id):
+    """Returns the backend for a listener.
 
-    If the listener is a TCP based listener (haproxy) return TCP.
-    If the listener is a UDP based listener (lvs) return UDP.
+    If the listener is a TCP based listener return 'HAPROXY'.
+    If the listener is a UDP or SCTP based listener return 'LVS'
     If the listener is not identifiable, return None.
 
     :param listener_id: The ID of the listener to identify.
-    :returns: TCP, UDP, or None
+    :returns: HAPROXY_BACKEND, LVS_BACKEND or None
     """
     if os.path.exists(config_path(object_id)):
-        return consts.PROTOCOL_TCP
+        return consts.HAPROXY_BACKEND
     if os.path.exists(keepalived_lvs_cfg_path(object_id)):
-        return consts.PROTOCOL_UDP
+        return consts.LVS_BACKEND
     return None
 
 
@@ -341,10 +341,10 @@ def vrrp_check_script_update(lb_id, action):
     os.makedirs(keepalived_check_scripts_dir(), exist_ok=True)
 
     lb_ids = get_loadbalancers()
-    udp_ids = get_udp_listeners()
+    lvs_ids = get_lvs_listeners()
     # If no LBs are found, so make sure keepalived thinks haproxy is down.
     if not lb_ids:
-        if not udp_ids:
+        if not lvs_ids:
             with open(haproxy_check_script_path(), 'w') as text_file:
                 text_file.write('exit 1')
         else:

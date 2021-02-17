@@ -33,8 +33,8 @@ up route add -net {{ hr.network }} gw {{ hr.gw }} dev {{ interface }}
 down route del -net {{ hr.network }} gw {{ hr.gw }} dev {{ interface }}
 {%- endif %}
 {%- endfor %}
-post-up /usr/local/bin/udp-masquerade.sh add {{ 'ipv6' if ipv6 else 'ipv4' }} {{ interface }}
-post-down /usr/local/bin/udp-masquerade.sh delete {{ 'ipv6' if ipv6 else 'ipv4' }} {{ interface }}
+post-up /usr/local/bin/lvs-masquerade.sh add {{ 'ipv6' if ipv6 else 'ipv4' }} {{ interface }}
+post-down /usr/local/bin/lvs-masquerade.sh delete {{ 'ipv6' if ipv6 else 'ipv4' }} {{ interface }}
 {%- else %}
 iface {{ interface }} inet dhcp
 auto {{ interface }}:0

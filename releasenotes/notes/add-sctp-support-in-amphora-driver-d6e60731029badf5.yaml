@@ -1,0 +1,7 @@
+---
+features:
+  - |
+    Add support for the SCTP protocol in the Amphora driver. Support for SCTP
+    listeners and pools is implemented using keepalived in the amphora. Support
+    for SCTP health monitors is provided by the amphora-health-checker script
+    and relies on an INIT/INIT-ACK/ABORT sequence of packets.

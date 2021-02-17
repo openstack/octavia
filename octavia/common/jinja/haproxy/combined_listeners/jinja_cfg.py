@@ -179,7 +179,7 @@ class JinjaTemplater(object):
         """
         listener_transforms = []
         for listener in listeners:
-            if listener.protocol == constants.PROTOCOL_UDP:
+            if listener.protocol in constants.LVS_PROTOCOLS:
                 continue
             listener_transforms.append(self._transform_listener(
                 listener, tls_certs, feature_compatibility, loadbalancer))
@@ -199,7 +199,7 @@ class JinjaTemplater(object):
         # listeners' connection limits.
         connection_limit_sum = 0
         for listener in listeners:
-            if listener.protocol == constants.PROTOCOL_UDP:
+            if listener.protocol in constants.LVS_PROTOCOLS:
                 continue
             if listener.connection_limit and listener.connection_limit > -1:
                 connection_limit_sum += listener.connection_limit

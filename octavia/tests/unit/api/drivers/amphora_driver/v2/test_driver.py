@@ -22,6 +22,7 @@ from octavia.common import constants as consts
 from octavia.network import base as network_base
 from octavia.tests.common import sample_data_models
 from octavia.tests.unit import base
+from octavia_lib.common import constants as lib_consts
 
 
 class TestAmphoraDriver(base.TestRpc):
@@ -365,6 +366,50 @@ class TestAmphoraDriver(base.TestRpc):
         mock_listener.load_balancer = mock_lb
         mock_pool = mock.MagicMock()
         mock_pool.protocol = consts.PROTOCOL_UDP
+        mock_pool.listeners = [mock_listener]
+        mock_pool_get.return_value = mock_pool
+
+        provider_member = driver_dm.Member(
+            member_id=self.sample_data.member1_id,
+            address="192.0.2.1")
+        self.assertRaises(exceptions.UnsupportedOptionError,
+                          self.amp_driver.member_create,
+                          provider_member)
+
+    @mock.patch('octavia.db.api.get_session')
+    @mock.patch('octavia.db.repositories.PoolRepository.get')
+    @mock.patch('oslo_messaging.RPCClient.cast')
+    def test_member_create_sctp_ipv4(self, mock_cast, mock_pool_get,
+                                     mock_session):
+        mock_lb = mock.MagicMock()
+        mock_lb.vip = mock.MagicMock()
+        mock_lb.vip.ip_address = "192.0.1.1"
+        mock_listener = mock.MagicMock()
+        mock_listener.load_balancer = mock_lb
+        mock_pool = mock.MagicMock()
+        mock_pool.protocol = lib_consts.PROTOCOL_SCTP
+        mock_pool.listeners = [mock_listener]
+        mock_pool_get.return_value = mock_pool
+
+        provider_member = driver_dm.Member(
+            member_id=self.sample_data.member1_id,
+            address="192.0.2.1")
+        self.amp_driver.member_create(provider_member)
+        payload = {consts.MEMBER: provider_member.to_dict()}
+        mock_cast.assert_called_with({}, 'create_member', **payload)
+
+    @mock.patch('octavia.db.api.get_session')
+    @mock.patch('octavia.db.repositories.PoolRepository.get')
+    @mock.patch('oslo_messaging.RPCClient.cast')
+    def test_member_create_sctp_ipv4_ipv6(self, mock_cast, mock_pool_get,
+                                          mock_session):
+        mock_lb = mock.MagicMock()
+        mock_lb.vip = mock.MagicMock()
+        mock_lb.vip.ip_address = "fe80::1"
+        mock_listener = mock.MagicMock()
+        mock_listener.load_balancer = mock_lb
+        mock_pool = mock.MagicMock()
+        mock_pool.protocol = lib_consts.PROTOCOL_SCTP
         mock_pool.listeners = [mock_listener]
         mock_pool_get.return_value = mock_pool
 

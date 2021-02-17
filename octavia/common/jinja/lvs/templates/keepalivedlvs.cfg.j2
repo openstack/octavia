@@ -21,7 +21,8 @@ net_namespace {{ constants.AMPHORA_NAMESPACE }}
 {% endblock global_definitions %}
 {% block proxies %}
     {% if loadbalancer.enabled and loadbalancer.listener.enabled %}
-        {{- virtualserver_macro(constants, loadbalancer.listener,
+        {{- virtualserver_macro(constants, lib_consts,
+                                loadbalancer.listener,
                                 loadbalancer.vip_address,
                                 loadbalancer.listener.get('default_pool', None)) }}
     {% endif %}

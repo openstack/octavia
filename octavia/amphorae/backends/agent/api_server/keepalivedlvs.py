@@ -26,7 +26,7 @@ import webob
 from werkzeug import exceptions
 
 from octavia.amphorae.backends.agent.api_server import loadbalancer
-from octavia.amphorae.backends.agent.api_server import udp_listener_base
+from octavia.amphorae.backends.agent.api_server import lvs_listener_base
 from octavia.amphorae.backends.agent.api_server import util
 from octavia.common import constants as consts
 
@@ -45,11 +45,11 @@ check_script_file_template = j2_env.get_template(
     consts.KEEPALIVED_CHECK_SCRIPT)
 
 
-class KeepalivedLvs(udp_listener_base.UdpListenerApiServerBase):
+class KeepalivedLvs(lvs_listener_base.LvsListenerApiServerBase):
 
     _SUBSCRIBED_AMP_COMPILE = ['keepalived', 'ipvsadm']
 
-    def upload_udp_listener_config(self, listener_id):
+    def upload_lvs_listener_config(self, listener_id):
         stream = loadbalancer.Wrapped(flask.request.stream)
         NEED_CHECK = True
 
@@ -175,7 +175,7 @@ class KeepalivedLvs(udp_listener_base.UdpListenerApiServerBase):
         res.headers['ETag'] = stream.get_md5()
         return res
 
-    def _check_udp_listener_exists(self, listener_id):
+    def _check_lvs_listener_exists(self, listener_id):
         if not os.path.exists(util.keepalived_lvs_cfg_path(listener_id)):
             raise exceptions.HTTPException(
                 response=webob.Response(json=dict(
@@ -183,18 +183,18 @@ class KeepalivedLvs(udp_listener_base.UdpListenerApiServerBase):
                     details="No UDP listener with UUID: {0}".format(
                         listener_id)), status=404))
 
-    def get_udp_listener_config(self, listener_id):
+    def get_lvs_listener_config(self, listener_id):
         """Gets the keepalivedlvs config
 
         :param listener_id: the id of the listener
         """
-        self._check_udp_listener_exists(listener_id)
+        self._check_lvs_listener_exists(listener_id)
         with open(util.keepalived_lvs_cfg_path(listener_id), 'r') as file:
             cfg = file.read()
             resp = webob.Response(cfg, content_type='text/plain')
             return resp
 
-    def manage_udp_listener(self, listener_id, action):
+    def manage_lvs_listener(self, listener_id, action):
         action = action.lower()
         if action not in [consts.AMP_ACTION_START,
                           consts.AMP_ACTION_STOP,
@@ -210,9 +210,9 @@ class KeepalivedLvs(udp_listener_base.UdpListenerApiServerBase):
         if action == consts.AMP_ACTION_RELOAD:
             action = consts.AMP_ACTION_RESTART
 
-        self._check_udp_listener_exists(listener_id)
+        self._check_lvs_listener_exists(listener_id)
         if action == consts.AMP_ACTION_RELOAD:
-            if consts.OFFLINE == self._check_udp_listener_status(listener_id):
+            if consts.OFFLINE == self._check_lvs_listener_status(listener_id):
                 action = consts.AMP_ACTION_START
 
         cmd = ("/usr/sbin/service "
@@ -236,7 +236,7 @@ class KeepalivedLvs(udp_listener_base.UdpListenerApiServerBase):
                                                   action=action)),
             status=202)
 
-    def _check_udp_listener_status(self, listener_id):
+    def _check_lvs_listener_status(self, listener_id):
         if os.path.exists(util.keepalived_lvs_pids_path(listener_id)[0]):
             if os.path.exists(os.path.join(
                     '/proc', util.get_keepalivedlvs_pid(listener_id))):
@@ -251,25 +251,25 @@ class KeepalivedLvs(udp_listener_base.UdpListenerApiServerBase):
             return consts.ERROR
         return consts.OFFLINE
 
-    def get_all_udp_listeners_status(self):
+    def get_all_lvs_listeners_status(self):
         """Gets the status of all UDP listeners
 
         Gets the status of all UDP listeners on the amphora.
         """
         listeners = list()
 
-        for udp_listener in util.get_udp_listeners():
-            status = self._check_udp_listener_status(udp_listener)
+        for lvs_listener in util.get_lvs_listeners():
+            status = self._check_lvs_listener_status(lvs_listener)
             listeners.append({
                 'status': status,
-                'uuid': udp_listener,
+                'uuid': lvs_listener,
                 'type': 'UDP',
             })
         return listeners
 
-    def delete_udp_listener(self, listener_id):
+    def delete_lvs_listener(self, listener_id):
         try:
-            self._check_udp_listener_exists(listener_id)
+            self._check_lvs_listener_exists(listener_id)
         except exceptions.HTTPException:
             return webob.Response(json={'message': 'OK'})
 
