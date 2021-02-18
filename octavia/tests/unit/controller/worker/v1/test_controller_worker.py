@@ -1559,6 +1559,32 @@ class TestControllerWorker(base.TestCase):
         mock_update.assert_called_with(_db_session, LB_ID,
                                        provisioning_status=constants.ERROR)
 
+    @mock.patch('octavia.db.repositories.LoadBalancerRepository.update')
+    def test_failover_amp_flow_exception_reraise(self,
+                                                 mock_update,
+                                                 mock_api_get_session,
+                                                 mock_dyn_log_listener,
+                                                 mock_taskflow_load,
+                                                 mock_pool_repo_get,
+                                                 mock_member_repo_get,
+                                                 mock_l7rule_repo_get,
+                                                 mock_l7policy_repo_get,
+                                                 mock_listener_repo_get,
+                                                 mock_lb_repo_get,
+                                                 mock_health_mon_repo_get,
+                                                 mock_amp_repo_get):
+
+        mock_amphora = mock.MagicMock()
+        mock_amphora.id = AMP_ID
+        mock_amphora.load_balancer_id = LB_ID
+        mock_amp_repo_get.return_value = mock_amphora
+
+        mock_lb_repo_get.side_effect = TestException('boom')
+        cw = controller_worker.ControllerWorker()
+        self.assertRaises(TestException,
+                          cw.failover_amphora,
+                          AMP_ID, reraise=True)
+
     @mock.patch('octavia.controller.worker.v1.flows.amphora_flows.'
                 'AmphoraFlows.get_failover_amphora_flow')
     def test_failover_amp_no_lb(self,
