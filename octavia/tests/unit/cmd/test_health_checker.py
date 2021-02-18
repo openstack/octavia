@@ -19,6 +19,7 @@ from oslo_config import cfg
 from oslo_config import fixture as oslo_fixture
 
 from octavia.cmd import health_checker
+from octavia.tests.common import utils as test_utils
 from octavia.tests.unit import base
 
 CONF = cfg.CONF
@@ -150,3 +151,178 @@ class TestHealthCheckerCMD(base.TestCase):
 
         ret = health_checker._sctp_decode_packet(data, family, expected_tag)
         self.assertFalse(ret)
+
+    @mock.patch("time.time")
+    @mock.patch("socket.socket")
+    @mock.patch("octavia.cmd.health_checker._sctp_decode_packet")
+    @mock.patch("octavia.cmd.health_checker._sctp_build_abort_packet")
+    def test_sctp_health_check(self, mock_build_abort_packet,
+                               mock_decode_packet, mock_socket,
+                               mock_time):
+        mock_time.side_effect = [1, 2, 3, 4]
+        socket_mock = mock.Mock()
+        socket_mock.recvfrom = mock.Mock()
+        socket_mock.recvfrom.side_effect = [
+            socket.timeout(),
+            (None, None)
+        ]
+        mock_socket.return_value = socket_mock
+
+        mock_decode_packet.return_value = 2  # INIT ACK
+
+        abrt_mock = mock.Mock()
+        mock_build_abort_packet.return_value = abrt_mock
+
+        mock_open = self.useFixture(
+            test_utils.OpenFixture('/proc/net/protocols',
+                                   'bar\n')).mock_open
+
+        with mock.patch('builtins.open', mock_open):
+            ret = health_checker.sctp_health_check(
+                "192.168.0.27", 1234, timeout=3)
+
+        self.assertEqual(0, ret)  # Success
+
+        mock_decode_packet.assert_called()
+        socket_mock.send.assert_called_with(abrt_mock)
+
+    @mock.patch("time.time")
+    @mock.patch("socket.socket")
+    @mock.patch("octavia.cmd.health_checker._sctp_decode_packet")
+    @mock.patch("octavia.cmd.health_checker._sctp_build_abort_packet")
+    def test_sctp_health_check_with_sctp_support(self,
+                                                 mock_build_abort_packet,
+                                                 mock_decode_packet,
+                                                 mock_socket,
+                                                 mock_time):
+        mock_time.side_effect = [1, 2, 3, 4]
+        socket_mock = mock.Mock()
+        socket_mock.recvfrom = mock.Mock()
+        socket_mock.recvfrom.side_effect = [
+            socket.timeout(),
+            (None, None)
+        ]
+        mock_socket.return_value = socket_mock
+
+        mock_decode_packet.return_value = 2  # INIT ACK
+
+        abrt_mock = mock.Mock()
+        mock_build_abort_packet.return_value = abrt_mock
+
+        mock_open = self.useFixture(
+            test_utils.OpenFixture('/proc/net/protocols',
+                                   'SCTP\n')).mock_open
+
+        with mock.patch('builtins.open', mock_open):
+            ret = health_checker.sctp_health_check(
+                "192.168.0.27", 1234, timeout=3)
+
+        self.assertEqual(0, ret)  # Success
+
+        mock_decode_packet.assert_called()
+        for call in socket_mock.send.mock_calls:
+            self.assertNotEqual(mock.call(abrt_mock), call)
+
+    @mock.patch("time.time")
+    @mock.patch("socket.socket")
+    @mock.patch("octavia.cmd.health_checker._sctp_decode_packet")
+    @mock.patch("octavia.cmd.health_checker._sctp_build_abort_packet")
+    def test_sctp_health_check_fail(self, mock_build_abort_packet,
+                                    mock_decode_packet, mock_socket,
+                                    mock_time):
+        mock_time.side_effect = [1, 2, 3, 4]
+        socket_mock = mock.Mock()
+        socket_mock.recvfrom = mock.Mock()
+        socket_mock.recvfrom.side_effect = [
+            socket.timeout(),
+            (None, None)
+        ]
+        mock_socket.return_value = socket_mock
+
+        mock_decode_packet.return_value = 6  # ABRT
+
+        abrt_mock = mock.Mock()
+        mock_build_abort_packet.return_value = abrt_mock
+
+        mock_open = self.useFixture(
+            test_utils.OpenFixture('/proc/net/protocols',
+                                   'bar\n')).mock_open
+
+        with mock.patch('builtins.open', mock_open):
+            ret = health_checker.sctp_health_check(
+                "192.168.0.27", 1234, timeout=3)
+
+        self.assertEqual(1, ret)  # Error
+
+        mock_decode_packet.assert_called()
+        for call in socket_mock.send.mock_calls:
+            self.assertNotEqual(mock.call(abrt_mock), call)
+
+    @mock.patch("time.time")
+    @mock.patch("socket.socket")
+    @mock.patch("octavia.cmd.health_checker._sctp_decode_packet")
+    @mock.patch("octavia.cmd.health_checker._sctp_build_abort_packet")
+    def test_sctp_health_check_error(self, mock_build_abort_packet,
+                                     mock_decode_packet, mock_socket,
+                                     mock_time):
+        mock_time.side_effect = [1, 2, 3, 4]
+        socket_mock = mock.Mock()
+        socket_mock.recvfrom = mock.Mock()
+        socket_mock.recvfrom.side_effect = [
+            socket.timeout(),
+            (None, None)
+        ]
+        mock_socket.return_value = socket_mock
+
+        mock_decode_packet.return_value = 1234  # Unknown
+
+        abrt_mock = mock.Mock()
+        mock_build_abort_packet.return_value = abrt_mock
+
+        mock_open = self.useFixture(
+            test_utils.OpenFixture('/proc/net/protocols',
+                                   'bar\n')).mock_open
+
+        with mock.patch('builtins.open', mock_open):
+            ret = health_checker.sctp_health_check(
+                "192.168.0.27", 1234, timeout=3)
+
+        self.assertEqual(3, ret)  # Unknown error
+
+        mock_decode_packet.assert_called()
+        socket_mock.send.assert_called_with(abrt_mock)
+
+    @mock.patch("time.time")
+    @mock.patch("socket.socket")
+    @mock.patch("octavia.cmd.health_checker._sctp_decode_packet")
+    @mock.patch("octavia.cmd.health_checker._sctp_build_abort_packet")
+    def test_sctp_health_check_timeout(self, mock_build_abort_packet,
+                                       mock_decode_packet, mock_socket,
+                                       mock_time):
+        mock_time.side_effect = [1, 2, 3, 4]
+        socket_mock = mock.Mock()
+        socket_mock.recvfrom = mock.Mock()
+        socket_mock.recvfrom.side_effect = [
+            socket.timeout(),
+            socket.timeout(),
+            socket.timeout(),
+            socket.timeout(),
+        ]
+        mock_socket.return_value = socket_mock
+
+        abrt_mock = mock.Mock()
+        mock_build_abort_packet.return_value = abrt_mock
+
+        mock_open = self.useFixture(
+            test_utils.OpenFixture('/proc/net/protocols',
+                                   'bar\n')).mock_open
+
+        with mock.patch('builtins.open', mock_open):
+            ret = health_checker.sctp_health_check(
+                "192.168.0.27", 1234, timeout=3)
+
+        self.assertEqual(2, ret)  # Timeout
+
+        mock_decode_packet.assert_not_called()
+        for call in socket_mock.send.mock_calls:
+            self.assertNotEqual(mock.call(abrt_mock), call)

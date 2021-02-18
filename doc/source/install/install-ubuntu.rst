@@ -289,15 +289,6 @@ Install and configure components
       $ MGMT_PORT_MAC=$(openstack port show -c mac_address -f value \
         $MGMT_PORT_ID)
 
-      $ MGMT_PORT_IP=$(openstack port show -f yaml -c fixed_ips \
-        $MGMT_PORT_ID | awk '{FS=",|";gsub(",","");gsub("'\''",""); \
-        for(line = 1; line <= NF; ++line) {if ($line ~ /^- ip_address:/) \
-        {split($line, word, " ");if (ENVIRON["IPV6_ENABLED"] == "" && word[3] ~ /\./) \
-        print word[3];if (ENVIRON["IPV6_ENABLED"] != "" && word[3] ~ /:/) print word[3];} \
-        else {split($line, word, " ");for(ind in word) {if (word[ind] ~ /^ip_address=/) \
-        {split(word[ind], token, "=");if (ENVIRON["IPV6_ENABLED"] == "" && token[2] ~ /\./) \
-        print token[2];if (ENVIRON["IPV6_ENABLED"] != "" && token[2] ~ /:/) print token[2];}}}}}')
-
       $ sudo ip link add o-hm0 type veth peer name o-bhm0
       $ NETID=$(openstack network show lb-mgmt-net -c id -f value)
       $ BRNAME=brq$(echo $NETID|cut -c 1-11)
