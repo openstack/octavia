@@ -330,6 +330,7 @@ class ListenersController(base.BaseController):
         except odb_exceptions.DBError as e:
             raise exceptions.InvalidOption(value=listener_dict.get('protocol'),
                                            option='protocol') from e
+        return None
 
     @wsme_pecan.wsexpose(listener_types.ListenerRootResponse,
                          body=listener_types.ListenerRootPOST, status_code=201)

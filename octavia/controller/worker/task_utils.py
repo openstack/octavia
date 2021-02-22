@@ -264,3 +264,4 @@ class TaskUtils(object):
             LOG.error("Failed to get loadbalancer %(loadbalancer)s "
                       "due to: %(except)s",
                       {'loadbalancer': loadbalancer_id, 'except': str(e)})
+        return None

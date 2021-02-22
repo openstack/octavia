@@ -111,6 +111,7 @@ class ControllerWorker(base_taskflow.BaseTaskFlowEngine):
             return create_amp_tf.storage.fetch('amphora')
         except Exception as e:
             LOG.error('Failed to create an amphora due to: %s', str(e))
+        return None
 
     def delete_amphora(self, amphora_id):
         """Deletes an existing Amphora.

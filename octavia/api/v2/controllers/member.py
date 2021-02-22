@@ -134,6 +134,7 @@ class MemberController(base.BaseController):
             # before creation or update since the exception messages
             # do not give any information as to what constraint failed
             raise exceptions.InvalidOption(value='', option='') from e
+        return None
 
     def _validate_pool_id(self, member_id, db_member_pool_id):
         if db_member_pool_id != self.pool_id:

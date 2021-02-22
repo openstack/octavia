@@ -118,6 +118,7 @@ class Policy(oslo_policy.Enforcer):
                 LOG.debug('Policy check for %(action)s failed with '
                           'credentials %(credentials)s',
                           {'action': action, 'credentials': credentials})
+        return None
 
     def check_is_admin(self, context):
         """Does roles contains 'admin' role according to policy setting.

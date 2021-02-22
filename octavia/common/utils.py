@@ -189,4 +189,5 @@ class exception_logger(object):
             except Exception as e:
                 with excutils.save_and_reraise_exception():
                     self.logger(e)
+            return None
         return call
