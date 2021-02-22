@@ -2794,7 +2794,8 @@ class TestLoadBalancerGraph(base.BaseAPITest):
             expected_listener['tls_versions'] = (
                 constants.TLS_VERSIONS_OWASP_SUITE_B)
             expected_listener['alpn_protocols'] = (
-                [lib_consts.ALPN_PROTOCOL_HTTP_1_1,
+                [lib_consts.ALPN_PROTOCOL_HTTP_2,
+                 lib_consts.ALPN_PROTOCOL_HTTP_1_1,
                  lib_consts.ALPN_PROTOCOL_HTTP_1_0])
 
         if create_timeout_client_data is not None:

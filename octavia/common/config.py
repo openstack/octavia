@@ -130,12 +130,14 @@ api_opts = [
                choices=constants.TLS_ALL_VERSIONS + [None],
                help=_('Minimum allowed TLS version for listeners and pools.')),
     cfg.ListOpt('default_listener_alpn_protocols',
-                default=[lib_consts.ALPN_PROTOCOL_HTTP_1_1,
+                default=[lib_consts.ALPN_PROTOCOL_HTTP_2,
+                         lib_consts.ALPN_PROTOCOL_HTTP_1_1,
                          lib_consts.ALPN_PROTOCOL_HTTP_1_0],
                 help=_('List of ALPN protocols to use for new TLS-enabled '
                        'listeners.')),
     cfg.ListOpt('default_pool_alpn_protocols',
-                default=[lib_consts.ALPN_PROTOCOL_HTTP_1_1,
+                default=[lib_consts.ALPN_PROTOCOL_HTTP_2,
+                         lib_consts.ALPN_PROTOCOL_HTTP_1_1,
                          lib_consts.ALPN_PROTOCOL_HTTP_1_0],
                 help=_('List of ALPN protocols to use for new TLS-enabled '
                        'pools.')),

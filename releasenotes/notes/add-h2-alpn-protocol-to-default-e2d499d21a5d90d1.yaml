@@ -1,0 +1,5 @@
+---
+features:
+  - |
+    The HTTP/2 protocol is now added to the default ALPN protocol list for
+    listener and pools.
