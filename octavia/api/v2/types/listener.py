@@ -12,16 +12,12 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-from oslo_config import cfg
 from wsme import types as wtypes
 
 from octavia.api.common import types
 from octavia.api.v2.types import l7policy
 from octavia.api.v2.types import pool
 from octavia.common import constants
-
-CONF = cfg.CONF
-CONF.import_group('haproxy_amphora', 'octavia.common.config')
 
 
 class BaseListenerType(types.BaseType):
@@ -136,20 +132,16 @@ class ListenerPOST(BaseListenerType):
     loadbalancer_id = wtypes.wsattr(wtypes.UuidType(), mandatory=True)
     timeout_client_data = wtypes.wsattr(
         wtypes.IntegerType(minimum=constants.MIN_TIMEOUT,
-                           maximum=constants.MAX_TIMEOUT),
-        default=CONF.haproxy_amphora.timeout_client_data)
+                           maximum=constants.MAX_TIMEOUT))
     timeout_member_connect = wtypes.wsattr(
         wtypes.IntegerType(minimum=constants.MIN_TIMEOUT,
-                           maximum=constants.MAX_TIMEOUT),
-        default=CONF.haproxy_amphora.timeout_member_connect)
+                           maximum=constants.MAX_TIMEOUT))
     timeout_member_data = wtypes.wsattr(
         wtypes.IntegerType(minimum=constants.MIN_TIMEOUT,
-                           maximum=constants.MAX_TIMEOUT),
-        default=CONF.haproxy_amphora.timeout_member_data)
+                           maximum=constants.MAX_TIMEOUT))
     timeout_tcp_inspect = wtypes.wsattr(
         wtypes.IntegerType(minimum=constants.MIN_TIMEOUT,
-                           maximum=constants.MAX_TIMEOUT),
-        default=CONF.haproxy_amphora.timeout_tcp_inspect)
+                           maximum=constants.MAX_TIMEOUT))
     tags = wtypes.wsattr(wtypes.ArrayType(wtypes.StringType(max_length=255)))
     client_ca_tls_container_ref = wtypes.StringType(max_length=255)
     client_authentication = wtypes.wsattr(
@@ -231,20 +223,16 @@ class ListenerSingleCreate(BaseListenerType):
         wtypes.DictType(str, wtypes.StringType(max_length=255)))
     timeout_client_data = wtypes.wsattr(
         wtypes.IntegerType(minimum=constants.MIN_TIMEOUT,
-                           maximum=constants.MAX_TIMEOUT),
-        default=CONF.haproxy_amphora.timeout_client_data)
+                           maximum=constants.MAX_TIMEOUT))
     timeout_member_connect = wtypes.wsattr(
         wtypes.IntegerType(minimum=constants.MIN_TIMEOUT,
-                           maximum=constants.MAX_TIMEOUT),
-        default=CONF.haproxy_amphora.timeout_member_connect)
+                           maximum=constants.MAX_TIMEOUT))
     timeout_member_data = wtypes.wsattr(
         wtypes.IntegerType(minimum=constants.MIN_TIMEOUT,
-                           maximum=constants.MAX_TIMEOUT),
-        default=CONF.haproxy_amphora.timeout_member_data)
+                           maximum=constants.MAX_TIMEOUT))
     timeout_tcp_inspect = wtypes.wsattr(
         wtypes.IntegerType(minimum=constants.MIN_TIMEOUT,
-                           maximum=constants.MAX_TIMEOUT),
-        default=CONF.haproxy_amphora.timeout_tcp_inspect)
+                           maximum=constants.MAX_TIMEOUT))
     tags = wtypes.wsattr(wtypes.ArrayType(wtypes.StringType(max_length=255)))
     client_ca_tls_container_ref = wtypes.StringType(max_length=255)
     client_authentication = wtypes.wsattr(
