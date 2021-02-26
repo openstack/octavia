@@ -2667,7 +2667,15 @@ class TestLoadBalancerGraph(base.BaseAPITest):
             create_client_crl_container=None,
             expected_client_crl_container=None,
             create_allowed_cidrs=None,
-            expected_allowed_cidrs=None):
+            expected_allowed_cidrs=None,
+            create_timeout_client_data=None,
+            expected_timeout_client_data=None,
+            create_timeout_member_connect=None,
+            expected_timeout_member_connect=None,
+            create_timeout_member_data=None,
+            expected_timeout_member_data=None,
+            create_timeout_tcp_inspect=None,
+            expected_timeout_tcp_inspect=None):
         create_listener = {
             'name': name,
             'protocol_port': protocol_port,
@@ -2740,6 +2748,31 @@ class TestLoadBalancerGraph(base.BaseAPITest):
             expected_listener['allowed_cidrs'] = expected_allowed_cidrs
         if create_protocol == constants.PROTOCOL_TERMINATED_HTTPS:
             expected_listener['tls_ciphers'] = constants.CIPHERS_OWASP_SUITE_B
+
+        if create_timeout_client_data is not None:
+            create_listener['timeout_client_data'] = (
+                create_timeout_client_data)
+        if expected_timeout_client_data is not None:
+            expected_listener['timeout_client_data'] = (
+                expected_timeout_client_data)
+        if create_timeout_member_connect is not None:
+            create_listener['timeout_member_connect'] = (
+                create_timeout_member_connect)
+        if expected_timeout_member_connect is not None:
+            expected_listener['timeout_member_connect'] = (
+                expected_timeout_member_connect)
+        if create_timeout_member_data is not None:
+            create_listener['timeout_member_data'] = (
+                create_timeout_member_data)
+        if expected_timeout_member_data is not None:
+            expected_listener['timeout_member_data'] = (
+                expected_timeout_member_data)
+        if create_timeout_tcp_inspect is not None:
+            create_listener['timeout_tcp_inspect'] = (
+                create_timeout_tcp_inspect)
+        if expected_timeout_tcp_inspect is not None:
+            expected_listener['timeout_tcp_inspect'] = (
+                expected_timeout_tcp_inspect)
 
         return create_listener, expected_listener
 
@@ -2919,6 +2952,27 @@ class TestLoadBalancerGraph(base.BaseAPITest):
 
     def test_with_one_listener(self):
         create_listener, expected_listener = self._get_listener_bodies()
+        create_lb, expected_lb = self._get_lb_bodies([create_listener],
+                                                     [expected_listener])
+        body = self._build_body(create_lb)
+        response = self.post(self.LBS_PATH, body)
+        api_lb = response.json.get(self.root_tag)
+        self._assert_graphs_equal(expected_lb, api_lb)
+
+    def test_with_one_listener_with_default_timeouts(self):
+        self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
+        self.conf.config(group='haproxy_amphora', timeout_client_data=20)
+        self.conf.config(group='haproxy_amphora', timeout_member_connect=21)
+        self.conf.config(group='haproxy_amphora',
+                         timeout_member_data=constants.MIN_TIMEOUT)
+        self.conf.config(group='haproxy_amphora',
+                         timeout_tcp_inspect=constants.MAX_TIMEOUT)
+
+        create_listener, expected_listener = self._get_listener_bodies(
+            expected_timeout_client_data=20,
+            expected_timeout_member_connect=21,
+            expected_timeout_member_data=constants.MIN_TIMEOUT,
+            expected_timeout_tcp_inspect=constants.MAX_TIMEOUT)
         create_lb, expected_lb = self._get_lb_bodies([create_listener],
                                                      [expected_listener])
         body = self._build_body(create_lb)
