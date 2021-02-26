@@ -661,6 +661,23 @@ class TestListener(base.BaseAPITest):
         self.assertEqual(constants.MAX_TIMEOUT,
                          listener_api.get('timeout_tcp_inspect'))
 
+    def test_create_with_default_timeouts(self):
+        self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
+        self.conf.config(group='haproxy_amphora', timeout_client_data=20)
+        self.conf.config(group='haproxy_amphora', timeout_member_connect=21)
+        self.conf.config(group='haproxy_amphora',
+                         timeout_member_data=constants.MIN_TIMEOUT)
+        self.conf.config(group='haproxy_amphora',
+                         timeout_tcp_inspect=constants.MAX_TIMEOUT)
+
+        listener_api = self.test_create()
+        self.assertEqual(20, listener_api.get('timeout_client_data'))
+        self.assertEqual(21, listener_api.get('timeout_member_connect'))
+        self.assertEqual(constants.MIN_TIMEOUT,
+                         listener_api.get('timeout_member_data'))
+        self.assertEqual(constants.MAX_TIMEOUT,
+                         listener_api.get('timeout_tcp_inspect'))
+
     def test_create_with_timeouts_too_high(self):
         optionals = {
             'timeout_client_data': 1,
