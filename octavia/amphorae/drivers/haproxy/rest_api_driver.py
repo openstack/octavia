@@ -203,8 +203,9 @@ class HaproxyAmphoraLoadBalancerDriver(
                     else:
                         listeners_to_update.append(listener)
                 except Exception as e:
-                    LOG.error('Unable to update listener %s due to "%s". '
-                              'Skipping this listener.', listener.id, str(e))
+                    LOG.exception('Unable to update listener %s due to '
+                                  '"%s". Skipping this listener.',
+                                  listener.id, str(e))
                     listener_repo = repo.ListenerRepository()
                     listener_repo.update(db_apis.get_session(), listener.id,
                                          provisioning_status=consts.ERROR,
@@ -529,13 +530,14 @@ class HaproxyAmphoraLoadBalancerDriver(
         # Handle the client cert(s) and key
         if pool.tls_certificate_id:
             data = cert_parser.load_certificates_data(self.cert_manager, pool)
-            pem = cert_parser.build_pem(data)
+            tls_cert = data['tls_cert']
+            pem = cert_parser.build_pem(tls_cert)
             try:
                 pem = pem.encode('utf-8')
             except AttributeError:
                 pass
             md5 = hashlib.md5(pem).hexdigest()  # nosec
-            name = '{id}.pem'.format(id=data.id)
+            name = '{id}.pem'.format(id=tls_cert.id)
             if amphora and obj_id:
                 self._upload_cert(amphora, obj_id, pem=pem, md5=md5, name=name)
             pool_cert_dict['client_cert'] = os.path.join(
