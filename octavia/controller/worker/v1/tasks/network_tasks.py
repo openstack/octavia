@@ -59,10 +59,10 @@ class CalculateAmphoraDelta(BaseNetworkTask):
 
         if vrrp_port is None:
             vrrp_port = self.network_driver.get_port(amphora.vrrp_port_id)
-        if availability_zone:
-            management_nets = (
-                [availability_zone.get(constants.MANAGEMENT_NETWORK)] or
-                CONF.controller_worker.amp_boot_network_list)
+        if (availability_zone and
+                availability_zone.get(constants.MANAGEMENT_NETWORK)):
+            management_nets = [availability_zone.get(
+                constants.MANAGEMENT_NETWORK)]
         else:
             management_nets = CONF.controller_worker.amp_boot_network_list
         desired_network_ids = {vrrp_port.network_id}.union(management_nets)
