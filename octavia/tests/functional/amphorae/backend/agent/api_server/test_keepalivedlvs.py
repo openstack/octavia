@@ -42,7 +42,7 @@ class KeepalivedLvsTestCase(base.TestCase):
         "# Configuration for Listener %(listener_id)s\n\n"
         "net_namespace haproxy-amphora\n\n"
         "virtual_server 10.0.0.2 80 {\n"
-        "    lb_algo rr\n"
+        "    lb_algo wrr\n"
         "    lb_kind NAT\n"
         "    protocol udp\n"
         "    delay_loop 30\n"
