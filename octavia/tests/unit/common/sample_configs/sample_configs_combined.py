@@ -469,7 +469,7 @@ RET_UDP_POOL = {
     'id': 'sample_pool_id_1',
     'enabled': True,
     'health_monitor': UDP_HEALTH_MONITOR_NO_SCRIPT,
-    'lb_algorithm': 'rr',
+    'lb_algorithm': 'wrr',
     'members': [UDP_MEMBER_1, UDP_MEMBER_2],
     'protocol': 'udp',
     'session_persistence': UDP_SOURCE_IP_BODY
@@ -481,7 +481,7 @@ RET_UDP_LISTENER = {
         'id': 'sample_pool_id_1',
         'enabled': True,
         'health_monitor': RET_UDP_HEALTH_MONITOR,
-        'lb_algorithm': 'rr',
+        'lb_algorithm': 'wrr',
         'members': [UDP_MEMBER_1, UDP_MEMBER_2],
         'protocol': 'udp',
         'session_persistence': UDP_SOURCE_IP_BODY
