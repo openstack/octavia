@@ -1,0 +1,6 @@
+---
+fixes:
+  - |
+    Fix weighted round-robin for UDP and SCTP listeners with keepalived and
+    lvs. The algorithm must be specified as 'wrr' in order for weighted
+    round-robin to work correctly, but was being set to 'rr'.

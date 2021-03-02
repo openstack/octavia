@@ -461,7 +461,7 @@ RET_UDP_POOL = {
     'id': 'sample_pool_id_1',
     'enabled': True,
     'health_monitor': RET_UDP_HEALTH_MONITOR,
-    'lb_algorithm': 'rr',
+    'lb_algorithm': 'wrr',
     'members': [UDP_MEMBER_1, UDP_MEMBER_2],
     'protocol': 'udp',
     'session_persistence': UDP_SOURCE_IP_BODY
@@ -473,7 +473,7 @@ RET_UDP_LISTENER = {
         'id': 'sample_pool_id_1',
         'enabled': True,
         'health_monitor': RET_UDP_HEALTH_MONITOR,
-        'lb_algorithm': 'rr',
+        'lb_algorithm': 'wrr',
         'members': [UDP_MEMBER_1, UDP_MEMBER_2],
         'protocol': 'udp',
         'session_persistence': UDP_SOURCE_IP_BODY
@@ -544,7 +544,7 @@ RET_SCTP_POOL = {
     'id': 'sample_pool_id_1',
     'enabled': True,
     'health_monitor': RET_SCTP_HEALTH_MONITOR,
-    'lb_algorithm': 'rr',
+    'lb_algorithm': 'wrr',
     'members': [SCTP_MEMBER_1, SCTP_MEMBER_2],
     'protocol': 'sctp',
     'session_persistence': SCTP_SOURCE_IP_BODY
@@ -556,7 +556,7 @@ RET_SCTP_LISTENER = {
         'id': 'sample_pool_id_1',
         'enabled': True,
         'health_monitor': RET_SCTP_HEALTH_MONITOR,
-        'lb_algorithm': 'rr',
+        'lb_algorithm': 'wrr',
         'members': [SCTP_MEMBER_1, SCTP_MEMBER_2],
         'protocol': 'sctp',
         'session_persistence': SCTP_SOURCE_IP_BODY
