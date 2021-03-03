@@ -118,6 +118,19 @@ def create_listener(listener_dict, lb_id):
             listener_dict['alpn_protocols'] = (
                 CONF.api_settings.default_listener_alpn_protocols)
 
+    if listener_dict.get('timeout_client_data') is None:
+        listener_dict['timeout_client_data'] = (
+            CONF.haproxy_amphora.timeout_client_data)
+    if listener_dict.get('timeout_member_connect') is None:
+        listener_dict['timeout_member_connect'] = (
+            CONF.haproxy_amphora.timeout_member_connect)
+    if listener_dict.get('timeout_member_data') is None:
+        listener_dict['timeout_member_data'] = (
+            CONF.haproxy_amphora.timeout_member_data)
+    if listener_dict.get('timeout_tcp_inspect') is None:
+        listener_dict['timeout_tcp_inspect'] = (
+            CONF.haproxy_amphora.timeout_tcp_inspect)
+
     return listener_dict
 
 
