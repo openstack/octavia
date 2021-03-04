@@ -716,6 +716,22 @@ class TestNetworkTasks(base.TestCase):
         net.revert(vip_mock, LB)
         mock_driver.deallocate_vip.assert_called_once_with(vip_mock)
 
+    def test_allocate_vip_for_failover(self, mock_get_net_driver):
+        mock_driver = mock.MagicMock()
+        mock_get_net_driver.return_value = mock_driver
+        net = network_tasks.AllocateVIPforFailover()
+
+        mock_driver.allocate_vip.return_value = LB.vip
+
+        mock_driver.reset_mock()
+        self.assertEqual(LB.vip, net.execute(LB))
+        mock_driver.allocate_vip.assert_called_once_with(LB)
+
+        # revert
+        vip_mock = mock.MagicMock()
+        net.revert(vip_mock, LB)
+        mock_driver.deallocate_vip.assert_not_called()
+
     def test_deallocate_vip(self, mock_get_net_driver):
         mock_driver = mock.MagicMock()
         mock_get_net_driver.return_value = mock_driver
