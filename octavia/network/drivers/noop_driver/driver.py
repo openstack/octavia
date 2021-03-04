@@ -149,7 +149,8 @@ class NoopManager(object):
         LOG.debug("Network %s no-op, get_network network_id %s",
                   self.__class__.__name__, network_id)
         self.networkconfigconfig[network_id] = (network_id, 'get_network')
-        network = network_models.Network(id=uuidutils.generate_uuid())
+        network = network_models.Network(id=uuidutils.generate_uuid(),
+                                         port_security_enabled=True)
 
         class ItIsInsideMe(network_models.Subnet):
             def to_dict(self, **kwargs):
@@ -181,7 +182,8 @@ class NoopManager(object):
                   self.__class__.__name__, network_name)
         self.networkconfigconfig[network_name] = (network_name,
                                                   'get_network_by_name')
-        return network_models.Network(id=uuidutils.generate_uuid())
+        return network_models.Network(id=uuidutils.generate_uuid(),
+                                      port_security_enabled=True)
 
     def get_subnet_by_name(self, subnet_name):
         LOG.debug("Subnet %s no-op, get_subnet_by_name subnet_name %s",
