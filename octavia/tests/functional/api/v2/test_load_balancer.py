@@ -932,13 +932,38 @@ class TestLoadBalancer(base.BaseAPITest):
                    }
         lb_json.update(optionals)
         body = self._build_body(lb_json)
-        with mock.patch('oslo_messaging.get_rpc_transport'):
-            with mock.patch('oslo_messaging.Target'):
-                with mock.patch('oslo_messaging.RPCClient'):
-                    response = self.post(self.LBS_PATH, body)
+        with mock.patch(
+                "octavia.network.drivers.noop_driver.driver.NoopManager"
+                ".get_network") as mock_get_network, mock.patch(
+                'oslo_messaging.get_rpc_transport'), mock.patch(
+                'oslo_messaging.Target'), mock.patch(
+                'oslo_messaging.RPCClient'):
+            mock_get_network.return_value = mock.MagicMock()
+            mock_get_network.return_value.port_security_enabled = True
+            response = self.post(self.LBS_PATH, body)
         api_lb = response.json.get(self.root_tag)
         self._assert_request_matches_response(lb_json, api_lb)
         return api_lb
+
+    def test_create_provider_octavia_no_port_sec(self, **optionals):
+        lb_json = {'name': 'test1',
+                   'vip_subnet_id': uuidutils.generate_uuid(),
+                   'project_id': self.project_id,
+                   'provider': constants.OCTAVIA
+                   }
+        lb_json.update(optionals)
+        body = self._build_body(lb_json)
+        with mock.patch(
+                "octavia.network.drivers.noop_driver.driver.NoopManager"
+                ".get_network") as mock_get_network, mock.patch(
+                'oslo_messaging.get_rpc_transport'), mock.patch(
+                'oslo_messaging.Target'), mock.patch(
+                'oslo_messaging.RPCClient'):
+            mock_get_network.return_value = mock.MagicMock()
+            mock_get_network.return_value.port_security_enabled = False
+            response = self.post(self.LBS_PATH, body, status=500)
+        self.assertIn("Port security must be enabled on the VIP network.",
+                      response.json.get('faultstring'))
 
     def test_create_provider_bogus(self, **optionals):
         lb_json = {'name': 'test1',
