@@ -814,6 +814,27 @@ class TestNetworkTasks(base.TestCase):
 
     @mock.patch('octavia.db.repositories.LoadBalancerRepository.get')
     @mock.patch('octavia.db.api.get_session', return_value=_session_mock)
+    def test_allocate_vip_for_failover(self, mock_get_session, mock_get_lb,
+                                       mock_get_net_driver):
+        mock_driver = mock.MagicMock()
+        mock_get_lb.return_value = LB
+        mock_get_net_driver.return_value = mock_driver
+        net = network_tasks.AllocateVIPforFailover()
+
+        mock_driver.allocate_vip.return_value = LB.vip
+
+        mock_driver.reset_mock()
+        self.assertEqual(LB.vip.to_dict(),
+                         net.execute(self.load_balancer_mock))
+        mock_driver.allocate_vip.assert_called_once_with(LB)
+
+        # revert
+        vip_mock = VIP.to_dict()
+        net.revert(vip_mock, self.load_balancer_mock)
+        mock_driver.deallocate_vip.assert_not_called()
+
+    @mock.patch('octavia.db.repositories.LoadBalancerRepository.get')
+    @mock.patch('octavia.db.api.get_session', return_value=_session_mock)
     def test_deallocate_vip(self, mock_get_session, mock_get_lb,
                             mock_get_net_driver):
         mock_driver = mock.MagicMock()

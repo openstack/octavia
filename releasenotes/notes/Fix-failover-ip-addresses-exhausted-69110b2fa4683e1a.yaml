@@ -1,0 +1,5 @@
+---
+fixes:
+  - |
+    Fixes an issue with load balancer failover, when the VIP subnet is out of
+    IP addresses, that could lead to the VIP being deallocated.
