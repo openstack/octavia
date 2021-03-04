@@ -420,8 +420,8 @@ class LoadBalancerFlows(object):
 
         # Check that the VIP port exists and is ok
         failover_LB_flow.add(
-            network_tasks.AllocateVIP(requires=constants.LOADBALANCER,
-                                      provides=constants.VIP))
+            network_tasks.AllocateVIPforFailover(
+                requires=constants.LOADBALANCER, provides=constants.VIP))
 
         # Update the database with the VIP information
         failover_LB_flow.add(database_tasks.UpdateVIPAfterAllocation(

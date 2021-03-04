@@ -462,6 +462,20 @@ class AllocateVIP(BaseNetworkTask):
                       {'vip': vip.ip_address, 'except': e})
 
 
+class AllocateVIPforFailover(AllocateVIP):
+    """Task to allocate/validate the VIP for a failover flow."""
+
+    def revert(self, result, loadbalancer, *args, **kwargs):
+        """Handle a failure to allocate vip."""
+
+        if isinstance(result, failure.Failure):
+            LOG.exception("Unable to allocate VIP")
+            return
+        vip = result
+        LOG.info("Failover revert is not deallocating vip %s because this is "
+                 "a failover.", vip.ip_address)
+
+
 class DeallocateVIP(BaseNetworkTask):
     """Task to deallocate a VIP."""
 
