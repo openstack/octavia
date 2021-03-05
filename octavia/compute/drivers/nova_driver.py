@@ -19,6 +19,7 @@ from novaclient import exceptions as nova_exceptions
 from oslo_config import cfg
 from oslo_log import log as logging
 from stevedore import driver as stevedore_driver
+import tenacity
 
 from octavia.common import clients
 from octavia.common import constants
@@ -179,6 +180,14 @@ class VirtualMachineManager(compute_base.ComputeBase):
             raise exceptions.ComputeStatusException() from e
         return constants.DOWN
 
+    def _raise_compute_exception(self):
+        LOG.exception("Error retrieving nova virtual machine.")
+        raise exceptions.ComputeGetException()
+
+    @tenacity.retry(retry=tenacity.retry_if_exception_type(),
+                    stop=tenacity.stop_after_attempt(CONF.compute.max_retries),
+                    retry_error_callback=_raise_compute_exception,
+                    wait=tenacity.wait_fixed(CONF.compute.retry_interval))
     def get_amphora(self, compute_id, management_network_id=None):
         '''Retrieve the information in nova of a virtual machine.
 
@@ -188,11 +197,7 @@ class VirtualMachineManager(compute_base.ComputeBase):
         :returns: fault message or None
         '''
         # utilize nova client ServerManager 'get' method to retrieve info
-        try:
-            amphora = self.manager.get(compute_id)
-        except Exception as e:
-            LOG.exception("Error retrieving nova virtual machine.")
-            raise exceptions.ComputeGetException() from e
+        amphora = self.manager.get(compute_id)
         return self._translate_amphora(amphora, management_network_id)
 
     def _translate_amphora(self, nova_response, management_network_id=None):

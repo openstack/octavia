@@ -1,0 +1,4 @@
+fixes:
+  - |
+    Fix an issue when load balancer creation was aborted due to en error on get
+    of amphora VM. 
