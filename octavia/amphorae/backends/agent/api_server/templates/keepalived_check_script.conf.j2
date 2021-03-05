@@ -23,7 +23,7 @@ status=0
 for file in {{ check_scripts_dir }}/*
 do
   echo "Running check script: " $file
-  sh $file
+  bash $file
   status=$(( $status + $? ))
 done
 exit $status
