@@ -1844,6 +1844,156 @@ class TestPool(base.BaseAPITest):
                          update_pool.get('ca_tls_container_ref'))
         self.assertIsNone(update_pool.get('crl_container_ref'))
 
+    def test_update_with_tls_versions(self):
+        tls_versions = [lib_consts.TLS_VERSION_1_3,
+                        lib_consts.TLS_VERSION_1_2]
+        api_pool = self.create_pool(
+            self.lb_id,
+            constants.PROTOCOL_HTTP,
+            constants.LB_ALGORITHM_ROUND_ROBIN,
+            tls_enabled=True,
+            tls_versions=tls_versions,
+            listener_id=self.listener_id).get(self.root_tag)
+        self.set_lb_status(lb_id=self.lb_id)
+        self.assertTrue(api_pool['tls_enabled'])
+        self.assertCountEqual(tls_versions,
+                              api_pool['tls_versions'])
+
+        new_pool = {'tls_versions': [lib_consts.TLS_VERSION_1_3]}
+        self.put(self.POOL_PATH.format(pool_id=api_pool.get('id')),
+                 self._build_body(new_pool))
+        self.assert_correct_status(
+            lb_id=self.lb_id, listener_id=self.listener_id,
+            pool_id=api_pool.get('id'),
+            lb_prov_status=constants.PENDING_UPDATE,
+            listener_prov_status=constants.PENDING_UPDATE,
+            pool_prov_status=constants.PENDING_UPDATE)
+        self.set_lb_status(self.lb_id)
+        response = self.get(self.POOL_PATH.format(
+            pool_id=api_pool.get('id'))).json.get(self.root_tag)
+        self.assertCountEqual([lib_consts.TLS_VERSION_1_3],
+                              response['tls_versions'])
+        self.assertIsNotNone(response.get('created_at'))
+        self.assertIsNotNone(response.get('updated_at'))
+        self.assert_correct_status(
+            lb_id=self.lb_id, listener_id=self.listener_id,
+            pool_id=response.get('id'))
+
+    def test_update_with_empty_tls_versions(self):
+        default_pool_tls_versions = [lib_consts.TLS_VERSION_1_3,
+                                     lib_consts.TLS_VERSION_1_2]
+        self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
+        self.conf.config(group='api_settings',
+                         default_pool_tls_versions=default_pool_tls_versions)
+
+        tls_versions = [lib_consts.TLS_VERSION_1_3]
+        api_pool = self.create_pool(
+            self.lb_id,
+            constants.PROTOCOL_HTTP,
+            constants.LB_ALGORITHM_ROUND_ROBIN,
+            tls_enabled=True,
+            tls_versions=tls_versions,
+            listener_id=self.listener_id).get(self.root_tag)
+        self.set_lb_status(lb_id=self.lb_id)
+        self.assertTrue(api_pool['tls_enabled'])
+        self.assertCountEqual(tls_versions,
+                              api_pool['tls_versions'])
+
+        new_pool = {'tls_versions': None}
+        self.put(self.POOL_PATH.format(pool_id=api_pool.get('id')),
+                 self._build_body(new_pool))
+        self.assert_correct_status(
+            lb_id=self.lb_id, listener_id=self.listener_id,
+            pool_id=api_pool.get('id'),
+            lb_prov_status=constants.PENDING_UPDATE,
+            listener_prov_status=constants.PENDING_UPDATE,
+            pool_prov_status=constants.PENDING_UPDATE)
+        self.set_lb_status(self.lb_id)
+        response = self.get(self.POOL_PATH.format(
+            pool_id=api_pool.get('id'))).json.get(self.root_tag)
+        self.assertCountEqual(default_pool_tls_versions,
+                              response['tls_versions'])
+        self.assertIsNotNone(response.get('created_at'))
+        self.assertIsNotNone(response.get('updated_at'))
+        self.assert_correct_status(
+            lb_id=self.lb_id, listener_id=self.listener_id,
+            pool_id=response.get('id'))
+
+    def test_update_with_tls_ciphers(self):
+        default_ciphers = (
+            'TLS_AES_256_GCM_SHA384:TLS_CHACHA20_POLY1305_SHA256')
+        self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
+        self.conf.config(group='api_settings',
+                         default_pool_ciphers=default_ciphers)
+
+        api_pool = self.create_pool(
+            self.lb_id,
+            constants.PROTOCOL_HTTP,
+            constants.LB_ALGORITHM_ROUND_ROBIN,
+            tls_enabled=True,
+            listener_id=self.listener_id).get(self.root_tag)
+        self.set_lb_status(lb_id=self.lb_id)
+        self.assertTrue(api_pool['tls_enabled'])
+        self.assertEqual(default_ciphers, api_pool['tls_ciphers'])
+
+        new_tls_ciphers = 'DHE-RSA-AES128-GCM-SHA256'
+        new_pool = {'tls_ciphers': new_tls_ciphers}
+        self.put(self.POOL_PATH.format(pool_id=api_pool.get('id')),
+                 self._build_body(new_pool))
+        self.assert_correct_status(
+            lb_id=self.lb_id, listener_id=self.listener_id,
+            pool_id=api_pool.get('id'),
+            lb_prov_status=constants.PENDING_UPDATE,
+            listener_prov_status=constants.PENDING_UPDATE,
+            pool_prov_status=constants.PENDING_UPDATE)
+        self.set_lb_status(self.lb_id)
+        response = self.get(self.POOL_PATH.format(
+            pool_id=api_pool.get('id'))).json.get(self.root_tag)
+        self.assertEqual(new_tls_ciphers, response['tls_ciphers'])
+        self.assertIsNotNone(response.get('created_at'))
+        self.assertIsNotNone(response.get('updated_at'))
+        self.assert_correct_status(
+            lb_id=self.lb_id, listener_id=self.listener_id,
+            pool_id=response.get('id'))
+
+    def test_update_with_empty_tls_ciphers(self):
+        default_ciphers = (
+            'TLS_AES_256_GCM_SHA384:TLS_CHACHA20_POLY1305_SHA256')
+        self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
+        self.conf.config(group='api_settings',
+                         default_pool_ciphers=default_ciphers)
+
+        tls_ciphers = 'DHE-RSA-AES128-GCM-SHA256'
+        api_pool = self.create_pool(
+            self.lb_id,
+            constants.PROTOCOL_HTTP,
+            constants.LB_ALGORITHM_ROUND_ROBIN,
+            tls_enabled=True,
+            tls_ciphers=tls_ciphers,
+            listener_id=self.listener_id).get(self.root_tag)
+        self.set_lb_status(lb_id=self.lb_id)
+        self.assertTrue(api_pool['tls_enabled'])
+        self.assertEqual(tls_ciphers, api_pool['tls_ciphers'])
+
+        new_pool = {'tls_ciphers': None}
+        self.put(self.POOL_PATH.format(pool_id=api_pool.get('id')),
+                 self._build_body(new_pool))
+        self.assert_correct_status(
+            lb_id=self.lb_id, listener_id=self.listener_id,
+            pool_id=api_pool.get('id'),
+            lb_prov_status=constants.PENDING_UPDATE,
+            listener_prov_status=constants.PENDING_UPDATE,
+            pool_prov_status=constants.PENDING_UPDATE)
+        self.set_lb_status(self.lb_id)
+        response = self.get(self.POOL_PATH.format(
+            pool_id=api_pool.get('id'))).json.get(self.root_tag)
+        self.assertEqual(default_ciphers, response['tls_ciphers'])
+        self.assertIsNotNone(response.get('created_at'))
+        self.assertIsNotNone(response.get('updated_at'))
+        self.assert_correct_status(
+            lb_id=self.lb_id, listener_id=self.listener_id,
+            pool_id=response.get('id'))
+
     def test_delete(self):
         api_pool = self.create_pool(
             self.lb_id,

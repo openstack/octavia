@@ -433,6 +433,11 @@ class PoolsController(base.BaseController):
 
         self._auth_validate_action(context, project_id, constants.RBAC_PUT)
 
+        if pool.tls_versions is None:
+            pool.tls_versions = CONF.api_settings.default_pool_tls_versions
+        if pool.tls_ciphers is None:
+            pool.tls_ciphers = CONF.api_settings.default_pool_ciphers
+
         if (pool.session_persistence and
                 not pool.session_persistence.type and
                 db_pool.session_persistence and
