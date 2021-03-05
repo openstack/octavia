@@ -49,18 +49,23 @@ function create {
 
     openstack loadbalancer listener create --name listener1 --protocol HTTP --protocol-port 80 lb1
     _wait_for_status "ACTIVE" "ONLINE" openstack loadbalancer listener show listener1
+    _wait_for_status "ACTIVE" "ONLINE" openstack loadbalancer show lb1
 
     openstack loadbalancer pool create --name pool1 --lb-algorithm ROUND_ROBIN --listener listener1 --protocol HTTP
     _wait_for_status "ACTIVE" "ONLINE" openstack loadbalancer pool show pool1
+    _wait_for_status "ACTIVE" "ONLINE" openstack loadbalancer show lb1
 
     openstack loadbalancer healthmonitor create --delay 5 --max-retries 4 --timeout 10 --type HTTP --url-path / --name hm1 pool1
     _wait_for_status "ACTIVE" "ONLINE" openstack loadbalancer healthmonitor show hm1
+    _wait_for_status "ACTIVE" "ONLINE" openstack loadbalancer show lb1
 
     openstack loadbalancer member create --subnet-id $PRIVATE_SUBNET_NAME --address $vm1_ipv4 --protocol-port 80 pool1 --name member1
     _wait_for_status "ACTIVE" "ONLINE" openstack loadbalancer member show pool1 member1
+    _wait_for_status "ACTIVE" "ONLINE" openstack loadbalancer show lb1
 
     openstack loadbalancer member create --subnet-id $PRIVATE_SUBNET_NAME --address $vm2_ipv4 --protocol-port 80 pool1 --name member2
     _wait_for_status "ACTIVE" "ONLINE" openstack loadbalancer member show pool1 member2
+    _wait_for_status "ACTIVE" "ONLINE" openstack loadbalancer show lb1
 
     lb_vip_ip=$(openstack loadbalancer show -f value -c vip_address lb1)
     resource_save octavia lb_vip_ip $lb_vip_ip
