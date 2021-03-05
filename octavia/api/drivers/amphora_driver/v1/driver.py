@@ -23,6 +23,7 @@ from stevedore import driver as stevedore_driver
 from octavia_lib.api.drivers import data_models as driver_dm
 from octavia_lib.api.drivers import exceptions
 from octavia_lib.api.drivers import provider_base as driver_base
+from octavia_lib.common import constants as lib_consts
 
 from octavia.api.drivers.amphora_driver import availability_zone_schema
 from octavia.api.drivers.amphora_driver import flavor_schema
@@ -43,6 +44,16 @@ AMPHORA_SUPPORTED_LB_ALGORITHMS = [
     consts.LB_ALGORITHM_SOURCE_IP,
     consts.LB_ALGORITHM_LEAST_CONNECTIONS]
 
+AMPHORA_SUPPORTED_PROTOCOLS = [
+    lib_consts.PROTOCOL_TCP,
+    lib_consts.PROTOCOL_HTTP,
+    lib_consts.PROTOCOL_HTTPS,
+    lib_consts.PROTOCOL_TERMINATED_HTTPS,
+    lib_consts.PROTOCOL_PROXY,
+    lib_consts.PROTOCOL_PROXYV2,
+    lib_consts.PROTOCOL_UDP,
+]
+
 
 class AmphoraProviderDriver(driver_base.ProviderDriver):
     def __init__(self):
@@ -58,6 +69,16 @@ class AmphoraProviderDriver(driver_base.ProviderDriver):
         if pool.lb_algorithm not in AMPHORA_SUPPORTED_LB_ALGORITHMS:
             msg = ('Amphora provider does not support %s algorithm.'
                    % pool.lb_algorithm)
+            raise exceptions.UnsupportedOptionError(
+                user_fault_string=msg,
+                operator_fault_string=msg)
+
+    def _validate_listener_protocol(self, listener):
+        if listener.protocol not in AMPHORA_SUPPORTED_PROTOCOLS:
+            msg = ('Amphora provider does not support %s protocol. '
+                   'Supported: %s'
+                   % (listener.protocol,
+                      ", ".join(AMPHORA_SUPPORTED_PROTOCOLS)))
             raise exceptions.UnsupportedOptionError(
                 user_fault_string=msg,
                 operator_fault_string=msg)
@@ -136,6 +157,7 @@ class AmphoraProviderDriver(driver_base.ProviderDriver):
 
     # Listener
     def listener_create(self, listener):
+        self._validate_listener_protocol(listener)
         self._validate_alpn_protocols(listener)
         payload = {consts.LISTENER_ID: listener.listener_id}
         self.client.cast({}, 'create_listener', **payload)

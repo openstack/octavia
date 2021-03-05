@@ -123,6 +123,7 @@ class TestAmphoraDriver(base.TestRpc):
     def test_listener_create(self, mock_cast):
         provider_listener = driver_dm.Listener(
             listener_id=self.sample_data.listener1_id,
+            protocol=consts.PROTOCOL_HTTPS,
             alpn_protocols=consts.AMPHORA_SUPPORTED_ALPN_PROTOCOLS)
         self.amp_driver.listener_create(provider_listener)
         payload = {consts.LISTENER_ID: self.sample_data.listener1_id}
@@ -131,8 +132,20 @@ class TestAmphoraDriver(base.TestRpc):
     @mock.patch('oslo_messaging.RPCClient.cast')
     def test_listener_create_unsupported_alpn(self, mock_cast):
         provider_listener = driver_dm.Listener(
-            listener_id=self.sample_data.listener1_id)
+            listener_id=self.sample_data.listener1_id,
+            protocol=consts.PROTOCOL_HTTPS)
         provider_listener.alpn_protocols = ['http/1.1', 'eureka']
+        self.assertRaises(
+            exceptions.UnsupportedOptionError,
+            self.amp_driver.listener_create,
+            provider_listener)
+        mock_cast.assert_not_called()
+
+    @mock.patch('oslo_messaging.RPCClient.cast')
+    def test_listener_create_unsupported_protocol(self, mock_cast):
+        provider_listener = driver_dm.Listener(
+            listener_id=self.sample_data.listener1_id,
+            protocol='UNSUPPORTED_PROTO')
         self.assertRaises(
             exceptions.UnsupportedOptionError,
             self.amp_driver.listener_create,
