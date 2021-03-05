@@ -1,0 +1,6 @@
+---
+fixes:
+  - |
+    Fix default value override for timeout values for listeners. Changing the
+    default timeouts in the configuration file wasn't correctly applied in the
+    default listener parameters.
