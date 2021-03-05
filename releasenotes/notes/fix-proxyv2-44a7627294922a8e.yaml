@@ -1,0 +1,4 @@
+---
+fixes:
+  - |
+    Fixed a bug where pools with PROXYV2 will go into ERROR.
