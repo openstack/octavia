@@ -865,13 +865,14 @@ class ControllerWorker(object):
             flow_utils.get_update_l7rule_flow,
             store=store)
 
-    def failover_amphora(self, amphora_id):
+    def failover_amphora(self, amphora_id, reraise=False):
         """Perform failover operations for an amphora.
 
         Note: This expects the load balancer to already be in
         provisioning_status=PENDING_UPDATE state.
 
         :param amphora_id: ID for amphora to failover
+        :param reraise: If enabled reraise any caught exception
         :returns: None
         :raises octavia.common.exceptions.NotFound: The referenced amphora was
                                                     not found
@@ -960,7 +961,7 @@ class ControllerWorker(object):
                       "role": amphora.role})
 
         except Exception as e:
-            with excutils.save_and_reraise_exception(reraise=False):
+            with excutils.save_and_reraise_exception(reraise=reraise):
                 LOG.exception("Amphora %s failover exception: %s",
                               amphora_id, str(e))
                 self._amphora_repo.update(db_apis.get_session(),

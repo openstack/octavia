@@ -136,7 +136,7 @@ class HealthManager(object):
 
             LOG.info("Stale amphora's id is: %s", amp_health.amphora_id)
             fut = self.executor.submit(
-                self.cw.failover_amphora, amp_health.amphora_id)
+                self.cw.failover_amphora, amp_health.amphora_id, reraise=True)
             fut.add_done_callback(
                 functools.partial(update_stats_on_done, stats)
             )
