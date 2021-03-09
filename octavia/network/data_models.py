@@ -43,7 +43,8 @@ class Network(data_models.BaseDataModel):
                  provider_network_type=None,
                  provider_physical_network=None,
                  provider_segmentation_id=None,
-                 router_external=None):
+                 router_external=None,
+                 port_security_enabled=None):
         self.id = id
         self.name = name
         self.subnets = subnets
@@ -54,6 +55,7 @@ class Network(data_models.BaseDataModel):
         self.provider_segmentation_id = provider_segmentation_id
         self.router_external = router_external
         self.mtu = mtu
+        self.port_security_enabled = port_security_enabled
 
 
 class Subnet(data_models.BaseDataModel):
