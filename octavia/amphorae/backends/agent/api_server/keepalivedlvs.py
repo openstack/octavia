@@ -169,6 +169,7 @@ class KeepalivedLvs(udp_listener_base.UdpListenerApiServerBase):
                         keepalived_lvs_pid_dir=util.keepalived_lvs_dir()
                     )
                     script_file.write(text)
+            util.vrrp_check_script_update(None, consts.AMP_ACTION_START)
 
         res = webob.Response(json={'message': 'OK'}, status=200)
         res.headers['ETag'] = stream.get_md5()
