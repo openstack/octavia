@@ -1,0 +1,37 @@
+# This policy YAML file will revert the Octavia API to follow the keystone
+# "default role" RBAC policies.
+#
+# The [oslo_policy] enforce_scope and enforce_new_defaults must be True.
+#
+# Users will not be required to be a member of the load-balancer_* roles
+# to take action on Octavia resources.
+# Keystone token scoping and "default roles"/personas will still be enforced.
+
+# Role Rules
+"system_admin": "role:admin and system_scope:all"
+"system_reader": "role:reader and system_scope:all"
+"project_reader": "role:reader and project_id:%(project_id)s"
+"project_member": "role:member and project_id:%(project_id)s"
+
+"context_is_admin": "role:admin and system_scope:all"
+
+# API Rules
+"load-balancer:admin": "is_admin:True or
+                        rule:system_admin or
+                        role:load-balancer_admin"
+
+"load-balancer:read": "is_admin:True or
+                       rule:system_reader or
+                       rule:project_reader"
+
+"load-balancer:read-global": "is_admin:True or rule:system_reader"
+
+"load-balancer:write": "is_admin:True or rule:project_member"
+
+"load-balancer:read-quota": "is_admin:True or
+                             rule:system_reader or
+                             rule:project_reader"
+
+"load-balancer:read-quota-global": "is_admin:True or rule:system_reader"
+
+"load-balancer:write-quota": "is_admin:True"

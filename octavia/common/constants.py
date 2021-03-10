@@ -731,6 +731,7 @@ DEFAULT_PAGE_SIZE = 1000
 
 # RBAC
 LOADBALANCER_API = 'os_load-balancer_api'
+
 RULE_API_ADMIN = 'rule:load-balancer:admin'
 RULE_API_READ = 'rule:load-balancer:read'
 RULE_API_READ_GLOBAL = 'rule:load-balancer:read-global'
@@ -738,6 +739,7 @@ RULE_API_WRITE = 'rule:load-balancer:write'
 RULE_API_READ_QUOTA = 'rule:load-balancer:read-quota'
 RULE_API_READ_QUOTA_GLOBAL = 'rule:load-balancer:read-quota-global'
 RULE_API_WRITE_QUOTA = 'rule:load-balancer:write-quota'
+
 RBAC_LOADBALANCER = '{}:loadbalancer:'.format(LOADBALANCER_API)
 RBAC_LISTENER = '{}:listener:'.format(LOADBALANCER_API)
 RBAC_POOL = '{}:pool:'.format(LOADBALANCER_API)
@@ -756,6 +758,7 @@ RBAC_FLAVOR_PROFILE = '{}:flavor-profile:'.format(LOADBALANCER_API)
 RBAC_AVAILABILITY_ZONE = '{}:availability-zone:'.format(LOADBALANCER_API)
 RBAC_AVAILABILITY_ZONE_PROFILE = '{}:availability-zone-profile:'.format(
     LOADBALANCER_API)
+
 RBAC_POST = 'post'
 RBAC_PUT = 'put'
 RBAC_PUT_CONFIG = 'put_config'
@@ -767,6 +770,16 @@ RBAC_GET_ALL_GLOBAL = 'get_all-global'
 RBAC_GET_DEFAULTS = 'get_defaults'
 RBAC_GET_STATS = 'get_stats'
 RBAC_GET_STATUS = 'get_status'
+
+RBAC_SCOPE_PROJECT = 'project'
+RBAC_SCOPE_SYSTEM = 'system'
+
+RBAC_ROLES_DEPRECATED_REASON = (
+    'The Octavia API now requires the OpenStack default roles and scoped '
+    'tokens. '
+    'See https://docs.openstack.org/octavia/latest/configuration/policy.html '
+    'and https://docs.openstack.org/keystone/latest/contributor/'
+    'services.html#reusable-default-roles for more information.')
 
 # PROVIDERS
 OCTAVIA = 'octavia'
