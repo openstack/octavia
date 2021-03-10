@@ -49,6 +49,7 @@
               check_interval: 1
               check_timeout: 180
       devstack_plugins:
+        neutron: https://opendev.org/openstack/neutron.git
         octavia: https://opendev.org/openstack/octavia.git
         octavia-tempest-plugin: https://opendev.org/openstack/octavia-tempest-plugin.git
       devstack_services:
