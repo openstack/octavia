@@ -44,8 +44,20 @@ def get_pecan_config():
 
 def _init_drivers():
     """Initialize provider drivers."""
-    for provider in CONF.api_settings.enabled_provider_drivers:
-        driver_factory.get_driver(provider)
+    providers_to_remove = []
+    enabled_providers = driver_factory.get_providers()
+    for provider in enabled_providers:
+        try:
+            driver_factory.get_driver(provider)
+        except Exception:
+            LOG.exception("Cannot load driver '%s', will remove from "
+                          "service. Please check "
+                          "[api_settings]/enabled_provider_drivers in "
+                          "octavia.conf for correctness.", provider)
+            providers_to_remove.append(provider)
+
+    if providers_to_remove:
+        driver_factory.remove_providers(providers_to_remove)
 
 
 def setup_app(pecan_config=None, debug=False, argv=None):
