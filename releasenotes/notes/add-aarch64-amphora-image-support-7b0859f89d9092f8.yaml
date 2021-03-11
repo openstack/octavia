@@ -1,0 +1,5 @@
+---
+features:
+  - |
+    Added aarch64/arm64 amphora image support to the disk image create tool
+    and to the devstack plugin.
