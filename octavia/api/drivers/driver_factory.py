@@ -48,3 +48,14 @@ def get_driver(provider):
                   provider, str(e))
         raise exceptions.ProviderNotFound(prov=provider)
     return driver
+
+
+def remove_providers(providers):
+    # Presumably these provider drivers failed to load, remove so they do not
+    # show up in the available list
+    for provider in providers:
+        CONF.api_settings.enabled_provider_drivers.pop(provider)
+
+
+def get_providers():
+    return CONF.api_settings.enabled_provider_drivers
