@@ -16,6 +16,8 @@ import time
 
 from octavia_lib.api.drivers import exceptions as driver_exceptions
 from octavia_lib.common import constants as lib_consts
+from oslo_log import log as logging
+from oslo_utils import excutils
 
 from octavia.common import constants as consts
 from octavia.common import data_models
@@ -24,10 +26,13 @@ from octavia.db import api as db_apis
 from octavia.db import repositories as repo
 from octavia.statistics import stats_base
 
+LOG = logging.getLogger(__name__)
+
 
 class DriverUpdater(object):
 
     def __init__(self, **kwargs):
+        self.repos = repo.Repositories()
         self.loadbalancer_repo = repo.LoadBalancerRepository()
         self.listener_repo = repo.ListenerRepository()
         self.pool_repo = repo.PoolRepository()
@@ -50,6 +55,28 @@ class DriverUpdater(object):
             network_driver = utils.get_network_driver()
             network_driver.deallocate_vip(vip)
 
+    def _decrement_quota(self, repo, object_name, record_id):
+        lock_session = db_apis.get_session(autocommit=False)
+        db_object = repo.get(lock_session, id=record_id)
+        try:
+            if db_object.provisioning_status == consts.DELETED:
+                LOG.info('%(name)s with ID of %(id)s is already in the '
+                         'DELETED state. Skipping quota update.',
+                         {'name': object_name, 'id': record_id})
+                lock_session.rollback()
+                return
+            self.repos.decrement_quota(lock_session,
+                                       repo.model_class.__data_model__,
+                                       db_object.project_id)
+            lock_session.commit()
+        except Exception:
+            with excutils.save_and_reraise_exception():
+                LOG.error('Failed to decrement %(name)s quota for '
+                          'project: %(proj)s the project may have excess '
+                          'quota in use.', {'proj': db_object.project_id,
+                                            'name': object_name})
+                lock_session.rollback()
+
     def _process_status_update(self, repo, object_name, record,
                                delete_record=False):
         # Zero it out so that if the ID is missing from a record we do not
@@ -60,12 +87,16 @@ class DriverUpdater(object):
             record_kwargs = {}
             prov_status = record.get(consts.PROVISIONING_STATUS, None)
             if prov_status:
-                if (prov_status == consts.DELETED and
-                        object_name == consts.LOADBALANCERS):
-                    self._check_for_lb_vip_deallocate(repo, record_id)
-                elif prov_status == consts.DELETED and delete_record:
-                    repo.delete(self.db_session, id=record_id)
-                    return
+                if prov_status == consts.DELETED:
+                    if object_name == consts.LOADBALANCERS:
+                        self._check_for_lb_vip_deallocate(repo, record_id)
+
+                    self._decrement_quota(repo, object_name, record_id)
+
+                    if delete_record and object_name != consts.LOADBALANCERS:
+                        repo.delete(self.db_session, id=record_id)
+                        return
+
                 record_kwargs[consts.PROVISIONING_STATUS] = prov_status
             op_status = record.get(consts.OPERATING_STATUS, None)
             if op_status:
