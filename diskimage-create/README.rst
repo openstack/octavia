@@ -41,6 +41,11 @@ or it can be overridden by setting the following environment variables:
     DIB_REPO_PATH = /<some directory>/diskimage-builder
     DIB_ELEMENTS = /<some directory>/diskimage-builder/elements
 
+diskimage-create has been moved in diskimage-builder repo:
+
+.. code-block:: bash
+
+    ln -s ${DIB_REPO_PATH}/diskimage_builder/lib/disk-image-create ${DIB_REPO_PATH}/bin/
 
 The following packages are required on each platform:
 
