@@ -1,0 +1,5 @@
+---
+fixes:
+  - |
+    Fix load balancers that use customized host_routes in the VIP or the member
+    subnets in amphorav2.

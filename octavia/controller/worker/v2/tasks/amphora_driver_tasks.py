@@ -266,9 +266,17 @@ class AmphoraPostNetworkPlug(BaseAmphoraTask):
         for port in ports:
             net = data_models.Network(**port.pop(constants.NETWORK))
             ips = port.pop(constants.FIXED_IPS)
-            fixed_ips = [data_models.FixedIP(
-                subnet=data_models.Subnet(**ip.pop(constants.SUBNET)), **ip)
-                for ip in ips]
+            fixed_ips = []
+            for ip in ips:
+                subnet_arg = ip.pop(constants.SUBNET)
+                host_routes = subnet_arg.get('host_routes')
+                if host_routes:
+                    subnet_arg['host_routes'] = [
+                        data_models.HostRoute(**hr)
+                        for hr in host_routes
+                    ]
+                fixed_ips.append(data_models.FixedIP(
+                    subnet=data_models.Subnet(**subnet_arg), **ip))
             self.amphora_driver.post_network_plug(
                 db_amp, data_models.Port(network=net, fixed_ips=fixed_ips,
                                          **port))
@@ -329,6 +337,12 @@ class AmphoraPostVIPPlug(BaseAmphoraTask):
         vip_arg = amphorae_network_config[amphora.get(
             constants.ID)][constants.VIP_SUBNET]
         if vip_arg:
+            host_routes = vip_arg.get('host_routes')
+            if host_routes:
+                vip_arg['host_routes'] = [
+                    data_models.HostRoute(**hr)
+                    for hr in host_routes
+                ]
             vip_subnet = data_models.Subnet(**vip_arg)
         else:
             vip_subnet = data_models.Subnet()

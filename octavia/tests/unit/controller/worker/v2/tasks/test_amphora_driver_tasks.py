@@ -381,8 +381,9 @@ class TestAmphoraDriverTasks(base.TestCase):
         amphora_post_network_plug_obj = (amphora_driver_tasks.
                                          AmphoraPostNetworkPlug())
         mock_amphora_repo_get.return_value = _db_amphora_mock
+        fixed_ips = [{constants.SUBNET: {}}]
         port_mock = {constants.NETWORK: mock.MagicMock(),
-                     constants.FIXED_IPS: [mock.MagicMock()],
+                     constants.FIXED_IPS: fixed_ips,
                      constants.ID: uuidutils.generate_uuid()}
         amphora_post_network_plug_obj.execute(_amphora_mock, [port_mock])
 
@@ -415,6 +416,37 @@ class TestAmphoraDriverTasks(base.TestCase):
         amp = amphora_post_network_plug_obj.revert(
             failure.Failure.from_exception(Exception('boom')), _amphora_mock)
         repo.AmphoraRepository.update.assert_not_called()
+
+    def test_amphora_post_network_plug_with_host_routes(
+            self, mock_driver, mock_generate_uuid, mock_log, mock_get_session,
+            mock_listener_repo_get, mock_listener_repo_update,
+            mock_amphora_repo_get, mock_amphora_repo_update):
+
+        amphora_post_network_plug_obj = (amphora_driver_tasks.
+                                         AmphoraPostNetworkPlug())
+        mock_amphora_repo_get.return_value = _db_amphora_mock
+        host_routes = [{'destination': '10.0.0.0/16',
+                        'nexthop': '192.168.10.3'},
+                       {'destination': '10.2.0.0/16',
+                        'nexthop': '192.168.10.5'}]
+        fixed_ips = [{constants.SUBNET: {'host_routes': host_routes}}]
+
+        port_mock = {constants.NETWORK: mock.MagicMock(),
+                     constants.FIXED_IPS: fixed_ips,
+                     constants.ID: uuidutils.generate_uuid()}
+        amphora_post_network_plug_obj.execute(_amphora_mock, [port_mock])
+
+        (mock_driver.post_network_plug.
+            assert_called_once_with)(_db_amphora_mock,
+                                     network_data_models.Port(**port_mock))
+
+        call_args = mock_driver.post_network_plug.call_args[0]
+        port_arg = call_args[1]
+        subnet_arg = port_arg.fixed_ips[0].subnet
+        self.assertEqual(2, len(subnet_arg.host_routes))
+        for hr1, hr2 in zip(host_routes, subnet_arg.host_routes):
+            self.assertEqual(hr1['destination'], hr2.destination)
+            self.assertEqual(hr1['nexthop'], hr2.nexthop)
 
     @mock.patch('octavia.db.repositories.LoadBalancerRepository.get')
     def test_amphorae_post_network_plug(self, mock_lb_get,
@@ -496,7 +528,14 @@ class TestAmphoraDriverTasks(base.TestCase):
                                    mock_amphora_repo_get,
                                    mock_amphora_repo_update):
 
-        amphorae_net_config_mock = mock.MagicMock()
+        amphorae_net_config_mock = {
+            AMP_ID: {
+                constants.VIP_SUBNET: {
+                    'host_routes': []
+                },
+                constants.VRRP_PORT: mock.MagicMock(),
+            }
+        }
         mock_amphora_repo_get.return_value = _db_amphora_mock
         mock_lb_get.return_value = _db_load_balancer_mock
         amphora_post_vip_plug_obj = amphora_driver_tasks.AmphoraPostVIPPlug()
@@ -548,6 +587,48 @@ class TestAmphoraDriverTasks(base.TestCase):
             failure.Failure.from_exception(Exception('boom')), _amphora_mock,
             None)
         repo.AmphoraRepository.update.assert_not_called()
+
+    @mock.patch('octavia.db.repositories.LoadBalancerRepository.update')
+    @mock.patch('octavia.db.repositories.LoadBalancerRepository.get')
+    def test_amphora_post_vip_plug_with_host_routes(
+            self, mock_lb_get, mock_loadbalancer_repo_update, mock_driver,
+            mock_generate_uuid, mock_log, mock_get_session,
+            mock_listener_repo_get, mock_listener_repo_update,
+            mock_amphora_repo_get, mock_amphora_repo_update):
+
+        host_routes = [{'destination': '10.0.0.0/16',
+                        'nexthop': '192.168.10.3'},
+                       {'destination': '10.2.0.0/16',
+                        'nexthop': '192.168.10.5'}]
+        amphorae_net_config_mock = {
+            AMP_ID: {
+                constants.VIP_SUBNET: {
+                    'host_routes': host_routes
+                },
+                constants.VRRP_PORT: mock.MagicMock(),
+            }
+        }
+        mock_amphora_repo_get.return_value = _db_amphora_mock
+        mock_lb_get.return_value = _db_load_balancer_mock
+        amphora_post_vip_plug_obj = amphora_driver_tasks.AmphoraPostVIPPlug()
+        amphora_post_vip_plug_obj.execute(_amphora_mock,
+                                          _LB_mock,
+                                          amphorae_net_config_mock)
+        vip_subnet = network_data_models.Subnet(
+            **amphorae_net_config_mock[AMP_ID]['vip_subnet'])
+        vrrp_port = network_data_models.Port(
+            **amphorae_net_config_mock[AMP_ID]['vrrp_port'])
+
+        mock_driver.post_vip_plug.assert_called_once_with(
+            _db_amphora_mock, _db_load_balancer_mock, amphorae_net_config_mock,
+            vip_subnet=vip_subnet, vrrp_port=vrrp_port)
+
+        call_kwargs = mock_driver.post_vip_plug.call_args[1]
+        vip_subnet_arg = call_kwargs.get(constants.VIP_SUBNET)
+        self.assertEqual(2, len(vip_subnet_arg.host_routes))
+        for hr1, hr2 in zip(host_routes, vip_subnet_arg.host_routes):
+            self.assertEqual(hr1['destination'], hr2.destination)
+            self.assertEqual(hr1['nexthop'], hr2.nexthop)
 
     @mock.patch('octavia.db.repositories.LoadBalancerRepository.update')
     @mock.patch('octavia.db.repositories.LoadBalancerRepository.get')
