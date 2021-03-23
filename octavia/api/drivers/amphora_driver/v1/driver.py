@@ -288,13 +288,10 @@ class AmphoraProviderDriver(driver_base.ProviderDriver):
             if m.id not in new_member_ids:
                 deleted_members.append(m)
 
-        if deleted_members or new_members or updated_members:
-            payload = {'old_member_ids': [m.id for m in deleted_members],
-                       'new_member_ids': [m.member_id for m in new_members],
-                       'updated_members': updated_members}
-            self.client.cast({}, 'batch_update_members', **payload)
-        else:
-            LOG.info("Member batch update is a noop, returning early.")
+        payload = {'old_member_ids': [m.id for m in deleted_members],
+                   'new_member_ids': [m.member_id for m in new_members],
+                   'updated_members': updated_members}
+        self.client.cast({}, 'batch_update_members', **payload)
 
     def _validate_members(self, db_pool, members):
         if db_pool.protocol in consts.LVS_PROTOCOLS:

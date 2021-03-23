@@ -481,13 +481,22 @@ class TestAmphoraDriver(base.TestRpc):
     @mock.patch('oslo_messaging.RPCClient.cast')
     def test_member_batch_update_clear_already_empty(
             self, mock_cast, mock_pool_get, mock_session):
+        """Expect that we will pass an empty payload if directed.
+
+        Logic for whether or not to attempt this will be done above the driver
+        layer, so our driver is responsible to forward the request even if it
+        is a perceived no-op.
+        """
         mock_pool = mock.MagicMock()
         mock_pool_get.return_value = mock_pool
 
         self.amp_driver.member_batch_update(
             self.sample_data.pool1_id, [])
 
-        mock_cast.assert_not_called()
+        payload = {'old_member_ids': [],
+                   'new_member_ids': [],
+                   'updated_members': []}
+        mock_cast.assert_called_with({}, 'batch_update_members', **payload)
 
     # Health Monitor
     @mock.patch('oslo_messaging.RPCClient.cast')
