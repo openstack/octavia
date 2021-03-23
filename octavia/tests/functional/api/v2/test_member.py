@@ -942,9 +942,7 @@ class TestMember(base.BaseAPITest):
 
         self.assertEqual([], returned_members)
 
-        mock_provider.assert_called_once_with(u'noop_driver',
-                                              mock_driver.member_batch_update,
-                                              self.pool_id, [])
+        mock_provider.assert_not_called()
 
     def test_create_with_attached_listener(self):
         api_member = self.create_member(
