@@ -249,6 +249,10 @@ function install_redis {
     pip_install_gr redis
 }
 
+function stop_redis {
+    stop_service redis || true
+}
+
 function uninstall_redis {
     if is_fedora; then
         uninstall_package redis
@@ -257,8 +261,6 @@ function uninstall_redis {
     elif is_suse; then
         uninstall_package redis
     fi
-
-    stop_service redis
 
     pip_unistall redis
 }
@@ -628,6 +630,10 @@ function octavia_stop {
         fi
     else
         die "Unknown network controller. Please define octavia_delete_network_interface_device"
+    fi
+
+    if [[ ${OCTAVIA_ENABLE_AMPHORAV2_PROVIDER} == True ]]; then
+        stop_redis
     fi
 }
 
