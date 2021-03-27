@@ -1,0 +1,5 @@
+---
+fixes:
+  - |
+    Fix an issue with the rsyslog configuration file in the Amphora when the
+    log offloading feature and the local log storage feature are both disabled.
