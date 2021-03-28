@@ -1,0 +1,8 @@
+---
+fixes:
+  - |
+    Fixed amphora driver pool ALPN compatibity with older amphora images.
+upgrade:
+  - |
+    Support for new features, such as ALPN on pools, HTTP/2 on pools,
+    gRPC, and SCTP require an updated amphora image.
