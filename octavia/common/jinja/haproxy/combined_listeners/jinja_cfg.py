@@ -100,6 +100,8 @@ class JinjaTemplater(object):
         # Is it newer than haproxy 1.5?
         if not (int(haproxy_versions[0]) < 2 and int(haproxy_versions[1]) < 6):
             feature_compatibility[constants.HTTP_REUSE] = True
+        if not (int(haproxy_versions[0]) < 2 and int(haproxy_versions[1]) < 9):
+            feature_compatibility[constants.POOL_ALPN] = True
 
         return self.render_loadbalancer_obj(
             host_amphora, listeners, tls_certs=tls_certs,
@@ -370,7 +372,8 @@ class JinjaTemplater(object):
                 ret_value['tls_ciphers'] = pool.tls_ciphers
             if pool.tls_versions is not None:
                 ret_value['tls_versions'] = pool.tls_versions
-            if pool.alpn_protocols is not None:
+            if (pool.alpn_protocols is not None and
+                    feature_compatibility.get(constants.POOL_ALPN, False)):
                 ret_value['alpn_protocols'] = ",".join(pool.alpn_protocols)
         if (pool.ca_tls_certificate_id and pool_tls_certs and
                 pool_tls_certs.get('ca_cert')):
