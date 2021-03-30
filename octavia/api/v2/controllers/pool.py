@@ -210,6 +210,8 @@ class PoolsController(base.BaseController):
 
         if pool.listener_id and listener:
             self._validate_protocol(listener.protocol, pool.protocol)
+            self._validate_tls_option_proto(
+                listener.protocol, pool.protocol, pool.tls_enabled)
 
         if pool.protocol == constants.PROTOCOL_UDP:
             self._validate_pool_request_for_udp(pool)
