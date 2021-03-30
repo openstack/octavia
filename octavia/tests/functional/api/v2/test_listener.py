@@ -2991,6 +2991,40 @@ class TestListener(base.BaseAPITest):
         self.get(self.LISTENER_PATH.format(
             listener_id=li.get('id') + "/stats"), status=404)
 
+    def test_invalid_listener_pool_protocol_and_tls_option_post(self):
+        pool = self.create_pool(
+            self.lb_id, constants.PROTOCOL_HTTPS,
+            constants.LB_ALGORITHM_ROUND_ROBIN, tls_enabled=True).get('pool')
+        self.set_object_status(self.lb_repo, self.lb_id)
+        listener = {'protocol': constants.PROTOCOL_HTTPS,
+                    'protocol_port': 80,
+                    'loadbalancer_id': self.lb_id,
+                    'default_pool_id': pool.get('id')}
+        body = self._build_body(listener)
+        expect_error_msg = ("TLS enabled is not a valid option for HTTPS "
+                            "protocol listener and for HTTPS protocol pool.")
+        res = self.post(self.LISTENERS_PATH, body, status=400,
+                        expect_errors=True)
+        self.assertEqual(expect_error_msg, res.json['faultstring'])
+        self.assert_correct_status(lb_id=self.lb_id)
+
+    def test_invalid_listener_pool_protocol_and_tls_option_put(self):
+        pool = self.create_pool(
+            self.lb_id, constants.PROTOCOL_HTTPS,
+            constants.LB_ALGORITHM_ROUND_ROBIN, tls_enabled=True).get('pool')
+        self.set_object_status(self.lb_repo, self.lb_id)
+        listener = self.create_listener(
+            constants.PROTOCOL_HTTPS, 80, self.lb_id).get('listener')
+        expect_error_msg = ("TLS enabled is not a valid option for HTTPS "
+                            "protocol listener and for HTTPS protocol pool.")
+        self.set_object_status(self.lb_repo, self.lb_id)
+        new_listener = {'default_pool_id': pool.get('id')}
+        res = self.put(
+            self.LISTENER_PATH.format(listener_id=listener.get('id')),
+            self._build_body(new_listener), status=400)
+        self.assertEqual(expect_error_msg, res.json['faultstring'])
+        self.assert_correct_status(lb_id=self.lb_id)
+
     @mock.patch('octavia.common.tls_utils.cert_parser.load_certificates_data')
     def test_listener_pool_protocol_map_post(self, mock_cert_data):
         cert = data_models.TLSContainer(certificate='cert')

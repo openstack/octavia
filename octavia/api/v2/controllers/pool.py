@@ -238,6 +238,8 @@ class PoolsController(base.BaseController):
                 raise exceptions.ListenerNoChildren(
                     protocol=lib_consts.PROTOCOL_PROMETHEUS)
             self._validate_protocol(listener.protocol, pool.protocol)
+            self._validate_tls_option_proto(
+                listener.protocol, pool.protocol, pool.tls_enabled)
 
         if pool.protocol in (constants.PROTOCOL_UDP,
                              lib_consts.PROTOCOL_SCTP):

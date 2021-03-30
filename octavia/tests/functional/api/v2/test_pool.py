@@ -2614,6 +2614,23 @@ class TestPool(base.BaseAPITest):
                               status=201)
                     self.set_object_status(self.lb_repo, self.lb_id)
 
+    def test_invalid_listener_pool_protocol_and_tls_option_post(self):
+        listener = self.create_listener(
+            constants.PROTOCOL_HTTPS, 8080, self.lb_id).get('listener')
+        self.set_object_status(self.lb_repo, self.lb_id)
+        lb_pool = {
+            'lb_algorithm': constants.LB_ALGORITHM_ROUND_ROBIN,
+            'project_id': self.project_id,
+            'protocol': constants.PROTOCOL_HTTPS,
+            'listener_id': listener.get('id'),
+            'tls_enabled': True}
+        expect_error_msg = ("TLS enabled is not a valid option for HTTPS "
+                            "protocol listener and for HTTPS protocol pool.")
+        res = self.post(self.POOLS_PATH, self._build_body(lb_pool),
+                        status=400, expect_errors=True)
+        self.assertEqual(expect_error_msg, res.json['faultstring'])
+        self.assert_correct_status(lb_id=self.lb_id)
+
     @mock.patch('octavia.common.tls_utils.cert_parser.load_certificates_data')
     def test_invalid_listener_pool_protocol_map(self, mock_cert_data):
         cert = data_models.TLSContainer(certificate='cert')

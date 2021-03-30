@@ -121,6 +121,8 @@ class ListenersController(base.BaseController):
             raise exceptions.NotFound(
                 resource=data_models.Pool._name(), id=pool_id)
         self._validate_protocol(listener_protocol, db_pool.protocol)
+        self._validate_tls_option_proto(listener_protocol, db_pool.protocol,
+                                        db_pool.tls_enabled)
 
     def _has_tls_container_refs(self, listener_dict):
         return (listener_dict.get('tls_certificate_id') or

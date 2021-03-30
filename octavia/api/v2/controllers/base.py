@@ -339,6 +339,16 @@ class BaseController(pecan_rest.RestController):
                     "authority reference supplied."))
 
     @staticmethod
+    def _validate_tls_option_proto(listener_protocol, pool_protocol,
+                                   pool_tls_opt):
+        if (listener_protocol == constants.PROTOCOL_HTTPS and
+                pool_protocol == constants.PROTOCOL_HTTPS and pool_tls_opt):
+            raise exceptions.InvalidOption(
+                    value='TLS enabled',
+                    option=('%s protocol listener and for %s protocol pool.'
+                            % (listener_protocol, pool_protocol)))
+
+    @staticmethod
     def _validate_protocol(listener_protocol, pool_protocol):
         proto_map = constants.VALID_LISTENER_POOL_PROTOCOL_MAP
         for valid_pool_proto in proto_map[listener_protocol]:
@@ -349,3 +359,5 @@ class BaseController(pecan_rest.RestController):
                        "pool_protocol": pool_protocol,
                        "listener_protocol": listener_protocol}
         raise exceptions.ValidationException(detail=detail)
+
+
