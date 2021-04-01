@@ -30,7 +30,7 @@ PROTOCOL_MAP = {
 }
 
 BALANCE_MAP = {
-    constants.LB_ALGORITHM_ROUND_ROBIN: 'rr',
+    constants.LB_ALGORITHM_ROUND_ROBIN: 'wrr',
     constants.LB_ALGORITHM_LEAST_CONNECTIONS: 'lc',
     constants.LB_ALGORITHM_SOURCE_IP: 'sh'
 }
