@@ -526,7 +526,8 @@ certificate_opts = [
                default='publicURL',
                help='The endpoint_type to be used for barbican service.'),
     cfg.StrOpt('ca_certificates_file',
-               help=_('CA certificates file path')),
+               help=_('CA certificates file path for the key manager service '
+                      '(such as Barbican).')),
     cfg.BoolOpt('insecure',
                 default=False,
                 help=_('Disable certificate validation on SSL connections ')),
