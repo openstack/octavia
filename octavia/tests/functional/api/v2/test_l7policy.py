@@ -1338,6 +1338,152 @@ class TestL7Policy(base.BaseAPITest):
                     l7policy_id=l7policy.get('id')),
                     status=404)
 
+    def test_invalid_listener_protocol_esd_l7policy_post(self):
+        l7policy = {
+            'action': constants.L7POLICY_ACTION_REJECT,
+            'name': 'some-random-name',
+        }
+        port = 1
+        for listener_proto in constants.ONLY_ESD_L7POLICY_PROTO:
+            port = port + 1
+            listener = self.create_listener(
+                listener_proto, port, self.lb_id).get('listener')
+            self.set_object_status(self.lb_repo, self.lb_id)
+            l7policy['listener_id'] = listener.get('id')
+            expect_error_msg = ("Validation failure: The extended policy "
+                                "'some-random-name' is invalid while the "
+                                "listener protocol is '%s'.") % listener_proto
+            res = self.post(self.L7POLICIES_PATH,
+                            self._build_body(l7policy), status=400)
+            self.assertEqual(expect_error_msg, res.json['faultstring'])
+            self.assert_correct_status(lb_id=self.lb_id)
+
+    def test_invalid_policy_action_esd_l7policy_post(self):
+        l7policy = {
+            'action': constants.L7POLICY_ACTION_REDIRECT_TO_URL,
+        }
+        port = 1
+        for listener_proto in constants.ONLY_ESD_L7POLICY_PROTO:
+            port = port + 1
+            listener = self.create_listener(
+                listener_proto, port, self.lb_id).get('listener')
+            self.set_object_status(self.lb_repo, self.lb_id)
+            l7policy['listener_id'] = listener.get('id')
+            for esd_name in constants.VALID_LISTENER_ESD_MAP[listener_proto]:
+                l7policy['name'] = esd_name
+                expect_error_msg = ("Validation failure: The extended policy"
+                                    " can be added only with REJECT l7"
+                                    " policy action.")
+                res = self.post(self.L7POLICIES_PATH,
+                                self._build_body(l7policy), status=400)
+                self.assertEqual(expect_error_msg, res.json['faultstring'])
+                self.assert_correct_status(lb_id=self.lb_id)
+
+    @mock.patch('octavia.common.tls_utils.cert_parser.load_certificates_data')
+    def test_listener_protocol_esd_l7policy_map_post(self, mock_cert_data):
+        cert = data_models.TLSContainer(certificate='cert')
+        mock_cert_data.return_value = {'sni_certs': [cert]}
+        l7policy = {
+            'action': constants.L7POLICY_ACTION_REJECT,
+        }
+        port = 1
+        for listener_proto in constants.VALID_LISTENER_POOL_PROTOCOL_MAP:
+            port = port + 1
+            opts = {}
+            if listener_proto == constants.PROTOCOL_TERMINATED_HTTPS:
+                opts['sni_container_refs'] = [uuidutils.generate_uuid()]
+            listener = self.create_listener(
+                listener_proto, port, self.lb_id, **opts).get('listener')
+            self.set_object_status(self.lb_repo, self.lb_id)
+            l7policy['listener_id'] = listener.get('id')
+            for esd_name in constants.VALID_LISTENER_ESD_MAP[listener_proto]:
+                l7policy['name'] = esd_name
+                self.post(self.L7POLICIES_PATH,
+                          self._build_body(l7policy), status=201)
+                self.set_object_status(self.lb_repo, self.lb_id)
+
+    def test_invalid_listener_protocol_esd_l7policy_put(self):
+        new_l7policy = {
+            'action': constants.L7POLICY_ACTION_REJECT,
+            'name': 'some-random-name',
+        }
+        port = 1
+        for listener_proto in constants.ONLY_ESD_L7POLICY_PROTO:
+            port = port + 1
+            listener = self.create_listener(
+                listener_proto, port, self.lb_id).get('listener')
+            self.set_object_status(self.lb_repo, self.lb_id)
+            l7policy = self.create_l7policy(
+                listener.get('id'),
+                constants.L7POLICY_ACTION_REJECT,
+                name=constants.VALID_LISTENER_ESD_MAP[listener_proto][0],
+            ).get(self.root_tag)
+            self.set_object_status(self.lb_repo, self.lb_id)
+            expect_error_msg = ("Validation failure: The extended policy "
+                                "'some-random-name' is invalid while the "
+                                "listener protocol is '%s'.") % listener_proto
+            res = self.put(self.L7POLICY_PATH.format(
+                l7policy_id=l7policy.get('id')),
+                self._build_body(new_l7policy), status=400)
+            self.assertEqual(expect_error_msg, res.json['faultstring'])
+            self.assert_correct_status(lb_id=self.lb_id)
+
+    def test_invalid_policy_action_esd_l7policy_put(self):
+        new_l7policy = {
+            'action': constants.L7POLICY_ACTION_REDIRECT_TO_URL,
+            'redirect_url': 'http://www.example.com',
+        }
+        port = 1
+        for listener_proto in constants.ONLY_ESD_L7POLICY_PROTO:
+            port = port + 1
+            listener = self.create_listener(
+                listener_proto, port, self.lb_id).get('listener')
+            self.set_object_status(self.lb_repo, self.lb_id)
+            for esd_name in constants.VALID_LISTENER_ESD_MAP[listener_proto]:
+                l7policy = self.create_l7policy(
+                    listener.get('id'),
+                    constants.L7POLICY_ACTION_REJECT,
+                    name=esd_name,
+                ).get(self.root_tag)
+                self.set_object_status(self.lb_repo, self.lb_id)
+                expect_error_msg = ("Validation failure: The extended policy"
+                                    " can be added only with REJECT l7"
+                                    " policy action.")
+                res = self.put(self.L7POLICY_PATH.format(
+                    l7policy_id=l7policy.get('id')),
+                    self._build_body(new_l7policy), status=400)
+                self.assertEqual(expect_error_msg, res.json['faultstring'])
+                self.assert_correct_status(lb_id=self.lb_id)
+
+    @mock.patch('octavia.common.tls_utils.cert_parser.load_certificates_data')
+    def test_listener_protocol_esd_l7policy_map_put(self, mock_cert_data):
+        cert = data_models.TLSContainer(certificate='cert')
+        mock_cert_data.return_value = {'sni_certs': [cert]}
+        new_l7policy = {
+            'action': constants.L7POLICY_ACTION_REJECT,
+        }
+        port = 1
+        for listener_proto in constants.VALID_LISTENER_POOL_PROTOCOL_MAP:
+            port = port + 1
+            opts = {}
+            if listener_proto == constants.PROTOCOL_TERMINATED_HTTPS:
+                opts['sni_container_refs'] = [uuidutils.generate_uuid()]
+            listener = self.create_listener(
+                listener_proto, port, self.lb_id, **opts).get('listener')
+            self.set_object_status(self.lb_repo, self.lb_id)
+            for esd_name in constants.VALID_LISTENER_ESD_MAP[listener_proto]:
+                l7policy = self.create_l7policy(
+                    listener.get('id'),
+                    constants.L7POLICY_ACTION_REJECT,
+                    name=esd_name,
+                ).get(self.root_tag)
+                self.set_object_status(self.lb_repo, self.lb_id)
+                new_l7policy['name'] = esd_name
+                self.put(
+                    self.L7POLICY_PATH.format(l7policy_id=l7policy.get('id')),
+                    self._build_body(new_l7policy), status=200)
+                self.set_object_status(self.lb_repo, self.lb_id)
+
     @mock.patch('octavia.common.tls_utils.cert_parser.load_certificates_data')
     def test_listener_pool_protocol_map_post(self, mock_cert_data):
         cert = data_models.TLSContainer(certificate='cert')
@@ -1346,6 +1492,11 @@ class TestL7Policy(base.BaseAPITest):
         port = 1
         l7policy = {'action': constants.L7POLICY_ACTION_REDIRECT_TO_POOL}
         for listener_proto in valid_map:
+            # We can ignore several protocols here, because they tested in
+            # test_listener.py and also these cases tested in previous tests
+            # for ESD policies.
+            if listener_proto in constants.ONLY_ESD_L7POLICY_PROTO:
+                continue
             for pool_proto in valid_map[listener_proto]:
                 port = port + 1
                 opts = {}
@@ -1357,7 +1508,6 @@ class TestL7Policy(base.BaseAPITest):
                 pool = self.create_pool(
                     self.lb_id, pool_proto,
                     constants.LB_ALGORITHM_ROUND_ROBIN).get('pool')
-
                 l7policy['listener_id'] = listener.get('id')
                 l7policy['redirect_pool_id'] = pool.get('id')
                 self.set_object_status(self.lb_repo, self.lb_id)
@@ -1406,6 +1556,11 @@ class TestL7Policy(base.BaseAPITest):
         port = 1
         new_l7policy = {'action': constants.L7POLICY_ACTION_REDIRECT_TO_POOL}
         for listener_proto in valid_map:
+            # We can ignore several protocols here, because they tested in
+            # test_listener.py and also these cases tested in previous tests
+            # for ESD policies.
+            if listener_proto in constants.ONLY_ESD_L7POLICY_PROTO:
+                continue
             for pool_proto in valid_map[listener_proto]:
                 port = port + 1
                 opts = {}
@@ -1432,6 +1587,11 @@ class TestL7Policy(base.BaseAPITest):
         invalid_map = c_const.INVALID_LISTENER_POOL_PROTOCOL_MAP
         port = 100
         for listener_proto in invalid_map:
+            # We can ignore several protocols here, because they tested in
+            # test_listener.py and also these cases tested in previous tests
+            # for ESD policies.
+            if listener_proto in constants.ONLY_ESD_L7POLICY_PROTO:
+                continue
             opts = {}
             if listener_proto == constants.PROTOCOL_TERMINATED_HTTPS:
                 opts['sni_container_refs'] = [uuidutils.generate_uuid()]

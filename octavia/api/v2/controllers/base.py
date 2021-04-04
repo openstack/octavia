@@ -360,4 +360,23 @@ class BaseController(pecan_rest.RestController):
                        "listener_protocol": listener_protocol}
         raise exceptions.ValidationException(detail=detail)
 
+    @staticmethod
+    def _validate_esd_policy(listener_protocol, esd_key):
+        proto_map = constants.VALID_LISTENER_ESD_MAP
+        for valid_esd_key in proto_map.get(listener_protocol, []):
+            if esd_key == valid_esd_key:
+                return
+        detail = _("The extended policy '%(esd_key)s' is invalid while "
+                   "the listener protocol is '%(listener_protocol)s'.") % {
+                       "esd_key": esd_key,
+                       "listener_protocol": listener_protocol}
+        raise exceptions.ValidationException(detail=detail)
 
+    @staticmethod
+    def _validate_policy_action_for_esd(L7policy_action):
+        if L7policy_action == constants.L7POLICY_ACTION_REJECT:
+            return
+        detail = _("The extended policy can be added only with "
+                   "%(allowed_action)s l7 policy action.") % {
+                       "allowed_action": constants.L7POLICY_ACTION_REJECT}
+        raise exceptions.ValidationException(detail=detail)

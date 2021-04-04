@@ -144,6 +144,11 @@ class L7PolicyController(base.BaseController):
                     context.session, l7policy.redirect_pool_id)
             self._validate_protocol(listener.protocol, db_pool.protocol)
 
+        # Check ESD policies if this listener supports only them
+        if listener.protocol in constants.ONLY_ESD_L7POLICY_PROTO:
+            self._validate_esd_policy(listener.protocol, l7policy.name)
+            self._validate_policy_action_for_esd(l7policy.action)
+
         # Load the driver early as it also provides validation
         driver = driver_factory.get_driver(provider)
 
@@ -241,6 +246,13 @@ class L7PolicyController(base.BaseController):
                 db_pool = self._get_db_pool(
                     context.session, l7policy_dict['redirect_pool_id'])
             self._validate_protocol(listener.protocol, db_pool.protocol)
+
+        # Check ESD policies if this listener supports only them
+        if listener.protocol in constants.ONLY_ESD_L7POLICY_PROTO:
+            if l7policy_dict.get('name'):
+                self._validate_esd_policy(listener.protocol, l7policy.name)
+            if l7policy_dict.get('action'):
+                self._validate_policy_action_for_esd(l7policy.action)
 
         # Load the driver early as it also provides validation
         driver = driver_factory.get_driver(provider)
