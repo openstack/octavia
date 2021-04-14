@@ -65,6 +65,16 @@ class Endpoints:
                  amphora_id)
         self.worker.failover_amphora(amphora_id)
 
+    def add_loadbalancer(self, context, load_balancer_id):
+        LOG.info('Adding (force) load balancer %s...',
+                 load_balancer_id)
+        self.worker.add_loadbalancer(load_balancer_id)
+
+    def remove_loadbalancer(self, context, load_balancer_id):
+        LOG.info('Removing (force) load balancer %s...',
+                 load_balancer_id)
+        self.worker.remove_loadbalancer(load_balancer_id)
+
     def create_listener(self, context, listener):
         LOG.info('Creating listener \'%s\'...',
                  listener[constants.LISTENER_ID])

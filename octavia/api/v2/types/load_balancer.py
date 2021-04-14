@@ -211,3 +211,7 @@ class LoadBalancerStatisticsResponse(BaseLoadBalancerType):
 
 class StatisticsRootResponse(types.BaseType):
     stats = wtypes.wsattr(LoadBalancerStatisticsResponse)
+
+
+class Rescheduling(types.BaseType):
+    target_host = wtypes.wsattr(wtypes.StringType(max_length=255), mandatory=True)
