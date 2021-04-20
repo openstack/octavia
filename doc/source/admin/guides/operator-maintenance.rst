@@ -27,17 +27,18 @@ Monitoring
 
 Monitoring Load Balancer Amphora
 --------------------------------
+
 Octavia will monitor the load balancing amphorae itself and initiate failovers
 and/or replacements if they malfunction. Therefore, most installations won't
 need to monitor the amphorae running the load balancer.
 
 Octavia will log each failover to the corresponding health manager logs. It is
-advisable to use log analytics to monitor failover trends to notice problems
-in the OpenStack installation early. We have seen neutron (network)
-connectivity issues, Denial of Service attacks, and nova (compute)
-malfunctions lead to a higher than normal failover rate. Alternatively, the
-monitoring of the other services showed problems as well, so depending on
-your overall monitoring strategy this might be optional.
+advisable to use log analytics to monitor failover trends to notice problems in
+the OpenStack installation early. We have seen neutron (network) connectivity
+issues, Denial of Service attacks, and nova (compute) malfunctions lead to a
+higher than normal failover rate. Alternatively, the monitoring of the other
+services showed problems as well, so depending on your overall monitoring
+strategy this might be optional.
 
 If additional monitoring is necessary, review the corresponding calls on
 the amphora agent REST interface (see
@@ -47,7 +48,7 @@ Monitoring Pool Members
 -----------------------
 
 Octavia will use the health information from the underlying load balancing
-application to determine the health of members. This information will be
+subsystems to determine the health of members. This information will be
 streamed to the Octavia database and made available via the status
 tree or other API methods. For critical applications we recommend to
 poll this information in regular intervals.
@@ -55,32 +56,35 @@ poll this information in regular intervals.
 Monitoring Load Balancers
 -------------------------
 
-For critical applications, we recommend to monitor the access to the
-application with a tool which polls the application from various points
-on the Internet and measures response times. Alerts should be triggered
-when response times become too high.
+You should monitor the provisioning status of a load balancer, and send alerts
+if the provisioning status is not ACTIVE. Alerts should not be triggered when
+an application is making regular changes to the pool and enters several PENDING
+stages.
 
-An additional check might be to monitor the provisioning status of a
-load balancer (see `Load Balance Status Codes
-<https://docs.openstack.org/api-ref/load-balancer/v2/#status-codes>`_)
-and alert depending on the application if the provisioning status is
-not ACTIVE. For some applications other states might not lead to alerts:
-For instance if an application is making regular changes to the pool
-several PENDING stages should not alert as well.
+The provisioning status of load balancer objects reflect the status of the
+control plane being able to contact and successfully provision a create,
+update, and delete request. The operating status of a load balancer object
+reports on the current functional status of the load balancer.
 
-In most cases, when a load balancer is in states other than ACTIVE it
-will still be passing traffic, which is why the response time check
-mentioned above is recommended. However, even if the load balancer
-is still functioning, it is advisable to investigate and potentially
-recreate it if it is stuck in a non-ACTIVE state.
+For example, a load balancer might have a provisioning status of ERROR, but an
+operating status of ONLINE. This could be caused by a neutron networking
+failure that blocked that last requested update to the load balancer
+configuration from successfully completing. In this case the load balancer is
+continuing to process traffic through the load balancer, but might not have
+applied the latest configuration updates yet.
 
 Monitoring load balancer functionality
 --------------------------------------
 
-For production sites we recommend to use outside monitoring services. They
-will use servers distributed around the globe to not only monitor if the site
-is up but also parts of the system outside the visibility of Octavia like
-routers, network connectivity, etc.
+You can monitor the operational status of your load balancer using the
+`openstack loadbalancer status show` command. It reports the current operation
+status of the load balancer and its child objects.
+
+You might also want to use an external monitoring service that connects to your
+load balancer listeners and monitors them from outside of the cloud. This type
+of monitoring indicates if there is a failure outside of Octavia that might
+impact the functionality of your load balancer, such as router failures,
+network connectivity issues, and so on.
 
 .. _Monasca Octavia plugin: https://github.com/openstack/monasca-agent/blob/master/monasca_setup/detection/plugins/octavia.py
 
@@ -108,11 +112,11 @@ least one set of components in each availability zone. Furthermore, the
 octavia-api endpoint could be behind a load balancer or other HA technology.
 That said, if one or more components fail the system will still be available
 (though potentially degraded). For instance if you have installed one set of
-components in three availability zones even if you lose a whole zone
-Octavia will still be responsive and available - only if you lose the
+components in each of the three availability zones even if you lose a whole
+zone Octavia will still be responsive and available - only if you lose the
 Octavia control plane in all three zones will the service be unavailable.
-Please note this only addresses control plane availability; the availability
-of the load balancing function depends highly on the chosen topology and the
+Please note this only addresses control plane availability; the availability of
+the load balancing function depends highly on the chosen topology and the
 anti-affinity settings. See our forthcoming HA guide for more details.
 
 Additionally, we recommend to monitor the Octavia API endpoint(s). There
@@ -433,4 +437,3 @@ of the specific amphora with the failover command on the amphora API.
 
 Alternatively, a live migration might also work if it happens quick enough for
 Octavia not to notice a stale amphora (the default configuration is 60s).
-
