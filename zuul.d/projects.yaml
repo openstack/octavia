@@ -39,8 +39,6 @@
             irrelevant-files: *irrelevant-files
         - octavia-v2-dsvm-tls-barbican:
             irrelevant-files: *irrelevant-files
-        - octavia-v2-dsvm-spare-pool:
-            irrelevant-files: *irrelevant-files
         - octavia-v2-act-stdby-dsvm-scenario:
             irrelevant-files: *irrelevant-files
         - octavia-grenade:
@@ -95,7 +93,6 @@
         - octavia-v2-dsvm-noop-api
         - octavia-v2-dsvm-scenario
         - octavia-v2-dsvm-tls-barbican
-        - octavia-v2-dsvm-spare-pool
         - octavia-v2-act-stdby-dsvm-scenario
         - octavia-grenade
     periodic:
@@ -111,7 +108,6 @@
         - octavia-v2-dsvm-scenario-nftables
         - octavia-v2-dsvm-noop-api-amphora-v2
         - octavia-v2-dsvm-tls-barbican-amphora-v2
-        - octavia-v2-dsvm-spare-pool-amphora-v2
         - octavia-v2-act-stdby-dsvm-scenario-amphora-v2
         - octavia-grenade-amphora-v2
         - octavia-v2-dsvm-cinder-amphora-v2
