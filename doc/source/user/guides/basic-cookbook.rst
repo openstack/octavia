@@ -828,25 +828,28 @@ This is a load balancer solution suitable for UDP-based services.
 
 Health Monitor Best Practices
 =============================
-While it is possible to set up a listener without a health monitor, if a
-back-end pool member goes down, Octavia will not remove the failed server from
-the pool. This can lead to service disruption for web clients. Because of this,
-we recommend always configuring production load balancers to use a health
-monitor.
+An Octavia health monitor is a process that does periodic health checks on each
+back-end member to pre-emptively detect failed members and temporarily
+pull them out of the pool.
 
-The health monitor itself is a process that does periodic health checks on each
-back-end server to pre-emptively detect failed servers and temporarily pull
-them out of the pool. Since effective health monitors depend as much on
-back-end application server configuration as proper load balancer
-configuration, some additional discussion of best practices is warranted here.
+If the health monitor detects a failed member, it removes it from the pool and
+marks the member in ERROR. After you have corrected the member and it is
+functional again, the health monitor automatically changes the status of the
+member from ERROR to ONLINE, and resumes passing traffic to it.
 
-See also: `Octavia API Reference <https://docs.openstack.org/api-ref/load-balancer/>`_
+Always use health monitors in production load balancers. If you do not have a
+health monitor, failed members are not removed from the pool. This can lead to
+service disruption for web clients.
 
+See also the command, `loadbalancer healthmonitor create <https://docs.openstack.org/python-octaviaclient/latest/cli/index.html#loadbalancer-healthmonitor-create>`_.
 
-Health monitor options
-----------------------
-All of the health monitors Octavia supports have the following configurable
-options:
+.. _all-health-monitors:
+
+Configuration arguments for all health monitors
+-----------------------------------------------
+
+All health monitor types for Octavia require the following configurable
+arguments:
 
 * ``delay``: Number of seconds to wait between health checks.
 * ``timeout``: Number of seconds to wait for any given health check to
@@ -858,31 +861,30 @@ options:
 
 .. _http-health-monitors:
 
-HTTP health monitors
---------------------
-In general, the application-side component of HTTP health checks are a part of
-the web application being load balanced. By default, Octavia will probe the "/"
-path on the application server. However, in many applications this is not
-appropriate because the "/" path ends up being a cached page, or causes the
-application server to do more work than is necessary for a basic health check.
+Configuration arguments for HTTP health monitors
+------------------------------------------------
 
-In addition to the above options, HTTP health monitors also have the following
-options:
+In addition to the arguments listed earlier in :ref:`all-health-monitors`, HTTP
+health monitor types *also* require the following arguments, which are set by
+default:
 
-* ``url_path``: Path part of the URL that should be retrieved from the back-end
+* ``url-path``: Path part of the URL that should be retrieved from the back-end
   server. By default this is "/".
-* ``http_method``: HTTP method that should be used to retrieve the
-  ``url_path``. By default this is "GET".
-* ``expected_codes``: List of HTTP status codes that indicate an OK health
+* ``http-method``: HTTP method that should be used to retrieve the
+  ``url-path``. By default this is "GET".
+* ``expected-codes``: List of HTTP status codes that indicate an OK health
   check. By default this is just "200".
+
+For a complete list of configuration arguments for Octavia health monitors, see
+the command, `loadbalancer healthmonitor create <https://docs.openstack.org/python-octaviaclient/latest/cli/index.html#loadbalancer-healthmonitor-create>`_.
 
 Please keep the following best practices in mind when writing the code that
 generates the health check in your web application:
 
-* The health monitor ``url_path`` should not require authentication to load.
-* By default the health monitor ``url_path`` should return a HTTP 200 OK status
+* The health monitor ``url-path`` should not require authentication to load.
+* By default the health monitor ``url-path`` should return a HTTP 200 OK status
   code to indicate a healthy server unless you specify alternate
-  ``expected_codes``.
+  ``expected-codes``.
 * The health check should do enough internal checks to ensure the application
   is healthy and no more. This may mean ensuring database or other external
   storage connections are up and running, server load is acceptable, the site
@@ -896,7 +898,7 @@ generates the health check in your web application:
   code running the health check may reference cached data. For example, you may
   find it useful to run a more extensive health check via cron and store the
   results of this to disk. The code generating the page at the health monitor
-  ``url_path`` would incorporate the results of this cron job in the tests it
+  ``url-path`` would incorporate the results of this cron job in the tests it
   performs.
 * Since Octavia only cares about the HTTP status code returned, and since
   health checks are run so frequently, it may make sense to use the "HEAD" or
