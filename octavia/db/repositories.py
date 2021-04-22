@@ -228,7 +228,6 @@ class Repositories(object):
         self.quotas = QuotasRepository()
         self.flavor = FlavorRepository()
         self.flavor_profile = FlavorProfileRepository()
-        self.spares_pool = SparesPoolRepository()
         self.availability_zone = AvailabilityZoneRepository()
         self.availability_zone_profile = AvailabilityZoneProfileRepository()
 
@@ -1376,34 +1375,6 @@ class AmphoraRepository(BaseRepository):
                 return db_lb.to_data_model()
             return None
 
-    def get_spare_amphora_count(self, session, availability_zone=None,
-                                check_booting_amphora=False):
-        """Get the count of the spare amphora.
-
-        :returns: Number of current spare amphora.
-        """
-        filters = {
-            'load_balancer_id': None
-        }
-        # For jobboard based controller amphora in booting/pending create state
-        # can reach READY state after restart of housekeeping/worker service,
-        # so include amphora in these state to query
-        if check_booting_amphora:
-            status = [consts.AMPHORA_READY,
-                      consts.AMPHORA_BOOTING,
-                      consts.PENDING_CREATE]
-        else:
-            status = [consts.AMPHORA_READY]
-
-        if availability_zone is not None:
-            filters['cached_zone'] = availability_zone
-
-        with session.begin(subtransactions=True):
-            count = session.query(self.model_class).filter_by(
-                **filters).filter(self.model_class.status.in_(status)).count()
-
-        return count
-
     def get_cert_expiring_amphora(self, session):
         """Retrieves an amphora whose cert is close to expiring..
 
@@ -1549,8 +1520,7 @@ class AmphoraBuildReqRepository(BaseRepository):
         """Fetches build request with highest priority and least created_time.
 
         priority 20 = failover (highest)
-        priority 40 = create_loadbalancer
-        priority 60 = sparespool (least)
+        priority 40 = create_loadbalancer (lowest)
         :param session: A Sql Alchemy database session.
         :returns amphora_id corresponding to highest priority and least created
         time in 'WAITING' status.
@@ -2082,20 +2052,6 @@ class FlavorRepository(_GetALLExceptDELETEDIdMixin, BaseRepository):
 
 class FlavorProfileRepository(_GetALLExceptDELETEDIdMixin, BaseRepository):
     model_class = models.FlavorProfile
-
-
-class SparesPoolRepository(BaseRepository):
-    model_class = models.SparesPool
-
-    def get_for_update(self, lock_session):
-        """Queries and locks the SparesPool record.
-
-        This call will query for the SparesPool table record and lock it
-        so that other processes cannot read or write it.
-        :returns: expected_spares_count, updated_at
-        """
-        row = lock_session.query(models.SparesPool).with_for_update().one()
-        return row
 
 
 class AvailabilityZoneRepository(_GetALLExceptDELETEDIdMixin, BaseRepository):

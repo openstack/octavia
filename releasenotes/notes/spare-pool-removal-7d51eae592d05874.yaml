@@ -1,0 +1,6 @@
+---
+upgrade:
+  - |
+    The spare pool feature was removed after being deprecated in the Victoria
+    release. After an upgrade of the controllers, spare amphorae will be
+    automatically deleted by the Octavia health-manager service.

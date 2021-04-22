@@ -121,43 +121,6 @@ class TestControllerWorker(base.TestCase):
         super().setUp()
 
     @mock.patch('octavia.controller.worker.v1.flows.'
-                'amphora_flows.AmphoraFlows.get_create_amphora_flow',
-                return_value='TEST')
-    def test_create_amphora(self,
-                            mock_get_create_amp_flow,
-                            mock_api_get_session,
-                            mock_dyn_log_listener,
-                            mock_taskflow_load,
-                            mock_pool_repo_get,
-                            mock_member_repo_get,
-                            mock_l7rule_repo_get,
-                            mock_l7policy_repo_get,
-                            mock_listener_repo_get,
-                            mock_lb_repo_get,
-                            mock_health_mon_repo_get,
-                            mock_amp_repo_get):
-
-        _flow_mock.reset_mock()
-
-        cw = controller_worker.ControllerWorker()
-        amp = cw.create_amphora()
-
-        (base_taskflow.BaseTaskFlowEngine.taskflow_load.
-            assert_called_once_with(
-                'TEST',
-                store={constants.BUILD_TYPE_PRIORITY:
-                       constants.LB_CREATE_SPARES_POOL_PRIORITY,
-                       constants.FLAVOR: None,
-                       constants.SERVER_GROUP_ID: None,
-                       constants.AVAILABILITY_ZONE: None}))
-
-        _flow_mock.run.assert_called_once_with()
-
-        _flow_mock.storage.fetch.assert_called_once_with('amphora')
-
-        self.assertEqual(AMP_ID, amp)
-
-    @mock.patch('octavia.controller.worker.v1.flows.'
                 'amphora_flows.AmphoraFlows.get_delete_amphora_flow',
                 return_value='TEST')
     def test_delete_amphora(self,
@@ -184,48 +147,6 @@ class TestControllerWorker(base.TestCase):
 
         mock_get_delete_amp_flow.assert_called_once_with(_amphora_mock)
         _flow_mock.run.assert_called_once_with()
-
-    @mock.patch('octavia.db.repositories.AvailabilityZoneRepository.'
-                'get_availability_zone_metadata_dict')
-    @mock.patch('octavia.controller.worker.v1.flows.'
-                'amphora_flows.AmphoraFlows.get_create_amphora_flow',
-                return_value='TEST')
-    def test_create_amphora_with_az(self,
-                                    mock_get_create_amp_flow,
-                                    mock_get_az_metadata,
-                                    mock_api_get_session,
-                                    mock_dyn_log_listener,
-                                    mock_taskflow_load,
-                                    mock_pool_repo_get,
-                                    mock_member_repo_get,
-                                    mock_l7rule_repo_get,
-                                    mock_l7policy_repo_get,
-                                    mock_listener_repo_get,
-                                    mock_lb_repo_get,
-                                    mock_health_mon_repo_get,
-                                    mock_amp_repo_get):
-
-        _flow_mock.reset_mock()
-        az = 'fake_az'
-        az_data = {constants.COMPUTE_ZONE: az}
-        mock_get_az_metadata.return_value = az_data
-        cw = controller_worker.ControllerWorker()
-        amp = cw.create_amphora(availability_zone=az)
-        mock_get_az_metadata.assert_called_once_with(_db_session, az)
-        (base_taskflow.BaseTaskFlowEngine.taskflow_load.
-            assert_called_once_with(
-                'TEST',
-                store={constants.BUILD_TYPE_PRIORITY:
-                       constants.LB_CREATE_SPARES_POOL_PRIORITY,
-                       constants.FLAVOR: None,
-                       constants.SERVER_GROUP_ID: None,
-                       constants.AVAILABILITY_ZONE: az_data}))
-
-        _flow_mock.run.assert_called_once_with()
-
-        _flow_mock.storage.fetch.assert_called_once_with('amphora')
-
-        self.assertEqual(AMP_ID, amp)
 
     @mock.patch('octavia.controller.worker.v1.flows.'
                 'health_monitor_flows.HealthMonitorFlows.'

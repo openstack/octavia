@@ -186,33 +186,6 @@ If you didn't configure image tags and instead configured an image id, you
 will need to update the Octavia configuration file with the new id and restart
 the Octavia services (except octavia-api).
 
-Rotating spare Amphorae
------------------------
-
-.. warning::
-
-    Spares pool support is deprecated as of the Victoria release.
-
-If the spare pool is enabled in Octavia, spare amphorae must be rotated
-first, so a new load balancer will use the new amphora image from a newly
-spawned spare amphora.
-
-To rotate spare amphorae, list the IDs of all amphorae in ``READY`` status:
-
-    .. code-block:: bash
-
-        openstack loadbalancer amphora list -c id -f value --status READY
-
-Then, for each ID, perform the failover on the amphora:
-
-    .. code-block:: bash
-
-        openstack loadbalancer amphora failover <amphora id>
-
-Spare amphorae now use the new amphora image, and those spare amphorae will be
-used when creating a new load balancer or when performing a failover of a load
-balancer.
-
 Generating a List of Load Balancers to Rotate
 ---------------------------------------------
 
@@ -241,32 +214,6 @@ show  <loadbalancer id>`` until the load balancer goes ``ACTIVE`` again.
 
 Best Practices/Optimizations
 ----------------------------
-
-To speed up the failovers, the spare pool can be temporarily increased to
-accommodate the rapid failover of the amphora. In this case after the
-new image has been loaded into glance, shut down or initiate a failover of the
-amphora in the spare pool. They can be found by listing amphorae in ``READY``
-status:
-
-
-    .. code-block:: bash
-
-        openstack loadbalancer amphora list --status READY
-
-
-After you have increased the spare pool size and restarted all Octavia
-services, failovers will be greatly accelerated. To preserve resources,
-restore the old settings and restart the Octavia services. Since Octavia won't
-terminate superfluous spare amphora on its own, they can be left in the system
-and will automatically be used up as new load balancers are created and/or
-load balancers in error state are failed over.
-
-.. warning::
-    If you are using the anti-affinity feature please be aware that it is
-    not compatible with spare pools and you are risking both the ACTIVE and
-    BACKUP amphora being scheduled on the same host. It is recommended to
-    not increase the spare pool during fail overs in this case (and not to use
-    the spare pool at all).
 
 Since a failover puts significant load on the OpenStack installation by
 creating new virtual machines and ports, it should either be done at a very
@@ -392,10 +339,7 @@ Once this is changed Octavia can't read any heartbeats and will assume
 all amphora are in an error state and initiate an immediate failover.
 
 In preparation, read the chapter on :ref:`best_practice` in
-the Failover section. In particular, it is advisable if the throttling
-enhancement (available in Pike) doesn't exist to create a sufficient
-number of spare amphorae to mitigate the stress on the OpenStack installation
-when Octavia starts to replace all amphora immediately.
+the Failover section.
 
 Given the risks involved with changing this key it should not be changed
 during routine maintenance but only when a compromise is strongly suspected.

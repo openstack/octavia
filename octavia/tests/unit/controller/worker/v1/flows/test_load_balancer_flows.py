@@ -275,17 +275,6 @@ class TestLoadBalancerFlows(base.TestCase):
 
         self._test_get_failover_LB_flow_single([amphora_mock])
 
-    def test_get_failover_LB_flow_one_spare_amp_single(self,
-                                                       mock_get_net_driver):
-        amphora_mock = mock.MagicMock()
-        amphora_mock.role = None
-        amphora_mock.lb_network_id = uuidutils.generate_uuid()
-        amphora_mock.compute_id = uuidutils.generate_uuid()
-        amphora_mock.vrrp_port_id = None
-        amphora_mock.vrrp_ip = None
-
-        self._test_get_failover_LB_flow_single([amphora_mock])
-
     def test_get_failover_LB_flow_one_bogus_amp_single(self,
                                                        mock_get_net_driver):
         amphora_mock = mock.MagicMock()
@@ -403,24 +392,6 @@ class TestLoadBalancerFlows(base.TestCase):
             self, mock_get_net_driver):
         amphora_mock = mock.MagicMock()
         amphora_mock.role = 'bogus'
-        amphora_mock.lb_network_id = uuidutils.generate_uuid()
-        amphora_mock.compute_id = uuidutils.generate_uuid()
-        amphora_mock.vrrp_port_id = uuidutils.generate_uuid()
-        amphora_mock.vrrp_ip = '192.0.2.46'
-        amphora2_mock = mock.MagicMock()
-        amphora2_mock.role = constants.ROLE_MASTER
-        amphora2_mock.lb_network_id = uuidutils.generate_uuid()
-        amphora2_mock.compute_id = uuidutils.generate_uuid()
-        amphora2_mock.vrrp_port_id = uuidutils.generate_uuid()
-        amphora2_mock.vrrp_ip = '2001:db8::46'
-
-        self._test_get_failover_LB_flow_no_amps_act_stdby([amphora_mock,
-                                                           amphora2_mock])
-
-    def test_get_failover_LB_flow_two_amps_spare_act_stdby(
-            self, mock_get_net_driver):
-        amphora_mock = mock.MagicMock()
-        amphora_mock.role = None
         amphora_mock.lb_network_id = uuidutils.generate_uuid()
         amphora_mock.compute_id = uuidutils.generate_uuid()
         amphora_mock.vrrp_port_id = uuidutils.generate_uuid()

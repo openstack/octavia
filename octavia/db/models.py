@@ -856,13 +856,6 @@ class ClientAuthenticationMode(base_models.BASE):
     name = sa.Column(sa.String(10), primary_key=True, nullable=False)
 
 
-class SparesPool(base_models.BASE):
-
-    __tablename__ = "spares_pool"
-
-    updated_at = sa.Column(sa.DateTime, primary_key=True, nullable=True)
-
-
 class ListenerCidr(base_models.BASE):
 
     __data_model__ = data_models.ListenerCidr

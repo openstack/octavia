@@ -346,8 +346,6 @@ defaults. Your specific environment may require more than this:
 +-----------------------+-------------------------------+
 | health_manager        | heartbeat_key                 |
 +-----------------------+-------------------------------+
-| house_keeping         | spare_amphora_pool_size       |
-+-----------------------+-------------------------------+
 | keystone_authtoken    | admin_password                |
 +-----------------------+-------------------------------+
 | keystone_authtoken    | admin_tenant_name             |
@@ -372,30 +370,6 @@ defaults. Your specific environment may require more than this:
 You must:
 
 * Create or update ``/etc/octavia/octavia.conf`` appropriately.
-
-
-Spares pool considerations
-^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-.. warning::
-
-    Spares pool support is deprecated as of the Victoria release.
-
-One configuration directive deserves some extra consideration in this document:
-
-Depending on the specifics of your production environment, you may decide to
-run Octavia with a non-empty "spares pool." Since the time it takes to spin up
-a new amphora can be non-trivial in some cloud environments (and the
-reliability of such operations can sometimes be less than ideal), this
-directive instructs Octavia to attempt to maintain a certain number of amphorae
-running in an idle, unconfigured state. These amphora will run base amphora
-health checks and wait for configuration from the Octavia controller. The
-overall effect of this is to greatly reduce the time it takes and increase the
-reliability of deploying a new load balancing service on demand. This comes at
-the cost of having a number of deployed amphorae which consume resources but
-are not actively providing load balancing services, and at the cost of not
-being able to use Nova anti-affinity features for ACTIVE-STANDBY load
-balancer topologies.
 
 
 Initialize Octavia Database

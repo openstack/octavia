@@ -143,8 +143,7 @@ Octavia version 4.0 consists of the following major components:
     failover events if amphorae fail unexpectedly.
 
   * **Housekeeping Manager** - This subcomponent cleans up stale (deleted)
-    database records, manages the spares pool, and manages amphora certificate
-    rotation.
+    database records and manages amphora certificate rotation.
 
   * **Driver Agent** - The driver agent receives status and statistics updates
     from provider drivers.

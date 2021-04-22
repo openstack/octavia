@@ -86,9 +86,9 @@ class TestAmphoraFlows(base.TestCase):
         self.assertEqual(5, len(amp_flow.provides))
         self.assertEqual(4, len(amp_flow.requires))
 
-    def test_get_create_amphora_for_lb_flow(self, mock_get_net_driver):
+    def test_get_amphora_for_lb_flow(self, mock_get_net_driver):
 
-        amp_flow = self.AmpFlow._get_create_amp_for_lb_subflow(
+        amp_flow = self.AmpFlow.get_amphora_for_lb_subflow(
             'SOMEPREFIX', constants.ROLE_STANDALONE)
 
         self.assertIsInstance(amp_flow, flow.Flow)
@@ -111,7 +111,7 @@ class TestAmphoraFlows(base.TestCase):
 
         self.AmpFlow = amphora_flows.AmphoraFlows()
 
-        amp_flow = self.AmpFlow._get_create_amp_for_lb_subflow(
+        amp_flow = self.AmpFlow.get_amphora_for_lb_subflow(
             'SOMEPREFIX', constants.ROLE_STANDALONE)
 
         self.assertIsInstance(amp_flow, flow.Flow)
@@ -135,7 +135,7 @@ class TestAmphoraFlows(base.TestCase):
 
         self.AmpFlow = amphora_flows.AmphoraFlows()
 
-        amp_flow = self.AmpFlow._get_create_amp_for_lb_subflow(
+        amp_flow = self.AmpFlow.get_amphora_for_lb_subflow(
             'SOMEPREFIX', constants.ROLE_MASTER)
 
         self.assertIsInstance(amp_flow, flow.Flow)
@@ -160,7 +160,7 @@ class TestAmphoraFlows(base.TestCase):
         self.conf.config(group="nova", enable_anti_affinity=True)
 
         self.AmpFlow = amphora_flows.AmphoraFlows()
-        amp_flow = self.AmpFlow._get_create_amp_for_lb_subflow(
+        amp_flow = self.AmpFlow.get_amphora_for_lb_subflow(
             'SOMEPREFIX', constants.ROLE_MASTER)
 
         self.assertIsInstance(amp_flow, flow.Flow)
@@ -185,7 +185,7 @@ class TestAmphoraFlows(base.TestCase):
             self, mock_get_net_driver):
         self.AmpFlow = amphora_flows.AmphoraFlows()
 
-        amp_flow = self.AmpFlow._get_create_amp_for_lb_subflow(
+        amp_flow = self.AmpFlow.get_amphora_for_lb_subflow(
             'SOMEPREFIX', constants.ROLE_BACKUP)
 
         self.assertIsInstance(amp_flow, flow.Flow)
@@ -208,7 +208,7 @@ class TestAmphoraFlows(base.TestCase):
             self, mock_get_net_driver):
         self.AmpFlow = amphora_flows.AmphoraFlows()
 
-        amp_flow = self.AmpFlow._get_create_amp_for_lb_subflow(
+        amp_flow = self.AmpFlow.get_amphora_for_lb_subflow(
             'SOMEPREFIX', 'BOGUS_ROLE')
 
         self.assertIsInstance(amp_flow, flow.Flow)
@@ -232,7 +232,7 @@ class TestAmphoraFlows(base.TestCase):
         self.conf.config(group="nova", enable_anti_affinity=True)
 
         self.AmpFlow = amphora_flows.AmphoraFlows()
-        amp_flow = self.AmpFlow._get_create_amp_for_lb_subflow(
+        amp_flow = self.AmpFlow.get_amphora_for_lb_subflow(
             'SOMEPREFIX', constants.ROLE_BACKUP)
 
         self.assertIsInstance(amp_flow, flow.Flow)
@@ -263,26 +263,6 @@ class TestAmphoraFlows(base.TestCase):
 
         self.assertEqual(0, len(amp_flow.provides))
         self.assertEqual(0, len(amp_flow.requires))
-
-    def test_allocate_amp_to_lb_decider(self, mock_get_net_driver):
-        history = mock.MagicMock()
-        values = mock.MagicMock(side_effect=[['TEST'], [None]])
-        history.values = values
-        result = self.AmpFlow._allocate_amp_to_lb_decider(history)
-        self.assertTrue(result)
-        result = self.AmpFlow._allocate_amp_to_lb_decider(history)
-        self.assertFalse(result)
-
-    def test_create_new_amp_for_lb_decider(self, mock_get_net_driver):
-        history = mock.MagicMock()
-        values = mock.MagicMock(side_effect=[[], [None], ['TEST']])
-        history.values = values
-        result = self.AmpFlow._create_new_amp_for_lb_decider(history)
-        self.assertTrue(result)
-        result = self.AmpFlow._create_new_amp_for_lb_decider(history)
-        self.assertTrue(result)
-        result = self.AmpFlow._create_new_amp_for_lb_decider(history)
-        self.assertFalse(result)
 
     def test_get_failover_flow_act_stdby(self, mock_get_net_driver):
         failed_amphora = data_models.Amphora(
@@ -368,20 +348,6 @@ class TestAmphoraFlows(base.TestCase):
         self.assertEqual(1, len(amp_flow.requires))
         self.assertEqual(1, len(amp_flow.provides))
 
-    def test_get_failover_flow_spare(self, mock_get_net_driver):
-
-        amp_flow = self.AmpFlow.get_failover_amphora_flow(
-            self.amp4.to_dict(), 0)
-
-        self.assertIsInstance(amp_flow, flow.Flow)
-
-        self.assertIn(constants.LOADBALANCER_ID, amp_flow.requires)
-
-        self.assertIn(constants.VIP_SG_ID, amp_flow.provides)
-
-        self.assertEqual(1, len(amp_flow.requires))
-        self.assertEqual(1, len(amp_flow.provides))
-
     def test_cert_rotate_amphora_flow(self, mock_get_net_driver):
         self.AmpFlow = amphora_flows.AmphoraFlows()
 
@@ -424,54 +390,6 @@ class TestAmphoraFlows(base.TestCase):
         self.assertEqual(2, len(vrrp_subflow.provides))
         self.assertEqual(2, len(vrrp_subflow.requires))
 
-    def test_get_post_map_lb_subflow(self, mock_get_net_driver):
-
-        self.AmpFlow = amphora_flows.AmphoraFlows()
-
-        amp_flow = self.AmpFlow._get_post_map_lb_subflow(
-            'SOMEPREFIX', constants.ROLE_MASTER)
-
-        self.assertIsInstance(amp_flow, flow.Flow)
-
-        self.assertIn(constants.FLAVOR, amp_flow.requires)
-        self.assertIn(constants.AMPHORA, amp_flow.requires)
-
-        self.assertEqual(0, len(amp_flow.provides))
-        self.assertEqual(2, len(amp_flow.requires))
-
-        amp_flow = self.AmpFlow._get_post_map_lb_subflow(
-            'SOMEPREFIX', constants.ROLE_BACKUP)
-
-        self.assertIsInstance(amp_flow, flow.Flow)
-
-        self.assertIn(constants.FLAVOR, amp_flow.requires)
-        self.assertIn(constants.AMPHORA, amp_flow.requires)
-
-        self.assertEqual(0, len(amp_flow.provides))
-        self.assertEqual(2, len(amp_flow.requires))
-
-        amp_flow = self.AmpFlow._get_post_map_lb_subflow(
-            'SOMEPREFIX', constants.ROLE_STANDALONE)
-
-        self.assertIsInstance(amp_flow, flow.Flow)
-
-        self.assertIn(constants.FLAVOR, amp_flow.requires)
-        self.assertIn(constants.AMPHORA, amp_flow.requires)
-
-        self.assertEqual(0, len(amp_flow.provides))
-        self.assertEqual(2, len(amp_flow.requires))
-
-        amp_flow = self.AmpFlow._get_post_map_lb_subflow(
-            'SOMEPREFIX', 'BOGUS_ROLE')
-
-        self.assertIsInstance(amp_flow, flow.Flow)
-
-        self.assertIn(constants.FLAVOR, amp_flow.requires)
-        self.assertIn(constants.AMPHORA, amp_flow.requires)
-
-        self.assertEqual(0, len(amp_flow.provides))
-        self.assertEqual(2, len(amp_flow.requires))
-
     def test_update_amphora_config_flow(self, mock_get_net_driver):
 
         amp_flow = self.AmpFlow.update_amphora_config_flow()
@@ -493,20 +411,3 @@ class TestAmphoraFlows(base.TestCase):
 
         self.assertEqual(1, len(amp_flow.requires))
         self.assertEqual(0, len(amp_flow.provides))
-
-    def test__finalize_flow(self, mock_get_net_driver):
-        for role in [constants.ROLE_STANDALONE,
-                     constants.ROLE_BACKUP,
-                     constants.ROLE_MASTER]:
-
-            amp_flow = self.AmpFlow._finalize_flow('test',
-                                                   role)
-
-            self.assertIsInstance(amp_flow, flow.Flow)
-
-            self.assertIn(constants.AMPHORA, amp_flow.requires)
-            self.assertIn(constants.LOADBALANCER_ID, amp_flow.requires)
-            self.assertIn(constants.AMPHORA, amp_flow.provides)
-
-            self.assertEqual(2, len(amp_flow.requires))
-            self.assertEqual(1, len(amp_flow.provides))

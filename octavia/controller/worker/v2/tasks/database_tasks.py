@@ -29,7 +29,6 @@ from octavia.common import constants
 from octavia.common import data_models
 import octavia.common.tls_utils.cert_parser as cert_parser
 from octavia.common import utils
-from octavia.common import validate
 from octavia.controller.worker import task_utils as task_utilities
 from octavia.db import api as db_apis
 from octavia.db import repositories as repo
@@ -543,59 +542,6 @@ class AssociateFailoverAmphoraWithLBID(BaseDatabaseTask):
             LOG.error("Failed to update amphora %(amp)s "
                       "load balancer id to None due to: "
                       "%(except)s", {'amp': amphora_id, 'except': str(e)})
-
-
-class MapLoadbalancerToAmphora(BaseDatabaseTask):
-    """Maps and assigns a load balancer to an amphora in the database."""
-
-    def execute(self, loadbalancer_id, server_group_id=None, flavor=None,
-                availability_zone=None):
-        """Allocates an Amphora for the load balancer in the database.
-
-        :param loadbalancer_id: The load balancer id to map to an amphora
-        :returns: Amphora ID if one was allocated, None if it was
-                  unable to allocate an Amphora
-        """
-
-        LOG.debug("Allocating an Amphora for load balancer with id %s",
-                  loadbalancer_id)
-
-        if server_group_id is not None:
-            LOG.debug("Load balancer is using anti-affinity. Skipping spares "
-                      "pool allocation.")
-            return None
-
-        # Validate the flavor is spares compatible
-        if not validate.is_flavor_spares_compatible(flavor):
-            LOG.debug("Load balancer has a flavor that is not compatible with "
-                      "using spares pool amphora. Skipping spares pool "
-                      "allocation.")
-            return None
-
-        if availability_zone:
-            amp_az = availability_zone.get(constants.COMPUTE_ZONE)
-        else:
-            amp_az = CONF.nova.availability_zone
-
-        amp = self.amphora_repo.allocate_and_associate(
-            db_apis.get_session(),
-            loadbalancer_id,
-            amp_az)
-        if amp is None:
-            LOG.debug("No Amphora available for load balancer with id %s",
-                      loadbalancer_id)
-            return None
-
-        LOG.debug("Allocated Amphora with id %(amp)s for load balancer "
-                  "with id %(lb)s", {'amp': amp.id, 'lb': loadbalancer_id})
-        # TODO(ataraday): return AMP here so refactored spit of create amp for
-        # loadbalancer flow can executed properly
-        return amp.to_dict()
-
-    def revert(self, result, loadbalancer_id, *args, **kwargs):
-        LOG.warning("Reverting Amphora allocation for the load "
-                    "balancer %s in the database.", loadbalancer_id)
-        self.task_utils.mark_loadbalancer_prov_status_error(loadbalancer_id)
 
 
 class _MarkAmphoraRoleAndPriorityInDB(BaseDatabaseTask):

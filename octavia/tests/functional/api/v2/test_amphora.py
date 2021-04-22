@@ -230,25 +230,6 @@ class TestAmphora(base.BaseAPITest):
         payload = {constants.AMPHORA_ID: self.amp_id}
         mock_cast.assert_called_with({}, 'failover_amphora', **payload)
 
-    @mock.patch('oslo_messaging.RPCClient.cast')
-    def test_failover_spare(self, mock_cast):
-        amp_args = {
-            'compute_id': uuidutils.generate_uuid(),
-            'status': constants.AMPHORA_READY,
-            'lb_network_ip': '192.168.1.2',
-            'cert_expiration': datetime.datetime.now(),
-            'cert_busy': False,
-            'cached_zone': 'zone1',
-            'created_at': datetime.datetime.now(),
-            'updated_at': datetime.datetime.now(),
-            'image_id': uuidutils.generate_uuid(),
-        }
-        amp = self.amphora_repo.create(self.session, **amp_args)
-        self.put(self.AMPHORA_FAILOVER_PATH.format(
-            amphora_id=amp.id), body={}, status=202)
-        payload = {constants.AMPHORA_ID: amp.id}
-        mock_cast.assert_called_once_with({}, 'failover_amphora', **payload)
-
     def test_failover_deleted(self):
         new_amp = self._create_additional_amp()
         self.amphora_repo.update(self.session, new_amp.id,
@@ -628,26 +609,6 @@ class TestAmphora(base.BaseAPITest):
         mock_cast.side_effect = exceptions.OctaviaException('boom')
         self.put(self.AMPHORA_CONFIG_PATH.format(
             amphora_id=self.amp_id), body={}, status=500)
-
-    @mock.patch('oslo_messaging.RPCClient.cast')
-    def test_config_spare_amp(self, mock_cast):
-        amp_args = {
-            'compute_id': uuidutils.generate_uuid(),
-            'status': constants.AMPHORA_READY,
-            'lb_network_ip': '192.168.1.2',
-            'cert_expiration': datetime.datetime.now(),
-            'cert_busy': False,
-            'cached_zone': 'zone1',
-            'created_at': datetime.datetime.now(),
-            'updated_at': datetime.datetime.now(),
-            'image_id': uuidutils.generate_uuid(),
-        }
-        amp = self.amphora_repo.create(self.session, **amp_args)
-        self.put(self.AMPHORA_CONFIG_PATH.format(
-            amphora_id=amp.id), body={}, status=202)
-        payload = {constants.AMPHORA_ID: amp.id}
-        mock_cast.assert_called_with({}, 'update_amphora_agent_config',
-                                     **payload)
 
     @mock.patch('oslo_messaging.RPCClient.cast')
     def test_config_authorized(self, mock_cast):

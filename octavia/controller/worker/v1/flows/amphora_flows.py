@@ -16,7 +16,6 @@
 
 from oslo_config import cfg
 from oslo_log import log as logging
-from taskflow.patterns import graph_flow
 from taskflow.patterns import linear_flow
 from taskflow.patterns import unordered_flow
 
@@ -108,7 +107,7 @@ class AmphoraFlows(object):
 
         return post_map_amp_to_lb
 
-    def _get_create_amp_for_lb_subflow(self, prefix, role, is_spare=False):
+    def _get_create_amp_for_lb_subflow(self, prefix, role):
         """Create a new amphora for lb."""
 
         sf_name = prefix + '-' + constants.CREATE_AMP_FOR_LB_SUBFLOW
@@ -156,16 +155,10 @@ class AmphoraFlows(object):
         create_amp_for_lb_subflow.add(amphora_driver_tasks.AmphoraFinalize(
             name=sf_name + '-' + constants.AMPHORA_FINALIZE,
             requires=constants.AMPHORA))
-        if is_spare:
-            create_amp_for_lb_subflow.add(
-                database_tasks.MarkAmphoraReadyInDB(
-                    name=sf_name + '-' + constants.MARK_AMPHORA_READY_INDB,
-                    requires=constants.AMPHORA))
-        else:
-            create_amp_for_lb_subflow.add(
-                database_tasks.MarkAmphoraAllocatedInDB(
-                    name=sf_name + '-' + constants.MARK_AMPHORA_ALLOCATED_INDB,
-                    requires=(constants.AMPHORA, constants.LOADBALANCER_ID)))
+        create_amp_for_lb_subflow.add(
+            database_tasks.MarkAmphoraAllocatedInDB(
+                name=sf_name + '-' + constants.MARK_AMPHORA_ALLOCATED_INDB,
+                requires=(constants.AMPHORA, constants.LOADBALANCER_ID)))
         create_amp_for_lb_subflow.add(database_tasks.ReloadAmphora(
             name=sf_name + '-' + constants.RELOAD_AMPHORA,
             requires=constants.AMPHORA_ID,
@@ -187,68 +180,9 @@ class AmphoraFlows(object):
 
         return create_amp_for_lb_subflow
 
-    def _allocate_amp_to_lb_decider(self, history):
-        """decides if the lb shall be mapped to a spare amphora
-
-        :return: True if a spare amphora exists in DB
-        """
-
-        return list(history.values())[0] is not None
-
-    def _create_new_amp_for_lb_decider(self, history):
-        """decides if a new amphora must be created for the lb
-
-        :return: True if there is no spare amphora
-        """
-
-        return list(history.values())[0] is None
-
     def get_amphora_for_lb_subflow(
-            self, prefix, role=constants.ROLE_STANDALONE, is_spare=False):
-        """Tries to allocate a spare amphora to a loadbalancer if none
-
-        exists, create a new amphora.
-        """
-
-        sf_name = prefix + '-' + constants.GET_AMPHORA_FOR_LB_SUBFLOW
-
-        # Don't replace a spare with another spare, just build a fresh one.
-        if is_spare:
-            get_spare_amp_flow = linear_flow.Flow(sf_name)
-
-            get_spare_amp_flow.add(self._get_create_amp_for_lb_subflow(
-                prefix, role, is_spare=is_spare))
-            return get_spare_amp_flow
-
-        # We need a graph flow here for a conditional flow
-        amp_for_lb_flow = graph_flow.Flow(sf_name)
-
-        # Setup the task that maps an amphora to a load balancer
-        allocate_and_associate_amp = database_tasks.MapLoadbalancerToAmphora(
-            name=sf_name + '-' + constants.MAP_LOADBALANCER_TO_AMPHORA,
-            requires=(constants.LOADBALANCER_ID, constants.FLAVOR,
-                      constants.AVAILABILITY_ZONE),
-            provides=constants.AMPHORA_ID)
-
-        # Define a subflow for if we successfully map an amphora
-        map_lb_to_amp = self._get_post_map_lb_subflow(prefix, role)
-        # Define a subflow for if we can't map an amphora
-        create_amp = self._get_create_amp_for_lb_subflow(prefix, role)
-
-        # Add them to the graph flow
-        amp_for_lb_flow.add(allocate_and_associate_amp,
-                            map_lb_to_amp, create_amp)
-
-        # Setup the decider for the path if we can map an amphora
-        amp_for_lb_flow.link(allocate_and_associate_amp, map_lb_to_amp,
-                             decider=self._allocate_amp_to_lb_decider,
-                             decider_depth='flow')
-        # Setup the decider for the path if we can't map an amphora
-        amp_for_lb_flow.link(allocate_and_associate_amp, create_amp,
-                             decider=self._create_new_amp_for_lb_decider,
-                             decider_depth='flow')
-
-        return amp_for_lb_flow
+            self, prefix, role=constants.ROLE_STANDALONE):
+        return self._get_create_amp_for_lb_subflow(prefix, role)
 
     def get_delete_amphora_flow(
             self, amphora,
@@ -433,7 +367,7 @@ class AmphoraFlows(object):
 
     def get_amphora_for_lb_failover_subflow(
             self, prefix, role=constants.ROLE_STANDALONE,
-            failed_amp_vrrp_port_id=None, is_vrrp_ipv6=False, is_spare=False):
+            failed_amp_vrrp_port_id=None, is_vrrp_ipv6=False):
         """Creates a new amphora that will be used in a failover flow.
 
         :requires: loadbalancer_id, flavor, vip, vip_sg_id, loadbalancer
@@ -442,7 +376,6 @@ class AmphoraFlows(object):
         :param role: The role this amphora will have in the topology.
         :param failed_amp_vrrp_port_id: The base port ID of the failed amp.
         :param is_vrrp_ipv6: True if the base port IP is IPv6.
-        :param is_spare: True if we are getting a spare amphroa.
         :return: A Taskflow sub-flow that will create the amphora.
         """
 
@@ -453,11 +386,7 @@ class AmphoraFlows(object):
         # Try to allocate or boot an amphora instance (unconfigured)
         amp_for_failover_flow.add(self.get_amphora_for_lb_subflow(
             prefix=prefix + '-' + constants.FAILOVER_LOADBALANCER_FLOW,
-            role=role, is_spare=is_spare))
-
-        # If we are getting a spare amphora, this is all we need to do.
-        if is_spare:
-            return amp_for_failover_flow
+            role=role))
 
         # Create the VIP base (aka VRRP) port for the amphora.
         amp_for_failover_flow.add(network_tasks.CreateVIPBasePort(
@@ -547,8 +476,6 @@ class AmphoraFlows(object):
             amp_role = 'master_or_backup'
         elif failed_amphora.role == constants.ROLE_STANDALONE:
             amp_role = 'standalone'
-        elif failed_amphora.role is None:
-            amp_role = 'spare'
         else:
             amp_role = 'undefined'
         LOG.info("Performing failover for amphora: %s",
@@ -570,10 +497,8 @@ class AmphoraFlows(object):
             requires=constants.LOADBALANCER_ID,
             provides=constants.VIP_SG_ID))
 
-        is_spare = True
         is_vrrp_ipv6 = False
         if failed_amphora.load_balancer_id:
-            is_spare = False
             if failed_amphora.vrrp_ip:
                 is_vrrp_ipv6 = utils.is_ipv6(failed_amphora.vrrp_ip)
 
@@ -590,8 +515,7 @@ class AmphoraFlows(object):
                 prefix=constants.FAILOVER_LOADBALANCER_FLOW,
                 role=failed_amphora.role,
                 failed_amp_vrrp_port_id=failed_amphora.vrrp_port_id,
-                is_vrrp_ipv6=is_vrrp_ipv6,
-                is_spare=is_spare))
+                is_vrrp_ipv6=is_vrrp_ipv6))
 
         failover_amp_flow.add(
             self.get_delete_amphora_flow(
@@ -605,7 +529,7 @@ class AmphoraFlows(object):
                 inject={constants.AMPHORA: failed_amphora}))
 
         if not failed_amphora.load_balancer_id:
-            # This is an unallocated amphora (spares pool), we are done.
+            # This is an unallocated amphora (bogus), we are done.
             return failover_amp_flow
 
         failover_amp_flow.add(database_tasks.GetLoadBalancer(
