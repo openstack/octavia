@@ -298,6 +298,7 @@ function octavia_configure {
     iniset $OCTAVIA_CONF database connection "mysql+pymysql://${DATABASE_USER}:${DATABASE_PASSWORD}@${DATABASE_HOST}:3306/octavia"
     if [[ ${OCTAVIA_ENABLE_AMPHORAV2_JOBBOARD} == True ]]; then
         iniset $OCTAVIA_CONF task_flow persistence_connection "mysql+pymysql://${DATABASE_USER}:${DATABASE_PASSWORD}@${DATABASE_HOST}:3306/octavia_persistence"
+        iniset $OCTAVIA_CONF task_flow jobboard_enabled True
     fi
     # Configure keystone auth_token for all users
     configure_keystone_authtoken_middleware $OCTAVIA_CONF octavia
