@@ -1,0 +1,5 @@
+---
+fixes:
+  - |
+    Fix an issue with amphorav2 driver, a failover of an amphora created an
+    amphora with an ERROR status.
