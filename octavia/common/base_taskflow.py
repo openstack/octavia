@@ -166,7 +166,10 @@ class TaskFlowServiceController(object):
                         'redis_taskflow_driver'):
                     conductor = RedisDynamicLoggingConductor(
                         name, board, persistence=persistence,
-                        engine=CONF.task_flow.engine)
+                        engine=CONF.task_flow.engine,
+                        engine_options={
+                            'max_workers': CONF.task_flow.max_workers
+                        })
                     board.claim = functools.partial(
                         board.claim,
                         expiry=CONF.task_flow.jobboard_expiration_time)
