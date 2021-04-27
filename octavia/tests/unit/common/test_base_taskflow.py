@@ -75,6 +75,7 @@ class TestTaskFlowServiceController(base.TestCase):
     def setUp(self):
         self.conf = oslo_fixture.Config(cfg.CONF)
         self.conf.config(group="task_flow", engine='parallel')
+        self.conf.config(group="task_flow", max_workers=MAX_WORKERS)
         self.driver_mock = mock.MagicMock()
         self.persistence_mock = mock.MagicMock()
         self.jobboard_mock = mock.MagicMock()
@@ -140,7 +141,10 @@ class TestTaskFlowServiceController(base.TestCase):
         rediscond.assert_called_once_with(
             "test", self.jobboard_mock.__enter__(),
             persistence=self.persistence_mock.__enter__(),
-            engine='parallel')
+            engine='parallel',
+            engine_options={
+                'max_workers': MAX_WORKERS,
+            })
         self.conf.config(group="task_flow",
                          jobboard_backend_driver='zookeeper_taskflow_driver')
 
