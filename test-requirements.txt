@@ -1,14 +1,14 @@
 # The order of packages is significant, because pip processes them in the order
 # of appearance. Changing the order has an impact on the overall integration
 # process, which may cause wedges in the gate later.
-hacking>=3.0 # Apache-2.0
+hacking>=3.0,<4.1.0 # Apache-2.0
 requests-mock>=1.2.0 # Apache-2.0
 coverage!=4.4,>=4.0 # Apache-2.0
 fixtures>=3.0.0 # Apache-2.0/BSD
 flake8-import-order==0.12 # LGPLv3
 python-subunit>=1.0.0 # Apache-2.0/BSD
 oslotest>=3.2.0 # Apache-2.0
-pylint>=2.5.3 # GPLv2
+pylint>=2.5.3,<2.8 # GPLv2
 testrepository>=0.0.18 # Apache-2.0/BSD
 testtools>=2.2.0 # MIT
 testresources>=2.0.0 # Apache-2.0/BSD
