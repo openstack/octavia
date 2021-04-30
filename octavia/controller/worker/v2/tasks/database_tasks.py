@@ -2873,14 +2873,10 @@ class CountPoolChildrenForQuota(BaseDatabaseTask):
         :returns: None
         """
         session = db_apis.get_session()
-        db_pool = self.pool_repo.get(session, id=pool_id)
-        LOG.debug("Counting pool children for "
-                  "project: %s ", db_pool.project_id)
+        hm_count, member_count = (
+            self.pool_repo.get_children_count(session, pool_id))
 
-        health_mon_count = 1 if db_pool.health_monitor else 0
-        member_count = len(db_pool.members)
-
-        return {'HM': health_mon_count, 'member': member_count}
+        return {'HM': hm_count, 'member': member_count}
 
 
 class DecrementL7policyQuota(BaseDatabaseTask):
