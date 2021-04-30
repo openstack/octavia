@@ -948,6 +948,16 @@ class PoolRepository(BaseRepository):
             session, pagination_helper=pagination_helper,
             query_options=query_options, **filters)
 
+    def get_children_count(self, session, pool_id):
+        hm_count = session.query(models.HealthMonitor).filter(
+            models.HealthMonitor.pool_id == pool_id,
+            models.HealthMonitor.provisioning_status != consts.DELETED).count()
+        member_count = session.query(models.Member).filter(
+            models.Member.pool_id == pool_id,
+            models.Member.provisioning_status != consts.DELETED).count()
+
+        return (hm_count, member_count)
+
 
 class MemberRepository(BaseRepository):
     model_class = models.Member
