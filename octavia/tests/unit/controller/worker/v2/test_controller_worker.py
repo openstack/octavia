@@ -1052,6 +1052,7 @@ class TestControllerWorker(base.TestCase):
             constants.L7POLICY_ID: L7POLICY_ID,
             constants.LISTENER_ID: LISTENER_ID
         }
+        mock_l7policy_repo_get.side_effect = [None, _l7policy_mock]
         cw.create_l7policy(l7policy_mock)
 
         (cw.services_controller.run_poster.
@@ -1140,7 +1141,7 @@ class TestControllerWorker(base.TestCase):
                            mock_amp_repo_get):
 
         _flow_mock.reset_mock()
-        mock_l7policy_repo_get.return_value = _l7policy_mock
+        mock_l7rule_repo_get.side_effect = [None, _l7rule_mock]
 
         cw = controller_worker.ControllerWorker()
 
