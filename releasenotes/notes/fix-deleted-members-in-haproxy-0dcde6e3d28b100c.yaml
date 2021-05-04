@@ -1,0 +1,6 @@
+---
+fixes:
+  - |
+    Fixed an issue when building the HAProxy configuration files, some DELETED
+    members could have been included in the server list after adding new
+    members.

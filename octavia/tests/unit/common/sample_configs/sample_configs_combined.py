@@ -601,6 +601,7 @@ def sample_listener_tuple(proto=None, monitor=True, alloc_default_pool=True,
                           pool_ca_cert=False, pool_crl=False,
                           tls_enabled=False, hm_host_http_check=False,
                           id='sample_listener_id_1', recursive_nest=False,
+                          provisioning_status=constants.ACTIVE,
                           sample_default_pool=1,
                           pool_enabled=True):
     proto = 'HTTP' if proto is None else proto
@@ -619,7 +620,7 @@ def sample_listener_tuple(proto=None, monitor=True, alloc_default_pool=True,
                     'timeout_member_connect, timeout_member_data, '
                     'timeout_tcp_inspect, client_ca_tls_certificate_id, '
                     'client_ca_tls_certificate, client_authentication, '
-                    'client_crl_container_id')
+                    'client_crl_container_id, provisioning_status')
     if l7:
         pools = [
             sample_pool_tuple(
@@ -734,6 +735,7 @@ def sample_listener_tuple(proto=None, monitor=True, alloc_default_pool=True,
             constants.CLIENT_AUTH_MANDATORY if client_ca_cert else
             constants.CLIENT_AUTH_NONE),
         client_crl_container_id='cont_id_crl' if client_crl_cert else '',
+        provisioning_status=provisioning_status,
     )
     if recursive_nest:
         listener.load_balancer.listeners.append(listener)
@@ -828,17 +830,19 @@ def sample_pool_tuple(listener_id=None, proto=None, monitor=True,
         tls_certificate_id='pool_cont_1' if pool_cert else None,
         ca_tls_certificate_id='pool_ca_1' if pool_ca_cert else None,
         crl_container_id='pool_crl' if pool_crl else None,
-        tls_enabled=tls_enabled, provisioning_status=constants.ACTIVE)
+        tls_enabled=tls_enabled,
+        provisioning_status=provisioning_status)
 
 
 def sample_member_tuple(id, ip, enabled=True, operating_status='ACTIVE',
+                        provisioning_status=constants.ACTIVE,
                         monitor_ip_port=False, backup=False):
     in_member = collections.namedtuple('member',
                                        'id, ip_address, protocol_port, '
                                        'weight, subnet_id, '
                                        'enabled, operating_status, '
                                        'monitor_address, monitor_port, '
-                                       'backup')
+                                       'backup, provisioning_status')
     monitor_address = '192.168.1.1' if monitor_ip_port else None
     monitor_port = 9000 if monitor_ip_port else None
     return in_member(
@@ -851,7 +855,7 @@ def sample_member_tuple(id, ip, enabled=True, operating_status='ACTIVE',
         operating_status=operating_status,
         monitor_address=monitor_address,
         monitor_port=monitor_port,
-        backup=backup)
+        backup=backup, provisioning_status=provisioning_status)
 
 
 def sample_session_persistence_tuple(persistence_type=None,
@@ -870,12 +874,14 @@ def sample_session_persistence_tuple(persistence_type=None,
 
 
 def sample_health_monitor_tuple(proto='HTTP', sample_hm=1,
-                                host_http_check=False):
+                                host_http_check=False,
+                                provisioning_status=constants.ACTIVE):
     proto = 'HTTP' if proto is 'TERMINATED_HTTPS' else proto
     monitor = collections.namedtuple(
         'monitor', 'id, type, delay, timeout, fall_threshold, rise_threshold,'
                    'http_method, url_path, expected_codes, enabled, '
-                   'check_script_path, http_version, domain_name')
+                   'check_script_path, http_version, domain_name, '
+                   'provisioning_status')
 
     if sample_hm == 1:
         id = 'sample_monitor_id_1'
@@ -893,7 +899,8 @@ def sample_health_monitor_tuple(proto='HTTP', sample_hm=1,
         'http_method': 'GET',
         'url_path': url_path,
         'expected_codes': '418',
-        'enabled': True
+        'enabled': True,
+        'provisioning_status': provisioning_status,
     }
     if host_http_check:
         kwargs.update({'http_version': 1.1, 'domain_name': 'testlab.com'})
@@ -912,12 +919,14 @@ def sample_l7policy_tuple(id,
                           redirect_pool=None, redirect_url=None,
                           redirect_prefix=None,
                           enabled=True, redirect_http_code=302,
-                          sample_policy=1):
+                          sample_policy=1,
+                          provisioning_status=constants.ACTIVE):
     in_l7policy = collections.namedtuple('l7policy',
                                          'id, action, redirect_pool, '
                                          'redirect_url, redirect_prefix, '
                                          'l7rules, enabled,'
-                                         'redirect_http_code')
+                                         'redirect_http_code,'
+                                         'provisioning_status')
     l7rules = []
     if sample_policy == 1:
         action = constants.L7POLICY_ACTION_REDIRECT_TO_POOL
@@ -965,7 +974,8 @@ def sample_l7policy_tuple(id,
         redirect_http_code=redirect_http_code
         if (action in [constants.L7POLICY_ACTION_REDIRECT_TO_URL,
                        constants.L7POLICY_ACTION_REDIRECT_PREFIX] and
-            redirect_http_code) else None)
+            redirect_http_code) else None,
+        provisioning_status=provisioning_status)
 
 
 def sample_l7rule_tuple(id,
@@ -975,10 +985,12 @@ def sample_l7rule_tuple(id,
                         value='/api',
                         invert=False,
                         enabled=True,
-                        sample_rule=1):
+                        sample_rule=1,
+                        provisioning_status=constants.ACTIVE):
     in_l7rule = collections.namedtuple('l7rule',
                                        'id, type, compare_type, '
-                                       'key, value, invert, enabled')
+                                       'key, value, invert, enabled,'
+                                       'provisioning_status')
     if sample_rule == 2:
         type = constants.L7RULE_TYPE_HEADER
         compare_type = constants.L7RULE_COMPARE_TYPE_CONTAINS
@@ -1049,7 +1061,8 @@ def sample_l7rule_tuple(id,
         key=key,
         value=value,
         invert=invert,
-        enabled=enabled)
+        enabled=enabled,
+        provisioning_status=provisioning_status)
 
 
 def sample_base_expected_config(frontend=None, logging=None, backend=None,
