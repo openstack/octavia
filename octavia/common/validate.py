@@ -429,14 +429,6 @@ def ip_not_reserved(ip_address):
                                        option='member address')
 
 
-def is_flavor_spares_compatible(flavor):
-    if flavor:
-        # If a compute flavor is specified, the flavor is not spares compatible
-        if flavor.get(constants.COMPUTE_FLAVOR, None):
-            return False
-    return True
-
-
 def check_cipher_prohibit_list(cipherstring):
     ciphers = cipherstring.split(':')
     prohibit_list = CONF.api_settings.tls_cipher_prohibit_list.split(':')

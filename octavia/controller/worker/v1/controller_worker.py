@@ -85,34 +85,6 @@ class ControllerWorker(base_taskflow.BaseTaskFlowEngine):
 
         return repo.get(db_apis.get_session(), id=id)
 
-    def create_amphora(self, availability_zone=None):
-        """Creates an Amphora.
-
-        This is used to create spare amphora.
-
-        :returns: amphora_id
-        """
-        try:
-            store = {constants.BUILD_TYPE_PRIORITY:
-                     constants.LB_CREATE_SPARES_POOL_PRIORITY,
-                     constants.FLAVOR: None,
-                     constants.SERVER_GROUP_ID: None,
-                     constants.AVAILABILITY_ZONE: None}
-            if availability_zone:
-                store[constants.AVAILABILITY_ZONE] = (
-                    self._az_repo.get_availability_zone_metadata_dict(
-                        db_apis.get_session(), availability_zone))
-            create_amp_tf = self.taskflow_load(
-                self._amphora_flows.get_create_amphora_flow(),
-                store=store)
-            with tf_logging.DynamicLoggingListener(create_amp_tf, log=LOG):
-                create_amp_tf.run()
-
-            return create_amp_tf.storage.fetch('amphora')
-        except Exception as e:
-            LOG.error('Failed to create an amphora due to: %s', str(e))
-        return None
-
     def delete_amphora(self, amphora_id):
         """Deletes an existing Amphora.
 

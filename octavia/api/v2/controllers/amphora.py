@@ -144,18 +144,13 @@ class FailoverController(base.BaseController):
         db_amp = self._get_db_amp(context.session, self.amp_id,
                                   show_deleted=False)
 
-        # Check to see if the amphora is a spare (not associated with an LB)
-        if db_amp.load_balancer:
-            self._auth_validate_action(
-                context, db_amp.load_balancer.project_id,
-                constants.RBAC_PUT_FAILOVER)
+        self._auth_validate_action(
+            context, db_amp.load_balancer.project_id,
+            constants.RBAC_PUT_FAILOVER)
 
-            self.repositories.load_balancer.test_and_set_provisioning_status(
-                context.session, db_amp.load_balancer_id,
-                status=constants.PENDING_UPDATE, raise_exception=True)
-        else:
-            self._auth_validate_action(
-                context, context.project_id, constants.RBAC_PUT_FAILOVER)
+        self.repositories.load_balancer.test_and_set_provisioning_status(
+            context.session, db_amp.load_balancer_id,
+            status=constants.PENDING_UPDATE, raise_exception=True)
 
         try:
             LOG.info("Sending failover request for amphora %s to the queue",
@@ -196,14 +191,9 @@ class AmphoraUpdateController(base.BaseController):
         db_amp = self._get_db_amp(context.session, self.amp_id,
                                   show_deleted=False)
 
-        # Check to see if the amphora is a spare (not associated with an LB)
-        if db_amp.load_balancer:
-            self._auth_validate_action(
-                context, db_amp.load_balancer.project_id,
-                constants.RBAC_PUT_CONFIG)
-        else:
-            self._auth_validate_action(
-                context, context.project_id, constants.RBAC_PUT_CONFIG)
+        self._auth_validate_action(
+            context, db_amp.load_balancer.project_id,
+            constants.RBAC_PUT_CONFIG)
 
         try:
             LOG.info("Sending amphora agent update request for amphora %s to "

@@ -120,9 +120,8 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
                            'listener_stats', 'amphora', 'sni',
                            'amphorahealth', 'vrrpgroup', 'l7rule', 'l7policy',
                            'amp_build_slots', 'amp_build_req', 'quotas',
-                           'flavor', 'flavor_profile', 'spares_pool',
-                           'listener_cidr', 'availability_zone',
-                           'availability_zone_profile')
+                           'flavor', 'flavor_profile', 'listener_cidr',
+                           'availability_zone', 'availability_zone_profile')
         for repo_attr in repo_attr_names:
             single_repo = getattr(self.repos, repo_attr, None)
             message = ("Class Repositories should have %s instance"
@@ -3992,34 +3991,6 @@ class AmphoraRepositoryTest(BaseRepositoryTest):
             self.session, exp_age=exp_age)
         self.assertIn(amphora1.id, expiring_ids)
         self.assertNotIn(amphora2.id, expiring_ids)
-
-    def test_get_spare_amphora_count(self):
-        count = self.amphora_repo.get_spare_amphora_count(self.session)
-        self.assertEqual(0, count)
-
-        amphora1 = self.create_amphora(self.FAKE_UUID_1)
-        self.amphora_repo.update(self.session, amphora1.id,
-                                 status=constants.AMPHORA_READY)
-        amphora2 = self.create_amphora(self.FAKE_UUID_2)
-        self.amphora_repo.update(self.session, amphora2.id,
-                                 status=constants.AMPHORA_READY)
-        count = self.amphora_repo.get_spare_amphora_count(self.session)
-        self.assertEqual(2, count)
-
-    def test_get_spare_amphora_count_check_booting_amphora_true(self):
-        count = self.amphora_repo.get_spare_amphora_count(
-            self.session, check_booting_amphora=True)
-        self.assertEqual(0, count)
-
-        amphora1 = self.create_amphora(self.FAKE_UUID_1)
-        self.amphora_repo.update(self.session, amphora1.id,
-                                 status=constants.AMPHORA_READY,)
-        amphora2 = self.create_amphora(self.FAKE_UUID_2)
-        self.amphora_repo.update(self.session, amphora2.id,
-                                 status=constants.AMPHORA_BOOTING)
-        count = self.amphora_repo.get_spare_amphora_count(
-            self.session, check_booting_amphora=True)
-        self.assertEqual(2, count)
 
     def test_get_none_cert_expired_amphora(self):
         # test with no expired amphora

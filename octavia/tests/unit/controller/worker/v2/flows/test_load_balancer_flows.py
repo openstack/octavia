@@ -310,15 +310,6 @@ class TestLoadBalancerFlows(base.TestCase):
 
         self._test_get_failover_LB_flow_single([amphora_dict])
 
-    def test_get_failover_LB_flow_one_spare_amp_single(self,
-                                                       mock_get_net_driver):
-        amphora_dict = {constants.ID: uuidutils.generate_uuid(),
-                        constants.ROLE: 'bogus',
-                        constants.COMPUTE_ID: uuidutils.generate_uuid(),
-                        constants.VRRP_PORT_ID: None, constants.VRRP_IP: None}
-
-        self._test_get_failover_LB_flow_single([amphora_dict])
-
     def test_get_failover_LB_flow_one_bogus_amp_single(self,
                                                        mock_get_net_driver):
         amphora_dict = {constants.ID: uuidutils.generate_uuid(),
@@ -422,22 +413,6 @@ class TestLoadBalancerFlows(base.TestCase):
             self, mock_get_net_driver):
         amphora_dict = {constants.ID: uuidutils.generate_uuid(),
                         constants.ROLE: 'bogus',
-                        constants.COMPUTE_ID: uuidutils.generate_uuid(),
-                        constants.VRRP_PORT_ID: uuidutils.generate_uuid(),
-                        constants.VRRP_IP: '192.0.2.46'}
-        amphora2_dict = {constants.ID: uuidutils.generate_uuid(),
-                         constants.ROLE: constants.ROLE_MASTER,
-                         constants.COMPUTE_ID: uuidutils.generate_uuid(),
-                         constants.VRRP_PORT_ID: uuidutils.generate_uuid(),
-                         constants.VRRP_IP: '2001:db8::46'}
-
-        self._test_get_failover_LB_flow_no_amps_act_stdby([amphora_dict,
-                                                           amphora2_dict])
-
-    def test_get_failover_LB_flow_two_amps_spare_act_stdby(
-            self, mock_get_net_driver):
-        amphora_dict = {constants.ID: uuidutils.generate_uuid(),
-                        constants.ROLE: None,
                         constants.COMPUTE_ID: uuidutils.generate_uuid(),
                         constants.VRRP_PORT_ID: uuidutils.generate_uuid(),
                         constants.VRRP_IP: '192.0.2.46'}

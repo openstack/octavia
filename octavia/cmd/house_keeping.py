@@ -29,27 +29,8 @@ from octavia import version
 LOG = logging.getLogger(__name__)
 CONF = cfg.CONF
 
-spare_amp_thread_event = threading.Event()
 db_cleanup_thread_event = threading.Event()
 cert_rotate_thread_event = threading.Event()
-
-
-def spare_amphora_check():
-    """Initiates spare amp check with respect to configured interval."""
-
-    # Read the interval from CONF
-    interval = CONF.house_keeping.spare_check_interval
-    LOG.info("Spare check interval is set to %d sec", interval)
-
-    spare_amp = house_keeping.SpareAmphora()
-    while not spare_amp_thread_event.is_set():
-        LOG.debug("Initiating spare amphora check...")
-        try:
-            spare_amp.spare_check()
-        except Exception as e:
-            LOG.debug('spare_amphora caught the following exception and '
-                      'is restarting: %s', str(e))
-        spare_amp_thread_event.wait(interval)
 
 
 def db_cleanup():
@@ -105,12 +86,6 @@ def main():
 
     threads = []
 
-    # Thread to perform spare amphora check
-    spare_amp_thread = threading.Thread(target=spare_amphora_check)
-    spare_amp_thread.daemon = True
-    spare_amp_thread.start()
-    threads.append(spare_amp_thread)
-
     # Thread to perform db cleanup
     db_cleanup_thread = threading.Thread(target=db_cleanup)
     db_cleanup_thread.daemon = True
@@ -125,10 +100,8 @@ def main():
 
     def process_cleanup(*args, **kwargs):
         LOG.info("Attempting to gracefully terminate House-Keeping")
-        spare_amp_thread_event.set()
         db_cleanup_thread_event.set()
         cert_rotate_thread_event.set()
-        spare_amp_thread.join()
         db_cleanup_thread.join()
         cert_rotate_thread.join()
         LOG.info("House-Keeping process terminated")

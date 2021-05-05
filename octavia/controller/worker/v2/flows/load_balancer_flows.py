@@ -47,9 +47,8 @@ class LoadBalancerFlows(object):
         self.lb_repo = repo.LoadBalancerRepository()
 
     def get_create_load_balancer_flow(self, topology, listeners=None):
-        """Creates a conditional graph flow that allocates a loadbalancer to
+        """Creates a conditional graph flow that allocates a loadbalancer.
 
-        two spare amphorae.
         :raises InvalidTopology: Invalid topology specified
         :return: The graph flow for creating a loadbalancer.
         """
@@ -385,8 +384,6 @@ class LoadBalancerFlows(object):
                 amp_role = 'master_or_backup'
             elif failed_amp_role == constants.ROLE_STANDALONE:
                 amp_role = 'standalone'
-            elif failed_amp_role is None:
-                amp_role = 'spare'
             else:
                 amp_role = 'undefined'
             LOG.info("Performing failover for amphora: %s",
@@ -535,8 +532,6 @@ class LoadBalancerFlows(object):
                     amp_role = 'master_or_backup'
                 elif failed_amp_role == constants.ROLE_STANDALONE:
                     amp_role = 'standalone'
-                elif failed_amp_role is None:
-                    amp_role = 'spare'
                 else:
                     amp_role = 'undefined'
                 LOG.info("Performing failover for amphora: %s",

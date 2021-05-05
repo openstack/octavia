@@ -221,24 +221,6 @@ class TestAmphoraFlows(base.TestCase):
         self.assertEqual(0, len(amp_flow.provides))
         self.assertEqual(0, len(amp_flow.requires))
 
-    def test_allocate_amp_to_lb_decider(self, mock_get_net_driver):
-        history = mock.MagicMock()
-        values = mock.MagicMock(side_effect=[['TEST'], [None]])
-        history.values = values
-        result = self.AmpFlow._allocate_amp_to_lb_decider(history)
-        self.assertTrue(result)
-        result = self.AmpFlow._allocate_amp_to_lb_decider(history)
-        self.assertFalse(result)
-
-    def test_create_new_amp_for_lb_decider(self, mock_get_net_driver):
-        history = mock.MagicMock()
-        values = mock.MagicMock(side_effect=[[None], ['TEST']])
-        history.values = values
-        result = self.AmpFlow._create_new_amp_for_lb_decider(history)
-        self.assertTrue(result)
-        result = self.AmpFlow._create_new_amp_for_lb_decider(history)
-        self.assertFalse(result)
-
     def test_get_failover_flow_act_stdby(self, mock_get_net_driver):
         failed_amphora = data_models.Amphora(
             id=uuidutils.generate_uuid(), role=constants.ROLE_MASTER,
@@ -319,19 +301,7 @@ class TestAmphoraFlows(base.TestCase):
 
         self.assertIn(constants.VIP_SG_ID, amp_flow.provides)
 
-        self.assertEqual(1, len(amp_flow.requires))
-        self.assertEqual(1, len(amp_flow.provides))
-
-    def test_get_failover_flow_spare(self, mock_get_net_driver):
-
-        amp_flow = self.AmpFlow.get_failover_amphora_flow(self.amp4, 0)
-
-        self.assertIsInstance(amp_flow, flow.Flow)
-
-        self.assertIn(constants.LOADBALANCER_ID, amp_flow.requires)
-
-        self.assertIn(constants.VIP_SG_ID, amp_flow.provides)
-
+        print(amp_flow.requires)
         self.assertEqual(1, len(amp_flow.requires))
         self.assertEqual(1, len(amp_flow.provides))
 
@@ -478,8 +448,7 @@ class TestAmphoraFlows(base.TestCase):
         TEST_PREFIX = 'test_prefix'
 
         get_amp_flow = self.AmpFlow.get_amphora_for_lb_failover_subflow(
-            TEST_PREFIX, role=constants.ROLE_MASTER,
-            is_spare=False)
+            TEST_PREFIX, role=constants.ROLE_MASTER)
 
         self.assertIsInstance(get_amp_flow, flow.Flow)
 

@@ -451,16 +451,6 @@ class TestValidations(base.TestCase):
                           validate.ip_not_reserved,
                           '2001:0DB8::5')
 
-    def test_is_flavor_spares_compatible(self):
-        not_compat_flavor = {constants.COMPUTE_FLAVOR: 'chocolate'}
-        compat_flavor = {constants.LOADBALANCER_TOPOLOGY:
-                         constants.TOPOLOGY_SINGLE}
-
-        self.assertTrue(validate.is_flavor_spares_compatible(None))
-        self.assertTrue(validate.is_flavor_spares_compatible(compat_flavor))
-        self.assertFalse(
-            validate.is_flavor_spares_compatible(not_compat_flavor))
-
     def test_check_default_ciphers_prohibit_list_conflict(self):
         self.conf.config(group='api_settings',
                          tls_cipher_prohibit_list='PSK-AES128-CBC-SHA')

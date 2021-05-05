@@ -359,35 +359,33 @@ class UpdateHealthDb:
                             self._update_listener_count_for_UDP(
                                 session, db_lb, expected_listener_count))
         else:
-            # If this is not a spare amp, log and skip it.
             amp = self.amphora_repo.get(session, id=health['id'])
-            if not amp or amp.load_balancer_id:
-                # This is debug and not warning because this can happen under
-                # normal deleting operations.
-                LOG.debug('Received a health heartbeat from amphora %s with '
-                          'IP %s that should not exist. This amphora may be '
-                          'in the process of being deleted, in which case you '
-                          'will only see this message a few '
-                          'times', health['id'], srcaddr)
-                if not amp:
-                    LOG.warning('The amphora %s with IP %s is missing from '
-                                'the DB, so it cannot be automatically '
-                                'deleted (the compute_id is unknown). An '
-                                'operator must manually delete it from the '
-                                'compute service.', health['id'], srcaddr)
-                    return
-                # delete the amp right there
-                try:
-                    compute = stevedore_driver.DriverManager(
-                        namespace='octavia.compute.drivers',
-                        name=CONF.controller_worker.compute_driver,
-                        invoke_on_load=True
-                    ).driver
-                    compute.delete(amp.compute_id)
-                    return
-                except Exception as e:
-                    LOG.info("Error deleting amp %s with IP %s Error: %s",
-                             health['id'], srcaddr, str(e))
+            # This is debug and not warning because this can happen under
+            # normal deleting operations.
+            LOG.debug('Received a health heartbeat from amphora %s with '
+                      'IP %s that should not exist. This amphora may be '
+                      'in the process of being deleted, in which case you '
+                      'will only see this message a few '
+                      'times', health['id'], srcaddr)
+            if not amp:
+                LOG.warning('The amphora %s with IP %s is missing from '
+                            'the DB, so it cannot be automatically '
+                            'deleted (the compute_id is unknown). An '
+                            'operator must manually delete it from the '
+                            'compute service.', health['id'], srcaddr)
+                return
+            # delete the amp right there
+            try:
+                compute = stevedore_driver.DriverManager(
+                    namespace='octavia.compute.drivers',
+                    name=CONF.controller_worker.compute_driver,
+                    invoke_on_load=True
+                ).driver
+                compute.delete(amp.compute_id)
+                return
+            except Exception as e:
+                LOG.info("Error deleting amp %s with IP %s Error: %s",
+                         health['id'], srcaddr, str(e))
             expected_listener_count = 0
 
         listeners = health['listeners']
@@ -428,7 +426,7 @@ class UpdateHealthDb:
                         {'id': health['id'], 'found': len(listeners),
                          'expected': expected_listener_count})
 
-        # Don't try to update status for spares pool amphora
+        # Don't try to update status for bogus or old spares pool amphora
         if not db_lb:
             return
 
