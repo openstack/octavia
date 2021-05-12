@@ -33,6 +33,9 @@ class QuotaBase(base.BaseType):
         minimum=consts.MIN_QUOTA, maximum=consts.MAX_QUOTA))
     healthmonitor = wtypes.wsattr(wtypes.IntegerType(
         minimum=consts.MIN_QUOTA, maximum=consts.MAX_QUOTA))
+    l7policy = wtypes.wsattr(wtypes.IntegerType(
+        minimum=consts.MIN_QUOTA, maximum=consts.MAX_QUOTA))
+
     # Misspelled version, deprecated in Rocky
     health_monitor = wtypes.wsattr(wtypes.IntegerType(
         minimum=consts.MIN_QUOTA, maximum=consts.MAX_QUOTA))
