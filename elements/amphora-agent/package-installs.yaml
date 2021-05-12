@@ -21,7 +21,7 @@ acl:
 acpid-ppc64le:
   arch: ppc64le, ppc64el
 acpid:
-  arch: i386, amd64, aarch64, arm64, s390x
+  arch: amd64, aarch64, arm64, s390x
 apparmor:
 apt-transport-https:
 at:
@@ -49,7 +49,7 @@ netbase:
 netcat-openbsd:
 network-scripts:
 open-vm-tools:
-  arch: i386, amd64
+  arch: amd64
 openssh-client:
 openssh-server:
 pollinate:
