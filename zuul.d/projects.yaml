@@ -97,8 +97,6 @@
         - octavia-grenade
     periodic:
       jobs:
-        - publish-openstack-octavia-amphora-image-bionic:
-            branches: ^(?!stable/.*).*$
         - publish-openstack-octavia-amphora-image-focal:
             branches: ^(?!stable/.*).*$
         - publish-openstack-octavia-amphora-image-centos8:
