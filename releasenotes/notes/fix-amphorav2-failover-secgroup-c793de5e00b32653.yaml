@@ -1,0 +1,5 @@
+---
+fixes:
+  - |
+    Fixed an issue that an amphorav2 LB cannot be reached after loadbalancer
+    failover. The LB security group was not set in the amphora port.

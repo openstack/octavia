@@ -34,6 +34,7 @@ COMPUTE_ID = uuidutils.generate_uuid()
 PORT_ID = uuidutils.generate_uuid()
 SUBNET_ID = uuidutils.generate_uuid()
 NETWORK_ID = uuidutils.generate_uuid()
+SG_ID = uuidutils.generate_uuid()
 IP_ADDRESS = "172.24.41.1"
 VIP = o_data_models.Vip(port_id=t_constants.MOCK_PORT_ID,
                         subnet_id=t_constants.MOCK_SUBNET_ID,
@@ -868,15 +869,17 @@ class TestNetworkTasks(base.TestCase):
     def test_update_vip_sg(self, mock_lb_get, mock_get_session,
                            mock_get_net_driver):
         mock_driver = mock.MagicMock()
+        mock_driver.update_vip_sg.return_value = SG_ID
         mock_get_net_driver.return_value = mock_driver
         mock_lb_get.return_value = self.load_balancer_mock
         net = network_tasks.UpdateVIPSecurityGroup()
 
-        net.execute(self.load_balancer_mock.id)
+        sg_id = net.execute(self.load_balancer_mock.id)
         mock_lb_get.assert_called_once_with('TEST',
                                             id=self.load_balancer_mock.id)
         mock_driver.update_vip_sg.assert_called_once_with(
             self.load_balancer_mock, self.load_balancer_mock.vip)
+        self.assertEqual(sg_id, SG_ID)
 
     def test_get_subnet_from_vip(self, mock_get_net_driver):
         mock_driver = mock.MagicMock()
