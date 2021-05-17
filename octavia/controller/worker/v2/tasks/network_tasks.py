@@ -405,7 +405,7 @@ class UpdateVIPSecurityGroup(BaseNetworkTask):
         LOG.debug("Setup SG for loadbalancer id: %s", loadbalancer_id)
         db_lb = self.loadbalancer_repo.get(
             db_apis.get_session(), id=loadbalancer_id)
-        self.network_driver.update_vip_sg(db_lb, db_lb.vip)
+        return self.network_driver.update_vip_sg(db_lb, db_lb.vip)
 
 
 class GetSubnetFromVIP(BaseNetworkTask):
