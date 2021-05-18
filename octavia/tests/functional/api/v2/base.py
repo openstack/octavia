@@ -82,6 +82,8 @@ class BaseAPITest(base_db_test.OctaviaDBTestBase):
     QUOTA_PATH = QUOTAS_PATH + '/{project_id}'
     QUOTA_DEFAULT_PATH = QUOTAS_PATH + '/{project_id}/default'
 
+    QUOTA_USAGE_PATH = '/lbaas/quota_usage/{project_id}'
+
     AMPHORAE_PATH = '/octavia/amphorae'
     AMPHORA_PATH = AMPHORAE_PATH + '/{amphora_id}'
     AMPHORA_FAILOVER_PATH = AMPHORA_PATH + '/failover'

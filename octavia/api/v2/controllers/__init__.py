@@ -28,6 +28,7 @@ from octavia.api.v2.controllers import load_balancer
 from octavia.api.v2.controllers import pool
 from octavia.api.v2.controllers import provider
 from octavia.api.v2.controllers import quotas
+from octavia.api.v2.controllers import quota_usage
 
 
 class BaseV2Controller(base.BaseController):
@@ -37,6 +38,7 @@ class BaseV2Controller(base.BaseController):
     l7policies = None
     healthmonitors = None
     quotas = None
+    quota_usage = None
 
     def __init__(self):
         super().__init__()
@@ -46,6 +48,7 @@ class BaseV2Controller(base.BaseController):
         self.l7policies = l7policy.L7PolicyController()
         self.healthmonitors = health_monitor.HealthMonitorController()
         self.quotas = quotas.QuotasController()
+        self.quota_usage = quota_usage.QuotaUsageController()
         self.providers = provider.ProviderController()
         self.flavors = flavors.FlavorsController()
         self.flavorprofiles = flavor_profiles.FlavorProfileController()

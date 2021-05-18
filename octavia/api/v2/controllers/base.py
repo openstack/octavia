@@ -225,6 +225,34 @@ class BaseController(pecan_rest.RestController):
                 db_quotas.l7rule = CONF.quotas.default_l7rule_quota
         return db_quotas
 
+    def _get_db_quota_usage(self, session, project_id):
+        """Gets the project's quota usage from the database."""
+        # TODO(Vadim Ponomarev): use stored quota usage in database instead
+        # counting when we will fix quota counting inside f5 amphora driver.
+        loadbalancer = self.repositories.load_balancer.count(
+            session, project_id=project_id, show_deleted=False)
+        listener = self.repositories.listener.count(
+            session, project_id=project_id, show_deleted=False)
+        pool = self.repositories.pool.count(
+            session, project_id=project_id, show_deleted=False)
+        member = self.repositories.member.count(
+            session, project_id=project_id, show_deleted=False)
+        l7policy = self.repositories.l7policy.count(
+            session, project_id=project_id, show_deleted=False)
+        l7rule = self.repositories.l7rule.count(
+            session, project_id=project_id, show_deleted=False)
+        healthmonitor = self.repositories.health_monitor.count(
+            session, project_id=project_id, show_deleted=False)
+        return data_models.QuotaUsage(
+            loadbalancer=loadbalancer,
+            listener=listener,
+            pool=pool,
+            member=member,
+            l7policy=l7policy,
+            l7rule=l7rule,
+            healthmonitor=healthmonitor,
+        )
+
     def _auth_get_all(self, context, project_id):
         # Check authorization to list objects under all projects
         action = f'{self.RBAC_TYPE}{constants.RBAC_GET_ALL_GLOBAL}'
