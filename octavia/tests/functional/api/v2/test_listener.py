@@ -2780,6 +2780,108 @@ class TestListener(base.BaseAPITest):
                 listener.get('faultstring'))
 
     @mock.patch('octavia.common.tls_utils.cert_parser.load_certificates_data')
+    def test_create_with_valid_esd_tags_mapping(self, mock_cert_data):
+        cert = data_models.TLSContainer(certificate='cert')
+        mock_cert_data.return_value = {'tls_cert': cert}
+        port = 1
+        for listener_proto, esds in constants.VALID_LISTENER_ESD_MAP.items():
+            port = port + 1
+            lb_listener = {
+                'loadbalancer_id': self.lb_id,
+                'protocol': listener_proto,
+                'protocol_port': port,
+                'tags': ['some-other-tag'] + esds,
+            }
+            if listener_proto == constants.PROTOCOL_TERMINATED_HTTPS:
+                lb_listener['sni_container_refs'] = [uuidutils.generate_uuid()]
+            body = self._build_body(lb_listener)
+            self.set_lb_status(self.lb_id)
+            self.post(self.LISTENERS_PATH, body, status=201)
+
+    @mock.patch('octavia.common.tls_utils.cert_parser.load_certificates_data')
+    def test_create_with_invalid_esd_tags_mapping(self, mock_cert_data):
+        cert = data_models.TLSContainer(certificate='cert')
+        mock_cert_data.return_value = {'tls_cert': cert}
+        port = 1
+        all_esds = constants.L4_ESD_POLICIES + constants.L7_ESD_POLICIES
+        for listener_proto, esds in constants.VALID_LISTENER_ESD_MAP.items():
+            invalid_esds = set(all_esds) - set(esds)
+            if not invalid_esds:
+                continue
+            port = port + 1
+            lb_listener = {
+                'loadbalancer_id': self.lb_id,
+                'protocol': listener_proto,
+                'protocol_port': port,
+                'tags': ['some-other-tag'] + list(invalid_esds),
+            }
+            if listener_proto == constants.PROTOCOL_TERMINATED_HTTPS:
+                lb_listener['sni_container_refs'] = [uuidutils.generate_uuid()]
+            body = self._build_body(lb_listener)
+            self.set_lb_status(self.lb_id)
+            listener = self.post(self.LISTENERS_PATH, body, status=400).json
+            self.assertIn('The extended policy',
+                          listener.get('faultstring'))
+            self.assertIn('is invalid while the listener protocol is',
+                          listener.get('faultstring'))
+
+    @mock.patch('octavia.common.tls_utils.cert_parser.load_certificates_data')
+    def test_update_with_valid_esd_tags_mapping(self, mock_cert_data):
+        cert = data_models.TLSContainer(certificate='cert')
+        mock_cert_data.return_value = {'tls_cert': cert}
+        port = 1
+        for listener_proto, esds in constants.VALID_LISTENER_ESD_MAP.items():
+            port = port + 1
+            lb_listener = {
+                'loadbalancer_id': self.lb_id,
+                'protocol': listener_proto,
+                'protocol_port': port,
+            }
+            if listener_proto == constants.PROTOCOL_TERMINATED_HTTPS:
+                lb_listener['sni_container_refs'] = [uuidutils.generate_uuid()]
+            body = self._build_body(lb_listener)
+            self.set_lb_status(self.lb_id)
+            listener = self.post(self.LISTENERS_PATH, body, status=201).json
+            self.set_lb_status(self.lb_id)
+            new_listener = {'tags': ['some-other-tag'] + esds}
+            self.put(
+                self.LISTENER_PATH.format(
+                    listener_id=listener[self.root_tag].get('id')),
+                self._build_body(new_listener), status=200)
+
+    @mock.patch('octavia.common.tls_utils.cert_parser.load_certificates_data')
+    def test_update_with_invalid_esd_tags_mapping(self, mock_cert_data):
+        cert = data_models.TLSContainer(certificate='cert')
+        mock_cert_data.return_value = {'tls_cert': cert}
+        port = 1
+        all_esds = constants.L4_ESD_POLICIES + constants.L7_ESD_POLICIES
+        for listener_proto, esds in constants.VALID_LISTENER_ESD_MAP.items():
+            invalid_esds = set(all_esds) - set(esds)
+            if not invalid_esds:
+                continue
+            port = port + 1
+            lb_listener = {
+                'loadbalancer_id': self.lb_id,
+                'protocol': listener_proto,
+                'protocol_port': port,
+            }
+            if listener_proto == constants.PROTOCOL_TERMINATED_HTTPS:
+                lb_listener['sni_container_refs'] = [uuidutils.generate_uuid()]
+            body = self._build_body(lb_listener)
+            self.set_lb_status(self.lb_id)
+            listener = self.post(self.LISTENERS_PATH, body, status=201).json
+            self.set_lb_status(self.lb_id)
+            new_listener = {'tags': ['some-other-tag'] + list(invalid_esds)}
+            res = self.put(
+                self.LISTENER_PATH.format(
+                    listener_id=listener[self.root_tag].get('id')),
+                self._build_body(new_listener), status=400).json
+            self.assertIn('The extended policy',
+                          res.get('faultstring'))
+            self.assertIn('is invalid while the listener protocol is',
+                          res.get('faultstring'))
+
+    @mock.patch('octavia.common.tls_utils.cert_parser.load_certificates_data')
     def test_update_with_valid_insert_headers(self, mock_cert_data):
         cert1 = data_models.TLSContainer(certificate='cert 1')
         mock_cert_data.return_value = {'tls_cert': cert1}

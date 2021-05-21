@@ -230,7 +230,6 @@ L7_ESD_POLICIES = ['x_forward_5b6e_v1_0', 'one_connect_dd5c_v1_0',
                    'sso_required_f544_v1_0', 'http_redirect_a26c_v1_0',
                    'hcm_rmk_restrict_internal']
 VALID_LISTENER_ESD_MAP = {
-    PROTOCOL_PROXY: L4_ESD_POLICIES,
     PROTOCOL_TCP: L4_ESD_POLICIES,
     PROTOCOL_HTTP: L4_ESD_POLICIES + L7_ESD_POLICIES,
     PROTOCOL_HTTPS: L4_ESD_POLICIES,
@@ -239,7 +238,7 @@ VALID_LISTENER_ESD_MAP = {
     lib_consts.PROTOCOL_SCTP: [],
     lib_consts.PROTOCOL_PROMETHEUS: [],
 }
-ONLY_ESD_L7POLICY_PROTO = [PROTOCOL_PROXY, PROTOCOL_TCP, PROTOCOL_HTTPS]
+ONLY_ESD_L7POLICY_PROTO = [PROTOCOL_TCP, PROTOCOL_HTTPS]
 
 # API Integer Ranges
 MIN_PORT_NUMBER = 1

@@ -124,6 +124,12 @@ class ListenersController(base.BaseController):
         self._validate_tls_option_proto(listener_protocol, db_pool.protocol,
                                         db_pool.tls_enabled)
 
+    def _validate_listener_tags(self, listener_protocol, listener_tags):
+        for tag in listener_tags:
+            if tag in constants.L4_ESD_POLICIES or \
+                    tag in constants.L7_ESD_POLICIES:
+                self._validate_esd_policy(listener_protocol, tag)
+
     def _has_tls_container_refs(self, listener_dict):
         return (listener_dict.get('tls_certificate_id') or
                 listener_dict.get('client_ca_tls_container_id') or
@@ -401,6 +407,10 @@ class ListenersController(base.BaseController):
                                     listener_dict['default_pool_id'],
                                     listener.protocol)
 
+            if listener_dict.get('tags'):
+                self._validate_listener_tags(
+                    listener.protocol, listener_dict['tags'])
+
             self._test_lb_and_listener_statuses(
                 context.session, lb_id=load_balancer_id)
 
@@ -645,6 +655,10 @@ class ListenersController(base.BaseController):
                 self._validate_pool(context.session, load_balancer_id,
                                     listener.default_pool_id,
                                     db_listener.protocol)
+
+        if listener.tags:
+            self._validate_listener_tags(
+                db_listener.protocol, listener.tags)
 
         # Load the driver early as it also provides validation
         driver = driver_factory.get_driver(provider)
