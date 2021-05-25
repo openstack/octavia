@@ -26,14 +26,19 @@
               - ^doc/.*$
               - ^octavia/tests/.*$
               - ^releasenotes/.*$
+            nodeset: octavia-single-node-ubuntu-bionic
         - octavia-v2-dsvm-scenario:
             irrelevant-files: *irrelevant-files
+            nodeset: octavia-single-node-ubuntu-bionic
         - octavia-v2-dsvm-tls-barbican:
             irrelevant-files: *irrelevant-files
+            nodeset: octavia-single-node-ubuntu-bionic
         - octavia-v2-dsvm-spare-pool:
             irrelevant-files: *irrelevant-files
+            nodeset: octavia-single-node-ubuntu-bionic
         - octavia-v2-act-stdby-dsvm-scenario:
             irrelevant-files: *irrelevant-files
+            nodeset: octavia-single-node-ubuntu-bionic
         - octavia-grenade:
             irrelevant-files:
               - ^.*\.rst$
@@ -45,15 +50,19 @@
               - ^tools/.*$
               - ^(test-|)requirements.txt$
               - ^tox.ini$
+            nodeset: octavia-single-node-ubuntu-bionic
         - octavia-v2-dsvm-cinder-amphora:
             irrelevant-files: *irrelevant-files
             voting: false
+            nodeset: octavia-single-node-ubuntu-bionic
         - octavia-v2-dsvm-scenario-two-node:
             irrelevant-files: *irrelevant-files
             voting: false
+            nodeset: octavia-single-node-ubuntu-bionic
         - octavia-v2-dsvm-scenario-amphora-v2:
             irrelevant-files: *irrelevant-files
             voting: false
+            nodeset: octavia-single-node-ubuntu-bionic
     gate:
       fail-fast: true
       queue: octavia
@@ -66,12 +75,18 @@
               - ^etc/.*$
               - ^octavia/tests/unit/.*$
               - ^releasenotes/.*$
-        - octavia-v2-dsvm-noop-api
-        - octavia-v2-dsvm-scenario
-        - octavia-v2-dsvm-tls-barbican
-        - octavia-v2-dsvm-spare-pool
-        - octavia-v2-act-stdby-dsvm-scenario
-        - octavia-grenade
+        - octavia-v2-dsvm-noop-api:
+            nodeset: octavia-single-node-ubuntu-bionic
+        - octavia-v2-dsvm-scenario:
+            nodeset: octavia-single-node-ubuntu-bionic
+        - octavia-v2-dsvm-tls-barbican:
+            nodeset: octavia-single-node-ubuntu-bionic
+        - octavia-v2-dsvm-spare-pool:
+            nodeset: octavia-single-node-ubuntu-bionic
+        - octavia-v2-act-stdby-dsvm-scenario:
+            nodeset: octavia-single-node-ubuntu-bionic
+        - octavia-grenade:
+            nodeset: octavia-single-node-ubuntu-bionic
     periodic:
       jobs:
         - publish-openstack-octavia-amphora-image-bionic:
