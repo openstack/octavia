@@ -15,13 +15,15 @@ Communication
 
 IRC
     People working on the Octavia project may be found in the
-    ``#openstack-lbaas`` channel on Freenode during working hours
-    in their timezone.  The channel is logged, so if you ask a question
-    when no one is around, you can check the log to see if it's been
-    answered: http://eavesdrop.openstack.org/irclogs/%23openstack-lbaas/
+    ``#openstack-lbaas`` channel on the IRC network described in
+    https://docs.openstack.org/contributors/common/irc.html
+    during working hours in their timezone.  The channel is logged, so if
+    you ask a question when no one is around, you can check the log to see
+    if it's been answered:
+    http://eavesdrop.openstack.org/irclogs/%23openstack-lbaas/
 
 Weekly Meeting
-    The Octavia team meets weekly on freenode IRC. Please see the OpenStack
+    The Octavia team meets weekly on IRC. Please see the OpenStack
     meetings page for the current meeting details and ICS file:
     http://eavesdrop.openstack.org/#Octavia_Meeting
     Meetings are logged: http://eavesdrop.openstack.org/meetings/octavia/
