@@ -527,6 +527,25 @@ You will then need to select the desired monitoring backend plugins:
   changes. Not only does it not run any tests, it will return 204 results
   instead of 200.
 
+The Octavia API health monitoring endpoint does not require a keystone token
+for access to allow external load balancers to query the endpoint. For this
+reason we recommend you restrict access to it on your external load balancer
+to prevent abuse.
+
+As an additional protection, the API will cache results for a configurable
+period of time. This means that queries to the health monitoring endpoint
+will return cached results until the refresh interval has expired, at which
+point the health check plugin will rerun the check.
+
+By default, the refresh interval is five seconds. This can be configured by
+adjusting the healthcheck_refresh_interval setting in the Octavia configuration
+file:
+
+.. code-block:: ini
+
+    [api_settings]
+    healthcheck_refresh_interval = 5
+
 Optionally you can enable the "detailed" mode in Oslo middleware healthcheck.
 This will cause Oslo middleware healthcheck to return additional information
 about the API instance. It will also provide exception details if one was
