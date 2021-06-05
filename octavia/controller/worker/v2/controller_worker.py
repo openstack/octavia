@@ -426,8 +426,15 @@ class ControllerWorker(object):
         :returns: None
         :raises NoSuitablePool: Unable to find the node pool
         """
-        pool = self._pool_repo.get(db_apis.get_session(),
-                                   id=member[constants.POOL_ID])
+        db_member = self._member_repo.get(db_apis.get_session(),
+                                          id=member[constants.MEMBER_ID])
+        if not db_member:
+            LOG.warning('Failed to fetch %s %s from DB. Retrying for up to '
+                        '60 seconds.', 'l7member',
+                        member[constants.MEMBER_ID])
+            raise db_exceptions.NoResultFound
+
+        pool = db_member.pool
         load_balancer = pool.load_balancer
         provider_lb = provider_utils.db_loadbalancer_to_provider_loadbalancer(
             load_balancer).to_dict()
@@ -693,8 +700,15 @@ class ControllerWorker(object):
         :returns: None
         :raises NoResultFound: Unable to find the object
         """
-        db_listener = self._listener_repo.get(
-            db_apis.get_session(), id=l7policy[constants.LISTENER_ID])
+        db_l7policy = self._l7policy_repo.get(
+            db_apis.get_session(), id=l7policy[constants.L7POLICY_ID])
+        if not db_l7policy:
+            LOG.warning('Failed to fetch %s %s from DB. Retrying for up to '
+                        '60 seconds.', 'l7policy',
+                        l7policy[constants.L7POLICY_ID])
+            raise db_exceptions.NoResultFound
+
+        db_listener = db_l7policy.listener
 
         listeners_dicts = (
             provider_utils.db_listeners_to_provider_dicts_list_of_dicts(
@@ -767,8 +781,15 @@ class ControllerWorker(object):
         :returns: None
         :raises NoResultFound: Unable to find the object
         """
-        db_l7policy = self._l7policy_repo.get(db_apis.get_session(),
-                                              id=l7rule[constants.L7POLICY_ID])
+        db_l7rule = self._l7rule_repo.get(db_apis.get_session(),
+                                          id=l7rule[constants.L7RULE_ID])
+        if not db_l7rule:
+            LOG.warning('Failed to fetch %s %s from DB. Retrying for up to '
+                        '60 seconds.', 'l7rule',
+                        l7rule[constants.L7RULE_ID])
+            raise db_exceptions.NoResultFound
+
+        db_l7policy = db_l7rule.l7policy
 
         load_balancer = db_l7policy.listener.load_balancer
 
