@@ -1,0 +1,5 @@
+---
+fixes:
+  - |
+    Fix a serialization error when using host_routes in VIP subnets when
+    persistence in the amphorav2 driver is enabled.
