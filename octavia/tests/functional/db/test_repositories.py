@@ -2666,6 +2666,50 @@ class PoolRepositoryTest(BaseRepositoryTest):
         self.assertIsNone(self.hm_repo.get(self.session, pool_id=hm.pool_id))
         self.assertIsNone(self.sp_repo.get(self.session, pool_id=sp.pool_id))
 
+    def test_get_children_count(self):
+        pool = self.create_pool(pool_id=self.FAKE_UUID_1,
+                                project_id=self.FAKE_UUID_2)
+        hm_count, member_count = (
+            self.pool_repo.get_children_count(self.session, pool.id))
+        self.assertEqual(0, hm_count)
+        self.assertEqual(0, member_count)
+
+        self.hm_repo.create(self.session, pool_id=pool.id,
+                            type=constants.HEALTH_MONITOR_HTTP,
+                            delay=1, timeout=1, fall_threshold=1,
+                            rise_threshold=1, enabled=True,
+                            provisioning_status=constants.ACTIVE,
+                            operating_status=constants.ONLINE)
+
+        hm_count, member_count = (
+            self.pool_repo.get_children_count(self.session, pool.id))
+        self.assertEqual(1, hm_count)
+        self.assertEqual(0, member_count)
+
+        self.member_repo.create(self.session, id=self.FAKE_UUID_3,
+                                project_id=self.FAKE_UUID_2,
+                                pool_id=pool.id,
+                                ip_address="192.0.2.1",
+                                protocol_port=80,
+                                provisioning_status=constants.ACTIVE,
+                                operating_status=constants.ONLINE,
+                                enabled=True,
+                                backup=False)
+        self.member_repo.create(self.session, id=self.FAKE_UUID_4,
+                                project_id=self.FAKE_UUID_2,
+                                pool_id=pool.id,
+                                ip_address="192.0.2.2",
+                                protocol_port=80,
+                                provisioning_status=constants.ACTIVE,
+                                operating_status=constants.ONLINE,
+                                enabled=True,
+                                backup=False)
+
+        hm_count, member_count = (
+            self.pool_repo.get_children_count(self.session, pool.id))
+        self.assertEqual(1, hm_count)
+        self.assertEqual(2, member_count)
+
 
 class MemberRepositoryTest(BaseRepositoryTest):
 
