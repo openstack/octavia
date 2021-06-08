@@ -945,8 +945,7 @@ class ControllerWorker(object):
                              constants.LOADBALANCER: provider_lb_dict,
                              constants.SERVER_GROUP_ID: server_group_id,
                              constants.LOADBALANCER_ID: lb_id,
-                             constants.VIP: vip_dict,
-                             constants.AMPHORA_ID: amphora_id}
+                             constants.VIP: vip_dict}
 
             self.run_flow(
                 flow_utils.get_failover_amphora_flow,
