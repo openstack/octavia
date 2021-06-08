@@ -51,7 +51,7 @@ def setup_app(pecan_config=None, debug=False, argv=None):
     if argv is None:
         argv = sys.argv
     octavia_service.prepare_service(argv)
-    cfg.CONF.log_opt_values(LOG, logging.DEBUG)
+    cfg.CONF.log_opt_values(LOG, logging.INFO)
 
     _init_drivers()
 

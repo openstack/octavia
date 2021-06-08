@@ -402,10 +402,15 @@ class UpdateVIPSecurityGroup(BaseNetworkTask):
     def execute(self, loadbalancer_id):
         """Task to setup SG for LB."""
 
-        LOG.debug("Setup SG for loadbalancer id: %s", loadbalancer_id)
+        LOG.debug("Setting up VIP SG for load balancer id: %s",
+                  loadbalancer_id)
         db_lb = self.loadbalancer_repo.get(
             db_apis.get_session(), id=loadbalancer_id)
-        return self.network_driver.update_vip_sg(db_lb, db_lb.vip)
+
+        sg_id = self.network_driver.update_vip_sg(db_lb, db_lb.vip)
+        LOG.info("Set up VIP SG %s for load balancer %s complete",
+                 sg_id if sg_id else "None", loadbalancer_id)
+        return sg_id
 
 
 class GetSubnetFromVIP(BaseNetworkTask):
@@ -417,8 +422,11 @@ class GetSubnetFromVIP(BaseNetworkTask):
         LOG.debug("Getting subnet for LB: %s",
                   loadbalancer[constants.LOADBALANCER_ID])
 
-        return self.network_driver.get_subnet(
-            loadbalancer['vip_subnet_id']).to_dict()
+        subnet = self.network_driver.get_subnet(loadbalancer['vip_subnet_id'])
+        LOG.info("Got subnet %s for load balancer %s",
+                 loadbalancer['vip_subnet_id'] if subnet else "None",
+                 loadbalancer[constants.LOADBALANCER_ID])
+        return subnet.to_dict()
 
 
 class PlugVIPAmphora(BaseNetworkTask):
@@ -486,14 +494,21 @@ class AllocateVIP(BaseNetworkTask):
     def execute(self, loadbalancer):
         """Allocate a vip to the loadbalancer."""
 
-        LOG.debug("Allocate_vip port_id %s, subnet_id %s,"
-                  "ip_address %s",
+        LOG.debug("Allocating vip with port id %s, subnet id %s, "
+                  "ip address %s for load balancer %s",
                   loadbalancer[constants.VIP_PORT_ID],
                   loadbalancer[constants.VIP_SUBNET_ID],
-                  loadbalancer[constants.VIP_ADDRESS])
+                  loadbalancer[constants.VIP_ADDRESS],
+                  loadbalancer[constants.LOADBALANCER_ID])
         db_lb = self.loadbalancer_repo.get(
             db_apis.get_session(), id=loadbalancer[constants.LOADBALANCER_ID])
         vip = self.network_driver.allocate_vip(db_lb)
+        LOG.info("Allocated vip with port id %s, subnet id %s, ip address %s "
+                 "for load balancer %s",
+                 loadbalancer[constants.VIP_PORT_ID],
+                 loadbalancer[constants.VIP_SUBNET_ID],
+                 loadbalancer[constants.VIP_ADDRESS],
+                 loadbalancer[constants.LOADBALANCER_ID])
         return vip.to_dict()
 
     def revert(self, result, loadbalancer, *args, **kwargs):
