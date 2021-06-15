@@ -61,7 +61,6 @@ screen:
 socat:
 tcpdump:
 ubuntu-cloudimage-keyring:
-ureadahead:
 uuid-runtime:
 vim-tiny:
 vlan:

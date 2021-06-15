@@ -21,11 +21,6 @@
         "screen": "",
         "dkms": ""
       }
-    },
-    "ubuntu": {
-      "focal": {
-        "ureadahead": ""
-      }
     }
   },
   "family": {
@@ -44,7 +39,6 @@
       "uuid-runtime": "",
       "ubuntu-cloudimage-keyring": "",
       "vim-tiny": "",
-      "ureadahead": "",
       "apt-transport-https": "",
       "pollinate": "",
       "ifupdown": "",
