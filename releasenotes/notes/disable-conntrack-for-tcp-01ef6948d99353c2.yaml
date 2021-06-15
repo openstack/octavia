@@ -1,0 +1,6 @@
+---
+fixes:
+  - |
+    Disable conntrack for TCP flows in the Amphora, it reduces memory usage for
+    HAProxy-based listeners and prevents some kernel warnings about dropped
+    packets.

@@ -80,3 +80,8 @@ post-down /sbin/ip {{ '-6 ' if vip_ipv6 }}rule del from {{ vip }}/{{ '128' if vi
 
 post-up /sbin/ip{{ '6' if vip_ipv6 }}tables -t nat -A POSTROUTING -p udp -o {{ interface }} -j MASQUERADE
 post-down /sbin/ip{{ '6' if vip_ipv6 }}tables -t nat -D POSTROUTING -p udp -o {{ interface }} -j MASQUERADE
+
+post-up /sbin/ip{{ '6' if vip_ipv6 }}tables -t raw -A PREROUTING -p tcp -i {{ interface }} -j NOTRACK
+post-up /sbin/ip{{ '6' if vip_ipv6 }}tables -t raw -A OUTPUT -p tcp -o {{ interface }} -j NOTRACK
+post-down /sbin/ip{{ '6' if vip_ipv6 }}tables -t raw -D PREROUTING -p tcp -i {{ interface }} -j NOTRACK
+post-down /sbin/ip{{ '6' if vip_ipv6 }}tables -t raw -D OUTPUT -p tcp -o {{ interface }} -j NOTRACK

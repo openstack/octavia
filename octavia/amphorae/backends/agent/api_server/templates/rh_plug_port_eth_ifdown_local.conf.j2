@@ -16,4 +16,10 @@ if [[ "$1" != "lo" ]]
   then
   /sbin/iptables -t nat -D POSTROUTING -o $1 -p udp -j MASQUERADE
   /sbin/ip6tables -t nat -D POSTROUTING -o $1 -p udp -j MASQUERADE
+
+  /sbin/iptables -t raw -D PREROUTING -p tcp -i $1 -j NOTRACK
+  /sbin/iptables -t raw -D OUTPUT -p tcp -o $1 -j NOTRACK
+
+  /sbin/ip6tables -t raw -D PREROUTING -p tcp -i $1 -j NOTRACK
+  /sbin/ip6tables -t raw -D OUTPUT -p tcp -o $1 -j NOTRACK
 fi
