@@ -35,6 +35,12 @@ down route del -net {{ hr.network }} gw {{ hr.gw }} dev {{ interface }}
 {%- endfor %}
 post-up /sbin/ip{{ '6' if ipv6 }}tables -t nat -A POSTROUTING -p udp -o {{ interface }} -j MASQUERADE
 post-down /sbin/ip{{ '6' if ipv6 }}tables -t nat -D POSTROUTING -p udp -o {{ interface }} -j MASQUERADE
+
+post-up /sbin/ip{{ '6' if ipv6 }}tables -t raw -A PREROUTING -p tcp -i {{ interface }} -j NOTRACK
+post-up /sbin/ip{{ '6' if ipv6 }}tables -t raw -A OUTPUT -p tcp -o {{ interface }} -j NOTRACK
+post-down /sbin/ip{{ '6' if ipv6 }}tables -t raw -D PREROUTING -p tcp -i {{ interface }} -j NOTRACK
+post-down /sbin/ip{{ '6' if ipv6 }}tables -t raw -D OUTPUT -p tcp -o {{ interface }} -j NOTRACK
+
 {%- else %}
 iface {{ interface }} inet dhcp
 auto {{ interface }}:0
