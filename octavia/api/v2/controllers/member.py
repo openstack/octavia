@@ -377,6 +377,12 @@ class MembersController(MemberController):
                 if (m.ip_address, m.protocol_port) not in new_member_uniques:
                     deleted_members.append(m)
 
+            if not (deleted_members or new_members or updated_members):
+                LOG.info("Member batch update is a noop, rolling back and "
+                         "returning early.")
+                lock_session.rollback()
+                return
+
             if additive_only:
                 member_count_diff = len(new_members)
             else:

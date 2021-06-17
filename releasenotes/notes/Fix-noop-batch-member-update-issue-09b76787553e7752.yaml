@@ -1,0 +1,5 @@
+---
+fixes:
+  - |
+    Fixed an issue with batch member updates, that don't have any changes,
+    not properly rolling back the update.
