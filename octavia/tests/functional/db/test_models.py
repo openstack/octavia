@@ -494,7 +494,8 @@ class HealthMonitorModelTest(base.OctaviaDBTestBase, ModelTestMixin):
 
     def test_update(self):
         health_monitor = self.create_health_monitor(self.session, self.pool.id)
-        health_monitor.name = 'test1'
+        with self.session.begin():
+            health_monitor.name = 'test1'
         new_health_monitor = self.session.query(
             models.HealthMonitor).filter_by(
                 pool_id=health_monitor.pool_id).first()
@@ -585,7 +586,8 @@ class VipModelTest(base.OctaviaDBTestBase, ModelTestMixin):
 
     def test_update(self):
         vip = self.create_vip(self.session, self.load_balancer.id)
-        vip.ip_address = "10.0.0.1"
+        with self.session.begin():
+            vip.ip_address = "10.0.0.1"
         new_vip = self.session.query(models.Vip).filter_by(
             load_balancer_id=self.load_balancer.id).first()
         self.assertEqual("10.0.0.1", new_vip.ip_address)
@@ -718,8 +720,9 @@ class L7PolicyModelTest(base.OctaviaDBTestBase, ModelTestMixin):
     def test_update(self):
         l7policy = self.create_l7policy(self.session, self.listener.id)
         pool = self.create_pool(self.session)
-        l7policy.action = constants.L7POLICY_ACTION_REDIRECT_TO_POOL
-        l7policy.redirect_pool_id = pool.id
+        with self.session.begin():
+            l7policy.action = constants.L7POLICY_ACTION_REDIRECT_TO_POOL
+            l7policy.redirect_pool_id = pool.id
         new_l7policy = self.session.query(
             models.L7Policy).filter_by(id=l7policy.id).first()
         self.assertEqual(pool.id, new_l7policy.redirect_pool_id)
@@ -758,8 +761,9 @@ class L7PolicyModelTest(base.OctaviaDBTestBase, ModelTestMixin):
     def test_pool_relationship(self):
         l7policy = self.create_l7policy(self.session, self.listener.id)
         self.create_pool(self.session, id=self.FAKE_UUID_2)
-        l7policy.action = constants.L7POLICY_ACTION_REDIRECT_TO_POOL
-        l7policy.redirect_pool_id = self.FAKE_UUID_2
+        with self.session.begin():
+            l7policy.action = constants.L7POLICY_ACTION_REDIRECT_TO_POOL
+            l7policy.redirect_pool_id = self.FAKE_UUID_2
         new_l7policy = self.session.query(
             models.L7Policy).filter_by(id=l7policy.id).first()
         self.assertIsNotNone(new_l7policy.redirect_pool)
