@@ -807,7 +807,7 @@ class Repositories(object):
         :returns: An amphora stats dictionary
         """
         with session.begin(subtransactions=True):
-            columns = (models.ListenerStatistics.__table__.columns +
+            columns = (list(models.ListenerStatistics.__table__.columns) +
                        [models.Amphora.load_balancer_id])
             amp_records = (
                 session.query(*columns)
@@ -1920,7 +1920,8 @@ class L7PolicyRepository(BaseRepository):
 
         listener.l7policies.reorder()
         session.flush()
-        l7policy.updated_at = None
+        with session.begin(subtransactions=True):
+            l7policy.updated_at = None
         return self.get(session, id=l7policy.id)
 
     def delete(self, session, id, **filters):
