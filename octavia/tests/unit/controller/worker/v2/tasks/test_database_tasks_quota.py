@@ -319,48 +319,24 @@ class TestDatabaseTasksQuota(base.TestCase):
             self.assertEqual(1, mock_lock_session.rollback.call_count)
 
     @mock.patch('octavia.db.api.get_session')
-    @mock.patch('octavia.db.repositories.PoolRepository.get')
+    @mock.patch('octavia.db.repositories.PoolRepository.get_children_count')
     def test_count_pool_children_for_quota(self, repo_mock, session_mock):
         project_id = uuidutils.generate_uuid()
-        member1 = data_models.Member(id=1, project_id=project_id)
-        member2 = data_models.Member(id=2, project_id=project_id)
-        healtmon = data_models.HealthMonitor(id=1, project_id=project_id)
-        pool_no_children = data_models.Pool(id=1, project_id=project_id)
-        pool_1_mem = data_models.Pool(id=1, project_id=project_id,
-                                      members=[member1])
-        pool_hm = data_models.Pool(id=1, project_id=project_id,
-                                   health_monitor=healtmon)
-        pool_hm_2_mem = data_models.Pool(id=1, project_id=project_id,
-                                         health_monitor=healtmon,
-                                         members=[member1, member2])
+        pool = data_models.Pool(id=1, project_id=project_id)
 
         task = database_tasks.CountPoolChildrenForQuota()
 
         # Test pool with no children
         repo_mock.reset_mock()
-        repo_mock.return_value = pool_no_children
-        result = task.execute(pool_no_children.id)
+        repo_mock.return_value = (0, 0)
+        result = task.execute(pool.id)
 
         self.assertEqual({'HM': 0, 'member': 0}, result)
 
-        # Test pool with one member
-        repo_mock.reset_mock()
-        repo_mock.return_value = pool_1_mem
-        result = task.execute(pool_1_mem.id)
-
-        self.assertEqual({'HM': 0, 'member': 1}, result)
-
-        # Test pool with health monitor and no members
-        repo_mock.reset_mock()
-        repo_mock.return_value = pool_hm
-        result = task.execute(pool_hm.id)
-
-        self.assertEqual({'HM': 1, 'member': 0}, result)
-
         # Test pool with health monitor and two members
         repo_mock.reset_mock()
-        repo_mock.return_value = pool_hm_2_mem
-        result = task.execute(pool_hm_2_mem.id)
+        repo_mock.return_value = (1, 2)
+        result = task.execute(pool.id)
 
         self.assertEqual({'HM': 1, 'member': 2}, result)
 
