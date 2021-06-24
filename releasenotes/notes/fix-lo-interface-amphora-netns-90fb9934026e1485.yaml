@@ -1,0 +1,8 @@
+---
+fixes:
+  - |
+    Fixed an issue with the ``lo`` interface in the ``amphora-haproxy`` network
+    namespace. The ``lo`` interface was down and prevented haproxy to
+    communicate with other haproxy processes (for persistent stick tables) on
+    configuration change. It delayed old haproxy worker cleanup and increased
+    the memory consumption usage after reloading the configuration.

@@ -399,7 +399,7 @@ class RH(BaseOS):
         if not network_dir:
             network_dir = self.get_network_path()
         if not ignore:
-            ignore = shutil.ignore_patterns('ifcfg-eth0*', 'ifcfg-lo*')
+            ignore = shutil.ignore_patterns('ifcfg-eth0*')
         super(RH, self).create_netns_dir(
             network_dir, netns_network_dir, ignore)
 
