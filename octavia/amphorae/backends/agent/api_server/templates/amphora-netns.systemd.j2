@@ -26,7 +26,11 @@ ExecStart=-/bin/sh -c '/usr/bin/sort -k 1 /var/lib/octavia/plugged_interfaces > 
 ExecStart=-/bin/sh -c '/sbin/ip link | awk \'{getline n; print $0,n}\' | awk \'{sub(":","",$2)} { for(i=1;i<=NF;i++) if ($i == "link/ether") {print $(i+1) " " $2} }\' | sort -k 1 | join -j 1 - /var/lib/octavia/plugged_interfaces.sorted | awk \'{system("ip link set "$2" netns {{ amphora_nsname }} name "$3"")}\''
 # Bring up all of the namespace interfaces
 {%- if HasIFUPAll %}
+# Ubuntu seems to not correctly set up the lo iface when calling ifup -a
+# Disable it first, before setting it up.
+ExecStart=-/sbin/ip netns exec {{ amphora_nsname }} ifdown lo
 ExecStart=-/sbin/ip netns exec {{ amphora_nsname }} ifup -a
 {%- else %}
+ExecStart=-/sbin/ip netns exec {{ amphora_nsname }} ifup lo
 ExecStart=-/bin/awk '{system("/sbin/ip netns exec {{ amphora_nsname }} ifup " $2)}' /var/lib/octavia/plugged_interfaces
 {%- endif %}
