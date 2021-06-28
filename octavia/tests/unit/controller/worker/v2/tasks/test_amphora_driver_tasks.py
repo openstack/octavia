@@ -630,6 +630,11 @@ class TestAmphoraDriverTasks(base.TestCase):
             self.assertEqual(hr1['destination'], hr2.destination)
             self.assertEqual(hr1['nexthop'], hr2.nexthop)
 
+        self.assertEqual(
+            host_routes,
+            amphorae_net_config_mock[AMP_ID][
+                constants.VIP_SUBNET]['host_routes'])
+
     @mock.patch('octavia.db.repositories.LoadBalancerRepository.update')
     @mock.patch('octavia.db.repositories.LoadBalancerRepository.get')
     def test_amphorae_post_vip_plug(self, mock_lb_get,
