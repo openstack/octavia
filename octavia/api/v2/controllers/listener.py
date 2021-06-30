@@ -276,8 +276,8 @@ class ListenersController(base.BaseController):
             # new listener
             disallowed_protocols = [
                 p
-                for p in constants.L4_PROTOCOL_MAP
-                if constants.L4_PROTOCOL_MAP[p] == l4_protocol
+                for p, l4_p in constants.L4_PROTOCOL_MAP.items()
+                if l4_p == l4_protocol
             ]
 
             for db_l in db_listeners:

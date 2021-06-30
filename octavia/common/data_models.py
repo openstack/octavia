@@ -30,10 +30,9 @@ class BaseDataModel(object):
         """Converts a data model to a dictionary."""
         calling_classes = calling_classes or []
         ret = {}
-        for attr in self.__dict__:
+        for attr, value in self.__dict__.items():
             if attr.startswith('_') or not kwargs.get(attr, True):
                 continue
-            value = self.__dict__[attr]
             if attr == 'tags':
                 # tags is a list, it doesn't need recurse
                 ret[attr] = value

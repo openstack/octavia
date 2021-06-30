@@ -26,7 +26,7 @@ from taskflow.types import failure
 
 from octavia.common import constants
 from octavia.common import data_models
-import octavia.common.tls_utils.cert_parser as cert_parser
+from octavia.common.tls_utils import cert_parser
 from octavia.common import utils
 from octavia.controller.worker import task_utils as task_utilities
 from octavia.db import api as db_apis

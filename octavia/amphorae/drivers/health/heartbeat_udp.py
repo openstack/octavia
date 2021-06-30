@@ -520,17 +520,16 @@ class UpdateHealthDb:
                     session, db_pool_id, db_pool_dict, pools,
                     lb_status, processed_pools, potential_offline_pools)
 
-        for pool_id in potential_offline_pools:
+        for pool_id, pool in potential_offline_pools.items():
             # Skip if we eventually found a status for this pool
             if pool_id in processed_pools:
                 continue
             try:
                 # If the database doesn't already show the pool offline, update
-                if potential_offline_pools[pool_id] != constants.OFFLINE:
+                if pool != constants.OFFLINE:
                     self._update_status(
                         session, self.pool_repo, constants.POOL,
-                        pool_id, constants.OFFLINE,
-                        potential_offline_pools[pool_id])
+                        pool_id, constants.OFFLINE, pool)
             except sqlalchemy.orm.exc.NoResultFound:
                 LOG.error("Pool %s is not in DB", pool_id)
 

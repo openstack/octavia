@@ -29,7 +29,7 @@ from octavia.api.v2.types import member as member_types
 from octavia.common import constants
 from octavia.common import data_models
 from octavia.common import exceptions
-import octavia.common.validate as validate
+from octavia.common import validate
 from octavia.db import api as db_api
 from octavia.db import prepare as db_prepare
 
