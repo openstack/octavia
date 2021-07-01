@@ -14,6 +14,7 @@
 
 import copy
 import multiprocessing
+from unittest import mock
 
 from octavia_lib.api.drivers import driver_lib as octavia_driver_lib
 from octavia_lib.common import constants as lib_consts
@@ -272,6 +273,7 @@ class DriverAgentTest(base.OctaviaDBTestBase):
         self.provider_lb_dict[
             lib_consts.LISTENERS] = [self.provider_listener_dict]
 
+    @mock.patch('octavia_lib.api.drivers.driver_lib.SOCKET_TIMEOUT', 30)
     def test_get_loadbalancer(self):
         result = self.driver_lib.get_loadbalancer(self.sample_data.lb_id)
 
@@ -282,6 +284,7 @@ class DriverAgentTest(base.OctaviaDBTestBase):
         result = self.driver_lib.get_loadbalancer('bogus')
         self.assertIsNone(result)
 
+    @mock.patch('octavia_lib.api.drivers.driver_lib.SOCKET_TIMEOUT', 30)
     def test_get_listener(self):
         result = self.driver_lib.get_listener(self.sample_data.listener1_id)
 
@@ -293,6 +296,7 @@ class DriverAgentTest(base.OctaviaDBTestBase):
         result = self.driver_lib.get_listener('bogus')
         self.assertIsNone(result)
 
+    @mock.patch('octavia_lib.api.drivers.driver_lib.SOCKET_TIMEOUT', 30)
     def test_get_pool(self):
         result = self.driver_lib.get_pool(self.sample_data.pool1_id)
 
@@ -303,6 +307,7 @@ class DriverAgentTest(base.OctaviaDBTestBase):
         result = self.driver_lib.get_pool('bogus')
         self.assertIsNone(result)
 
+    @mock.patch('octavia_lib.api.drivers.driver_lib.SOCKET_TIMEOUT', 30)
     def test_get_member(self):
         result = self.driver_lib.get_member(self.sample_data.member1_id)
 
@@ -313,6 +318,7 @@ class DriverAgentTest(base.OctaviaDBTestBase):
         result = self.driver_lib.get_member('bogus')
         self.assertIsNone(result)
 
+    @mock.patch('octavia_lib.api.drivers.driver_lib.SOCKET_TIMEOUT', 30)
     def test_get_healthmonitor(self):
         result = self.driver_lib.get_healthmonitor(self.sample_data.hm1_id)
 
@@ -323,6 +329,7 @@ class DriverAgentTest(base.OctaviaDBTestBase):
         result = self.driver_lib.get_healthmonitor('bogus')
         self.assertIsNone(result)
 
+    @mock.patch('octavia_lib.api.drivers.driver_lib.SOCKET_TIMEOUT', 30)
     def test_get_l7policy(self):
         result = self.driver_lib.get_l7policy(self.sample_data.l7policy1_id)
 
@@ -333,6 +340,7 @@ class DriverAgentTest(base.OctaviaDBTestBase):
         result = self.driver_lib.get_l7policy('bogus')
         self.assertIsNone(result)
 
+    @mock.patch('octavia_lib.api.drivers.driver_lib.SOCKET_TIMEOUT', 30)
     def test_get_l7rule(self):
         result = self.driver_lib.get_l7rule(self.sample_data.l7rule1_id)
 
