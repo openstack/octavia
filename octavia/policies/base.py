@@ -18,17 +18,23 @@ from octavia.common import constants
 deprecated_context_is_admin = policy.DeprecatedRule(
     name='context_is_admin',
     check_str='role:admin or '
-              'role:load-balancer_admin'
+              'role:load-balancer_admin',
+    deprecated_reason=constants.RBAC_ROLES_DEPRECATED_REASON,
+    deprecated_since=versionutils.deprecated.WALLABY,
 )
 deprecated_observer_and_owner = policy.DeprecatedRule(
     name='load-balancer:observer_and_owner',
     check_str='role:load-balancer_observer and '
-              'rule:load-balancer:owner'
+              'rule:load-balancer:owner',
+    deprecated_reason=constants.RBAC_ROLES_DEPRECATED_REASON,
+    deprecated_since=versionutils.deprecated.WALLABY,
 )
 deprecated_member_and_owner = policy.DeprecatedRule(
     name='load-balancer:member_and_owner',
     check_str='role:load-balancer_member and '
-              'rule:load-balancer:owner'
+              'rule:load-balancer:owner',
+    deprecated_reason=constants.RBAC_ROLES_DEPRECATED_REASON,
+    deprecated_since=versionutils.deprecated.WALLABY,
 )
 
 rules = [
@@ -87,8 +93,6 @@ rules = [
         check_str='role:load-balancer_admin or '
                   'rule:system-admin',
         deprecated_rule=deprecated_context_is_admin,
-        deprecated_reason=constants.RBAC_ROLES_DEPRECATED_REASON,
-        deprecated_since=versionutils.deprecated.WALLABY,
         scope_types=[constants.RBAC_SCOPE_SYSTEM]),
 
     # Note: 'is_admin:True' is a policy rule that takes into account the
@@ -106,8 +110,6 @@ rules = [
         check_str='role:load-balancer_observer and '
                   'rule:project-reader',
         deprecated_rule=deprecated_observer_and_owner,
-        deprecated_reason=constants.RBAC_ROLES_DEPRECATED_REASON,
-        deprecated_since=versionutils.deprecated.WALLABY,
         scope_types=[constants.RBAC_SCOPE_PROJECT]),
 
     policy.RuleDefault(
@@ -121,8 +123,6 @@ rules = [
         check_str='role:load-balancer_member and '
                   'rule:project-member',
         deprecated_rule=deprecated_member_and_owner,
-        deprecated_reason=constants.RBAC_ROLES_DEPRECATED_REASON,
-        deprecated_since=versionutils.deprecated.WALLABY,
         scope_types=[constants.RBAC_SCOPE_PROJECT]),
 
     # API access methods
