@@ -491,6 +491,7 @@ class LoadBalancersController(base.BaseController):
     def _create_loadbalancer(self, load_balancer, driver, context):
         lock_session = context.session
         lock_session.begin()
+        vip = None
         try:
             if self.repositories.check_quota_met(
                     lock_session,
@@ -618,6 +619,15 @@ class LoadBalancersController(base.BaseController):
             lock_session.rollback()
             raise exceptions.IDAlreadyExists() from e
         except Exception:
+            # Delete VIP if for example quota not met for fully
+            # populated load balancer.
+            if vip:
+                network_driver = utils.get_network_driver()
+                try:
+                    network_driver.deallocate_vip(vip)
+                except network_base.DeallocateVIPException:
+                    LOG.error("Cannot deallocate VIP of LB {}, IP {}, port {}",
+                              vip.load_balancer_id, vip.ip_address, vip.port_id)
             with excutils.save_and_reraise_exception():
                 lock_session.rollback()
 
