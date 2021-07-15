@@ -24,7 +24,7 @@ ln -s $AMP_VENV/bin/amphora-agent /usr/local/bin/amphora-agent || true
 # Also link out the vrrp check script(s) so they're in PATH for keepalived
 ln -s $AMP_VENV/bin/haproxy-vrrp-* /usr/local/bin/ || true
 
-# Link heath checker script
+# Link health checker script
 ln -s $AMP_VENV/bin/amphora-health-checker /usr/local/bin/amphora-health-checker || true
 
 mkdir /etc/octavia
