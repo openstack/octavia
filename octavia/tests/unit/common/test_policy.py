@@ -46,7 +46,7 @@ class PolicyFileTestCase(base.TestCase):
             tmp.write('{"example:test": ""}')
             tmp.flush()
 
-            self.context = context.Context('fake', 'fake')
+            self.context = context.Context('fake', project_id='fake')
 
             rule = oslo_policy.RuleDefault('example:test', "")
             policy.get_enforcer().register_defaults([rule])
@@ -73,7 +73,8 @@ class PolicyTestCase(base.TestCase):
         # https://bugs.launchpad.net/oslo.config/+bug/1645868
         self.conf.conf.__call__(args=[])
         policy.reset()
-        self.context = context.Context('fake', 'fake', roles=['member'])
+        self.context = context.Context('fake', project_id='fake',
+                                       roles=['member'])
 
         self.rules = [
             oslo_policy.RuleDefault("true", "@"),
@@ -152,7 +153,8 @@ class PolicyTestCase(base.TestCase):
 
         # NOTE(dprince) we mix case in the Admin role here to ensure
         # case is ignored
-        self.context = context.Context('admin', 'fake', roles=['AdMiN'])
+        self.context = context.Context('admin', project_id='fake',
+                                       roles=['AdMiN'])
 
         policy.get_enforcer().authorize(lowercase_action, self.target,
                                         self.context)
@@ -167,14 +169,15 @@ class PolicyTestCase(base.TestCase):
     #               This test and the conditional in common/policy.py can then
     #               be removed in favor of test_check_is_admin_new_defaults().
     def test_check_is_admin(self):
-        self.context = context.Context('admin', 'fake', roles=['AdMiN'])
+        self.context = context.Context('admin', project_id='fake',
+                                       roles=['AdMiN'])
 
         self.assertTrue(policy.get_enforcer().check_is_admin(self.context))
 
     def test_check_is_admin_new_defaults(self):
         conf = oslo_fixture.Config(config.cfg.CONF)
         conf.config(group="oslo_policy", enforce_new_defaults=True)
-        self.context = context.Context('admin', 'fake', roles=['AdMiN'],
+        self.context = context.Context('admin', roles=['AdMiN'],
                                        system_scope='all')
 
         self.assertTrue(policy.get_enforcer().check_is_admin(self.context))
@@ -194,7 +197,7 @@ class IsAdminCheckTestCase(base.TestCase):
         # https://bugs.launchpad.net/oslo.config/+bug/1645868
         self.conf.conf.__call__(args=[])
 
-        self.context = context.Context('fake', 'fake')
+        self.context = context.Context('fake', project_id='fake')
 
     def test_init_true(self):
         check = policy.IsAdminCheck('is_admin', 'True')
@@ -237,7 +240,8 @@ class AdminRolePolicyTestCase(base.TestCase):
         # https://bugs.launchpad.net/oslo.config/+bug/1645868
         self.conf.conf.__call__(args=[])
 
-        self.context = context.Context('fake', 'fake', roles=['member'])
+        self.context = context.Context('fake', project_id='fake',
+                                       roles=['member'])
         self.actions = policy.get_enforcer().get_rules().keys()
         self.target = {}
 

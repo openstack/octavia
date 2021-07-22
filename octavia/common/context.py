@@ -26,13 +26,8 @@ class Context(common_context.RequestContext):
 
     _session = None
 
-    def __init__(self, user_id=None, project_id=None, **kwargs):
-
-        if project_id:
-            kwargs['tenant'] = project_id
-
+    def __init__(self, user_id=None, **kwargs):
         super().__init__(**kwargs)
-
         self.is_admin = (policy.get_enforcer().check_is_admin(self) or
                          CONF.api_settings.auth_strategy == constants.NOAUTH)
 
@@ -41,7 +36,3 @@ class Context(common_context.RequestContext):
         if self._session is None:
             self._session = db_api.get_session()
         return self._session
-
-    @property
-    def project_id(self):
-        return self.tenant
