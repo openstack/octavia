@@ -1242,7 +1242,8 @@ class TestControllerWorker(base.TestCase):
             constants.LOADBALANCER: mock_provider_lb.to_dict(),
             constants.LOADBALANCER_ID: LB_ID,
             constants.SERVER_GROUP_ID: None,
-            constants.VIP: mock_lb.vip.to_dict()}
+            constants.VIP: mock_lb.vip.to_dict(),
+            constants.AMPHORA_ID: AMP_ID}
 
         cw = controller_worker.ControllerWorker()
         cw.services_controller.reset_mock()
@@ -1297,7 +1298,8 @@ class TestControllerWorker(base.TestCase):
             constants.LOADBALANCER: mock_provider_lb.to_dict(),
             constants.LOADBALANCER_ID: LB_ID,
             constants.SERVER_GROUP_ID: None,
-            constants.VIP: mock_lb.vip.to_dict()}
+            constants.VIP: mock_lb.vip.to_dict(),
+            constants.AMPHORA_ID: AMP_ID}
 
         cw = controller_worker.ControllerWorker()
         cw.services_controller.reset_mock()
@@ -1352,7 +1354,8 @@ class TestControllerWorker(base.TestCase):
             constants.LOADBALANCER: mock_provider_lb.to_dict(),
             constants.LOADBALANCER_ID: LB_ID,
             constants.SERVER_GROUP_ID: SERVER_GROUP_ID,
-            constants.VIP: mock_lb.vip.to_dict()}
+            constants.VIP: mock_lb.vip.to_dict(),
+            constants.AMPHORA_ID: AMP_ID}
 
         cw = controller_worker.ControllerWorker()
         cw.services_controller.reset_mock()
@@ -1404,7 +1407,8 @@ class TestControllerWorker(base.TestCase):
             constants.LOADBALANCER: mock_provider_lb.to_dict(),
             constants.LOADBALANCER_ID: LB_ID,
             constants.SERVER_GROUP_ID: SERVER_GROUP_ID,
-            constants.VIP: mock_lb.vip.to_dict()}
+            constants.VIP: mock_lb.vip.to_dict(),
+            constants.AMPHORA_ID: AMP_ID}
 
         cw = controller_worker.ControllerWorker()
         cw.services_controller.reset_mock()
@@ -1460,7 +1464,8 @@ class TestControllerWorker(base.TestCase):
             constants.LOADBALANCER: mock_provider_lb.to_dict(),
             constants.LOADBALANCER_ID: LB_ID,
             constants.SERVER_GROUP_ID: None,
-            constants.VIP: mock_lb.vip.to_dict()}
+            constants.VIP: mock_lb.vip.to_dict(),
+            constants.AMPHORA_ID: AMP_ID}
         mock_get_flavor_meta.return_value = {'taste': 'spicy'}
 
         cw = controller_worker.ControllerWorker()
@@ -1516,7 +1521,8 @@ class TestControllerWorker(base.TestCase):
             constants.LOADBALANCER: mock_provider_lb.to_dict(),
             constants.LOADBALANCER_ID: LB_ID,
             constants.SERVER_GROUP_ID: None,
-            constants.VIP: mock_lb.vip.to_dict()}
+            constants.VIP: mock_lb.vip.to_dict(),
+            constants.AMPHORA_ID: AMP_ID}
         mock_get_az_meta.return_value = {'planet': 'jupiter'}
 
         cw = controller_worker.ControllerWorker()
@@ -1607,7 +1613,8 @@ class TestControllerWorker(base.TestCase):
                                   constants.LOADBALANCER: None,
                                   constants.LOADBALANCER_ID: None,
                                   constants.SERVER_GROUP_ID: None,
-                                  constants.VIP: {}}
+                                  constants.VIP: {},
+                                  constants.AMPHORA_ID: AMP_ID}
 
         cw = controller_worker.ControllerWorker()
         cw.services_controller.reset_mock()

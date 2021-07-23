@@ -191,7 +191,7 @@ class AmphoraIndexListenersReload(BaseAmphoraTask):
             try:
                 self.amphora_driver.reload(db_lb, db_amp, timeout_dict)
             except Exception as e:
-                amphora_id = amphorae[amphora_index].id
+                amphora_id = amphorae[amphora_index][constants.ID]
                 LOG.warning('Failed to reload listeners on amphora %s. '
                             'Skipping this amphora as it is failing to '
                             'reload due to: %s', amphora_id, str(e))
