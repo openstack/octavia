@@ -289,10 +289,6 @@ function octavia_configure {
     sudo mkdir -m 700 -p $OCTAVIA_RUN_DIR
     safe_chown $STACK_USER $OCTAVIA_RUN_DIR
 
-    if ! [ -e $OCTAVIA_CONF ] ; then
-        cp $OCTAVIA_DIR/etc/octavia.conf $OCTAVIA_CONF
-    fi
-
     if ! [ -e $OCTAVIA_AUDIT_MAP ] ; then
         cp $OCTAVIA_DIR/etc/audit/octavia_api_audit_map.conf.sample $OCTAVIA_AUDIT_MAP
     fi
