@@ -18,7 +18,6 @@ Routines for configuring Octavia
 """
 
 import os
-import ssl
 import sys
 
 from keystoneauth1 import loading as ks_loading
@@ -41,9 +40,6 @@ LOG = logging.getLogger(__name__)
 EXTRA_LOG_LEVEL_DEFAULTS = [
     'neutronclient.v2_0.client=INFO',
 ]
-
-TLS_PROTOCOL_CHOICES = [
-    p[9:].replace('_', '.') for p in ssl._PROTOCOL_NAMES.values()]
 
 core_opts = [
     cfg.HostnameOpt('host', default=utils.get_hostname(),
@@ -170,10 +166,10 @@ amphora_agent_opts = [
     cfg.IntOpt('agent_request_read_timeout', default=180,
                help=_("The time in seconds to allow a request from the "
                       "controller to run before terminating the socket.")),
-    cfg.StrOpt('agent_tls_protocol', default='TLSv1.2',
+    cfg.StrOpt('agent_tls_protocol', default=lib_consts.TLS_VERSION_1_2,
                help=_("Minimum TLS protocol for communication with the "
                       "amphora agent."),
-               choices=TLS_PROTOCOL_CHOICES),
+               choices=constants.TLS_ALL_VERSIONS),
 
     # Logging setup
     cfg.ListOpt('admin_log_targets',
