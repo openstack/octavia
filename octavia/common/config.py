@@ -535,10 +535,7 @@ task_flow_opts = [
     cfg.StrOpt('engine',
                default='parallel',
                choices=constants.SUPPORTED_TASKFLOW_ENGINE_TYPES,
-               help=_('TaskFlow engine to use. '
-                      'serial - Runs all tasks on a single thread. '
-                      'parallel - Schedules tasks onto different threads to '
-                      'allow for running non-dependent tasks simultaneously')),
+               help=_('TaskFlow engine to use.')),
     cfg.IntOpt('max_workers',
                default=5,
                help=_('The maximum number of workers')),
@@ -555,7 +552,11 @@ task_flow_opts = [
                 help=_('If True, enables TaskFlow jobboard.')),
     cfg.StrOpt('jobboard_backend_driver',
                default='redis_taskflow_driver',
-               choices=['redis_taskflow_driver', 'zookeeper_taskflow_driver'],
+               choices=[('redis_taskflow_driver',
+                         'Driver that will use Redis to store job states.'),
+                        ('zookeeper_taskflow_driver',
+                         'Driver that will use Zookeeper to store job states.')
+                        ],
                help='Jobboard backend driver that will monitor job state.'),
     cfg.ListOpt('jobboard_backend_hosts', default=['127.0.0.1'],
                 help='Jobboard backend server host(s).'),

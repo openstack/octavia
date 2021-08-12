@@ -296,7 +296,10 @@ DOMAIN_NAME_REGEX = (
     r'^(?=.{1,253}\.?$)(?:(?!-|[^.]+_)[A-Za-z0-9-_]{1,63}(?<!-)(?:\.|$))+$')
 
 # TaskFlow
-SUPPORTED_TASKFLOW_ENGINE_TYPES = ['serial', 'parallel']
+SUPPORTED_TASKFLOW_ENGINE_TYPES = [
+    ('serial', 'Runs all tasks on a single thread'),
+    ('parallel', 'Schedules tasks onto different threads to allow for running '
+                 'non-dependent tasks simultaneously')]
 
 # Task/Flow constants
 ACTIVE_CONNECTIONS = 'active_connections'
