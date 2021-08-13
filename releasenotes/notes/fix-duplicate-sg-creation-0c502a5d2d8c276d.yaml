@@ -1,0 +1,9 @@
+---
+fixes:
+  - |
+    Fixes loadbalancer creation failure when one of the listener port matches
+    with the octavia generated peer ports and the allowed_cidr is explicitly
+    set to 0.0.0.0/0 on the listener. This is due to creation of two security
+    group rules with remote_ip_prefix as None and remote_ip_prefix as 0.0.0.0/0
+    which neutron rejects the second request with security group rule already
+    exists.
