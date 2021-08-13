@@ -153,6 +153,7 @@ class AllowedAddressPairsDriver(neutron_base.BaseNeutronDriver):
             security_group_id=sec_grp_id)
 
         updated_ports = []
+        listener_peer_ports = []
         for l in load_balancer.listeners:
             if (l.provisioning_status in [constants.PENDING_DELETE,
                                           constants.DELETED]):
@@ -170,11 +171,17 @@ class AllowedAddressPairsDriver(neutron_base.BaseNeutronDriver):
                 port = (l.protocol_port, protocol, None)
                 updated_ports.append(port)
 
-            # As the peer port will hold the tcp connection for keepalived and
-            # haproxy session synchronization, so here the security group rule
-            # should be just related with tcp protocol only.
-            updated_ports.append(
-                (l.peer_port, constants.PROTOCOL_TCP.lower(), None))
+            listener_peer_ports.append(l.peer_port)
+
+        # As the peer port will hold the tcp connection for keepalived and
+        # haproxy session synchronization, so here the security group rule
+        # should be just related with tcp protocol only. To avoid adding
+        # duplicate rules, peer_port info should be added if updated_ports
+        # does not have the peer_port entry with allowed_cidr 0.0.0.0/0
+        tcp_lower = constants.PROTOCOL_TCP.lower()
+        for peer_port in listener_peer_ports:
+            if (peer_port, tcp_lower, "0.0.0.0/0") not in updated_ports:
+                updated_ports.append((peer_port, tcp_lower, None))
 
         # Just going to use port_range_max for now because we can assume that
         # port_range_max and min will be the same since this driver is
