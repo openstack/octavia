@@ -17,6 +17,7 @@ from unittest import mock
 
 from oslo_config import cfg
 from oslo_config import fixture as oslo_fixture
+from oslo_utils.secretutils import md5
 from oslo_utils import uuidutils
 import requests
 import requests_mock
@@ -343,7 +344,7 @@ class TestHaproxyAmphoraLoadBalancerDriverTest(base.TestCase):
         mock_oslo.return_value = fake_context
         self.driver.cert_manager.get_secret.reset_mock()
         self.driver.cert_manager.get_secret.return_value = fake_secret
-        ref_md5 = hashlib.md5(fake_secret).hexdigest()  # nosec
+        ref_md5 = md5(fake_secret, usedforsecurity=False).hexdigest()  # nosec
         ref_id = hashlib.sha1(fake_secret).hexdigest()  # nosec
         ref_name = '{id}.pem'.format(id=ref_id)
 
@@ -357,7 +358,7 @@ class TestHaproxyAmphoraLoadBalancerDriverTest(base.TestCase):
             fake_context, sample_listener.client_ca_tls_certificate_id)
         mock_upload_cert.assert_called_once_with(
             self.amp, sample_listener.id, pem=fake_secret,
-            md5=ref_md5, name=ref_name)
+            md5sum=ref_md5, name=ref_name)
         self.assertEqual(ref_name, result)
 
     @mock.patch('octavia.amphorae.drivers.haproxy.rest_api_driver.'
@@ -407,7 +408,7 @@ class TestHaproxyAmphoraLoadBalancerDriverTest(base.TestCase):
         mock_load_certs.return_value = pool_data
         fake_pem = b'fake pem'
         mock_build_pem.return_value = fake_pem
-        ref_md5 = hashlib.md5(fake_pem).hexdigest()  # nosec
+        ref_md5 = md5(fake_pem, usedforsecurity=False).hexdigest()  # nosec
         ref_name = '{id}.pem'.format(id=pool_cert.id)
         ref_path = '{cert_dir}/{lb_id}/{name}'.format(
             cert_dir=fake_cert_dir, lb_id=sample_listener.load_balancer.id,
@@ -439,7 +440,7 @@ class TestHaproxyAmphoraLoadBalancerDriverTest(base.TestCase):
         mock_build_pem.assert_called_once_with(pool_cert)
         mock_upload_cert.assert_called_once_with(
             self.amp, sample_listener.load_balancer.id, pem=fake_pem,
-            md5=ref_md5, name=ref_name)
+            md5sum=ref_md5, name=ref_name)
         mock_secret.assert_has_calls(secret_calls)
         self.assertEqual(ref_result, result)
 

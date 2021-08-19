@@ -21,6 +21,7 @@ import warnings
 
 from oslo_context import context as oslo_context
 from oslo_log import log as logging
+from oslo_utils.secretutils import md5
 import requests
 import simplejson
 from stevedore import driver as stevedore_driver
@@ -468,20 +469,21 @@ class HaproxyAmphoraLoadBalancerDriver(
         if amphora and obj_id:
             for cert in certs:
                 pem = cert_parser.build_pem(cert)
-                md5 = hashlib.md5(pem).hexdigest()  # nosec
+                md5sum = md5(pem, usedforsecurity=False).hexdigest()  # nosec
                 name = '{id}.pem'.format(id=cert.id)
                 cert_filename_list.append(
                     os.path.join(
                         CONF.haproxy_amphora.base_cert_dir, obj_id, name))
-                self._upload_cert(amphora, obj_id, pem, md5, name)
+                self._upload_cert(amphora, obj_id, pem, md5sum, name)
 
             if certs:
                 # Build and upload the crt-list file for haproxy
                 crt_list = "\n".join(cert_filename_list)
                 crt_list = f'{crt_list}\n'.encode('utf-8')
-                md5 = hashlib.md5(crt_list).hexdigest()  # nosec
+                md5sum = md5(crt_list,
+                             usedforsecurity=False).hexdigest()  # nosec
                 name = '{id}.pem'.format(id=listener.id)
-                self._upload_cert(amphora, obj_id, crt_list, md5, name)
+                self._upload_cert(amphora, obj_id, crt_list, md5sum, name)
         return {'tls_cert': tls_cert, 'sni_certs': sni_certs}
 
     def _process_secret(self, listener, secret_ref, amphora=None, obj_id=None):
@@ -497,13 +499,13 @@ class HaproxyAmphoraLoadBalancerDriver(
             secret = secret.encode('utf-8')
         except AttributeError:
             pass
-        md5 = hashlib.md5(secret).hexdigest()  # nosec
+        md5sum = md5(secret, usedforsecurity=False).hexdigest()  # nosec
         id = hashlib.sha1(secret).hexdigest()  # nosec
         name = '{id}.pem'.format(id=id)
 
         if amphora and obj_id:
             self._upload_cert(
-                amphora, obj_id, pem=secret, md5=md5, name=name)
+                amphora, obj_id, pem=secret, md5sum=md5sum, name=name)
         return name
 
     def _process_listener_pool_certs(self, listener, amphora, obj_id):
@@ -536,10 +538,11 @@ class HaproxyAmphoraLoadBalancerDriver(
                 pem = pem.encode('utf-8')
             except AttributeError:
                 pass
-            md5 = hashlib.md5(pem).hexdigest()  # nosec
+            md5sum = md5(pem, usedforsecurity=False).hexdigest()  # nosec
             name = '{id}.pem'.format(id=tls_cert.id)
             if amphora and obj_id:
-                self._upload_cert(amphora, obj_id, pem=pem, md5=md5, name=name)
+                self._upload_cert(amphora, obj_id, pem=pem,
+                                  md5sum=md5sum, name=name)
             pool_cert_dict['client_cert'] = os.path.join(
                 CONF.haproxy_amphora.base_cert_dir, obj_id, name)
         if pool.ca_tls_certificate_id:
@@ -555,10 +558,10 @@ class HaproxyAmphoraLoadBalancerDriver(
 
         return pool_cert_dict
 
-    def _upload_cert(self, amp, listener_id, pem, md5, name):
+    def _upload_cert(self, amp, listener_id, pem, md5sum, name):
         try:
             if self.clients[amp.api_version].get_cert_md5sum(
-                    amp, listener_id, name, ignore=(404,)) == md5:
+                    amp, listener_id, name, ignore=(404,)) == md5sum:
                 return
         except exc.NotFound:
             pass
