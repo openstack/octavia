@@ -168,7 +168,7 @@ class TestCertRotation(base.TestCase):
                                                           amp_cert_mock
                                                           ):
         self.CONF.config(group="api_settings",
-                         default_provider_driver='amphora')
+                         default_provider_driver='amphorav1')
         amphora = mock.MagicMock()
         amphora.id = AMPHORA_ID
 
@@ -190,7 +190,7 @@ class TestCertRotation(base.TestCase):
                                                              amp_cert_mock
                                                              ):
         self.CONF.config(group="api_settings",
-                         default_provider_driver='amphora')
+                         default_provider_driver='amphorav1')
         amphora = mock.MagicMock()
         amphora.id = AMPHORA_ID
 
@@ -211,7 +211,7 @@ class TestCertRotation(base.TestCase):
                                                cert_exp_amp_mock,
                                                amp_cert_mock):
         self.CONF.config(group="api_settings",
-                         default_provider_driver='amphora')
+                         default_provider_driver='amphorav1')
 
         session.return_value = session
         cert_exp_amp_mock.return_value = None
@@ -227,7 +227,7 @@ class TestCertRotation(base.TestCase):
     def test_cert_rotation_expired_amphora_with_exception_amphorav2(
             self, session, cert_exp_amp_mock, amp_cert_mock):
         self.CONF.config(group="api_settings",
-                         default_provider_driver='amphorav2')
+                         default_provider_driver='amphora')
 
         amphora = mock.MagicMock()
         amphora.id = AMPHORA_ID
@@ -248,7 +248,7 @@ class TestCertRotation(base.TestCase):
     def test_cert_rotation_expired_amphora_without_exception_amphorav2(
             self, session, cert_exp_amp_mock, amp_cert_mock):
         self.CONF.config(group="api_settings",
-                         default_provider_driver='amphorav2')
+                         default_provider_driver='amphora')
         amphora = mock.MagicMock()
         amphora.id = AMPHORA_ID
 
@@ -268,7 +268,7 @@ class TestCertRotation(base.TestCase):
     def test_cert_rotation_non_expired_amphora_amphorav2(
             self, session, cert_exp_amp_mock, amp_cert_mock):
         self.CONF.config(group="api_settings",
-                         default_provider_driver='amphorav2')
+                         default_provider_driver='amphora')
         session.return_value = session
         cert_exp_amp_mock.return_value = None
         cr = house_keeping.CertRotation()

@@ -58,10 +58,10 @@ def update_stats_on_done(stats, fut):
 
 class HealthManager(object):
     def __init__(self, exit_event):
-        if CONF.api_settings.default_provider_driver == constants.AMPHORAV2:
-            self.cw = cw2.ControllerWorker()
-        else:
+        if CONF.api_settings.default_provider_driver == constants.AMPHORAV1:
             self.cw = cw1.ControllerWorker()
+        else:
+            self.cw = cw2.ControllerWorker()
         self.threads = CONF.health_manager.failover_threads
         # pylint: disable=consider-using-with
         self.executor = futures.ThreadPoolExecutor(max_workers=self.threads)

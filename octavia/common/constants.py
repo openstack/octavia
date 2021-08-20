@@ -783,6 +783,7 @@ RBAC_ROLES_DEPRECATED_REASON = (
 # PROVIDERS
 OCTAVIA = 'octavia'
 AMPHORAV2 = 'amphorav2'
+AMPHORAV1 = 'amphorav1'
 
 # systemctl commands
 DISABLE = 'disable'

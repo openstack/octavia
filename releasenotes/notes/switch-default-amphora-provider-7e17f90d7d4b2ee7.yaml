@@ -1,0 +1,8 @@
+---
+features:
+  - |
+    AmphoraV2 provider that was intoduced in earier releases now is default
+    Amphora provider for Octavia. Alias `amphorav1` is available for previous
+    version of Amphora provider. Alias `amphorav2` is now the same as
+    `amphora`. By default, jobboard (usage persistence storage) is not
+    enabled, configurable via `jobboard_enabled` option in `task_flow` section.
