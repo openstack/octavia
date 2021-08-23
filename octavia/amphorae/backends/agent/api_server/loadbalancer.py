@@ -192,6 +192,8 @@ class Loadbalancer(object):
                     haproxy_pid=util.pid_path(lb_id),
                     haproxy_cmd=util.CONF.haproxy_amphora.haproxy_cmd,
                     haproxy_cfg=util.config_path(lb_id),
+                    haproxy_state_file=util.state_file_path(lb_id),
+                    haproxy_socket=util.haproxy_sock_path(lb_id),
                     haproxy_user_group_cfg=consts.HAPROXY_USER_GROUP_CFG,
                     respawn_count=util.CONF.haproxy_amphora.respawn_count,
                     respawn_interval=(util.CONF.haproxy_amphora.

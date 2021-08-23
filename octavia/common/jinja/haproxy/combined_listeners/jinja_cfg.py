@@ -159,11 +159,15 @@ class JinjaTemplater(object):
         if not socket_path:
             socket_path = '%s/%s.sock' % (self.base_amp_path,
                                           listeners[0].load_balancer.id)
+        state_file_path = '%s/%s/servers-state' % (
+            self.base_amp_path,
+            listeners[0].load_balancer.id)
         return self._get_template().render(
             {'loadbalancer': loadbalancer,
              'stats_sock': socket_path,
              'log_http': self.log_http,
              'log_server': self.log_server,
+             'state_file': state_file_path,
              'administrative_log_facility':
                  CONF.amphora_agent.administrative_log_facility,
              'user_log_facility': CONF.amphora_agent.user_log_facility,
