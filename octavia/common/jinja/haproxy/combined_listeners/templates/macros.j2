@@ -334,6 +334,7 @@ backend {{ pool.id }}:{{ listener.id }}
         {% endif %}
     {% endif %}
     {% if pool.health_monitor and pool.health_monitor.enabled %}
+    load-server-state-from-file global
     timeout check {{ pool.health_monitor.timeout }}s
         {% if (pool.health_monitor.type ==
                constants.HEALTH_MONITOR_HTTP or pool.health_monitor.type ==
