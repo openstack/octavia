@@ -1,0 +1,5 @@
+---
+fixes:
+  - |
+    Fixed an issue with members in ERROR operating status that may have been
+    updated briefly to ONLINE during a Load Balancer configuration change.
