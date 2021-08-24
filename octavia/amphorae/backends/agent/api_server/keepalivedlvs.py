@@ -189,7 +189,8 @@ class KeepalivedLvs(lvs_listener_base.LvsListenerApiServerBase):
         :param listener_id: the id of the listener
         """
         self._check_lvs_listener_exists(listener_id)
-        with open(util.keepalived_lvs_cfg_path(listener_id), 'r') as file:
+        with open(util.keepalived_lvs_cfg_path(listener_id),
+                  'r', encoding='utf-8') as file:
             cfg = file.read()
             resp = webob.Response(cfg, content_type='text/plain')
             return resp
@@ -242,7 +243,7 @@ class KeepalivedLvs(lvs_listener_base.LvsListenerApiServerBase):
                     '/proc', util.get_keepalivedlvs_pid(listener_id))):
                 # Check if the listener is disabled
                 with open(util.keepalived_lvs_cfg_path(listener_id),
-                          'r') as file:
+                          'r', encoding='utf-8') as file:
                     cfg = file.read()
                     m = re.search('virtual_server', cfg)
                     if m:
@@ -256,7 +257,7 @@ class KeepalivedLvs(lvs_listener_base.LvsListenerApiServerBase):
 
         Gets the status of all UDP listeners on the amphora.
         """
-        listeners = list()
+        listeners = []
 
         for lvs_listener in util.get_lvs_listeners():
             status = self._check_lvs_listener_status(lvs_listener)

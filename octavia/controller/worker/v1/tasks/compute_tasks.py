@@ -158,7 +158,8 @@ class CertComputeCreate(ComputeCreate):
         """
 
         # load client certificate
-        with open(CONF.controller_worker.client_ca, 'r') as client_ca:
+        with open(CONF.controller_worker.client_ca,
+                  'r', encoding='utf-8') as client_ca:
             ca = client_ca.read()
 
         key = utils.get_compatible_server_certs_key_passphrase()

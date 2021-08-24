@@ -116,13 +116,13 @@ def config_path(lb_id):
 
 
 def get_haproxy_pid(lb_id):
-    with open(pid_path(lb_id), 'r') as f:
+    with open(pid_path(lb_id), 'r', encoding='utf-8') as f:
         return f.readline().rstrip()
 
 
 def get_keepalivedlvs_pid(listener_id):
     pid_file = keepalived_lvs_pids_path(listener_id)[0]
-    with open(pid_file, 'r') as f:
+    with open(pid_file, 'r', encoding='utf-8') as f:
         return f.readline().rstrip()
 
 
@@ -224,7 +224,8 @@ def is_lvs_listener_running(listener_id):
 
 def get_os_init_system():
     if os.path.exists(consts.INIT_PROC_COMM_PATH):
-        with open(consts.INIT_PROC_COMM_PATH, 'r') as init_comm:
+        with open(consts.INIT_PROC_COMM_PATH,
+                  'r', encoding='utf-8') as init_comm:
             init_proc_name = init_comm.read().rstrip('\n')
             if init_proc_name == consts.INIT_SYSTEMD:
                 return consts.INIT_SYSTEMD
@@ -293,7 +294,7 @@ def get_backend_for_lb_object(object_id):
 
 
 def parse_haproxy_file(lb_id):
-    with open(config_path(lb_id), 'r') as file:
+    with open(config_path(lb_id), 'r', encoding='utf-8') as file:
         cfg = file.read()
 
         listeners = {}
@@ -345,7 +346,8 @@ def vrrp_check_script_update(lb_id, action):
     # If no LBs are found, so make sure keepalived thinks haproxy is down.
     if not lb_ids:
         if not lvs_ids:
-            with open(haproxy_check_script_path(), 'w') as text_file:
+            with open(haproxy_check_script_path(),
+                      'w', encoding='utf-8') as text_file:
                 text_file.write('exit 1')
         else:
             try:
@@ -362,7 +364,7 @@ def vrrp_check_script_update(lb_id, action):
         args.append(haproxy_sock_path(lbid))
 
     cmd = 'haproxy-vrrp-check {args}; exit $?'.format(args=' '.join(args))
-    with open(haproxy_check_script_path(), 'w') as text_file:
+    with open(haproxy_check_script_path(), 'w', encoding='utf-8') as text_file:
         text_file.write(cmd)
 
 
@@ -373,7 +375,7 @@ def get_haproxy_vip_addresses(lb_id):
     :returns: List of VIP addresses (IPv4 and IPv6)
     """
     vips = []
-    with open(config_path(lb_id), 'r') as file:
+    with open(config_path(lb_id), 'r', encoding='utf-8') as file:
         for line in file:
             current_line = line.strip()
             if current_line.startswith('bind'):

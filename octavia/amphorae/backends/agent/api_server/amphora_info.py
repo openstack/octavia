@@ -127,8 +127,8 @@ class AmphoraInfo(object):
 
     def _get_meminfo(self):
         re_parser = re.compile(r'^(?P<key>\S*):\s*(?P<value>\d*)\s*kB')
-        result = dict()
-        with open('/proc/meminfo', 'r') as meminfo:
+        result = {}
+        with open('/proc/meminfo', 'r', encoding='utf-8') as meminfo:
             for line in meminfo:
                 match = re_parser.match(line)
                 if not match:
@@ -138,7 +138,7 @@ class AmphoraInfo(object):
         return result
 
     def _cpu(self):
-        with open('/proc/stat') as f:
+        with open('/proc/stat', encoding='utf-8') as f:
             cpu = f.readline()
             vals = cpu.split(' ')
             return {
@@ -153,13 +153,13 @@ class AmphoraInfo(object):
             }
 
     def _load(self):
-        with open('/proc/loadavg') as f:
+        with open('/proc/loadavg', encoding='utf-8') as f:
             load = f.readline()
             vals = load.split(' ')
             return vals[:3]
 
     def _get_networks(self):
-        networks = dict()
+        networks = {}
         with pyroute2.NetNS(consts.AMPHORA_NAMESPACE) as netns:
             for interface in netns.get_links():
                 interface_name = None

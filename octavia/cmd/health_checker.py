@@ -224,7 +224,7 @@ def sctp_health_check(ip_address, port, timeout=2):
     if send_abort:
         has_sctp_support = False
 
-        with open("/proc/net/protocols") as fp:
+        with open("/proc/net/protocols", encoding='utf-8') as fp:
             for line in fp:
                 if line.startswith('SCTP'):
                     has_sctp_support = True

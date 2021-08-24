@@ -147,7 +147,8 @@ def get_lvs_listener_resource_ipports_nsname(listener_id):
     #                                        'ipport': ipport}],
     #                            'HealthMonitor': {'id': healthmonitor-id}}
     resource_ipport_mapping = {}
-    with open(util.keepalived_lvs_cfg_path(listener_id), 'r') as f:
+    with open(util.keepalived_lvs_cfg_path(listener_id),
+              'r', encoding='utf-8') as f:
         cfg = f.read()
         ns_name = NS_REGEX.findall(cfg)[0]
         listener_ip_port = V4_VS_REGEX.findall(cfg)
@@ -255,7 +256,8 @@ def get_lvs_listener_pool_status(listener_id):
     # updating to a recent keepalived release.
     restarting = config_stat.st_mtime > check_pid_stat.st_mtime
 
-    with open(util.keepalived_lvs_cfg_path(listener_id), 'r') as f:
+    with open(util.keepalived_lvs_cfg_path(listener_id),
+              'r', encoding='utf-8') as f:
         cfg = f.read()
         hm_enabled = len(CHECKER_REGEX.findall(cfg)) > 0
 
@@ -323,7 +325,7 @@ def get_ipvsadm_info(ns_name, is_stats_cmd=False):
     # mapping = {'listeneripport': {'Linstener': vs_values,
     #                              'members': [rs_values1, rs_values2]}}
     last_key = None
-    value_mapping = dict()
+    value_mapping = {}
     output_line_num = len(output)
 
     def split_line(line):
@@ -382,8 +384,8 @@ def get_lvs_listeners_stats():
     need_check_listener_ids = [
         listener_id for listener_id in lvs_listener_ids
         if util.is_lvs_listener_running(listener_id)]
-    ipport_mapping = dict()
-    listener_stats_res = dict()
+    ipport_mapping = {}
+    listener_stats_res = {}
     for check_listener_id in need_check_listener_ids:
         # resource_ipport_mapping = {'Listener': {'id': listener-id,
         #                                         'ipport': ipport},

@@ -513,7 +513,7 @@ class HaproxyAmphoraLoadBalancerDriver(
         #         'client_cert': client_full_filename,
         #         'ca_cert': ca_cert_full_filename,
         #         'crl': crl_full_filename}}
-        pool_certs_dict = dict()
+        pool_certs_dict = {}
         for pool in listener.pools:
             if pool.id not in pool_certs_dict:
                 pool_certs_dict[pool.id] = self._process_pool_certs(
@@ -527,7 +527,7 @@ class HaproxyAmphoraLoadBalancerDriver(
         return pool_certs_dict
 
     def _process_pool_certs(self, listener, pool, amphora, obj_id):
-        pool_cert_dict = dict()
+        pool_cert_dict = {}
 
         # Handle the client cert(s) and key
         if pool.tls_certificate_id:

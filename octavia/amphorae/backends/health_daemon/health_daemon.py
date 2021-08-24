@@ -118,7 +118,8 @@ def run_sender(cmd_queue):
             # heartbeat
             if os.path.isfile(keepalived_cfg_path):
                 # Is there a pid file for keepalived?
-                with open(keepalived_pid_path, 'r') as pid_file:
+                with open(keepalived_pid_path,
+                          'r', encoding='utf-8') as pid_file:
                     pid = int(pid_file.readline())
                 os.kill(pid, 0)
 
@@ -251,7 +252,7 @@ def build_stats_message():
                 pool_status = (
                     keepalivedlvs_query.get_lvs_listener_pool_status(
                         listener_id))
-                lvs_listener_dict = dict()
+                lvs_listener_dict = {}
                 lvs_listener_dict['status'] = listener_stats['status']
                 lvs_listener_dict['stats'] = {
                     'tx': delta_values['bout'],

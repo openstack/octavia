@@ -111,7 +111,7 @@ class LocalCertManager(cert_mgr.CertManager):
         filename_intermediates = "{0}.int".format(filename_base)
         filename_pkp = "{0}.pass".format(filename_base)
 
-        cert_data = dict()
+        cert_data = {}
 
         flags = os.O_RDONLY
         try:

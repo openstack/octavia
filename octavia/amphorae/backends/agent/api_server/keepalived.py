@@ -146,7 +146,8 @@ class Keepalived(object):
             keepalived_pid_path = util.keepalived_pid_path()
             try:
                 # Is there a pid file for keepalived?
-                with open(keepalived_pid_path, 'r') as pid_file:
+                with open(keepalived_pid_path,
+                          'r', encoding='utf-8') as pid_file:
                     pid = int(pid_file.readline())
                 os.kill(pid, 0)
 

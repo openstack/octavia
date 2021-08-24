@@ -82,7 +82,7 @@ class Loadbalancer(object):
         :param listener_id: the id of the listener
         """
         self._check_lb_exists(lb_id)
-        with open(util.config_path(lb_id), 'r') as file:
+        with open(util.config_path(lb_id), 'r', encoding='utf-8') as file:
             cfg = file.read()
             resp = webob.Response(cfg, content_type='text/plain')
             resp.headers['ETag'] = (
@@ -365,7 +365,7 @@ class Loadbalancer(object):
 
         Currently type==SSL is also not detected
         """
-        listeners = list()
+        listeners = []
 
         for lb in util.get_loadbalancers():
             stats_socket, listeners_on_lb = util.parse_haproxy_file(lb)
@@ -414,7 +414,7 @@ class Loadbalancer(object):
                 details="No certificate with filename: {f}".format(
                     f=filename)), status=404)
 
-        with open(cert_path, 'r') as crt_file:
+        with open(cert_path, 'r', encoding='utf-8') as crt_file:
             cert = crt_file.read()
             md5sum = md5(octavia_utils.b(cert),
                          usedforsecurity=False).hexdigest()  # nosec
@@ -433,7 +433,8 @@ class Loadbalancer(object):
             if os.path.exists(
                     os.path.join('/proc', util.get_haproxy_pid(lb_id))):
                 # Check if the listener is disabled
-                with open(util.config_path(lb_id), 'r') as file:
+                with open(util.config_path(lb_id),
+                          'r', encoding='utf-8') as file:
                     cfg = file.read()
                     m = re.findall('^frontend (.*)$', cfg, re.MULTILINE)
                     return m or []

@@ -53,7 +53,7 @@ class HAProxyQuery(object):
 
         try:
             sock.send(octavia_utils.b(query + '\n'))
-            data = u''
+            data = ''
             while True:
                 x = sock.recv(1024)
                 if not x:
@@ -68,7 +68,7 @@ class HAProxyQuery(object):
         """Get and parse output from 'show info' command."""
         results = self._query('show info')
 
-        dict_results = dict()
+        dict_results = {}
         for r in results.split('\n'):
             vals = r.split(":", 1)
             dict_results[vals[0].strip()] = vals[1].strip()
