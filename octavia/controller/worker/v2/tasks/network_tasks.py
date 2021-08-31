@@ -452,12 +452,13 @@ class PlugVIPAmphora(BaseNetworkTask):
                                            id=amphora.get(constants.ID))
             db_amp.vrrp_port_id = result[constants.VRRP_PORT_ID]
             db_amp.ha_port_id = result[constants.HA_PORT_ID]
+            db_subnet = self.network_driver.get_subnet(subnet[constants.ID])
             db_lb = self.loadbalancer_repo.get(
                 db_apis.get_session(),
                 id=loadbalancer[constants.LOADBALANCER_ID])
 
             self.network_driver.unplug_aap_port(db_lb.vip,
-                                                db_amp, subnet)
+                                                db_amp, db_subnet)
         except Exception as e:
             LOG.error('Failed to unplug AAP port. Resources may still be in '
                       'use for VIP: %s due to error: %s', db_lb.vip, str(e))
