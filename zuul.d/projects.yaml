@@ -39,8 +39,6 @@
             irrelevant-files: *irrelevant-files
         - octavia-v2-dsvm-tls-barbican:
             irrelevant-files: *irrelevant-files
-        - octavia-v2-act-stdby-dsvm-scenario:
-            irrelevant-files: *irrelevant-files
         - octavia-grenade:
             irrelevant-files:
               - ^.*\.rst$
@@ -52,6 +50,9 @@
               - ^tools/.*$
               - ^(test-|)requirements.txt$
               - ^tox.ini$
+        - octavia-v2-act-stdby-dsvm-scenario:
+            irrelevant-files: *irrelevant-files
+            voting: false
         - octavia-v2-dsvm-cinder-amphora:
             irrelevant-files: *irrelevant-files
             voting: false
@@ -93,7 +94,6 @@
         - octavia-v2-dsvm-noop-api
         - octavia-v2-dsvm-scenario
         - octavia-v2-dsvm-tls-barbican
-        - octavia-v2-act-stdby-dsvm-scenario
         - octavia-grenade
     periodic:
       jobs:
