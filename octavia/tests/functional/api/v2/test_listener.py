@@ -683,17 +683,21 @@ class TestListener(base.BaseAPITest):
     def test_create_with_timeouts_too_high(self):
         optionals = {
             'timeout_client_data': 1,
-            'timeout_member_connect': 2,
-            'timeout_member_data': 3,
-            'timeout_tcp_inspect': constants.MAX_TIMEOUT + 1,
+            'timeout_member_connect': 1,
+            'timeout_member_data': 1,
+            'timeout_tcp_inspect': 1,
         }
-        resp = self.test_create(response_status=400, **optionals).json
-        fault = resp.get('faultstring')
-        self.assertIn(
-            'Invalid input for field/attribute timeout_tcp_inspect', fault)
-        self.assertIn(
-            'Value should be lower or equal to {0}'.format(
-                constants.MAX_TIMEOUT), fault)
+        for field in optionals.items():
+            optionals.update({field[0]: constants.MAX_TIMEOUT + 1})
+            resp = self.test_create(response_status=400, **optionals).json
+            optionals.update({field[0]: 1})
+            fault = resp.get('faultstring')
+            self.assertIn(
+                'Invalid input for field/attribute {0}'.format(
+                    field[0]), fault)
+            self.assertIn(
+                'Value should be lower or equal to {0}'.format(
+                    constants.MAX_TIMEOUT), fault)
 
     def test_create_with_timeouts_too_low(self):
         optionals = {
