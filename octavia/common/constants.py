@@ -232,8 +232,8 @@ DEFAULT_MAX_RETRIES_DOWN = 3
 MIN_HM_RETRIES = 1
 MAX_HM_RETRIES = 10
 
-# 1 year:     y     d    h    m    ms
-MAX_TIMEOUT = 365 * 24 * 60 * 60 * 1000
+# 24 days:   days  d    h    m    ms
+MAX_TIMEOUT = 24 * 24 * 60 * 60 * 1000
 MIN_TIMEOUT = 0
 
 DEFAULT_TIMEOUT_CLIENT_DATA = 50000
