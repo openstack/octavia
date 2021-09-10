@@ -342,3 +342,40 @@ class DriverAgentTest(base.OctaviaDBTestBase):
         # Test non-existent L7 rule
         result = self.driver_lib.get_l7rule('bogus')
         self.assertIsNone(result)
+
+    def test_update_load_balancer_status(self):
+        # Add a new member
+        member_dict = copy.deepcopy(self.sample_data.test_member2_dict)
+        self.repos.member.create(self.session, **member_dict)
+
+        result = self.driver_lib.get_member(member_dict[lib_consts.ID])
+        self.assertEqual(self.sample_data.provider_member2_dict,
+                         result.to_dict(render_unsets=True))
+
+        # Test deleting a member
+        status = {
+            "loadbalancers": [
+                {"id": self.sample_data.lb_id,
+                 "provisioning_status": "ACTIVE",
+                 "operating_status": "ONLINE"}
+            ],
+            "healthmonitors": [],
+            "l7policies": [],
+            "l7rules": [],
+            "listeners": [],
+            "members": [
+                {"id": member_dict[lib_consts.ID],
+                 "provisioning_status": "DELETED"}
+            ],
+            "pools": []
+        }
+
+        self.driver_lib.update_loadbalancer_status(status)
+        result = self.driver_lib.get_member(member_dict[lib_consts.ID])
+        self.assertIsNone(result)
+
+        # Test deleting an already deleted member
+        # It should be silently ignored
+        self.driver_lib.update_loadbalancer_status(status)
+        result = self.driver_lib.get_member(member_dict[lib_consts.ID])
+        self.assertIsNone(result)
