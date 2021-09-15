@@ -44,7 +44,7 @@ touch index.txt
 echo 1000 > serial
 
 # Create the client CA private key
-openssl genrsa -aes128 -out private/ca.key.pem -passout pass:not-secure-passphrase 2048
+openssl genpkey -algorithm RSA -out private/ca.key.pem -aes-128-cbc -pass pass:not-secure-passphrase
 chmod 400 private/ca.key.pem
 
 # Create the client CA root certificate
@@ -58,7 +58,7 @@ touch intermediate_ca/index.txt
 echo 1000 > intermediate_ca/serial
 
 # Create the client intermediate CA private key
-openssl genrsa -aes128 -out intermediate_ca/private/intermediate.ca.key.pem -passout pass:not-secure-passphrase 2048
+openssl genpkey -algorithm RSA -out intermediate_ca/private/intermediate.ca.key.pem -aes-128-cbc -pass pass:not-secure-passphrase
 chmod 400 intermediate_ca/private/intermediate.ca.key.pem
 
 # Create the client intermediate CA certificate signing request
@@ -71,7 +71,7 @@ openssl ca -config ../../openssl.cnf -name CA_intermediate -extensions v3_interm
 cat intermediate_ca/certs/intermediate.cert.pem certs/ca.cert.pem > intermediate_ca/ca-chain.cert.pem
 
 ###### Create the client key and certificate
-openssl genrsa -aes128 -out intermediate_ca/private/controller.key.pem -passout pass:not-secure-passphrase 2048
+openssl genpkey -algorithm RSA -out intermediate_ca/private/controller.key.pem -aes-128-cbc -pass pass:not-secure-passphrase
 chmod 400 intermediate_ca/private/controller.key.pem
 
 # Create the client controller certificate signing request
@@ -103,7 +103,7 @@ touch index.txt
 echo 1000 > serial
 
 # Create the server CA private key
-openssl genrsa -aes128 -out private/ca.key.pem -passout pass:not-secure-passphrase 2048
+openssl genpkey -algorithm RSA -out private/ca.key.pem -aes-128-cbc -pass pass:not-secure-passphrase
 chmod 400 private/ca.key.pem
 
 # Create the server CA root certificate
@@ -117,7 +117,7 @@ touch intermediate_ca/index.txt
 echo 1000 > intermediate_ca/serial
 
 # Create the server intermediate CA private key
-openssl genrsa -aes128 -out intermediate_ca/private/intermediate.ca.key.pem -passout pass:not-secure-passphrase 2048
+openssl genpkey -algorithm RSA -out intermediate_ca/private/intermediate.ca.key.pem -aes-128-cbc -pass pass:not-secure-passphrase
 chmod 400 intermediate_ca/private/intermediate.ca.key.pem
 
 # Create the server intermediate CA certificate signing request
