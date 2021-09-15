@@ -196,3 +196,31 @@
         - openstack/octavia
     vars:
       tox_envlist: pip-missing-reqs,pip-extra-reqs
+
+- job:
+    name: octavia-v2-dsvm-scenario-fips
+    parent: octavia-v2-dsvm-scenario
+    nodeset: octavia-single-node-centos-8-stream
+    description: |
+      Functional testing for a FIPS enabled Centos 8 system
+    pre-run: playbooks/enable-fips.yaml
+    vars:
+      devstack_local_conf:
+        test-config:
+          "$TEMPEST_CONFIG":
+            validation:
+              ssh_key_type: 'ecdsa'
+
+- job:
+    name: octavia-v2-dsvm-tls-barbican-fips
+    parent: octavia-v2-dsvm-tls-barbican
+    nodeset: octavia-single-node-centos-8-stream
+    description: |
+      Functional testing for a FIPS enabled Centos 8 system
+    pre-run: playbooks/enable-fips.yaml
+    vars:
+      devstack_local_conf:
+        test-config:
+          "$TEMPEST_CONFIG":
+            validation:
+              ssh_key_type: 'ecdsa'
