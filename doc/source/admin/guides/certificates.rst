@@ -142,7 +142,7 @@ can be used to create the required certificates.
 
    .. code-block:: bash
 
-       $ openssl genrsa -aes256 -out private/ca.key.pem 4096
+       $ openssl genpkey -algorithm RSA -out private/ca.key.pem -aes-128-cbc -pkeyopt rsa_keygen_bits:4096
        $ chmod 400 private/ca.key.pem
 
 7. Create the `server` CA certificate.
@@ -174,7 +174,7 @@ can be used to create the required certificates.
 
    .. code-block:: bash
 
-       $ openssl genrsa -aes256 -out private/ca.key.pem 4096
+       $ openssl genpkey -algorithm RSA -out private/ca.key.pem -aes-128-cbc -pkeyopt rsa_keygen_bits:4096
        $ chmod 400 private/ca.key.pem
 
 10. Create the `client` CA certificate.
@@ -199,7 +199,7 @@ can be used to create the required certificates.
 
     .. code-block:: bash
 
-        $ openssl genrsa -aes256 -out private/client.key.pem 2048
+        $ openssl genpkey -algorithm RSA -out private/ca.key.pem -aes-128-cbc -pkeyopt rsa_keygen_bits:2048
 
 12. Create the certificate request for the `client` certificate used on the
     controllers.
