@@ -1,0 +1,5 @@
+---
+fixes:
+  - |
+    Increased the TCP buffer memory maximum and enabled MTU ICMP black hole
+    detection.

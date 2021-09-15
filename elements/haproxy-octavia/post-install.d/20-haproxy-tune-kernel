@@ -20,9 +20,14 @@ sysctl-write-value fs.nr_open 2600000
 sysctl-write-value net.ipv4.netfilter.ip_conntrack_tcp_timeout_time_wait 5 || true
 sysctl-write-value net.ipv4.netfilter.ip_conntrack_tcp_timeout_fin_wait 5 || true
 
+# Enable MTU icmp black hole detection (RFC4821)
+sysctl-write-value net.ipv4.tcp_mtu_probing 1
+
 sysctl-write-value net.ipv4.tcp_fin_timeout 5
 sysctl-write-value net.ipv4.ip_nonlocal_bind 1
 sysctl-write-value net.ipv6.ip_nonlocal_bind 1
-sysctl-write-value net.ipv4.tcp_rmem "16384 65536 524288"
-sysctl-write-value net.ipv4.tcp_wmem "16384 349520 699040"
+sysctl-write-value net.core.rmem_max 67108864
+sysctl-write-value net.core.wmem_max 67108864
+sysctl-write-value net.ipv4.tcp_rmem "4096 87380 33554432"
+sysctl-write-value net.ipv4.tcp_wmem "4096 87380 33554432"
 sysctl-write-value net.ipv4.ip_local_port_range "1025 65534"
