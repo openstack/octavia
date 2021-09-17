@@ -42,7 +42,7 @@ def url(url, require_scheme=True):
             raise exceptions.InvalidURL(url=url)
         p_url = rfc3986.urlparse(rfc3986.normalize_uri(url))
         if require_scheme:
-            if p_url.scheme != 'http' and p_url.scheme != 'https':
+            if p_url.scheme not in ('http', 'https'):
                 raise exceptions.InvalidURL(url=url)
     except Exception as e:
         raise exceptions.InvalidURL(url=url) from e

@@ -1077,9 +1077,12 @@ class ControllerWorker(object):
             else:
                 flavor = {constants.LOADBALANCER_TOPOLOGY: lb.topology}
 
-            provider_lb_dict = (
-                provider_utils.db_loadbalancer_to_provider_loadbalancer(
-                    lb).to_dict() if lb else lb)
+            if lb:
+                provider_lb_dict = (
+                    provider_utils.db_loadbalancer_to_provider_loadbalancer(
+                        lb).to_dict())
+            else:
+                provider_lb_dict = lb
 
             provider_lb_dict[constants.FLAVOR] = flavor
 

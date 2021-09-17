@@ -39,6 +39,7 @@ disable=
  invalid-name,
  line-too-long,
  missing-docstring,
+ consider-using-f-string,
 # "R" Refactor recommendations
  duplicate-code,
  interface-not-implemented,
