@@ -1047,6 +1047,36 @@ class TestAllowedAddressPairsDriver(base.TestCase):
                                       mock.call(expected_create_rule_udp)],
                                      any_order=True)
 
+    def test_update_vip_when_protocol_and_peer_ports_overlap(self):
+        lc_1 = data_models.ListenerCidr('l1', '0.0.0.0/0')
+        listeners = [data_models.Listener(protocol_port=80, peer_port=1024,
+                                          protocol=constants.PROTOCOL_TCP),
+                     data_models.Listener(protocol_port=443, peer_port=1025,
+                                          protocol=constants.PROTOCOL_TCP),
+                     data_models.Listener(protocol_port=1025, peer_port=1026,
+                                          protocol=constants.PROTOCOL_TCP,
+                                          allowed_cidrs=[lc_1])]
+        vip = data_models.Vip(ip_address='10.0.0.2')
+        lb = data_models.LoadBalancer(id='1', listeners=listeners, vip=vip)
+        list_sec_grps = self.driver.neutron_client.list_security_groups
+        list_sec_grps.return_value = {'security_groups': [{'id': 'secgrp-1'}]}
+        fake_rules = {
+            'security_group_rules': [
+                {'id': 'rule-80', 'port_range_max': 80, 'protocol': 'tcp'},
+                {'id': 'rule-22', 'port_range_max': 22, 'protocol': 'tcp'}
+            ]
+        }
+        list_rules = self.driver.neutron_client.list_security_group_rules
+        list_rules.return_value = fake_rules
+        delete_rule = self.driver.neutron_client.delete_security_group_rule
+        create_rule = self.driver.neutron_client.create_security_group_rule
+        self.driver.update_vip(lb)
+        delete_rule.assert_called_once_with('rule-22')
+
+        # Create SG rule calls should be 4, each for port 1024/1025/1026/443
+        # No duplicate SG creation for overlap port 1025
+        self.assertEqual(4, create_rule.call_count)
+
     def test_update_vip_when_listener_deleted(self):
         listeners = [data_models.Listener(protocol_port=80,
                                           protocol=constants.PROTOCOL_TCP),
