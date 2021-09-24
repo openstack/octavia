@@ -230,11 +230,15 @@ class TestNetworkTasks(base.TestCase):
                          calc_delta.execute(self.load_balancer_mock, {}))
 
         # Test with one amp and one pool and one member, nothing plugged
+        # Dummy AZ is provided
         # Delta should be one additional subnet to plug
         mock_driver.reset_mock()
         member_mock = mock.MagicMock()
         member_mock.subnet_id = 1
         pool_mock.members = [member_mock]
+        az = {
+            constants.COMPUTE_ZONE: 'foo'
+        }
         mock_driver.get_subnet.return_value = data_models.Subnet(id=2,
                                                                  network_id=3)
 
@@ -244,7 +248,7 @@ class TestNetworkTasks(base.TestCase):
                                     data_models.Interface(network_id=3)],
                                 delete_nics=[]).to_dict(recurse=True)
         self.assertEqual({self.db_amphora_mock.id: ndm},
-                         calc_delta.execute(self.load_balancer_mock, {}))
+                         calc_delta.execute(self.load_balancer_mock, az))
 
         vrrp_port_call = mock.call(PORT_ID)
         mock_driver.get_port.assert_has_calls([vrrp_port_call])

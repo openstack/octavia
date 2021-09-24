@@ -69,10 +69,10 @@ class CalculateAmphoraDelta(BaseNetworkTask):
 
         # Figure out what networks we want
         # seed with lb network(s)
-        if availability_zone:
-            management_nets = (
-                [availability_zone.get(constants.MANAGEMENT_NETWORK)] or
-                CONF.controller_worker.amp_boot_network_list)
+        if (availability_zone and
+                availability_zone.get(constants.MANAGEMENT_NETWORK)):
+            management_nets = [
+                availability_zone.get(constants.MANAGEMENT_NETWORK)]
         else:
             management_nets = CONF.controller_worker.amp_boot_network_list
         desired_network_ids = {vrrp_port_network_id}.union(management_nets)
