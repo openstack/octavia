@@ -172,6 +172,11 @@ class ListenersController(base.BaseController):
         """
         listener_protocol = listener_dict.get('protocol')
 
+        _can_tls_offload = (
+            listener_protocol == constants.PROTOCOL_TERMINATED_HTTPS or
+            (listener_protocol == constants.PROTOCOL_PROMETHEUS and
+             self._has_tls_container_refs(listener_dict)))
+
         if listener_dict and listener_dict.get('insert_headers'):
             self._validate_insert_headers(
                 listener_dict['insert_headers'].keys(), listener_protocol)
@@ -186,17 +191,25 @@ class ListenersController(base.BaseController):
 
         # Check for TLS disabled
         if (not CONF.api_settings.allow_tls_terminated_listeners and
-                listener_protocol == constants.PROTOCOL_TERMINATED_HTTPS):
-            raise exceptions.DisabledOption(
-                value=constants.PROTOCOL_TERMINATED_HTTPS, option='protocol')
+                _can_tls_offload):
+            if listener_protocol == constants.PROTOCOL_PROMETHEUS:
+                msg = f"{listener_protocol} with TLS"
+            else:
+                msg = listener_protocol
+            raise exceptions.DisabledOption(value=msg, option='protocol')
 
-        # Check for certs when not TERMINATED_HTTPS
-        if (listener_protocol != constants.PROTOCOL_TERMINATED_HTTPS and
+        # Check for PROMETHEUS listeners disabled
+        if (not CONF.api_settings.allow_prometheus_listeners and
+                listener_protocol == lib_consts.PROTOCOL_PROMETHEUS):
+            raise exceptions.DisabledOption(
+                value=lib_consts.PROTOCOL_PROMETHEUS, option='protocol')
+
+        # Check for certs when not TLS offload capable
+        if (not _can_tls_offload and
                 self._has_tls_container_refs(listener_dict)):
             raise exceptions.ValidationException(detail=_(
-                "Certificate container references are only allowed on "
-                "%s protocol listeners.") %
-                constants.PROTOCOL_TERMINATED_HTTPS)
+                "Certificate container references are not allowed on "
+                "%s protocol listeners.") % listener_protocol)
 
         # Make sure a base certificate exists if specifying a client ca
         if (listener_dict.get('client_ca_tls_certificate_id') and
@@ -206,14 +219,17 @@ class ListenersController(base.BaseController):
                 "An SNI or default certificate container reference must "
                 "be provided with a client CA container reference."))
 
-        # Make sure a certificate container is specified for TERMINATED_HTTPS
-        if (listener_protocol == constants.PROTOCOL_TERMINATED_HTTPS and
+        # Make sure a certificate container is specified for TLS protocols
+        if (_can_tls_offload and
             not (listener_dict.get('tls_certificate_id') or
                  listener_dict.get('sni_containers'))):
+            if listener_protocol == constants.PROTOCOL_PROMETHEUS:
+                msg = f"{listener_protocol} with TLS"
+            else:
+                msg = listener_protocol
             raise exceptions.ValidationException(detail=_(
                 "An SNI or default certificate container reference must "
-                "be provided for %s protocol listeners.") %
-                constants.PROTOCOL_TERMINATED_HTTPS)
+                "be provided for %s protocol listeners.") % msg)
 
         # Make sure we have a client CA cert if they enable client auth
         if (listener_dict.get('client_authentication') !=
@@ -295,7 +311,7 @@ class ListenersController(base.BaseController):
         vip_address = vip_db.ip_address
         self._validate_cidr_compatible_with_vip(vip_address, allowed_cidrs)
 
-        if listener_protocol == constants.PROTOCOL_TERMINATED_HTTPS:
+        if _can_tls_offload:
             # Validate TLS version list
             validate.check_tls_version_list(listener_dict['tls_versions'])
             # Validate TLS versions against minimum
@@ -363,6 +379,10 @@ class ListenersController(base.BaseController):
                 listener.to_dict(render_unsets=True), None)
 
             if listener_dict['default_pool_id']:
+                if (listener_dict.get('protocol') ==
+                        lib_consts.PROTOCOL_PROMETHEUS):
+                    raise exceptions.ListenerNoChildren(
+                        protocol=lib_consts.PROTOCOL_PROMETHEUS)
                 self._validate_pool(context.session, load_balancer_id,
                                     listener_dict['default_pool_id'],
                                     listener.protocol)
@@ -406,6 +426,9 @@ class ListenersController(base.BaseController):
             listener_dict, load_balancer_id)
         l7policies = listener_dict.pop('l7policies', l7policies)
         if listener_dict.get('default_pool_id'):
+            if listener_dict.get('protocol') == lib_consts.PROTOCOL_PROMETHEUS:
+                raise exceptions.ListenerNoChildren(
+                    protocol=lib_consts.PROTOCOL_PROMETHEUS)
             self._validate_pool(lock_session, load_balancer_id,
                                 listener_dict['default_pool_id'],
                                 listener_dict['protocol'])
@@ -414,6 +437,12 @@ class ListenersController(base.BaseController):
 
         # Now create l7policies
         new_l7ps = []
+
+        if (listener_dict.get('protocol') == lib_consts.PROTOCOL_PROMETHEUS and
+                l7policies):
+            raise exceptions.ListenerNoChildren(
+                protocol=lib_consts.PROTOCOL_PROMETHEUS)
+
         for l7p in l7policies:
             l7p['project_id'] = db_listener.project_id
             l7p['load_balancer_id'] = load_balancer_id
@@ -432,6 +461,11 @@ class ListenersController(base.BaseController):
         return db_listener
 
     def _validate_listener_PUT(self, listener, db_listener):
+        _can_tls_offload = (
+            db_listener.protocol == constants.PROTOCOL_TERMINATED_HTTPS or
+            (db_listener.protocol == constants.PROTOCOL_PROMETHEUS and
+             self._has_tls_container_refs(listener.to_dict())))
+
         # TODO(rm_work): Do we need something like this? What do we do on an
         # empty body for a PUT?
         if not listener:
@@ -446,13 +480,12 @@ class ListenersController(base.BaseController):
                 "%s protocol listener does not support TLS or header "
                 "insertion.") % db_listener.protocol)
 
-        # Check for certs when not TERMINATED_HTTPS
-        if (db_listener.protocol != constants.PROTOCOL_TERMINATED_HTTPS and
+        # Check for certs when not TLS offload capable
+        if (not _can_tls_offload and
                 self._has_tls_container_refs(listener.to_dict())):
             raise exceptions.ValidationException(detail=_(
-                "Certificate container references are only allowed on "
-                "%s protocol listeners.") %
-                constants.PROTOCOL_TERMINATED_HTTPS)
+                "Certificate container references are not allowed on "
+                "%s protocol listeners.") % db_listener.protocol)
 
         # Make sure we have a client CA cert if they enable client auth
         if (listener.client_authentication not in
@@ -577,6 +610,9 @@ class ListenersController(base.BaseController):
         self._set_default_on_none(listener)
 
         if listener.default_pool_id:
+            if db_listener.protocol == lib_consts.PROTOCOL_PROMETHEUS:
+                raise exceptions.ListenerNoChildren(
+                    protocol=lib_consts.PROTOCOL_PROMETHEUS)
             self._validate_pool(context.session, load_balancer_id,
                                 listener.default_pool_id, db_listener.protocol)
 

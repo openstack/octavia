@@ -229,6 +229,9 @@ class PoolsController(base.BaseController):
                                    constants.RBAC_POST)
 
         if pool.listener_id and listener:
+            if listener.protocol == lib_consts.PROTOCOL_PROMETHEUS:
+                raise exceptions.ListenerNoChildren(
+                    protocol=lib_consts.PROTOCOL_PROMETHEUS)
             self._validate_protocol(listener.protocol, pool.protocol)
 
         if pool.protocol in (constants.PROTOCOL_UDP,

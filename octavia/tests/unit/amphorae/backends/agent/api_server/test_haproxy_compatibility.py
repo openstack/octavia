@@ -40,7 +40,7 @@ class HAProxyCompatTestCase(base.TestCase):
             "    option redispatch\n"
             "    option splice-request\n"
             "    option splice-response\n"
-            "    option http-keep-alive\n\n\n\n"
+            "    option http-keep-alive\n\n\n\n\n"
             "frontend sample_listener_id_1\n"
             "    maxconn {maxconn}\n"
             "    bind 10.0.0.2:80\n"

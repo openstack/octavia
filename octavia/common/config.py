@@ -84,6 +84,8 @@ api_opts = [
                 help=_("Allow users to create TLS Terminated listeners?")),
     cfg.BoolOpt('allow_ping_health_monitors', default=True,
                 help=_("Allow users to create PING type Health Monitors?")),
+    cfg.BoolOpt('allow_prometheus_listeners', default=True,
+                help=_("Allow users to create PROMETHEUS type listeners?")),
     cfg.DictOpt('enabled_provider_drivers',
                 help=_('A comma separated list of dictionaries of the '
                        'enabled provider driver names and descriptions. '

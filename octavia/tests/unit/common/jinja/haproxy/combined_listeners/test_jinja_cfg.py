@@ -16,6 +16,7 @@
 import copy
 import os
 
+from octavia_lib.common import constants as lib_consts
 from oslo_config import cfg
 from oslo_config import fixture as oslo_fixture
 
@@ -39,7 +40,7 @@ class TestHaproxyCfg(base.TestCase):
         self.assertEqual('haproxy.cfg.j2', template.name)
 
     def test_render_template_tls(self):
-        conf = oslo_fixture.Config(cfg.CONF)
+        conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
         conf.config(group="haproxy_amphora", base_cert_dir='/fake_cert_dir')
         FAKE_CRT_LIST_FILENAME = os.path.join(
             CONF.haproxy_amphora.base_cert_dir,
@@ -98,7 +99,7 @@ class TestHaproxyCfg(base.TestCase):
             rendered_obj)
 
     def test_render_template_tls_no_sni(self):
-        conf = oslo_fixture.Config(cfg.CONF)
+        conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
         conf.config(group="haproxy_amphora", base_cert_dir='/fake_cert_dir')
         FAKE_CRT_LIST_FILENAME = os.path.join(
             CONF.haproxy_amphora.base_cert_dir,
@@ -150,7 +151,7 @@ class TestHaproxyCfg(base.TestCase):
             rendered_obj)
 
     def test_render_template_tls_no_ciphers(self):
-        conf = oslo_fixture.Config(cfg.CONF)
+        conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
         conf.config(group="haproxy_amphora", base_cert_dir='/fake_cert_dir')
         FAKE_CRT_LIST_FILENAME = os.path.join(
             CONF.haproxy_amphora.base_cert_dir,
@@ -201,7 +202,7 @@ class TestHaproxyCfg(base.TestCase):
             rendered_obj)
 
     def test_render_template_tls_no_versions(self):
-        conf = oslo_fixture.Config(cfg.CONF)
+        conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
         conf.config(group="haproxy_amphora", base_cert_dir='/fake_cert_dir')
         FAKE_CRT_LIST_FILENAME = os.path.join(
             CONF.haproxy_amphora.base_cert_dir,
@@ -260,7 +261,7 @@ class TestHaproxyCfg(base.TestCase):
             rendered_obj)
 
     def test_render_template_tls_no_ciphers_or_versions(self):
-        conf = oslo_fixture.Config(cfg.CONF)
+        conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
         conf.config(group="haproxy_amphora", base_cert_dir='/fake_cert_dir')
         FAKE_CRT_LIST_FILENAME = os.path.join(
             CONF.haproxy_amphora.base_cert_dir,
@@ -312,7 +313,7 @@ class TestHaproxyCfg(base.TestCase):
             rendered_obj)
 
     def test_render_template_tls_alpn(self):
-        conf = oslo_fixture.Config(cfg.CONF)
+        conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
         conf.config(group="haproxy_amphora", base_cert_dir='/fake_cert_dir')
         FAKE_CRT_LIST_FILENAME = os.path.join(
             CONF.haproxy_amphora.base_cert_dir,
@@ -366,7 +367,7 @@ class TestHaproxyCfg(base.TestCase):
             rendered_obj)
 
     def test_render_template_tls_no_alpn(self):
-        conf = oslo_fixture.Config(cfg.CONF)
+        conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
         conf.config(group="haproxy_amphora", base_cert_dir='/fake_cert_dir')
         FAKE_CRT_LIST_FILENAME = os.path.join(
             CONF.haproxy_amphora.base_cert_dir,
@@ -442,6 +443,55 @@ class TestHaproxyCfg(base.TestCase):
             [sample_configs_combined.sample_listener_tuple()])
         self.assertEqual(
             sample_configs_combined.sample_base_expected_config(backend=be),
+            rendered_obj)
+
+    def test_render_template_prometheus(self):
+        fe = ("frontend sample_listener_id_1\n"
+              "    maxconn {maxconn}\n"
+              "    bind 10.0.0.2:80\n"
+              "    mode http\n"
+              "    timeout client 50000\n"
+              "    default_backend prometheus-exporter-internal\n").format(
+            maxconn=constants.HAPROXY_DEFAULT_MAXCONN)
+        be = ""
+        defaults = ("defaults\n"
+                    "    log global\n"
+                    "    retries 3\n"
+                    "    option redispatch\n"
+                    "    option splice-request\n"
+                    "    option splice-response\n"
+                    "    option http-keep-alive\n\n\n\n"
+                    "frontend prometheus-exporter-internal-endpoint\n"
+                    "    bind 127.0.0.1:9101\n"
+                    "    mode http\n"
+                    "    no log\n"
+                    "    option http-use-htx\n"
+                    "    http-request use-service prometheus-exporter if { "
+                    "path /metrics }\n"
+                    "    http-request reject\n"
+                    "    timeout http-request 5s\n"
+                    "    timeout client 5s\n"
+                    "backend prometheus-exporter-internal\n"
+                    "    mode http\n"
+                    "    no log\n"
+                    "    balance first\n"
+                    "    timeout connect 5s\n"
+                    "    timeout server 5s\n"
+                    "    server prometheus-internal 127.0.0.1:9102")
+        logging = ("    log-format 12345\\ sample_loadbalancer_id_1\\ %f\\ "
+                   "%ci\\ %cp\\ %t\\ -\\ -\\ %B\\ %U\\ "
+                   "%[ssl_c_verify]\\ %{+Q}[ssl_c_s_dn]\\ %b\\ %s\\ %Tt\\ "
+                   "%tsc\n\n")
+
+        rendered_obj = self.jinja_cfg.render_loadbalancer_obj(
+            sample_configs_combined.sample_amphora_tuple(),
+            [sample_configs_combined.sample_listener_tuple(
+                proto=lib_consts.PROTOCOL_PROMETHEUS, include_pools=False)],
+            feature_compatibility={lib_consts.PROTOCOL_PROMETHEUS: True})
+
+        self.assertEqual(
+            sample_configs_combined.sample_base_expected_config(
+                frontend=fe, backend=be, logging=logging, defaults=defaults),
             rendered_obj)
 
     def test_render_template_member_backup(self):
@@ -1434,6 +1484,15 @@ class TestHaproxyCfg(base.TestCase):
                                                  in_listener.load_balancer)
         self.assertEqual(sample_configs_combined.RET_LISTENER_L7, ret)
 
+    def test_transform_listener_PROMETHEUS(self):
+        in_listener = sample_configs_combined.sample_listener_tuple()
+        ret = self.jinja_cfg._transform_listener(
+            in_listener, None, {lib_consts.PROTOCOL_PROMETHEUS: True},
+            in_listener.load_balancer)
+        expected_config = copy.copy(sample_configs_combined.RET_LISTENER)
+        expected_config[lib_consts.PROTOCOL_PROMETHEUS] = True
+        self.assertEqual(expected_config, ret)
+
     def test_transform_loadbalancer(self):
         in_amphora = sample_configs_combined.sample_amphora_tuple()
         in_listener = sample_configs_combined.sample_listener_tuple()
@@ -1533,7 +1592,7 @@ class TestHaproxyCfg(base.TestCase):
                     "    option redispatch\n"
                     "    option splice-request\n"
                     "    option splice-response\n"
-                    "    option http-keep-alive\n\n")
+                    "    option http-keep-alive\n\n\n")
         rendered_obj = j_cfg.render_loadbalancer_obj(
             sample_configs_combined.sample_amphora_tuple(),
             [sample_configs_combined.sample_listener_tuple()]

@@ -27,6 +27,7 @@ oslo.reports>=1.18.0 # Apache-2.0
 oslo.serialization>=2.28.1 # Apache-2.0
 oslo.upgradecheck>=1.3.0 # Apache-2.0
 oslo.utils>=4.7.0 # Apache-2.0
+psutil>=5.7.1 # BSD
 pyasn1!=0.2.3,>=0.1.8 # BSD
 pyasn1-modules>=0.0.6 # BSD
 python-barbicanclient>=4.5.2 # Apache-2.0
@@ -41,7 +42,7 @@ castellan>=0.16.0 # Apache-2.0
 tenacity>=5.0.4  # Apache-2.0
 distro>=1.2.0 # Apache-2.0
 jsonschema>=3.2.0 # MIT
-octavia-lib>=2.3.0 # Apache-2.0
+octavia-lib>=2.5.0 # Apache-2.0
 netaddr>=0.7.19 # BSD
 simplejson>=3.13.2 # MIT
 setproctitle>=1.1.10 # BSD

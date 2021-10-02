@@ -19,6 +19,7 @@ Guides
 
    guides/l7
    feature-classification/index
+   guides/monitoring
 
 References
 ==========

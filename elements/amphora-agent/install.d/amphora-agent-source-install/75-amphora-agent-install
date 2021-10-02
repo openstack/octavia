@@ -30,6 +30,9 @@ ln -s $AMP_VENV/bin/amphora-health-checker /usr/local/bin/amphora-health-checker
 # Link amphora interface script
 ln -s $AMP_VENV/bin/amphora-interface /usr/local/bin/amphora-interface || true
 
+# Link the prometheus proxy
+ln -s $AMP_VENV/bin/prometheus-proxy /usr/local/bin/prometheus-proxy || true
+
 mkdir /etc/octavia
 # we assume certs, etc will come in through the config drive
 mkdir /etc/octavia/certs
@@ -40,12 +43,15 @@ install -D -g root -o root -m 0644 ${SCRIPTDIR}/amphora-agent.logrotate /etc/log
 case "$DIB_INIT_SYSTEM" in
     upstart)
         install -D -g root -o root -m 0644 ${SCRIPTDIR}/amphora-agent.conf /etc/init/amphora-agent.conf
+        install -D -g root -o root -m 0644 ${SCRIPTDIR}/prometheus-proxy.conf /etc/init/prometheus-proxy.conf
         ;;
     systemd)
         install -D -g root -o root -m 0644 ${SCRIPTDIR}/amphora-agent.service /usr/lib/systemd/system/amphora-agent.service
+        install -D -g root -o root -m 0644 ${SCRIPTDIR}/prometheus-proxy.service /usr/lib/systemd/system/prometheus-proxy.service
         ;;
     sysv)
         install -D -g root -o root -m 0644 ${SCRIPTDIR}/amphora-agent.init /etc/init.d/amphora-agent.init
+        install -D -g root -o root -m 0644 ${SCRIPTDIR}/prometheus-proxy.init /etc/init.d/prometheus-proxy.init
         ;;
     *)
         echo "Unsupported init system"
