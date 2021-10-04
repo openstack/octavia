@@ -324,10 +324,11 @@ class TestInterface(base.TestCase):
     @mock.patch('pyroute2.IPRoute.route')
     @mock.patch('pyroute2.IPRoute.addr')
     @mock.patch('pyroute2.IPRoute.link')
+    @mock.patch('pyroute2.IPRoute.get_links')
     @mock.patch('pyroute2.IPRoute.link_lookup')
     @mock.patch('subprocess.check_output')
-    def test_up(self, mock_check_output, mock_link_lookup, mock_link,
-                mock_addr, mock_route, mock_rule):
+    def test_up(self, mock_check_output, mock_link_lookup, mock_get_links,
+                mock_link, mock_addr, mock_route, mock_rule):
         iface = interface_file.InterfaceFile(
             name="eth1",
             mtu=1450,
@@ -375,6 +376,10 @@ class TestInterface(base.TestCase):
 
         idx = mock.MagicMock()
         mock_link_lookup.return_value = [idx]
+
+        mock_get_links.return_value = [{
+            consts.STATE: consts.IFACE_DOWN
+        }]
 
         controller = interface.InterfaceController()
         controller.up(iface)
@@ -444,13 +449,213 @@ class TestInterface(base.TestCase):
     @mock.patch('pyroute2.IPRoute.route')
     @mock.patch('pyroute2.IPRoute.addr')
     @mock.patch('pyroute2.IPRoute.link')
+    @mock.patch('pyroute2.IPRoute.get_links')
+    @mock.patch('pyroute2.IPRoute.get_rules')
+    @mock.patch('pyroute2.IPRoute.get_routes')
+    @mock.patch('pyroute2.IPRoute.get_addr')
+    @mock.patch('pyroute2.IPRoute.link_lookup')
+    @mock.patch('subprocess.check_output')
+    @mock.patch('octavia.amphorae.backends.utils.interface.'
+                'InterfaceController._wait_tentative')
+    def test_up_update(self, mock_wait_tentative, mock_check_output,
+                       mock_link_lookup, mock_get_addr, mock_get_routes,
+                       mock_get_rules, mock_get_links, mock_link, mock_addr,
+                       mock_route, mock_rule):
+        iface = interface_file.InterfaceFile(
+            name="eth1",
+            mtu=1450,
+            addresses=[{
+                consts.ADDRESS: '1.2.3.4',
+                consts.PREFIXLEN: 24
+            }, {
+                consts.ADDRESS: '10.2.3.4',
+                consts.PREFIXLEN: 16
+            }, {
+                consts.ADDRESS: '10.4.3.2',
+                consts.PREFIXLEN: 16,
+                consts.OCTAVIA_OWNED: False
+            }, {
+                consts.ADDRESS: '2001:db8::3',
+                consts.PREFIXLEN: 64
+            }],
+            routes=[{
+                consts.DST: '10.0.0.0/8',
+                consts.GATEWAY: '1.0.0.1',
+                consts.TABLE: 10,
+                consts.ONLINK: True
+            }, {
+                consts.DST: '20.0.0.0/8',
+                consts.GATEWAY: '1.0.0.2',
+                consts.PREFSRC: '1.2.3.4',
+                consts.SCOPE: 'link'
+            }, {
+                consts.DST: '2001:db8:2::1/128',
+                consts.GATEWAY: '2001:db8::1'
+            }],
+            rules=[{
+                consts.SRC: '1.1.1.1',
+                consts.SRC_LEN: 32,
+                consts.TABLE: 20,
+            }, {
+                consts.SRC: '2001:db8::1',
+                consts.SRC_LEN: 128,
+                consts.TABLE: 40,
+            }],
+            scripts={
+                consts.IFACE_UP: [{
+                    consts.COMMAND: "post-up eth1"
+                }],
+                consts.IFACE_DOWN: [{
+                    consts.COMMAND: "post-down eth1"
+                }],
+            })
+
+        idx = mock.MagicMock()
+        mock_link_lookup.return_value = [idx]
+
+        mock_get_links.return_value = [{
+            consts.STATE: consts.IFACE_UP
+        }]
+
+        mock_get_addr.return_value = [{
+            'prefixlen': 24,
+            'attrs': {
+                'IFA_ADDRESS': '2.0.0.1',
+                'IFA_FLAGS': 0x80  # IFA_F_PERMANENT
+            }
+        }, {
+            'prefixlen': 16,
+            'attrs': {
+                'IFA_ADDRESS': '10.2.3.4',
+                'IFA_FLAGS': 0x80  # IFA_F_PERMANENT
+            }
+        }, {
+            'prefixlen': 16,
+            'attrs': {
+                'IFA_ADDRESS': '10.2.3.5',
+                'IFA_FLAGS': 0x0  # not IFA_F_PERMANENT
+            }
+        }]
+
+        mock_get_routes.return_value = [{
+            'dst_len': 16,
+            'family': 2,
+            'proto': 4,  # STATIC
+            'attrs': {
+                'RTA_DST': '24.24.0.0',
+                'RTA_GATEWAY': '2.0.0.254',
+                'RTA_PREFSRC': '2.0.0.1',
+                'RTA_TABLE': 254
+            }
+        }, {
+            'dst_len': 8,
+            'family': 2,
+            'proto': 4,  # STATIC
+            'attrs': {
+                'RTA_DST': '20.0.0.0',
+                'RTA_GATEWAY': '1.0.0.2',
+                'RTA_PREFSRC': '1.2.3.4',
+                'RTA_TABLE': 254
+            }
+        }]
+
+        mock_get_rules.return_value = [{
+            'src_len': 32,
+            'attrs': {
+                'FRA_SRC': '1.1.1.1',
+                'FRA_TABLE': 20,
+                'FRA_PROTOCOL': 0
+            }
+        }, {
+            'src_len': 32,
+            'attrs': {
+                'FRA_SRC': '2.2.2.2',
+                'FRA_TABLE': 254,
+                'FRA_PROTOCOL': 18  # Keepalived
+            }
+        }, {
+            'src_len': 32,
+            'attrs': {
+                'FRA_SRC': '3.3.3.3',
+                'FRA_TABLE': 254,
+                'FRA_PROTOCOL': 0
+            }
+        }]
+
+        controller = interface.InterfaceController()
+        controller.up(iface)
+
+        mock_link.assert_not_called()
+
+        mock_addr.assert_has_calls([
+            mock.call(controller.ADD,
+                      index=idx,
+                      address='1.2.3.4',
+                      prefixlen=24,
+                      family=socket.AF_INET),
+            mock.call(controller.ADD,
+                      index=idx,
+                      address='2001:db8::3',
+                      prefixlen=64,
+                      family=socket.AF_INET6),
+            mock.call(controller.DELETE,
+                      index=idx,
+                      address='2.0.0.1',
+                      prefixlen=24,
+                      family=socket.AF_INET)
+        ])
+
+        mock_route.assert_has_calls([
+            mock.call(controller.ADD,
+                      oif=idx,
+                      dst='10.0.0.0/8',
+                      gateway='1.0.0.1',
+                      table=10,
+                      onlink=True,
+                      family=socket.AF_INET),
+            mock.call(controller.ADD,
+                      oif=idx,
+                      dst='2001:db8:2::1/128',
+                      gateway='2001:db8::1',
+                      family=socket.AF_INET6),
+            mock.call(controller.DELETE,
+                      oif=idx,
+                      dst='24.24.0.0/16',
+                      gateway='2.0.0.254',
+                      prefsrc='2.0.0.1',
+                      table=254,
+                      family=socket.AF_INET)])
+
+        mock_rule.assert_has_calls([
+            mock.call(controller.ADD,
+                      src="2001:db8::1",
+                      src_len=128,
+                      table=40,
+                      family=socket.AF_INET6),
+            mock.call(controller.DELETE,
+                      src='3.3.3.3',
+                      src_len=32,
+                      table=254,
+                      family=socket.AF_INET)])
+
+        mock_check_output.assert_not_called()
+
+    @mock.patch('pyroute2.IPRoute.rule')
+    @mock.patch('pyroute2.IPRoute.route')
+    @mock.patch('pyroute2.IPRoute.addr')
+    @mock.patch('pyroute2.IPRoute.link')
+    @mock.patch('pyroute2.IPRoute.get_links')
+    @mock.patch('pyroute2.IPRoute.get_rules')
+    @mock.patch('pyroute2.IPRoute.get_routes')
+    @mock.patch('pyroute2.IPRoute.get_addr')
     @mock.patch('pyroute2.IPRoute.link_lookup')
     @mock.patch('subprocess.check_output')
     @mock.patch('octavia.amphorae.backends.utils.interface.'
                 'InterfaceController._wait_tentative')
     def test_up_auto(self, mock_wait_tentative, mock_check_output,
-                     mock_link_lookup, mock_link, mock_addr, mock_route,
-                     mock_rule):
+                     mock_link_lookup, mock_get_addr, mock_get_routes,
+                     mock_get_rules, mock_get_links, mock_link, mock_addr,
+                     mock_route, mock_rule):
         iface = interface_file.InterfaceFile(
             name="eth1",
             mtu=1450,
@@ -471,6 +676,10 @@ class TestInterface(base.TestCase):
 
         idx = mock.MagicMock()
         mock_link_lookup.return_value = [idx]
+
+        mock_get_links.return_value = [{
+            consts.STATE: consts.IFACE_DOWN
+        }]
 
         controller = interface.InterfaceController()
         controller.up(iface)
@@ -629,13 +838,14 @@ class TestInterface(base.TestCase):
     @mock.patch('pyroute2.IPRoute.rule')
     @mock.patch('pyroute2.IPRoute.route')
     @mock.patch('pyroute2.IPRoute.addr')
+    @mock.patch('pyroute2.IPRoute.flush_addr')
     @mock.patch('pyroute2.IPRoute.link')
     @mock.patch('pyroute2.IPRoute.get_links')
     @mock.patch('pyroute2.IPRoute.link_lookup')
     @mock.patch('subprocess.check_output')
     def test_down_with_errors(self, mock_check_output, mock_link_lookup,
-                              mock_get_links, mock_link, mock_addr,
-                              mock_route, mock_rule):
+                              mock_get_links, mock_link, mock_flush_addr,
+                              mock_addr, mock_route, mock_rule):
         iface = interface_file.InterfaceFile(
             name="eth1",
             mtu=1450,
@@ -690,6 +900,9 @@ class TestInterface(base.TestCase):
         mock_addr.side_effect = [
             pyroute2.NetlinkError(123),
             pyroute2.NetlinkError(123),
+            pyroute2.NetlinkError(123),
+        ]
+        mock_flush_addr.side_effect = [
             pyroute2.NetlinkError(123)
         ]
         mock_route.side_effect = [
@@ -729,6 +942,10 @@ class TestInterface(base.TestCase):
                       address='2001:db8::3',
                       prefixlen=64,
                       family=socket.AF_INET6)
+        ])
+
+        mock_flush_addr.assert_has_calls([
+            mock.call(index=idx)
         ])
 
         mock_route.assert_has_calls([
@@ -842,13 +1059,14 @@ class TestInterface(base.TestCase):
     @mock.patch('pyroute2.IPRoute.rule')
     @mock.patch('pyroute2.IPRoute.route')
     @mock.patch('pyroute2.IPRoute.addr')
+    @mock.patch('pyroute2.IPRoute.flush_addr')
     @mock.patch('pyroute2.IPRoute.link')
     @mock.patch('pyroute2.IPRoute.get_links')
     @mock.patch('pyroute2.IPRoute.link_lookup')
     @mock.patch('subprocess.check_output')
     def test_down_auto(self, mock_check_output, mock_link_lookup,
-                       mock_get_links, mock_link, mock_addr, mock_route,
-                       mock_rule):
+                       mock_get_links, mock_link, mock_flush_addr,
+                       mock_addr, mock_route, mock_rule):
         iface = interface_file.InterfaceFile(
             name="eth1",
             mtu=1450,
@@ -885,6 +1103,8 @@ class TestInterface(base.TestCase):
         mock_addr.assert_not_called()
         mock_route.assert_not_called()
         mock_rule.assert_not_called()
+
+        mock_flush_addr.assert_called_once()
 
         mock_check_output.assert_has_calls([
             mock.call(["/sbin/dhclient",
@@ -950,3 +1170,49 @@ class TestInterface(base.TestCase):
 
         controller._wait_tentative(mock_ipr, idx)
         self.assertEqual(4, len(mock_time_sleep.mock_calls))
+
+    def test__normalize_ip_address(self):
+        controller = interface.InterfaceController()
+
+        # Simple IPv4 address
+        addr = controller._normalize_ip_address('192.168.0.1')
+        self.assertEqual('192.168.0.1', addr)
+
+        # Simple IPv6 address
+        addr = controller._normalize_ip_address('2001::1')
+        self.assertEqual('2001::1', addr)
+
+        # Uncompressed IPv6 address
+        addr = controller._normalize_ip_address(
+            '2001:0000:0000:0000:0000:0000:0000:0001')
+        self.assertEqual('2001::1', addr)
+
+        addr = controller._normalize_ip_address(None)
+        self.assertIsNone(addr)
+
+    def test__normalize_ip_network(self):
+        controller = interface.InterfaceController()
+
+        # Simple IP address
+        addr = controller._normalize_ip_network('192.168.0.1')
+        self.assertEqual('192.168.0.1/32', addr)
+
+        # "Normal" network
+        addr = controller._normalize_ip_network('10.0.0.0/16')
+        self.assertEqual('10.0.0.0/16', addr)
+
+        # Network with hostbits set
+        addr = controller._normalize_ip_network('10.0.0.10/16')
+        self.assertEqual('10.0.0.0/16', addr)
+
+        # IPv6 network with hostbits set
+        addr = controller._normalize_ip_network('2001::1/64')
+        self.assertEqual('2001::/64', addr)
+
+        # Uncompressed IPv6 network
+        addr = controller._normalize_ip_network(
+            '2001:0000:0000:0000:0000:0000:0000:0001/64')
+        self.assertEqual('2001::/64', addr)
+
+        addr = controller._normalize_ip_network(None)
+        self.assertIsNone(addr)

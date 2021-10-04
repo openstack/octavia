@@ -117,7 +117,7 @@ class Plug(object):
                      IFLA_IFNAME=primary_interface)
 
         # bring interfaces up
-        self._osutils.bring_interfaces_up(ip, primary_interface)
+        self._osutils.bring_interface_up(primary_interface, 'VIP')
 
         return webob.Response(json=dict(
             message="OK",
@@ -179,8 +179,7 @@ class Plug(object):
                      net_ns_fd=consts.AMPHORA_NAMESPACE,
                      IFLA_IFNAME=netns_interface)
 
-        self._osutils._bring_if_down(netns_interface)
-        self._osutils._bring_if_up(netns_interface, 'network')
+        self._osutils.bring_interface_up(netns_interface, 'network')
 
         return webob.Response(json=dict(
             message="OK",
