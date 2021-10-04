@@ -77,6 +77,8 @@ def assert_route_lists_equal(obj, l1, l2):
                 ipaddress.ip_address(r2[consts.PREFSRC]))
         for attr in (consts.ONLINK, consts.TABLE, consts.SCOPE):
             obj.assertEqual(r1.get(attr), r2.get(attr))
+        obj.assertEqual(r1.get(consts.OCTAVIA_OWNED, True),
+                        r2.get(consts.OCTAVIA_OWNED, True))
 
 
 def assert_rule_lists_equal(obj, l1, l2):

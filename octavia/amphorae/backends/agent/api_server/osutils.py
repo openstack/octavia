@@ -87,7 +87,7 @@ class BaseOS(object):
         port_interface.write()
 
     @classmethod
-    def _bring_if_up(cls, interface, what):
+    def bring_interface_up(cls, interface, name):
         cmd = ("ip netns exec {ns} amphora-interface up {params}".format(
             ns=consts.AMPHORA_NAMESPACE, params=interface))
         LOG.debug("Executing: %s", cmd)
@@ -100,24 +100,8 @@ class BaseOS(object):
                       e, e.output)
             raise exceptions.HTTPException(
                 response=webob.Response(json=dict(
-                    message='Error plugging {0}'.format(what),
+                    message='Error plugging {0}'.format(name),
                     details=e.output), status=500))
-
-    @classmethod
-    def _bring_if_down(cls, interface):
-        cmd = ("ip netns exec {ns} amphora-interface down {params}".format(
-            ns=consts.AMPHORA_NAMESPACE, params=interface))
-        LOG.debug("Executing: %s", cmd)
-        try:
-            subprocess.check_output(cmd.split(), stderr=subprocess.STDOUT)
-        except subprocess.CalledProcessError as e:
-            LOG.info('Ignoring failure to set %s down due to error: %s %s',
-                     interface, e, e.output)
-
-    @classmethod
-    def bring_interfaces_up(cls, ip, primary_interface):
-        cls._bring_if_down(primary_interface)
-        cls._bring_if_up(primary_interface, 'VIP')
 
 
 class Ubuntu(BaseOS):
