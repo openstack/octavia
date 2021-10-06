@@ -1,0 +1,7 @@
+---
+fixes:
+  - |
+    Fixed MAX_TIMEOUT for timeout_client_data, timeout_member_connect,
+    timeout_member_data, timeout_tcp_inspect API listener. The value was
+    reduced from 365 days to 24 days, which now does not exceed the value of
+    the data type in DB.
