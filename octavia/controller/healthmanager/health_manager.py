@@ -63,7 +63,6 @@ class HealthManager(object):
         else:
             self.cw = cw2.ControllerWorker()
         self.threads = CONF.health_manager.failover_threads
-        # pylint: disable=consider-using-with
         self.executor = futures.ThreadPoolExecutor(max_workers=self.threads)
         self.amp_repo = repo.AmphoraRepository()
         self.amp_health_repo = repo.AmphoraHealthRepository()

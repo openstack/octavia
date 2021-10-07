@@ -53,10 +53,8 @@ class UDPStatusGetter(object):
         self.sock = None
         self.update(self.key, self.ip, self.port)
 
-        # pylint: disable=consider-using-with
         self.health_executor = futures.ProcessPoolExecutor(
             max_workers=CONF.health_manager.health_update_threads)
-        # pylint: disable=consider-using-with
         self.stats_executor = futures.ProcessPoolExecutor(
             max_workers=CONF.health_manager.stats_update_threads)
         self.health_updater = UpdateHealthDb()

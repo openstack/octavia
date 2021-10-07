@@ -40,7 +40,6 @@ class NetworkNamespace(object):
 
     def __enter__(self):
         # Save the current network namespace
-        # pylint: disable=consider-using-with
         self.current_netns_fd = open(self.current_netns, encoding='utf-8')
         with open(self.target_netns, encoding='utf-8') as fd:
             self.set_netns(fd.fileno(), self.CLONE_NEWNET)
