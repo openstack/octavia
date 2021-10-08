@@ -172,7 +172,7 @@ class CertComputeCreate(ComputeCreate):
         fer = fernet.Fernet(key)
         config_drive_files = {
             '/etc/octavia/certs/server.pem': fer.decrypt(
-                server_pem.encode("utf-8")),
+                server_pem.encode("utf-8")).decode("utf-8"),
             '/etc/octavia/certs/client_ca.pem': ca}
         return super().execute(
             amphora_id, config_drive_files=config_drive_files,
