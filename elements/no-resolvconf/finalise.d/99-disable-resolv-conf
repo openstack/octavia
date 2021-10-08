@@ -1,6 +1,9 @@
 #!/bin/bash
-echo "" > /etc/resolv.conf
-echo "" > /etc/resolv.conf.ORIG
+
+# Override resolv.conf file from DIB with a custom one.
+# Having at least one nameserver is now required by dnfpython (>=)
+echo "nameserver 127.0.0.1" > /etc/resolv.conf
+echo "nameserver 127.0.0.1" > /etc/resolv.conf.ORIG
 if [ -d /etc/dhcp/dhclient-enter-hooks.d ]
 then
     # Debian/Ubuntu
