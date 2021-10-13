@@ -1019,8 +1019,10 @@ class TestNetworkTasks(base.TestCase):
         mock_get.return_value = self.db_amphora_mock
         mock_get_net_driver.return_value = mock_driver
         net = network_tasks.PlugVIPAmphora()
-        mockSubnet = mock_driver.get_subnet()
-        net.execute(self.load_balancer_mock, amphora, mockSubnet)
+        subnet = {constants.ID: SUBNET_ID}
+        mockSubnet = mock.MagicMock()
+        mock_driver.get_subnet.return_value = mockSubnet
+        net.execute(self.load_balancer_mock, amphora, subnet)
         mock_driver.plug_aap_port.assert_called_once_with(
             LB, LB.vip, self.db_amphora_mock, mockSubnet)
 
@@ -1034,11 +1036,13 @@ class TestNetworkTasks(base.TestCase):
         mock_get.return_value = self.db_amphora_mock
         mock_get_net_driver.return_value = mock_driver
         net = network_tasks.PlugVIPAmphora()
-        mockSubnet = mock.MagicMock()
         amphora = {constants.ID: AMPHORA_ID,
                    constants.LB_NETWORK_IP: IP_ADDRESS}
+        subnet = {constants.ID: SUBNET_ID}
+        mockSubnet = mock.MagicMock()
+        mock_driver.get_subnet.return_value = mockSubnet
         net.revert(AMPS_DATA[0].to_dict(), self.load_balancer_mock,
-                   amphora, mockSubnet)
+                   amphora, subnet)
         mock_driver.unplug_aap_port.assert_called_once_with(
             LB.vip, self.db_amphora_mock, mockSubnet)
 
