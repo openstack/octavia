@@ -19,14 +19,14 @@
         amphora_os_release: focal
 
 - job:
-    name: publish-openstack-octavia-amphora-image-centos8
-    nodeset: centos-8
+    name: publish-openstack-octavia-amphora-image-centos-8-stream
+    nodeset: centos-8-stream
     parent: publish-openstack-octavia-amphora-image
     description: |
-      Publish CentOS 8 based amphora image to tarballs.o.o.
+      Publish CentOS 8 Stream based amphora image to tarballs.o.o.
     vars:
         amphora_os: centos
-        amphora_os_release: 8
+        amphora_os_release: 8-stream
 
 - job:
     name: octavia-grenade
@@ -164,17 +164,17 @@
         - openstack/diskimage-builder
 
 - job:
-    name: octavia-amphora-image-build-live-centos8
+    name: octavia-amphora-image-build-live-centos-8-stream
     parent: octavia-amphora-image-build
-    nodeset: centos-8
+    nodeset: centos-8-stream
     description: |
-      Builds a CentOS 8 amphora image using diskimage-builder from Git
+      Builds a CentOS 8 Stream amphora image using diskimage-builder from Git
       master. This job does not publish the image.
     required-projects:
         - openstack/diskimage-builder
     vars:
         amphora_os: centos
-        amphora_os_release: 8
+        amphora_os_release: 8-stream
 
 - job:
     name: octavia-v2-dsvm-scenario-nftables
