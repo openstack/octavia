@@ -13,6 +13,7 @@
 # under the License.
 #
 
+import copy
 from cryptography import fernet
 from oslo_config import cfg
 from oslo_log import log as logging
@@ -334,8 +335,9 @@ class AmphoraPostVIPPlug(BaseAmphoraTask):
             **amphorae_network_config[
                 amphora.get(constants.ID)][constants.VRRP_PORT])
         # Required for noop-case
-        vip_arg = amphorae_network_config[amphora.get(
-            constants.ID)][constants.VIP_SUBNET]
+        vip_arg = copy.deepcopy(
+            amphorae_network_config[
+                amphora.get(constants.ID)][constants.VIP_SUBNET])
         if vip_arg:
             host_routes = vip_arg.get('host_routes')
             if host_routes:
