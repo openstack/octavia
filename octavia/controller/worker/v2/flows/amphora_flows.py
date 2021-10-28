@@ -578,6 +578,10 @@ class AmphoraFlows(object):
         failover_amp_flow = linear_flow.Flow(
             constants.FAILOVER_AMPHORA_FLOW)
 
+        # Revert LB to provisioning_status ERROR if this flow goes wrong
+        failover_amp_flow.add(lifecycle_tasks.LoadBalancerToErrorOnRevertTask(
+            requires=constants.LOADBALANCER))
+
         # Revert amphora to status ERROR if this flow goes wrong
         failover_amp_flow.add(lifecycle_tasks.AmphoraToErrorOnRevertTask(
             requires=constants.AMPHORA,
