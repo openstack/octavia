@@ -342,10 +342,11 @@ class TestAmphoraFlows(base.TestCase):
         self.assertIsInstance(amp_flow, flow.Flow)
 
         self.assertIn(constants.LOADBALANCER_ID, amp_flow.requires)
+        self.assertIn(constants.LOADBALANCER, amp_flow.requires)
 
         self.assertIn(constants.VIP_SG_ID, amp_flow.provides)
 
-        self.assertEqual(1, len(amp_flow.requires))
+        self.assertEqual(2, len(amp_flow.requires))
         self.assertEqual(1, len(amp_flow.provides))
 
     def test_cert_rotate_amphora_flow(self, mock_get_net_driver):

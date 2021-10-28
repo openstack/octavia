@@ -955,10 +955,7 @@ class TestDatabaseTasks(base.TestCase):
             'TEST',
             id=LISTENER_ID,
             provisioning_status=constants.ERROR)
-        repo.LoadBalancerRepository.update.assert_called_once_with(
-            'TEST',
-            id=LB_ID,
-            provisioning_status=constants.ERROR)
+        repo.LoadBalancerRepository.update.assert_not_called()
 
         # Test the revert with exceptions
         mock_loadbalancer_repo_update.reset_mock()
@@ -973,10 +970,7 @@ class TestDatabaseTasks(base.TestCase):
             'TEST',
             id=LISTENER_ID,
             provisioning_status=constants.ERROR)
-        repo.LoadBalancerRepository.update.assert_called_once_with(
-            'TEST',
-            id=LB_ID,
-            provisioning_status=constants.ERROR)
+        repo.LoadBalancerRepository.update.assert_not_called()
 
     @mock.patch('octavia.common.tls_utils.cert_parser.get_cert_expiration',
                 return_value=_cert_mock)
@@ -1040,10 +1034,7 @@ class TestDatabaseTasks(base.TestCase):
         mock_loadbalancer_repo_update.reset_mock()
         mark_loadbalancer_active.revert(self.loadbalancer_mock)
 
-        repo.LoadBalancerRepository.update.assert_called_once_with(
-            'TEST',
-            id=LB_ID,
-            provisioning_status=constants.ERROR)
+        repo.LoadBalancerRepository.update.assert_not_called()
         self.assertEqual(0, repo.ListenerRepository.update.call_count)
 
         # Test the revert with exception
@@ -1051,10 +1042,7 @@ class TestDatabaseTasks(base.TestCase):
         mock_loadbalancer_repo_update.side_effect = Exception('fail')
         mark_loadbalancer_active.revert(self.loadbalancer_mock)
 
-        repo.LoadBalancerRepository.update.assert_called_once_with(
-            'TEST',
-            id=LB_ID,
-            provisioning_status=constants.ERROR)
+        repo.LoadBalancerRepository.update.assert_not_called()
         self.assertEqual(0, repo.ListenerRepository.update.call_count)
 
     def test_mark_LB_active_in_db_and_listeners(self,
@@ -1086,10 +1074,7 @@ class TestDatabaseTasks(base.TestCase):
         mock_listener_repo_update.reset_mock()
         mark_lb_active.revert(lb)
 
-        repo.LoadBalancerRepository.update.assert_called_once_with(
-            'TEST',
-            id=lb.id,
-            provisioning_status=constants.ERROR)
+        repo.LoadBalancerRepository.update.assert_not_called()
         self.assertEqual(2, repo.ListenerRepository.update.call_count)
         repo.ListenerRepository.update.has_calls(
             [mock.call('TEST', listeners[0].id,
@@ -1192,10 +1177,7 @@ class TestDatabaseTasks(base.TestCase):
         mock_l7r_repo_update.reset_mock()
         mark_lb_active.revert(lb)
 
-        repo.LoadBalancerRepository.update.assert_called_once_with(
-            'TEST',
-            id=lb.id,
-            provisioning_status=constants.ERROR)
+        repo.LoadBalancerRepository.update.assert_not_called()
         self.assertEqual(2, repo.ListenerRepository.update.call_count)
         repo.ListenerRepository.update.has_calls(
             [mock.call('TEST', listeners[0].id,
@@ -1252,20 +1234,14 @@ class TestDatabaseTasks(base.TestCase):
         mock_loadbalancer_repo_update.reset_mock()
         mark_loadbalancer_deleted.revert(self.loadbalancer_mock)
 
-        repo.LoadBalancerRepository.update.assert_called_once_with(
-            'TEST',
-            id=LB_ID,
-            provisioning_status=constants.ERROR)
+        repo.LoadBalancerRepository.update.assert_not_called()
 
         # Test the revert with exception
         mock_loadbalancer_repo_update.reset_mock()
         mock_loadbalancer_repo_update.side_effect = Exception('fail')
         mark_loadbalancer_deleted.revert(self.loadbalancer_mock)
 
-        repo.LoadBalancerRepository.update.assert_called_once_with(
-            'TEST',
-            id=LB_ID,
-            provisioning_status=constants.ERROR)
+        repo.LoadBalancerRepository.update.assert_not_called()
 
     def test_mark_LB_pending_deleted_in_db(self,
                                            mock_generate_uuid,
@@ -1284,25 +1260,6 @@ class TestDatabaseTasks(base.TestCase):
             'TEST',
             LB_ID,
             provisioning_status=constants.PENDING_DELETE)
-
-        # Test the revert
-        mock_loadbalancer_repo_update.reset_mock()
-        mark_loadbalancer_pending_delete.revert(self.loadbalancer_mock)
-
-        repo.LoadBalancerRepository.update.assert_called_once_with(
-            'TEST',
-            id=LB_ID,
-            provisioning_status=constants.ERROR)
-
-        # Test the revert with exception
-        mock_loadbalancer_repo_update.reset_mock()
-        mock_loadbalancer_repo_update.side_effect = Exception('fail')
-        mark_loadbalancer_pending_delete.revert(self.loadbalancer_mock)
-
-        repo.LoadBalancerRepository.update.assert_called_once_with(
-            'TEST',
-            id=LB_ID,
-            provisioning_status=constants.ERROR)
 
     @mock.patch('octavia.db.repositories.HealthMonitorRepository.update')
     def test_update_health_monitor_in_db(self,
@@ -1360,25 +1317,6 @@ class TestDatabaseTasks(base.TestCase):
             'TEST',
             LB_ID,
             name='test', description='test2')
-
-        # Test the revert
-        mock_loadbalancer_repo_update.reset_mock()
-        update_load_balancer.revert(self.loadbalancer_mock)
-
-        repo.LoadBalancerRepository.update.assert_called_once_with(
-            'TEST',
-            id=LB_ID,
-            provisioning_status=constants.ERROR)
-
-        # Test the revert with exception
-        mock_loadbalancer_repo_update.reset_mock()
-        mock_loadbalancer_repo_update.side_effect = Exception('fail')
-        update_load_balancer.revert(self.loadbalancer_mock)
-
-        repo.LoadBalancerRepository.update.assert_called_once_with(
-            'TEST',
-            id=LB_ID,
-            provisioning_status=constants.ERROR)
 
     @mock.patch('octavia.db.repositories.VipRepository.update')
     def test_update_vip_in_db_during_update_loadbalancer(self,
