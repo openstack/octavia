@@ -1,0 +1,9 @@
+---
+fixes:
+  - |
+    Fix an issue with the provisioning status of a load balancer that was set
+    to ERROR too early when an error occurred, making the load balancer mutable
+    while the execution of the tasks for this resources haven't finished yet.
+  - |
+    Fix an issue that could set the provisioning status of a load balancer to a
+    PENDING_UPDATE state when an error occurred in the amphora failover flow.
