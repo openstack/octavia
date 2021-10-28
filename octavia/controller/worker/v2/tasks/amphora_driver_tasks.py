@@ -359,8 +359,6 @@ class AmphoraPostVIPPlug(BaseAmphoraTask):
             return
         LOG.warning("Reverting post vip plug.")
         self.task_utils.mark_amphora_status_error(amphora.get(constants.ID))
-        self.task_utils.mark_loadbalancer_prov_status_error(
-            loadbalancer[constants.LOADBALANCER_ID])
 
 
 class AmphoraePostVIPPlug(BaseAmphoraTask):
@@ -375,14 +373,6 @@ class AmphoraePostVIPPlug(BaseAmphoraTask):
             amp_post_vip_plug.execute(amphora.to_dict(),
                                       loadbalancer,
                                       amphorae_network_config)
-
-    def revert(self, result, loadbalancer, *args, **kwargs):
-        """Handle a failed amphora vip plug notification."""
-        if isinstance(result, failure.Failure):
-            return
-        LOG.warning("Reverting amphorae post vip plug.")
-        self.task_utils.mark_loadbalancer_prov_status_error(
-            loadbalancer[constants.LOADBALANCER_ID])
 
 
 class AmphoraCertUpload(BaseAmphoraTask):

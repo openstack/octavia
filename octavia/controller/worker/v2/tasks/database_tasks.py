@@ -1086,12 +1086,6 @@ class MarkLBActiveInDB(BaseDatabaseTask):
                     LOG.warning("Error updating listener %s provisioning "
                                 "status", listener.id)
 
-        LOG.warning("Reverting mark load balancer deleted in DB "
-                    "for load balancer id %s",
-                    loadbalancer[constants.LOADBALANCER_ID])
-        self.task_utils.mark_loadbalancer_prov_status_error(
-            loadbalancer[constants.LOADBALANCER_ID])
-
 
 class MarkLBActiveInDBByListener(BaseDatabaseTask):
     """Mark the load balancer active in the DB using a listener dict.
@@ -1111,22 +1105,6 @@ class MarkLBActiveInDBByListener(BaseDatabaseTask):
         self.loadbalancer_repo.update(db_apis.get_session(),
                                       listener[constants.LOADBALANCER_ID],
                                       provisioning_status=constants.ACTIVE)
-
-    def revert(self, listener, *args, **kwargs):
-        """Mark the load balancer as broken and ready to be cleaned up.
-
-        This also puts all sub-objects of the load balancer to ERROR state if
-        self.mark_subobjects is True
-
-        :param listener: Listener dictionary
-        :returns: None
-        """
-
-        LOG.warning("Reverting mark load balancer active in DB "
-                    "for load balancer id %s",
-                    listener[constants.LOADBALANCER_ID])
-        self.task_utils.mark_loadbalancer_prov_status_error(
-            listener[constants.LOADBALANCER_ID])
 
 
 class UpdateLBServerGroupInDB(BaseDatabaseTask):
@@ -1187,19 +1165,6 @@ class MarkLBDeletedInDB(BaseDatabaseTask):
                                       loadbalancer[constants.LOADBALANCER_ID],
                                       provisioning_status=constants.DELETED)
 
-    def revert(self, loadbalancer, *args, **kwargs):
-        """Mark the load balancer as broken and ready to be cleaned up.
-
-        :param loadbalancer: Load balancer object that failed to update
-        :returns: None
-        """
-
-        LOG.warning("Reverting mark load balancer deleted in DB "
-                    "for load balancer id %s",
-                    loadbalancer[constants.LOADBALANCER_ID])
-        self.task_utils.mark_loadbalancer_prov_status_error(
-            loadbalancer[constants.LOADBALANCER_ID])
-
 
 class MarkLBPendingDeleteInDB(BaseDatabaseTask):
     """Mark the load balancer pending delete in the DB.
@@ -1220,19 +1185,6 @@ class MarkLBPendingDeleteInDB(BaseDatabaseTask):
                                       loadbalancer[constants.LOADBALANCER_ID],
                                       provisioning_status=(constants.
                                                            PENDING_DELETE))
-
-    def revert(self, loadbalancer, *args, **kwargs):
-        """Mark the load balancer as broken and ready to be cleaned up.
-
-        :param loadbalancer: Load balancer object that failed to update
-        :returns: None
-        """
-
-        LOG.warning("Reverting mark load balancer pending delete in DB "
-                    "for load balancer id %s",
-                    loadbalancer[constants.LOADBALANCER_ID])
-        self.task_utils.mark_loadbalancer_prov_status_error(
-            loadbalancer[constants.LOADBALANCER_ID])
 
 
 class MarkLBAndListenersActiveInDB(BaseDatabaseTask):
@@ -1272,20 +1224,11 @@ class MarkLBAndListenersActiveInDB(BaseDatabaseTask):
         :param listeners: Listener objects that failed to update
         :returns: None
         """
-        lb_id = None
-        if loadbalancer_id:
-            lb_id = loadbalancer_id
-        elif listeners:
-            lb_id = listeners[0][constants.LOADBALANCER_ID]
-
-        if lb_id:
-            lists = ', '.join([listener[constants.LISTENER_ID]
-                              for listener in listeners])
-            LOG.warning("Reverting mark load balancer and listeners active in "
-                        "DB for load balancer id %(LB)s and listener ids: "
-                        "%(list)s", {'LB': lb_id,
-                                     'list': lists})
-            self.task_utils.mark_loadbalancer_prov_status_error(lb_id)
+        lists = ', '.join([listener[constants.LISTENER_ID]
+                           for listener in listeners])
+        LOG.warning("Reverting mark listeners active in "
+                    "DB for listener ids: "
+                    "%(list)s", {'list': lists})
 
         for listener in listeners:
             self.task_utils.mark_listener_prov_status_error(
@@ -1375,20 +1318,6 @@ class UpdateLoadbalancerInDB(BaseDatabaseTask):
         self.loadbalancer_repo.update(db_apis.get_session(),
                                       loadbalancer[constants.LOADBALANCER_ID],
                                       **update_dict)
-
-    def revert(self, loadbalancer, *args, **kwargs):
-        """Mark the loadbalancer ERROR since the update couldn't happen
-
-        :param loadbalancer: The load balancer that couldn't be updated
-        :returns: None
-        """
-
-        LOG.warning("Reverting update loadbalancer in DB "
-                    "for loadbalancer id %s",
-                    loadbalancer[constants.LOADBALANCER_ID])
-
-        self.task_utils.mark_loadbalancer_prov_status_error(
-            loadbalancer[constants.LOADBALANCER_ID])
 
 
 class UpdateHealthMonInDB(BaseDatabaseTask):
