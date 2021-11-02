@@ -3,7 +3,7 @@
 set -eu
 set -o xtrace
 
-if [ "$DISTRO_NAME" == "centos" ]; then
+if [[ "$DISTRO_NAME" == "centos" && "$DIB_RELEASE" == "8" ]]; then
     dnf install -y dnf-plugins-core centos-release-nfv-common
     # REVISIT(cgoncalves): replace arch if-else + GPG with release RPM once available
     if [[ "$ARCH" =~ (aarch64|arm64) ]]; then
