@@ -19,6 +19,7 @@ from cryptography import fernet
 from oslo_config import cfg
 from oslo_log import log as logging
 from stevedore import driver as stevedore_driver
+from taskflow import retry
 from taskflow import task
 from taskflow.types import failure
 import tenacity
@@ -49,6 +50,26 @@ class BaseComputeTask(task.Task):
         ).driver
         self.loadbalancer_repo = repo.LoadBalancerRepository()
         self.rate_limit = amphora_rate_limit.AmphoraBuildRateLimit()
+
+
+class ComputeRetry(retry.Times):
+
+    def on_failure(self, history, *args, **kwargs):
+        last_errors = history[-1][1]
+        max_retry_attempt = CONF.controller_worker.amp_active_retries
+        for task_name, ex_info in last_errors.items():
+            if len(history) <= max_retry_attempt:
+                # When taskflow persistance is enabled and flow/task state is
+                # saved in the backend. If flow(task) is restored(restart of
+                # worker,etc) we are getting ex_info as None - we need to RETRY
+                # task to check its real state.
+                if ex_info is None or ex_info._exc_info is None:
+                    return retry.RETRY
+                excp = ex_info._exc_info[1]
+                if isinstance(excp, exceptions.ComputeWaitTimeoutException):
+                    return retry.RETRY
+
+        return retry.REVERT_ALL
 
 
 class ComputeCreate(BaseComputeTask):
@@ -251,7 +272,7 @@ class ComputeDelete(BaseComputeTask):
                 raise
 
 
-class ComputeActiveWait(BaseComputeTask):
+class ComputeWait(BaseComputeTask):
     """Wait for the compute driver to mark the amphora active."""
 
     def execute(self, compute_id, amphora_id, availability_zone):
@@ -268,16 +289,16 @@ class ComputeActiveWait(BaseComputeTask):
             amp_network = availability_zone.get(constants.MANAGEMENT_NETWORK)
         else:
             amp_network = None
-        for i in range(CONF.controller_worker.amp_active_retries):
-            amp, fault = self.compute.get_amphora(compute_id, amp_network)
-            if amp.status == constants.ACTIVE:
-                if CONF.haproxy_amphora.build_rate_limit != -1:
-                    self.rate_limit.remove_from_build_req_queue(amphora_id)
-                return amp.to_dict()
-            if amp.status == constants.ERROR:
-                raise exceptions.ComputeBuildException(fault=fault)
-            time.sleep(CONF.controller_worker.amp_active_wait_sec)
 
+        amp, fault = self.compute.get_amphora(compute_id, amp_network)
+        if amp.status == constants.ACTIVE:
+            if CONF.haproxy_amphora.build_rate_limit != -1:
+                self.rate_limit.remove_from_build_req_queue(amphora_id)
+            return amp.to_dict()
+        if amp.status == constants.ERROR:
+            raise exceptions.ComputeBuildException(fault=fault)
+
+        time.sleep(CONF.controller_worker.amp_active_wait_sec)
         raise exceptions.ComputeWaitTimeoutException(id=compute_id)
 
 

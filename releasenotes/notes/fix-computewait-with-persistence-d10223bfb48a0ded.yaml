@@ -1,0 +1,6 @@
+---
+fixes:
+  - |
+    Fix an issue that may have occurred when running the amphorav2 with
+    persistence, the ComputeActiveWait was incorrectly executed twice on
+    different controllers.
