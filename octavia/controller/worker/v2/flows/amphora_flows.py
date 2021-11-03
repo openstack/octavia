@@ -58,9 +58,14 @@ class AmphoraFlows(object):
             provides=constants.COMPUTE_ID))
         create_amphora_flow.add(database_tasks.MarkAmphoraBootingInDB(
             requires=(constants.AMPHORA_ID, constants.COMPUTE_ID)))
-        create_amphora_flow.add(compute_tasks.ComputeActiveWait(
-            requires=(constants.COMPUTE_ID, constants.AMPHORA_ID),
-            provides=constants.COMPUTE_OBJ))
+        retry_subflow = linear_flow.Flow(
+            constants.COMPUTE_CREATE_RETRY_SUBFLOW,
+            retry=compute_tasks.ComputeRetry())
+        retry_subflow.add(
+            compute_tasks.ComputeWait(
+                requires=(constants.COMPUTE_ID, constants.AMPHORA_ID),
+                provides=constants.COMPUTE_OBJ))
+        create_amphora_flow.add(retry_subflow)
         create_amphora_flow.add(database_tasks.UpdateAmphoraInfo(
             requires=(constants.AMPHORA_ID, constants.COMPUTE_OBJ),
             provides=constants.AMPHORA))
@@ -140,11 +145,7 @@ class AmphoraFlows(object):
         create_amp_for_lb_subflow.add(database_tasks.MarkAmphoraBootingInDB(
             name=sf_name + '-' + constants.MARK_AMPHORA_BOOTING_INDB,
             requires=(constants.AMPHORA_ID, constants.COMPUTE_ID)))
-        create_amp_for_lb_subflow.add(compute_tasks.ComputeActiveWait(
-            name=sf_name + '-' + constants.COMPUTE_WAIT,
-            requires=(constants.COMPUTE_ID, constants.AMPHORA_ID,
-                      constants.AVAILABILITY_ZONE),
-            provides=constants.COMPUTE_OBJ))
+        create_amp_for_lb_subflow.add(self._retry_compute_wait_flow(sf_name))
         create_amp_for_lb_subflow.add(database_tasks.UpdateAmphoraInfo(
             name=sf_name + '-' + constants.UPDATE_AMPHORA_INFO,
             requires=(constants.AMPHORA_ID, constants.COMPUTE_OBJ),
@@ -194,6 +195,18 @@ class AmphoraFlows(object):
         """
         values = history.values()
         return not values or list(values)[0] is None
+
+    def _retry_compute_wait_flow(self, sf_name):
+        retry_task = sf_name + '-' + constants.COMPUTE_WAIT
+        retry_subflow = linear_flow.Flow(
+            sf_name + '-' + constants.COMPUTE_CREATE_RETRY_SUBFLOW,
+            retry=compute_tasks.ComputeRetry())
+        retry_subflow.add(
+            compute_tasks.ComputeWait(
+                name=retry_task,
+                requires=(constants.COMPUTE_ID, constants.AMPHORA_ID),
+                provides=constants.COMPUTE_OBJ))
+        return retry_subflow
 
     def _retry_flow(self, sf_name):
         retry_task = sf_name + '-' + constants.AMP_COMPUTE_CONNECTIVITY_WAIT
