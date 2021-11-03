@@ -28,7 +28,8 @@ from taskflow.listeners import logging
 from taskflow.persistence import models
 from taskflow import states
 
-from octavia.amphorae.driver_exceptions import exceptions
+from octavia.amphorae.driver_exceptions import exceptions as drv_exceptions
+from octavia.common import exceptions
 
 LOG = log.getLogger(__name__)
 
@@ -39,7 +40,9 @@ CONF = cfg.CONF
 #  to instance" will be logged as usual.
 def retryMaskFilter(record):
     if record.exc_info is not None and isinstance(
-            record.exc_info[1], exceptions.AmpConnectionRetry):
+            record.exc_info[1], (
+                drv_exceptions.AmpConnectionRetry,
+                exceptions.ComputeWaitTimeoutException)):
         return False
     return True
 
