@@ -14,6 +14,7 @@
 
 import copy
 import datetime
+import json
 import random
 
 from oslo_utils import uuidutils
@@ -43,6 +44,7 @@ class TestDataModels(base.TestCase):
         self.COMPUTE_ID = uuidutils.generate_uuid()
         self.IMAGE_ID = uuidutils.generate_uuid()
         self.COMPUTE_FLAVOR = uuidutils.generate_uuid()
+        self.TLS_CONTAINER_ID = uuidutils.generate_uuid()
 
         self.LB_obj = data_models.LoadBalancer(
             id=self.LB_ID,
@@ -533,3 +535,21 @@ class TestDataModels(base.TestCase):
 
         # test incrementing an incompatible object
         self.assertRaises(TypeError, stats_1.__iadd__, "boom")
+
+    def test_TLSContainer_serialization(self):
+        tls_container = data_models.TLSContainer(
+            id=self.TLS_CONTAINER_ID,
+            primary_cn='fake_cn',
+            certificate=b'certificate_buffer1',
+            private_key=b'private_key1',
+            passphrase=b'passphrase1',
+            intermediates=[
+                b'intermediate_buffer1',
+                b'intermediate_buffer2',
+            ]
+        )
+        tls_container_dict = tls_container.to_dict(recurse=True)
+        json_buffer = json.dumps(tls_container_dict)
+        json_doc = json.loads(json_buffer)
+
+        self.assertEqual(tls_container_dict, json_doc)
