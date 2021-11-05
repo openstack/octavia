@@ -1,0 +1,6 @@
+---
+fixes:
+  - |
+    Fix a serialization issue when using TLSContainer with amphorav2 driver
+    with persistence, a list of bytes type in the data model was not correctly
+    converted to serializable data.
