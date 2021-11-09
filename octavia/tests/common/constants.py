@@ -177,8 +177,10 @@ MOCK_FLOATING_IP = {'floatingip': {'id': MOCK_FLOATING_IP_ID,
 
 MOCK_AMP_ID1 = 'amp1-id'
 MOCK_AMP_ID2 = 'amp2-id'
+MOCK_AMP_ID3 = 'amp3-id'
 MOCK_AMP_COMPUTE_ID1 = 'amp1-compute-id'
 MOCK_AMP_COMPUTE_ID2 = 'amp2-compute-id'
+MOCK_AMP_COMPUTE_ID3 = 'amp3-compute-id'
 
 MOCK_MANAGEMENT_SUBNET_ID = 'mgmt-subnet-1'
 MOCK_MANAGEMENT_NET_ID = 'mgmt-net-1'
@@ -218,9 +220,11 @@ MOCK_VIP_SUBNET_ID = 'vip-subnet-1'
 MOCK_VIP_NET_ID = 'vip-net-1'
 MOCK_VRRP_PORT_ID1 = 'vrrp-port-1'
 MOCK_VRRP_PORT_ID2 = 'vrrp-port-2'
+MOCK_VRRP_PORT_ID3 = 'vrrp-port-3'
 # These IPs become vrrp_ip
 MOCK_VRRP_IP1 = '55.55.55.1'
 MOCK_VRRP_IP2 = '55.55.55.2'
+MOCK_VRRP_IP3 = '55.55.55.3'
 
 MOCK_VRRP_FIXED_IPS1 = [{'ip_address': MOCK_VRRP_IP1,
                          'subnet_id': MOCK_VIP_SUBNET_ID}]
