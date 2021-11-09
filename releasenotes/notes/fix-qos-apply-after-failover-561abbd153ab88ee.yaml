@@ -1,0 +1,6 @@
+---
+fixes:
+  - |
+    Fix a bug when updating a load balancer with a QoS policy after a failover,
+    Octavia attempted to update the VRRP ports of the deleted amphorae, moving
+    the provisioning status of the load balancer to ERROR.
