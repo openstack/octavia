@@ -585,6 +585,10 @@ class ApplyQos(BaseNetworkTask):
         if not amps_data:
             amps_data = loadbalancer.amphorae
 
+        amps_data = [amp
+                     for amp in amps_data
+                     if amp.status == constants.AMPHORA_ALLOCATED]
+
         apply_qos = ApplyQosAmphora()
         for amp_data in amps_data:
             apply_qos._apply_qos_on_vrrp_port(loadbalancer, amp_data,

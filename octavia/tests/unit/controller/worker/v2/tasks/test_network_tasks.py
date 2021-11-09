@@ -48,11 +48,17 @@ INTERFACE = data_models.Interface(id=uuidutils.generate_uuid(),
                                   compute_id=COMPUTE_ID, fixed_ips=FIXED_IPS,
                                   port_id=PORT_ID)
 AMPS_DATA = [o_data_models.Amphora(id=t_constants.MOCK_AMP_ID1,
+                                   status=constants.AMPHORA_ALLOCATED,
                                    vrrp_port_id=t_constants.MOCK_VRRP_PORT_ID1,
                                    vrrp_ip=t_constants.MOCK_VRRP_IP1),
              o_data_models.Amphora(id=t_constants.MOCK_AMP_ID2,
+                                   status=constants.AMPHORA_ALLOCATED,
                                    vrrp_port_id=t_constants.MOCK_VRRP_PORT_ID2,
-                                   vrrp_ip=t_constants.MOCK_VRRP_IP2)
+                                   vrrp_ip=t_constants.MOCK_VRRP_IP2),
+             o_data_models.Amphora(id=t_constants.MOCK_AMP_ID3,
+                                   status=constants.DELETED,
+                                   vrrp_port_id=t_constants.MOCK_VRRP_PORT_ID3,
+                                   vrrp_ip=t_constants.MOCK_VRRP_IP3)
              ]
 UPDATE_DICT = {constants.TOPOLOGY: None}
 
