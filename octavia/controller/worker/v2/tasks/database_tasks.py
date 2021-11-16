@@ -592,11 +592,6 @@ class MapLoadbalancerToAmphora(BaseDatabaseTask):
         # loadbalancer flow can executed properly
         return amp.to_dict()
 
-    def revert(self, result, loadbalancer_id, *args, **kwargs):
-        LOG.warning("Reverting Amphora allocation for the load "
-                    "balancer %s in the database.", loadbalancer_id)
-        self.task_utils.mark_loadbalancer_prov_status_error(loadbalancer_id)
-
 
 class _MarkAmphoraRoleAndPriorityInDB(BaseDatabaseTask):
     """Alter the amphora role and priority in DB."""
