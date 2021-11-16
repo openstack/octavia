@@ -573,22 +573,6 @@ class TestDatabaseTasks(base.TestCase):
 
         self.assertIsNone(amp_id)
 
-        # Test revert
-        map_lb_to_amp.revert(None, self.loadbalancer_mock.id)
-        repo.LoadBalancerRepository.update.assert_called_once_with(
-            'TEST',
-            id=LB_ID,
-            provisioning_status=constants.ERROR)
-
-        # Test revert with exception
-        repo.LoadBalancerRepository.update.reset_mock()
-        mock_loadbalancer_repo_update.side_effect = Exception('fail')
-        map_lb_to_amp.revert(None, self.loadbalancer_mock.id)
-        repo.LoadBalancerRepository.update.assert_called_once_with(
-            'TEST',
-            id=LB_ID,
-            provisioning_status=constants.ERROR)
-
     @mock.patch('octavia.db.repositories.AmphoraRepository.get',
                 return_value=_amphora_mock)
     @mock.patch('octavia.db.repositories.LoadBalancerRepository.get',
