@@ -100,7 +100,10 @@ class ControllerWorker(object):
 
     def run_flow(self, func, *args, **kwargs):
         if CONF.task_flow.jobboard_enabled:
-            self.services_controller.run_poster(func, *args, **kwargs)
+            job_id = self.services_controller.run_poster(func, *args,
+                                                         **kwargs)
+            LOG.info("Taskflow job will execute flow %s with id %s",
+                     func.__name__, job_id)
         else:
             tf = self.tf_engine.taskflow_load(
                 func(*args), **kwargs)

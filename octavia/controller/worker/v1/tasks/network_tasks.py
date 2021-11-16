@@ -373,13 +373,17 @@ class UpdateVIPSecurityGroup(BaseNetworkTask):
         Task is idempotent and safe to retry.
         """
 
-        LOG.debug("Setup SG for loadbalancer id: %s", loadbalancer_id)
+        LOG.debug("Setting up VIP SG for load balancer id: %s",
+                  loadbalancer_id)
 
         loadbalancer = self.lb_repo.get(db_apis.get_session(),
                                         id=loadbalancer_id)
 
-        return self.network_driver.update_vip_sg(loadbalancer,
-                                                 loadbalancer.vip)
+        sg_id = self.network_driver.update_vip_sg(loadbalancer,
+                                                  loadbalancer.vip)
+        LOG.info("Set up VIP SG %s for load balancer %s complete",
+                 sg_id if sg_id else "None", loadbalancer_id)
+        return sg_id
 
 
 class GetSubnetFromVIP(BaseNetworkTask):
@@ -390,7 +394,11 @@ class GetSubnetFromVIP(BaseNetworkTask):
 
         LOG.debug("Getting subnet for LB: %s", loadbalancer.id)
 
-        return self.network_driver.get_subnet(loadbalancer.vip.subnet_id)
+        subnet = self.network_driver.get_subnet(loadbalancer.vip.subnet_id)
+        LOG.info("Got subnet %s for load balancer %s",
+                 loadbalancer.vip.subnet_id if subnet else "None",
+                 loadbalancer.id)
+        return subnet
 
 
 class PlugVIPAmpphora(BaseNetworkTask):
@@ -446,12 +454,20 @@ class AllocateVIP(BaseNetworkTask):
     def execute(self, loadbalancer):
         """Allocate a vip to the loadbalancer."""
 
-        LOG.debug("Allocate_vip port_id %s, subnet_id %s,"
-                  "ip_address %s",
+        LOG.debug("Allocating vip port id %s, subnet id %s, ip address %s for "
+                  "load balancer %s",
                   loadbalancer.vip.port_id,
                   loadbalancer.vip.subnet_id,
-                  loadbalancer.vip.ip_address)
-        return self.network_driver.allocate_vip(loadbalancer)
+                  loadbalancer.vip.ip_address,
+                  loadbalancer.id)
+        vip = self.network_driver.allocate_vip(loadbalancer)
+        LOG.info("Allocated vip with port id %s, subnet id %s, ip address %s "
+                 "for load balancer %s",
+                 loadbalancer.vip.port_id,
+                 loadbalancer.vip.subnet_id,
+                 loadbalancer.vip.ip_address,
+                 loadbalancer.id)
+        return vip
 
     def revert(self, result, loadbalancer, *args, **kwargs):
         """Handle a failure to allocate vip."""

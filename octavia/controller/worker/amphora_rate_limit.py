@@ -39,8 +39,10 @@ class AmphoraBuildRateLimit(object):
             db_apis.get_session(),
             amphora_id=amphora_id,
             priority=build_priority)
-        LOG.debug("Added build request for %s to the queue", amphora_id)
+        LOG.debug("Added build request for amphora %s to the queue",
+                  amphora_id)
         self.wait_for_build_slot(amphora_id)
+        LOG.info("Build slot for amphora %s is ready", amphora_id)
 
     def has_build_slot(self):
         build_rate_limit = CONF.haproxy_amphora.build_rate_limit

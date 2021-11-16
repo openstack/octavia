@@ -168,3 +168,4 @@ def get_listener(exit_event):
     LOG.info('Driver get listener shutdown finished.')
     server.server_close()
     _cleanup_socket_file(CONF.driver_agent.get_socket_path)
+    LOG.info("UDS server was closed and socket was cleaned up.")

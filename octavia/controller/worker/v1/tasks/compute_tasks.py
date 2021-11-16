@@ -122,8 +122,8 @@ class ComputeCreate(BaseComputeTask):
                 server_group_id=server_group_id,
                 availability_zone=amp_availability_zone)
 
-            LOG.debug("Server created with id: %s for amphora id: %s",
-                      compute_id, amphora_id)
+            LOG.info("Server created with id: %s for amphora id: %s",
+                     compute_id, amphora_id)
             return compute_id
 
         except Exception:

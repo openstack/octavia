@@ -99,8 +99,11 @@ class CreateAmphoraInDB(BaseDatabaseTask):
                                            load_balancer_id=loadbalancer_id,
                                            status=constants.PENDING_CREATE,
                                            cert_busy=False)
-
-        LOG.info("Created Amphora in DB with id %s", amphora.id)
+        if loadbalancer_id:
+            LOG.info("Created Amphora %s in DB for load balancer %s",
+                     amphora.id, loadbalancer_id)
+        else:
+            LOG.info("Created Amphora %s in DB", amphora.id)
         return amphora.id
 
     def revert(self, result, *args, **kwargs):
@@ -445,8 +448,15 @@ class UpdateVIPAfterAllocation(BaseDatabaseTask):
                               ip_address=vip[constants.IP_ADDRESS])
         db_lb = self.repos.load_balancer.get(db_apis.get_session(),
                                              id=loadbalancer_id)
-        return provider_utils.db_loadbalancer_to_provider_loadbalancer(
-            db_lb).to_dict()
+        prov_lb = provider_utils.db_loadbalancer_to_provider_loadbalancer(
+            db_lb)
+        LOG.info("Updated vip with port id %s, subnet id %s, ip address %s "
+                 "for load balancer %s",
+                 vip[constants.PORT_ID],
+                 vip[constants.SUBNET_ID],
+                 vip[constants.IP_ADDRESS],
+                 loadbalancer_id)
+        return prov_lb.to_dict()
 
 
 class UpdateAmphoraeVIPData(BaseDatabaseTask):
@@ -665,7 +675,7 @@ class MarkAmphoraAllocatedInDB(BaseDatabaseTask):
         """
 
         LOG.info('Mark ALLOCATED in DB for amphora: %(amp)s with '
-                 'compute id %(comp)s for load balancer: %(lb)s',
+                 'compute id: %(comp)s for load balancer: %(lb)s',
                  {
                      'amp': amphora.get(constants.ID),
                      'comp': amphora[constants.COMPUTE_ID],
