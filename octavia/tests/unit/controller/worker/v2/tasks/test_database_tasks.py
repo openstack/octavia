@@ -624,22 +624,6 @@ class TestDatabaseTasks(base.TestCase):
 
         self.assertIsNone(amp_id)
 
-        # Test revert
-        map_lb_to_amp.revert(None, LB_ID)
-        repo.LoadBalancerRepository.update.assert_called_once_with(
-            'TEST',
-            id=LB_ID,
-            provisioning_status=constants.ERROR)
-
-        # Test revert with exception
-        repo.LoadBalancerRepository.update.reset_mock()
-        mock_loadbalancer_repo_update.side_effect = Exception('fail')
-        map_lb_to_amp.revert(None, LB_ID)
-        repo.LoadBalancerRepository.update.assert_called_once_with(
-            'TEST',
-            id=LB_ID,
-            provisioning_status=constants.ERROR)
-
     @mock.patch('octavia.db.repositories.AmphoraRepository.'
                 'allocate_and_associate',
                 side_effect=[_db_amphora_mock, None])
@@ -668,22 +652,6 @@ class TestDatabaseTasks(base.TestCase):
         amp = map_lb_to_amp.execute(_db_loadbalancer_mock.id)
 
         self.assertIsNone(amp)
-
-        # Test revert
-        map_lb_to_amp.revert(None, _db_loadbalancer_mock.id)
-        repo.LoadBalancerRepository.update.assert_called_once_with(
-            'TEST',
-            id=LB_ID,
-            provisioning_status=constants.ERROR)
-
-        # Test revert with exception
-        repo.LoadBalancerRepository.update.reset_mock()
-        mock_loadbalancer_repo_update.side_effect = Exception('fail')
-        map_lb_to_amp.revert(None, _db_loadbalancer_mock.id)
-        repo.LoadBalancerRepository.update.assert_called_once_with(
-            'TEST',
-            id=LB_ID,
-            provisioning_status=constants.ERROR)
 
     @mock.patch('octavia.db.repositories.AmphoraRepository.get',
                 return_value=_db_amphora_mock)
