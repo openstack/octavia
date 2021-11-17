@@ -48,6 +48,10 @@ class TestHealthCheck(base_db_test.OctaviaDBTestBase):
         cfg.CONF.register_opts(healthcheck_opts, group='healthcheck')
 
         self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
+        # Mock log_opt_values, it prevents the dump of the configuration
+        # with LOG.info for each test. It saves a lot of time when running
+        # the functional tests.
+        self.conf.conf.log_opt_values = mock.MagicMock()
         self.conf.config(group='healthcheck', backends=['octavia_db_check'])
         self.conf.config(group='api_settings', healthcheck_refresh_interval=5)
         self.UNAVAILABLE = (healthcheck_plugins.OctaviaDBHealthcheck.

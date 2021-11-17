@@ -101,6 +101,10 @@ class BaseAPITest(base_db_test.OctaviaDBTestBase):
     def setUp(self):
         super().setUp()
         self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
+        # Mock log_opt_values, it prevents the dump of the configuration
+        # with LOG.info for each test. It saves a lot of time when running
+        # the functional tests.
+        self.conf.conf.log_opt_values = mock.MagicMock()
         self.conf.config(group="controller_worker",
                          network_driver='network_noop_driver')
         self.conf.config(group='api_settings', auth_strategy=constants.NOAUTH)
