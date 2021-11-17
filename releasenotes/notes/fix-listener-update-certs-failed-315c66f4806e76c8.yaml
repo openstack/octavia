@@ -1,0 +1,5 @@
+---
+fixes:
+  - |
+    Fix update listener certs failed. The fix ensures
+    that an existing certificate gets overwritten properly.
