@@ -223,7 +223,7 @@ class AmphoraStatsController(base.BaseController):
 
         stats = self.repositories.get_amphora_stats(context.session,
                                                     self.amp_id)
-        if stats == []:
+        if not stats:
             raise exceptions.NotFound(resource='Amphora stats for',
                                       id=self.amp_id)
 
