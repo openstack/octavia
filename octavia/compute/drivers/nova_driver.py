@@ -39,6 +39,7 @@ class VirtualMachineManager(compute_base.ComputeBase):
         super().__init__()
         # Must initialize nova api
         self._nova_client = clients.NovaAuth.get_nova_client(
+            service_name=CONF.nova.service_name,
             endpoint=CONF.nova.endpoint,
             region=CONF.nova.region_name,
             endpoint_type=CONF.nova.endpoint_type,
