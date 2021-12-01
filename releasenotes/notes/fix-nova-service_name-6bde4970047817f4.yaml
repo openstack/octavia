@@ -1,0 +1,6 @@
+---
+fixes:
+  - |
+    Now the ``[nova] service_name`` parameter is effectively used to find
+    the nova endpoint in keystone catalog. The parameter had no effect before
+    it was fixed.
