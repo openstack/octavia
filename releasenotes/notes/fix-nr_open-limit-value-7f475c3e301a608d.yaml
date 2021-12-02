@@ -1,0 +1,6 @@
+---
+fixes:
+  - |
+    Increase the limit value for nr_open and file-max in the amphora, the new
+    value is based on what HAProxy 2.x is expecting from the system with the
+    greatest maxconn value that Octavia can set.
