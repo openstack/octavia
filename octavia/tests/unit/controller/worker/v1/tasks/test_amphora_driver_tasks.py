@@ -496,10 +496,7 @@ class TestAmphoraDriverTasks(base.TestCase):
             _session_mock,
             id=AMP_ID,
             status=constants.ERROR)
-        repo.LoadBalancerRepository.update.assert_called_once_with(
-            _session_mock,
-            id=LB_ID,
-            provisioning_status=constants.ERROR)
+        repo.LoadBalancerRepository.update.assert_not_called()
 
         self.assertIsNone(amp)
 
@@ -513,10 +510,7 @@ class TestAmphoraDriverTasks(base.TestCase):
             _session_mock,
             id=AMP_ID,
             status=constants.ERROR)
-        repo.LoadBalancerRepository.update.assert_called_once_with(
-            _session_mock,
-            id=LB_ID,
-            provisioning_status=constants.ERROR)
+        repo.LoadBalancerRepository.update.assert_not_called()
 
         self.assertIsNone(amp)
 
@@ -545,33 +539,6 @@ class TestAmphoraDriverTasks(base.TestCase):
 
         mock_driver.post_vip_plug.assert_called_once_with(
             _amphora_mock, _LB_mock, amphorae_net_config_mock)
-
-        # Test revert
-        amp = amphora_post_vip_plug_obj.revert(None, _LB_mock)
-        repo.LoadBalancerRepository.update.assert_called_once_with(
-            _session_mock,
-            id=LB_ID,
-            provisioning_status=constants.ERROR)
-
-        self.assertIsNone(amp)
-
-        # Test revert with exception
-        repo.LoadBalancerRepository.update.reset_mock()
-        mock_loadbalancer_repo_update.side_effect = Exception('fail')
-        amp = amphora_post_vip_plug_obj.revert(None, _LB_mock)
-        repo.LoadBalancerRepository.update.assert_called_once_with(
-            _session_mock,
-            id=LB_ID,
-            provisioning_status=constants.ERROR)
-
-        self.assertIsNone(amp)
-
-        # Test revert when this task failed
-        repo.AmphoraRepository.update.reset_mock()
-        amp = amphora_post_vip_plug_obj.revert(
-            failure.Failure.from_exception(Exception('boom')), _amphora_mock,
-            None)
-        repo.AmphoraRepository.update.assert_not_called()
 
     def test_amphora_cert_upload(self,
                                  mock_driver,
