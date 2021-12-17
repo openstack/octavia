@@ -64,6 +64,8 @@ class Server(object):
 
         register_app_error_handler(self.app)
 
+        self._plug.plug_lo()
+
         self.app.add_url_rule(rule='/', view_func=self.version_discovery,
                               methods=['GET'])
         self.app.add_url_rule(rule=PATH_PREFIX +

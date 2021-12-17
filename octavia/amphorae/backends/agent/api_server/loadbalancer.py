@@ -28,7 +28,6 @@ import webob
 from werkzeug import exceptions
 
 from octavia.amphorae.backends.agent.api_server import haproxy_compatibility
-from octavia.amphorae.backends.agent.api_server import osutils
 from octavia.amphorae.backends.agent.api_server import util
 from octavia.common import constants as consts
 from octavia.common import utils as octavia_utils
@@ -72,9 +71,6 @@ class Wrapped(object):
 
 
 class Loadbalancer(object):
-
-    def __init__(self):
-        self._osutils = osutils.BaseOS.get_os_util()
 
     def get_haproxy_config(self, lb_id):
         """Gets the haproxy config
@@ -198,7 +194,6 @@ class Loadbalancer(object):
                                       respawn_interval),
                     amphora_netns=consts.AMP_NETNS_SVC_PREFIX,
                     amphora_nsname=consts.AMPHORA_NAMESPACE,
-                    HasIFUPAll=self._osutils.has_ifup_all(),
                     haproxy_major_version=hap_major,
                     haproxy_minor_version=hap_minor
                 )

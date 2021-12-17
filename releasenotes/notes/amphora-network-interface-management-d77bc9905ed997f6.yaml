@@ -1,0 +1,13 @@
+---
+deprecations:
+  - |
+    The ``[amphora_agent].agent_server_network_file`` configuration option is
+    now deprecated, the new Amphora network configuration tool introduced in
+    Xena does not support a single configuration file.
+fixes:
+  - |
+    Amphora network configuration for the VIP interface and the pool member
+    interfaces are now applied with the amphora-interface tool.
+    amphora-interface uses pyroute2 low-level functions to configure the
+    interfaces instead of distribution-specific tools such as "network-scripts"
+    or "/etc/network/interfaces" files.
