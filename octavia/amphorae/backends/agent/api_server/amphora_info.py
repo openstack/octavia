@@ -112,7 +112,7 @@ class AmphoraInfo(object):
     def _count_lvs_listener_processes(self, lvs_driver, listener_list):
         num = 0
         for listener_id in listener_list:
-            if lvs_driver.is_listener_running(listener_id):
+            if util.is_lvs_listener_running(listener_id):
                 # optional check if it's still running
                 num += 1
         return num
