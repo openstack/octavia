@@ -111,7 +111,7 @@ class AmphoraInfo(object):
     def _count_udp_listener_processes(self, udp_driver, listener_list):
         num = 0
         for listener_id in listener_list:
-            if udp_driver.is_listener_running(listener_id):
+            if util.is_udp_listener_running(listener_id):
                 # optional check if it's still running
                 num += 1
         return num
