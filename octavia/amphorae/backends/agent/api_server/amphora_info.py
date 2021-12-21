@@ -48,6 +48,7 @@ class AmphoraInfo(object):
         return webob.Response(json=body)
 
     def compile_amphora_details(self, extend_lvs_driver=None):
+        haproxy_loadbalancer_list = sorted(util.get_loadbalancers())
         haproxy_listener_list = sorted(util.get_listeners())
         extend_body = {}
         lvs_listener_list = []
@@ -73,7 +74,7 @@ class AmphoraInfo(object):
                 'networks': self._get_networks(),
                 'active': True,
                 'haproxy_count':
-                    self._count_haproxy_processes(haproxy_listener_list),
+                    self._count_haproxy_processes(haproxy_loadbalancer_list),
                 'cpu_count': os.cpu_count(),
                 'cpu': {
                     'total': cpu['total'],
