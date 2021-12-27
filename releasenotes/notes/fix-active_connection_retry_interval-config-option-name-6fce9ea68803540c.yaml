@@ -1,0 +1,12 @@
+---
+upgrade:
+  - |
+    The ``[haproxy_amphora].active_connection_rety_interval`` configuration
+    option has been renamed to
+    ``[haproxy_amphora].active_connection_retry_interval``. An alias for the old
+    name is in place to maintain compatibility with old configuration files.
+fixes:
+  - |
+    The ``[haproxy_amphora].active_connection_rety_interval`` configuration
+    option has been renamed to
+    ``[haproxy_amphora].active_connection_retry_interval``.

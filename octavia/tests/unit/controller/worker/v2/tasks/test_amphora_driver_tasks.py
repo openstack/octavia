@@ -79,7 +79,7 @@ class TestAmphoraDriverTasks(base.TestCase):
         conf.config(group="haproxy_amphora",
                     active_connection_max_retries=CONN_MAX_RETRIES)
         conf.config(group="haproxy_amphora",
-                    active_connection_rety_interval=CONN_RETRY_INTERVAL)
+                    active_connection_retry_interval=CONN_RETRY_INTERVAL)
         conf.config(group="controller_worker",
                     loadbalancer_topology=constants.TOPOLOGY_SINGLE)
         self.timeout_dict = {constants.REQ_CONN_TIMEOUT: 1,

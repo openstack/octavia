@@ -391,7 +391,7 @@ class LoadBalancerFlows(object):
             constants.CONN_MAX_RETRIES:
                 CONF.haproxy_amphora.active_connection_max_retries,
             constants.CONN_RETRY_INTERVAL:
-                CONF.haproxy_amphora.active_connection_rety_interval}
+                CONF.haproxy_amphora.active_connection_retry_interval}
 
         if failed_amp:
             if failed_amp.role in (constants.ROLE_MASTER,

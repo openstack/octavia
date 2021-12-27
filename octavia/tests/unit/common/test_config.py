@@ -12,6 +12,8 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import tempfile
+
 from oslo_config import cfg
 from oslo_config import fixture as oslo_fixture
 
@@ -49,3 +51,30 @@ class TestConfig(base.TestCase):
         self.assertRaises(
             ValueError, conf.config, group="certificates",
             server_certs_key_passphrase="insecure-key-do-not-u$e-this-key")
+
+    def test_active_connection_retry_interval(self):
+        conf = self.useFixture(oslo_fixture.Config(config.cfg.CONF))
+
+        # Test new name
+        with tempfile.NamedTemporaryFile(mode='w', delete=True) as tmp:
+            tmp.write("[haproxy_amphora]\n"
+                      "active_connection_retry_interval=4\n")
+            tmp.flush()
+
+            conf.set_config_files([tmp.name])
+
+        self.assertEqual(
+            4,
+            conf.conf.haproxy_amphora.active_connection_retry_interval)
+
+        # Test deprecated name
+        with tempfile.NamedTemporaryFile(mode='w', delete=True) as tmp:
+            tmp.write("[haproxy_amphora]\n"
+                      "active_connection_rety_interval=3\n")
+            tmp.flush()
+
+            conf.set_config_files([tmp.name])
+
+        self.assertEqual(
+            3,
+            conf.conf.haproxy_amphora.active_connection_retry_interval)

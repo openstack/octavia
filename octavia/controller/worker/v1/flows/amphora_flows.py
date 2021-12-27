@@ -550,7 +550,7 @@ class AmphoraFlows(object):
             constants.CONN_MAX_RETRIES:
                 CONF.haproxy_amphora.active_connection_max_retries,
             constants.CONN_RETRY_INTERVAL:
-                CONF.haproxy_amphora.active_connection_rety_interval}
+                CONF.haproxy_amphora.active_connection_retry_interval}
 
         # Listeners update needs to be run on all amphora to update
         # their peer configurations. So parallelize this with an

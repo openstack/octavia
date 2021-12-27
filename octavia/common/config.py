@@ -354,8 +354,9 @@ haproxy_amphora_opts = [
     cfg.IntOpt('active_connection_max_retries',
                default=15,
                help=_('Retry threshold for connecting to active amphorae.')),
-    cfg.IntOpt('active_connection_rety_interval',
+    cfg.IntOpt('active_connection_retry_interval',
                default=2,
+               deprecated_name='active_connection_rety_interval',
                help=_('Retry timeout between connection attempts in '
                       'seconds for active amphora.')),
     cfg.IntOpt('failover_connection_max_retries',
