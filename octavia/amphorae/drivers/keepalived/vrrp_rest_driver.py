@@ -51,7 +51,8 @@ class KeepalivedAmphoraDriverMixin(driver_base.VRRPDriverMixin):
 
         LOG.debug("Update amphora %s VRRP configuration.", amphora.id)
 
-        self._populate_amphora_api_version(amphora)
+        self._populate_amphora_api_version(amphora,
+                                           timeout_dict=timeout_dict)
         # Get the VIP subnet prefix for the amphora
         vip_cidr = amphorae_network_config[amphora.id].vip_subnet.cidr
 
