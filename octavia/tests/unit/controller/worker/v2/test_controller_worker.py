@@ -1210,8 +1210,7 @@ class TestControllerWorker(base.TestCase):
 
         cw.services_controller.run_poster.assert_called_once_with(
             flow_utils.get_failover_amphora_flow,
-            mock_amphora.to_dict(), 1, store=expected_stored_params,
-            wait=True)
+            mock_amphora.to_dict(), 1, store=expected_stored_params)
 
     @mock.patch('octavia.db.repositories.AvailabilityZoneRepository.'
                 'get_availability_zone_metadata_dict', return_value={})
@@ -1265,8 +1264,7 @@ class TestControllerWorker(base.TestCase):
 
         cw.services_controller.run_poster.assert_called_once_with(
             flow_utils.get_failover_amphora_flow,
-            mock_amphora.to_dict(), 2, store=expected_stored_params,
-            wait=True)
+            mock_amphora.to_dict(), 2, store=expected_stored_params)
 
     @mock.patch('octavia.db.repositories.AvailabilityZoneRepository.'
                 'get_availability_zone_metadata_dict', return_value={})
@@ -1320,8 +1318,7 @@ class TestControllerWorker(base.TestCase):
 
         cw.services_controller.run_poster.assert_called_once_with(
             flow_utils.get_failover_amphora_flow,
-            mock_amphora.to_dict(), 2, store=expected_stored_params,
-            wait=True)
+            mock_amphora.to_dict(), 2, store=expected_stored_params)
 
     @mock.patch('octavia.api.drivers.utils.'
                 'db_loadbalancer_to_provider_loadbalancer')
@@ -1372,8 +1369,7 @@ class TestControllerWorker(base.TestCase):
 
         cw.services_controller.run_poster.assert_called_once_with(
             flow_utils.get_failover_amphora_flow,
-            mock_amphora.to_dict(), None, store=expected_stored_params,
-            wait=True)
+            mock_amphora.to_dict(), None, store=expected_stored_params)
 
     @mock.patch('octavia.db.repositories.FlavorRepository.'
                 'get_flavor_metadata_dict', return_value={})
@@ -1429,8 +1425,7 @@ class TestControllerWorker(base.TestCase):
 
         cw.services_controller.run_poster.assert_called_once_with(
             flow_utils.get_failover_amphora_flow,
-            mock_amphora.to_dict(), 1, store=expected_stored_params,
-            wait=True)
+            mock_amphora.to_dict(), 1, store=expected_stored_params)
 
     @mock.patch('octavia.db.repositories.AvailabilityZoneRepository.'
                 'get_availability_zone_metadata_dict', return_value={})
@@ -1488,8 +1483,7 @@ class TestControllerWorker(base.TestCase):
         print(cw.services_controller.run_poster, flush=True)
         cw.services_controller.run_poster.assert_called_once_with(
             flow_utils.get_failover_amphora_flow,
-            mock_amphora.to_dict(), 1, store=expected_stored_params,
-            wait=True)
+            mock_amphora.to_dict(), 1, store=expected_stored_params)
 
     @mock.patch('octavia.controller.worker.v1.flows.amphora_flows.'
                 'AmphoraFlows.get_failover_amphora_flow')
@@ -1601,7 +1595,7 @@ class TestControllerWorker(base.TestCase):
         cw.services_controller.run_poster.assert_called_once_with(
             flow_utils.get_failover_amphora_flow,
             mock_amphora.to_dict(),
-            None, store=expected_stored_params, wait=True)
+            None, store=expected_stored_params)
 
     @mock.patch('octavia.db.repositories.AmphoraHealthRepository.delete')
     def test_failover_deleted_amphora(self,
@@ -1800,7 +1794,7 @@ class TestControllerWorker(base.TestCase):
 
         cw.services_controller.run_poster.assert_called_once_with(
             flow_utils.get_failover_LB_flow, [_amphora_mock], provider_lb,
-            wait=True, store=expected_flow_store)
+            store=expected_flow_store)
 
     @mock.patch('octavia.controller.worker.v2.controller_worker.'
                 'ControllerWorker._get_amphorae_for_failover')
@@ -1851,7 +1845,7 @@ class TestControllerWorker(base.TestCase):
 
         cw.services_controller.run_poster.assert_called_once_with(
             flow_utils.get_failover_LB_flow, [_amphora_mock, _amphora_mock],
-            provider_lb, wait=True, store=expected_flow_store)
+            provider_lb, store=expected_flow_store)
 
     @mock.patch('octavia.db.repositories.LoadBalancerRepository.update')
     def test_failover_loadbalancer_no_lb(self,
@@ -1952,7 +1946,7 @@ class TestControllerWorker(base.TestCase):
 
         cw.services_controller.run_poster.assert_called_once_with(
             flow_utils.get_failover_LB_flow, [_amphora_mock], provider_lb,
-            wait=True, store=expected_flow_store)
+            store=expected_flow_store)
 
     @mock.patch('octavia.db.repositories.FlavorRepository.'
                 'get_flavor_metadata_dict', return_value={'taste': 'spicy'})
@@ -2006,7 +2000,7 @@ class TestControllerWorker(base.TestCase):
 
         cw.services_controller.run_poster.assert_called_once_with(
             flow_utils.get_failover_LB_flow, [_amphora_mock, _amphora_mock],
-            provider_lb, wait=True, store=expected_flow_store)
+            provider_lb, store=expected_flow_store)
 
     def test_amphora_cert_rotation(self,
                                    mock_api_get_session,
