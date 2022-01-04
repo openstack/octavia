@@ -487,6 +487,16 @@ class TestHaproxyAmphoraLoadBalancerDriverTest(base.TestCase):
             API_VERSION].reload_listener.assert_called_once_with(
             amp1, listener.id, None)
 
+        self.driver.clients[
+            API_VERSION].reload_listener.reset_mock()
+        timeout_dict = {
+            'elem1': 1000
+        }
+        self.driver.reload(loadbalancer, timeout_dict=timeout_dict)
+        self.driver.clients[
+            API_VERSION].reload_listener.assert_called_once_with(
+            amp1, listener.id, timeout_dict)
+
     def test_start_with_amphora(self):
         # Execute driver method
         amp = mock.MagicMock()
@@ -656,7 +666,19 @@ class TestHaproxyAmphoraLoadBalancerDriverTest(base.TestCase):
         ref_haproxy_versions = ['1', '6']
         result = self.driver._get_haproxy_versions(self.amp)
         self.driver.clients[API_VERSION].get_info.assert_called_once_with(
-            self.amp)
+            self.amp, timeout_dict=None)
+        self.assertEqual(ref_haproxy_versions, result)
+
+    def test_get_haproxy_versions_with_timeout_dict(self):
+        ref_haproxy_versions = ['1', '6']
+        timeout_dict = {
+            constants.CONN_MAX_RETRIES: 100,
+            constants.CONN_RETRY_INTERVAL: 1
+        }
+        result = self.driver._get_haproxy_versions(self.amp,
+                                                   timeout_dict=timeout_dict)
+        self.driver.clients[API_VERSION].get_info.assert_called_once_with(
+            self.amp, timeout_dict=timeout_dict)
         self.assertEqual(ref_haproxy_versions, result)
 
     def test_populate_amphora_api_version(self):
@@ -748,6 +770,19 @@ class TestAmphoraAPIClientTest(base.TestCase):
         m.get("{base}/info".format(base=self.base_url_ver),
               json=info)
         information = self.driver.get_info(self.amp)
+        self.assertEqual(info, information)
+
+    @requests_mock.mock()
+    def test_get_info_with_timeout_dict(self, m):
+        info = {"hostname": "some_hostname", "version": "some_version",
+                "api_version": "0.5", "uuid": FAKE_UUID_1}
+        m.get("{base}/info".format(base=self.base_url_ver),
+              json=info)
+        timeout_dict = {
+            constants.CONN_MAX_RETRIES: 100,
+            constants.CONN_RETRY_INTERVAL: 1
+        }
+        information = self.driver.get_info(self.amp, timeout_dict=timeout_dict)
         self.assertEqual(info, information)
 
     @requests_mock.mock()

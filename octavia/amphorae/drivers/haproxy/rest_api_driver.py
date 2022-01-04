@@ -77,15 +77,17 @@ class HaproxyAmphoraLoadBalancerDriver(
             connection_logging=CONF.haproxy_amphora.connection_logging)
         self.udp_jinja = jinja_udp_cfg.LvsJinjaTemplater()
 
-    def _get_haproxy_versions(self, amphora):
+    def _get_haproxy_versions(self, amphora, timeout_dict=None):
         """Get major and minor version number from haproxy
 
         Example: ['1', '6']
 
         :returns version_list: A list with the major and minor numbers
         """
-        self._populate_amphora_api_version(amphora)
-        amp_info = self.clients[amphora.api_version].get_info(amphora)
+        self._populate_amphora_api_version(
+            amphora, timeout_dict=timeout_dict)
+        amp_info = self.clients[amphora.api_version].get_info(
+            amphora, timeout_dict=timeout_dict)
         haproxy_version_string = amp_info['haproxy_version']
 
         return haproxy_version_string.split('.')[:2]
@@ -135,7 +137,8 @@ class HaproxyAmphoraLoadBalancerDriver(
             return
 
         # Check which HAProxy version is on the amp
-        haproxy_versions = self._get_haproxy_versions(amphora)
+        haproxy_versions = self._get_haproxy_versions(
+            amphora, timeout_dict=timeout_dict)
         # Check which config style to use
         api_version = self._populate_amphora_api_version(amphora)
         if api_version[0] == 0 and api_version[1] <= 5:  # 0.5 or earlier
@@ -258,15 +261,18 @@ class HaproxyAmphoraLoadBalancerDriver(
         self._populate_amphora_api_version(amp)
         self.clients[amp.api_version].update_cert_for_rotation(amp, pem)
 
-    def _apply(self, func_name, loadbalancer, amphora=None, *args):
+    def _apply(self, func_name, loadbalancer, amphora=None, *args, **kwargs):
         if amphora is None:
             amphorae = loadbalancer.amphorae
         else:
             amphorae = [amphora]
 
+        timeout_dict = args[0]
+
         for amp in amphorae:
             if amp.status != consts.DELETED:
-                api_version = self._populate_amphora_api_version(amp)
+                api_version = self._populate_amphora_api_version(
+                    amp, timeout_dict=timeout_dict)
                 # Check which config style to use
                 if api_version[0] == 0 and api_version[1] <= 5:
                     # 0.5 or earlier
@@ -368,11 +374,14 @@ class HaproxyAmphoraLoadBalancerDriver(
             self.clients[amphora.api_version].delete_listener(
                 amphora, listener.load_balancer.id)
 
-    def get_info(self, amphora, raise_retry_exception=False):
+    def get_info(self, amphora, raise_retry_exception=False,
+                 timeout_dict=None):
         self._populate_amphora_api_version(
-            amphora, raise_retry_exception=raise_retry_exception)
+            amphora, raise_retry_exception=raise_retry_exception,
+            timeout_dict=timeout_dict)
         return self.clients[amphora.api_version].get_info(
-            amphora, raise_retry_exception=raise_retry_exception)
+            amphora, raise_retry_exception=raise_retry_exception,
+            timeout_dict=timeout_dict)
 
     def get_diagnostics(self, amphora):
         pass
@@ -808,8 +817,10 @@ class AmphoraAPIClient0_5(AmphoraAPIClientBase):
             amp, 'listeners/{listener_id}'.format(listener_id=listener_id))
         return exc.check_exception(r, (404,))
 
-    def get_info(self, amp, raise_retry_exception=False):
-        r = self.get(amp, "info", raise_retry_exception=raise_retry_exception)
+    def get_info(self, amp, raise_retry_exception=False,
+                 timeout_dict=None):
+        r = self.get(amp, "info", raise_retry_exception=raise_retry_exception,
+                     timeout_dict=timeout_dict)
         if exc.check_exception(r):
             return r.json()
         return None
@@ -937,8 +948,10 @@ class AmphoraAPIClient1_0(AmphoraAPIClientBase):
             amp, 'listeners/{object_id}'.format(object_id=object_id))
         return exc.check_exception(r, (404,))
 
-    def get_info(self, amp, raise_retry_exception=False):
-        r = self.get(amp, "info", raise_retry_exception=raise_retry_exception)
+    def get_info(self, amp, raise_retry_exception=False,
+                 timeout_dict=None):
+        r = self.get(amp, "info", raise_retry_exception=raise_retry_exception,
+                     timeout_dict=timeout_dict)
         if exc.check_exception(r):
             return r.json()
         return None
