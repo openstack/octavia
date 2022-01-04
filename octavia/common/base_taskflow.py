@@ -125,7 +125,7 @@ class TaskFlowServiceController(object):
     def __init__(self, driver):
         self.driver = driver
 
-    def run_poster(self, flow_factory, *args, wait=False, **kwargs):
+    def run_poster(self, flow_factory, *args, **kwargs):
         with self.driver.persistence_driver.get_persistence() as persistence:
             with self.driver.job_board(persistence) as job_board:
                 job_id = uuidutils.generate_uuid()
@@ -144,16 +144,23 @@ class TaskFlowServiceController(object):
 
                 job_board.post(job_name, book=job_logbook,
                                details=job_details)
-                if wait:
-                    self._wait_for_job(job_board)
+                self._wait_for_job(job_board)
 
                 return job_id
 
     def _wait_for_job(self, job_board):
         # Wait for job to its complete state
-        for job in job_board.iterjobs():
-            LOG.debug("Waiting for job %s to finish", job.name)
-            job.wait()
+        expiration_time = CONF.task_flow.jobboard_expiration_time
+
+        need_wait = True
+        while need_wait:
+            need_wait = False
+            for job in job_board.iterjobs():
+                # If job hasn't finished in expiration_time/2 seconds,
+                # extend its TTL
+                if not job.wait(timeout=expiration_time / 2):
+                    job.extend_expiry(expiration_time)
+                    need_wait = True
 
     def run_conductor(self, name):
         with self.driver.persistence_driver.get_persistence() as persistence:

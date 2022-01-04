@@ -114,25 +114,26 @@ class TestTaskFlowServiceController(base.TestCase):
             post_args = self.jobboard_mock.__enter__().post.call_args
             self.assertEqual(job_name, post_args[0][0])
             self.assertEqual(job_details, post_args[1]['details'])
-            wait.assert_not_called()
+            wait.assert_called()
             self.assertEqual(self._mock_uuid, uuid)
 
-    @mock.patch('oslo_utils.uuidutils.generate_uuid', return_value=_mock_uuid)
-    @mock.patch('taskflow.engines.save_factory_details')
-    def test_run_poster_wait(self, mock_engines, mockuuid):
-        flow_factory = mock.MagicMock()
-        flow_factory.__name__ = 'testname'
-        job_details = {'store': 'test'}
-        with mock.patch.object(self.service_controller, '_wait_for_job'
-                               ) as wait:
-            uuid = self.service_controller.run_poster(flow_factory, wait=True,
-                                                      **job_details)
-            self.persistence_mock.__enter__().get_connection(
-            ).save_logbook.assert_called()
-            mock_engines.assert_called()
-            self.jobboard_mock.__enter__().post.assert_called()
-            wait.assert_called_once_with(self.jobboard_mock.__enter__())
-            self.assertEqual(self._mock_uuid, uuid)
+    def test__wait_for_job(self):
+        job1 = mock.MagicMock()
+        job1.wait.side_effect = [False, True]
+        job2 = mock.MagicMock()
+        job2.wait.side_effect = [False, True]
+        job3 = mock.MagicMock()
+        job3.wait.return_value = True
+        job_board = mock.MagicMock()
+        job_board.iterjobs.side_effect = [
+            [job1, job2, job3],
+            [job1, job2]
+        ]
+        self.service_controller._wait_for_job(job_board)
+
+        job1.extend_expiry.assert_called_once()
+        job2.extend_expiry.assert_called_once()
+        job3.extend_expiry.assert_not_called()
 
     @mock.patch('octavia.common.base_taskflow.RedisDynamicLoggingConductor')
     @mock.patch('octavia.common.base_taskflow.DynamicLoggingConductor')
