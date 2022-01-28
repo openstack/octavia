@@ -115,20 +115,22 @@ class HAProxyQuery(object):
         for line in results:
             # pxname: pool, svname: server_name, status: status
 
-            # Due to a bug in some versions of HAProxy, DRAIN mode isn't
-            # calculated correctly, but we can spoof the correct value here.
-            if line['status'] == consts.UP and line['weight'] == 0:
-                line['status'] = consts.DRAIN
-
             if line['pxname'] not in final_results:
                 final_results[line['pxname']] = dict(members={})
 
             if line['svname'] == 'BACKEND':
+                # BACKEND describes a pool of servers in HAProxy
                 pool_id, listener_id = line['pxname'].split(':')
                 final_results[line['pxname']]['pool_uuid'] = pool_id
                 final_results[line['pxname']]['listener_uuid'] = listener_id
                 final_results[line['pxname']]['status'] = line['status']
             else:
+                # Due to a bug in some versions of HAProxy, DRAIN mode isn't
+                # calculated correctly, but we can spoof the correct
+                # value here.
+                if line['status'] == consts.UP and line['weight'] == '0':
+                    line['status'] = consts.DRAIN
+
                 final_results[line['pxname']]['members'][line['svname']] = (
                     line['status'])
         return final_results
