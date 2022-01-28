@@ -1,0 +1,5 @@
+---
+fixes:
+  - |
+    Correctly detect the member operating status "drain" when querying status
+    data from HAProxy.
