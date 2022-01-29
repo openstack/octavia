@@ -159,11 +159,8 @@ class ControllerWorker(object):
         pool.health_monitor = db_health_monitor
         load_balancer = pool.load_balancer
         provider_lb = provider_utils.db_loadbalancer_to_provider_loadbalancer(
-            load_balancer).to_dict()
-
-        listeners_dicts = (
-            provider_utils.db_listeners_to_provider_dicts_list_of_dicts(
-                pool.listeners))
+            load_balancer).to_dict(recurse=True)
+        listeners_dicts = provider_lb.get('listeners', [])
 
         store = {constants.HEALTH_MON: health_monitor,
                  constants.POOL_ID: pool.id,
@@ -188,11 +185,8 @@ class ControllerWorker(object):
         pool = db_health_monitor.pool
         load_balancer = pool.load_balancer
         provider_lb = provider_utils.db_loadbalancer_to_provider_loadbalancer(
-            load_balancer).to_dict()
-
-        listeners_dicts = (
-            provider_utils.db_listeners_to_provider_dicts_list_of_dicts(
-                pool.listeners))
+            load_balancer).to_dict(recurse=True)
+        listeners_dicts = provider_lb.get('listeners', [])
 
         store = {constants.HEALTH_MON: health_monitor,
                  constants.POOL_ID: pool.id,
@@ -227,13 +221,10 @@ class ControllerWorker(object):
 
         pool = db_health_monitor.pool
 
-        listeners_dicts = (
-            provider_utils.db_listeners_to_provider_dicts_list_of_dicts(
-                pool.listeners))
-
         load_balancer = pool.load_balancer
         provider_lb = provider_utils.db_loadbalancer_to_provider_loadbalancer(
-            load_balancer).to_dict()
+            load_balancer).to_dict(recurse=True)
+        listeners_dicts = provider_lb.get('listeners', [])
 
         store = {constants.HEALTH_MON: original_health_monitor,
                  constants.POOL_ID: pool.id,
@@ -269,15 +260,10 @@ class ControllerWorker(object):
             raise db_exceptions.NoResultFound
 
         load_balancer = db_listener.load_balancer
-        listeners = load_balancer.listeners
-        dict_listeners = []
-        for li in listeners:
-            dict_listeners.append(
-                provider_utils.db_listener_to_provider_listener(li).to_dict())
         provider_lb = provider_utils.db_loadbalancer_to_provider_loadbalancer(
-            load_balancer).to_dict()
+            load_balancer).to_dict(recurse=True)
 
-        store = {constants.LISTENERS: dict_listeners,
+        store = {constants.LISTENERS: provider_lb['listeners'],
                  constants.LOADBALANCER: provider_lb,
                  constants.LOADBALANCER_ID: load_balancer.id}
 
@@ -440,11 +426,8 @@ class ControllerWorker(object):
         pool = db_member.pool
         load_balancer = pool.load_balancer
         provider_lb = provider_utils.db_loadbalancer_to_provider_loadbalancer(
-            load_balancer).to_dict()
-
-        listeners_dicts = (
-            provider_utils.db_listeners_to_provider_dicts_list_of_dicts(
-                pool.listeners))
+            load_balancer).to_dict(recurse=True)
+        listeners_dicts = provider_lb.get('listeners', [])
 
         store = {
             constants.MEMBER: member,
@@ -475,11 +458,8 @@ class ControllerWorker(object):
 
         load_balancer = pool.load_balancer
         provider_lb = provider_utils.db_loadbalancer_to_provider_loadbalancer(
-            load_balancer).to_dict()
-
-        listeners_dicts = (
-            provider_utils.db_listeners_to_provider_dicts_list_of_dicts(
-                pool.listeners))
+            load_balancer).to_dict(recurse=True)
+        listeners_dicts = provider_lb.get('listeners', [])
 
         store = {
             constants.MEMBER: member,
@@ -524,11 +504,9 @@ class ControllerWorker(object):
                 id=updated_members[0][0][constants.POOL_ID])
         load_balancer = pool.load_balancer
 
-        listeners_dicts = (
-            provider_utils.db_listeners_to_provider_dicts_list_of_dicts(
-                pool.listeners))
         provider_lb = provider_utils.db_loadbalancer_to_provider_loadbalancer(
-            load_balancer).to_dict()
+            load_balancer).to_dict(recurse=True)
+        listeners_dicts = provider_lb.get('listeners', [])
 
         store = {
             constants.LISTENERS: listeners_dicts,
@@ -561,11 +539,8 @@ class ControllerWorker(object):
                                    id=member[constants.POOL_ID])
         load_balancer = pool.load_balancer
         provider_lb = provider_utils.db_loadbalancer_to_provider_loadbalancer(
-            load_balancer).to_dict()
-
-        listeners_dicts = (
-            provider_utils.db_listeners_to_provider_dicts_list_of_dicts(
-                pool.listeners))
+            load_balancer).to_dict(recurse=True)
+        listeners_dicts = provider_lb.get('listeners', [])
         store = {
             constants.MEMBER: member,
             constants.LISTENERS: listeners_dicts,
@@ -611,11 +586,8 @@ class ControllerWorker(object):
 
         load_balancer = db_pool.load_balancer
         provider_lb = provider_utils.db_loadbalancer_to_provider_loadbalancer(
-            load_balancer).to_dict()
-
-        listeners_dicts = (
-            provider_utils.db_listeners_to_provider_dicts_list_of_dicts(
-                db_pool.listeners))
+            load_balancer).to_dict(recurse=True)
+        listeners_dicts = provider_lb.get('listeners', [])
 
         store = {constants.POOL_ID: pool[constants.POOL_ID],
                  constants.LISTENERS: listeners_dicts,
@@ -635,13 +607,10 @@ class ControllerWorker(object):
         db_pool = self._pool_repo.get(db_apis.get_session(),
                                       id=pool[constants.POOL_ID])
 
-        listeners_dicts = (
-            provider_utils.db_listeners_to_provider_dicts_list_of_dicts(
-                db_pool.listeners))
         load_balancer = db_pool.load_balancer
-
         provider_lb = provider_utils.db_loadbalancer_to_provider_loadbalancer(
-            load_balancer).to_dict()
+            load_balancer).to_dict(recurse=True)
+        listeners_dicts = provider_lb.get('listeners', [])
 
         store = {constants.POOL_ID: pool[constants.POOL_ID],
                  constants.LISTENERS: listeners_dicts,
@@ -673,11 +642,8 @@ class ControllerWorker(object):
 
         load_balancer = db_pool.load_balancer
         provider_lb = provider_utils.db_loadbalancer_to_provider_loadbalancer(
-            load_balancer).to_dict()
-
-        listeners_dicts = (
-            provider_utils.db_listeners_to_provider_dicts_list_of_dicts(
-                db_pool.listeners))
+            load_balancer).to_dict(recurse=True)
+        listeners_dicts = provider_lb.get('listeners', [])
 
         store = {constants.POOL_ID: db_pool.id,
                  constants.LISTENERS: listeners_dicts,
