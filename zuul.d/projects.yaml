@@ -74,7 +74,7 @@
         - octavia-v2-dsvm-scenario-amphora-v2-no-jobboard:
             irrelevant-files: *irrelevant-files
             voting: false
-        - octavia-v2-dsvm-scenario-centos-8-stream:
+        - octavia-v2-dsvm-scenario-centos-9-stream:
             irrelevant-files: *irrelevant-files
             voting: false
     gate:
@@ -105,7 +105,7 @@
       jobs:
         - publish-openstack-octavia-amphora-image-focal:
             branches: ^(?!stable/.*).*$
-        - publish-openstack-octavia-amphora-image-centos-8-stream:
+        - publish-openstack-octavia-amphora-image-centos-9-stream:
             branches: ^(?!stable/.*).*$
         - octavia-amphora-image-build
         - octavia-grenade-ffu
