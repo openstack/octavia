@@ -173,7 +173,8 @@ class TestAmphora(base.BaseAPITest):
         self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
         auth_strategy = self.conf.conf.api_settings.get('auth_strategy')
         self.conf.config(group='api_settings', auth_strategy=constants.TESTING)
-        with mock.patch.object(octavia.common.context.Context, 'project_id',
+        with mock.patch.object(octavia.common.context.RequestContext,
+                               'project_id',
                                self.project_id):
             override_credentials = {
                 'service_user_id': None,
@@ -214,7 +215,8 @@ class TestAmphora(base.BaseAPITest):
         self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
         auth_strategy = self.conf.conf.api_settings.get('auth_strategy')
         self.conf.config(group='api_settings', auth_strategy=constants.TESTING)
-        with mock.patch.object(octavia.common.context.Context, 'project_id',
+        with mock.patch.object(octavia.common.context.RequestContext,
+                               'project_id',
                                self.project_id):
             self.delete(self.AMPHORA_PATH.format(amphora_id=amp.id),
                         status=403)
@@ -247,7 +249,8 @@ class TestAmphora(base.BaseAPITest):
         self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
         auth_strategy = self.conf.conf.api_settings.get('auth_strategy')
         self.conf.config(group='api_settings', auth_strategy=constants.TESTING)
-        with mock.patch.object(octavia.common.context.Context, 'project_id',
+        with mock.patch.object(octavia.common.context.RequestContext,
+                               'project_id',
                                self.project_id):
             override_credentials = {
                 'service_user_id': None,
@@ -276,7 +279,8 @@ class TestAmphora(base.BaseAPITest):
         self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
         auth_strategy = self.conf.conf.api_settings.get('auth_strategy')
         self.conf.config(group='api_settings', auth_strategy=constants.TESTING)
-        with mock.patch.object(octavia.common.context.Context, 'project_id',
+        with mock.patch.object(octavia.common.context.RequestContext,
+                               'project_id',
                                uuidutils.generate_uuid()):
             response = self.get(self.AMPHORA_PATH.format(
                 amphora_id=self.amp_id), status=403)
@@ -289,7 +293,8 @@ class TestAmphora(base.BaseAPITest):
         self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
         auth_strategy = self.conf.conf.api_settings.get('auth_strategy')
         self.conf.config(group='api_settings', auth_strategy=constants.TESTING)
-        with mock.patch.object(octavia.common.context.Context, 'project_id',
+        with mock.patch.object(octavia.common.context.RequestContext,
+                               'project_id',
                                self.project_id):
             override_credentials = {
                 'service_user_id': None,
@@ -320,7 +325,8 @@ class TestAmphora(base.BaseAPITest):
         self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
         auth_strategy = self.conf.conf.api_settings.get('auth_strategy')
         self.conf.config(group='api_settings', auth_strategy=constants.TESTING)
-        with mock.patch.object(octavia.common.context.Context, 'project_id',
+        with mock.patch.object(octavia.common.context.RequestContext,
+                               'project_id',
                                uuidutils.generate_uuid()):
             response = self.put(self.AMPHORA_FAILOVER_PATH.format(
                 amphora_id=self.amp_id), body={}, status=403)
@@ -349,7 +355,8 @@ class TestAmphora(base.BaseAPITest):
     def test_get_all_authorized(self):
         auth_strategy = self.conf.conf.api_settings.get('auth_strategy')
         self.conf.config(group='api_settings', auth_strategy=constants.TESTING)
-        with mock.patch.object(octavia.common.context.Context, 'project_id',
+        with mock.patch.object(octavia.common.context.RequestContext,
+                               'project_id',
                                uuidutils.generate_uuid()):
             override_credentials = {
                 'service_user_id': None,
@@ -378,7 +385,8 @@ class TestAmphora(base.BaseAPITest):
     def test_get_all_not_authorized(self):
         auth_strategy = self.conf.conf.api_settings.get('auth_strategy')
         self.conf.config(group='api_settings', auth_strategy=constants.TESTING)
-        with mock.patch.object(octavia.common.context.Context, 'project_id',
+        with mock.patch.object(octavia.common.context.RequestContext,
+                               'project_id',
                                uuidutils.generate_uuid()):
             amps = self.get(self.AMPHORAE_PATH, status=403).json
 
@@ -511,7 +519,8 @@ class TestAmphora(base.BaseAPITest):
         self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
         auth_strategy = self.conf.conf.api_settings.get('auth_strategy')
         self.conf.config(group='api_settings', auth_strategy=constants.TESTING)
-        with mock.patch.object(octavia.common.context.Context, 'project_id',
+        with mock.patch.object(octavia.common.context.RequestContext,
+                               'project_id',
                                self.project_id):
             override_credentials = {
                 'service_user_id': None,
@@ -539,7 +548,8 @@ class TestAmphora(base.BaseAPITest):
         self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
         auth_strategy = self.conf.conf.api_settings.get('auth_strategy')
         self.conf.config(group='api_settings', auth_strategy=constants.TESTING)
-        with mock.patch.object(octavia.common.context.Context, 'project_id',
+        with mock.patch.object(octavia.common.context.RequestContext,
+                               'project_id',
                                uuidutils.generate_uuid()):
             response = self.get(self.AMPHORA_STATS_PATH.format(
                 amphora_id=self.amp_id), status=403)
@@ -615,7 +625,8 @@ class TestAmphora(base.BaseAPITest):
         self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
         auth_strategy = self.conf.conf.api_settings.get('auth_strategy')
         self.conf.config(group='api_settings', auth_strategy=constants.TESTING)
-        with mock.patch.object(octavia.common.context.Context, 'project_id',
+        with mock.patch.object(octavia.common.context.RequestContext,
+                               'project_id',
                                self.project_id):
             override_credentials = {
                 'service_user_id': None,
@@ -647,7 +658,8 @@ class TestAmphora(base.BaseAPITest):
         self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
         auth_strategy = self.conf.conf.api_settings.get('auth_strategy')
         self.conf.config(group='api_settings', auth_strategy=constants.TESTING)
-        with mock.patch.object(octavia.common.context.Context, 'project_id',
+        with mock.patch.object(octavia.common.context.RequestContext,
+                               'project_id',
                                uuidutils.generate_uuid()):
             self.put(self.AMPHORA_CONFIG_PATH.format(
                 amphora_id=self.amp_id), body={}, status=403)

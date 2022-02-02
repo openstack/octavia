@@ -866,7 +866,8 @@ class TestLoadBalancer(base.BaseAPITest):
                    }
         lb_json.update(optionals)
         body = self._build_body(lb_json)
-        with mock.patch.object(octavia.common.context.Context, 'project_id',
+        with mock.patch.object(octavia.common.context.RequestContext,
+                               'project_id',
                                self.project_id):
             response = self.post(self.LBS_PATH, body)
         api_lb = response.json.get(self.root_tag)
@@ -883,7 +884,8 @@ class TestLoadBalancer(base.BaseAPITest):
                    }
         lb_json.update(optionals)
         body = self._build_body(lb_json)
-        with mock.patch.object(octavia.common.context.Context, 'project_id',
+        with mock.patch.object(octavia.common.context.RequestContext,
+                               'project_id',
                                project_id):
             override_credentials = {
                 'service_user_id': None,
@@ -916,7 +918,8 @@ class TestLoadBalancer(base.BaseAPITest):
                    }
         lb_json.update(optionals)
         body = self._build_body(lb_json)
-        with mock.patch.object(octavia.common.context.Context, 'project_id',
+        with mock.patch.object(octavia.common.context.RequestContext,
+                               'project_id',
                                uuidutils.generate_uuid()):
             response = self.post(self.LBS_PATH, body, status=403)
         api_lb = response.json
@@ -1193,7 +1196,8 @@ class TestLoadBalancer(base.BaseAPITest):
         auth_strategy = self.conf.conf.api_settings.get('auth_strategy')
         self.conf.config(group='api_settings',
                          auth_strategy=constants.KEYSTONE)
-        with mock.patch.object(octavia.common.context.Context, 'project_id',
+        with mock.patch.object(octavia.common.context.RequestContext,
+                               'project_id',
                                self.project_id):
             override_credentials = {
                 'service_user_id': None,
@@ -1232,7 +1236,8 @@ class TestLoadBalancer(base.BaseAPITest):
         auth_strategy = self.conf.conf.api_settings.get('auth_strategy')
         self.conf.config(group='api_settings',
                          auth_strategy=constants.KEYSTONE)
-        with mock.patch.object(octavia.common.context.Context, 'project_id',
+        with mock.patch.object(octavia.common.context.RequestContext,
+                               'project_id',
                                None):
             override_credentials = {
                 'service_user_id': None,
@@ -1269,7 +1274,8 @@ class TestLoadBalancer(base.BaseAPITest):
         auth_strategy = self.conf.conf.api_settings.get('auth_strategy')
         self.conf.config(group='api_settings',
                          auth_strategy=constants.KEYSTONE)
-        with mock.patch.object(octavia.common.context.Context, 'project_id',
+        with mock.patch.object(octavia.common.context.RequestContext,
+                               'project_id',
                                self.project_id):
             override_credentials = {
                 'service_user_id': None,
@@ -1309,7 +1315,8 @@ class TestLoadBalancer(base.BaseAPITest):
         auth_strategy = self.conf.conf.api_settings.get('auth_strategy')
         self.conf.config(group='api_settings', auth_strategy=constants.TESTING)
         LB_PROJECT_PATH = '{}?project_id={}'.format(self.LBS_PATH, project_id)
-        with mock.patch.object(octavia.common.context.Context, 'project_id',
+        with mock.patch.object(octavia.common.context.RequestContext,
+                               'project_id',
                                self.project_id):
             response = self.get(LB_PROJECT_PATH, status=403)
         api_lb = response.json
@@ -1769,7 +1776,8 @@ class TestLoadBalancer(base.BaseAPITest):
         self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
         auth_strategy = self.conf.conf.api_settings.get('auth_strategy')
         self.conf.config(group='api_settings', auth_strategy=constants.TESTING)
-        with mock.patch.object(octavia.common.context.Context, 'project_id',
+        with mock.patch.object(octavia.common.context.RequestContext,
+                               'project_id',
                                project_id):
             override_credentials = {
                 'service_user_id': None,
@@ -1826,7 +1834,8 @@ class TestLoadBalancer(base.BaseAPITest):
         self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
         auth_strategy = self.conf.conf.api_settings.get('auth_strategy')
         self.conf.config(group='api_settings', auth_strategy=constants.TESTING)
-        with mock.patch.object(octavia.common.context.Context, 'project_id',
+        with mock.patch.object(octavia.common.context.RequestContext,
+                               'project_id',
                                uuidutils.generate_uuid()):
             response = self.get(self.LB_PATH.format(lb_id=lb_dict.get('id')),
                                 status=403)
@@ -1965,7 +1974,8 @@ class TestLoadBalancer(base.BaseAPITest):
         self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
         auth_strategy = self.conf.conf.api_settings.get('auth_strategy')
         self.conf.config(group='api_settings', auth_strategy=constants.TESTING)
-        with mock.patch.object(octavia.common.context.Context, 'project_id',
+        with mock.patch.object(octavia.common.context.RequestContext,
+                               'project_id',
                                project_id):
             override_credentials = {
                 'service_user_id': None,
@@ -2011,7 +2021,8 @@ class TestLoadBalancer(base.BaseAPITest):
         self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
         auth_strategy = self.conf.conf.api_settings.get('auth_strategy')
         self.conf.config(group='api_settings', auth_strategy=constants.TESTING)
-        with mock.patch.object(octavia.common.context.Context, 'project_id',
+        with mock.patch.object(octavia.common.context.RequestContext,
+                               'project_id',
                                uuidutils.generate_uuid()):
             response = self.put(self.LB_PATH.format(lb_id=lb_dict.get('id')),
                                 lb_json, status=403)
@@ -2149,7 +2160,8 @@ class TestLoadBalancer(base.BaseAPITest):
         self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
         auth_strategy = self.conf.conf.api_settings.get('auth_strategy')
         self.conf.config(group='api_settings', auth_strategy=constants.TESTING)
-        with mock.patch.object(octavia.common.context.Context, 'project_id',
+        with mock.patch.object(octavia.common.context.RequestContext,
+                               'project_id',
                                project_id):
             override_credentials = {
                 'service_user_id': None,
@@ -2192,7 +2204,8 @@ class TestLoadBalancer(base.BaseAPITest):
         self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
         auth_strategy = self.conf.conf.api_settings.get('auth_strategy')
         self.conf.config(group='api_settings', auth_strategy=constants.TESTING)
-        with mock.patch.object(octavia.common.context.Context, 'project_id',
+        with mock.patch.object(octavia.common.context.RequestContext,
+                               'project_id',
                                uuidutils.generate_uuid()):
             self.delete(self.LB_PATH.format(lb_id=lb_dict.get('id')),
                         status=403)
@@ -2317,7 +2330,8 @@ class TestLoadBalancer(base.BaseAPITest):
         self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
         auth_strategy = self.conf.conf.api_settings.get('auth_strategy')
         self.conf.config(group='api_settings', auth_strategy=constants.TESTING)
-        with mock.patch.object(octavia.common.context.Context, 'project_id',
+        with mock.patch.object(octavia.common.context.RequestContext,
+                               'project_id',
                                uuidutils.generate_uuid()):
             response = self.app.put(path, status=403)
         self.conf.config(group='api_settings', auth_strategy=auth_strategy)
@@ -2338,7 +2352,8 @@ class TestLoadBalancer(base.BaseAPITest):
         self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
         auth_strategy = self.conf.conf.api_settings.get('auth_strategy')
         self.conf.config(group='api_settings', auth_strategy=constants.TESTING)
-        with mock.patch.object(octavia.common.context.Context, 'project_id',
+        with mock.patch.object(octavia.common.context.RequestContext,
+                               'project_id',
                                uuidutils.generate_uuid()):
             override_credentials = {
                 'service_user_id': None,
@@ -2376,7 +2391,8 @@ class TestLoadBalancer(base.BaseAPITest):
         self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
         auth_strategy = self.conf.conf.api_settings.get('auth_strategy')
         self.conf.config(group='api_settings', auth_strategy=constants.TESTING)
-        with mock.patch.object(octavia.common.context.Context, 'project_id',
+        with mock.patch.object(octavia.common.context.RequestContext,
+                               'project_id',
                                project_id_2):
             override_credentials = {
                 'service_user_id': None,
@@ -2413,7 +2429,8 @@ class TestLoadBalancer(base.BaseAPITest):
         self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
         auth_strategy = self.conf.conf.api_settings.get('auth_strategy')
         self.conf.config(group='api_settings', auth_strategy=constants.NOAUTH)
-        with mock.patch.object(octavia.common.context.Context, 'project_id',
+        with mock.patch.object(octavia.common.context.RequestContext,
+                               'project_id',
                                project_id_2):
             override_credentials = {
                 'service_user_id': None,
@@ -3788,7 +3805,8 @@ class TestLoadBalancerGraph(base.BaseAPITest):
         auth_strategy = self.conf.conf.api_settings.get('auth_strategy')
         self.conf.config(group='api_settings', auth_strategy=constants.TESTING)
 
-        with mock.patch.object(octavia.common.context.Context, 'project_id',
+        with mock.patch.object(octavia.common.context.RequestContext,
+                               'project_id',
                                project_id):
             override_credentials = {
                 'service_user_id': None,
@@ -3822,7 +3840,8 @@ class TestLoadBalancerGraph(base.BaseAPITest):
         self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
         auth_strategy = self.conf.conf.api_settings.get('auth_strategy')
         self.conf.config(group='api_settings', auth_strategy=constants.TESTING)
-        with mock.patch.object(octavia.common.context.Context, 'project_id',
+        with mock.patch.object(octavia.common.context.RequestContext,
+                               'project_id',
                                uuidutils.generate_uuid()):
 
             res = self.get(self.LB_PATH.format(lb_id=lb['id'] + "/status"),
@@ -3889,7 +3908,8 @@ class TestLoadBalancerGraph(base.BaseAPITest):
         auth_strategy = self.conf.conf.api_settings.get('auth_strategy')
         self.conf.config(group='api_settings', auth_strategy=constants.TESTING)
 
-        with mock.patch.object(octavia.common.context.Context, 'project_id',
+        with mock.patch.object(octavia.common.context.RequestContext,
+                               'project_id',
                                project_id):
             override_credentials = {
                 'service_user_id': None,
@@ -3935,7 +3955,8 @@ class TestLoadBalancerGraph(base.BaseAPITest):
         self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
         auth_strategy = self.conf.conf.api_settings.get('auth_strategy')
         self.conf.config(group='api_settings', auth_strategy=constants.TESTING)
-        with mock.patch.object(octavia.common.context.Context, 'project_id',
+        with mock.patch.object(octavia.common.context.RequestContext,
+                               'project_id',
                                uuidutils.generate_uuid()):
             res = self.get(self.LB_PATH.format(lb_id=lb['id'] + "/stats"),
                            status=403)
