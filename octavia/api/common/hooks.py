@@ -23,7 +23,8 @@ class ContextHook(hooks.PecanHook):
     """Configures a request context and attaches it to the request."""
 
     def on_route(self, state):
-        context_obj = context.Context.from_environ(state.request.environ)
+        context_obj = context.RequestContext.from_environ(
+            state.request.environ)
         state.request.context['octavia_context'] = context_obj
 
 
