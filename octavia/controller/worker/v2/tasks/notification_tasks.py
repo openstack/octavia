@@ -29,7 +29,8 @@ class BaseNotificationTask(task.Task):
         self._rpc_notifier = rpc.get_notifier()
 
     def execute(self, loadbalancer):
-        ctx = context.Context(project_id=loadbalancer[constants.PROJECT_ID])
+        ctx = context.RequestContext(
+            project_id=loadbalancer[constants.PROJECT_ID])
         LOG.debug(f"Sending rpc notification: {self.event_type} "
                   f"{loadbalancer[constants.LOADBALANCER_ID]}")
         self._rpc_notifier.info(

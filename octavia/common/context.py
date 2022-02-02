@@ -22,7 +22,7 @@ from octavia.db import api as db_api
 CONF = cfg.CONF
 
 
-class Context(common_context.RequestContext):
+class RequestContext(common_context.RequestContext):
 
     _session = None
 
