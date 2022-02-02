@@ -19,11 +19,14 @@ Cert manager implementation for Castellan
 from castellan.common.objects import opaque_data
 from castellan import key_manager
 from OpenSSL import crypto
+from oslo_config import cfg
 from oslo_log import log as logging
 
 from octavia.certificates.common import pkcs12
 from octavia.certificates.manager import cert_mgr
 from octavia.common import exceptions
+
+CONF = cfg.CONF
 
 LOG = logging.getLogger(__name__)
 
@@ -33,7 +36,7 @@ class CastellanCertManager(cert_mgr.CertManager):
 
     def __init__(self):
         super().__init__()
-        self.manager = key_manager.API()
+        self.manager = key_manager.API(CONF)
 
     def store_cert(self, context, certificate, private_key, intermediates=None,
                    private_key_passphrase=None, expiration=None,
