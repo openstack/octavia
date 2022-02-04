@@ -1,0 +1,4 @@
+bootloader
+dracut-regenerate
+package-installs
+pkg-map

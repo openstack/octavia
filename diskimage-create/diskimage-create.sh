@@ -61,6 +61,7 @@ usage() {
     echo "        '-v' display the script version"
     echo "        '-w' working directory for image building (default: .)"
     echo "        '-x' enable tracing for diskimage-builder"
+    echo "        '-y' enable FIPS 140-2 mode in the amphora image"
     echo
     exit 1
 }
@@ -91,7 +92,7 @@ dib_enable_tracing=
 
 AMP_LOGFILE=""
 
-while getopts "a:b:c:d:efg:hi:k:l:no:pt:r:s:vw:x" opt; do
+while getopts "a:b:c:d:efg:hi:k:l:no:pt:r:s:vw:xy" opt; do
     case $opt in
         a)
             AMP_ARCH=$OPTARG
@@ -207,6 +208,8 @@ while getopts "a:b:c:d:efg:hi:k:l:no:pt:r:s:vw:x" opt; do
         ;;
         x)  dib_enable_tracing=1
         ;;
+        y)  AMP_ENABLE_FIPS=1
+        ;;
         *)
             usage
         ;;
@@ -255,6 +258,8 @@ AMP_PACKAGE_INSTALL=${AMP_PACKAGE_INSTALL:-0}
 AMP_ENABLE_FULL_MAC_SECURITY=${AMP_ENABLE_FULL_MAC_SECURITY:-0}
 
 AMP_DISABLE_TMP_FS=${AMP_DISABLE_TMP_FS:-""}
+
+AMP_ENABLE_FIPS=${AMP_ENABLE_FIPS:-0}
 
 if [[ "$AMP_BASEOS" =~ ^(rhel|fedora)$ ]] && [[ "$AMP_IMAGESIZE" -lt 3 ]]; then
     echo "RHEL/Fedora based amphora requires an image size of at least 3GB"
@@ -469,6 +474,11 @@ AMP_element_sequence="$AMP_element_sequence certs-ramfs"
 # Disable SSHD if requested
 if [ "$AMP_DISABLE_SSHD" -eq 1 ]; then
     AMP_element_sequence="$AMP_element_sequence remove-sshd"
+fi
+
+# Enable FIPS if requested
+if [ "$AMP_ENABLE_FIPS" -eq 1 ]; then
+    AMP_element_sequence="$AMP_element_sequence amphora-fips"
 fi
 
 # Allow full elements override

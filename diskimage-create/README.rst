@@ -118,6 +118,7 @@ Command syntax:
             [-v]
             [-w <working directory> ]
             [-x]
+            [-y]
 
         '-a' is the architecture type for the image (default: amd64)
         '-b' is the backend type (default: haproxy)
@@ -139,6 +140,7 @@ Command syntax:
         '-v' display the script version
         '-w' working directory for image building (default: .)
         '-x' enable tracing for diskimage-builder
+        '-y' enable FIPS 140-2 mode in the amphora image
 
 
 Building Images for Alternate Branches
