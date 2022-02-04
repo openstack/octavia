@@ -108,6 +108,9 @@ function build_octavia_worker_image {
     if [[ "$(trueorfalse False OCTAVIA_AMP_DISABLE_TMP_FS)" == "True" ]]; then
         export PARAM_OCTAVIA_AMP_DISABLE_TMP_FS='-f'
     fi
+    if [[ "$(trueorfalse False OCTAVIA_AMP_ENABLE_FIPS)" == "True" ]]; then
+        export PARAM_OCTAVIA_AMP_ENABLE_FIPS='-y'
+    fi
 
     # Use the infra pypi mirror if it is available
     if [[ -e /etc/ci/mirror_info.sh ]]; then
@@ -131,7 +134,7 @@ function build_octavia_worker_image {
         fi
         sudo mkdir -m755 ${dib_logs}
         sudo chown $STACK_USER ${dib_logs}
-        $OCTAVIA_DIR/diskimage-create/diskimage-create.sh -l ${dib_logs}/$(basename $OCTAVIA_AMP_IMAGE_FILE).log $octavia_dib_tracing_arg -o $OCTAVIA_AMP_IMAGE_FILE ${PARAM_OCTAVIA_AMP_BASE_OS:-} ${PARAM_OCTAVIA_AMP_DISTRIBUTION_RELEASE_ID:-} ${PARAM_OCTAVIA_AMP_IMAGE_SIZE:-} ${PARAM_OCTAVIA_AMP_IMAGE_ARCH:-} ${PARAM_OCTAVIA_AMP_DISABLE_TMP_FS:-}
+        $OCTAVIA_DIR/diskimage-create/diskimage-create.sh -l ${dib_logs}/$(basename $OCTAVIA_AMP_IMAGE_FILE).log $octavia_dib_tracing_arg -o $OCTAVIA_AMP_IMAGE_FILE ${PARAM_OCTAVIA_AMP_BASE_OS:-} ${PARAM_OCTAVIA_AMP_DISTRIBUTION_RELEASE_ID:-} ${PARAM_OCTAVIA_AMP_IMAGE_SIZE:-} ${PARAM_OCTAVIA_AMP_IMAGE_ARCH:-} ${PARAM_OCTAVIA_AMP_DISABLE_TMP_FS:-} ${PARAM_OCTAVIA_AMP_ENABLE_FIPS:-}
     fi
 
     if ! [ -f $OCTAVIA_AMP_IMAGE_FILE ]; then
