@@ -114,6 +114,10 @@ def config_path(lb_id):
     return os.path.join(haproxy_dir(lb_id), 'haproxy.cfg')
 
 
+def state_file_path(lb_id):
+    return os.path.join(haproxy_dir(lb_id), 'servers-state')
+
+
 def get_haproxy_pid(lb_id):
     with open(pid_path(lb_id), 'r', encoding='utf-8') as f:
         return f.readline().rstrip()
