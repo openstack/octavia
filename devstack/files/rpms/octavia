@@ -1,3 +1,3 @@
 golang
-debootstrap
+debootstrap # not:rhel9
 rsyslog
