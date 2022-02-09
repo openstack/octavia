@@ -22,6 +22,8 @@ import time
 from oslo_config import cfg
 from oslo_log import log as logging
 import pyroute2
+# pylint: disable=no-name-in-module
+from pyroute2.netlink.rtnl import ifaddrmsg
 
 from octavia.amphorae.backends.utils import interface_file
 from octavia.common import constants as consts
@@ -36,6 +38,9 @@ class InterfaceController(object):
     ADD = 'add'
     DELETE = 'delete'
     SET = 'set'
+
+    TENTATIVE_WAIT_INTERVAL = .2
+    TENTATIVE_WAIT_TIMEOUT = 30
 
     def interface_file_list(self):
         net_dir = interface_file.InterfaceFile.get_directory()
@@ -134,6 +139,21 @@ class InterfaceController(object):
             LOG.debug("Running '%s'", cmd)
             subprocess.check_output(cmd, stderr=subprocess.STDOUT)
 
+    def _wait_tentative(self, ipr, idx):
+        start = time.time()
+        while time.time() - start < self.TENTATIVE_WAIT_TIMEOUT:
+            addrs = ipr.get_addr(idx)
+            has_tentative = [
+                True
+                for addr in addrs
+                if (addr['family'] == socket.AF_INET6 and
+                    addr['flags'] & ifaddrmsg.IFA_F_TENTATIVE)]
+            if not has_tentative:
+                return
+            time.sleep(self.TENTATIVE_WAIT_INTERVAL)
+        LOG.warning("Some IPV6 addresses remain still in 'tentative' state "
+                    "after %d seconds.", self.TENTATIVE_WAIT_TIMEOUT)
+
     def up(self, interface):
         LOG.info("Setting interface %s up", interface.name)
 
@@ -157,6 +177,8 @@ class InterfaceController(object):
                 address[consts.FAMILY] = self._family(address[consts.ADDRESS])
                 LOG.debug("%s: Adding address %s", interface.name, address)
                 self._ipr_command(ipr.addr, self.ADD, index=idx, **address)
+
+            self._wait_tentative(ipr, idx)
 
             for route in interface.routes:
                 route[consts.FAMILY] = self._family(route[consts.DST])
