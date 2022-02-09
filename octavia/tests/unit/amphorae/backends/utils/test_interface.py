@@ -446,8 +446,11 @@ class TestInterface(base.TestCase):
     @mock.patch('pyroute2.IPRoute.link')
     @mock.patch('pyroute2.IPRoute.link_lookup')
     @mock.patch('subprocess.check_output')
-    def test_up_auto(self, mock_check_output, mock_link_lookup, mock_link,
-                     mock_addr, mock_route, mock_rule):
+    @mock.patch('octavia.amphorae.backends.utils.interface.'
+                'InterfaceController._wait_tentative')
+    def test_up_auto(self, mock_wait_tentative, mock_check_output,
+                     mock_link_lookup, mock_link, mock_addr, mock_route,
+                     mock_rule):
         iface = interface_file.InterfaceFile(
             name="eth1",
             mtu=1450,
@@ -900,3 +903,50 @@ class TestInterface(base.TestCase):
                       stderr=-2),
             mock.call(["post-down", iface.name])
         ])
+
+    @mock.patch("time.time")
+    @mock.patch("time.sleep")
+    def test__wait_tentative(self, mock_time_sleep, mock_time_time):
+        mock_ipr = mock.MagicMock()
+        mock_ipr.get_addr.side_effect = [
+            ({'family': socket.AF_INET,
+              'flags': 0},
+             {'family': socket.AF_INET6,
+              'flags': 0x40},  # tentative
+             {'family': socket.AF_INET6,
+              'flags': 0}),
+            ({'family': socket.AF_INET,
+              'flags': 0},
+             {'family': socket.AF_INET6,
+              'flags': 0},
+             {'family': socket.AF_INET6,
+              'flags': 0})
+        ]
+
+        mock_time_time.return_value = 0
+
+        controller = interface.InterfaceController()
+        idx = 4
+
+        controller._wait_tentative(mock_ipr, idx)
+        mock_time_sleep.assert_called_once()
+
+    @mock.patch("time.time")
+    @mock.patch("time.sleep")
+    def test__wait_tentative_timeout(self, mock_time_sleep,
+                                     mock_time_time):
+        mock_ipr = mock.MagicMock()
+        mock_ipr.get_addr.return_value = (
+            {'family': socket.AF_INET6,
+             'flags': 0x40},  # tentative
+            {'family': socket.AF_INET6,
+             'flags': 0}
+        )
+
+        mock_time_time.side_effect = [0, 0, 1, 2, 29, 30, 31]
+
+        controller = interface.InterfaceController()
+        idx = 4
+
+        controller._wait_tentative(mock_ipr, idx)
+        self.assertEqual(4, len(mock_time_sleep.mock_calls))
