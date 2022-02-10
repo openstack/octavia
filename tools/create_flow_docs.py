@@ -23,6 +23,7 @@ from taskflow import engines
 
 from octavia.api.drivers import utils
 from octavia.common import constants
+from octavia.common import rpc
 from octavia.tests.common import data_model_helpers as dmh
 
 
@@ -64,6 +65,12 @@ def generate(flow_list, output_directory):
                     get_flow_method(amp1, 2))
             elif (current_tuple[1] == 'LoadBalancerFlows' and
                   current_tuple[2] == 'get_create_load_balancer_flow'):
+                class fake_notifier:
+                    def prepare(self):
+                        pass
+                rpc.NOTIFIER = fake_notifier()
+                rpc.TRANSPORT = "fake"
+                rpc.NOTIFICATION_TRANSPORT = "fake"
                 current_engine = engines.load(
                     get_flow_method(
                         constants.TOPOLOGY_ACTIVE_STANDBY))

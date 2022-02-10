@@ -55,6 +55,7 @@ Operator Reference
 
    Octavia API Reference <https://docs.openstack.org/api-ref/load-balancer/>
    ../contributor/api/haproxy-amphora-api.rst
+   event-notifications.rst
 
 .. only:: html
 

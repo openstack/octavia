@@ -1,0 +1,13 @@
+---
+features:
+  - |
+    Octavia now supports oslo.message notifications for loadbalancer create,
+    delete, and update operations.
+upgrade:
+  - |
+    A new option is provided in the oslo_messaging namespace to disable
+    event_notifications.
+other:
+  - |
+    Admin documentation page has been added to explain the available events,
+    the notification format, and how to disable event notifications.
