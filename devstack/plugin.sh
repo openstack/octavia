@@ -261,7 +261,7 @@ function install_redis {
     fi
 
     start_service redis
-
+    redis-cli del octavia_jobboard:listings
 }
 
 function stop_redis {
