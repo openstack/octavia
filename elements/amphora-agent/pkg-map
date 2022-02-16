@@ -9,6 +9,16 @@
         "vlan": "",
         "screen": "",
         "dkms": ""
+      },
+      "9": {
+        "isc-dhcp-client": "dhcp-client",
+        "python3-dev": "platform-python-devel",
+        "python3-venv": "",
+        "python3": "python39",
+        "vlan": "",
+        "screen": "",
+        "dkms": "",
+        "network-scripts": ""
       }
     },
     "centos": {
