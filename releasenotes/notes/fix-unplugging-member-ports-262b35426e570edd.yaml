@@ -1,0 +1,7 @@
+---
+fixes:
+  - |
+    Fix a bug that could have triggered a race condition when configuring a
+    member interface in the amphora. Due to a race condition, a network
+    interface might have been deleted from the amphora, leading to a loss of
+    connectivity.
