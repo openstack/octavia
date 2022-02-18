@@ -3,7 +3,7 @@
 set -eu
 set -o xtrace
 
-if [[ "$DISTRO_NAME" == "centos" && "$DIB_RELEASE" == "8" ]]; then
+if [[ "$DISTRO_NAME" == "centos" && "$DIB_RELEASE" == "8-stream" ]]; then
     dnf install -y dnf-plugins-core centos-release-nfv-common
     # REVISIT(cgoncalves): replace arch if-else + GPG with release RPM once available
     if [[ "$ARCH" =~ (aarch64|arm64) ]]; then
@@ -16,6 +16,6 @@ if [[ "$DISTRO_NAME" == "centos" && "$DIB_RELEASE" == "8" ]]; then
         echo "ERROR: Unsupported architecture $ARCH"
         exit 1
     fi
-    dnf config-manager --add-repo http://mirror.centos.org/centos/8/nfv/${yum_arch}/network-extras
-    echo gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-SIG-NFV >> /etc/yum.repos.d/mirror.centos.org_centos_8_nfv_*_network-extras.repo
+    dnf config-manager --add-repo http://mirror.centos.org/centos/$DIB_RELEASE/nfv/${yum_arch}/network-extras
+    echo gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-SIG-NFV >> /etc/yum.repos.d/mirror.centos.org_centos_${DIB_RELEASE}_nfv_*_network-extras.repo
 fi
