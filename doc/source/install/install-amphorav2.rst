@@ -50,9 +50,9 @@ during installation of octavia packages.
 
      .. code-block:: console
 
-        GRANT ALL PRIVILEGES ON octavia.* TO 'octavia_persistence'@'localhost' \
+        GRANT ALL PRIVILEGES ON octavia_persistence.* TO 'octavia'@'localhost' \
         IDENTIFIED BY 'OCTAVIA_DBPASS';
-        GRANT ALL PRIVILEGES ON octavia.* TO 'octavia_persistence'@'%' \
+        GRANT ALL PRIVILEGES ON octavia_persistence.* TO 'octavia'@'%' \
         IDENTIFIED BY 'OCTAVIA_DBPASS';
 
      Replace OCTAVIA_DBPASS with a suitable password.
