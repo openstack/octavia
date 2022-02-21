@@ -1,0 +1,4 @@
+---
+fixes:
+  - |
+    Fixed issues when building amphora image for RHEL 9.
