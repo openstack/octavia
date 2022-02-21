@@ -1,0 +1,4 @@
+---
+fixes:
+  - |
+    Fixed issues when building amphora image for Centos Stream 9.
