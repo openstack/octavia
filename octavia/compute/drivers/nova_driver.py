@@ -32,6 +32,11 @@ LOG = logging.getLogger(__name__)
 CONF = cfg.CONF
 
 
+def _raise_compute_exception(retry_state):
+    LOG.exception("Error retrieving nova virtual machine.")
+    raise exceptions.ComputeGetException()
+
+
 class VirtualMachineManager(compute_base.ComputeBase):
     '''Compute implementation of virtual machines via nova.'''
 
@@ -179,10 +184,6 @@ class VirtualMachineManager(compute_base.ComputeBase):
             LOG.exception("Error retrieving nova virtual machine status.")
             raise exceptions.ComputeStatusException() from e
         return constants.DOWN
-
-    def _raise_compute_exception(self):
-        LOG.exception("Error retrieving nova virtual machine.")
-        raise exceptions.ComputeGetException()
 
     @tenacity.retry(retry=tenacity.retry_if_exception_type(),
                     stop=tenacity.stop_after_attempt(CONF.compute.max_retries),
