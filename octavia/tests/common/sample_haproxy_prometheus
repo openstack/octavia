@@ -1,0 +1,886 @@
+# HELP haproxy_process_nbthread Configured number of threads.
+# TYPE haproxy_process_nbthread gauge
+haproxy_process_nbthread 1
+# HELP haproxy_process_nbproc Configured number of processes.
+# TYPE haproxy_process_nbproc gauge
+haproxy_process_nbproc 1
+# HELP haproxy_process_relative_process_id Relative process id, starting at 1.
+# TYPE haproxy_process_relative_process_id gauge
+haproxy_process_relative_process_id 1
+# HELP haproxy_process_start_time_seconds Start time in seconds.
+# TYPE haproxy_process_start_time_seconds gauge
+haproxy_process_start_time_seconds 1644875239
+# HELP haproxy_process_max_memory_bytes Per-process memory limit (in bytes); 0=unset.
+# TYPE haproxy_process_max_memory_bytes gauge
+haproxy_process_max_memory_bytes 0
+# HELP haproxy_process_pool_allocated_bytes Total amount of memory allocated in pools (in bytes).
+# TYPE haproxy_process_pool_allocated_bytes gauge
+haproxy_process_pool_allocated_bytes 111616
+# HELP haproxy_process_pool_used_bytes Total amount of memory used in pools (in bytes).
+# TYPE haproxy_process_pool_used_bytes gauge
+haproxy_process_pool_used_bytes 78848
+# HELP haproxy_process_pool_failures_total Total number of failed pool allocations.
+# TYPE haproxy_process_pool_failures_total counter
+haproxy_process_pool_failures_total 0
+# HELP haproxy_process_max_fds Maximum number of open file descriptors; 0=unset.
+# TYPE haproxy_process_max_fds gauge
+haproxy_process_max_fds 375033
+# HELP haproxy_process_max_sockets Maximum numer of open sockets.
+# TYPE haproxy_process_max_sockets gauge
+haproxy_process_max_sockets 375033
+# HELP haproxy_process_max_connections Maximum number of concurrent connections.
+# TYPE haproxy_process_max_connections gauge
+haproxy_process_max_connections 150000
+# HELP haproxy_process_hard_max_connections Initial Maximum number of concurrent connections.
+# TYPE haproxy_process_hard_max_connections gauge
+haproxy_process_hard_max_connections 150000
+# HELP haproxy_process_current_connections Number of active sessions.
+# TYPE haproxy_process_current_connections gauge
+haproxy_process_current_connections 1
+# HELP haproxy_process_connections_total Total number of created sessions.
+# TYPE haproxy_process_connections_total counter
+haproxy_process_connections_total 680
+# HELP haproxy_process_requests_total Total number of requests (TCP or HTTP).
+# TYPE haproxy_process_requests_total counter
+haproxy_process_requests_total 680
+# HELP haproxy_process_max_ssl_connections Configured maximum number of concurrent SSL connections.
+# TYPE haproxy_process_max_ssl_connections gauge
+haproxy_process_max_ssl_connections 0
+# HELP haproxy_process_current_ssl_connections Number of opened SSL connections.
+# TYPE haproxy_process_current_ssl_connections gauge
+haproxy_process_current_ssl_connections 0
+# HELP haproxy_process_ssl_connections_total Total number of opened SSL connections.
+# TYPE haproxy_process_ssl_connections_total counter
+haproxy_process_ssl_connections_total 0
+# HELP haproxy_process_max_pipes Configured maximum number of pipes.
+# TYPE haproxy_process_max_pipes gauge
+haproxy_process_max_pipes 37500
+# HELP haproxy_process_pipes_used_total Number of pipes in used.
+# TYPE haproxy_process_pipes_used_total counter
+haproxy_process_pipes_used_total 0
+# HELP haproxy_process_pipes_free_total Number of pipes unused.
+# TYPE haproxy_process_pipes_free_total counter
+haproxy_process_pipes_free_total 0
+# HELP haproxy_process_current_connection_rate Current number of connections per second over last elapsed second.
+# TYPE haproxy_process_current_connection_rate gauge
+haproxy_process_current_connection_rate 1
+# HELP haproxy_process_limit_connection_rate Configured maximum number of connections per second.
+# TYPE haproxy_process_limit_connection_rate gauge
+haproxy_process_limit_connection_rate 0
+# HELP haproxy_process_max_connection_rate Maximum observed number of connections per second.
+# TYPE haproxy_process_max_connection_rate gauge
+haproxy_process_max_connection_rate 2
+# HELP haproxy_process_current_session_rate Current number of sessions per second over last elapsed second.
+# TYPE haproxy_process_current_session_rate gauge
+haproxy_process_current_session_rate 1
+# HELP haproxy_process_limit_session_rate Configured maximum number of sessions per second.
+# TYPE haproxy_process_limit_session_rate gauge
+haproxy_process_limit_session_rate 0
+# HELP haproxy_process_max_session_rate Maximum observed number of sessions per second.
+# TYPE haproxy_process_max_session_rate gauge
+haproxy_process_max_session_rate 2
+# HELP haproxy_process_current_ssl_rate Current number of SSL sessions per second over last elapsed second.
+# TYPE haproxy_process_current_ssl_rate gauge
+haproxy_process_current_ssl_rate 0
+# HELP haproxy_process_limit_ssl_rate Configured maximum number of SSL sessions per second.
+# TYPE haproxy_process_limit_ssl_rate gauge
+haproxy_process_limit_ssl_rate 0
+# HELP haproxy_process_max_ssl_rate Maximum observed number of SSL sessions per second.
+# TYPE haproxy_process_max_ssl_rate gauge
+haproxy_process_max_ssl_rate 0
+# HELP haproxy_process_current_frontend_ssl_key_rate Current frontend SSL Key computation per second over last elapsed second.
+# TYPE haproxy_process_current_frontend_ssl_key_rate gauge
+haproxy_process_current_frontend_ssl_key_rate 0
+# HELP haproxy_process_max_frontend_ssl_key_rate Maximum observed frontend SSL Key computation per second.
+# TYPE haproxy_process_max_frontend_ssl_key_rate gauge
+haproxy_process_max_frontend_ssl_key_rate 0
+# HELP haproxy_process_frontent_ssl_reuse SSL session reuse ratio (percent).
+# TYPE haproxy_process_frontent_ssl_reuse gauge
+haproxy_process_frontent_ssl_reuse 0
+# HELP haproxy_process_current_backend_ssl_key_rate Current backend SSL Key computation per second over last elapsed second.
+# TYPE haproxy_process_current_backend_ssl_key_rate gauge
+haproxy_process_current_backend_ssl_key_rate 0
+# HELP haproxy_process_max_backend_ssl_key_rate Maximum observed backend SSL Key computation per second.
+# TYPE haproxy_process_max_backend_ssl_key_rate gauge
+haproxy_process_max_backend_ssl_key_rate 0
+# HELP haproxy_process_ssl_cache_lookups_total Total number of SSL session cache lookups.
+# TYPE haproxy_process_ssl_cache_lookups_total counter
+haproxy_process_ssl_cache_lookups_total 0
+# HELP haproxy_process_ssl_cache_misses_total Total number of SSL session cache misses.
+# TYPE haproxy_process_ssl_cache_misses_total counter
+haproxy_process_ssl_cache_misses_total 0
+# HELP haproxy_process_http_comp_bytes_in_total Number of bytes per second over last elapsed second, before http compression.
+# TYPE haproxy_process_http_comp_bytes_in_total counter
+haproxy_process_http_comp_bytes_in_total 0
+# HELP haproxy_process_http_comp_bytes_out_total Number of bytes per second over last elapsed second, after http compression.
+# TYPE haproxy_process_http_comp_bytes_out_total counter
+haproxy_process_http_comp_bytes_out_total 0
+# HELP haproxy_process_limit_http_comp Configured maximum input compression rate in bytes.
+# TYPE haproxy_process_limit_http_comp gauge
+haproxy_process_limit_http_comp 0
+# HELP haproxy_process_current_zlib_memory Current memory used for zlib in bytes.
+# TYPE haproxy_process_current_zlib_memory gauge
+haproxy_process_current_zlib_memory 0
+# HELP haproxy_process_max_zlib_memory Configured maximum amount of memory for zlib in bytes.
+# TYPE haproxy_process_max_zlib_memory gauge
+haproxy_process_max_zlib_memory 0
+# HELP haproxy_process_current_tasks Current number of tasks.
+# TYPE haproxy_process_current_tasks gauge
+haproxy_process_current_tasks 20
+# HELP haproxy_process_current_run_queue Current number of tasks in the run-queue.
+# TYPE haproxy_process_current_run_queue gauge
+haproxy_process_current_run_queue 1
+# HELP haproxy_process_idle_time_percent Idle to total ratio over last sample (percent).
+# TYPE haproxy_process_idle_time_percent gauge
+haproxy_process_idle_time_percent 100
+# HELP haproxy_process_stopping Non zero means stopping in progress.
+# TYPE haproxy_process_stopping gauge
+haproxy_process_stopping 0
+# HELP haproxy_process_jobs Current number of active jobs (listeners, sessions, open devices).
+# TYPE haproxy_process_jobs gauge
+haproxy_process_jobs 7
+# HELP haproxy_process_unstoppable_jobs Current number of active jobs that can''t be stopped during a soft stop.
+# TYPE haproxy_process_unstoppable_jobs gauge
+haproxy_process_unstoppable_jobs 0
+# HELP haproxy_process_listeners Current number of active listeners.
+# TYPE haproxy_process_listeners gauge
+haproxy_process_listeners 6
+# HELP haproxy_process_active_peers Current number of active peers.
+# TYPE haproxy_process_active_peers gauge
+haproxy_process_active_peers 0
+# HELP haproxy_process_connected_peers Current number of connected peers.
+# TYPE haproxy_process_connected_peers gauge
+haproxy_process_connected_peers 0
+# HELP haproxy_process_dropped_logs_total Total number of dropped logs.
+# TYPE haproxy_process_dropped_logs_total counter
+haproxy_process_dropped_logs_total 0
+# HELP haproxy_process_busy_polling_enabled Non zero if the busy polling is enabled.
+# TYPE haproxy_process_busy_polling_enabled gauge
+haproxy_process_busy_polling_enabled 0
+# HELP haproxy_frontend_status Current status of the service (frontend: 0=STOP, 1=UP, 2=FULL - backend: 0=DOWN, 1=UP - server: 0=DOWN, 1=UP, 2=MAINT, 3=DRAIN, 4=NOLB).
+# TYPE haproxy_frontend_status gauge
+haproxy_frontend_status{proxy="prometheus-exporter-internal-endpoint"} 1
+haproxy_frontend_status{proxy="1a0c13c0-8e69-46c7-a68a-ca4937996d74"} 1
+haproxy_frontend_status{proxy="4919eeb2-b3ed-40c5-8200-057400b83bb7"} 1
+haproxy_frontend_status{proxy="0b248d39-eb90-4180-91aa-5363be7df4db"} 1
+# HELP haproxy_frontend_current_sessions Current number of active sessions.
+# TYPE haproxy_frontend_current_sessions gauge
+haproxy_frontend_current_sessions{proxy="prometheus-exporter-internal-endpoint"} 1
+haproxy_frontend_current_sessions{proxy="1a0c13c0-8e69-46c7-a68a-ca4937996d74"} 0
+haproxy_frontend_current_sessions{proxy="4919eeb2-b3ed-40c5-8200-057400b83bb7"} 0
+haproxy_frontend_current_sessions{proxy="0b248d39-eb90-4180-91aa-5363be7df4db"} 0
+# HELP haproxy_frontend_max_sessions Maximum observed number of active sessions.
+# TYPE haproxy_frontend_max_sessions gauge
+haproxy_frontend_max_sessions{proxy="prometheus-exporter-internal-endpoint"} 1
+haproxy_frontend_max_sessions{proxy="1a0c13c0-8e69-46c7-a68a-ca4937996d74"} 0
+haproxy_frontend_max_sessions{proxy="4919eeb2-b3ed-40c5-8200-057400b83bb7"} 1
+haproxy_frontend_max_sessions{proxy="0b248d39-eb90-4180-91aa-5363be7df4db"} 0
+# HELP haproxy_frontend_limit_sessions Configured session limit.
+# TYPE haproxy_frontend_limit_sessions gauge
+haproxy_frontend_limit_sessions{proxy="prometheus-exporter-internal-endpoint"} 150000
+haproxy_frontend_limit_sessions{proxy="1a0c13c0-8e69-46c7-a68a-ca4937996d74"} 50000
+haproxy_frontend_limit_sessions{proxy="4919eeb2-b3ed-40c5-8200-057400b83bb7"} 50000
+haproxy_frontend_limit_sessions{proxy="0b248d39-eb90-4180-91aa-5363be7df4db"} 50000
+# HELP haproxy_frontend_sessions_total Total number of sessions.
+# TYPE haproxy_frontend_sessions_total counter
+haproxy_frontend_sessions_total{proxy="prometheus-exporter-internal-endpoint"} 4
+haproxy_frontend_sessions_total{proxy="1a0c13c0-8e69-46c7-a68a-ca4937996d74"} 0
+haproxy_frontend_sessions_total{proxy="4919eeb2-b3ed-40c5-8200-057400b83bb7"} 2
+haproxy_frontend_sessions_total{proxy="0b248d39-eb90-4180-91aa-5363be7df4db"} 0
+# HELP haproxy_frontend_limit_session_rate Configured limit on new sessions per second.
+# TYPE haproxy_frontend_limit_session_rate gauge
+haproxy_frontend_limit_session_rate{proxy="prometheus-exporter-internal-endpoint"} 0
+haproxy_frontend_limit_session_rate{proxy="1a0c13c0-8e69-46c7-a68a-ca4937996d74"} 0
+haproxy_frontend_limit_session_rate{proxy="4919eeb2-b3ed-40c5-8200-057400b83bb7"} 0
+haproxy_frontend_limit_session_rate{proxy="0b248d39-eb90-4180-91aa-5363be7df4db"} 0
+# HELP haproxy_frontend_max_session_rate Maximum observed number of sessions per second.
+# TYPE haproxy_frontend_max_session_rate gauge
+haproxy_frontend_max_session_rate{proxy="prometheus-exporter-internal-endpoint"} 1
+haproxy_frontend_max_session_rate{proxy="1a0c13c0-8e69-46c7-a68a-ca4937996d74"} 0
+haproxy_frontend_max_session_rate{proxy="4919eeb2-b3ed-40c5-8200-057400b83bb7"} 1
+haproxy_frontend_max_session_rate{proxy="0b248d39-eb90-4180-91aa-5363be7df4db"} 0
+# HELP haproxy_frontend_connections_rate_max Maximum observed number of connections per second.
+# TYPE haproxy_frontend_connections_rate_max gauge
+haproxy_frontend_connections_rate_max{proxy="prometheus-exporter-internal-endpoint"} 1
+haproxy_frontend_connections_rate_max{proxy="1a0c13c0-8e69-46c7-a68a-ca4937996d74"} 0
+haproxy_frontend_connections_rate_max{proxy="4919eeb2-b3ed-40c5-8200-057400b83bb7"} 1
+haproxy_frontend_connections_rate_max{proxy="0b248d39-eb90-4180-91aa-5363be7df4db"} 0
+# HELP haproxy_frontend_connections_total Total number of connections.
+# TYPE haproxy_frontend_connections_total counter
+haproxy_frontend_connections_total{proxy="prometheus-exporter-internal-endpoint"} 4
+haproxy_frontend_connections_total{proxy="1a0c13c0-8e69-46c7-a68a-ca4937996d74"} 0
+haproxy_frontend_connections_total{proxy="4919eeb2-b3ed-40c5-8200-057400b83bb7"} 2
+haproxy_frontend_connections_total{proxy="0b248d39-eb90-4180-91aa-5363be7df4db"} 0
+# HELP haproxy_frontend_bytes_in_total Current total of incoming bytes.
+# TYPE haproxy_frontend_bytes_in_total counter
+haproxy_frontend_bytes_in_total{proxy="prometheus-exporter-internal-endpoint"} 312
+haproxy_frontend_bytes_in_total{proxy="1a0c13c0-8e69-46c7-a68a-ca4937996d74"} 0
+haproxy_frontend_bytes_in_total{proxy="4919eeb2-b3ed-40c5-8200-057400b83bb7"} 176
+haproxy_frontend_bytes_in_total{proxy="0b248d39-eb90-4180-91aa-5363be7df4db"} 0
+# HELP haproxy_frontend_bytes_out_total Current total of outgoing bytes.
+# TYPE haproxy_frontend_bytes_out_total counter
+haproxy_frontend_bytes_out_total{proxy="prometheus-exporter-internal-endpoint"} 177027
+haproxy_frontend_bytes_out_total{proxy="1a0c13c0-8e69-46c7-a68a-ca4937996d74"} 0
+haproxy_frontend_bytes_out_total{proxy="4919eeb2-b3ed-40c5-8200-057400b83bb7"} 145918
+haproxy_frontend_bytes_out_total{proxy="0b248d39-eb90-4180-91aa-5363be7df4db"} 0
+# HELP haproxy_frontend_requests_denied_total Total number of denied requests.
+# TYPE haproxy_frontend_requests_denied_total counter
+haproxy_frontend_requests_denied_total{proxy="prometheus-exporter-internal-endpoint"} 1
+haproxy_frontend_requests_denied_total{proxy="1a0c13c0-8e69-46c7-a68a-ca4937996d74"} 0
+haproxy_frontend_requests_denied_total{proxy="4919eeb2-b3ed-40c5-8200-057400b83bb7"} 0
+haproxy_frontend_requests_denied_total{proxy="0b248d39-eb90-4180-91aa-5363be7df4db"} 0
+# HELP haproxy_frontend_responses_denied_total Total number of denied responses.
+# TYPE haproxy_frontend_responses_denied_total counter
+haproxy_frontend_responses_denied_total{proxy="prometheus-exporter-internal-endpoint"} 0
+haproxy_frontend_responses_denied_total{proxy="1a0c13c0-8e69-46c7-a68a-ca4937996d74"} 0
+haproxy_frontend_responses_denied_total{proxy="4919eeb2-b3ed-40c5-8200-057400b83bb7"} 0
+haproxy_frontend_responses_denied_total{proxy="0b248d39-eb90-4180-91aa-5363be7df4db"} 0
+# HELP haproxy_frontend_request_errors_total Total number of request errors.
+# TYPE haproxy_frontend_request_errors_total counter
+haproxy_frontend_request_errors_total{proxy="prometheus-exporter-internal-endpoint"} 0
+haproxy_frontend_request_errors_total{proxy="1a0c13c0-8e69-46c7-a68a-ca4937996d74"} 0
+haproxy_frontend_request_errors_total{proxy="4919eeb2-b3ed-40c5-8200-057400b83bb7"} 0
+haproxy_frontend_request_errors_total{proxy="0b248d39-eb90-4180-91aa-5363be7df4db"} 0
+# HELP haproxy_frontend_denied_connections_total Total number of requests denied by "tcp-request connection" rules.
+# TYPE haproxy_frontend_denied_connections_total counter
+haproxy_frontend_denied_connections_total{proxy="prometheus-exporter-internal-endpoint"} 0
+haproxy_frontend_denied_connections_total{proxy="1a0c13c0-8e69-46c7-a68a-ca4937996d74"} 0
+haproxy_frontend_denied_connections_total{proxy="4919eeb2-b3ed-40c5-8200-057400b83bb7"} 0
+haproxy_frontend_denied_connections_total{proxy="0b248d39-eb90-4180-91aa-5363be7df4db"} 0
+# HELP haproxy_frontend_denied_sessions_total Total number of requests denied by "tcp-request session" rules.
+# TYPE haproxy_frontend_denied_sessions_total counter
+haproxy_frontend_denied_sessions_total{proxy="prometheus-exporter-internal-endpoint"} 0
+haproxy_frontend_denied_sessions_total{proxy="1a0c13c0-8e69-46c7-a68a-ca4937996d74"} 0
+haproxy_frontend_denied_sessions_total{proxy="4919eeb2-b3ed-40c5-8200-057400b83bb7"} 0
+haproxy_frontend_denied_sessions_total{proxy="0b248d39-eb90-4180-91aa-5363be7df4db"} 0
+# HELP haproxy_frontend_failed_header_rewriting_total Total number of failed header rewriting warnings.
+# TYPE haproxy_frontend_failed_header_rewriting_total counter
+haproxy_frontend_failed_header_rewriting_total{proxy="prometheus-exporter-internal-endpoint"} 0
+haproxy_frontend_failed_header_rewriting_total{proxy="1a0c13c0-8e69-46c7-a68a-ca4937996d74"} 0
+haproxy_frontend_failed_header_rewriting_total{proxy="4919eeb2-b3ed-40c5-8200-057400b83bb7"} 0
+haproxy_frontend_failed_header_rewriting_total{proxy="0b248d39-eb90-4180-91aa-5363be7df4db"} 0
+# HELP haproxy_frontend_http_requests_rate_max Maximum observed number of HTTP requests per second.
+# TYPE haproxy_frontend_http_requests_rate_max gauge
+haproxy_frontend_http_requests_rate_max{proxy="prometheus-exporter-internal-endpoint"} 1
+haproxy_frontend_http_requests_rate_max{proxy="1a0c13c0-8e69-46c7-a68a-ca4937996d74"} 0
+haproxy_frontend_http_requests_rate_max{proxy="4919eeb2-b3ed-40c5-8200-057400b83bb7"} 1
+haproxy_frontend_http_requests_rate_max{proxy="0b248d39-eb90-4180-91aa-5363be7df4db"} 0
+# HELP haproxy_frontend_http_requests_total Total number of HTTP requests received.
+# TYPE haproxy_frontend_http_requests_total counter
+haproxy_frontend_http_requests_total{proxy="prometheus-exporter-internal-endpoint"} 4
+haproxy_frontend_http_requests_total{proxy="1a0c13c0-8e69-46c7-a68a-ca4937996d74"} 0
+haproxy_frontend_http_requests_total{proxy="4919eeb2-b3ed-40c5-8200-057400b83bb7"} 2
+haproxy_frontend_http_requests_total{proxy="0b248d39-eb90-4180-91aa-5363be7df4db"} 0
+# HELP haproxy_frontend_http_responses_total Total number of HTTP responses.
+# TYPE haproxy_frontend_http_responses_total counter
+haproxy_frontend_http_responses_total{proxy="prometheus-exporter-internal-endpoint",code="1xx"} 0
+haproxy_frontend_http_responses_total{proxy="1a0c13c0-8e69-46c7-a68a-ca4937996d74",code="1xx"} 0
+haproxy_frontend_http_responses_total{proxy="4919eeb2-b3ed-40c5-8200-057400b83bb7",code="1xx"} 0
+haproxy_frontend_http_responses_total{proxy="0b248d39-eb90-4180-91aa-5363be7df4db",code="1xx"} 0
+haproxy_frontend_http_responses_total{proxy="prometheus-exporter-internal-endpoint",code="2xx"} 2
+haproxy_frontend_http_responses_total{proxy="1a0c13c0-8e69-46c7-a68a-ca4937996d74",code="2xx"} 0
+haproxy_frontend_http_responses_total{proxy="4919eeb2-b3ed-40c5-8200-057400b83bb7",code="2xx"} 2
+haproxy_frontend_http_responses_total{proxy="0b248d39-eb90-4180-91aa-5363be7df4db",code="2xx"} 0
+haproxy_frontend_http_responses_total{proxy="prometheus-exporter-internal-endpoint",code="3xx"} 0
+haproxy_frontend_http_responses_total{proxy="1a0c13c0-8e69-46c7-a68a-ca4937996d74",code="3xx"} 0
+haproxy_frontend_http_responses_total{proxy="4919eeb2-b3ed-40c5-8200-057400b83bb7",code="3xx"} 0
+haproxy_frontend_http_responses_total{proxy="0b248d39-eb90-4180-91aa-5363be7df4db",code="3xx"} 0
+haproxy_frontend_http_responses_total{proxy="prometheus-exporter-internal-endpoint",code="4xx"} 0
+haproxy_frontend_http_responses_total{proxy="1a0c13c0-8e69-46c7-a68a-ca4937996d74",code="4xx"} 0
+haproxy_frontend_http_responses_total{proxy="4919eeb2-b3ed-40c5-8200-057400b83bb7",code="4xx"} 0
+haproxy_frontend_http_responses_total{proxy="0b248d39-eb90-4180-91aa-5363be7df4db",code="4xx"} 0
+haproxy_frontend_http_responses_total{proxy="prometheus-exporter-internal-endpoint",code="5xx"} 0
+haproxy_frontend_http_responses_total{proxy="1a0c13c0-8e69-46c7-a68a-ca4937996d74",code="5xx"} 0
+haproxy_frontend_http_responses_total{proxy="4919eeb2-b3ed-40c5-8200-057400b83bb7",code="5xx"} 0
+haproxy_frontend_http_responses_total{proxy="0b248d39-eb90-4180-91aa-5363be7df4db",code="5xx"} 0
+haproxy_frontend_http_responses_total{proxy="prometheus-exporter-internal-endpoint",code="other"} 1
+haproxy_frontend_http_responses_total{proxy="1a0c13c0-8e69-46c7-a68a-ca4937996d74",code="other"} 0
+haproxy_frontend_http_responses_total{proxy="4919eeb2-b3ed-40c5-8200-057400b83bb7",code="other"} 0
+haproxy_frontend_http_responses_total{proxy="0b248d39-eb90-4180-91aa-5363be7df4db",code="other"} 0
+# HELP haproxy_frontend_intercepted_requests_total Total number of intercepted HTTP requests.
+# TYPE haproxy_frontend_intercepted_requests_total counter
+haproxy_frontend_intercepted_requests_total{proxy="prometheus-exporter-internal-endpoint"} 3
+haproxy_frontend_intercepted_requests_total{proxy="1a0c13c0-8e69-46c7-a68a-ca4937996d74"} 0
+haproxy_frontend_intercepted_requests_total{proxy="4919eeb2-b3ed-40c5-8200-057400b83bb7"} 0
+haproxy_frontend_intercepted_requests_total{proxy="0b248d39-eb90-4180-91aa-5363be7df4db"} 0
+# HELP haproxy_frontend_http_cache_lookups_total Total number of HTTP cache lookups.
+# TYPE haproxy_frontend_http_cache_lookups_total counter
+haproxy_frontend_http_cache_lookups_total{proxy="prometheus-exporter-internal-endpoint"} 0
+haproxy_frontend_http_cache_lookups_total{proxy="1a0c13c0-8e69-46c7-a68a-ca4937996d74"} 0
+haproxy_frontend_http_cache_lookups_total{proxy="4919eeb2-b3ed-40c5-8200-057400b83bb7"} 0
+haproxy_frontend_http_cache_lookups_total{proxy="0b248d39-eb90-4180-91aa-5363be7df4db"} 0
+# HELP haproxy_frontend_http_cache_hits_total Total number of HTTP cache hits.
+# TYPE haproxy_frontend_http_cache_hits_total counter
+haproxy_frontend_http_cache_hits_total{proxy="prometheus-exporter-internal-endpoint"} 0
+haproxy_frontend_http_cache_hits_total{proxy="1a0c13c0-8e69-46c7-a68a-ca4937996d74"} 0
+haproxy_frontend_http_cache_hits_total{proxy="4919eeb2-b3ed-40c5-8200-057400b83bb7"} 0
+haproxy_frontend_http_cache_hits_total{proxy="0b248d39-eb90-4180-91aa-5363be7df4db"} 0
+# HELP haproxy_frontend_http_comp_bytes_in_total Total number of HTTP response bytes fed to the compressor.
+# TYPE haproxy_frontend_http_comp_bytes_in_total counter
+haproxy_frontend_http_comp_bytes_in_total{proxy="prometheus-exporter-internal-endpoint"} 0
+haproxy_frontend_http_comp_bytes_in_total{proxy="1a0c13c0-8e69-46c7-a68a-ca4937996d74"} 0
+haproxy_frontend_http_comp_bytes_in_total{proxy="4919eeb2-b3ed-40c5-8200-057400b83bb7"} 0
+haproxy_frontend_http_comp_bytes_in_total{proxy="0b248d39-eb90-4180-91aa-5363be7df4db"} 0
+# HELP haproxy_frontend_http_comp_bytes_out_total Total number of HTTP response bytes emitted by the compressor.
+# TYPE haproxy_frontend_http_comp_bytes_out_total counter
+haproxy_frontend_http_comp_bytes_out_total{proxy="prometheus-exporter-internal-endpoint"} 0
+haproxy_frontend_http_comp_bytes_out_total{proxy="1a0c13c0-8e69-46c7-a68a-ca4937996d74"} 0
+haproxy_frontend_http_comp_bytes_out_total{proxy="4919eeb2-b3ed-40c5-8200-057400b83bb7"} 0
+haproxy_frontend_http_comp_bytes_out_total{proxy="0b248d39-eb90-4180-91aa-5363be7df4db"} 0
+# HELP haproxy_frontend_http_comp_bytes_bypassed_total Total number of bytes that bypassed the HTTP compressor (CPU/BW limit).
+# TYPE haproxy_frontend_http_comp_bytes_bypassed_total counter
+haproxy_frontend_http_comp_bytes_bypassed_total{proxy="prometheus-exporter-internal-endpoint"} 0
+haproxy_frontend_http_comp_bytes_bypassed_total{proxy="1a0c13c0-8e69-46c7-a68a-ca4937996d74"} 0
+haproxy_frontend_http_comp_bytes_bypassed_total{proxy="4919eeb2-b3ed-40c5-8200-057400b83bb7"} 0
+haproxy_frontend_http_comp_bytes_bypassed_total{proxy="0b248d39-eb90-4180-91aa-5363be7df4db"} 0
+# HELP haproxy_frontend_http_comp_responses_total Total number of HTTP responses that were compressed.
+# TYPE haproxy_frontend_http_comp_responses_total counter
+haproxy_frontend_http_comp_responses_total{proxy="prometheus-exporter-internal-endpoint"} 0
+haproxy_frontend_http_comp_responses_total{proxy="1a0c13c0-8e69-46c7-a68a-ca4937996d74"} 0
+haproxy_frontend_http_comp_responses_total{proxy="4919eeb2-b3ed-40c5-8200-057400b83bb7"} 0
+haproxy_frontend_http_comp_responses_total{proxy="0b248d39-eb90-4180-91aa-5363be7df4db"} 0
+# HELP haproxy_backend_status Current status of the service (frontend: 0=STOP, 1=UP, 2=FULL - backend: 0=DOWN, 1=UP - server: 0=DOWN, 1=UP, 2=MAINT, 3=DRAIN, 4=NOLB).
+# TYPE haproxy_backend_status gauge
+haproxy_backend_status{proxy="prometheus-exporter-internal"} 1
+haproxy_backend_status{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:1a0c13c0-8e69-46c7-a68a-ca4937996d74"} 0
+haproxy_backend_status{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:0b248d39-eb90-4180-91aa-5363be7df4db"} 0
+# HELP haproxy_backend_current_sessions Current number of active sessions.
+# TYPE haproxy_backend_current_sessions gauge
+haproxy_backend_current_sessions{proxy="prometheus-exporter-internal"} 0
+haproxy_backend_current_sessions{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:1a0c13c0-8e69-46c7-a68a-ca4937996d74"} 0
+haproxy_backend_current_sessions{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:0b248d39-eb90-4180-91aa-5363be7df4db"} 0
+# HELP haproxy_backend_max_sessions Maximum observed number of active sessions.
+# TYPE haproxy_backend_max_sessions gauge
+haproxy_backend_max_sessions{proxy="prometheus-exporter-internal"} 1
+haproxy_backend_max_sessions{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:1a0c13c0-8e69-46c7-a68a-ca4937996d74"} 0
+haproxy_backend_max_sessions{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:0b248d39-eb90-4180-91aa-5363be7df4db"} 0
+# HELP haproxy_backend_limit_sessions Configured session limit.
+# TYPE haproxy_backend_limit_sessions gauge
+haproxy_backend_limit_sessions{proxy="prometheus-exporter-internal"} 5000
+haproxy_backend_limit_sessions{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:1a0c13c0-8e69-46c7-a68a-ca4937996d74"} 50000
+haproxy_backend_limit_sessions{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:0b248d39-eb90-4180-91aa-5363be7df4db"} 50000
+# HELP haproxy_backend_sessions_total Total number of sessions.
+# TYPE haproxy_backend_sessions_total counter
+haproxy_backend_sessions_total{proxy="prometheus-exporter-internal"} 2
+haproxy_backend_sessions_total{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:1a0c13c0-8e69-46c7-a68a-ca4937996d74"} 0
+haproxy_backend_sessions_total{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:0b248d39-eb90-4180-91aa-5363be7df4db"} 0
+# HELP haproxy_backend_max_session_rate Maximum observed number of sessions per second.
+# TYPE haproxy_backend_max_session_rate gauge
+haproxy_backend_max_session_rate{proxy="prometheus-exporter-internal"} 1
+haproxy_backend_max_session_rate{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:1a0c13c0-8e69-46c7-a68a-ca4937996d74"} 0
+haproxy_backend_max_session_rate{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:0b248d39-eb90-4180-91aa-5363be7df4db"} 0
+# HELP haproxy_backend_last_session_seconds Number of seconds since last session assigned to server/backend.
+# TYPE haproxy_backend_last_session_seconds gauge
+haproxy_backend_last_session_seconds{proxy="prometheus-exporter-internal"} 1829
+haproxy_backend_last_session_seconds{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:1a0c13c0-8e69-46c7-a68a-ca4937996d74"} -1
+haproxy_backend_last_session_seconds{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:0b248d39-eb90-4180-91aa-5363be7df4db"} -1
+# HELP haproxy_backend_current_queue Current number of queued requests.
+# TYPE haproxy_backend_current_queue gauge
+haproxy_backend_current_queue{proxy="prometheus-exporter-internal"} 0
+haproxy_backend_current_queue{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:1a0c13c0-8e69-46c7-a68a-ca4937996d74"} 0
+haproxy_backend_current_queue{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:0b248d39-eb90-4180-91aa-5363be7df4db"} 0
+# HELP haproxy_backend_max_queue Maximum observed number of queued requests.
+# TYPE haproxy_backend_max_queue gauge
+haproxy_backend_max_queue{proxy="prometheus-exporter-internal"} 0
+haproxy_backend_max_queue{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:1a0c13c0-8e69-46c7-a68a-ca4937996d74"} 0
+haproxy_backend_max_queue{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:0b248d39-eb90-4180-91aa-5363be7df4db"} 0
+# HELP haproxy_backend_connection_attempts_total Total number of connection establishment attempts.
+# TYPE haproxy_backend_connection_attempts_total counter
+haproxy_backend_connection_attempts_total{proxy="prometheus-exporter-internal"} 2
+haproxy_backend_connection_attempts_total{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:1a0c13c0-8e69-46c7-a68a-ca4937996d74"} 0
+haproxy_backend_connection_attempts_total{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:0b248d39-eb90-4180-91aa-5363be7df4db"} 0
+# HELP haproxy_backend_connection_reuses_total Total number of connection reuses.
+# TYPE haproxy_backend_connection_reuses_total counter
+haproxy_backend_connection_reuses_total{proxy="prometheus-exporter-internal"} 0
+haproxy_backend_connection_reuses_total{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:1a0c13c0-8e69-46c7-a68a-ca4937996d74"} 0
+haproxy_backend_connection_reuses_total{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:0b248d39-eb90-4180-91aa-5363be7df4db"} 0
+# HELP haproxy_backend_bytes_in_total Current total of incoming bytes.
+# TYPE haproxy_backend_bytes_in_total counter
+haproxy_backend_bytes_in_total{proxy="prometheus-exporter-internal"} 176
+haproxy_backend_bytes_in_total{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:1a0c13c0-8e69-46c7-a68a-ca4937996d74"} 0
+haproxy_backend_bytes_in_total{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:0b248d39-eb90-4180-91aa-5363be7df4db"} 0
+# HELP haproxy_backend_bytes_out_total Current total of outgoing bytes.
+# TYPE haproxy_backend_bytes_out_total counter
+haproxy_backend_bytes_out_total{proxy="prometheus-exporter-internal"} 145918
+haproxy_backend_bytes_out_total{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:1a0c13c0-8e69-46c7-a68a-ca4937996d74"} 0
+haproxy_backend_bytes_out_total{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:0b248d39-eb90-4180-91aa-5363be7df4db"} 0
+# HELP haproxy_backend_queue_time_average_seconds Avg. queue time for last 1024 successful connections.
+# TYPE haproxy_backend_queue_time_average_seconds gauge
+haproxy_backend_queue_time_average_seconds{proxy="prometheus-exporter-internal"} 0.000000
+haproxy_backend_queue_time_average_seconds{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:1a0c13c0-8e69-46c7-a68a-ca4937996d74"} 0.000000
+haproxy_backend_queue_time_average_seconds{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:0b248d39-eb90-4180-91aa-5363be7df4db"} 0.000000
+# HELP haproxy_backend_connect_time_average_seconds Avg. connect time for last 1024 successful connections.
+# TYPE haproxy_backend_connect_time_average_seconds gauge
+haproxy_backend_connect_time_average_seconds{proxy="prometheus-exporter-internal"} 0.000000
+haproxy_backend_connect_time_average_seconds{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:1a0c13c0-8e69-46c7-a68a-ca4937996d74"} 0.000000
+haproxy_backend_connect_time_average_seconds{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:0b248d39-eb90-4180-91aa-5363be7df4db"} 0.000000
+# HELP haproxy_backend_response_time_average_seconds Avg. response time for last 1024 successful connections.
+# TYPE haproxy_backend_response_time_average_seconds gauge
+haproxy_backend_response_time_average_seconds{proxy="prometheus-exporter-internal"} 0.001000
+haproxy_backend_response_time_average_seconds{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:1a0c13c0-8e69-46c7-a68a-ca4937996d74"} 0.000000
+haproxy_backend_response_time_average_seconds{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:0b248d39-eb90-4180-91aa-5363be7df4db"} 0.000000
+# HELP haproxy_backend_total_time_average_seconds Avg. total time for last 1024 successful connections.
+# TYPE haproxy_backend_total_time_average_seconds gauge
+haproxy_backend_total_time_average_seconds{proxy="prometheus-exporter-internal"} 0.001000
+haproxy_backend_total_time_average_seconds{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:1a0c13c0-8e69-46c7-a68a-ca4937996d74"} 0.000000
+haproxy_backend_total_time_average_seconds{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:0b248d39-eb90-4180-91aa-5363be7df4db"} 0.000000
+# HELP haproxy_backend_max_queue_time_seconds Maximum observed time spent in the queue
+# TYPE haproxy_backend_max_queue_time_seconds gauge
+haproxy_backend_max_queue_time_seconds{proxy="prometheus-exporter-internal"} 0.000000
+haproxy_backend_max_queue_time_seconds{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:1a0c13c0-8e69-46c7-a68a-ca4937996d74"} 0.000000
+haproxy_backend_max_queue_time_seconds{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:0b248d39-eb90-4180-91aa-5363be7df4db"} 0.000000
+# HELP haproxy_backend_max_connect_time_seconds Maximum observed time spent waiting for a connection to complete
+# TYPE haproxy_backend_max_connect_time_seconds gauge
+haproxy_backend_max_connect_time_seconds{proxy="prometheus-exporter-internal"} 0.001000
+haproxy_backend_max_connect_time_seconds{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:1a0c13c0-8e69-46c7-a68a-ca4937996d74"} 0.000000
+haproxy_backend_max_connect_time_seconds{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:0b248d39-eb90-4180-91aa-5363be7df4db"} 0.000000
+# HELP haproxy_backend_max_response_time_seconds Maximum observed time spent waiting for a server response
+# TYPE haproxy_backend_max_response_time_seconds gauge
+haproxy_backend_max_response_time_seconds{proxy="prometheus-exporter-internal"} 0.038000
+haproxy_backend_max_response_time_seconds{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:1a0c13c0-8e69-46c7-a68a-ca4937996d74"} 0.000000
+haproxy_backend_max_response_time_seconds{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:0b248d39-eb90-4180-91aa-5363be7df4db"} 0.000000
+# HELP haproxy_backend_max_total_time_seconds Maximum observed total request+response time (request+queue+connect+response+processing)
+# TYPE haproxy_backend_max_total_time_seconds gauge
+haproxy_backend_max_total_time_seconds{proxy="prometheus-exporter-internal"} 0.038000
+haproxy_backend_max_total_time_seconds{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:1a0c13c0-8e69-46c7-a68a-ca4937996d74"} 0.000000
+haproxy_backend_max_total_time_seconds{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:0b248d39-eb90-4180-91aa-5363be7df4db"} 0.000000
+# HELP haproxy_backend_requests_denied_total Total number of denied requests.
+# TYPE haproxy_backend_requests_denied_total counter
+haproxy_backend_requests_denied_total{proxy="prometheus-exporter-internal"} 0
+haproxy_backend_requests_denied_total{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:1a0c13c0-8e69-46c7-a68a-ca4937996d74"} 0
+haproxy_backend_requests_denied_total{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:0b248d39-eb90-4180-91aa-5363be7df4db"} 0
+# HELP haproxy_backend_responses_denied_total Total number of denied responses.
+# TYPE haproxy_backend_responses_denied_total counter
+haproxy_backend_responses_denied_total{proxy="prometheus-exporter-internal"} 0
+haproxy_backend_responses_denied_total{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:1a0c13c0-8e69-46c7-a68a-ca4937996d74"} 0
+haproxy_backend_responses_denied_total{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:0b248d39-eb90-4180-91aa-5363be7df4db"} 0
+# HELP haproxy_backend_connection_errors_total Total number of connection errors.
+# TYPE haproxy_backend_connection_errors_total counter
+haproxy_backend_connection_errors_total{proxy="prometheus-exporter-internal"} 0
+haproxy_backend_connection_errors_total{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:1a0c13c0-8e69-46c7-a68a-ca4937996d74"} 0
+haproxy_backend_connection_errors_total{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:0b248d39-eb90-4180-91aa-5363be7df4db"} 0
+# HELP haproxy_backend_response_errors_total Total number of response errors.
+# TYPE haproxy_backend_response_errors_total counter
+haproxy_backend_response_errors_total{proxy="prometheus-exporter-internal"} 0
+haproxy_backend_response_errors_total{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:1a0c13c0-8e69-46c7-a68a-ca4937996d74"} 0
+haproxy_backend_response_errors_total{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:0b248d39-eb90-4180-91aa-5363be7df4db"} 0
+# HELP haproxy_backend_retry_warnings_total Total number of retry warnings.
+# TYPE haproxy_backend_retry_warnings_total counter
+haproxy_backend_retry_warnings_total{proxy="prometheus-exporter-internal"} 0
+haproxy_backend_retry_warnings_total{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:1a0c13c0-8e69-46c7-a68a-ca4937996d74"} 0
+haproxy_backend_retry_warnings_total{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:0b248d39-eb90-4180-91aa-5363be7df4db"} 0
+# HELP haproxy_backend_redispatch_warnings_total Total number of redispatch warnings.
+# TYPE haproxy_backend_redispatch_warnings_total counter
+haproxy_backend_redispatch_warnings_total{proxy="prometheus-exporter-internal"} 0
+haproxy_backend_redispatch_warnings_total{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:1a0c13c0-8e69-46c7-a68a-ca4937996d74"} 0
+haproxy_backend_redispatch_warnings_total{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:0b248d39-eb90-4180-91aa-5363be7df4db"} 0
+# HELP haproxy_backend_failed_header_rewriting_total Total number of failed header rewriting warnings.
+# TYPE haproxy_backend_failed_header_rewriting_total counter
+haproxy_backend_failed_header_rewriting_total{proxy="prometheus-exporter-internal"} 0
+haproxy_backend_failed_header_rewriting_total{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:1a0c13c0-8e69-46c7-a68a-ca4937996d74"} 0
+haproxy_backend_failed_header_rewriting_total{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:0b248d39-eb90-4180-91aa-5363be7df4db"} 0
+# HELP haproxy_backend_client_aborts_total Total number of data transfers aborted by the client.
+# TYPE haproxy_backend_client_aborts_total counter
+haproxy_backend_client_aborts_total{proxy="prometheus-exporter-internal"} 0
+haproxy_backend_client_aborts_total{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:1a0c13c0-8e69-46c7-a68a-ca4937996d74"} 0
+haproxy_backend_client_aborts_total{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:0b248d39-eb90-4180-91aa-5363be7df4db"} 0
+# HELP haproxy_backend_server_aborts_total Total number of data transfers aborted by the server.
+# TYPE haproxy_backend_server_aborts_total counter
+haproxy_backend_server_aborts_total{proxy="prometheus-exporter-internal"} 0
+haproxy_backend_server_aborts_total{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:1a0c13c0-8e69-46c7-a68a-ca4937996d74"} 0
+haproxy_backend_server_aborts_total{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:0b248d39-eb90-4180-91aa-5363be7df4db"} 0
+# HELP haproxy_backend_weight Service weight.
+# TYPE haproxy_backend_weight gauge
+haproxy_backend_weight{proxy="prometheus-exporter-internal"} 1
+haproxy_backend_weight{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:1a0c13c0-8e69-46c7-a68a-ca4937996d74"} 0
+haproxy_backend_weight{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:0b248d39-eb90-4180-91aa-5363be7df4db"} 0
+# HELP haproxy_backend_active_servers Current number of active servers.
+# TYPE haproxy_backend_active_servers gauge
+haproxy_backend_active_servers{proxy="prometheus-exporter-internal"} 1
+haproxy_backend_active_servers{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:1a0c13c0-8e69-46c7-a68a-ca4937996d74"} 0
+haproxy_backend_active_servers{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:0b248d39-eb90-4180-91aa-5363be7df4db"} 0
+# HELP haproxy_backend_backup_servers Current number of backup servers.
+# TYPE haproxy_backend_backup_servers gauge
+haproxy_backend_backup_servers{proxy="prometheus-exporter-internal"} 0
+haproxy_backend_backup_servers{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:1a0c13c0-8e69-46c7-a68a-ca4937996d74"} 0
+haproxy_backend_backup_servers{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:0b248d39-eb90-4180-91aa-5363be7df4db"} 0
+# HELP haproxy_backend_check_up_down_total Total number of UP->DOWN transitions.
+# TYPE haproxy_backend_check_up_down_total counter
+haproxy_backend_check_up_down_total{proxy="prometheus-exporter-internal"} 0
+haproxy_backend_check_up_down_total{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:1a0c13c0-8e69-46c7-a68a-ca4937996d74"} 1
+haproxy_backend_check_up_down_total{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:0b248d39-eb90-4180-91aa-5363be7df4db"} 1
+# HELP haproxy_backend_check_last_change_seconds Number of seconds since the last UP<->DOWN transition.
+# TYPE haproxy_backend_check_last_change_seconds gauge
+haproxy_backend_check_last_change_seconds{proxy="prometheus-exporter-internal"} 3378
+haproxy_backend_check_last_change_seconds{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:1a0c13c0-8e69-46c7-a68a-ca4937996d74"} 3352
+haproxy_backend_check_last_change_seconds{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:0b248d39-eb90-4180-91aa-5363be7df4db"} 3349
+# HELP haproxy_backend_downtime_seconds_total Total downtime (in seconds) for the service.
+# TYPE haproxy_backend_downtime_seconds_total counter
+haproxy_backend_downtime_seconds_total{proxy="prometheus-exporter-internal"} 0
+haproxy_backend_downtime_seconds_total{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:1a0c13c0-8e69-46c7-a68a-ca4937996d74"} 3352
+haproxy_backend_downtime_seconds_total{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:0b248d39-eb90-4180-91aa-5363be7df4db"} 3349
+# HELP haproxy_backend_loadbalanced_total Total number of times a service was selected, either for new sessions, or when redispatching.
+# TYPE haproxy_backend_loadbalanced_total counter
+haproxy_backend_loadbalanced_total{proxy="prometheus-exporter-internal"} 2
+haproxy_backend_loadbalanced_total{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:1a0c13c0-8e69-46c7-a68a-ca4937996d74"} 0
+haproxy_backend_loadbalanced_total{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:0b248d39-eb90-4180-91aa-5363be7df4db"} 0
+# HELP haproxy_backend_http_requests_total Total number of HTTP requests received.
+# TYPE haproxy_backend_http_requests_total counter
+haproxy_backend_http_requests_total{proxy="prometheus-exporter-internal"} 2
+haproxy_backend_http_requests_total{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:1a0c13c0-8e69-46c7-a68a-ca4937996d74"} 0
+haproxy_backend_http_requests_total{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:0b248d39-eb90-4180-91aa-5363be7df4db"} 0
+# HELP haproxy_backend_http_responses_total Total number of HTTP responses.
+# TYPE haproxy_backend_http_responses_total counter
+haproxy_backend_http_responses_total{proxy="prometheus-exporter-internal",code="1xx"} 0
+haproxy_backend_http_responses_total{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:1a0c13c0-8e69-46c7-a68a-ca4937996d74",code="1xx"} 0
+haproxy_backend_http_responses_total{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:0b248d39-eb90-4180-91aa-5363be7df4db",code="1xx"} 0
+haproxy_backend_http_responses_total{proxy="prometheus-exporter-internal",code="2xx"} 2
+haproxy_backend_http_responses_total{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:1a0c13c0-8e69-46c7-a68a-ca4937996d74",code="2xx"} 0
+haproxy_backend_http_responses_total{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:0b248d39-eb90-4180-91aa-5363be7df4db",code="2xx"} 0
+haproxy_backend_http_responses_total{proxy="prometheus-exporter-internal",code="3xx"} 0
+haproxy_backend_http_responses_total{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:1a0c13c0-8e69-46c7-a68a-ca4937996d74",code="3xx"} 0
+haproxy_backend_http_responses_total{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:0b248d39-eb90-4180-91aa-5363be7df4db",code="3xx"} 0
+haproxy_backend_http_responses_total{proxy="prometheus-exporter-internal",code="4xx"} 0
+haproxy_backend_http_responses_total{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:1a0c13c0-8e69-46c7-a68a-ca4937996d74",code="4xx"} 0
+haproxy_backend_http_responses_total{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:0b248d39-eb90-4180-91aa-5363be7df4db",code="4xx"} 0
+haproxy_backend_http_responses_total{proxy="prometheus-exporter-internal",code="5xx"} 0
+haproxy_backend_http_responses_total{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:1a0c13c0-8e69-46c7-a68a-ca4937996d74",code="5xx"} 0
+haproxy_backend_http_responses_total{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:0b248d39-eb90-4180-91aa-5363be7df4db",code="5xx"} 0
+haproxy_backend_http_responses_total{proxy="prometheus-exporter-internal",code="other"} 0
+haproxy_backend_http_responses_total{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:1a0c13c0-8e69-46c7-a68a-ca4937996d74",code="other"} 0
+haproxy_backend_http_responses_total{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:0b248d39-eb90-4180-91aa-5363be7df4db",code="other"} 0
+# HELP haproxy_backend_http_cache_lookups_total Total number of HTTP cache lookups.
+# TYPE haproxy_backend_http_cache_lookups_total counter
+haproxy_backend_http_cache_lookups_total{proxy="prometheus-exporter-internal"} 0
+haproxy_backend_http_cache_lookups_total{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:1a0c13c0-8e69-46c7-a68a-ca4937996d74"} 0
+haproxy_backend_http_cache_lookups_total{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:0b248d39-eb90-4180-91aa-5363be7df4db"} 0
+# HELP haproxy_backend_http_cache_hits_total Total number of HTTP cache hits.
+# TYPE haproxy_backend_http_cache_hits_total counter
+haproxy_backend_http_cache_hits_total{proxy="prometheus-exporter-internal"} 0
+haproxy_backend_http_cache_hits_total{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:1a0c13c0-8e69-46c7-a68a-ca4937996d74"} 0
+haproxy_backend_http_cache_hits_total{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:0b248d39-eb90-4180-91aa-5363be7df4db"} 0
+# HELP haproxy_backend_http_comp_bytes_in_total Total number of HTTP response bytes fed to the compressor.
+# TYPE haproxy_backend_http_comp_bytes_in_total counter
+haproxy_backend_http_comp_bytes_in_total{proxy="prometheus-exporter-internal"} 0
+haproxy_backend_http_comp_bytes_in_total{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:1a0c13c0-8e69-46c7-a68a-ca4937996d74"} 0
+haproxy_backend_http_comp_bytes_in_total{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:0b248d39-eb90-4180-91aa-5363be7df4db"} 0
+# HELP haproxy_backend_http_comp_bytes_out_total Total number of HTTP response bytes emitted by the compressor.
+# TYPE haproxy_backend_http_comp_bytes_out_total counter
+haproxy_backend_http_comp_bytes_out_total{proxy="prometheus-exporter-internal"} 0
+haproxy_backend_http_comp_bytes_out_total{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:1a0c13c0-8e69-46c7-a68a-ca4937996d74"} 0
+haproxy_backend_http_comp_bytes_out_total{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:0b248d39-eb90-4180-91aa-5363be7df4db"} 0
+# HELP haproxy_backend_http_comp_bytes_bypassed_total Total number of bytes that bypassed the HTTP compressor (CPU/BW limit).
+# TYPE haproxy_backend_http_comp_bytes_bypassed_total counter
+haproxy_backend_http_comp_bytes_bypassed_total{proxy="prometheus-exporter-internal"} 0
+haproxy_backend_http_comp_bytes_bypassed_total{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:1a0c13c0-8e69-46c7-a68a-ca4937996d74"} 0
+haproxy_backend_http_comp_bytes_bypassed_total{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:0b248d39-eb90-4180-91aa-5363be7df4db"} 0
+# HELP haproxy_backend_http_comp_responses_total Total number of HTTP responses that were compressed.
+# TYPE haproxy_backend_http_comp_responses_total counter
+haproxy_backend_http_comp_responses_total{proxy="prometheus-exporter-internal"} 0
+haproxy_backend_http_comp_responses_total{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:1a0c13c0-8e69-46c7-a68a-ca4937996d74"} 0
+haproxy_backend_http_comp_responses_total{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:0b248d39-eb90-4180-91aa-5363be7df4db"} 0
+# HELP haproxy_server_status Current status of the service (frontend: 0=STOP, 1=UP, 2=FULL - backend: 0=DOWN, 1=UP - server: 0=DOWN, 1=UP, 2=MAINT, 3=DRAIN, 4=NOLB).
+# TYPE haproxy_server_status gauge
+haproxy_server_status{proxy="prometheus-exporter-internal",server="prometheus-internal"} 1
+haproxy_server_status{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:1a0c13c0-8e69-46c7-a68a-ca4937996d74",server="edf6ca81-b5d5-4d94-a656-f6028d8bbb77"} 0
+haproxy_server_status{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:1a0c13c0-8e69-46c7-a68a-ca4937996d74",server="88ee5795-d594-478b-8591-455acf30164f"} 0
+haproxy_server_status{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:0b248d39-eb90-4180-91aa-5363be7df4db",server="edf6ca81-b5d5-4d94-a656-f6028d8bbb77"} 0
+haproxy_server_status{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:0b248d39-eb90-4180-91aa-5363be7df4db",server="88ee5795-d594-478b-8591-455acf30164f"} 0
+# HELP haproxy_server_current_sessions Current number of active sessions.
+# TYPE haproxy_server_current_sessions gauge
+haproxy_server_current_sessions{proxy="prometheus-exporter-internal",server="prometheus-internal"} 0
+haproxy_server_current_sessions{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:1a0c13c0-8e69-46c7-a68a-ca4937996d74",server="edf6ca81-b5d5-4d94-a656-f6028d8bbb77"} 0
+haproxy_server_current_sessions{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:1a0c13c0-8e69-46c7-a68a-ca4937996d74",server="88ee5795-d594-478b-8591-455acf30164f"} 0
+haproxy_server_current_sessions{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:0b248d39-eb90-4180-91aa-5363be7df4db",server="edf6ca81-b5d5-4d94-a656-f6028d8bbb77"} 0
+haproxy_server_current_sessions{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:0b248d39-eb90-4180-91aa-5363be7df4db",server="88ee5795-d594-478b-8591-455acf30164f"} 0
+# HELP haproxy_server_max_sessions Maximum observed number of active sessions.
+# TYPE haproxy_server_max_sessions gauge
+haproxy_server_max_sessions{proxy="prometheus-exporter-internal",server="prometheus-internal"} 1
+haproxy_server_max_sessions{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:1a0c13c0-8e69-46c7-a68a-ca4937996d74",server="edf6ca81-b5d5-4d94-a656-f6028d8bbb77"} 0
+haproxy_server_max_sessions{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:1a0c13c0-8e69-46c7-a68a-ca4937996d74",server="88ee5795-d594-478b-8591-455acf30164f"} 0
+haproxy_server_max_sessions{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:0b248d39-eb90-4180-91aa-5363be7df4db",server="edf6ca81-b5d5-4d94-a656-f6028d8bbb77"} 0
+haproxy_server_max_sessions{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:0b248d39-eb90-4180-91aa-5363be7df4db",server="88ee5795-d594-478b-8591-455acf30164f"} 0
+# HELP haproxy_server_limit_sessions Configured session limit.
+# TYPE haproxy_server_limit_sessions gauge
+haproxy_server_limit_sessions{proxy="prometheus-exporter-internal",server="prometheus-internal"} 0
+haproxy_server_limit_sessions{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:1a0c13c0-8e69-46c7-a68a-ca4937996d74",server="edf6ca81-b5d5-4d94-a656-f6028d8bbb77"} 0
+haproxy_server_limit_sessions{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:1a0c13c0-8e69-46c7-a68a-ca4937996d74",server="88ee5795-d594-478b-8591-455acf30164f"} 0
+haproxy_server_limit_sessions{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:0b248d39-eb90-4180-91aa-5363be7df4db",server="edf6ca81-b5d5-4d94-a656-f6028d8bbb77"} 0
+haproxy_server_limit_sessions{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:0b248d39-eb90-4180-91aa-5363be7df4db",server="88ee5795-d594-478b-8591-455acf30164f"} 0
+# HELP haproxy_server_sessions_total Total number of sessions.
+# TYPE haproxy_server_sessions_total counter
+haproxy_server_sessions_total{proxy="prometheus-exporter-internal",server="prometheus-internal"} 2
+haproxy_server_sessions_total{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:1a0c13c0-8e69-46c7-a68a-ca4937996d74",server="edf6ca81-b5d5-4d94-a656-f6028d8bbb77"} 0
+haproxy_server_sessions_total{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:1a0c13c0-8e69-46c7-a68a-ca4937996d74",server="88ee5795-d594-478b-8591-455acf30164f"} 0
+haproxy_server_sessions_total{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:0b248d39-eb90-4180-91aa-5363be7df4db",server="edf6ca81-b5d5-4d94-a656-f6028d8bbb77"} 0
+haproxy_server_sessions_total{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:0b248d39-eb90-4180-91aa-5363be7df4db",server="88ee5795-d594-478b-8591-455acf30164f"} 0
+# HELP haproxy_server_max_session_rate Maximum observed number of sessions per second.
+# TYPE haproxy_server_max_session_rate gauge
+haproxy_server_max_session_rate{proxy="prometheus-exporter-internal",server="prometheus-internal"} 1
+haproxy_server_max_session_rate{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:1a0c13c0-8e69-46c7-a68a-ca4937996d74",server="edf6ca81-b5d5-4d94-a656-f6028d8bbb77"} 0
+haproxy_server_max_session_rate{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:1a0c13c0-8e69-46c7-a68a-ca4937996d74",server="88ee5795-d594-478b-8591-455acf30164f"} 0
+haproxy_server_max_session_rate{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:0b248d39-eb90-4180-91aa-5363be7df4db",server="edf6ca81-b5d5-4d94-a656-f6028d8bbb77"} 0
+haproxy_server_max_session_rate{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:0b248d39-eb90-4180-91aa-5363be7df4db",server="88ee5795-d594-478b-8591-455acf30164f"} 0
+# HELP haproxy_server_last_session_seconds Number of seconds since last session assigned to server/backend.
+# TYPE haproxy_server_last_session_seconds gauge
+haproxy_server_last_session_seconds{proxy="prometheus-exporter-internal",server="prometheus-internal"} 1829
+haproxy_server_last_session_seconds{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:1a0c13c0-8e69-46c7-a68a-ca4937996d74",server="edf6ca81-b5d5-4d94-a656-f6028d8bbb77"} -1
+haproxy_server_last_session_seconds{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:1a0c13c0-8e69-46c7-a68a-ca4937996d74",server="88ee5795-d594-478b-8591-455acf30164f"} -1
+haproxy_server_last_session_seconds{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:0b248d39-eb90-4180-91aa-5363be7df4db",server="edf6ca81-b5d5-4d94-a656-f6028d8bbb77"} -1
+haproxy_server_last_session_seconds{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:0b248d39-eb90-4180-91aa-5363be7df4db",server="88ee5795-d594-478b-8591-455acf30164f"} -1
+# HELP haproxy_server_current_queue Current number of queued requests.
+# TYPE haproxy_server_current_queue gauge
+haproxy_server_current_queue{proxy="prometheus-exporter-internal",server="prometheus-internal"} 0
+haproxy_server_current_queue{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:1a0c13c0-8e69-46c7-a68a-ca4937996d74",server="edf6ca81-b5d5-4d94-a656-f6028d8bbb77"} 0
+haproxy_server_current_queue{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:1a0c13c0-8e69-46c7-a68a-ca4937996d74",server="88ee5795-d594-478b-8591-455acf30164f"} 0
+haproxy_server_current_queue{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:0b248d39-eb90-4180-91aa-5363be7df4db",server="edf6ca81-b5d5-4d94-a656-f6028d8bbb77"} 0
+haproxy_server_current_queue{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:0b248d39-eb90-4180-91aa-5363be7df4db",server="88ee5795-d594-478b-8591-455acf30164f"} 0
+# HELP haproxy_server_max_queue Maximum observed number of queued requests.
+# TYPE haproxy_server_max_queue gauge
+haproxy_server_max_queue{proxy="prometheus-exporter-internal",server="prometheus-internal"} 0
+haproxy_server_max_queue{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:1a0c13c0-8e69-46c7-a68a-ca4937996d74",server="edf6ca81-b5d5-4d94-a656-f6028d8bbb77"} 0
+haproxy_server_max_queue{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:1a0c13c0-8e69-46c7-a68a-ca4937996d74",server="88ee5795-d594-478b-8591-455acf30164f"} 0
+haproxy_server_max_queue{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:0b248d39-eb90-4180-91aa-5363be7df4db",server="edf6ca81-b5d5-4d94-a656-f6028d8bbb77"} 0
+haproxy_server_max_queue{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:0b248d39-eb90-4180-91aa-5363be7df4db",server="88ee5795-d594-478b-8591-455acf30164f"} 0
+# HELP haproxy_server_queue_limit Configured maxqueue for the server (0 meaning no limit).
+# TYPE haproxy_server_queue_limit gauge
+haproxy_server_queue_limit{proxy="prometheus-exporter-internal",server="prometheus-internal"} 0
+haproxy_server_queue_limit{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:1a0c13c0-8e69-46c7-a68a-ca4937996d74",server="edf6ca81-b5d5-4d94-a656-f6028d8bbb77"} 0
+haproxy_server_queue_limit{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:1a0c13c0-8e69-46c7-a68a-ca4937996d74",server="88ee5795-d594-478b-8591-455acf30164f"} 0
+haproxy_server_queue_limit{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:0b248d39-eb90-4180-91aa-5363be7df4db",server="edf6ca81-b5d5-4d94-a656-f6028d8bbb77"} 0
+haproxy_server_queue_limit{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:0b248d39-eb90-4180-91aa-5363be7df4db",server="88ee5795-d594-478b-8591-455acf30164f"} 0
+# HELP haproxy_server_bytes_in_total Current total of incoming bytes.
+# TYPE haproxy_server_bytes_in_total counter
+haproxy_server_bytes_in_total{proxy="prometheus-exporter-internal",server="prometheus-internal"} 176
+haproxy_server_bytes_in_total{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:1a0c13c0-8e69-46c7-a68a-ca4937996d74",server="edf6ca81-b5d5-4d94-a656-f6028d8bbb77"} 0
+haproxy_server_bytes_in_total{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:1a0c13c0-8e69-46c7-a68a-ca4937996d74",server="88ee5795-d594-478b-8591-455acf30164f"} 0
+haproxy_server_bytes_in_total{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:0b248d39-eb90-4180-91aa-5363be7df4db",server="edf6ca81-b5d5-4d94-a656-f6028d8bbb77"} 0
+haproxy_server_bytes_in_total{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:0b248d39-eb90-4180-91aa-5363be7df4db",server="88ee5795-d594-478b-8591-455acf30164f"} 0
+# HELP haproxy_server_bytes_out_total Current total of outgoing bytes.
+# TYPE haproxy_server_bytes_out_total counter
+haproxy_server_bytes_out_total{proxy="prometheus-exporter-internal",server="prometheus-internal"} 145918
+haproxy_server_bytes_out_total{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:1a0c13c0-8e69-46c7-a68a-ca4937996d74",server="edf6ca81-b5d5-4d94-a656-f6028d8bbb77"} 0
+haproxy_server_bytes_out_total{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:1a0c13c0-8e69-46c7-a68a-ca4937996d74",server="88ee5795-d594-478b-8591-455acf30164f"} 0
+haproxy_server_bytes_out_total{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:0b248d39-eb90-4180-91aa-5363be7df4db",server="edf6ca81-b5d5-4d94-a656-f6028d8bbb77"} 0
+haproxy_server_bytes_out_total{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:0b248d39-eb90-4180-91aa-5363be7df4db",server="88ee5795-d594-478b-8591-455acf30164f"} 0
+# HELP haproxy_server_queue_time_average_seconds Avg. queue time for last 1024 successful connections.
+# TYPE haproxy_server_queue_time_average_seconds gauge
+haproxy_server_queue_time_average_seconds{proxy="prometheus-exporter-internal",server="prometheus-internal"} 0.000000
+haproxy_server_queue_time_average_seconds{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:1a0c13c0-8e69-46c7-a68a-ca4937996d74",server="edf6ca81-b5d5-4d94-a656-f6028d8bbb77"} 0.000000
+haproxy_server_queue_time_average_seconds{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:1a0c13c0-8e69-46c7-a68a-ca4937996d74",server="88ee5795-d594-478b-8591-455acf30164f"} 0.000000
+haproxy_server_queue_time_average_seconds{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:0b248d39-eb90-4180-91aa-5363be7df4db",server="edf6ca81-b5d5-4d94-a656-f6028d8bbb77"} 0.000000
+haproxy_server_queue_time_average_seconds{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:0b248d39-eb90-4180-91aa-5363be7df4db",server="88ee5795-d594-478b-8591-455acf30164f"} 0.000000
+# HELP haproxy_server_connect_time_average_seconds Avg. connect time for last 1024 successful connections.
+# TYPE haproxy_server_connect_time_average_seconds gauge
+haproxy_server_connect_time_average_seconds{proxy="prometheus-exporter-internal",server="prometheus-internal"} 0.000000
+haproxy_server_connect_time_average_seconds{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:1a0c13c0-8e69-46c7-a68a-ca4937996d74",server="edf6ca81-b5d5-4d94-a656-f6028d8bbb77"} 0.000000
+haproxy_server_connect_time_average_seconds{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:1a0c13c0-8e69-46c7-a68a-ca4937996d74",server="88ee5795-d594-478b-8591-455acf30164f"} 0.000000
+haproxy_server_connect_time_average_seconds{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:0b248d39-eb90-4180-91aa-5363be7df4db",server="edf6ca81-b5d5-4d94-a656-f6028d8bbb77"} 0.000000
+haproxy_server_connect_time_average_seconds{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:0b248d39-eb90-4180-91aa-5363be7df4db",server="88ee5795-d594-478b-8591-455acf30164f"} 0.000000
+# HELP haproxy_server_response_time_average_seconds Avg. response time for last 1024 successful connections.
+# TYPE haproxy_server_response_time_average_seconds gauge
+haproxy_server_response_time_average_seconds{proxy="prometheus-exporter-internal",server="prometheus-internal"} 0.001000
+haproxy_server_response_time_average_seconds{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:1a0c13c0-8e69-46c7-a68a-ca4937996d74",server="edf6ca81-b5d5-4d94-a656-f6028d8bbb77"} 0.000000
+haproxy_server_response_time_average_seconds{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:1a0c13c0-8e69-46c7-a68a-ca4937996d74",server="88ee5795-d594-478b-8591-455acf30164f"} 0.000000
+haproxy_server_response_time_average_seconds{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:0b248d39-eb90-4180-91aa-5363be7df4db",server="edf6ca81-b5d5-4d94-a656-f6028d8bbb77"} 0.000000
+haproxy_server_response_time_average_seconds{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:0b248d39-eb90-4180-91aa-5363be7df4db",server="88ee5795-d594-478b-8591-455acf30164f"} 0.000000
+# HELP haproxy_server_total_time_average_seconds Avg. total time for last 1024 successful connections.
+# TYPE haproxy_server_total_time_average_seconds gauge
+haproxy_server_total_time_average_seconds{proxy="prometheus-exporter-internal",server="prometheus-internal"} 0.001000
+haproxy_server_total_time_average_seconds{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:1a0c13c0-8e69-46c7-a68a-ca4937996d74",server="edf6ca81-b5d5-4d94-a656-f6028d8bbb77"} 0.000000
+haproxy_server_total_time_average_seconds{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:1a0c13c0-8e69-46c7-a68a-ca4937996d74",server="88ee5795-d594-478b-8591-455acf30164f"} 0.000000
+haproxy_server_total_time_average_seconds{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:0b248d39-eb90-4180-91aa-5363be7df4db",server="edf6ca81-b5d5-4d94-a656-f6028d8bbb77"} 0.000000
+haproxy_server_total_time_average_seconds{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:0b248d39-eb90-4180-91aa-5363be7df4db",server="88ee5795-d594-478b-8591-455acf30164f"} 0.000000
+# HELP haproxy_server_max_queue_time_seconds Maximum observed time spent in the queue
+# TYPE haproxy_server_max_queue_time_seconds gauge
+haproxy_server_max_queue_time_seconds{proxy="prometheus-exporter-internal",server="prometheus-internal"} 0.000000
+haproxy_server_max_queue_time_seconds{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:1a0c13c0-8e69-46c7-a68a-ca4937996d74",server="edf6ca81-b5d5-4d94-a656-f6028d8bbb77"} 0.000000
+haproxy_server_max_queue_time_seconds{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:1a0c13c0-8e69-46c7-a68a-ca4937996d74",server="88ee5795-d594-478b-8591-455acf30164f"} 0.000000
+haproxy_server_max_queue_time_seconds{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:0b248d39-eb90-4180-91aa-5363be7df4db",server="edf6ca81-b5d5-4d94-a656-f6028d8bbb77"} 0.000000
+haproxy_server_max_queue_time_seconds{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:0b248d39-eb90-4180-91aa-5363be7df4db",server="88ee5795-d594-478b-8591-455acf30164f"} 0.000000
+# HELP haproxy_server_max_connect_time_seconds Maximum observed time spent waiting for a connection to complete
+# TYPE haproxy_server_max_connect_time_seconds gauge
+haproxy_server_max_connect_time_seconds{proxy="prometheus-exporter-internal",server="prometheus-internal"} 0.001000
+haproxy_server_max_connect_time_seconds{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:1a0c13c0-8e69-46c7-a68a-ca4937996d74",server="edf6ca81-b5d5-4d94-a656-f6028d8bbb77"} 0.000000
+haproxy_server_max_connect_time_seconds{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:1a0c13c0-8e69-46c7-a68a-ca4937996d74",server="88ee5795-d594-478b-8591-455acf30164f"} 0.000000
+haproxy_server_max_connect_time_seconds{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:0b248d39-eb90-4180-91aa-5363be7df4db",server="edf6ca81-b5d5-4d94-a656-f6028d8bbb77"} 0.000000
+haproxy_server_max_connect_time_seconds{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:0b248d39-eb90-4180-91aa-5363be7df4db",server="88ee5795-d594-478b-8591-455acf30164f"} 0.000000
+# HELP haproxy_server_max_response_time_seconds Maximum observed time spent waiting for a server response
+# TYPE haproxy_server_max_response_time_seconds gauge
+haproxy_server_max_response_time_seconds{proxy="prometheus-exporter-internal",server="prometheus-internal"} 0.038000
+haproxy_server_max_response_time_seconds{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:1a0c13c0-8e69-46c7-a68a-ca4937996d74",server="edf6ca81-b5d5-4d94-a656-f6028d8bbb77"} 0.000000
+haproxy_server_max_response_time_seconds{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:1a0c13c0-8e69-46c7-a68a-ca4937996d74",server="88ee5795-d594-478b-8591-455acf30164f"} 0.000000
+haproxy_server_max_response_time_seconds{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:0b248d39-eb90-4180-91aa-5363be7df4db",server="edf6ca81-b5d5-4d94-a656-f6028d8bbb77"} 0.000000
+haproxy_server_max_response_time_seconds{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:0b248d39-eb90-4180-91aa-5363be7df4db",server="88ee5795-d594-478b-8591-455acf30164f"} 0.000000
+# HELP haproxy_server_max_total_time_seconds Maximum observed total request+response time (request+queue+connect+response+processing)
+# TYPE haproxy_server_max_total_time_seconds gauge
+haproxy_server_max_total_time_seconds{proxy="prometheus-exporter-internal",server="prometheus-internal"} 0.038000
+haproxy_server_max_total_time_seconds{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:1a0c13c0-8e69-46c7-a68a-ca4937996d74",server="edf6ca81-b5d5-4d94-a656-f6028d8bbb77"} 0.000000
+haproxy_server_max_total_time_seconds{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:1a0c13c0-8e69-46c7-a68a-ca4937996d74",server="88ee5795-d594-478b-8591-455acf30164f"} 0.000000
+haproxy_server_max_total_time_seconds{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:0b248d39-eb90-4180-91aa-5363be7df4db",server="edf6ca81-b5d5-4d94-a656-f6028d8bbb77"} 0.000000
+haproxy_server_max_total_time_seconds{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:0b248d39-eb90-4180-91aa-5363be7df4db",server="88ee5795-d594-478b-8591-455acf30164f"} 0.000000
+# HELP haproxy_server_connection_attempts_total Total number of connection establishment attempts.
+# TYPE haproxy_server_connection_attempts_total counter
+haproxy_server_connection_attempts_total{proxy="prometheus-exporter-internal",server="prometheus-internal"} 2
+haproxy_server_connection_attempts_total{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:1a0c13c0-8e69-46c7-a68a-ca4937996d74",server="edf6ca81-b5d5-4d94-a656-f6028d8bbb77"} 0
+haproxy_server_connection_attempts_total{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:1a0c13c0-8e69-46c7-a68a-ca4937996d74",server="88ee5795-d594-478b-8591-455acf30164f"} 0
+haproxy_server_connection_attempts_total{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:0b248d39-eb90-4180-91aa-5363be7df4db",server="edf6ca81-b5d5-4d94-a656-f6028d8bbb77"} 0
+haproxy_server_connection_attempts_total{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:0b248d39-eb90-4180-91aa-5363be7df4db",server="88ee5795-d594-478b-8591-455acf30164f"} 0
+# HELP haproxy_server_connection_reuses_total Total number of connection reuses.
+# TYPE haproxy_server_connection_reuses_total counter
+haproxy_server_connection_reuses_total{proxy="prometheus-exporter-internal",server="prometheus-internal"} 0
+haproxy_server_connection_reuses_total{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:1a0c13c0-8e69-46c7-a68a-ca4937996d74",server="edf6ca81-b5d5-4d94-a656-f6028d8bbb77"} 0
+haproxy_server_connection_reuses_total{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:1a0c13c0-8e69-46c7-a68a-ca4937996d74",server="88ee5795-d594-478b-8591-455acf30164f"} 0
+haproxy_server_connection_reuses_total{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:0b248d39-eb90-4180-91aa-5363be7df4db",server="edf6ca81-b5d5-4d94-a656-f6028d8bbb77"} 0
+haproxy_server_connection_reuses_total{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:0b248d39-eb90-4180-91aa-5363be7df4db",server="88ee5795-d594-478b-8591-455acf30164f"} 0
+# HELP haproxy_server_responses_denied_total Total number of denied responses.
+# TYPE haproxy_server_responses_denied_total counter
+haproxy_server_responses_denied_total{proxy="prometheus-exporter-internal",server="prometheus-internal"} 0
+haproxy_server_responses_denied_total{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:1a0c13c0-8e69-46c7-a68a-ca4937996d74",server="edf6ca81-b5d5-4d94-a656-f6028d8bbb77"} 0
+haproxy_server_responses_denied_total{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:1a0c13c0-8e69-46c7-a68a-ca4937996d74",server="88ee5795-d594-478b-8591-455acf30164f"} 0
+haproxy_server_responses_denied_total{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:0b248d39-eb90-4180-91aa-5363be7df4db",server="edf6ca81-b5d5-4d94-a656-f6028d8bbb77"} 0
+haproxy_server_responses_denied_total{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:0b248d39-eb90-4180-91aa-5363be7df4db",server="88ee5795-d594-478b-8591-455acf30164f"} 0
+# HELP haproxy_server_connection_errors_total Total number of connection errors.
+# TYPE haproxy_server_connection_errors_total counter
+haproxy_server_connection_errors_total{proxy="prometheus-exporter-internal",server="prometheus-internal"} 0
+haproxy_server_connection_errors_total{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:1a0c13c0-8e69-46c7-a68a-ca4937996d74",server="edf6ca81-b5d5-4d94-a656-f6028d8bbb77"} 0
+haproxy_server_connection_errors_total{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:1a0c13c0-8e69-46c7-a68a-ca4937996d74",server="88ee5795-d594-478b-8591-455acf30164f"} 0
+haproxy_server_connection_errors_total{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:0b248d39-eb90-4180-91aa-5363be7df4db",server="edf6ca81-b5d5-4d94-a656-f6028d8bbb77"} 0
+haproxy_server_connection_errors_total{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:0b248d39-eb90-4180-91aa-5363be7df4db",server="88ee5795-d594-478b-8591-455acf30164f"} 0
+# HELP haproxy_server_response_errors_total Total number of response errors.
+# TYPE haproxy_server_response_errors_total counter
+haproxy_server_response_errors_total{proxy="prometheus-exporter-internal",server="prometheus-internal"} 0
+haproxy_server_response_errors_total{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:1a0c13c0-8e69-46c7-a68a-ca4937996d74",server="edf6ca81-b5d5-4d94-a656-f6028d8bbb77"} 0
+haproxy_server_response_errors_total{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:1a0c13c0-8e69-46c7-a68a-ca4937996d74",server="88ee5795-d594-478b-8591-455acf30164f"} 0
+haproxy_server_response_errors_total{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:0b248d39-eb90-4180-91aa-5363be7df4db",server="edf6ca81-b5d5-4d94-a656-f6028d8bbb77"} 0
+haproxy_server_response_errors_total{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:0b248d39-eb90-4180-91aa-5363be7df4db",server="88ee5795-d594-478b-8591-455acf30164f"} 0
+# HELP haproxy_server_retry_warnings_total Total number of retry warnings.
+# TYPE haproxy_server_retry_warnings_total counter
+haproxy_server_retry_warnings_total{proxy="prometheus-exporter-internal",server="prometheus-internal"} 0
+haproxy_server_retry_warnings_total{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:1a0c13c0-8e69-46c7-a68a-ca4937996d74",server="edf6ca81-b5d5-4d94-a656-f6028d8bbb77"} 0
+haproxy_server_retry_warnings_total{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:1a0c13c0-8e69-46c7-a68a-ca4937996d74",server="88ee5795-d594-478b-8591-455acf30164f"} 0
+haproxy_server_retry_warnings_total{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:0b248d39-eb90-4180-91aa-5363be7df4db",server="edf6ca81-b5d5-4d94-a656-f6028d8bbb77"} 0
+haproxy_server_retry_warnings_total{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:0b248d39-eb90-4180-91aa-5363be7df4db",server="88ee5795-d594-478b-8591-455acf30164f"} 0
+# HELP haproxy_server_redispatch_warnings_total Total number of redispatch warnings.
+# TYPE haproxy_server_redispatch_warnings_total counter
+haproxy_server_redispatch_warnings_total{proxy="prometheus-exporter-internal",server="prometheus-internal"} 0
+haproxy_server_redispatch_warnings_total{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:1a0c13c0-8e69-46c7-a68a-ca4937996d74",server="edf6ca81-b5d5-4d94-a656-f6028d8bbb77"} 0
+haproxy_server_redispatch_warnings_total{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:1a0c13c0-8e69-46c7-a68a-ca4937996d74",server="88ee5795-d594-478b-8591-455acf30164f"} 0
+haproxy_server_redispatch_warnings_total{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:0b248d39-eb90-4180-91aa-5363be7df4db",server="edf6ca81-b5d5-4d94-a656-f6028d8bbb77"} 0
+haproxy_server_redispatch_warnings_total{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:0b248d39-eb90-4180-91aa-5363be7df4db",server="88ee5795-d594-478b-8591-455acf30164f"} 0
+# HELP haproxy_server_failed_header_rewriting_total Total number of failed header rewriting warnings.
+# TYPE haproxy_server_failed_header_rewriting_total counter
+haproxy_server_failed_header_rewriting_total{proxy="prometheus-exporter-internal",server="prometheus-internal"} 0
+haproxy_server_failed_header_rewriting_total{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:1a0c13c0-8e69-46c7-a68a-ca4937996d74",server="edf6ca81-b5d5-4d94-a656-f6028d8bbb77"} 0
+haproxy_server_failed_header_rewriting_total{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:1a0c13c0-8e69-46c7-a68a-ca4937996d74",server="88ee5795-d594-478b-8591-455acf30164f"} 0
+haproxy_server_failed_header_rewriting_total{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:0b248d39-eb90-4180-91aa-5363be7df4db",server="edf6ca81-b5d5-4d94-a656-f6028d8bbb77"} 0
+haproxy_server_failed_header_rewriting_total{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:0b248d39-eb90-4180-91aa-5363be7df4db",server="88ee5795-d594-478b-8591-455acf30164f"} 0
+# HELP haproxy_server_client_aborts_total Total number of data transfers aborted by the client.
+# TYPE haproxy_server_client_aborts_total counter
+haproxy_server_client_aborts_total{proxy="prometheus-exporter-internal",server="prometheus-internal"} 0
+haproxy_server_client_aborts_total{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:1a0c13c0-8e69-46c7-a68a-ca4937996d74",server="edf6ca81-b5d5-4d94-a656-f6028d8bbb77"} 0
+haproxy_server_client_aborts_total{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:1a0c13c0-8e69-46c7-a68a-ca4937996d74",server="88ee5795-d594-478b-8591-455acf30164f"} 0
+haproxy_server_client_aborts_total{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:0b248d39-eb90-4180-91aa-5363be7df4db",server="edf6ca81-b5d5-4d94-a656-f6028d8bbb77"} 0
+haproxy_server_client_aborts_total{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:0b248d39-eb90-4180-91aa-5363be7df4db",server="88ee5795-d594-478b-8591-455acf30164f"} 0
+# HELP haproxy_server_server_aborts_total Total number of data transfers aborted by the server.
+# TYPE haproxy_server_server_aborts_total counter
+haproxy_server_server_aborts_total{proxy="prometheus-exporter-internal",server="prometheus-internal"} 0
+haproxy_server_server_aborts_total{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:1a0c13c0-8e69-46c7-a68a-ca4937996d74",server="edf6ca81-b5d5-4d94-a656-f6028d8bbb77"} 0
+haproxy_server_server_aborts_total{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:1a0c13c0-8e69-46c7-a68a-ca4937996d74",server="88ee5795-d594-478b-8591-455acf30164f"} 0
+haproxy_server_server_aborts_total{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:0b248d39-eb90-4180-91aa-5363be7df4db",server="edf6ca81-b5d5-4d94-a656-f6028d8bbb77"} 0
+haproxy_server_server_aborts_total{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:0b248d39-eb90-4180-91aa-5363be7df4db",server="88ee5795-d594-478b-8591-455acf30164f"} 0
+# HELP haproxy_server_weight Service weight.
+# TYPE haproxy_server_weight gauge
+haproxy_server_weight{proxy="prometheus-exporter-internal",server="prometheus-internal"} 1
+haproxy_server_weight{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:1a0c13c0-8e69-46c7-a68a-ca4937996d74",server="edf6ca81-b5d5-4d94-a656-f6028d8bbb77"} 1
+haproxy_server_weight{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:1a0c13c0-8e69-46c7-a68a-ca4937996d74",server="88ee5795-d594-478b-8591-455acf30164f"} 1
+haproxy_server_weight{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:0b248d39-eb90-4180-91aa-5363be7df4db",server="edf6ca81-b5d5-4d94-a656-f6028d8bbb77"} 1
+haproxy_server_weight{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:0b248d39-eb90-4180-91aa-5363be7df4db",server="88ee5795-d594-478b-8591-455acf30164f"} 1
+# HELP haproxy_server_check_failures_total Total number of failed check (Only counts checks failed when the server is up).
+# TYPE haproxy_server_check_failures_total counter
+haproxy_server_check_failures_total{proxy="prometheus-exporter-internal",server="prometheus-internal"} 0
+haproxy_server_check_failures_total{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:1a0c13c0-8e69-46c7-a68a-ca4937996d74",server="edf6ca81-b5d5-4d94-a656-f6028d8bbb77"} 3
+haproxy_server_check_failures_total{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:1a0c13c0-8e69-46c7-a68a-ca4937996d74",server="88ee5795-d594-478b-8591-455acf30164f"} 3
+haproxy_server_check_failures_total{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:0b248d39-eb90-4180-91aa-5363be7df4db",server="edf6ca81-b5d5-4d94-a656-f6028d8bbb77"} 3
+haproxy_server_check_failures_total{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:0b248d39-eb90-4180-91aa-5363be7df4db",server="88ee5795-d594-478b-8591-455acf30164f"} 3
+# HELP haproxy_server_check_up_down_total Total number of UP->DOWN transitions.
+# TYPE haproxy_server_check_up_down_total counter
+haproxy_server_check_up_down_total{proxy="prometheus-exporter-internal",server="prometheus-internal"} 0
+haproxy_server_check_up_down_total{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:1a0c13c0-8e69-46c7-a68a-ca4937996d74",server="edf6ca81-b5d5-4d94-a656-f6028d8bbb77"} 1
+haproxy_server_check_up_down_total{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:1a0c13c0-8e69-46c7-a68a-ca4937996d74",server="88ee5795-d594-478b-8591-455acf30164f"} 1
+haproxy_server_check_up_down_total{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:0b248d39-eb90-4180-91aa-5363be7df4db",server="edf6ca81-b5d5-4d94-a656-f6028d8bbb77"} 1
+haproxy_server_check_up_down_total{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:0b248d39-eb90-4180-91aa-5363be7df4db",server="88ee5795-d594-478b-8591-455acf30164f"} 1
+# HELP haproxy_server_downtime_seconds_total Total downtime (in seconds) for the service.
+# TYPE haproxy_server_downtime_seconds_total counter
+haproxy_server_downtime_seconds_total{proxy="prometheus-exporter-internal",server="prometheus-internal"} 0
+haproxy_server_downtime_seconds_total{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:1a0c13c0-8e69-46c7-a68a-ca4937996d74",server="edf6ca81-b5d5-4d94-a656-f6028d8bbb77"} 3353
+haproxy_server_downtime_seconds_total{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:1a0c13c0-8e69-46c7-a68a-ca4937996d74",server="88ee5795-d594-478b-8591-455acf30164f"} 3352
+haproxy_server_downtime_seconds_total{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:0b248d39-eb90-4180-91aa-5363be7df4db",server="edf6ca81-b5d5-4d94-a656-f6028d8bbb77"} 3350
+haproxy_server_downtime_seconds_total{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:0b248d39-eb90-4180-91aa-5363be7df4db",server="88ee5795-d594-478b-8591-455acf30164f"} 3349
+# HELP haproxy_server_check_last_change_seconds Number of seconds since the last UP<->DOWN transition.
+# TYPE haproxy_server_check_last_change_seconds gauge
+haproxy_server_check_last_change_seconds{proxy="prometheus-exporter-internal",server="prometheus-internal"} 3378
+haproxy_server_check_last_change_seconds{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:1a0c13c0-8e69-46c7-a68a-ca4937996d74",server="edf6ca81-b5d5-4d94-a656-f6028d8bbb77"} 3353
+haproxy_server_check_last_change_seconds{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:1a0c13c0-8e69-46c7-a68a-ca4937996d74",server="88ee5795-d594-478b-8591-455acf30164f"} 3352
+haproxy_server_check_last_change_seconds{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:0b248d39-eb90-4180-91aa-5363be7df4db",server="edf6ca81-b5d5-4d94-a656-f6028d8bbb77"} 3350
+haproxy_server_check_last_change_seconds{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:0b248d39-eb90-4180-91aa-5363be7df4db",server="88ee5795-d594-478b-8591-455acf30164f"} 3349
+# HELP haproxy_server_current_throttle Current throttle percentage for the server, when slowstart is active, or no value if not in slowstart.
+# TYPE haproxy_server_current_throttle gauge
+haproxy_server_current_throttle{proxy="prometheus-exporter-internal",server="prometheus-internal"} 100
+haproxy_server_current_throttle{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:1a0c13c0-8e69-46c7-a68a-ca4937996d74",server="edf6ca81-b5d5-4d94-a656-f6028d8bbb77"} 100
+haproxy_server_current_throttle{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:1a0c13c0-8e69-46c7-a68a-ca4937996d74",server="88ee5795-d594-478b-8591-455acf30164f"} 100
+haproxy_server_current_throttle{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:0b248d39-eb90-4180-91aa-5363be7df4db",server="edf6ca81-b5d5-4d94-a656-f6028d8bbb77"} 100
+haproxy_server_current_throttle{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:0b248d39-eb90-4180-91aa-5363be7df4db",server="88ee5795-d594-478b-8591-455acf30164f"} 100
+# HELP haproxy_server_loadbalanced_total Total number of times a service was selected, either for new sessions, or when redispatching.
+# TYPE haproxy_server_loadbalanced_total counter
+haproxy_server_loadbalanced_total{proxy="prometheus-exporter-internal",server="prometheus-internal"} 2
+haproxy_server_loadbalanced_total{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:1a0c13c0-8e69-46c7-a68a-ca4937996d74",server="edf6ca81-b5d5-4d94-a656-f6028d8bbb77"} 0
+haproxy_server_loadbalanced_total{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:1a0c13c0-8e69-46c7-a68a-ca4937996d74",server="88ee5795-d594-478b-8591-455acf30164f"} 0
+haproxy_server_loadbalanced_total{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:0b248d39-eb90-4180-91aa-5363be7df4db",server="edf6ca81-b5d5-4d94-a656-f6028d8bbb77"} 0
+haproxy_server_loadbalanced_total{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:0b248d39-eb90-4180-91aa-5363be7df4db",server="88ee5795-d594-478b-8591-455acf30164f"} 0
+# HELP haproxy_server_http_responses_total Total number of HTTP responses.
+# TYPE haproxy_server_http_responses_total counter
+haproxy_server_http_responses_total{proxy="prometheus-exporter-internal",server="prometheus-internal",code="1xx"} 0
+haproxy_server_http_responses_total{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:1a0c13c0-8e69-46c7-a68a-ca4937996d74",server="edf6ca81-b5d5-4d94-a656-f6028d8bbb77",code="1xx"} 0
+haproxy_server_http_responses_total{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:1a0c13c0-8e69-46c7-a68a-ca4937996d74",server="88ee5795-d594-478b-8591-455acf30164f",code="1xx"} 0
+haproxy_server_http_responses_total{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:0b248d39-eb90-4180-91aa-5363be7df4db",server="edf6ca81-b5d5-4d94-a656-f6028d8bbb77",code="1xx"} 0
+haproxy_server_http_responses_total{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:0b248d39-eb90-4180-91aa-5363be7df4db",server="88ee5795-d594-478b-8591-455acf30164f",code="1xx"} 0
+haproxy_server_http_responses_total{proxy="prometheus-exporter-internal",server="prometheus-internal",code="2xx"} 2
+haproxy_server_http_responses_total{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:1a0c13c0-8e69-46c7-a68a-ca4937996d74",server="edf6ca81-b5d5-4d94-a656-f6028d8bbb77",code="2xx"} 0
+haproxy_server_http_responses_total{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:1a0c13c0-8e69-46c7-a68a-ca4937996d74",server="88ee5795-d594-478b-8591-455acf30164f",code="2xx"} 0
+haproxy_server_http_responses_total{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:0b248d39-eb90-4180-91aa-5363be7df4db",server="edf6ca81-b5d5-4d94-a656-f6028d8bbb77",code="2xx"} 0
+haproxy_server_http_responses_total{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:0b248d39-eb90-4180-91aa-5363be7df4db",server="88ee5795-d594-478b-8591-455acf30164f",code="2xx"} 0
+haproxy_server_http_responses_total{proxy="prometheus-exporter-internal",server="prometheus-internal",code="3xx"} 0
+haproxy_server_http_responses_total{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:1a0c13c0-8e69-46c7-a68a-ca4937996d74",server="edf6ca81-b5d5-4d94-a656-f6028d8bbb77",code="3xx"} 0
+haproxy_server_http_responses_total{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:1a0c13c0-8e69-46c7-a68a-ca4937996d74",server="88ee5795-d594-478b-8591-455acf30164f",code="3xx"} 0
+haproxy_server_http_responses_total{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:0b248d39-eb90-4180-91aa-5363be7df4db",server="edf6ca81-b5d5-4d94-a656-f6028d8bbb77",code="3xx"} 0
+haproxy_server_http_responses_total{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:0b248d39-eb90-4180-91aa-5363be7df4db",server="88ee5795-d594-478b-8591-455acf30164f",code="3xx"} 0
+haproxy_server_http_responses_total{proxy="prometheus-exporter-internal",server="prometheus-internal",code="4xx"} 0
+haproxy_server_http_responses_total{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:1a0c13c0-8e69-46c7-a68a-ca4937996d74",server="edf6ca81-b5d5-4d94-a656-f6028d8bbb77",code="4xx"} 0
+haproxy_server_http_responses_total{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:1a0c13c0-8e69-46c7-a68a-ca4937996d74",server="88ee5795-d594-478b-8591-455acf30164f",code="4xx"} 0
+haproxy_server_http_responses_total{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:0b248d39-eb90-4180-91aa-5363be7df4db",server="edf6ca81-b5d5-4d94-a656-f6028d8bbb77",code="4xx"} 0
+haproxy_server_http_responses_total{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:0b248d39-eb90-4180-91aa-5363be7df4db",server="88ee5795-d594-478b-8591-455acf30164f",code="4xx"} 0
+haproxy_server_http_responses_total{proxy="prometheus-exporter-internal",server="prometheus-internal",code="5xx"} 0
+haproxy_server_http_responses_total{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:1a0c13c0-8e69-46c7-a68a-ca4937996d74",server="edf6ca81-b5d5-4d94-a656-f6028d8bbb77",code="5xx"} 0
+haproxy_server_http_responses_total{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:1a0c13c0-8e69-46c7-a68a-ca4937996d74",server="88ee5795-d594-478b-8591-455acf30164f",code="5xx"} 0
+haproxy_server_http_responses_total{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:0b248d39-eb90-4180-91aa-5363be7df4db",server="edf6ca81-b5d5-4d94-a656-f6028d8bbb77",code="5xx"} 0
+haproxy_server_http_responses_total{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:0b248d39-eb90-4180-91aa-5363be7df4db",server="88ee5795-d594-478b-8591-455acf30164f",code="5xx"} 0
+haproxy_server_http_responses_total{proxy="prometheus-exporter-internal",server="prometheus-internal",code="other"} 0
+haproxy_server_http_responses_total{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:1a0c13c0-8e69-46c7-a68a-ca4937996d74",server="edf6ca81-b5d5-4d94-a656-f6028d8bbb77",code="other"} 0
+haproxy_server_http_responses_total{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:1a0c13c0-8e69-46c7-a68a-ca4937996d74",server="88ee5795-d594-478b-8591-455acf30164f",code="other"} 0
+haproxy_server_http_responses_total{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:0b248d39-eb90-4180-91aa-5363be7df4db",server="edf6ca81-b5d5-4d94-a656-f6028d8bbb77",code="other"} 0
+haproxy_server_http_responses_total{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:0b248d39-eb90-4180-91aa-5363be7df4db",server="88ee5795-d594-478b-8591-455acf30164f",code="other"} 0
+# HELP haproxy_server_server_idle_connections_current Current number of idle connections available for reuse
+# TYPE haproxy_server_server_idle_connections_current gauge
+haproxy_server_server_idle_connections_current{proxy="prometheus-exporter-internal",server="prometheus-internal"} 0
+haproxy_server_server_idle_connections_current{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:1a0c13c0-8e69-46c7-a68a-ca4937996d74",server="edf6ca81-b5d5-4d94-a656-f6028d8bbb77"} 0
+haproxy_server_server_idle_connections_current{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:1a0c13c0-8e69-46c7-a68a-ca4937996d74",server="88ee5795-d594-478b-8591-455acf30164f"} 0
+haproxy_server_server_idle_connections_current{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:0b248d39-eb90-4180-91aa-5363be7df4db",server="edf6ca81-b5d5-4d94-a656-f6028d8bbb77"} 0
+haproxy_server_server_idle_connections_current{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:0b248d39-eb90-4180-91aa-5363be7df4db",server="88ee5795-d594-478b-8591-455acf30164f"} 0
+# HELP haproxy_server_server_idle_connections_limit Limit on the number of available idle connections
+# TYPE haproxy_server_server_idle_connections_limit gauge
+haproxy_server_server_idle_connections_limit{proxy="prometheus-exporter-internal",server="prometheus-internal"} 0
+haproxy_server_server_idle_connections_limit{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:1a0c13c0-8e69-46c7-a68a-ca4937996d74",server="edf6ca81-b5d5-4d94-a656-f6028d8bbb77"} 0
+haproxy_server_server_idle_connections_limit{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:1a0c13c0-8e69-46c7-a68a-ca4937996d74",server="88ee5795-d594-478b-8591-455acf30164f"} 0
+haproxy_server_server_idle_connections_limit{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:0b248d39-eb90-4180-91aa-5363be7df4db",server="edf6ca81-b5d5-4d94-a656-f6028d8bbb77"} 0
+haproxy_server_server_idle_connections_limit{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:0b248d39-eb90-4180-91aa-5363be7df4db",server="88ee5795-d594-478b-8591-455acf30164f"} 0

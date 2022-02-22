@@ -97,7 +97,11 @@ class HAProxyQuery(object):
                 server_id=server_id))
         list_results = results[2:].split('\n')
         csv_reader = csv.DictReader(list_results)
-        return list(csv_reader)
+        stats_list = list(csv_reader)
+        # We don't want to report the internal prometheus proxy stats
+        # up to the control plane as it shouldn't be billed traffic
+        return [stat for stat in stats_list
+                if "prometheus" not in stat['pxname']]
 
     def get_pool_status(self):
         """Get status for each server and the pool as a whole.
@@ -114,6 +118,11 @@ class HAProxyQuery(object):
         final_results = {}
         for line in results:
             # pxname: pool, svname: server_name, status: status
+
+            # We don't want to report the internal prometheus proxy stats
+            # up to health manager as it shouldn't be billed traffic
+            if 'prometheus' in line['pxname']:
+                continue
 
             if line['pxname'] not in final_results:
                 final_results[line['pxname']] = dict(members={})

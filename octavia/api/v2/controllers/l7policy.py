@@ -13,6 +13,7 @@
 #    under the License.
 
 from octavia_lib.api.drivers import data_models as driver_dm
+from octavia_lib.common import constants as lib_consts
 from oslo_config import cfg
 from oslo_db import exception as odb_exceptions
 from oslo_log import log as logging
@@ -128,6 +129,11 @@ class L7PolicyController(base.BaseController):
 
         self._auth_validate_action(context, l7policy.project_id,
                                    constants.RBAC_POST)
+
+        # PROMETHEUS listeners cannot have l7policies attached
+        if listener.protocol == lib_consts.PROTOCOL_PROMETHEUS:
+            raise exceptions.ListenerNoChildren(
+                protocol=lib_consts.PROTOCOL_PROMETHEUS)
 
         # Make sure any pool specified by redirect_pool_id exists
         if l7policy.redirect_pool_id:

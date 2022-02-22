@@ -14,6 +14,7 @@
 
 from unittest import mock
 
+from octavia_lib.common import constants as lib_consts
 from oslo_config import cfg
 from oslo_config import fixture as oslo_fixture
 from oslo_utils import uuidutils
@@ -857,6 +858,14 @@ class TestL7Policy(base.BaseAPITest):
                     'action': constants.L7POLICY_ACTION_REDIRECT_TO_URL,
                     'redirect_url': 'http://a.com'}
         self.post(self.L7POLICIES_PATH, self._build_body(l7policy), status=403)
+
+    def test_negative_create_prometheus_listener(self):
+        prometheus_listener = self.create_listener(
+            lib_consts.PROTOCOL_PROMETHEUS, 8123, lb_id=self.lb_id)
+        prometheus_listener_id = prometheus_listener.get('listener').get('id')
+        self.set_lb_status(self.lb_id)
+        l7policy = {'listener_id': prometheus_listener_id, 'name': 'test1'}
+        self.post(self.L7POLICIES_PATH, self._build_body(l7policy), status=400)
 
     def test_update(self):
         api_l7policy = self.create_l7policy(self.listener_id,

@@ -419,3 +419,8 @@ class InvalidIPAddress(APIException):
 class AmphoraNetworkConfigException(OctaviaException):
     message = _('Cannot configure network resource in the amphora: '
                 '%(detail)s')
+
+
+class ListenerNoChildren(APIException):
+    msg = _('Protocol %(protocol)s listeners cannot have child objects.')
+    code = 400

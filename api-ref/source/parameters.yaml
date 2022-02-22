@@ -1245,7 +1245,7 @@ project_id-optional-deprecated:
 protocol:
   description: |
     The protocol for the resource. One of ``HTTP``, ``HTTPS``, ``SCTP``,
-    ``TCP``, ``TERMINATED_HTTPS``, or ``UDP``.
+    ``PROMETHEUS``, ``TCP``, ``TERMINATED_HTTPS``, or ``UDP``.
   in: body
   required: true
   type: string

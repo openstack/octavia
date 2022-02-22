@@ -53,6 +53,7 @@ AMPHORA_SUPPORTED_PROTOCOLS = [
     lib_consts.PROTOCOL_PROXYV2,
     lib_consts.PROTOCOL_UDP,
     lib_consts.PROTOCOL_SCTP,
+    lib_consts.PROTOCOL_PROMETHEUS,
 ]
 
 

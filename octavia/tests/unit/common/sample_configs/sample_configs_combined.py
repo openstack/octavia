@@ -310,6 +310,7 @@ RET_LISTENER = {
     'timeout_member_connect': 5000,
     'timeout_member_data': 50000,
     'timeout_tcp_inspect': 0,
+    'PROMETHEUS': False,
 }
 
 RET_LISTENER_L7 = {
@@ -332,6 +333,7 @@ RET_LISTENER_L7 = {
     'timeout_member_connect': 5000,
     'timeout_member_data': 50000,
     'timeout_tcp_inspect': 0,
+    'PROMETHEUS': False,
 }
 
 RET_LISTENER_TLS = {
@@ -683,7 +685,8 @@ def sample_listener_tuple(proto=None, monitor=True, alloc_default_pool=True,
                           sample_default_pool=1,
                           pool_enabled=True,
                           backend_alpn_protocols=constants.
-                          AMPHORA_SUPPORTED_ALPN_PROTOCOLS):
+                          AMPHORA_SUPPORTED_ALPN_PROTOCOLS,
+                          include_pools=True):
     proto = 'HTTP' if proto is None else proto
     if be_proto is None:
         be_proto = 'HTTP' if proto == 'TERMINATED_HTTPS' else proto
@@ -815,7 +818,7 @@ def sample_listener_tuple(proto=None, monitor=True, alloc_default_pool=True,
                     intermediates=sample_certs.X509_IMDS_LIST,
                     primary_cn=sample_certs.X509_CERT_CN_3))]
         if sni else [],
-        pools=pools,
+        pools=pools if include_pools else '',
         l7policies=l7policies,
         enabled=enabled,
         insert_headers=insert_headers,
@@ -1239,7 +1242,7 @@ def sample_base_expected_config(frontend=None, logging=None, backend=None,
                     "    option redispatch\n"
                     "    option splice-request\n"
                     "    option splice-response\n"
-                    "    option http-keep-alive\n\n")
+                    "    option http-keep-alive\n\n\n")
     return ("# Configuration for loadbalancer sample_loadbalancer_id_1\n"
             "global\n"
             "    daemon\n"

@@ -1,0 +1,11 @@
+---
+features:
+  - |
+    Added a new PROMETHEUS listener that exposes a prometheus exporter
+    endpoint.
+upgrade:
+  - |
+    PROMETHEUS listeners require an amphora image with HAProxy 2.0 or newer.
+issues:
+  - |
+    PROMETHEUS listeners will not report information for UDP or SCTP listeners.

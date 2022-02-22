@@ -1205,6 +1205,19 @@ class TestPool(base.BaseAPITest):
             'project_id': self.project_id}
         self.post(self.POOLS_PATH, self._build_body(lb_pool), status=403)
 
+    def test_negative_create_prometheus_listener(self):
+        stats_listener = self.create_listener(
+            lib_constants.PROTOCOL_PROMETHEUS, 8123,
+            self.lb_id).get('listener')
+        stats_listener_id = stats_listener.get('id')
+        self.set_lb_status(self.lb_id)
+
+        lb_pool = {
+            'listener_id': stats_listener_id,
+            'protocol': 'HTTP',
+            'lb_algorithm': constants.LB_ALGORITHM_ROUND_ROBIN}
+        self.post(self.POOLS_PATH, self._build_body(lb_pool), status=400)
+
     def test_update(self):
         api_pool = self.create_pool(
             self.lb_id,

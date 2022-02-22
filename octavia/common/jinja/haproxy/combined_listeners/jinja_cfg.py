@@ -28,7 +28,8 @@ PROTOCOL_MAP = {
     constants.PROTOCOL_HTTPS: 'tcp',
     constants.PROTOCOL_PROXY: 'proxy',
     lib_consts.PROTOCOL_PROXYV2: 'proxy',
-    constants.PROTOCOL_TERMINATED_HTTPS: 'http'
+    constants.PROTOCOL_TERMINATED_HTTPS: 'http',
+    lib_consts.PROTOCOL_PROMETHEUS: 'http'
 }
 
 BALANCE_MAP = {
@@ -102,6 +103,8 @@ class JinjaTemplater(object):
             feature_compatibility[constants.HTTP_REUSE] = True
         if not (int(haproxy_versions[0]) < 2 and int(haproxy_versions[1]) < 9):
             feature_compatibility[constants.POOL_ALPN] = True
+        if int(haproxy_versions[0]) >= 2:
+            feature_compatibility[lib_consts.PROTOCOL_PROMETHEUS] = True
 
         return self.render_loadbalancer_obj(
             host_amphora, listeners, tls_certs=tls_certs,
@@ -165,6 +168,13 @@ class JinjaTemplater(object):
         state_file_path = '%s/%s/servers-state' % (
             self.base_amp_path,
             listeners[0].load_balancer.id)
+        prometheus_listener = False
+        for listener in listeners:
+            if listener.protocol == lib_consts.PROTOCOL_PROMETHEUS:
+                prometheus_listener = True
+                break
+        enable_prometheus = prometheus_listener and feature_compatibility.get(
+            lib_consts.PROTOCOL_PROMETHEUS, False)
         return self._get_template().render(
             {'loadbalancer': loadbalancer,
              'stats_sock': socket_path,
@@ -174,7 +184,8 @@ class JinjaTemplater(object):
              'administrative_log_facility':
                  CONF.amphora_agent.administrative_log_facility,
              'user_log_facility': CONF.amphora_agent.user_log_facility,
-             'connection_logging': self.connection_logging},
+             'connection_logging': self.connection_logging,
+             'enable_prometheus': enable_prometheus},
             constants=constants, lib_consts=lib_consts)
 
     def _transform_loadbalancer(self, host_amphora, loadbalancer, listeners,
@@ -262,6 +273,8 @@ class JinjaTemplater(object):
                 CONF.haproxy_amphora.timeout_member_data),
             'timeout_tcp_inspect': (listener.timeout_tcp_inspect or
                                     CONF.haproxy_amphora.timeout_tcp_inspect),
+            lib_consts.PROTOCOL_PROMETHEUS: feature_compatibility.get(
+                lib_consts.PROTOCOL_PROMETHEUS, False)
         }
         if self.connection_logging:
             ret_value['user_log_format'] = (
@@ -292,7 +305,8 @@ class JinjaTemplater(object):
                                  tls_certs[listener.client_crl_container_id]))
 
         tls_enabled = False
-        if listener.protocol == constants.PROTOCOL_TERMINATED_HTTPS:
+        if listener.protocol in (constants.PROTOCOL_TERMINATED_HTTPS,
+                                 constants.PROTOCOL_PROMETHEUS):
             tls_enabled = True
             if listener.tls_ciphers is not None:
                 ret_value['tls_ciphers'] = listener.tls_ciphers

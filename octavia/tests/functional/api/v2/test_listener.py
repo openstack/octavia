@@ -799,10 +799,9 @@ class TestListener(base.BaseAPITest):
         resp = self.test_create(response_status=400, **optionals).json
         fault = resp.get('faultstring')
         self.assertIn(
-            'Certificate container references are only allowed on ', fault)
+            'Certificate container references are not allowed on ', fault)
         self.assertIn(
-            '{} protocol listeners.'.format(
-                constants.PROTOCOL_TERMINATED_HTTPS), fault)
+            '{} protocol listeners.'.format(constants.PROTOCOL_TCP), fault)
 
     def test_create_without_certs_if_terminated_https(self):
         optionals = {
@@ -1361,6 +1360,27 @@ class TestListener(base.BaseAPITest):
     def test_negative_create_UDP_with_headers(self):
         self._test_negative_create_with_headers(constants.PROTOCOL_UDP)
 
+    def test_create_prometheus(self):
+        self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
+        self.conf.config(group='api_settings', allow_prometheus_listeners=True)
+        listener = self.create_listener(lib_consts.PROTOCOL_PROMETHEUS,
+                                        80, self.lb_id)
+        listener_path = self.LISTENER_PATH.format(
+            listener_id=listener['listener']['id'])
+        get_listener = self.get(listener_path).json['listener']
+        self.assertEqual(lib_consts.PROTOCOL_PROMETHEUS,
+                         get_listener['protocol'])
+
+    def test_create_prometheus_disabled(self):
+        self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
+        self.conf.config(group='api_settings',
+                         allow_prometheus_listeners=False)
+        req_dict = {'name': 'create_listener_prometheus_disabled',
+                    'protocol': lib_consts.PROTOCOL_PROMETHEUS,
+                    'protocol_port': 6666,
+                    'loadbalancer_id': self.lb_id}
+        self.post(self.LISTENERS_PATH, self._build_body(req_dict), status=400)
+
     def test_update_allowed_cidrs(self):
         allowed_cidrs = ['10.0.1.0/24', '10.0.2.0/24']
         new_cidrs = ['10.0.1.0/24', '10.0.3.0/24']
@@ -1620,10 +1640,9 @@ class TestListener(base.BaseAPITest):
         response = self.put(listener_path, body, status=400).json
         fault = response.get('faultstring')
         self.assertIn(
-            'Certificate container references are only allowed on ', fault)
-        self.assertIn(
-            '{} protocol listeners.'.format(
-                constants.PROTOCOL_TERMINATED_HTTPS), fault)
+            'Certificate container references are not allowed on ', fault)
+        self.assertIn('{} protocol listeners.'.format(
+            constants.PROTOCOL_TCP), fault)
 
     def test_update_with_ca_cert(self):
         self.cert_manager_mock().get_secret.return_value = (
@@ -2617,8 +2636,8 @@ class TestListener(base.BaseAPITest):
         body = self._build_body({'sni_container_refs': [sni_id1, sni_id2]})
         response = self.put(listener_path, body, status=400).json
         self.assertEqual(
-            "Validation failure: Certificate container references are only "
-            "allowed on TERMINATED_HTTPS protocol listeners.",
+            "Validation failure: Certificate container references are not "
+            "allowed on HTTP protocol listeners.",
             response['faultstring'])
         get_listener = self.get(listener_path).json['listener']
         self.assertEqual([], get_listener.get('sni_container_refs'))
