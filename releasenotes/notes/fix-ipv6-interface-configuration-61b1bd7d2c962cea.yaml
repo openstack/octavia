@@ -1,0 +1,5 @@
+---
+fixes:
+  - |
+    Fix an issue with IPv6 members that could have been set in operating_status
+    ``ERROR`` just after being added.
