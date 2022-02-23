@@ -1,0 +1,28 @@
+#!/bin/bash
+
+if [ ${DIB_DEBUG_TRACE:-0} -gt 0 ]; then
+    set -x
+fi
+
+set -eu
+set -o pipefail
+
+case $DISTRO_NAME in
+    ubuntu | debian )
+        echo "ERROR: $DISTRO_NAME is not supported for FIPS mode."
+        exit 1
+    ;;
+    fedora | centos* | rhel* )
+        DIB_DRACUT_ENABLED_MODULES+="
+- name: fips
+        "
+        export DIB_DRACUT_ENABLED_MODULES
+
+        DIB_BOOTLOADER_DEFAULT_CMDLINE+=" fips=1"
+        export DIB_BOOTLOADER_DEFAULT_CMDLINE
+    ;;
+    *)
+        echo "ERROR: Unsupported distribution $DISTRO_NAME"
+        exit 1
+    ;;
+esac
