@@ -363,7 +363,7 @@ octavia_pool_failed_header_rewriting_total{pool="6034884d-ed47-49d5-ade7-8fa2c45
 # TYPE octavia_pool_client_aborts_total counter
 octavia_pool_client_aborts_total{pool="6034884d-ed47-49d5-ade7-8fa2c4501a74:1a0c13c0-8e69-46c7-a68a-ca4937996d74"} 0
 octavia_pool_client_aborts_total{pool="6034884d-ed47-49d5-ade7-8fa2c4501a74:0b248d39-eb90-4180-91aa-5363be7df4db"} 0
-# HELP octavia_pool_server_aborts_total Total number of data transfers aborted by the server.
+# HELP octavia_pool_member_aborts_total Total number of data transfers aborted by the server.
 # TYPE octavia_pool_member_aborts_total counter
 octavia_pool_member_aborts_total{pool="6034884d-ed47-49d5-ade7-8fa2c4501a74:1a0c13c0-8e69-46c7-a68a-ca4937996d74"} 0
 octavia_pool_member_aborts_total{pool="6034884d-ed47-49d5-ade7-8fa2c4501a74:0b248d39-eb90-4180-91aa-5363be7df4db"} 0
