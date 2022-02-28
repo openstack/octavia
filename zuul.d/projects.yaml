@@ -50,6 +50,12 @@
               - ^tools/.*$
               - ^(test-|)requirements.txt$
               - ^tox.ini$
+        - octavia-v2-dsvm-scenario-fips:
+            irrelevant-files: *irrelevant-files
+            voting: false
+        - octavia-v2-dsvm-tls-barbican-fips:
+            irrelevant-files: *irrelevant-files
+            voting: false
         - octavia-v2-act-stdby-dsvm-scenario:
             irrelevant-files: *irrelevant-files
             voting: false
