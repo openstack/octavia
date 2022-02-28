@@ -149,5 +149,5 @@ For more information on setting up Prometheus, see the
 
 You can connect `Grafana <https://grafana.com>`_ to the
 `Prometheus <https://prometheus.io>`_ instance to provide additional graphing
-and dashboard capabilities. There are multiple `community built dashboards <https://grafana.com/dashboards?dataSource=prometheus&search=haproxy>`_ available
-that can be adapted to the Octavia metrics.
+and dashboard capabilities. A Grafana dashboard for Octavia load balancers is
+included in the etc/grafana directory of the Octavia code.
