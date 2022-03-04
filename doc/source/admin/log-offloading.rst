@@ -49,15 +49,9 @@ Enabling Administrative Log Offloading
 
 One or more syslog receiver endpoints must be configured in the Octavia
 configuration file to enable administrative log offloading. The first endpoint
-will be the primary endpoint to receive the syslog packets. Should the first
-endpoint become unavailable, the additional endpoints listed will be tried
-one at a time.
-
-.. note::
-
-    Secondary syslog endpoints will only be used if the log_protocol is
-    configured for TCP. With the UDP syslog protocol, rsyslog is unable
-    to detect if the primary endpoint has failed.
+will be the primary endpoint to receive the syslog packets.
+Read the :ref:`rsyslog failover considerations` section for information about
+how to use multiple target servers.
 
 To configure administrative log offloading, set the following setting in your
 Octavia configuration file for all of the controllers and restart them:
@@ -65,10 +59,10 @@ Octavia configuration file for all of the controllers and restart them:
 .. code-block:: ini
 
     [amphora_agent]
-    admin_log_targets = 192.0.2.1:10514, 2001:db8:1::10:10514
+    admin_log_targets = 192.0.2.1:10514
 
-In this example, the primary syslog receiver will be 192.0.2.1 on port 10514.
-The backup syslog receiver will be 2001:db8:1::10 on port 10514.
+In this example, the syslog receiver will be 192.0.2.1 on port 10514.
+If *log_protocol* is not specified UDP will be used.
 
 .. note::
 
@@ -122,10 +116,11 @@ Enabling Tenant Flow Log Offloading
 
 One or more syslog receiver endpoints must be configured in the Octavia
 configuration file to enable tenant flow log offloading. The first endpoint
-will be the primary endpoint to receive the syslog packets. Should the first
-endpoint become unavailable, the additional endpoints listed will be tried
-one at a time. The endpoints configured for tenant flow log offloading may be
+will be the primary endpoint to receive the syslog packets.
+The endpoints configured for tenant flow log offloading may be
 the same endpoints as the administrative log offloading configuration.
+Read the :ref:`rsyslog failover considerations` section for information
+about how to use multiple target servers.
 
 .. warning::
 
@@ -136,22 +131,16 @@ the same endpoints as the administrative log offloading configuration.
     receivers appropriately based on the expected number of connections your
     load balancers will be handling.
 
-.. note::
-
-    Secondary syslog endpoints will only be used if the log_protocol is
-    configured for TCP. With the UDP syslog protocol, rsyslog is unable
-    to detect if the primary endpoint has failed.
-
 To configure tenant flow log offloading, set the following setting in your
 Octavia configuration file for all of the controllers and restart them:
 
 .. code-block:: ini
 
     [amphora_agent]
-    tenant_log_targets = 192.0.2.1:10514, 2001:db8:1::10:10514
+    tenant_log_targets = 192.0.2.1:10514
 
-In this example, the primary syslog receiver will be 192.0.2.1 on port 10514.
-The backup syslog receiver will be 2001:db8:1::10 on port 10514.
+In this example, the syslog receiver will be 192.0.2.1 on port 10514.
+If *log_protocol* is not specified UDP will be used.
 
 .. note::
 
@@ -217,6 +206,38 @@ Octavia configuration file for all of the controllers and restart them:
 
     [haproxy_amphora]
     user_log_format = '{{ project_id }} {{ lb_id }} %f %ci %cp %t %{+Q}r %ST %B %U %[ssl_c_verify] %{+Q}[ssl_c_s_dn] %b %s %Tt %tsc'
+
+.. _rsyslog failover considerations:
+
+Failover Considerations
+=======================
+
+In order to provide protection against potential data loss because of
+downtime of a single syslog server, it may be a advisable to
+use multiple log targets.
+In such configuration *log_protocol* needs to be set to *TCP*.
+With the UDP syslog protocol, RSyslog is unable
+to detect if the primary endpoint has failed.
+
+Also pay attention to the *log_retry_count* and *log_retry_interval* settings
+when using multiple log targets. You might want to set *log_retry_count* to 0
+and use a higher value for *log_retry_interval*. Values up to 1800 (30 minutes)
+are possible.
+That way the failover will happen immediately after the client detects
+that the server became unavailable. In such case, that server won't be
+used again for at least *log_retry_interval* seconds after that event.
+In the following example the primary syslog receiver will be
+192.0.2.1 on port 10514.
+The backup syslog receiver will be 2001:db8:1::10 on port 10514.
+
+.. code-block:: ini
+
+    [amphora_agent]
+    admin_log_targets = 192.0.2.1:10514, 2001:db8:1::10:10514
+    tenant_log_targets = 192.0.2.1:10514, 2001:db8:1::10:10514
+    log_protocol = TCP
+    log_retry_count = 0
+    log_retry_interval = 1800
 
 Disabling Logging
 =================
