@@ -1,0 +1,5 @@
+---
+fixes:
+  - |
+    The generated RSyslog configuration on the amphora supports now
+    RSyslog failover with TCP if multiple RSyslog servers were specified.

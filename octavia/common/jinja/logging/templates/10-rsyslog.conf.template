@@ -15,17 +15,41 @@
 #}
 {#- Tenant traffic logs -#}
 {%- if tenant_log_hosts -%}
-local{{ user_log_facility }}.=info {% for host in tenant_log_hosts %}{% if not loop.first %}&{% endif %}action(type="omfwd" target="{{  host['host'] }}" port="{{ host['port'] }}" protocol="{{ protocol }}" action.resumeRetryCount="{{ retry_count }}" action.resumeInterval="{{ retry_interval }}" queue.type="linkedList" queue.size="{{ queue_size }}" {% if not loop.first %}action.execOnlyWhenPreviousIsSuspended="on"{% endif %}){% endfor %}
-{%- endif -%}
+ruleset(name="tenant_forwarding" queue.type="linkedList" queue.size="{{ queue_size }}") {
+{%- for host in tenant_log_hosts %}
+  action(type="omfwd"
+         target="{{ host['host'] }}"
+         port="{{ host['port'] }}"
+         protocol="{{ protocol }}"
+         action.resumeRetryCount="{{ retry_count }}"
+         action.resumeInterval="{{ retry_interval }}"
+         {% if not loop.first %}action.execOnlyWhenPreviousIsSuspended="on"{%- endif -%}
+         )
+{%- endfor %}
+}
+local{{ user_log_facility }}.=info call tenant_forwarding
+{% endif %}
 
 {#- Administrative logs -#}
-{%- if admin_log_hosts -%}
+{% if admin_log_hosts %}
+ruleset(name="admin_forwarding" queue.type="linkedList" queue.size="{{ queue_size }}") {
+{%- for host in admin_log_hosts %}
+  action(type="omfwd"
+         target="{{ host['host'] }}"
+         port="{{ host['port'] }}"
+         protocol="{{ protocol }}"
+         action.resumeRetryCount="{{ retry_count }}"
+         action.resumeInterval="{{ retry_interval }}"
+         {% if not loop.first %}action.execOnlyWhenPreviousIsSuspended="on"{%- endif -%}
+         )
+{%- endfor %}
+}
 {%- if forward_all_logs %}
-*.*;local{{ user_log_facility }}.none {% for host in admin_log_hosts %}{% if not loop.first %}&{% endif %}action(type="omfwd" target="{{  host['host'] }}" port="{{ host['port'] }}" protocol="{{ protocol }}" action.resumeRetryCount="{{ retry_count }}" action.resumeInterval="{{ retry_interval }}" queue.type="linkedList" queue.size="{{ queue_size }}" {% if not loop.first %}action.execOnlyWhenPreviousIsSuspended="on"{% endif %}){% endfor %}
+*.*;local{{ user_log_facility }}.none call admin_forwarding
 {% else %}
-local{{ admin_log_facility }}.* {% for host in admin_log_hosts %}{% if not loop.first %}&{% endif %}action(type="omfwd" target="{{  host['host'] }}" port="{{ host['port'] }}" protocol="{{ protocol }}" action.resumeRetryCount="{{ retry_count }}" action.resumeInterval="{{ retry_interval }}" queue.type="linkedList" queue.size="{{ queue_size }}" {% if not loop.first %}action.execOnlyWhenPreviousIsSuspended="on"{% endif %}){% endfor -%}
+local{{ admin_log_facility }}.* call admin_forwarding
 {%- endif -%}
-{%- endif -%}
+{% endif %}
 
 {%- if disable_local_log_storage -%}
 *.* stop
