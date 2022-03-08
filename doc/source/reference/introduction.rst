@@ -30,7 +30,7 @@ Octavia accomplishes its delivery of load balancing services by managing a
 fleet of virtual machines, containers, or bare metal servers—collectively known
 as *amphorae*\— which it spins up on demand. This on-demand, horizontal scaling
 feature differentiates Octavia from other load balancing solutions, thereby
-making Octavia truly suited "for the cloud."
+making Octavia truly suited "for the cloud".
 
 Where Octavia fits into the OpenStack ecosystem
 -----------------------------------------------
