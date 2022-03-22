@@ -1,0 +1,7 @@
+---
+issues:
+  - |
+    Fixed configuration issue which allowed authenticated and authorized
+    users to inject code into HAProxy configuration using API requests.
+    Octavia API no longer accepts unencoded whitespace characters in url_path values
+    in update requests for healthmonitors.

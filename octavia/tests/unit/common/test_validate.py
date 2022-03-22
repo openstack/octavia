@@ -44,6 +44,15 @@ class TestValidations(base.TestCase):
         self.assertRaises(exceptions.InvalidURL, validate.url,
                           'ssh://www.example.com/')
 
+    def test_validate_url_path(self):
+        self.assertTrue(validate.url_path('/foo'))
+        self.assertTrue(validate.url_path('/foo%0Abar'))
+
+    def test_validate_bad_url_path(self):
+        self.assertRaises(exceptions.InvalidURLPath, validate.url_path, 'foo')
+        self.assertRaises(exceptions.InvalidURLPath, validate.url_path,
+                          '/foo\nbar')
+
     def test_validate_header_name(self):
         ret = validate.header_name('Some-header')
         self.assertTrue(ret)

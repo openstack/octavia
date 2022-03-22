@@ -55,6 +55,7 @@ def url_path(url_path):
         p_url = rfc3986.urlparse(rfc3986.normalize_uri(url_path))
 
         invalid_path = (
+            re.search(r"\s", url_path) or
             p_url.scheme or p_url.userinfo or p_url.host or
             p_url.port or
             p_url.path is None or
