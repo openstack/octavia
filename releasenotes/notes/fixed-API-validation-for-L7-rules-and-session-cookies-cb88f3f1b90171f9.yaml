@@ -1,0 +1,9 @@
+---
+fixes:
+  - |
+    Fixed validations in L7 rule and session cookie APIs in order to prevent
+    authenticated and authorized users to inject code into HAProxy
+    configuration. CR and LF (\r and \n) are no longer allowed in L7 rule
+    keys and values. The session persistence cookie names must follow the rules 
+    described in
+    https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Set-Cookie.
