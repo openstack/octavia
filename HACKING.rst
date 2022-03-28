@@ -61,6 +61,7 @@ either additional knowledge about the state of other components in the Octavia
 system, advanced logic behind decisions, or otherwise a high degree of
 intelligence should be done by centralized components (ex. controllers) within
 the Octavia system. Examples of this might include:
+
 * Generating haproxy configuration files
 * Managing the lifecycle of Octavia amphorae
 * Moving a loadbalancer instance from one Octavia amphora to another.
@@ -68,6 +69,7 @@ the Octavia system. Examples of this might include:
 On the other hand, tasks done extremely often, or which entail a significant
 load on the system should be pushed as far out to the most horizontally
 scalable components as possible. Examples of this might include:
+
 * Serving actual client requests to end-users (ie. running haproxy)
 * Monitoring pool members for failure and sending notifications about this
 * Processing log files
