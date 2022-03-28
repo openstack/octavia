@@ -798,7 +798,10 @@ class TestAllowedAddressPairsDriver(base.TestCase):
         self.assertEqual(t_constants.MOCK_PORT_ID, vip.port_id)
         self.assertEqual(fake_lb.id, vip.load_balancer_id)
 
-    def test_unplug_aap_port_errors_when_update_port_cant_find_port(self):
+    @mock.patch("time.time")
+    @mock.patch("time.sleep")
+    def test_unplug_aap_port_errors_when_update_port_cant_find_port(
+            self, mock_time_sleep, mock_time_time):
         lb = dmh.generate_load_balancer_tree()
         list_ports = self.driver.neutron_client.list_ports
         port1 = t_constants.MOCK_NEUTRON_PORT['port']
@@ -809,14 +812,22 @@ class TestAllowedAddressPairsDriver(base.TestCase):
         subnet = network_models.Subnet(
             id=t_constants.MOCK_MANAGEMENT_SUBNET_ID,
             network_id='3')
-        list_ports.return_value = {'ports': [port1, port2]}
+        list_ports.side_effect = [
+            {'ports': [port1, port2]},
+            {'ports': [port1, port2]},
+            {'ports': [port1]}
+        ]
+        mock_time_time.side_effect = [1, 1, 2]
         update_port = self.driver.neutron_client.update_port
         update_port.side_effect = neutron_exceptions.PortNotFoundClient
         self.assertRaises(network_base.UnplugVIPException,
                           self.driver.unplug_aap_port, lb.vip, lb.amphorae[0],
                           subnet)
 
-    def test_unplug_aap_errors_when_update_port_fails(self):
+    @mock.patch("time.time")
+    @mock.patch("time.sleep")
+    def test_unplug_aap_errors_when_update_port_fails(
+            self, mock_time_sleep, mock_time_time):
         lb = dmh.generate_load_balancer_tree()
         port1 = t_constants.MOCK_NEUTRON_PORT['port']
         port2 = {
@@ -829,7 +840,12 @@ class TestAllowedAddressPairsDriver(base.TestCase):
             network_id='3')
 
         list_ports = self.driver.neutron_client.list_ports
-        list_ports.return_value = {'ports': [port1, port2]}
+        list_ports.side_effect = [
+            {'ports': [port1, port2]},
+            {'ports': [port1, port2]},
+            {'ports': [port1]}
+        ]
+        mock_time_time.side_effect = [1, 1, 2]
 
         update_port = self.driver.neutron_client.update_port
         update_port.side_effect = TypeError
@@ -853,7 +869,9 @@ class TestAllowedAddressPairsDriver(base.TestCase):
         self.driver.unplug_vip(lb, lb.vip)
         self.assertEqual(len(lb.amphorae), mock.call_count)
 
-    def test_unplug_aap_port(self):
+    @mock.patch("time.time")
+    @mock.patch("time.sleep")
+    def test_unplug_aap_port(self, mock_time_sleep, mock_time_time):
         lb = dmh.generate_load_balancer_tree()
         update_port = self.driver.neutron_client.update_port
         port1 = t_constants.MOCK_NEUTRON_PORT['port']
@@ -865,7 +883,12 @@ class TestAllowedAddressPairsDriver(base.TestCase):
             id=t_constants.MOCK_MANAGEMENT_SUBNET_ID,
             network_id='3')
         list_ports = self.driver.neutron_client.list_ports
-        list_ports.return_value = {'ports': [port1, port2]}
+        list_ports.side_effect = [
+            {'ports': [port1, port2]},
+            {'ports': [port1, port2]},
+            {'ports': [port1]}
+        ]
+        mock_time_time.side_effect = [1, 1, 2]
         get_port = self.driver.neutron_client.get_port
         get_port.side_effect = neutron_exceptions.NotFound
         self.driver.unplug_aap_port(lb.vip, lb.amphorae[0], subnet)
@@ -929,7 +952,36 @@ class TestAllowedAddressPairsDriver(base.TestCase):
                           self.driver.unplug_network,
                           t_constants.MOCK_COMPUTE_ID, net_id)
 
-    def test_unplug_network(self):
+    @mock.patch("time.time")
+    @mock.patch("time.sleep")
+    def test_unplug_network(self, mock_time_sleep, mock_time_time):
+        list_ports = self.driver.neutron_client.list_ports
+        port1 = t_constants.MOCK_NEUTRON_PORT['port']
+        port2 = {
+            'id': '4', 'network_id': '3', 'fixed_ips':
+            [{'ip_address': '10.0.0.2'}]
+        }
+        list_ports.side_effect = [
+            {'ports': [port1, port2]},
+            {'ports': [port1, port2]},
+            {'ports': [port1]}
+        ]
+        port_detach = self.driver.compute.detach_port
+
+        mock_time_time.side_effect = [1, 1, 2]
+
+        self.driver.unplug_network(t_constants.MOCK_COMPUTE_ID,
+                                   port2.get('network_id'))
+        port_detach.assert_called_once_with(
+            compute_id=t_constants.MOCK_COMPUTE_ID, port_id=port2.get('id'))
+
+        mock_time_sleep.assert_called_once()
+
+    @mock.patch("time.time")
+    @mock.patch("time.sleep")
+    @mock.patch("octavia.network.drivers.neutron.allowed_address_pairs.LOG")
+    def test_unplug_network_timeout(self, mock_log,
+                                    mock_time_sleep, mock_time_time):
         list_ports = self.driver.neutron_client.list_ports
         port1 = t_constants.MOCK_NEUTRON_PORT['port']
         port2 = {
@@ -938,10 +990,16 @@ class TestAllowedAddressPairsDriver(base.TestCase):
         }
         list_ports.return_value = {'ports': [port1, port2]}
         port_detach = self.driver.compute.detach_port
+
+        mock_time_time.side_effect = [0, 0, 1, 2, 10, 20, 100, 300]
+
         self.driver.unplug_network(t_constants.MOCK_COMPUTE_ID,
                                    port2.get('network_id'))
         port_detach.assert_called_once_with(
             compute_id=t_constants.MOCK_COMPUTE_ID, port_id=port2.get('id'))
+
+        self.assertEqual(6, len(mock_time_sleep.mock_calls))
+        mock_log.warning.assert_called_once()
 
     def test_update_vip(self):
         lc_1 = data_models.ListenerCidr('l1', '10.0.101.0/24')
