@@ -1,0 +1,6 @@
+---
+fixes:
+  - |
+    Fix PING health-monitors with recent haproxy releases (>=2.2), haproxy now
+    requires an additional "insecure-fork-wanted" option to authorize the
+    Octavia PING healthcheck.
