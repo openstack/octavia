@@ -30,3 +30,11 @@ sysctl-write-value net.core.wmem_max 67108864
 sysctl-write-value net.ipv4.tcp_rmem "4096 87380 33554432"
 sysctl-write-value net.ipv4.tcp_wmem "4096 87380 33554432"
 sysctl-write-value net.ipv4.ip_local_port_range "1025 65534"
+
+# Allow unprivileged users to send ICMP echo requests
+# https://bugzilla.redhat.com/show_bug.cgi?id=2037807
+# This sysctl is already included in /usr/lib/sysctl.d/50-default.conf on Centos
+# 8 Stream (with a '-'' prefix that prevents sysctl from throwing an error if
+# the setting doesn't exist in the kernel), but sysctl --system doesn't apply it
+# correctly when creating the amphora-haproxy namespace.
+sysctl-write-value net.ipv4.ping_group_range "0 2147483647"
