@@ -146,11 +146,11 @@ class PoolsController(base.BaseController):
                 listener_id=listener_id)
         except odb_exceptions.DBDuplicateEntry as e:
             raise exceptions.IDAlreadyExists() from e
+        except odb_exceptions.DBReferenceError as e:
+            raise exceptions.InvalidOption(value=pool_dict.get(e.key),
+                                           option=e.key) from e
         except odb_exceptions.DBError as e:
-            # TODO(blogan): will have to do separate validation protocol
-            # before creation or update since the exception messages
-            # do not give any information as to what constraint failed
-            raise exceptions.InvalidOption(value='', option='') from e
+            raise exceptions.APIException() from e
 
     def _is_only_specified_in_request(self, request, **kwargs):
         request_attrs = []

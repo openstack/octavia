@@ -1,0 +1,6 @@
+---
+fixes:
+  - |
+    The Octavia API returned an unhelpful message when a constraint failed
+    while creating an object in the DB. The error now contains the name and the
+    value of the parameter that breaks the constraints.
