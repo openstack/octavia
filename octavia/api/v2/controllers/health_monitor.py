@@ -159,11 +159,11 @@ class HealthMonitorController(base.BaseController):
                 lock_session, **hm_dict)
         except odb_exceptions.DBDuplicateEntry as e:
             raise exceptions.DuplicateHealthMonitor() from e
+        except odb_exceptions.DBReferenceError as e:
+            raise exceptions.InvalidOption(value=hm_dict.get(e.key),
+                                           option=e.key) from e
         except odb_exceptions.DBError as e:
-            # TODO(blogan): will have to do separate validation protocol
-            # before creation or update since the exception messages
-            # do not give any information as to what constraint failed
-            raise exceptions.InvalidOption(value='', option='') from e
+            raise exceptions.APIException() from e
 
     def _validate_healthmonitor_request_for_udp_sctp(self, request,
                                                      pool_protocol):
