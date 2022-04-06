@@ -132,6 +132,13 @@ class OctaviaBase(models.ModelBase):
             query = query.join(getattr(model, k)).filter_by(**v)
         return query
 
+    def __repr__(self):
+        params = sorted(
+            (k, getattr(self, k)) for k in self.__mapper__.columns.keys()
+        )
+        params = ", ".join(f"{k}={v!r}" for k, v in params)
+        return f"{self.__class__.__name__}({params})"
+
 
 class LookupTableMixin(object):
     """Mixin to add to classes that are lookup tables."""
