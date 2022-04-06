@@ -197,11 +197,21 @@ class ModelTestMixin(object):
         kwargs = {'listener_id': listener_id, 'cidr': cidr}
         return self._insert(session, models.ListenerCidr, kwargs)
 
+    def create_quotas(self, session, **overrides):
+        kwargs = {"project_id": self.FAKE_UUID_1}
+        kwargs.update(overrides)
+        return self._insert(session, models.Quotas, kwargs)
+
 
 class PoolModelTest(base.OctaviaDBTestBase, ModelTestMixin):
 
     def test_create(self):
         pool = self.create_pool(self.session)
+        self.assertEqual(f"Pool(id={pool.id!r}, name=None, "
+                         f"project_id={pool.project_id!r}, "
+                         f"provisioning_status='ACTIVE', protocol='HTTP', "
+                         f"lb_algorithm='LEAST_CONNECTIONS', enabled=True)",
+                         str(pool))
 
         self.assertIsNotNone(pool.created_at)
         self.assertIsNone(pool.updated_at)
@@ -276,6 +286,12 @@ class MemberModelTest(base.OctaviaDBTestBase, ModelTestMixin):
 
     def test_create(self):
         member = self.create_member(self.session, self.pool.id)
+        self.assertEqual(f"Member(id={member.id!r}, name=None, "
+                         f"project_id={member.project_id!r}, "
+                         f"provisioning_status='ACTIVE', "
+                         f"ip_address='10.0.0.1', protocol_port=80, "
+                         f"operating_status='ONLINE', weight=None)",
+                         str(member))
 
         self.assertIsNotNone(member.created_at)
         self.assertIsNone(member.updated_at)
@@ -321,7 +337,11 @@ class SessionPersistenceModelTest(base.OctaviaDBTestBase, ModelTestMixin):
         self.pool = self.create_pool(self.session)
 
     def test_create(self):
-        self.create_session_persistence(self.session, self.pool.id)
+        obj = self.create_session_persistence(self.session, self.pool.id)
+        self.assertEqual(f"SessionPersistence(cookie_name='cookie_name', "
+                         f"persistence_granularity=None, "
+                         f"persistence_timeout=None, pool_id={obj.pool_id!r}, "
+                         f"type='HTTP_COOKIE')", str(obj))
 
     def test_update(self):
         session_persistence = self.create_session_persistence(self.session,
@@ -353,6 +373,10 @@ class ListenerModelTest(base.OctaviaDBTestBase, ModelTestMixin):
 
     def test_create(self):
         listener = self.create_listener(self.session)
+        self.assertEqual(f"Listener(id={listener.id!r}, default_pool=None, "
+                         f"name=None, project_id={listener.project_id!r}, "
+                         f"protocol='HTTP', protocol_port=80, enabled=True)",
+                         str(listener))
 
         self.assertIsNotNone(listener.created_at)
         self.assertIsNone(listener.updated_at)
@@ -454,8 +478,12 @@ class ListenerStatisticsModelTest(base.OctaviaDBTestBase, ModelTestMixin):
         self.amphora = self.create_amphora(self.session)
 
     def test_create(self):
-        self.create_listener_statistics(self.session, self.listener.id,
-                                        self.amphora.id)
+        obj = self.create_listener_statistics(self.session, self.listener.id,
+                                              self.amphora.id)
+        self.assertEqual(f"ListenerStatistics(active_connections=0, "
+                         f"amphora_id={obj.amphora_id!r}, bytes_in=0, "
+                         f"bytes_out=0, listener_id={obj.listener_id!r}, "
+                         f"request_errors=0, total_connections=0)", str(obj))
 
     def test_create_with_negative_int(self):
         overrides = {'bytes_in': -1}
@@ -490,7 +518,10 @@ class HealthMonitorModelTest(base.OctaviaDBTestBase, ModelTestMixin):
         self.pool = self.create_pool(self.session)
 
     def test_create(self):
-        self.create_health_monitor(self.session, self.pool.id)
+        obj = self.create_health_monitor(self.session, self.pool.id)
+        self.assertEqual(f"HealthMonitor(id={obj.id!r}, name=None, "
+                         f"project_id={obj.project_id!r}, type='HTTP', "
+                         f"enabled=True)", str(obj))
 
     def test_update(self):
         health_monitor = self.create_health_monitor(self.session, self.pool.id)
@@ -524,6 +555,11 @@ class LoadBalancerModelTest(base.OctaviaDBTestBase, ModelTestMixin):
 
     def test_create(self):
         load_balancer = self.create_load_balancer(self.session)
+        self.assertEqual(f"LoadBalancer(id={load_balancer.id!r}, name=None, "
+                         f"project_id={load_balancer.project_id!r}, "
+                         f"vip=None, provisioning_status='ACTIVE', "
+                         f"operating_status='ONLINE', provider=None)",
+                         str(load_balancer))
 
         self.assertIsNotNone(load_balancer.created_at)
         self.assertIsNone(load_balancer.updated_at)
@@ -582,7 +618,11 @@ class VipModelTest(base.OctaviaDBTestBase, ModelTestMixin):
         self.load_balancer = self.create_load_balancer(self.session)
 
     def test_create(self):
-        self.create_vip(self.session, self.load_balancer.id)
+        obj = self.create_vip(self.session, self.load_balancer.id)
+        self.assertEqual(f"Vip(ip_address=None, "
+                         f"load_balancer_id={obj.load_balancer_id!r}, "
+                         f"network_id=None, octavia_owned=None, port_id=None, "
+                         f"qos_policy_id=None, subnet_id=None)", str(obj))
 
     def test_update(self):
         vip = self.create_vip(self.session, self.load_balancer.id)
@@ -616,7 +656,11 @@ class SNIModelTest(base.OctaviaDBTestBase, ModelTestMixin):
         self.listener = self.create_listener(self.session)
 
     def test_create(self):
-        self.create_sni(self.session, listener_id=self.listener.id)
+        obj = self.create_sni(self.session, listener_id=self.listener.id)
+        self.assertEqual(f"SNI(listener_id={obj.listener_id!r}, "
+                         f"position=None, "
+                         f"tls_container_id={obj.tls_container_id!r})",
+                         str(obj))
 
     def test_update(self):
         sni = self.create_sni(self.session, listener_id=self.listener.id)
@@ -649,7 +693,11 @@ class AmphoraModelTest(base.OctaviaDBTestBase, ModelTestMixin):
         self.load_balancer = self.create_load_balancer(self.session)
 
     def test_create(self):
-        self.create_amphora(self.session)
+        obj = self.create_amphora(self.session)
+        self.assertEqual(f"Amphora(id={obj.id!r}, load_balancer_id=None, "
+                         f"status='ACTIVE', role=None, "
+                         f"lb_network_ip='10.0.0.1', vrrp_ip='10.0.0.1')",
+                         str(obj))
 
     def test_update(self):
         amphora = self.create_amphora(
@@ -684,7 +732,10 @@ class AmphoraHealthModelTest(base.OctaviaDBTestBase, ModelTestMixin):
         self.amphora = self.create_amphora(self.session)
 
     def test_create(self):
-        self.create_amphora_health(self.session)
+        obj = self.create_amphora_health(self.session)
+        self.assertEqual(f"AmphoraHealth(amphora_id={obj.amphora_id!r}, "
+                         f"busy=True, last_update={obj.last_update!r})",
+                         str(obj))
 
     def test_update(self):
         amphora_health = self.create_amphora_health(self.session)
@@ -715,6 +766,10 @@ class L7PolicyModelTest(base.OctaviaDBTestBase, ModelTestMixin):
 
     def test_create(self):
         l7policy = self.create_l7policy(self.session, self.listener.id)
+        self.assertEqual(f"L7Policy(id={l7policy.id!r}, name=None, "
+                         f"project_id=None, provisioning_status='ACTIVE', "
+                         f"action='REJECT', position=1, enabled=True)",
+                         str(l7policy))
         self.assertIsInstance(l7policy, models.L7Policy)
 
     def test_update(self):
@@ -836,6 +891,10 @@ class L7RuleModelTest(base.OctaviaDBTestBase, ModelTestMixin):
 
     def test_create(self):
         l7rule = self.create_l7rule(self.session, self.l7policy.id)
+        self.assertEqual(f"L7Rule(id={l7rule.id!r}, project_id=None, "
+                         f"provisioning_status='ACTIVE', type='PATH', "
+                         f"key=None, value='/api', invert=False, "
+                         f"enabled=True)", str(l7rule))
         self.assertIsInstance(l7rule, models.L7Rule)
 
     def test_update(self):
@@ -1757,6 +1816,9 @@ class FlavorModelTest(base.OctaviaDBTestBase, ModelTestMixin):
 
     def test_create(self):
         flavor = self.create_flavor(self.session, self.profile.id)
+        self.assertEqual(f"Flavor(description='fake flavor', enabled=True, "
+                         f"flavor_profile_id={flavor.flavor_profile_id!r}, "
+                         f"id={flavor.id!r}, name='fake_flavor')", str(flavor))
         self.assertIsNotNone(flavor.id)
 
     def test_delete(self):
@@ -1776,6 +1838,9 @@ class FlavorProfileModelTest(base.OctaviaDBTestBase, ModelTestMixin):
 
     def test_create(self):
         fp = self.create_flavor_profile(self.session)
+        self.assertEqual(f"FlavorProfile(flavor_data={fp.flavor_data!r}, "
+                         f"id={fp.id!r}, name='fake_profile', "
+                         f"provider_name='fake_provider')", str(fp))
         self.assertIsNotNone(fp.id)
 
     def test_delete(self):
@@ -1789,3 +1854,15 @@ class FlavorProfileModelTest(base.OctaviaDBTestBase, ModelTestMixin):
         new_fp = self.session.query(
             models.FlavorProfile).filter_by(id=id).first()
         self.assertIsNone(new_fp)
+
+
+class QuotasModelTest(base.OctaviaDBTestBase, ModelTestMixin):
+
+    def test_create(self):
+        obj = self.create_quotas(self.session, load_balancer=1, listener=2,
+                                 pool=3, health_monitor=4, member=5,
+                                 l7policy=6, l7rule=8)
+        self.assertEqual(f"Quotas(project_id={obj.project_id!r}, "
+                         f"load_balancer=1, listener=2, pool=3, "
+                         f"health_monitor=4, member=5, l7policy=6, l7rule=8)",
+                         str(obj))

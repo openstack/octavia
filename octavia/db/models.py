@@ -237,6 +237,15 @@ class Member(base_models.BASE, base_models.IdMixin, base_models.ProjectMixin,
         primaryjoin='and_(foreign(Tags.resource_id)==Member.id)'
     )
 
+    def __str__(self):
+        return (f"Member(id={self.id!r}, name={self.name!r}, "
+                f"project_id={self.project_id!r}, "
+                f"provisioning_status={self.provisioning_status!r}, "
+                f"ip_address={self.ip_address!r}, "
+                f"protocol_port={self.protocol_port!r}, "
+                f"operating_status={self.operating_status!r}, "
+                f"weight={self.weight!r})")
+
 
 class HealthMonitor(base_models.BASE, base_models.IdMixin,
                     base_models.ProjectMixin, models.TimestampMixin,
@@ -292,6 +301,11 @@ class HealthMonitor(base_models.BASE, base_models.IdMixin,
     )
     http_version = sa.Column(sa.Float, nullable=True)
     domain_name = sa.Column(sa.String(255), nullable=True)
+
+    def __str__(self):
+        return (f"HealthMonitor(id={self.id!r}, name={self.name!r}, "
+                f"project_id={self.project_id!r}, type={self.type!r}, "
+                f"enabled={self.enabled!r})")
 
 
 class Pool(base_models.BASE, base_models.IdMixin, base_models.ProjectMixin,
@@ -372,6 +386,14 @@ class Pool(base_models.BASE, base_models.IdMixin, base_models.ProjectMixin,
                 _l_ids.append(li.id)
         return _listeners
 
+    def __str__(self):
+        return (f"Pool(id={self.id!r}, name={self.name!r}, "
+                f"project_id={self.project_id!r}, "
+                f"provisioning_status={self.provisioning_status!r}, "
+                f"protocol={self.protocol!r}, "
+                f"lb_algorithm={self.lb_algorithm!r}, "
+                f"enabled={self.enabled!r})")
+
 
 class LoadBalancer(base_models.BASE, base_models.IdMixin,
                    base_models.ProjectMixin, models.TimestampMixin,
@@ -424,6 +446,13 @@ class LoadBalancer(base_models.BASE, base_models.IdMixin,
         sa.ForeignKey("availability_zone.name",
                       name="fk_load_balancer_availability_zone_name"),
         nullable=True)
+
+    def __str__(self):
+        return (f"LoadBalancer(id={self.id!r}, name={self.name!r}, "
+                f"project_id={self.project_id!r}, vip={self.vip!r}, "
+                f"provisioning_status={self.provisioning_status!r}, "
+                f"operating_status={self.operating_status!r}, "
+                f"provider={self.provider!r})")
 
 
 class VRRPGroup(base_models.BASE):
@@ -574,6 +603,13 @@ class Listener(base_models.BASE, base_models.IdMixin,
         'ListenerCidr', cascade='all,delete-orphan',
         uselist=True, backref=orm.backref('listener', uselist=False))
 
+    def __str__(self):
+        return (f"Listener(id={self.id!r}, "
+                f"default_pool={self.default_pool!r}, name={self.name!r}, "
+                f"project_id={self.project_id!r}, protocol={self.protocol!r}, "
+                f"protocol_port={self.protocol_port!r}, "
+                f"enabled={self.enabled!r})")
+
 
 class SNI(base_models.BASE):
 
@@ -629,6 +665,12 @@ class Amphora(base_models.BASE, base_models.IdMixin, models.TimestampMixin):
     load_balancer = orm.relationship("LoadBalancer", uselist=False,
                                      back_populates='amphorae')
     compute_flavor = sa.Column(sa.String(255), nullable=True)
+
+    def __str__(self):
+        return (f"Amphora(id={self.id!r}, load_balancer_id="
+                f"{self.load_balancer_id!r}, status={self.status!r}, "
+                f"role={self.role!r}, lb_network_ip={self.lb_network_ip!r}, "
+                f"vrrp_ip={self.vrrp_ip!r})")
 
 
 class AmphoraHealth(base_models.BASE):
@@ -692,6 +734,12 @@ class L7Rule(base_models.BASE, base_models.IdMixin, base_models.ProjectMixin,
         primaryjoin='and_(foreign(Tags.resource_id)==L7Rule.id)'
     )
 
+    def __str__(self):
+        return (f"L7Rule(id={self.id!r}, project_id={self.project_id!r}, "
+                f"provisioning_status={self.provisioning_status!r}, "
+                f"type={self.type!r}, key={self.key!r}, value={self.value!r}, "
+                f"invert={self.invert!r}, enabled={self.enabled!r})")
+
 
 class L7Policy(base_models.BASE, base_models.IdMixin, base_models.ProjectMixin,
                models.TimestampMixin, base_models.NameMixin,
@@ -751,6 +799,13 @@ class L7Policy(base_models.BASE, base_models.IdMixin, base_models.ProjectMixin,
         primaryjoin='and_(foreign(Tags.resource_id)==L7Policy.id)'
     )
 
+    def __str__(self):
+        return (f"L7Policy(id={self.id!r}, name={self.name!r}, "
+                f"project_id={self.project_id!r}, "
+                f"provisioning_status={self.provisioning_status!r}, "
+                f"action={self.action!r}, position={self.position!r}, "
+                f"enabled={self.enabled!r})")
+
 
 class Quotas(base_models.BASE):
 
@@ -775,6 +830,14 @@ class Quotas(base_models.BASE):
     in_use_pool = sa.Column(sa.Integer(), nullable=True)
     in_use_l7policy = sa.Column(sa.Integer(), nullable=True)
     in_use_l7rule = sa.Column(sa.Integer(), nullable=True)
+
+    def __str__(self):
+        return (f"Quotas(project_id={self.project_id!r}, "
+                f"load_balancer={self.load_balancer!r}, "
+                f"listener={self.listener!r}, pool={self.pool!r}, "
+                f"health_monitor={self.health_monitor!r}, "
+                f"member={self.member!r}, l7policy={self.l7policy!r}, "
+                f"l7rule={self.l7rule!r})")
 
 
 class FlavorProfile(base_models.BASE, base_models.IdMixin,
