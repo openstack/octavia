@@ -1,0 +1,7 @@
+---
+fixes:
+  - |
+    Fix a potential race condition when updating a resource in the amphorav2
+    worker. The worker was not waiting for the resource to be set to
+    PENDING_UPDATE, so the resource may have been updated with old data from the
+    database, resulting in a no-op update.
