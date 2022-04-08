@@ -17,6 +17,7 @@ from unittest import mock
 from oslo_config import cfg
 from oslo_config import fixture as oslo_fixture
 from oslo_utils import uuidutils
+import tenacity
 
 from octavia.api.drivers import utils as provider_utils
 from octavia.common import constants
@@ -370,6 +371,33 @@ class TestControllerWorker(base.TestCase):
                                            constants.UPDATE_DICT:
                                            HEALTH_UPDATE_DICT}))
 
+    @mock.patch("octavia.controller.worker.v2.controller_worker."
+                "ControllerWorker._get_db_obj_until_pending_update")
+    def test_update_health_monitor_timeout(self,
+                                           mock__get_db_obj_until_pending,
+                                           mock_api_get_session,
+                                           mock_dyn_log_listener,
+                                           mock_taskflow_load,
+                                           mock_pool_repo_get,
+                                           mock_member_repo_get,
+                                           mock_l7rule_repo_get,
+                                           mock_l7policy_repo_get,
+                                           mock_listener_repo_get,
+                                           mock_lb_repo_get,
+                                           mock_health_mon_repo_get,
+                                           mock_amp_repo_get):
+
+        _flow_mock.reset_mock()
+        _db_health_mon_mock.provisioning_status = constants.ACTIVE
+        last_attempt_mock = mock.MagicMock()
+        last_attempt_mock.result.return_value = _db_health_mon_mock
+        mock__get_db_obj_until_pending.side_effect = tenacity.RetryError(
+            last_attempt=last_attempt_mock)
+
+        cw = controller_worker.ControllerWorker()
+        cw.update_health_monitor(_health_mon_mock,
+                                 HEALTH_UPDATE_DICT)
+
     def test_create_listener(self,
                              mock_api_get_session,
                              mock_dyn_log_listener,
@@ -442,6 +470,11 @@ class TestControllerWorker(base.TestCase):
                              mock_health_mon_repo_get,
                              mock_amp_repo_get):
 
+        load_balancer_mock = mock.MagicMock()
+        load_balancer_mock.provisioning_status = constants.PENDING_UPDATE
+        load_balancer_mock.id = LB_ID
+        mock_lb_repo_get.return_value = load_balancer_mock
+
         _flow_mock.reset_mock()
         _listener_mock.provisioning_status = constants.PENDING_UPDATE
 
@@ -458,6 +491,36 @@ class TestControllerWorker(base.TestCase):
                                            constants.LOADBALANCER_ID: LB_ID,
                                            constants.LISTENERS:
                                            [listener_dict]}))
+
+    @mock.patch("octavia.controller.worker.v2.controller_worker."
+                "ControllerWorker._get_db_obj_until_pending_update")
+    def test_update_listener_timeout(self,
+                                     mock__get_db_obj_until_pending,
+                                     mock_api_get_session,
+                                     mock_dyn_log_listener,
+                                     mock_taskflow_load,
+                                     mock_pool_repo_get,
+                                     mock_member_repo_get,
+                                     mock_l7rule_repo_get,
+                                     mock_l7policy_repo_get,
+                                     mock_listener_repo_get,
+                                     mock_lb_repo_get,
+                                     mock_health_mon_repo_get,
+                                     mock_amp_repo_get):
+        load_balancer_mock = mock.MagicMock()
+        load_balancer_mock.provisioning_status = constants.PENDING_UPDATE
+        load_balancer_mock.id = LB_ID
+        _flow_mock.reset_mock()
+        _listener_mock.provisioning_status = constants.PENDING_UPDATE
+        last_attempt_mock = mock.MagicMock()
+        last_attempt_mock.result.return_value = load_balancer_mock
+        mock__get_db_obj_until_pending.side_effect = tenacity.RetryError(
+            last_attempt=last_attempt_mock)
+
+        listener_dict = {constants.LISTENER_ID: LISTENER_ID,
+                         constants.LOADBALANCER_ID: LB_ID}
+        cw = controller_worker.ControllerWorker()
+        cw.update_listener(listener_dict, LISTENER_UPDATE_DICT)
 
     def test_create_load_balancer_single_no_anti_affinity(
             self, mock_api_get_session,
@@ -760,6 +823,36 @@ class TestControllerWorker(base.TestCase):
                                                _db_load_balancer_mock.id,
                                            }))
 
+    @mock.patch('octavia.db.repositories.ListenerRepository.get_all',
+                return_value=([_listener_mock], None))
+    @mock.patch("octavia.controller.worker.v2.controller_worker."
+                "ControllerWorker._get_db_obj_until_pending_update")
+    def test_update_load_balancer_timeout(self,
+                                          mock__get_db_obj_until_pending,
+                                          mock_listener_repo_get_all,
+                                          mock_api_get_session,
+                                          mock_dyn_log_listener,
+                                          mock_taskflow_load,
+                                          mock_pool_repo_get,
+                                          mock_member_repo_get,
+                                          mock_l7rule_repo_get,
+                                          mock_l7policy_repo_get,
+                                          mock_listener_repo_get,
+                                          mock_lb_repo_get,
+                                          mock_health_mon_repo_get,
+                                          mock_amp_repo_get):
+
+        _flow_mock.reset_mock()
+        _db_load_balancer_mock.provisioning_status = constants.ACTIVE
+        last_attempt_mock = mock.MagicMock()
+        last_attempt_mock.result.return_value = _db_load_balancer_mock
+        mock__get_db_obj_until_pending.side_effect = tenacity.RetryError(
+            last_attempt=last_attempt_mock)
+
+        cw = controller_worker.ControllerWorker()
+        change = 'TEST2'
+        cw.update_load_balancer(_load_balancer_mock, change)
+
     @mock.patch('octavia.controller.worker.v2.flows.'
                 'member_flows.MemberFlows.get_create_member_flow',
                 return_value=_flow_mock)
@@ -862,6 +955,10 @@ class TestControllerWorker(base.TestCase):
                            mock_amp_repo_get):
 
         _flow_mock.reset_mock()
+        db_member = mock.MagicMock()
+        db_member.provisioning_status = constants.PENDING_UPDATE
+        db_member.pool = _db_pool_mock
+        mock_member_repo_get.return_value = db_member
         _member = _member_mock.to_dict()
         _member[constants.PROVISIONING_STATUS] = constants.PENDING_UPDATE
         mock_get_az_metadata_dict.return_value = {}
@@ -883,6 +980,44 @@ class TestControllerWorker(base.TestCase):
                                            constants.UPDATE_DICT:
                                                MEMBER_UPDATE_DICT,
                                            constants.AVAILABILITY_ZONE: {}}))
+
+    @mock.patch('octavia.controller.worker.v2.flows.'
+                'member_flows.MemberFlows.get_update_member_flow',
+                return_value=_flow_mock)
+    @mock.patch('octavia.db.repositories.AvailabilityZoneRepository.'
+                'get_availability_zone_metadata_dict')
+    @mock.patch("octavia.controller.worker.v2.controller_worker."
+                "ControllerWorker._get_db_obj_until_pending_update")
+    def test_update_member_timeout(self,
+                                   mock__get_db_obj_until_pending,
+                                   mock_get_az_metadata_dict,
+                                   mock_get_update_member_flow,
+                                   mock_api_get_session,
+                                   mock_dyn_log_listener,
+                                   mock_taskflow_load,
+                                   mock_pool_repo_get,
+                                   mock_member_repo_get,
+                                   mock_l7rule_repo_get,
+                                   mock_l7policy_repo_get,
+                                   mock_listener_repo_get,
+                                   mock_lb_repo_get,
+                                   mock_health_mon_repo_get,
+                                   mock_amp_repo_get):
+
+        _flow_mock.reset_mock()
+        db_member = mock.MagicMock()
+        db_member.provisioning_status = constants.ACTIVE
+        db_member.pool = _db_pool_mock
+        last_attempt_mock = mock.MagicMock()
+        last_attempt_mock.result.return_value = db_member
+        mock__get_db_obj_until_pending.side_effect = tenacity.RetryError(
+            last_attempt=last_attempt_mock)
+        mock_member_repo_get.return_value = db_member
+        _member = _member_mock.to_dict()
+        _member[constants.PROVISIONING_STATUS] = constants.PENDING_UPDATE
+        mock_get_az_metadata_dict.return_value = {}
+        cw = controller_worker.ControllerWorker()
+        cw.update_member(_member, MEMBER_UPDATE_DICT)
 
     @mock.patch('octavia.controller.worker.v2.flows.'
                 'member_flows.MemberFlows.get_batch_update_members_flow',
@@ -910,7 +1045,9 @@ class TestControllerWorker(base.TestCase):
         old_member = mock.MagicMock()
         old_member.to_dict.return_value = {'id': 9,
                                            constants.POOL_ID: 'testtest'}
-        mock_member_repo_get.side_effect = [_member_mock, old_member]
+        new_member = mock.MagicMock()
+        mock_member_repo_get.side_effect = [
+            new_member, _member_mock, old_member]
         cw.batch_update_members([{constants.MEMBER_ID: 9,
                                   constants.POOL_ID: 'testtest'}],
                                 [{constants.MEMBER_ID: 11}],
@@ -1030,6 +1167,32 @@ class TestControllerWorker(base.TestCase):
                                            constants.UPDATE_DICT:
                                                POOL_UPDATE_DICT}))
 
+    @mock.patch("octavia.controller.worker.v2.controller_worker."
+                "ControllerWorker._get_db_obj_until_pending_update")
+    def test_update_pool_update(self,
+                                mock__get_db_obj_until_pending,
+                                mock_api_get_session,
+                                mock_dyn_log_listener,
+                                mock_taskflow_load,
+                                mock_pool_repo_get,
+                                mock_member_repo_get,
+                                mock_l7rule_repo_get,
+                                mock_l7policy_repo_get,
+                                mock_listener_repo_get,
+                                mock_lb_repo_get,
+                                mock_health_mon_repo_get,
+                                mock_amp_repo_get):
+
+        _flow_mock.reset_mock()
+        _db_pool_mock.provisioning_status = constants.ACTIVE
+        last_attempt_mock = mock.MagicMock()
+        last_attempt_mock.result.return_value = _db_pool_mock
+        mock__get_db_obj_until_pending.side_effect = tenacity.RetryError(
+            last_attempt=last_attempt_mock)
+
+        cw = controller_worker.ControllerWorker()
+        cw.update_pool(_pool_mock, POOL_UPDATE_DICT)
+
     def test_create_l7policy(self,
                              mock_api_get_session,
                              mock_dyn_log_listener,
@@ -1124,6 +1287,38 @@ class TestControllerWorker(base.TestCase):
                                                LB_ID,
                                            constants.UPDATE_DICT:
                                                L7POLICY_UPDATE_DICT}))
+
+    @mock.patch("octavia.controller.worker.v2.controller_worker."
+                "ControllerWorker._get_db_obj_until_pending_update")
+    def test_update_l7policy_timeout(self,
+                                     mock__get_db_obj_until_pending,
+                                     mock_api_get_session,
+                                     mock_dyn_log_listener,
+                                     mock_taskflow_load,
+                                     mock_pool_repo_get,
+                                     mock_member_repo_get,
+                                     mock_l7rule_repo_get,
+                                     mock_l7policy_repo_get,
+                                     mock_listener_repo_get,
+                                     mock_lb_repo_get,
+                                     mock_health_mon_repo_get,
+                                     mock_amp_repo_get):
+
+        _flow_mock.reset_mock()
+        mock_listener_repo_get.return_value = _listener_mock
+        _l7policy_mock.provisioning_status = constants.ACTIVE
+        last_attempt_mock = mock.MagicMock()
+        last_attempt_mock.result.return_value = _l7policy_mock
+        mock__get_db_obj_until_pending.side_effect = tenacity.RetryError(
+            last_attempt=last_attempt_mock)
+
+        cw = controller_worker.ControllerWorker()
+        l7policy_mock = {
+            constants.L7POLICY_ID: L7POLICY_ID,
+            constants.LISTENER_ID: LISTENER_ID
+        }
+
+        cw.update_l7policy(l7policy_mock, L7POLICY_UPDATE_DICT)
 
     def test_create_l7rule(self,
                            mock_api_get_session,
@@ -1227,6 +1422,32 @@ class TestControllerWorker(base.TestCase):
                                             [self.ref_listener_dict],
                                         constants.UPDATE_DICT:
                                             L7RULE_UPDATE_DICT}))
+
+    @mock.patch("octavia.controller.worker.v2.controller_worker."
+                "ControllerWorker._get_db_obj_until_pending_update")
+    def test_update_l7rule_timeout(self,
+                                   mock__get_db_obj_until_pending,
+                                   mock_api_get_session,
+                                   mock_dyn_log_listener,
+                                   mock_taskflow_load,
+                                   mock_pool_repo_get,
+                                   mock_member_repo_get,
+                                   mock_l7rule_repo_get,
+                                   mock_l7policy_repo_get,
+                                   mock_listener_repo_get,
+                                   mock_lb_repo_get,
+                                   mock_health_mon_repo_get,
+                                   mock_amp_repo_get):
+
+        _flow_mock.reset_mock()
+        _l7rule_mock.provisioning_status = constants.ACTIVE
+        last_attempt_mock = mock.MagicMock()
+        last_attempt_mock.result.return_value = _l7rule_mock
+        mock__get_db_obj_until_pending.side_effect = tenacity.RetryError(
+            last_attempt=last_attempt_mock)
+
+        cw = controller_worker.ControllerWorker()
+        cw.update_l7rule(_l7rule_mock.to_dict(), L7RULE_UPDATE_DICT)
 
     @mock.patch('octavia.api.drivers.utils.'
                 'db_loadbalancer_to_provider_loadbalancer')
