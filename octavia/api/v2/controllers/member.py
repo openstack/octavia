@@ -119,16 +119,10 @@ class MemberController(base.BaseController):
         """Validate creating member on pool."""
         try:
             return self.repositories.member.create(lock_session, **member_dict)
-        except odb_exceptions.DBDuplicateEntry as de:
-            column_list = ['pool_id', 'ip_address', 'protocol_port']
-            constraint_list = ['uq_member_pool_id_address_protocol_port']
-            if ['id'] == de.columns:
-                raise exceptions.IDAlreadyExists()
-            if (set(column_list) == set(de.columns) or
-                    set(constraint_list) == set(de.columns)):
-                raise exceptions.DuplicateMemberEntry(
-                    ip_address=member_dict.get('ip_address'),
-                    port=member_dict.get('protocol_port'))
+        except odb_exceptions.DBDuplicateEntry:
+            raise exceptions.DuplicateMemberEntry(
+                ip_address=member_dict.get('ip_address'),
+                port=member_dict.get('protocol_port'))
         except odb_exceptions.DBError:
             # TODO(blogan): will have to do separate validation protocol
             # before creation or update since the exception messages

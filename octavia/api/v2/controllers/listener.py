@@ -296,16 +296,10 @@ class ListenersController(base.BaseController):
                     lock_session, id=db_listener.id)
 
             return db_listener
-        except odb_exceptions.DBDuplicateEntry as de:
-            column_list = ['load_balancer_id', 'protocol', 'protocol_port']
-            constraint_list = ['uq_listener_load_balancer_id_protocol_port']
-            if ['id'] == de.columns:
-                raise exceptions.IDAlreadyExists()
-            if (set(column_list) == set(de.columns) or
-                    set(constraint_list) == set(de.columns)):
-                raise exceptions.DuplicateListenerEntry(
-                    protocol=listener_dict.get('protocol'),
-                    port=listener_dict.get('protocol_port'))
+        except odb_exceptions.DBDuplicateEntry:
+            raise exceptions.DuplicateListenerEntry(
+                protocol=listener_dict.get('protocol'),
+                port=listener_dict.get('protocol_port'))
         except odb_exceptions.DBError:
             raise exceptions.InvalidOption(value=listener_dict.get('protocol'),
                                            option='protocol')
