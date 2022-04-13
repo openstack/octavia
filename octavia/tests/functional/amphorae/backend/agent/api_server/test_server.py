@@ -353,8 +353,10 @@ class TestServerTestCase(base.TestCase):
     @mock.patch('octavia.amphorae.backends.agent.api_server.loadbalancer.'
                 'Loadbalancer._check_haproxy_status')
     @mock.patch('subprocess.check_output')
-    def _test_reload(self, distro, mock_subprocess, mock_haproxy_status,
-                     mock_vrrp, mock_exists, mock_listdir):
+    @mock.patch('octavia.amphorae.backends.utils.haproxy_query.HAProxyQuery')
+    def _test_reload(self, distro, mock_haproxy_query, mock_subprocess,
+                     mock_haproxy_status, mock_vrrp, mock_exists,
+                     mock_listdir):
 
         self.assertIn(distro, [consts.UBUNTU, consts.CENTOS])
 
