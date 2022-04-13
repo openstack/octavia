@@ -64,8 +64,9 @@ class ListenerTestCase(base.TestCase):
     @mock.patch('octavia.amphorae.backends.agent.api_server.loadbalancer.'
                 'Loadbalancer._check_lb_exists')
     @mock.patch('subprocess.check_output')
-    def test_start_stop_lb(self, mock_check_output, mock_lb_exists,
-                           mock_path_exists, mock_vrrp_update,
+    @mock.patch('octavia.amphorae.backends.utils.haproxy_query.HAProxyQuery')
+    def test_start_stop_lb(self, mock_haproxy_query, mock_check_output,
+                           mock_lb_exists, mock_path_exists, mock_vrrp_update,
                            mock_check_status):
         listener_id = uuidutils.generate_uuid()
 
