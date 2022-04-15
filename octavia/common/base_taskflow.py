@@ -16,6 +16,7 @@
 import concurrent.futures
 import datetime
 import functools
+import time
 
 from oslo_config import cfg
 from oslo_log import log
@@ -153,17 +154,9 @@ class TaskFlowServiceController(object):
 
     def _wait_for_job(self, job_board):
         # Wait for job to its complete state
-        expiration_time = CONF.task_flow.jobboard_expiration_time
-
-        need_wait = True
-        while need_wait:
-            need_wait = False
-            for job in job_board.iterjobs():
-                # If job hasn't finished in expiration_time/2 seconds,
-                # extend its TTL
-                if not job.wait(timeout=expiration_time / 2):
-                    job.extend_expiry(expiration_time)
-                    need_wait = True
+        for job in job_board.iterjobs():
+            LOG.debug("Waiting for job %s to finish", job.name)
+            job.wait()
 
     def run_conductor(self, name):
         with self.driver.persistence_driver.get_persistence() as persistence:
@@ -187,4 +180,35 @@ class TaskFlowServiceController(object):
                         name, board, persistence=persistence,
                         engine=CONF.task_flow.engine)
 
+                waiter_th = concurrent.futures.ThreadPoolExecutor(
+                    max_workers=1)
+                waiter_th.submit(self._waiter, conductor)
+
                 conductor.run()
+
+    def _extend_jobs(self, conductor, expiration_time):
+        conductor_name = conductor._name
+
+        with self.driver.persistence_driver.get_persistence() as persistence:
+            with self.driver.job_board(persistence) as board:
+                for job in board.iterjobs():
+                    try:
+                        owner = board.find_owner(job)
+                    except TypeError:
+                        # taskflow throws an exception if a job is not owned
+                        # (probably a bug in taskflow)
+                        continue
+                    # Only extend expiry for jobs that are owner by our
+                    # conductor (from the same process)
+                    if owner == conductor_name:
+                        if job.expires_in() < expiration_time / 2:
+                            LOG.debug("Extend expiry for job %s", job.name)
+                            job.extend_expiry(expiration_time)
+
+    def _waiter(self, conductor):
+        expiration_time = CONF.task_flow.jobboard_expiration_time
+
+        while True:
+            self._extend_jobs(conductor, expiration_time)
+
+            time.sleep(expiration_time / 4)
