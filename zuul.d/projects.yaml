@@ -42,17 +42,6 @@
             irrelevant-files: *irrelevant-files
         - octavia-v2-act-stdby-dsvm-scenario:
             irrelevant-files: *irrelevant-files
-        - octavia-grenade:
-            irrelevant-files:
-              - ^.*\.rst$
-              - ^api-ref/.*$
-              - ^doc/.*$
-              - ^octavia/tests/.*$
-              - ^releasenotes/.*$
-              - ^setup.cfg$
-              - ^tools/.*$
-              - ^(test-|)requirements.txt$
-              - ^tox.ini$
         - octavia-v2-dsvm-cinder-amphora:
             irrelevant-files: *irrelevant-files
             voting: false
@@ -96,7 +85,6 @@
         - octavia-v2-dsvm-tls-barbican
         - octavia-v2-dsvm-spare-pool
         - octavia-v2-act-stdby-dsvm-scenario
-        - octavia-grenade
     periodic:
       jobs:
         - publish-openstack-octavia-amphora-image-bionic:
