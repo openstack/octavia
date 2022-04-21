@@ -284,7 +284,7 @@ class TestControllerWorker(base.TestCase):
         cw = controller_worker.ControllerWorker()
         cw.create_health_monitor(_health_mon_mock)
         provider_lb = provider_utils.db_loadbalancer_to_provider_loadbalancer(
-            _db_load_balancer_mock).to_dict()
+            _db_load_balancer_mock).to_dict(recurse=True)
         mock_health_mon_repo_get.return_value = _db_health_mon_mock
 
         (cw.services_controller.run_poster.
@@ -317,7 +317,7 @@ class TestControllerWorker(base.TestCase):
 
         cw = controller_worker.ControllerWorker()
         provider_lb = provider_utils.db_loadbalancer_to_provider_loadbalancer(
-            _db_load_balancer_mock).to_dict()
+            _db_load_balancer_mock).to_dict(recurse=True)
 
         cw.delete_health_monitor(_health_mon_mock)
         mock_health_mon_repo_get.return_value = _db_health_mon_mock
@@ -356,7 +356,7 @@ class TestControllerWorker(base.TestCase):
         cw.update_health_monitor(_health_mon_mock,
                                  HEALTH_UPDATE_DICT)
         provider_lb = provider_utils.db_loadbalancer_to_provider_loadbalancer(
-            _db_load_balancer_mock).to_dict()
+            _db_load_balancer_mock).to_dict(recurse=True)
 
         (cw.services_controller.run_poster.
             assert_called_once_with(flow_utils.get_update_health_monitor_flow,
@@ -394,7 +394,7 @@ class TestControllerWorker(base.TestCase):
                          constants.PROJECT_ID: PROJECT_ID}
         cw.create_listener(listener_dict)
         provider_lb = provider_utils.db_loadbalancer_to_provider_loadbalancer(
-            _db_load_balancer_mock).to_dict()
+            _db_load_balancer_mock).to_dict(recurse=True)
 
         (cw.services_controller.run_poster.
             assert_called_once_with(
@@ -790,7 +790,7 @@ class TestControllerWorker(base.TestCase):
         cw.create_member(_member)
 
         provider_lb = provider_utils.db_loadbalancer_to_provider_loadbalancer(
-            _db_load_balancer_mock).to_dict()
+            _db_load_balancer_mock).to_dict(recurse=True)
         (cw.services_controller.run_poster.
          assert_called_once_with(flow_utils.get_create_member_flow,
                                  store={constants.MEMBER: _member,
@@ -830,7 +830,7 @@ class TestControllerWorker(base.TestCase):
         cw = controller_worker.ControllerWorker()
         cw.delete_member(_member)
         provider_lb = provider_utils.db_loadbalancer_to_provider_loadbalancer(
-            _db_load_balancer_mock).to_dict()
+            _db_load_balancer_mock).to_dict(recurse=True)
 
         (cw.services_controller.run_poster.
             assert_called_once_with(
@@ -870,7 +870,7 @@ class TestControllerWorker(base.TestCase):
         cw = controller_worker.ControllerWorker()
         cw.update_member(_member, MEMBER_UPDATE_DICT)
         provider_lb = provider_utils.db_loadbalancer_to_provider_loadbalancer(
-            _db_load_balancer_mock).to_dict()
+            _db_load_balancer_mock).to_dict(recurse=True)
         (cw.services_controller.run_poster.
             assert_called_once_with(flow_utils.get_update_member_flow,
                                     store={constants.MEMBER: _member,
@@ -921,7 +921,7 @@ class TestControllerWorker(base.TestCase):
         old_provider_m = provider_utils.db_member_to_provider_member(
             old_member).to_dict()
         provider_lb = provider_utils.db_loadbalancer_to_provider_loadbalancer(
-            _db_load_balancer_mock).to_dict()
+            _db_load_balancer_mock).to_dict(recurse=True)
         (cw.services_controller.run_poster.
             assert_called_once_with(
                 flow_utils.get_batch_update_members_flow,
@@ -954,7 +954,7 @@ class TestControllerWorker(base.TestCase):
         cw = controller_worker.ControllerWorker()
         cw.create_pool(_pool_mock)
         provider_lb = provider_utils.db_loadbalancer_to_provider_loadbalancer(
-            _db_load_balancer_mock).to_dict()
+            _db_load_balancer_mock).to_dict(recurse=True)
 
         (cw.services_controller.run_poster.
             assert_called_once_with(flow_utils.get_create_pool_flow,
@@ -987,7 +987,7 @@ class TestControllerWorker(base.TestCase):
         cw = controller_worker.ControllerWorker()
         cw.delete_pool(_pool_mock)
         provider_lb = provider_utils.db_loadbalancer_to_provider_loadbalancer(
-            _db_load_balancer_mock).to_dict()
+            _db_load_balancer_mock).to_dict(recurse=True)
         (cw.services_controller.run_poster.
             assert_called_once_with(flow_utils.get_delete_pool_flow,
                                     store={constants.POOL_ID: POOL_ID,
@@ -1019,7 +1019,7 @@ class TestControllerWorker(base.TestCase):
         cw = controller_worker.ControllerWorker()
         cw.update_pool(_pool_mock, POOL_UPDATE_DICT)
         provider_lb = provider_utils.db_loadbalancer_to_provider_loadbalancer(
-            _db_load_balancer_mock).to_dict()
+            _db_load_balancer_mock).to_dict(recurse=True)
         (cw.services_controller.run_poster.
             assert_called_once_with(flow_utils.get_update_pool_flow,
                                     store={constants.POOL_ID: POOL_ID,
