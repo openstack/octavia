@@ -1,0 +1,9 @@
+---
+fixes:
+  - |
+    Fix an issue when Octavia performs a failover of an ACTIVE-STANDBY load
+    balancer that has both amphorae missing.
+    Some tasks in the controller took too much time to timeout because the
+    timeout value defined in
+    ``[haproxy_amphora].active_connection_max_retries`` and
+    ``[haproxy_amphora].active_connection_rety_interval`` was not used.
