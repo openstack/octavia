@@ -39,18 +39,6 @@
         - octavia-v2-act-stdby-dsvm-scenario:
             irrelevant-files: *irrelevant-files
             nodeset: octavia-single-node-ubuntu-bionic
-        - octavia-grenade:
-            irrelevant-files:
-              - ^.*\.rst$
-              - ^api-ref/.*$
-              - ^doc/.*$
-              - ^octavia/tests/.*$
-              - ^releasenotes/.*$
-              - ^setup.cfg$
-              - ^tools/.*$
-              - ^(test-|)requirements.txt$
-              - ^tox.ini$
-            nodeset: octavia-single-node-ubuntu-bionic
         - octavia-v2-dsvm-cinder-amphora:
             irrelevant-files: *irrelevant-files
             voting: false
@@ -84,8 +72,6 @@
         - octavia-v2-dsvm-spare-pool:
             nodeset: octavia-single-node-ubuntu-bionic
         - octavia-v2-act-stdby-dsvm-scenario:
-            nodeset: octavia-single-node-ubuntu-bionic
-        - octavia-grenade:
             nodeset: octavia-single-node-ubuntu-bionic
     periodic:
       jobs:
