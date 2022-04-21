@@ -619,9 +619,26 @@ class AllowedAddressPairsDriver(neutron_base.BaseNeutronDriver):
 
         unpluggers = self._get_interfaces_to_unplug(interfaces, network_id,
                                                     ip_address=ip_address)
+        removed_port_ids = set()
         for index, unplugger in enumerate(unpluggers):
             self.compute.detach_port(
                 compute_id=compute_id, port_id=unplugger.port_id)
+            removed_port_ids.add(unplugger.port_id)
+
+        port_detach_timeout = CONF.networking.port_detach_timeout
+
+        start = time.time()
+        while time.time() - start < port_detach_timeout:
+            interfaces = self.get_plugged_networks(compute_id)
+            plugged_port_ids = {i.port_id for i in interfaces}
+            if not plugged_port_ids & removed_port_ids:
+                break
+            time.sleep(CONF.networking.retry_interval)
+        else:
+            LOG.warning("Ports (%s) still attached to compute %s after "
+                        "%s seconds.",
+                        ", ".join(removed_port_ids),
+                        compute_id, port_detach_timeout)
 
     def update_vip(self, load_balancer, for_delete=False):
         sec_grp = self._get_lb_security_group(load_balancer.id)
