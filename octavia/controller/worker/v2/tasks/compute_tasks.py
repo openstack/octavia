@@ -107,10 +107,10 @@ class ComputeCreate(BaseComputeTask):
             config_drive_files['/etc/rsyslog.d/10-rsyslog.conf'] = (
                 logging_cfg.build_logging_config())
 
+            udtemplater = user_data_jinja_cfg.UserDataJinjaCfg()
+            user_data = udtemplater.build_user_data_config(
+                config_drive_files if user_data_config_drive else {})
             if user_data_config_drive:
-                udtemplater = user_data_jinja_cfg.UserDataJinjaCfg()
-                user_data = udtemplater.build_user_data_config(
-                    config_drive_files)
                 config_drive_files = None
 
             compute_id = self.compute.build(

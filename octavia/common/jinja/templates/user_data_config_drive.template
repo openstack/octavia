@@ -22,13 +22,18 @@
 #
 # Example:
 #     {'/root/path/to/file.cfg': 'I'm a file, write things in me'}
+{% if user_data -%}
 write_files:
 {%-  for key, value in user_data.items() %}
 -   path: {{ key }}
     content: |
         {{ value|indent(8) }}
 {%- endfor -%}
+{%- endif -%}
 
 {# restart agent now that configurations are in place #}
 runcmd:
+-   systemctl restart rsyslog
+{% if user_data -%}
 -   service amphora-agent restart
+{%- endif %}

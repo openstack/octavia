@@ -36,10 +36,11 @@ BASE_CFG = ('#cloud-config\n'
             '#\n'
             '# Example:\n'
             '#     {\'/root/path/to/file.cfg\': \'I\'m a file, '
-            'write things in me\'}\n'
-            'write_files:\n')
+            'write things in me\'}\n')
+WRITE_FILES_CFG = ('write_files:\n')
 RUN_CMD = ('runcmd:\n'
-           '-   service amphora-agent restart')
+           '-   systemctl restart rsyslog\n')
+WRITE_FILES_CMD = ('-   service amphora-agent restart')
 
 
 class TestUserDataJinjaCfg(base.TestCase):
@@ -48,8 +49,15 @@ class TestUserDataJinjaCfg(base.TestCase):
 
     def test_build_user_data_config(self):
         udc = user_data_jinja_cfg.UserDataJinjaCfg()
-        expected_config = (BASE_CFG +
+        expected_config = (BASE_CFG + WRITE_FILES_CFG +
                            '-   path: /test/config/path\n'
-                           '    content: |\n' + EXPECTED_TEST_CONFIG + RUN_CMD)
+                           '    content: |\n' + EXPECTED_TEST_CONFIG +
+                           RUN_CMD + WRITE_FILES_CMD)
         ud_cfg = udc.build_user_data_config({'/test/config/path': TEST_CONFIG})
+        self.assertEqual(expected_config, ud_cfg)
+
+    def test_build_user_data_config_no_files(self):
+        udc = user_data_jinja_cfg.UserDataJinjaCfg()
+        expected_config = (BASE_CFG + '\n' + RUN_CMD)
+        ud_cfg = udc.build_user_data_config({})
         self.assertEqual(expected_config, ud_cfg)
