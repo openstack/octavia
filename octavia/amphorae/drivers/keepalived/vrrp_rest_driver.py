@@ -50,7 +50,8 @@ class KeepalivedAmphoraDriverMixin(driver_base.VRRPDriverMixin):
 
         LOG.debug("Update amphora %s VRRP configuration.", amphora.id)
 
-        self._populate_amphora_api_version(amphora)
+        self._populate_amphora_api_version(amphora,
+                                           timeout_dict=timeout_dict)
         # Get the VIP subnet prefix for the amphora
         # For amphorav2 amphorae_network_config will be list of dicts
         try:
