@@ -39,7 +39,7 @@ STATS_SOCKET_SAMPLE = (
     "tcp-servers:listener-id,id-34833,0,0,0,0,,0,0,0,,0,,0,0,0,0,UP,1,1,0,1,1,"
     "560,560,,1,5,1,,0,,2,0,,0,L4TOUT,,30000,,,,,,,0,,,,0,0,,,,,-1,,,0,0,0,0,"
     "\n"
-    "tcp-servers:listener-id,id-34836,0,0,0,0,,0,0,0,,0,,0,0,0,0,UP,1,1,0,1,1,"
+    "tcp-servers:listener-id,id-34836,0,0,0,0,,0,0,0,,0,,0,0,0,0,UP,0,1,0,1,1,"
     "552,552,,1,5,2,,0,,2,0,,0,L4TOUT,,30001,,,,,,,0,,,,0,0,,,,,-1,,,0,0,0,0,"
     "\n"
     "tcp-servers:listener-id,id-34839,0,0,0,0,,0,0,0,,0,,0,0,0,0,DRAIN,0,1,0,"
@@ -48,7 +48,7 @@ STATS_SOCKET_SAMPLE = (
     "tcp-servers:listener-id,id-34842,0,0,0,0,,0,0,0,,0,,0,0,0,0,MAINT,0,1,0,"
     "0,0,552,0,,1,5,2,,0,,2,0,,0,L7OK,,30001,,,,,,,0,,,,0,0,,,,,-1,,,0,0,0,0,"
     "\n"
-    "tcp-servers:listener-id,BACKEND,0,0,0,0,200,0,0,0,0,0,,0,0,0,0,UP,0,0,0,,"
+    "tcp-servers:listener-id,BACKEND,0,0,0,0,200,0,0,0,0,0,,0,0,0,0,UP,1,0,0,,"
     "1,552,552,,1,5,0,,0,,1,0,,0,,,,,,,,,,,,,,0,0,0,0,0,0,-1,,,0,0,0,0,"
 )
 
@@ -105,7 +105,7 @@ class QueryTestCase(base.TestCase):
                 'pool_uuid': 'tcp-servers',
                 'members':
                     {'id-34833': constants.UP,
-                     'id-34836': constants.UP,
+                     'id-34836': constants.DRAIN,
                      'id-34839': constants.DRAIN,
                      'id-34842': constants.MAINT}},
              'http-servers:listener-id': {
