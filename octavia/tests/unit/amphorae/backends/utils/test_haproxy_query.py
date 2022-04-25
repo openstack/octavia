@@ -145,3 +145,32 @@ class QueryTestCase(base.TestCase):
              'description': '', 'Release_date': '2014/07/25'},
             self.q.show_info()
         )
+
+    def test_save_state(self):
+        filename = 'state_file'
+
+        query_mock = mock.Mock()
+        query_mock.return_value = 'DATA'
+
+        self.q._query = query_mock
+        builtin_open = '__builtin__.open' if six.PY2 else 'builtins.open'
+
+        with mock.patch(builtin_open) as mock_open:
+            mock_fh = mock.MagicMock()
+            mock_open().__enter__.return_value = mock_fh
+
+            self.q.save_state(filename)
+
+            mock_fh.write.assert_called_once_with('DATA')
+
+    def test_save_state_error(self):
+        """save_state() should swallow exceptions"""
+        filename = 'state_file'
+
+        query_mock = mock.Mock(side_effect=OSError())
+        self.q._query = query_mock
+
+        try:
+            self.q.save_state(filename)
+        except Exception as ex:
+            self.fail("save_state() raised %r unexpectedly!" % ex)
