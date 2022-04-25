@@ -15,9 +15,13 @@
 import csv
 import socket
 
+from oslo_log import log as logging
+
 from octavia.common import constants as consts
 from octavia.common import utils as octavia_utils
 from octavia.i18n import _
+
+LOG = logging.getLogger(__name__)
 
 
 class HAProxyQuery(object):
@@ -29,9 +33,9 @@ class HAProxyQuery(object):
     """
 
     def __init__(self, stats_socket):
-        """stats_socket
+        """Initialize the class
 
-            Path to the HAProxy statistics socket file.
+        :param stats_socket: Path to the HAProxy statistics socket file.
         """
 
         self.socket = stats_socket
@@ -133,3 +137,24 @@ class HAProxyQuery(object):
                 final_results[line['pxname']]['members'][line['svname']] = (
                     line['status'])
         return final_results
+
+    def save_state(self, state_file_path):
+        """Save haproxy connection state to a file.
+
+        :param state_file_path: Absolute path to the state file
+
+        :returns: bool (True if success, False otherwise)
+        """
+
+        try:
+            result = self._query('show servers state')
+            # No need for binary mode, the _query converts bytes to ascii.
+            with open(state_file_path, 'w', encoding='utf-8') as fh:
+                fh.write(result)
+            return True
+        except Exception as e:
+            # Catch any exception - may be socket issue, or write permission
+            # issue as well.
+            LOG.warning("Unable to save state: %(err)s %(output)s",
+                        {'err': e, 'output': e.output})
+            return False
