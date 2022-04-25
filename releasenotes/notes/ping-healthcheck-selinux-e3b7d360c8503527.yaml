@@ -1,0 +1,6 @@
+---
+issues:
+  - |
+    When using a distribution with a recent SELinux release such as CentOS 8
+    Stream, PING health-monitor does not work as shell_exec_t calls are denied
+    by SELinux.

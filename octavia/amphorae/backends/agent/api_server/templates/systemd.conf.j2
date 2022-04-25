@@ -13,7 +13,6 @@ Environment="CONFIG={{ haproxy_cfg }}" "USERCONFIG={{ haproxy_user_group_cfg }}"
 
 ExecStartPre={{ haproxy_cmd }} -f $CONFIG -f $USERCONFIG -c -q -L {{ peer_name }}
 
-ExecReload=/bin/sh -c "echo 'show servers state' | socat stdio unix-connect:{{ haproxy_socket }} > {{ haproxy_state_file }}"
 ExecReload={{ haproxy_cmd }} -c -f $CONFIG -f $USERCONFIG -L {{ peer_name }}
 ExecReload=/bin/kill -USR2 $MAINPID
 
