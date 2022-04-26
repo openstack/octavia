@@ -123,9 +123,11 @@ virtual_server {{ lb_vip_address }} {{ listener.protocol_port }} {
     {% if default_pool.health_monitor and default_pool.health_monitor.enabled %}
     # Configuration for HealthMonitor {{ default_pool.health_monitor.id }}
     {% endif %}
-    {% for member in default_pool.members %}
+    {% if default_pool.enabled %}
+      {% for member in default_pool.members %}
         {{- realserver_macro(constants, default_pool, member, listener) }}
-    {% endfor %}
+      {% endfor %}
+    {% endif %}
 {% endif %}
 }
 {% endif %}

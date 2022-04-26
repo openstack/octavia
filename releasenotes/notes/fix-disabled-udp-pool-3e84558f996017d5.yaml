@@ -1,0 +1,5 @@
+---
+fixes:
+  - |
+    Fix disabled UDP pools. Disabled UDP pools were marked as "OFFLINE" but the
+    requests were still forwarded to the members of the pool.
