@@ -60,7 +60,7 @@ source_suffix = '.rst'
 master_doc = 'index'
 
 # General information about the project.
-copyright = u'2015, Octavia Developers'
+copyright = '2015, Octavia Developers'
 
 # Release notes are version independent.
 # The short X.Y version.
@@ -192,8 +192,8 @@ htmlhelp_basename = 'OctaviaReleaseNotesdoc'
 #  documentclass [howto, manual, or own class]).
 latex_documents = [
     ('index', 'OctaviaReleaseNotes.tex',
-     u'OctaviaRelease Notes Documentation',
-     u'Octavia Developers', 'manual'),
+     'OctaviaRelease Notes Documentation',
+     'Octavia Developers', 'manual'),
 ]
 
 # The name of an image file (relative to this directory) to place at the top of
@@ -222,8 +222,8 @@ latex_documents = [
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    ('index', 'octaviareleasenotes', u'Octavia Release Notes '
-     'Documentation', [u'Octavia Developers'], 1)
+    ('index', 'octaviareleasenotes', 'Octavia Release Notes '
+     'Documentation', ['Octavia Developers'], 1)
 ]
 
 # If true, show URL addresses after external links.
@@ -236,9 +236,9 @@ man_pages = [
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-    ('index', 'OctaviaReleaseNotes', u'Octavia Release Notes '
+    ('index', 'OctaviaReleaseNotes', 'Octavia Release Notes '
      'Documentation',
-     u'Octavia Developers', 'OctaviaReleaseNotes',
+     'Octavia Developers', 'OctaviaReleaseNotes',
      'One line description of project.',
      'Miscellaneous'),
 ]
