@@ -147,10 +147,7 @@ class TestPrometheusProxyCMD(base.TestCase):
         mock_http.shutdown.assert_called_once()
 
     @mock.patch('threading.Thread')
-    # TODO(johnsom) Switch this when we move to ThreadingHTTPServer
-    # @mock.patch('http.server.ThreadingHTTPServer.serve_forever')
-    @mock.patch('octavia.cmd.prometheus_proxy.ThreadedHTTPServer.'
-                'serve_forever')
+    @mock.patch('http.server.ThreadingHTTPServer.serve_forever')
     @mock.patch('octavia.amphorae.backends.utils.network_namespace.'
                 'NetworkNamespace.__exit__')
     @mock.patch('octavia.amphorae.backends.utils.network_namespace.'

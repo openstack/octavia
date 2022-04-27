@@ -1,0 +1,6 @@
+---
+upgrade:
+  - |
+    Update Python base version from 3.6 to 3.8. As per Openstack Python
+    runtime versions policy Python 3.8 will be the the minimum Python version
+    in the Zed release cycle.
