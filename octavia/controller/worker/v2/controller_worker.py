@@ -126,7 +126,7 @@ class ControllerWorker(object):
                         db_apis.get_session(), availability_zone))
             self.run_flow(
                 flow_utils.get_create_amphora_flow,
-                store=store, wait=True)
+                store=store)
         except Exception as e:
             LOG.error('Failed to create an amphora due to: %s', str(e))
 
@@ -937,7 +937,7 @@ class ControllerWorker(object):
             self.run_flow(
                 flow_utils.get_failover_amphora_flow,
                 amphora.to_dict(), lb_amp_count,
-                store=stored_params, wait=True)
+                store=stored_params)
 
             LOG.info("Successfully completed the failover for an amphora: %s",
                      {"id": amphora_id,
@@ -1088,7 +1088,7 @@ class ControllerWorker(object):
 
             self.run_flow(
                 flow_utils.get_failover_LB_flow, amps, provider_lb_dict,
-                store=stored_params, wait=True)
+                store=stored_params)
 
             LOG.info('Failover of load balancer %s completed successfully.',
                      lb.id)

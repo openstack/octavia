@@ -1,0 +1,8 @@
+---
+fixes:
+  - |
+    Fix an issue with amphorav2 and persistence, some long tasks executed by a
+    controller might have been released in taskflow and rescheduled on another
+    controller. Octavia now ensures that a task is never released early by
+    using a keepalive mechanism to notify taskflow (and its redis backend) that
+    a job is still running.
