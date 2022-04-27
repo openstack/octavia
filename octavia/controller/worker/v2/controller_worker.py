@@ -100,7 +100,7 @@ class ControllerWorker(object):
                         db_apis.get_session(), availability_zone))
             job_id = self.services_controller.run_poster(
                 flow_utils.get_create_amphora_flow,
-                store=store, wait=True)
+                store=store)
 
             return job_id
         except Exception as e:
@@ -906,7 +906,7 @@ class ControllerWorker(object):
             self.services_controller.run_poster(
                 flow_utils.get_failover_amphora_flow,
                 amphora.to_dict(), lb_amp_count,
-                store=stored_params, wait=True)
+                store=stored_params)
 
             LOG.info("Successfully completed the failover for an amphora: %s",
                      {"id": amphora_id,
@@ -1057,7 +1057,7 @@ class ControllerWorker(object):
 
             self.services_controller.run_poster(
                 flow_utils.get_failover_LB_flow, amps, provider_lb_dict,
-                store=stored_params, wait=True)
+                store=stored_params)
 
             LOG.info('Failover of load balancer %s completed successfully.',
                      lb.id)
