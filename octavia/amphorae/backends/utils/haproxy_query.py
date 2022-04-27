@@ -155,6 +155,5 @@ class HAProxyQuery(object):
         except Exception as e:
             # Catch any exception - may be socket issue, or write permission
             # issue as well.
-            LOG.warning("Unable to save state: %(err)s %(output)s",
-                        {'err': e, 'output': e.output})
+            LOG.warning("Unable to save state: %r", e)
             return False
