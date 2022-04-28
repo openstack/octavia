@@ -375,6 +375,11 @@ class TestControllerWorker(base.TestCase):
                              mock_health_mon_repo_get,
                              mock_amp_repo_get):
 
+        load_balancer_mock = mock.MagicMock()
+        load_balancer_mock.provisioning_status = constants.PENDING_UPDATE
+        load_balancer_mock.id = LB_ID
+        mock_lb_repo_get.return_value = load_balancer_mock
+
         _flow_mock.reset_mock()
         _listener_mock.provisioning_status = constants.PENDING_UPDATE
 
@@ -795,6 +800,10 @@ class TestControllerWorker(base.TestCase):
                            mock_amp_repo_get):
 
         _flow_mock.reset_mock()
+        db_member = mock.MagicMock()
+        db_member.provisioning_status = constants.PENDING_UPDATE
+        db_member.pool = _db_pool_mock
+        mock_member_repo_get.return_value = db_member
         _member = _member_mock.to_dict()
         _member[constants.PROVISIONING_STATUS] = constants.PENDING_UPDATE
         mock_get_az_metadata_dict.return_value = {}
@@ -843,7 +852,9 @@ class TestControllerWorker(base.TestCase):
         old_member = mock.MagicMock()
         old_member.to_dict.return_value = {'id': 9,
                                            constants.POOL_ID: 'testtest'}
-        mock_member_repo_get.side_effect = [_member_mock, old_member]
+        new_member = mock.MagicMock()
+        mock_member_repo_get.side_effect = [
+            new_member, _member_mock, old_member]
         cw.batch_update_members([{constants.MEMBER_ID: 9,
                                   constants.POOL_ID: 'testtest'}],
                                 [{constants.MEMBER_ID: 11}],

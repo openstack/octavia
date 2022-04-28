@@ -294,8 +294,17 @@ class ControllerWorker(object):
         :returns: None
         :raises ListenerNotFound: The referenced listener was not found
         """
-        db_lb = self._lb_repo.get(db_apis.get_session(),
-                                  id=listener[constants.LOADBALANCER_ID])
+        try:
+            db_lb = self._get_db_obj_until_pending_update(
+                self._lb_repo, listener[constants.LOADBALANCER_ID])
+        except tenacity.RetryError as e:
+            LOG.warning('Loadbalancer did not go into %s in 60 seconds. '
+                        'This either due to an in-progress Octavia upgrade '
+                        'or an overloaded and failing database. Assuming '
+                        'an upgrade is in progress and continuing.',
+                        constants.PENDING_UPDATE)
+            db_lb = e.last_attempt.result()
+
         store = {constants.LISTENER: listener,
                  constants.UPDATE_DICT: listener_updates,
                  constants.LOADBALANCER_ID: db_lb.id,
@@ -391,6 +400,18 @@ class ControllerWorker(object):
         :returns: None
         :raises LBNotFound: The referenced load balancer was not found
         """
+
+        try:
+            self._get_db_obj_until_pending_update(
+                self._lb_repo,
+                original_load_balancer[constants.LOADBALANCER_ID])
+        except tenacity.RetryError:
+            LOG.warning('Load balancer did not go into %s in 60 seconds. '
+                        'This either due to an in-progress Octavia upgrade '
+                        'or an overloaded and failing database. Assuming '
+                        'an upgrade is in progress and continuing.',
+                        constants.PENDING_UPDATE)
+
         store = {constants.LOADBALANCER: original_load_balancer,
                  constants.LOADBALANCER_ID:
                      original_load_balancer[constants.LOADBALANCER_ID],
@@ -479,8 +500,26 @@ class ControllerWorker(object):
             flow_utils.get_delete_member_flow,
             store=store)
 
+    @tenacity.retry(
+        retry=tenacity.retry_if_exception_type(db_exceptions.NoResultFound),
+        wait=tenacity.wait_incrementing(
+            CONF.haproxy_amphora.api_db_commit_retry_initial_delay,
+            CONF.haproxy_amphora.api_db_commit_retry_backoff,
+            CONF.haproxy_amphora.api_db_commit_retry_max),
+        stop=tenacity.stop_after_attempt(
+            CONF.haproxy_amphora.api_db_commit_retry_attempts))
     def batch_update_members(self, old_members, new_members,
                              updated_members):
+        db_new_members = [self._member_repo.get(db_apis.get_session(),
+                                                id=member[constants.MEMBER_ID])
+                          for member in new_members]
+        # The API may not have commited all of the new member records yet.
+        # Make sure we retry looking them up.
+        if None in db_new_members or len(db_new_members) != len(new_members):
+            LOG.warning('Failed to fetch one of the new members from DB. '
+                        'Retrying for up to 60 seconds.')
+            raise db_exceptions.NoResultFound
+
         updated_members = [
             (provider_utils.db_member_to_provider_member(
                 self._member_repo.get(db_apis.get_session(),
@@ -534,9 +573,19 @@ class ControllerWorker(object):
         :returns: None
         :raises MemberNotFound: The referenced member was not found
         """
-        # TODO(ataraday) when other flows will use dicts - revisit this
-        pool = self._pool_repo.get(db_apis.get_session(),
-                                   id=member[constants.POOL_ID])
+
+        try:
+            db_member = self._get_db_obj_until_pending_update(
+                self._member_repo, member[constants.MEMBER_ID])
+        except tenacity.RetryError as e:
+            LOG.warning('Member did not go into %s in 60 seconds. '
+                        'This either due to an in-progress Octavia upgrade '
+                        'or an overloaded and failing database. Assuming '
+                        'an upgrade is in progress and continuing.',
+                        constants.PENDING_UPDATE)
+            db_member = e.last_attempt.result()
+
+        pool = db_member.pool
         load_balancer = pool.load_balancer
         provider_lb = provider_utils.db_loadbalancer_to_provider_loadbalancer(
             load_balancer).to_dict(recurse=True)
@@ -720,8 +769,18 @@ class ControllerWorker(object):
         :returns: None
         :raises L7PolicyNotFound: The referenced l7policy was not found
         """
-        db_listener = self._listener_repo.get(
-            db_apis.get_session(), id=original_l7policy[constants.LISTENER_ID])
+        try:
+            db_l7policy = self._get_db_obj_until_pending_update(
+                self._l7policy_repo, original_l7policy[constants.L7POLICY_ID])
+        except tenacity.RetryError as e:
+            LOG.warning('L7 policy did not go into %s in 60 seconds. '
+                        'This either due to an in-progress Octavia upgrade '
+                        'or an overloaded and failing database. Assuming '
+                        'an upgrade is in progress and continuing.',
+                        constants.PENDING_UPDATE)
+            db_l7policy = e.last_attempt.result()
+
+        db_listener = db_l7policy.listener
 
         listeners_dicts = (
             provider_utils.db_listeners_to_provider_dicts_list_of_dicts(
@@ -812,8 +871,17 @@ class ControllerWorker(object):
         :returns: None
         :raises L7RuleNotFound: The referenced l7rule was not found
         """
-        db_l7policy = self._l7policy_repo.get(
-            db_apis.get_session(), id=original_l7rule[constants.L7POLICY_ID])
+        try:
+            db_l7rule = self._get_db_obj_until_pending_update(
+                self._l7rule_repo, original_l7rule[constants.L7RULE_ID])
+        except tenacity.RetryError as e:
+            LOG.warning('L7 rule did not go into %s in 60 seconds. '
+                        'This either due to an in-progress Octavia upgrade '
+                        'or an overloaded and failing database. Assuming '
+                        'an upgrade is in progress and continuing.',
+                        constants.PENDING_UPDATE)
+            db_l7rule = e.last_attempt.result()
+        db_l7policy = db_l7rule.l7policy
         load_balancer = db_l7policy.listener.load_balancer
 
         listeners_dicts = (
