@@ -1,0 +1,6 @@
+---
+features:
+  - |
+    Configuration of the amphora's timezone is now possible using new
+    configuration setting "amp_timezone" in the controller_worker options
+    group.

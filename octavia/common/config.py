@@ -477,6 +477,10 @@ controller_worker_opts = [
                default='',
                help=_('Optional SSH keypair name, in nova, that will be used '
                       'for the authorized_keys inside the amphora.')),
+    cfg.StrOpt('amp_timezone',
+               default='UTC',
+               help=_('The timezone to use in the Amphora as represented in '
+                      '/usr/share/zoneinfo.')),
     cfg.ListOpt('amp_boot_network_list',
                 default='',
                 help=_('List of networks to attach to the Amphorae. '

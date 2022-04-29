@@ -37,3 +37,5 @@ runcmd:
 {% if user_data -%}
 -   service amphora-agent restart
 {%- endif %}
+
+timezone: {{ timezone }}
