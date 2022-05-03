@@ -439,10 +439,13 @@ AMP_element_sequence="$AMP_element_sequence sos"
 AMP_element_sequence="$AMP_element_sequence cloud-init-datasources"
 AMP_element_sequence="$AMP_element_sequence remove-default-ints"
 
-if [ "$AMP_ENABLE_FULL_MAC_SECURITY" -ne 1 ]; then
-    # SELinux systems
-    if [ "${AMP_BASEOS}" = "centos-minimal" ] || [ "${AMP_BASEOS}" = "fedora" ] || [ "${AMP_BASEOS}" = "rhel" ]; then
+# SELinux systems
+if [ "${AMP_BASEOS}" = "centos-minimal" ] || [ "${AMP_BASEOS}" = "fedora" ] || [ "${AMP_BASEOS}" = "rhel" ]; then
+    if [ "$AMP_ENABLE_FULL_MAC_SECURITY" -ne 1 ]; then
         AMP_element_sequence="$AMP_element_sequence selinux-permissive"
+    else
+        # If SELinux is enforced, the amphora image requires the amphora-selinux policies
+        AMP_element_sequence="$AMP_element_sequence amphora-selinux"
     fi
 fi
 
