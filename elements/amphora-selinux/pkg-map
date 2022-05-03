@@ -1,0 +1,12 @@
+{
+    "family": {
+      "redhat": {
+        "openstack-selinux": "openstack-selinux",
+        "policycoreutils-python-utils": "policycoreutils-python-utils"
+      }
+    },
+    "default": {
+        "openstack-selinux": "",
+        "policycoreutils-python-utils": ""
+    }
+}
