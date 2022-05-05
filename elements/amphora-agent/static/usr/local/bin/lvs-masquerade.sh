@@ -30,7 +30,7 @@ fi
 
 if [ "$1" == "add" ]; then
 
-    if [ -x "$(sudo bash -c 'command -v nft')" ]; then
+    if [ -x "$(command -v nft)" ]; then
         # Note: inet for nat requires a 5.2 or newer kernel.
         if [ "$2" == "ipv4" ]; then
             nft add table ip octavia-ipv4
@@ -77,7 +77,7 @@ if [ "$1" == "add" ]; then
 
 elif [ "$1" == "delete" ]; then
 
-    if [ -x "$(sudo bash -c 'command -v nft')" ]; then
+    if [ -x "$(command -v nft)" ]; then
         if [ "$2" == "ipv4" ]; then
             nft flush chain ip octavia-ipv4 ip-udp-masq
             nft delete chain ip octavia-ipv4 ip-udp-masq
