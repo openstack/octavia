@@ -33,6 +33,7 @@ tempest.log
 *~
 .eggs/
 .ropeproject/
+*.qcow2
 
 # Files created by releasenotes build
 releasenotes/build
