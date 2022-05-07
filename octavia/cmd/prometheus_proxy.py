@@ -19,11 +19,10 @@
 # of metrics. It also aligns the terms to be consistent with Octavia
 # terminology.
 
-from http.server import HTTPServer
 from http.server import SimpleHTTPRequestHandler
+from http.server import ThreadingHTTPServer
 import os
 import signal
-import socketserver
 import sys
 import threading
 import time
@@ -785,12 +784,6 @@ def shutdown_thread(http):
     http.shutdown()
 
 
-# TODO(johnsom) Remove and switch to ThreadingHTTPServer once python3.7 is
-# the minimum version supported.
-class ThreadedHTTPServer(socketserver.ThreadingMixIn, HTTPServer):
-    daemon_threads = True
-
-
 def main():
     global PRINT_REJECTED
     try:
@@ -806,15 +799,13 @@ def main():
         # it gracefully.
         try:
             with network_namespace.NetworkNamespace(consts.AMPHORA_NAMESPACE):
-                httpd = ThreadedHTTPServer(('127.0.0.1', 9102),
-                                           PrometheusProxy)
+                httpd = ThreadingHTTPServer(('127.0.0.1', 9102),
+                                            PrometheusProxy)
                 shutdownthread = threading.Thread(target=shutdown_thread,
                                                   args=(httpd,))
                 shutdownthread.start()
 
-                # TODO(johnsom) Uncomment this when we move to
-                #               ThreadingHTTPServer
-                # httpd.daemon_threads = True
+                httpd.daemon_threads = True
                 print("Now serving on port 9102")
                 httpd.serve_forever()
         except Exception:

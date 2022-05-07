@@ -20,7 +20,7 @@
               - ^etc/.*$
               - ^octavia/tests/.*$
               - ^releasenotes/.*$
-        - openstack-tox-functional-py36:
+        - openstack-tox-functional-py38:
             irrelevant-files:
               - ^.*\.rst$
               - ^api-ref/.*$
@@ -28,6 +28,23 @@
               - ^etc/.*$
               - ^octavia/tests/unit/.*$
               - ^releasenotes/.*$
+        - openstack-tox-functional-py39:
+            irrelevant-files:
+              - ^.*\.rst$
+              - ^api-ref/.*$
+              - ^doc/.*$
+              - ^etc/.*$
+              - ^octavia/tests/unit/.*$
+              - ^releasenotes/.*$
+        - openstack-tox-functional-py310:
+            irrelevant-files:
+              - ^.*\.rst$
+              - ^api-ref/.*$
+              - ^doc/.*$
+              - ^etc/.*$
+              - ^octavia/tests/unit/.*$
+              - ^releasenotes/.*$
+            voting: false
         - octavia-v2-dsvm-noop-api:
             irrelevant-files: &irrelevant-files
               - ^.*\.rst$
@@ -86,7 +103,7 @@
               - ^etc/.*$
               - ^octavia/tests/.*$
               - ^releasenotes/.*$
-        - openstack-tox-functional-py36:
+        - openstack-tox-functional-py38:
             irrelevant-files:
               - ^.*\.rst$
               - ^api-ref/.*$

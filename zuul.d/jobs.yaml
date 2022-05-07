@@ -113,14 +113,14 @@
     name: octavia-tox-tips
     check:
       jobs:
-        - octavia-tox-py37-tips
-        - octavia-tox-functional-py37-tips
+        - octavia-tox-py39-tips
+        - octavia-tox-functional-py39-tips
 
 - job:
-    name: octavia-tox-py37-tips
-    parent: openstack-tox-py37
+    name: octavia-tox-py39-tips
+    parent: openstack-tox-py39
     description: |
-      Run tox python 3.7 unit tests against master of related libraries.
+      Run tox python 3.9 unit tests against master of related libraries.
     vars:
       tox_install_siblings: true
       zuul_work_dir: src/opendev.org/openstack/octavia
@@ -129,10 +129,10 @@
       - openstack/octavia
 
 - job:
-    name: octavia-tox-functional-py37-tips
-    parent: openstack-tox-functional-py37
+    name: octavia-tox-functional-py39-tips
+    parent: openstack-tox-functional-py39
     description: |
-      Run tox python 3.7 functional against master of related libraries.
+      Run tox python 3.9 functional against master of related libraries.
     vars:
       tox_install_siblings: true
       zuul_work_dir: src/opendev.org/openstack/octavia
