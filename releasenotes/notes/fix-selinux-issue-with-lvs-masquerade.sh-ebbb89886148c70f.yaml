@@ -1,0 +1,6 @@
+---
+fixes:
+  - |
+    Fixed issue with SELinux and the lvs-masquerade.sh script on the amphora.
+    The script already runs with root permissions, so the use of sudo inside the
+    script is unneeded.
