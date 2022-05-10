@@ -199,7 +199,7 @@ can be used to create the required certificates.
 
     .. code-block:: bash
 
-        $ openssl genpkey -algorithm RSA -out private/ca.key.pem -aes-128-cbc -pkeyopt rsa_keygen_bits:2048
+        $ openssl genpkey -algorithm RSA -out private/client.key.pem -aes-128-cbc -pkeyopt rsa_keygen_bits:2048
 
 12. Create the certificate request for the `client` certificate used on the
     controllers.
