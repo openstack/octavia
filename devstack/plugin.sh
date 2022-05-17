@@ -332,6 +332,7 @@ function octavia_configure {
     iniset $OCTAVIA_CONF controller_worker network_driver ${OCTAVIA_NETWORK_DRIVER}
     iniset $OCTAVIA_CONF controller_worker image_driver ${OCTAVIA_IMAGE_DRIVER}
     iniset $OCTAVIA_CONF controller_worker amp_image_tag ${OCTAVIA_AMP_IMAGE_TAG}
+    iniset $OCTAVIA_CONF controller_worker amp_timezone $(readlink -e /etc/localtime | sed "s/\/usr\/share\/zoneinfo\///")
 
     iniuncomment $OCTAVIA_CONF health_manager heartbeat_key
     iniset $OCTAVIA_CONF health_manager heartbeat_key ${OCTAVIA_HEALTH_KEY}

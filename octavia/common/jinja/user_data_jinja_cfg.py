@@ -35,4 +35,5 @@ class UserDataJinjaCfg(object):
             constants.USER_DATA_CONFIG_DRIVE_TEMPLATE)
 
     def build_user_data_config(self, user_data):
-        return self.agent_template.render(user_data=user_data)
+        return self.agent_template.render(
+            user_data=user_data, timezone=CONF.controller_worker.amp_timezone)
