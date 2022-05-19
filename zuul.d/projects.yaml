@@ -69,9 +69,9 @@
             voting: false
         - octavia-v2-act-stdby-iptables-dsvm-py2-scenario-centos-7:
             voting: false
+    queue: octavia
     gate:
       fail-fast: true
-      queue: octavia
       jobs:
         - openstack-tox-functional:
             irrelevant-files:
