@@ -51,9 +51,9 @@
             irrelevant-files: *irrelevant-files
             voting: false
             nodeset: octavia-single-node-ubuntu-bionic
+    queue: octavia
     gate:
       fail-fast: true
-      queue: octavia
       jobs:
         - openstack-tox-functional-py36:
             irrelevant-files:
