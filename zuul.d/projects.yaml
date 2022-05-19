@@ -74,9 +74,9 @@
         - octavia-v2-dsvm-scenario-centos-8-stream:
             irrelevant-files: *irrelevant-files
             voting: false
+    queue: octavia
     gate:
       fail-fast: true
-      queue: octavia
       jobs:
         - openstack-tox-pip-check-reqs:
             irrelevant-files:
