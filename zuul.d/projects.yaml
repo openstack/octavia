@@ -50,9 +50,6 @@
               - ^tools/.*$
               - ^(test-|)requirements.txt$
               - ^tox.ini$
-        - octavia-v2-dsvm-scenario-fips:
-            irrelevant-files: *irrelevant-files
-            voting: false
         - octavia-v2-dsvm-tls-barbican-fips:
             irrelevant-files: *irrelevant-files
             voting: false
@@ -109,6 +106,9 @@
             branches: ^(?!stable/.*).*$
         - octavia-amphora-image-build
         - octavia-grenade-ffu
+# Putting octavia-v2-dsvm-scenario-fips in periodic as centos 8 is too slow
+        - octavia-v2-dsvm-scenario-fips:
+            voting: false
     experimental:
       jobs:
         - octavia-v2-dsvm-scenario-nftables

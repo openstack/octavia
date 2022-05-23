@@ -1,0 +1,10 @@
+{
+  "family": {
+    "redhat": {
+      "crypto-policies-scripts": "crypto-policies-scripts"
+    }
+  },
+  "default": {
+      "crypto-policies-scripts": ""
+  }
+}
