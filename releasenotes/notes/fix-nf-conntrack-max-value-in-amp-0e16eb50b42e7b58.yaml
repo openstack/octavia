@@ -1,0 +1,15 @@
+---
+upgrade:
+  - |
+    The fix that updates the Netfilter Conntrack Sysfs variables requires
+    rebuilding the amphora image in order to be effective.
+fixes:
+  - |
+    Netfilter Conntrack Sysfs variables net.netfilter.nf_conntrack_max and
+    nf_conntrack_expect_max get set to sensible values on the amphora now.
+    Previously, kernel default values were used which were much too low for the
+    configured net.netfilter.nf_conntrack_buckets value. As a result packets
+    could get dropped because the conntrack table got filled too quickly. Note
+    that this affects only UDP and SCTP protocol listeners.
+    Connection tracking is disabled for TCP-based connections on the
+    amphora including HTTP(S).
