@@ -113,59 +113,53 @@ def _cleanup_socket_file(filename):
 def status_listener(exit_event):
     _cleanup_socket_file(CONF.driver_agent.status_socket_path)
 
-    server = ForkingUDSServer(CONF.driver_agent.status_socket_path,
-                              StatusRequestHandler)
+    with ForkingUDSServer(CONF.driver_agent.status_socket_path,
+                          StatusRequestHandler) as server:
+        server.timeout = CONF.driver_agent.status_request_timeout
+        server.max_children = CONF.driver_agent.status_max_processes
 
-    server.timeout = CONF.driver_agent.status_request_timeout
-    server.max_children = CONF.driver_agent.status_max_processes
+        threading.Thread(target=server.serve_forever).start()
 
-    while not exit_event.is_set():
-        server.handle_request()
+        exit_event.wait()
 
-    LOG.info('Waiting for driver status listener to shutdown...')
-    # Can't shut ourselves down as we would deadlock, spawn a thread
-    threading.Thread(target=server.shutdown).start()
-    LOG.info('Driver status listener shutdown finished.')
-    server.server_close()
+        LOG.info('Waiting for driver status listener to shutdown...')
+        server.shutdown()
+        LOG.info('Driver status listener shutdown finished.')
     _cleanup_socket_file(CONF.driver_agent.status_socket_path)
 
 
 def stats_listener(exit_event):
     _cleanup_socket_file(CONF.driver_agent.stats_socket_path)
 
-    server = ForkingUDSServer(CONF.driver_agent.stats_socket_path,
-                              StatsRequestHandler)
+    with ForkingUDSServer(CONF.driver_agent.stats_socket_path,
+                          StatsRequestHandler) as server:
+        server.timeout = CONF.driver_agent.stats_request_timeout
+        server.max_children = CONF.driver_agent.stats_max_processes
 
-    server.timeout = CONF.driver_agent.stats_request_timeout
-    server.max_children = CONF.driver_agent.stats_max_processes
+        threading.Thread(target=server.serve_forever).start()
 
-    while not exit_event.is_set():
-        server.handle_request()
+        exit_event.wait()
 
-    LOG.info('Waiting for driver statistics listener to shutdown...')
-    # Can't shut ourselves down as we would deadlock, spawn a thread
-    threading.Thread(target=server.shutdown).start()
-    LOG.info('Driver statistics listener shutdown finished.')
-    server.server_close()
+        LOG.info('Waiting for driver statistics listener to shutdown...')
+        server.shutdown()
+        LOG.info('Driver statistics listener shutdown finished.')
     _cleanup_socket_file(CONF.driver_agent.stats_socket_path)
 
 
 def get_listener(exit_event):
     _cleanup_socket_file(CONF.driver_agent.get_socket_path)
 
-    server = ForkingUDSServer(CONF.driver_agent.get_socket_path,
-                              GetRequestHandler)
+    with ForkingUDSServer(CONF.driver_agent.get_socket_path,
+                          GetRequestHandler) as server:
+        server.timeout = CONF.driver_agent.get_request_timeout
+        server.max_children = CONF.driver_agent.get_max_processes
 
-    server.timeout = CONF.driver_agent.get_request_timeout
-    server.max_children = CONF.driver_agent.get_max_processes
+        threading.Thread(target=server.serve_forever).start()
 
-    while not exit_event.is_set():
-        server.handle_request()
+        exit_event.wait()
 
-    LOG.info('Waiting for driver get listener to shutdown...')
-    # Can't shut ourselves down as we would deadlock, spawn a thread
-    threading.Thread(target=server.shutdown).start()
-    LOG.info('Driver get listener shutdown finished.')
-    server.server_close()
+        LOG.info('Waiting for driver get listener to shutdown...')
+        server.shutdown()
+        LOG.info('Driver get listener shutdown finished.')
     _cleanup_socket_file(CONF.driver_agent.get_socket_path)
     LOG.info("UDS server was closed and socket was cleaned up.")
