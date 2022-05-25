@@ -1,0 +1,7 @@
+---
+fixes:
+  - |
+    Fix the shutdown of the driver-agent, the process might have been stuck
+    while waiting for threads to finish. Systemd would have killed the process
+    after a timeout, but some children processes might have leaked on the
+    controllers.

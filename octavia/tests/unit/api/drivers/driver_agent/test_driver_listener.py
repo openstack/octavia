@@ -156,13 +156,12 @@ class TestDriverListener(base.TestCase):
                          'a' * CONF.driver_agent.status_max_processes, 'a',
                          'a' * 1000, ''])
         type(mock_server).active_children = mock_active_children
-        mock_forking_server.return_value = mock_server
+        mock_forking_server.return_value.__enter__.return_value = mock_server
         mock_exit_event = mock.MagicMock()
         mock_exit_event.is_set.side_effect = [False, False, False, False, True]
 
         driver_listener.status_listener(mock_exit_event)
-        mock_server.handle_request.assert_called()
-        mock_server.server_close.assert_called_once()
+        mock_server.serve_forever.assert_called()
         self.assertEqual(2, mock_cleanup.call_count)
 
     @mock.patch('octavia.api.drivers.driver_agent.driver_listener.'
@@ -176,13 +175,12 @@ class TestDriverListener(base.TestCase):
                          'a' * CONF.driver_agent.status_max_processes, 'a',
                          'a' * 1000, ''])
         type(mock_server).active_children = mock_active_children
-        mock_forking_server.return_value = mock_server
+        mock_forking_server.return_value.__enter__.return_value = mock_server
         mock_exit_event = mock.MagicMock()
         mock_exit_event.is_set.side_effect = [False, False, False, False, True]
 
         driver_listener.stats_listener(mock_exit_event)
-        mock_server.handle_request.assert_called()
-        mock_server.server_close.assert_called_once()
+        mock_server.serve_forever.assert_called()
 
     @mock.patch('octavia.api.drivers.driver_agent.driver_listener.'
                 '_cleanup_socket_file')
@@ -195,10 +193,9 @@ class TestDriverListener(base.TestCase):
                          'a' * CONF.driver_agent.status_max_processes, 'a',
                          'a' * 1000, ''])
         type(mock_server).active_children = mock_active_children
-        mock_forking_server.return_value = mock_server
+        mock_forking_server.return_value.__enter__.return_value = mock_server
         mock_exit_event = mock.MagicMock()
         mock_exit_event.is_set.side_effect = [False, False, False, False, True]
 
         driver_listener.get_listener(mock_exit_event)
-        mock_server.handle_request.assert_called()
-        mock_server.server_close.assert_called_once()
+        mock_server.serve_forever.assert_called()
