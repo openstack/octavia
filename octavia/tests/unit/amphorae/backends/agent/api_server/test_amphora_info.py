@@ -183,6 +183,8 @@ class TestAmphoraInfo(base.TestCase):
         api_server.VERSION = original_version
 
     @mock.patch('octavia.amphorae.backends.agent.api_server.util.'
+                'is_udp_listener_running')
+    @mock.patch('octavia.amphorae.backends.agent.api_server.util.'
                 'get_udp_listeners',
                 return_value=[FAKE_LISTENER_ID_3, FAKE_LISTENER_ID_4])
     @mock.patch('octavia.amphorae.backends.agent.api_server.util.'
@@ -204,7 +206,8 @@ class TestAmphoraInfo(base.TestCase):
     def test_compile_amphora_details_for_udp(self, mhostname, m_count,
                                              m_pkg_version, m_load, m_get_nets,
                                              m_os, m_cpu, mget_mem,
-                                             mock_get_lb, mget_udp_listener):
+                                             mock_get_lb, mget_udp_listener,
+                                             mock_is_udp_listener_running):
         mget_mem.return_value = {'SwapCached': 0, 'Buffers': 344792,
                                  'MemTotal': 21692784, 'Cached': 4271856,
                                  'Slab': 534384, 'MemFree': 12685624,
@@ -226,7 +229,7 @@ class TestAmphoraInfo(base.TestCase):
         m_count.return_value = 5
         self.udp_driver.get_subscribed_amp_compile_info.return_value = [
             'keepalived', 'ipvsadm']
-        self.udp_driver.is_listener_running.side_effect = [True, False]
+        mock_is_udp_listener_running.side_effect = [True, False]
         mock_get_lb.return_value = [self.LB_ID_1]
         original_version = api_server.VERSION
         api_server.VERSION = self.API_VERSION
@@ -281,8 +284,10 @@ class TestAmphoraInfo(base.TestCase):
             [uuidutils.generate_uuid(), uuidutils.generate_uuid()])
         self.assertEqual(1, result)
 
-    def test__count_udp_listener_processes(self):
-        self.udp_driver.is_listener_running.side_effect = [True, False, True]
+    @mock.patch('octavia.amphorae.backends.agent.api_server.util.'
+                'is_udp_listener_running')
+    def test__count_udp_listener_processes(self, mock_is_udp_listener_running):
+        mock_is_udp_listener_running.side_effect = [True, False, True]
         expected = 2
         actual = self.amp_info._count_udp_listener_processes(
             self.udp_driver, [self.FAKE_LISTENER_ID_1,
