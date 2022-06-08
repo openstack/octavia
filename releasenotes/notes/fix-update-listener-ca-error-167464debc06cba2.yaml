@@ -1,0 +1,5 @@
+---
+fixes:
+  - |
+    Fixed "Could not retrieve certificate" error when updating/deleting the
+    client_ca_tls_container_ref field of a listener after a CA/CRL was deleted.
