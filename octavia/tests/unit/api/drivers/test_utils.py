@@ -274,6 +274,8 @@ class TestUtils(base.TestCase):
         del expect_prov['sni_container_data']
         provider_listener = utils.listener_dict_to_provider_dict(
             self.sample_data.test_listener1_dict, for_delete=True)
+        args, kwargs = mock_secret.call_args
+        self.assertEqual(kwargs['for_delete'], True)
         self.assertEqual(expect_prov, provider_listener)
 
     @mock.patch('octavia.api.drivers.utils._get_secret_data')
@@ -379,6 +381,8 @@ class TestUtils(base.TestCase):
         provider_pool_dict = utils.pool_dict_to_provider_dict(
             self.sample_data.test_pool1_dict, for_delete=True)
         provider_pool_dict.pop('crl_container_ref')
+        args, kwargs = mock_secret.call_args
+        self.assertEqual(kwargs['for_delete'], True)
         self.assertEqual(expect_prov, provider_pool_dict)
 
     def test_db_HM_to_provider_HM(self):
