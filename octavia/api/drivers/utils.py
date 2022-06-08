@@ -267,11 +267,13 @@ def listener_dict_to_provider_dict(listener_dict, for_delete=False):
 
         if listener_obj.client_ca_tls_certificate_id:
             cert = _get_secret_data(cert_manager, listener_obj.project_id,
-                                    listener_obj.client_ca_tls_certificate_id)
+                                    listener_obj.client_ca_tls_certificate_id,
+                                    for_delete=for_delete)
             new_listener_dict['client_ca_tls_container_data'] = cert
         if listener_obj.client_crl_container_id:
             crl_file = _get_secret_data(cert_manager, listener_obj.project_id,
-                                        listener_obj.client_crl_container_id)
+                                        listener_obj.client_crl_container_id,
+                                        for_delete=for_delete)
             new_listener_dict['client_crl_container_data'] = crl_file
 
     # Format the allowed_cidrs
@@ -389,12 +391,14 @@ def pool_dict_to_provider_dict(pool_dict, for_delete=False):
 
         if pool_obj.ca_tls_certificate_id:
             cert = _get_secret_data(cert_manager, pool_obj.project_id,
-                                    pool_obj.ca_tls_certificate_id)
+                                    pool_obj.ca_tls_certificate_id,
+                                    for_delete=for_delete)
             new_pool_dict['ca_tls_container_data'] = cert
 
         if pool_obj.crl_container_id:
             crl_file = _get_secret_data(cert_manager, pool_obj.project_id,
-                                        pool_obj.crl_container_id)
+                                        pool_obj.crl_container_id,
+                                        for_delete=for_delete)
             new_pool_dict['crl_container_data'] = crl_file
 
     # Remove the DB back references
