@@ -95,15 +95,13 @@ class TestPlug(base.TestCase):
     @mock.patch('pyroute2.NSPopen', create=True)
     @mock.patch.object(plug, "webob")
     @mock.patch('pyroute2.IPRoute', create=True)
-    @mock.patch('pyroute2.netns.create', create=True)
     @mock.patch('pyroute2.NetNS', create=True)
     @mock.patch('subprocess.check_output')
     @mock.patch('shutil.copytree')
     @mock.patch('os.makedirs')
     def test_plug_vip_ipv4(self, mock_makedirs, mock_copytree,
-                           mock_check_output, mock_netns, mock_netns_create,
-                           mock_pyroute2, mock_webob, mock_nspopen,
-                           mock_by_mac):
+                           mock_check_output, mock_netns, mock_pyroute2,
+                           mock_webob, mock_nspopen, mock_by_mac):
         m = mock.mock_open()
         with mock.patch('os.open'), mock.patch.object(os, 'fdopen', m):
             self.test_plug.plug_vip(
@@ -134,15 +132,13 @@ class TestPlug(base.TestCase):
     @mock.patch('pyroute2.NSPopen', create=True)
     @mock.patch.object(plug, "webob")
     @mock.patch('pyroute2.IPRoute', create=True)
-    @mock.patch('pyroute2.netns.create', create=True)
     @mock.patch('pyroute2.NetNS', create=True)
     @mock.patch('subprocess.check_output')
     @mock.patch('shutil.copytree')
     @mock.patch('os.makedirs')
     def test_plug_vip_ipv6(self, mock_makedirs, mock_copytree,
-                           mock_check_output, mock_netns, mock_netns_create,
-                           mock_pyroute2, mock_webob, mock_nspopen,
-                           mock_by_mac):
+                           mock_check_output, mock_netns, mock_pyroute2,
+                           mock_webob, mock_nspopen, mock_by_mac):
         conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
         conf.config(group='controller_worker',
                     loadbalancer_topology=constants.TOPOLOGY_ACTIVE_STANDBY)
@@ -174,14 +170,13 @@ class TestPlug(base.TestCase):
 
     @mock.patch.object(plug, "webob")
     @mock.patch('pyroute2.IPRoute', create=True)
-    @mock.patch('pyroute2.netns.create', create=True)
     @mock.patch('pyroute2.NetNS', create=True)
     @mock.patch('subprocess.check_output')
     @mock.patch('shutil.copytree')
     @mock.patch('os.makedirs')
     def test_plug_vip_bad_ip(self, mock_makedirs, mock_copytree,
-                             mock_check_output, mock_netns, mock_netns_create,
-                             mock_pyroute2, mock_webob):
+                             mock_check_output, mock_netns, mock_pyroute2,
+                             mock_webob):
         m = mock.mock_open()
         with mock.patch('os.open'), mock.patch.object(os, 'fdopen', m):
             self.test_plug.plug_vip(
