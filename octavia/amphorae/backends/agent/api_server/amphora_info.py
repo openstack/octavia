@@ -149,7 +149,7 @@ class AmphoraInfo(object):
                 'iowait': vals[6],
                 'irq': vals[7],
                 'softirq': vals[8],
-                'total': sum([int(i) for i in vals[2:]])
+                'total': sum(int(i) for i in vals[2:])
             }
 
     def _load(self):
