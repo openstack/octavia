@@ -107,8 +107,10 @@ function build_octavia_worker_image {
             export PATH=$DIB_VENV_DIR/bin:$PATH
             if ! [ -d $DIB_GIT_DIR ]; then
                 git clone ${GITREPO["diskimage-builder"]} $DIB_GIT_DIR
+                # Checkout the last commit that supports py36
+                (cd $DIB_GIT_DIR && git checkout 70e90e17551499b1f8d0c2d0bc36ee4698aa18a0)
             fi
-            (cd $REQUIREMENTS_DIR && git show origin/master:upper-constraints.txt) | sed '/diskimage-builder/d' > $DIB_VENV_DIR/u-c.txt
+            (cd $REQUIREMENTS_DIR && git show origin/stable/train:upper-constraints.txt) | sed '/diskimage-builder/d' > $DIB_VENV_DIR/u-c.txt
             pip install -c $DIB_VENV_DIR/u-c.txt $DIB_GIT_DIR
             $OCTAVIA_DIR/diskimage-create/diskimage-create.sh -l ${dib_logs}/$(basename $OCTAVIA_AMP_IMAGE_FILE).log $octavia_dib_tracing_arg -o $OCTAVIA_AMP_IMAGE_FILE ${PARAM_OCTAVIA_AMP_BASE_OS:-} ${PARAM_OCTAVIA_AMP_DISTRIBUTION_RELEASE_ID:-} ${PARAM_OCTAVIA_AMP_IMAGE_SIZE:-}
         )
