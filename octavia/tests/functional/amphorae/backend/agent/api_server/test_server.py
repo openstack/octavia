@@ -1485,7 +1485,6 @@ class TestServerTestCase(base.TestCase):
     @mock.patch('octavia.amphorae.backends.agent.api_server.'
                 'plug.Plug._netns_interface_exists')
     @mock.patch('pyroute2.IPRoute', create=True)
-    @mock.patch('pyroute2.netns.create', create=True)
     @mock.patch('pyroute2.NetNS', create=True)
     @mock.patch('subprocess.check_output')
     @mock.patch('shutil.copytree')
@@ -1493,7 +1492,7 @@ class TestServerTestCase(base.TestCase):
     @mock.patch('os.path.isfile')
     def _test_plug_VIP4(self, distro, mock_isfile, mock_makedirs,
                         mock_copytree, mock_check_output, mock_netns,
-                        mock_netns_create, mock_pyroute2, mock_int_exists,
+                        mock_pyroute2, mock_int_exists,
                         mock_nspopen, mock_copy2, mock_os_chmod):
         mock_ipr = mock.MagicMock()
         mock_ipr_instance = mock.MagicMock()
@@ -1870,7 +1869,6 @@ class TestServerTestCase(base.TestCase):
     @mock.patch('shutil.copy2')
     @mock.patch('pyroute2.NSPopen', create=True)
     @mock.patch('pyroute2.IPRoute', create=True)
-    @mock.patch('pyroute2.netns.create', create=True)
     @mock.patch('pyroute2.NetNS', create=True)
     @mock.patch('subprocess.check_output')
     @mock.patch('shutil.copytree')
@@ -1878,7 +1876,7 @@ class TestServerTestCase(base.TestCase):
     @mock.patch('os.path.isfile')
     def _test_plug_vip6(self, distro, mock_isfile, mock_makedirs,
                         mock_copytree, mock_check_output, mock_netns,
-                        mock_netns_create, mock_pyroute2, mock_nspopen,
+                        mock_pyroute2, mock_nspopen,
                         mock_copy2, mock_os_chmod):
         mock_ipr = mock.MagicMock()
         mock_ipr_instance = mock.MagicMock()
