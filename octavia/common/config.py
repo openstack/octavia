@@ -86,10 +86,7 @@ api_opts = [
                 help=_('A comma separated list of dictionaries of the '
                        'enabled provider driver names and descriptions. '
                        'Must match the driver name in the '
-                       'octavia.api.drivers entrypoint. Example: '
-                       'amphora:The Octavia Amphora driver.,'
-                       'octavia:Deprecated alias of the Octavia '
-                       'Amphora driver.'),
+                       'octavia.api.drivers entrypoint.'),
                 default={'amphora': 'The Octavia Amphora driver.',
                          'octavia': 'Deprecated alias of the Octavia Amphora '
                          'driver.',
@@ -379,7 +376,7 @@ haproxy_amphora_opts = [
                       'seconds.')),
     cfg.StrOpt('haproxy_stick_size', default='10k',
                help=_('Size of the HAProxy stick table. Accepts k, m, g '
-                      'suffixes.  Example: 10k')),
+                      'suffixes.')),
     cfg.StrOpt('user_log_format',
                default='{{ project_id }} {{ lb_id }} %f %ci %cp %t %{+Q}r %ST '
                        '%B %U %[ssl_c_verify] %{+Q}[ssl_c_s_dn] %b %s %Tt '
