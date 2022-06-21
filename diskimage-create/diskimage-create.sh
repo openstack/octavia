@@ -23,7 +23,7 @@ usage() {
     echo "            [-a i386 | **amd64** | armhf | aarch64 | ppc64le]"
     echo "            [-b **haproxy** ]"
     echo "            [-c **~/.cache/image-create** | <cache directory> ]"
-    echo "            [-d **focal**/**8** | <other release id> ]"
+    echo "            [-d **focal**/**9-stream**/**9** | <other release id> ]"
     echo "            [-e]"
     echo "            [-f]"
     echo "            [-g **repository branch** | stable/train | stable/stein | ... ]"
@@ -235,8 +235,10 @@ AMP_BASEOS=${AMP_BASEOS:-"ubuntu-minimal"}
 
 if [ "$AMP_BASEOS" = "ubuntu-minimal" ]; then
     export DIB_RELEASE=${AMP_DIB_RELEASE:-"focal"}
-elif [ "${AMP_BASEOS}" = "centos-minimal" ] || [ "${AMP_BASEOS}" = "rhel" ]; then
-    export DIB_RELEASE=${AMP_DIB_RELEASE:-"8"}
+elif [ "${AMP_BASEOS}" = "rhel" ]; then
+    export DIB_RELEASE=${AMP_DIB_RELEASE:-"9"}
+elif [ "${AMP_BASEOS}" = "centos-minimal" ]; then
+    export DIB_RELEASE=${AMP_DIB_RELEASE:-"9-stream"}
 elif [ "${AMP_BASEOS}" = "fedora" ]; then
     export DIB_RELEASE=${AMP_DIB_RELEASE:-"28"}
 fi

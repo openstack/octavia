@@ -69,8 +69,9 @@ running the tests:
 
 Usage
 =====
-This script and associated elements will build Amphora images.  Current support
-is with an Ubuntu base OS and HAProxy.  The script can use Fedora
+This script and associated elements will build Amphora images. Current support
+is with an Ubuntu and CentOS Stream base OS and HAProxy.
+The script can use RHEL and Fedora
 as a base OS but these will not initially be tested or supported.
 As the project progresses and/or the diskimage-builder project adds support
 for additional base OS options they may become available for Amphora images.
@@ -101,7 +102,7 @@ Command syntax:
             [-a i386 | **amd64** | armhf | aarch64 | ppc64le ]
             [-b **haproxy** ]
             [-c **~/.cache/image-create** | <cache directory> ]
-            [-d **focal**/**8** | <other release id> ]
+            [-d **focal**/**9-stream**/**9** | <other release id> ]
             [-e]
             [-f]
             [-g **repository branch** | stable/train | stable/stein | ... ]

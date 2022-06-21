@@ -1,0 +1,5 @@
+---
+upgrade:
+  - |
+    diskimage-create defaults now to distribution release 9 when selecting RHEL
+    as base OS and to release 9-stream when selecting CentOS as base OS.
