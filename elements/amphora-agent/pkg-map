@@ -58,7 +58,7 @@
       "isc-dhcp-client": "dhclient",
       "uuid-runtime": "",
       "ubuntu-cloudimage-keyring": "",
-      "vim-tiny": "",
+      "vim-tiny": "vim-minimal",
       "apt-transport-https": "",
       "pollinate": "",
       "ifupdown": "",
