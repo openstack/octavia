@@ -378,7 +378,8 @@ class TestComputeTasks(base.TestCase):
             user_data=None,
             config_drive_files={
                 '/etc/rsyslog.d/10-rsyslog.conf': 'FAKE CFG',
-                '/etc/octavia/certs/server.pem': fer.decrypt(test_cert),
+                '/etc/octavia/certs/server.pem': fer.decrypt(
+                    test_cert).decode('utf-8'),
                 '/etc/octavia/certs/client_ca.pem': 'test',
                 '/etc/octavia/amphora-agent.conf': 'test_conf'},
             server_group_id=SERVER_GRPOUP_ID,
