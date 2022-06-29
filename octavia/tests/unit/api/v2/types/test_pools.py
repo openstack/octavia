@@ -198,7 +198,17 @@ class TestSessionPersistencePOST(base.BaseTypesTest, TestSessionPersistence):
         self.assertRaises(exc.InvalidInput, wsme_json.fromjson, self._type,
                           body)
 
+    def test_invalid_app_cookie_name(self):
+        body = {"cookie_name": "cookie,monster"}
+        self.assertRaises(exc.InvalidInput, wsme_json.fromjson, self._type,
+                          body)
+
 
 class TestSessionPersistencePUT(base.BaseTypesTest, TestSessionPersistence):
 
     _type = pool_type.SessionPersistencePUT
+
+    def test_invalid_app_cookie_name(self):
+        body = {"cookie_name": "cookie\nmonster"}
+        self.assertRaises(exc.InvalidInput, wsme_json.fromjson, self._type,
+                          body)
