@@ -19,3 +19,4 @@ tempest>=23.0.0 # Apache-2.0
 # Required for pep8 - doc8 tests
 sphinx>=2.0.0,!=2.1.0 # BSD
 bashate>=0.5.1 # Apache-2.0
+WebTest>=2.0.26 # MIT
