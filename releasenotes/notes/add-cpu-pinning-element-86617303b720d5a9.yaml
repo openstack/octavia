@@ -1,0 +1,19 @@
+---
+features:
+  - |
+    The new "cpu-pinning" element optimizes the amphora image for better
+    vertical scaling. When an amphora flavor with multiple vCPUs is configured
+    it will configure the kernel to isolate (isolcpus)
+    all vCPUs except the first one.
+    Furthermore, it uninstalls irqbalance and sets the IRQ affinity to the
+    first CPU. That way the other CPUs are free to be used by HAProxy
+    exclusively. A new customized TuneD profile applies some more tweaks
+    for improving network latency.
+    This new feature is disabled by default, but can be enabled by running
+    `diskimage-create.sh` with the `-m` option or setting the
+    `AMP_ENABLE_CPUPINNING` environment variable to 1 before running the script.
+upgrade:
+  - |
+    Amphora vertical scaling optimizations require a new amphora image
+    build with the optional CPU pinning feature enabled in order
+    to become effective.
