@@ -14,6 +14,7 @@
 
 import os
 import re
+from typing import Optional
 
 import jinja2
 from octavia_lib.common import constants as lib_consts
@@ -85,11 +86,12 @@ class JinjaTemplater(object):
         self.connection_logging = connection_logging
 
     def build_config(self, host_amphora, listeners, tls_certs,
-                     haproxy_versions, socket_path=None):
+                     haproxy_versions, amp_details, socket_path=None):
         """Convert a logical configuration to the HAProxy version
 
         :param host_amphora: The Amphora this configuration is hosted on
         :param listener: The listener configuration
+        :param amp_details: Detail information from the amphora
         :param socket_path: The socket path for Haproxy process
         :return: Rendered configuration
         """
@@ -115,7 +117,8 @@ class JinjaTemplater(object):
         return self.render_loadbalancer_obj(
             host_amphora, listeners, tls_certs=tls_certs,
             socket_path=socket_path,
-            feature_compatibility=feature_compatibility)
+            feature_compatibility=feature_compatibility,
+            amp_details=amp_details)
 
     def _get_template(self):
         """Returns the specified Jinja configuration template."""
@@ -152,13 +155,15 @@ class JinjaTemplater(object):
 
     def render_loadbalancer_obj(self, host_amphora, listeners,
                                 tls_certs=None, socket_path=None,
-                                feature_compatibility=None):
+                                feature_compatibility=None,
+                                amp_details: Optional[dict] = None):
         """Renders a templated configuration from a load balancer object
 
         :param host_amphora: The Amphora this configuration is hosted on
         :param listener: The listener configuration
         :param tls_certs: Dict of the TLS certificates for the listener
         :param socket_path: The socket path for Haproxy process
+        :param amp_details: Detail information from the amphora
         :return: Rendered configuration
         """
         feature_compatibility = feature_compatibility or {}
@@ -167,7 +172,7 @@ class JinjaTemplater(object):
             listeners[0].load_balancer,
             listeners,
             tls_certs,
-            feature_compatibility,)
+            feature_compatibility)
         if not socket_path:
             socket_path = '%s/%s.sock' % (self.base_amp_path,
                                           listeners[0].load_balancer.id)
@@ -175,28 +180,37 @@ class JinjaTemplater(object):
             self.base_amp_path,
             listeners[0].load_balancer.id) if feature_compatibility.get(
             constants.SERVER_STATE_FILE) else ''
-        prometheus_listener = False
-        for listener in listeners:
-            if listener.protocol == lib_consts.PROTOCOL_PROMETHEUS:
-                prometheus_listener = True
-                break
+        prometheus_listener = any(
+            lsnr.protocol == lib_consts.PROTOCOL_PROMETHEUS for lsnr in
+            listeners)
         require_insecure_fork = feature_compatibility.get(
             constants.INSECURE_FORK)
         enable_prometheus = prometheus_listener and feature_compatibility.get(
             lib_consts.PROTOCOL_PROMETHEUS, False)
+
+        jinja_dict = {
+            'loadbalancer': loadbalancer,
+            'stats_sock': socket_path,
+            'log_http': self.log_http,
+            'log_server': self.log_server,
+            'state_file': state_file_path,
+            'administrative_log_facility':
+                CONF.amphora_agent.administrative_log_facility,
+            'user_log_facility':
+                CONF.amphora_agent.user_log_facility,
+            'connection_logging': self.connection_logging,
+            'enable_prometheus': enable_prometheus,
+            'require_insecure_fork': require_insecure_fork,
+        }
+        try:
+            # Enable cpu-pinning only if the amphora TuneD profile is active
+            if "amphora" in amp_details["active_tuned_profiles"].split():
+                jinja_dict["cpu_count"] = int(amp_details["cpu_count"])
+        except (KeyError, TypeError):
+            pass
+
         return self._get_template().render(
-            {'loadbalancer': loadbalancer,
-             'stats_sock': socket_path,
-             'log_http': self.log_http,
-             'log_server': self.log_server,
-             'state_file': state_file_path,
-             'administrative_log_facility':
-                 CONF.amphora_agent.administrative_log_facility,
-             'user_log_facility': CONF.amphora_agent.user_log_facility,
-             'connection_logging': self.connection_logging,
-             'enable_prometheus': enable_prometheus,
-             'require_insecure_fork': require_insecure_fork},
-            constants=constants, lib_consts=lib_consts)
+            jinja_dict, constants=constants, lib_consts=lib_consts)
 
     def _transform_loadbalancer(self, host_amphora, loadbalancer, listeners,
                                 tls_certs, feature_compatibility):

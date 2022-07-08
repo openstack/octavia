@@ -11,6 +11,7 @@
 #    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 #    License for the specific language governing permissions and limitations
 #    under the License.
+import os
 import random
 from unittest import mock
 
@@ -151,11 +152,13 @@ class TestAmphoraInfo(base.TestCase):
         original_version = api_server.VERSION
         api_server.VERSION = self.API_VERSION
         expected_dict = {u'active': True,
+                         'active_tuned_profiles': '',
                          u'api_version': self.API_VERSION,
                          u'cpu': {u'soft_irq': u'8336',
                                   u'system': u'52554',
                                   u'total': 7503411,
                                   u'user': u'252551'},
+                         'cpu_count': os.cpu_count(),
                          u'disk': {u'available': 109079126016,
                                    u'used': 25718685696},
                          u'haproxy_count': 5,
@@ -235,11 +238,13 @@ class TestAmphoraInfo(base.TestCase):
         original_version = api_server.VERSION
         api_server.VERSION = self.API_VERSION
         expected_dict = {u'active': True,
+                         'active_tuned_profiles': '',
                          u'api_version': self.API_VERSION,
                          u'cpu': {u'soft_irq': u'8336',
                                   u'system': u'52554',
                                   u'total': 7503411,
                                   u'user': u'252551'},
+                         'cpu_count': os.cpu_count(),
                          u'disk': {u'available': 109079126016,
                                    u'used': 25718685696},
                          u'haproxy_count': 5,

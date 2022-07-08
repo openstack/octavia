@@ -17,6 +17,7 @@ import re
 import socket
 import subprocess
 
+from oslo_log import log as logging
 import pyroute2
 import webob
 
@@ -25,6 +26,8 @@ from octavia.amphorae.backends.agent.api_server import util
 from octavia.amphorae.backends.utils import network_utils
 from octavia.common import constants as consts
 from octavia.common import exceptions
+
+LOG = logging.getLogger(__name__)
 
 
 class AmphoraInfo(object):
@@ -60,6 +63,9 @@ class AmphoraInfo(object):
         meminfo = self._get_meminfo()
         cpu = self._cpu()
         st = os.statvfs('/')
+        listeners = (
+            sorted(set(haproxy_listener_list + lvs_listener_list))
+            if lvs_listener_list else haproxy_listener_list)
         body = {'hostname': socket.gethostname(),
                 'haproxy_version':
                     self._get_version_of_installed_package('haproxy'),
@@ -68,6 +74,7 @@ class AmphoraInfo(object):
                 'active': True,
                 'haproxy_count':
                     self._count_haproxy_processes(haproxy_listener_list),
+                'cpu_count': os.cpu_count(),
                 'cpu': {
                     'total': cpu['total'],
                     'user': cpu['user'],
@@ -85,11 +92,10 @@ class AmphoraInfo(object):
                     'used': (st.f_blocks - st.f_bfree) * st.f_frsize,
                     'available': st.f_bavail * st.f_frsize},
                 'load': self._load(),
+                'active_tuned_profiles': self._get_active_tuned_profiles(),
                 'topology': consts.TOPOLOGY_SINGLE,
                 'topology_status': consts.TOPOLOGY_STATUS_OK,
-                'listeners': sorted(list(
-                    set(haproxy_listener_list + lvs_listener_list)))
-                if lvs_listener_list else haproxy_listener_list,
+                'listeners': listeners,
                 'packages': {}}
         if extend_body:
             body.update(extend_body)
@@ -188,3 +194,12 @@ class AmphoraInfo(object):
                 status=404)
         return webob.Response(json=dict(message='OK', interface=interface),
                               status=200)
+
+    def _get_active_tuned_profiles(self) -> str:
+        """Returns the active TuneD profile(s)"""
+        try:
+            with open("/etc/tuned/active_profile", "r", encoding="utf-8") as f:
+                return f.read(1024).strip()
+        except OSError as ex:
+            LOG.debug("Reading active TuneD profiles failed: %r", ex)
+        return ""

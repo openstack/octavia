@@ -1626,6 +1626,57 @@ class TestHaproxyCfg(base.TestCase):
                 defaults=defaults, logging="\n"),
             rendered_obj)
 
+    def test_render_template_amp_details(self):
+        j_cfg = jinja_cfg.JinjaTemplater(
+            base_amp_path='/var/lib/octavia',
+            base_crt_dir='/var/lib/octavia/certs',
+            connection_logging=False)
+        rendered_obj = j_cfg.render_loadbalancer_obj(
+            sample_configs_combined.sample_amphora_tuple(),
+            [sample_configs_combined.sample_listener_tuple()],
+            amp_details={"cpu_count": 7,
+                         "active_tuned_profiles": 'virtual-guest '
+                                                  'optimize-serial-console '
+                                                  'amphora'}
+        )
+        defaults = ("defaults\n"
+                    "    no log\n"
+                    "    retries 3\n"
+                    "    option redispatch\n"
+                    "    option splice-request\n"
+                    "    option splice-response\n"
+                    "    option http-keep-alive\n\n\n")
+        global_opts = ("    maxconn 50000\n"
+                       "    nbthread 6\n"
+                       "    cpu-map auto:1/1-6 1-6\n")
+        self.assertEqual(
+            sample_configs_combined.sample_base_expected_config(
+                defaults=defaults, logging="\n", global_opts=global_opts),
+            rendered_obj)
+
+    def test_render_template_amp_details_cpu_count_none(self):
+        j_cfg = jinja_cfg.JinjaTemplater(
+            base_amp_path='/var/lib/octavia',
+            base_crt_dir='/var/lib/octavia/certs',
+            connection_logging=False)
+        rendered_obj = j_cfg.render_loadbalancer_obj(
+            sample_configs_combined.sample_amphora_tuple(),
+            [sample_configs_combined.sample_listener_tuple()],
+            amp_details={"cpu_count": None},
+        )
+        defaults = ("defaults\n"
+                    "    no log\n"
+                    "    retries 3\n"
+                    "    option redispatch\n"
+                    "    option splice-request\n"
+                    "    option splice-response\n"
+                    "    option http-keep-alive\n\n\n")
+        global_opts = "    maxconn 50000\n\n"
+        self.assertEqual(
+            sample_configs_combined.sample_base_expected_config(
+                defaults=defaults, logging="\n", global_opts=global_opts),
+            rendered_obj)
+
     def test_haproxy_cfg_1_8_vs_1_5(self):
         j_cfg = jinja_cfg.JinjaTemplater(
             base_amp_path='/var/lib/octavia',
@@ -1664,7 +1715,8 @@ class TestHaproxyCfg(base.TestCase):
             sample_amphora,
             [sample_proxy_listener],
             tls_certs=None,
-            haproxy_versions=("1", "8", "1"))
+            haproxy_versions=("1", "8", "1"),
+            amp_details=None)
         self.assertEqual(
             sample_configs_combined.sample_base_expected_config(
                 global_opts=go, backend=be),
@@ -1693,7 +1745,8 @@ class TestHaproxyCfg(base.TestCase):
             sample_amphora,
             [sample_proxy_listener],
             tls_certs=None,
-            haproxy_versions=("1", "5", "18"))
+            haproxy_versions=("1", "5", "18"),
+            amp_details=None)
         self.assertEqual(
             sample_configs_combined.sample_base_expected_config(backend=be),
             rendered_obj)
@@ -1780,7 +1833,8 @@ class TestHaproxyCfg(base.TestCase):
             sample_configs_combined.sample_amphora_tuple(),
             [sample_listener],
             tls_certs=None,
-            haproxy_versions=("1", "5", "18"))
+            haproxy_versions=("1", "5", "18"),
+            amp_details=None)
         self.assertEqual(
             sample_configs_combined.sample_base_expected_config(
                 frontend=fe, backend=be),
@@ -1797,19 +1851,19 @@ class TestHaproxyCfg(base.TestCase):
         j_cfg = jinja_cfg.JinjaTemplater()
         j_cfg.build_config(mock_amp, mock_listeners, mock_tls_certs,
                            haproxy_versions=("0", "7", "0"),
-                           socket_path=mock_socket_path)
+                           socket_path=mock_socket_path, amp_details=None)
 
         expected_fc = {}
         mock_render_loadbalancer_obj.assert_called_once_with(
             mock_amp, mock_listeners, tls_certs=mock_tls_certs,
-            socket_path=mock_socket_path,
+            socket_path=mock_socket_path, amp_details=None,
             feature_compatibility=expected_fc)
 
         mock_render_loadbalancer_obj.reset_mock()
 
         j_cfg.build_config(mock_amp, mock_listeners, mock_tls_certs,
                            haproxy_versions=("1", "6", "0"),
-                           socket_path=mock_socket_path)
+                           socket_path=mock_socket_path, amp_details=None)
 
         expected_fc = {
             constants.HTTP_REUSE: True,
@@ -1817,14 +1871,14 @@ class TestHaproxyCfg(base.TestCase):
         }
         mock_render_loadbalancer_obj.assert_called_once_with(
             mock_amp, mock_listeners, tls_certs=mock_tls_certs,
-            socket_path=mock_socket_path,
+            socket_path=mock_socket_path, amp_details=None,
             feature_compatibility=expected_fc)
 
         mock_render_loadbalancer_obj.reset_mock()
 
         j_cfg.build_config(mock_amp, mock_listeners, mock_tls_certs,
                            haproxy_versions=("1", "9", "0"),
-                           socket_path=mock_socket_path)
+                           socket_path=mock_socket_path, amp_details=None)
 
         expected_fc = {
             constants.HTTP_REUSE: True,
@@ -1833,14 +1887,14 @@ class TestHaproxyCfg(base.TestCase):
         }
         mock_render_loadbalancer_obj.assert_called_once_with(
             mock_amp, mock_listeners, tls_certs=mock_tls_certs,
-            socket_path=mock_socket_path,
+            socket_path=mock_socket_path, amp_details=None,
             feature_compatibility=expected_fc)
 
         mock_render_loadbalancer_obj.reset_mock()
 
         j_cfg.build_config(mock_amp, mock_listeners, mock_tls_certs,
                            haproxy_versions=("2", "1", "1"),
-                           socket_path=mock_socket_path)
+                           socket_path=mock_socket_path, amp_details=None)
 
         expected_fc = {
             constants.HTTP_REUSE: True,
@@ -1850,13 +1904,13 @@ class TestHaproxyCfg(base.TestCase):
         }
         mock_render_loadbalancer_obj.assert_called_once_with(
             mock_amp, mock_listeners, tls_certs=mock_tls_certs,
-            socket_path=mock_socket_path,
+            socket_path=mock_socket_path, amp_details=None,
             feature_compatibility=expected_fc)
 
         mock_render_loadbalancer_obj.reset_mock()
 
         j_cfg.build_config(mock_amp, mock_listeners, mock_tls_certs,
-                           haproxy_versions=("2", "2", "1"),
+                           haproxy_versions=("2", "2", "1"), amp_details=None,
                            socket_path=mock_socket_path)
 
         expected_fc = {
@@ -1868,27 +1922,27 @@ class TestHaproxyCfg(base.TestCase):
         }
         mock_render_loadbalancer_obj.assert_called_once_with(
             mock_amp, mock_listeners, tls_certs=mock_tls_certs,
-            socket_path=mock_socket_path,
+            socket_path=mock_socket_path, amp_details=None,
             feature_compatibility=expected_fc)
 
         mock_render_loadbalancer_obj.reset_mock()
 
         j_cfg.build_config(mock_amp, mock_listeners, mock_tls_certs,
                            haproxy_versions=("2", "4", "0"),
-                           socket_path=mock_socket_path)
+                           socket_path=mock_socket_path, amp_details=None)
 
         mock_render_loadbalancer_obj.assert_called_once_with(
             mock_amp, mock_listeners, tls_certs=mock_tls_certs,
-            socket_path=mock_socket_path,
+            socket_path=mock_socket_path, amp_details=None,
             feature_compatibility=expected_fc)
 
         mock_render_loadbalancer_obj.reset_mock()
 
         j_cfg.build_config(mock_amp, mock_listeners, mock_tls_certs,
                            haproxy_versions=("3", "1", "0"),
-                           socket_path=mock_socket_path)
+                           socket_path=mock_socket_path, amp_details=None)
 
         mock_render_loadbalancer_obj.assert_called_once_with(
             mock_amp, mock_listeners, tls_certs=mock_tls_certs,
-            socket_path=mock_socket_path,
+            socket_path=mock_socket_path, amp_details=None,
             feature_compatibility=expected_fc)

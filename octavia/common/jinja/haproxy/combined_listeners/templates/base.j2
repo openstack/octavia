@@ -26,6 +26,10 @@ global
     {% if loadbalancer.global_connection_limit is defined %}
     maxconn {{ loadbalancer.global_connection_limit }}
     {% endif %}
+    {%- if cpu_count is defined and cpu_count > 1 %}
+    nbthread {{ cpu_count - 1 }}
+    cpu-map auto:1/1-{{ cpu_count - 1 }} 1-{{ cpu_count - 1 }}
+    {%- endif %}
     {% set found_ns = namespace(found=false) %}
     {% for listener in loadbalancer.listeners if listener.enabled %}
         {% for pool in listener.pools if pool.enabled %}
