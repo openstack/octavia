@@ -397,7 +397,7 @@ METRIC_MAP = {
         ("octavia_pool_client_aborts_total{", None, {"proxy=": "pool="}),
     "haproxy_backend_server_aborts_total ":
         ("octavia_pool_member_aborts_total ",
-         "# HELP octavia_pool_server_aborts_total Total number of data "
+         "# HELP octavia_pool_member_aborts_total Total number of data "
          "transfers aborted by the server.\n", None),
     "haproxy_backend_server_aborts_total{":
         ("octavia_pool_member_aborts_total{", None, {"proxy=": "pool="}),
