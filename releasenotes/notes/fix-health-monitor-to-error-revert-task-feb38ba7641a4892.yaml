@@ -1,0 +1,6 @@
+---
+fixes:
+  - |
+    Fix a bug that prevented the provisioning_state of a health-monitor to be
+    set to ERROR when an error occurred while creating, updating or deleting a
+    health-monitor.
