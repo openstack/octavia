@@ -8,12 +8,12 @@
 # Keystone token scoping and "default roles"/personas will still be enforced.
 
 # Role Rules
-"system_admin": "role:admin"
-"system_reader": "role:reader"
+"system_admin": "role:admin and system_scope:all"
+"system_reader": "role:reader and system_scope:all"
 "project_reader": "role:reader and project_id:%(project_id)s"
 "project_member": "role:member and project_id:%(project_id)s"
 
-"context_is_admin": "role:admin"
+"context_is_admin": "role:admin and system_scope:all"
 
 # API Rules
 "load-balancer:admin": "is_admin:True or
