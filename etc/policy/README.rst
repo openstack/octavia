@@ -22,6 +22,18 @@ have one of the load-balancer:* roles.
 
 This policy will honor the following Keystone default roles in the Octavia API:
 
+* Admin
+* Project scoped - Reader
+* Project scoped - Member
+
+keystone_default_roles_scoped-policy.yaml
+----------------------------------
+This policy file disables the requirement for load-balancer service users to
+have one of the load-balancer:* roles.
+
+This policy will honor the following Keystone default roles and scopes in the
+Octavia API:
+
 * System scoped - Admin
 * System scoped - Reader
 * Project scoped - Reader
