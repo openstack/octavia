@@ -526,3 +526,13 @@ class TestValidations(base.TestCase):
             exceptions.ValidationException,
             validate.check_alpn_protocols,
             [])
+
+    def test_is_ip_member_of_cidr(self):
+        self.assertTrue(validate.is_ip_member_of_cidr('192.0.0.5',
+                                                      '192.0.0.0/24'))
+        self.assertFalse(validate.is_ip_member_of_cidr('198.51.100.5',
+                                                       '192.0.0.0/24'))
+        self.assertTrue(validate.is_ip_member_of_cidr('2001:db8::5',
+                                                      '2001:db8::/32'))
+        self.assertFalse(validate.is_ip_member_of_cidr('::ffff:0:203.0.113.5',
+                                                       '2001:db8::/32'))

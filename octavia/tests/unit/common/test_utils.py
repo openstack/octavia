@@ -41,6 +41,10 @@ class TestConfig(base.TestCase):
         self.assertTrue(utils.is_ipv6('2001:db8::1'))
         self.assertTrue(utils.is_ipv6('fe80::225:90ff:fefb:53ad'))
 
+    def test_is_cidr_ipv6(self):
+        self.assertTrue(utils.is_cidr_ipv6('2001:db8::/32'))
+        self.assertFalse(utils.is_cidr_ipv6('192.0.2.0/32'))
+
     def test_is_ipv6_lla(self):
         self.assertFalse(utils.is_ipv6_lla('192.0.2.10'))
         self.assertFalse(utils.is_ipv6_lla('169.254.0.10'))
