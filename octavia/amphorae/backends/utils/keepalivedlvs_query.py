@@ -27,7 +27,7 @@ KERNEL_LVS_STATS_PATH = '/proc/net/ip_vs_stats'
 LVS_KEY_REGEX = re.compile(r"RemoteAddress:Port\s+(.*$)")
 V4_RS_VALUE_REGEX = re.compile(r"(\w{8}:\w{4})\s+(.*$)")
 V4_HEX_IP_REGEX = re.compile(r"(\w{2})(\w{2})(\w{2})(\w{2})")
-V6_RS_VALUE_REGEX = re.compile(r"(\[[[\w{4}:]+\b\]:\w{4})\s+(.*$)")
+V6_RS_VALUE_REGEX = re.compile(r"(\[[\[\w{4}:]+\b\]:\w{4})\s+(.*$)")
 
 NS_REGEX = re.compile(r"net_namespace\s(\w+-\w+)")
 V4_VS_REGEX = re.compile(r"virtual_server\s([\d+\.]+\b)\s(\d{1,5})")
