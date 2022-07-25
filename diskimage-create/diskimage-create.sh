@@ -32,7 +32,7 @@ usage() {
     echo "            [-k <kernel package name> ]"
     echo "            [-l <log file> ]"
     echo "            [-n]"
-    echo "            [-o **amphora-x64-haproxy** | <filename> ]"
+    echo "            [-o **amphora-x64-haproxy.qcow2** | <filename> ]"
     echo "            [-p]"
     echo "            [-r <root password> ]"
     echo "            [-s **2** | <size in GB> ]"
@@ -243,7 +243,7 @@ elif [ "${AMP_BASEOS}" = "fedora" ]; then
     export DIB_RELEASE=${AMP_DIB_RELEASE:-"28"}
 fi
 
-AMP_OUTPUTFILENAME=${AMP_OUTPUTFILENAME:-"$PWD/amphora-x64-haproxy"}
+AMP_OUTPUTFILENAME=${AMP_OUTPUTFILENAME:-"$PWD/amphora-x64-haproxy.qcow2"}
 
 AMP_IMAGETYPE=${AMP_IMAGETYPE:-"qcow2"}
 
@@ -520,4 +520,4 @@ if [ -z "$DIB_REPOREF_amphora_agent" ]; then
 else
     echo "Successfully built the amphora using the $DIB_REPOREF_amphora_agent amphora-agent."
 fi
-echo "Amphora image size: `stat -c "%n %s" $AMP_OUTPUTFILENAME.$AMP_IMAGETYPE`"
+echo "Amphora image size: `stat -c "%n %s" $AMP_OUTPUTFILENAME`"
