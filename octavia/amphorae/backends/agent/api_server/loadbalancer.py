@@ -399,7 +399,7 @@ class Loadbalancer(object):
 
         stream = Wrapped(flask.request.stream)
         file = self._cert_file_path(lb_id, filename)
-        flags = os.O_WRONLY | os.O_CREAT
+        flags = os.O_WRONLY | os.O_CREAT | os.O_TRUNC
         # mode 00600
         mode = stat.S_IRUSR | stat.S_IWUSR
         with os.fdopen(os.open(file, flags, mode), 'wb') as crt_file:
