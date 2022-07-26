@@ -28,7 +28,7 @@ class TestLifecycleTasks(base.TestCase):
         self.AMPHORA.id = self.AMPHORA_ID
         self.HEALTH_MON = mock.MagicMock()
         self.HEALTH_MON_ID = uuidutils.generate_uuid()
-        self.HEALTH_MON.pool_id = self.HEALTH_MON_ID
+        self.HEALTH_MON.id = self.HEALTH_MON_ID
         self.L7POLICY = mock.MagicMock()
         self.L7POLICY_ID = uuidutils.generate_uuid()
         self.L7POLICY.id = self.L7POLICY_ID
