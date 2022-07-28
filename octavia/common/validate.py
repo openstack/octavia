@@ -24,7 +24,8 @@ import re
 
 import netaddr
 from oslo_config import cfg
-import rfc3986
+from rfc3986 import uri_reference
+from rfc3986 import validators
 from wsme import types as wtypes
 
 from octavia.common import constants
@@ -37,13 +38,16 @@ CONF = cfg.CONF
 
 def url(url, require_scheme=True):
     """Raises an error if the url doesn't look like a URL."""
+    validator = validators.Validator()
+    if require_scheme:
+        validator.allow_schemes('http', 'https')
+        validator.require_presence_of('scheme', 'host')
+        validator.check_validity_of('scheme', 'host', 'path')
+    else:
+        validator.check_validity_of('path')
+
     try:
-        if not rfc3986.is_valid_uri(url, require_scheme=require_scheme):
-            raise exceptions.InvalidURL(url=url)
-        p_url = rfc3986.urlparse(rfc3986.normalize_uri(url))
-        if require_scheme:
-            if p_url.scheme not in ('http', 'https'):
-                raise exceptions.InvalidURL(url=url)
+        validator.validate(uri_reference(url))
     except Exception as e:
         raise exceptions.InvalidURL(url=url) from e
     return True
@@ -51,8 +55,10 @@ def url(url, require_scheme=True):
 
 def url_path(url_path):
     """Raises an error if the url_path doesn't look like a URL Path."""
+    validator = validators.Validator().check_validity_of('path')
     try:
-        p_url = rfc3986.urlparse(rfc3986.normalize_uri(url_path))
+        p_url = uri_reference(url_path)
+        validator.validate(p_url)
 
         invalid_path = (
             re.search(r"\s", url_path) or
