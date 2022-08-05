@@ -1000,3 +1000,6 @@ NFT_TABLE = 'amphora_table'
 NFT_CHAIN = 'amphora_chain'
 NFT_VIP_CHAIN = 'amphora_vip_chain'
 PROTOCOL = 'protocol'
+
+# Amphora heart beat TCP message header ('AMPH')
+AMP_HEARTBEAT_HEADER = 0x414d5048

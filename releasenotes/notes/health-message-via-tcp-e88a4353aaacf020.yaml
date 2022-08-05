@@ -1,0 +1,18 @@
+---
+features:
+  - |
+    Added a feature to send larger health status messages via TCP,
+    in order to avoid fragmented UDP messages which may not arrive at the
+    receiver in some networks.
+    The new configuration option heartbeat_use_tcp_threshold determines
+    at what size of the message TCP will be chosen (-1 to never use TCP).
+upgrade:
+  - |
+    There is a new option heartbeat_use_tcp_threshold to let amphorae send
+    their heart beat messages via TCP if they exceed this threshold.
+    Set heartbeat_use_tcp_threshold to a positive value to enable this feature.
+    Heart beat messages that are smaller than this value will still be sent
+    via UDP, larger messages via TCP. If heartbeat_use_tcp_threshold is -1
+    (default) TCP will never be used, so an octavia upgrade will not change
+    the behavior unless you explicitly set heartbeat_use_tcp_threshold.
+    To make use of the new feature you will need to rebuild the amphora image.

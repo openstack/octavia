@@ -169,10 +169,17 @@ amphora's API (by default, TCP port 9443). It can also be helpful to allow SSH
 access to the amphorae from the controller for troubleshooting purposes (ie.
 TCP port 22), though this is not strictly necessary in production environments.
 
+If the underlying network does not support fragmented UDP packets you
+can configure Octavia to let the amphora switch to TCP transport for larger
+heartbeat messages. In that case the Neutron security group applied to
+amphorae needs to allow TCP connections to the health monitor, with the same
+port number as for UDP (by default port 5555).
+
 Amphorae will send periodic health checks to the controller's health manager.
 Any firewall protecting the interface on which the health manager listens must
 allow these packets from amphorae on the LB Network (by default, UDP port
-5555).
+5555). If the option for TCP transport of heartbeat messages is active, the
+same port number must be opened for TCP too.
 
 Finally, you need to add routing or interfaces to this network such that the
 Octavia controller (which will be described below) is able to communicate with

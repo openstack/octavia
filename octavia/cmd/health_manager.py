@@ -26,6 +26,7 @@ from oslo_log import log as logging
 from oslo_reports import guru_meditation_report as gmr
 from oslo_reports import opts as gmr_opts
 
+from octavia.amphorae.drivers.health import heartbeat_tcp
 from octavia.amphorae.drivers.health import heartbeat_udp
 from octavia.common import service
 from octavia.controller.healthmanager import health_manager
@@ -44,7 +45,7 @@ def _mutate_config(*args, **kwargs):
     CONF.mutate_config_files()
 
 
-def hm_listener(exit_event):
+def hm_listener_udp(exit_event):
     signal.signal(signal.SIGINT, signal.SIG_IGN)
     signal.signal(signal.SIGHUP, _mutate_config)
     udp_getter = heartbeat_udp.UDPStatusGetter()
@@ -57,6 +58,23 @@ def hm_listener(exit_event):
     LOG.info('Waiting for executor to shutdown...')
     udp_getter.health_executor.shutdown()
     udp_getter.stats_executor.shutdown()
+    LOG.info('Executor shutdown finished.')
+
+
+def hm_listener_tcp(exit_event):
+    signal.signal(signal.SIGINT, signal.SIG_IGN)
+    signal.signal(signal.SIGHUP, _mutate_config)
+    tcp_getter = heartbeat_tcp.TCPStatusGetter()
+    while not exit_event.is_set():
+        try:
+            tcp_getter.check()
+        except Exception as e:
+            LOG.error('Health Manager listener (TCP) experienced unknown '
+                      'error: %s',
+                      str(e))
+    LOG.info('Waiting for executor to shutdown...')
+    tcp_getter.health_executor.shutdown()
+    tcp_getter.stats_executor.shutdown()
     LOG.info('Executor shutdown finished.')
 
 
@@ -82,11 +100,11 @@ def hm_health_check(exit_event):
     health_check.start()
 
 
-def _handle_mutate_config(listener_proc_pid, check_proc_pid, *args, **kwargs):
+def _handle_mutate_config(proc_pids, *args, **kwargs):
     LOG.info("Health Manager received HUP signal, mutating config.")
     _mutate_config()
-    os.kill(listener_proc_pid, signal.SIGHUP)
-    os.kill(check_proc_pid, signal.SIGHUP)
+    for pid in proc_pids:
+        os.kill(pid, signal.SIGHUP)
 
 
 def main():
@@ -101,17 +119,26 @@ def main():
     processes = []
     exit_event = multiproc.Event()
 
-    hm_listener_proc = multiproc.Process(name='HM_listener',
-                                         target=hm_listener,
-                                         args=(exit_event,))
-    processes.append(hm_listener_proc)
+    hm_listener_udp_proc = multiproc.Process(name='HM_listener_udp',
+                                             target=hm_listener_udp,
+                                             args=(exit_event,))
+    processes.append(hm_listener_udp_proc)
+    hm_listener_tcp_proc = None
+    if CONF.health_manager.heartbeat_use_tcp_threshold >= 0:
+        hm_listener_tcp_proc = multiproc.Process(name='HM_listener_tcp',
+                                                 target=hm_listener_tcp,
+                                                 args=(exit_event,))
+        processes.append(hm_listener_tcp_proc)
     hm_health_check_proc = multiproc.Process(name='HM_health_check',
                                              target=hm_health_check,
                                              args=(exit_event,))
     processes.append(hm_health_check_proc)
 
-    LOG.info("Health Manager listener process starts:")
-    hm_listener_proc.start()
+    LOG.info("Health Manager listener process (UDP) starts:")
+    hm_listener_udp_proc.start()
+    if hm_listener_tcp_proc is not None:
+        LOG.info("Health Manager listener process (TCP) starts:")
+        hm_listener_tcp_proc.start()
     LOG.info("Health manager check process starts:")
     hm_health_check_proc.start()
 
@@ -120,11 +147,13 @@ def main():
         exit_event.set()
         os.kill(hm_health_check_proc.pid, signal.SIGINT)
         hm_health_check_proc.join()
-        hm_listener_proc.join()
+        if hm_listener_tcp_proc is not None:
+            hm_listener_tcp_proc.join()
+        hm_listener_udp_proc.join()
 
     signal.signal(signal.SIGTERM, process_cleanup)
-    signal.signal(signal.SIGHUP, partial(
-        _handle_mutate_config, hm_listener_proc.pid, hm_health_check_proc.pid))
+    pids = [process.pid for process in processes]
+    signal.signal(signal.SIGHUP, partial(_handle_mutate_config, pids))
 
     try:
         for process in processes:

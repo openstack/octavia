@@ -38,6 +38,7 @@ Optional Installation and Configuration Guides
    apache-httpd.rst
    failover-circuit-breaker.rst
    sr-iov.rst
+   amphora-tcp-heartbeat.rst
 
 Maintenance and Operations
 --------------------------
