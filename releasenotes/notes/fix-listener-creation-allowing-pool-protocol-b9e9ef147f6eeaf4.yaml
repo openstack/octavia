@@ -1,0 +1,5 @@
+---
+fixes:
+  - |
+    Fixes listener creation failure when protocol used is PROXY or PROXYV2
+    which are pool protocol and not listener protocol.
