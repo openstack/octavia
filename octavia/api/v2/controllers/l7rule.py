@@ -157,7 +157,7 @@ class L7RuleController(base.BaseController):
             l7rule_dict = db_prepare.create_l7rule(
                 l7rule.to_dict(render_unsets=True), self.l7policy_id)
 
-            self._test_lb_listener_policy_statuses(context.session)
+            self._test_lb_listener_policy_statuses(lock_session)
 
             db_l7rule = self._validate_create_l7rule(lock_session, l7rule_dict)
 
