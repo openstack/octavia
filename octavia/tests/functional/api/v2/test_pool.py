@@ -2706,3 +2706,24 @@ class TestPool(base.BaseAPITest):
             'Invalid input for field/attribute alpn_protocols', fault)
         self.assertIn('Value should be a valid ALPN protocol ID', fault)
         self.assert_correct_status(lb_id=self.lb_id)
+
+    @mock.patch("octavia.api.drivers.noop_driver.driver.NoopManager."
+                "pool_update")
+    def test_update_with_exception_in_provider_driver(self, pool_update_mock):
+        pool_update_mock.side_effect = Exception("Provider error")
+
+        api_pool = self.create_pool(
+            self.lb_id,
+            constants.PROTOCOL_HTTP,
+            constants.LB_ALGORITHM_ROUND_ROBIN,
+            listener_id=self.listener_id).get(self.root_tag)
+        self.set_lb_status(lb_id=self.lb_id)
+
+        new_pool = {'name': 'foo'}
+        self.put(self.POOL_PATH.format(pool_id=api_pool.get('id')),
+                 self._build_body(new_pool), status=500)
+
+        lb = self.get(self.LB_PATH.format(lb_id=self.lb_id)).json.get(
+            "loadbalancer")
+        self.assertEqual(lb[constants.PROVISIONING_STATUS],
+                         constants.ACTIVE)
