@@ -1,0 +1,5 @@
+---
+fixes:
+  - |
+    Fix load balancers stuck in PENDING_UPDATE issues for some API calls (POST
+    /l7rule, PUT /pool) when a provider denied the call.
