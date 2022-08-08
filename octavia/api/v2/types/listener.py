@@ -12,6 +12,7 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+from octavia_lib.common import constants as lib_constants
 from wsme import types as wtypes
 
 from octavia.api.common import types
@@ -111,7 +112,8 @@ class ListenerPOST(BaseListenerType):
     name = wtypes.wsattr(wtypes.StringType(max_length=255))
     description = wtypes.wsattr(wtypes.StringType(max_length=255))
     admin_state_up = wtypes.wsattr(bool, default=True)
-    protocol = wtypes.wsattr(wtypes.Enum(str, *constants.SUPPORTED_PROTOCOLS),
+    protocol = wtypes.wsattr(wtypes.Enum(str,
+                             *lib_constants.LISTENER_SUPPORTED_PROTOCOLS),
                              mandatory=True)
     protocol_port = wtypes.wsattr(
         wtypes.IntegerType(minimum=constants.MIN_PORT_NUMBER,
@@ -205,7 +207,8 @@ class ListenerSingleCreate(BaseListenerType):
     name = wtypes.wsattr(wtypes.StringType(max_length=255))
     description = wtypes.wsattr(wtypes.StringType(max_length=255))
     admin_state_up = wtypes.wsattr(bool, default=True)
-    protocol = wtypes.wsattr(wtypes.Enum(str, *constants.SUPPORTED_PROTOCOLS),
+    protocol = wtypes.wsattr(wtypes.Enum(str,
+                             *lib_constants.LISTENER_SUPPORTED_PROTOCOLS),
                              mandatory=True)
     protocol_port = wtypes.wsattr(
         wtypes.IntegerType(minimum=constants.MIN_PORT_NUMBER,

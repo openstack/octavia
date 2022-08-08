@@ -2240,6 +2240,11 @@ class TestListener(base.BaseAPITest):
                        'protocol_port': 80}
         self.post(self.LISTENERS_PATH, lb_listener, status=400)
 
+    def test_create_listener_proxy_protocol(self):
+        lb_listener = {'protocol': 'PROXY',
+                       'protocol_port': 80}
+        self.post(self.LISTENERS_PATH, lb_listener, status=400)
+
     def test_update_listener_bad_protocol(self):
         listener = self.create_listener(constants.PROTOCOL_TCP, 80, self.lb_id)
         self.set_lb_status(self.lb_id)
@@ -2766,10 +2771,6 @@ class TestListener(base.BaseAPITest):
     def test_update_protocol_HTTPS_insert_headers(self):
         self._test_update_protocol_insert_headers_mismatch(
             constants.PROTOCOL_HTTPS)
-
-    def test_update_protocol_PROXY_insert_headers(self):
-        self._test_update_protocol_insert_headers_mismatch(
-            constants.PROTOCOL_PROXY)
 
     def test_update_protocol_TCP_insert_headers(self):
         self._test_update_protocol_insert_headers_mismatch(
