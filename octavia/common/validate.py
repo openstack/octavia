@@ -22,7 +22,6 @@ Defined here so these can also be used at deeper levels than the API.
 import ipaddress
 import re
 
-import netaddr
 from oslo_config import cfg
 from rfc3986 import uri_reference
 from rfc3986 import validators
@@ -397,7 +396,7 @@ def network_allowed_by_config(network_id, valid_networks=None):
 
 
 def is_ip_member_of_cidr(address, cidr):
-    if netaddr.IPAddress(address) in netaddr.IPNetwork(cidr):
+    if ipaddress.ip_address(address) in ipaddress.ip_network(cidr):
         return True
     return False
 

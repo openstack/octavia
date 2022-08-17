@@ -20,10 +20,10 @@
 
 import base64
 import hashlib
+import ipaddress
 import re
 import socket
 
-import netaddr
 from oslo_config import cfg
 from oslo_log import log as logging
 from oslo_utils import excutils
@@ -73,47 +73,42 @@ def get_network_driver():
 
 def is_ipv4(ip_address):
     """Check if ip address is IPv4 address."""
-    ip = netaddr.IPAddress(ip_address)
+    ip = ipaddress.ip_address(ip_address)
     return ip.version == 4
 
 
 def is_ipv6(ip_address):
     """Check if ip address is IPv6 address."""
-    ip = netaddr.IPAddress(ip_address)
+    ip = ipaddress.ip_address(ip_address)
     return ip.version == 6
 
 
 def is_cidr_ipv6(cidr):
     """Check if CIDR is IPv6 address with subnet prefix."""
-    ip = netaddr.IPNetwork(cidr)
+    ip = ipaddress.ip_network(cidr, strict=False)
     return ip.version == 6
 
 
 def is_ipv6_lla(ip_address):
     """Check if ip address is IPv6 link local address."""
-    ip = netaddr.IPAddress(ip_address)
-    return ip.version == 6 and ip.is_link_local()
+    ip = ipaddress.ip_address(ip_address)
+    return ip.version == 6 and ip.is_link_local
 
 
 def ip_port_str(ip_address, port):
     """Return IP port as string representation depending on address family."""
-    ip = netaddr.IPAddress(ip_address)
+    ip = ipaddress.ip_address(ip_address)
     if ip.version == 4:
         return "{ip}:{port}".format(ip=ip, port=port)
     return "[{ip}]:{port}".format(ip=ip, port=port)
 
 
 def netmask_to_prefix(netmask):
-    return netaddr.IPAddress(netmask).netmask_bits()
+    return ipaddress.ip_network(f'0.0.0.0/{netmask}', strict=False).prefixlen
 
 
 def ip_netmask_to_cidr(ip, netmask):
-    net = netaddr.IPNetwork("0.0.0.0/0")
-    if ip and netmask:
-        net = netaddr.IPNetwork(
-            "{ip}/{netmask}".format(ip=ip, netmask=netmask)
-        )
-    return "{ip}/{netmask}".format(ip=net.network, netmask=net.prefixlen)
+    return ipaddress.ip_network(f'{ip}/{netmask}', strict=False).with_prefixlen
 
 
 def get_vip_security_group_name(loadbalancer_id):

@@ -13,9 +13,9 @@
 #    under the License.
 
 import copy
+import ipaddress
 
 from dateutil import parser
-import netaddr
 from wsme import types as wtypes
 
 from octavia.common import constants
@@ -50,8 +50,8 @@ class CidrType(wtypes.UserType):
     def validate(value):
         """Validates whether value is an IPv4 or IPv6 CIDR."""
         try:
-            return str(netaddr.IPNetwork(value).cidr)
-        except (ValueError, netaddr.core.AddrFormatError) as e:
+            return ipaddress.ip_network(value, strict=False).with_prefixlen
+        except Exception as e:
             error = 'Value should be IPv4 or IPv6 CIDR format'
             raise ValueError(error) from e
 

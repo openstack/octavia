@@ -1,0 +1,5 @@
+---
+other:
+  - |
+    The netaddr python module has been removed as an Octavia requirement. It
+    has been replaced with the python standard library 'ipaddress' module.
