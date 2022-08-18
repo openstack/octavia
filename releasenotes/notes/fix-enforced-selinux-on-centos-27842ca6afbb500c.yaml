@@ -1,0 +1,4 @@
+---
+fixes:
+  - |
+    Enable required SELinux booleans for CentOS or RHEL amphora image.
