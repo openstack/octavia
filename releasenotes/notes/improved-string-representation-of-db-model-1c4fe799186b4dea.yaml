@@ -1,0 +1,7 @@
+---
+other:
+  - |
+    The string representation of data base model objects has been improved.
+    Calling str() on them will return a certain subset of fields and calling
+    repr() on them will return all fields. This is helpful for debugging, but
+    it may also change some of the log messages that Octavia emits.
