@@ -13,6 +13,7 @@
 #    under the License.
 import errno
 import socket
+import time
 from unittest import mock
 
 from oslo_config import cfg
@@ -28,6 +29,13 @@ class TestDriverListener(base.TestCase):
 
     def setUp(self):
         super().setUp()
+
+    def _wait_until_called(self, mock_to_be_called):
+        """Wait for up to 1 sec for the given mock to be called."""
+        for _ in range(10):
+            if mock_to_be_called.call_count > 0:
+                break
+            time.sleep(.1)
 
     @mock.patch('octavia.api.drivers.driver_agent.driver_listener.memoryview')
     def test_recv(self, mock_memoryview):
@@ -308,6 +316,7 @@ class TestDriverListener(base.TestCase):
         mock_exit_event.is_set.side_effect = [False, False, False, False, True]
 
         driver_listener.status_listener(mock_exit_event)
+        self._wait_until_called(mock_server.serve_forever)
         mock_server.serve_forever.assert_called()
         self.assertEqual(2, mock_cleanup.call_count)
 
@@ -327,6 +336,7 @@ class TestDriverListener(base.TestCase):
         mock_exit_event.is_set.side_effect = [False, False, False, False, True]
 
         driver_listener.stats_listener(mock_exit_event)
+        self._wait_until_called(mock_server.serve_forever)
         mock_server.serve_forever.assert_called()
 
     @mock.patch('octavia.api.drivers.driver_agent.driver_listener.'
@@ -345,4 +355,5 @@ class TestDriverListener(base.TestCase):
         mock_exit_event.is_set.side_effect = [False, False, False, False, True]
 
         driver_listener.get_listener(mock_exit_event)
+        self._wait_until_called(mock_server.serve_forever)
         mock_server.serve_forever.assert_called()
