@@ -1,0 +1,9 @@
+---
+other:
+  - |
+    When a HTTPS termination listener gets configured, Octavia will tweak the
+    HAProxy `tune.ssl.cachesize` setting to use about half of the available
+    memory (free + buffers + cached) on the amphora minus the memory needed
+    for network sockets based on the global max connections setting.
+    This allows to make better reuse of existing SSL sessions and
+    helps to lower the number of computationally expensive SSL handshakes.
