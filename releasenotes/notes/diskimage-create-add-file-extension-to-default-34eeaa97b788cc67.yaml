@@ -1,0 +1,11 @@
+---
+upgrade:
+  - |
+    The default for the output file has been changed in
+    diskimage-create.sh. It is now amphora-x64-haproxy.qcow2 instead of
+    amphora-x64-haproxy.
+fixes:
+  - |
+    diskimage-create.sh used $AMP_OUTPUTFILENAME.$AMP_IMAGETYPE for
+    constructing the image file path when checking the file size, which was
+    not correct and caused an "No such file or directory" error.
