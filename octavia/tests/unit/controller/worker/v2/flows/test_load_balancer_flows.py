@@ -26,6 +26,10 @@ from octavia.controller.worker.v2.flows import load_balancer_flows
 import octavia.tests.unit.base as base
 
 
+class MockNOTIFIER(mock.MagicMock):
+    info = mock.MagicMock()
+
+
 # NOTE: We patch the get_network_driver for all the calls so we don't
 # inadvertently make real calls.
 @mock.patch('octavia.common.utils.get_network_driver')
@@ -40,7 +44,10 @@ class TestLoadBalancerFlows(base.TestCase):
         self.conf.config(group="nova", enable_anti_affinity=False)
         self.LBFlow = load_balancer_flows.LoadBalancerFlows()
 
-    def test_get_create_load_balancer_flow(self, mock_get_net_driver):
+    @mock.patch('octavia.common.rpc.NOTIFIER',
+                new_callable=MockNOTIFIER)
+    def test_get_create_load_balancer_flow(self, mock_get_net_driver,
+                                           mock_notifier):
         amp_flow = self.LBFlow.get_create_load_balancer_flow(
             constants.TOPOLOGY_SINGLE)
         self.assertIsInstance(amp_flow, flow.Flow)
@@ -50,8 +57,10 @@ class TestLoadBalancerFlows(base.TestCase):
         self.assertIn(constants.COMPUTE_ID, amp_flow.provides)
         self.assertIn(constants.COMPUTE_OBJ, amp_flow.provides)
 
+    @mock.patch('octavia.common.rpc.NOTIFIER',
+                new_callable=MockNOTIFIER)
     def test_get_create_active_standby_load_balancer_flow(
-            self, mock_get_net_driver):
+            self, mock_get_net_driver, mock_notifier):
         amp_flow = self.LBFlow.get_create_load_balancer_flow(
             constants.TOPOLOGY_ACTIVE_STANDBY)
         self.assertIsInstance(amp_flow, flow.Flow)
@@ -61,8 +70,10 @@ class TestLoadBalancerFlows(base.TestCase):
         self.assertIn(constants.COMPUTE_ID, amp_flow.provides)
         self.assertIn(constants.COMPUTE_OBJ, amp_flow.provides)
 
+    @mock.patch('octavia.common.rpc.NOTIFIER',
+                new_callable=MockNOTIFIER)
     def test_get_create_anti_affinity_active_standby_load_balancer_flow(
-            self, mock_get_net_driver):
+            self, mock_get_net_driver, mock_notifier):
         self.conf.config(group="nova", enable_anti_affinity=True)
 
         self._LBFlow = load_balancer_flows.LoadBalancerFlows()
@@ -77,13 +88,18 @@ class TestLoadBalancerFlows(base.TestCase):
         self.assertIn(constants.COMPUTE_OBJ, amp_flow.provides)
         self.conf.config(group="nova", enable_anti_affinity=False)
 
+    @mock.patch('octavia.common.rpc.NOTIFIER',
+                new_callable=MockNOTIFIER)
     def test_get_create_bogus_topology_load_balancer_flow(
-            self, mock_get_net_driver):
+            self, mock_get_net_driver, mock_notifier):
         self.assertRaises(exceptions.InvalidTopology,
                           self.LBFlow.get_create_load_balancer_flow,
                           'BOGUS')
 
-    def test_get_delete_load_balancer_flow(self, mock_get_net_driver):
+    @mock.patch('octavia.common.rpc.NOTIFIER',
+                new_callable=MockNOTIFIER)
+    def test_get_delete_load_balancer_flow(self, mock_get_net_driver,
+                                           mock_notifier):
         lb_mock = mock.Mock()
         listener_mock = mock.Mock()
         listener_mock.id = '123'
@@ -100,11 +116,14 @@ class TestLoadBalancerFlows(base.TestCase):
         self.assertEqual(0, len(lb_flow.provides))
         self.assertEqual(3, len(lb_flow.requires))
 
+    @mock.patch('octavia.common.rpc.NOTIFIER',
+                new_callable=MockNOTIFIER)
     @mock.patch('octavia.db.repositories.LoadBalancerRepository.get')
     @mock.patch('octavia.db.api.get_session', return_value=mock.MagicMock())
     def test_get_delete_load_balancer_flow_cascade(self, mock_session,
                                                    mock_get_lb,
-                                                   mock_get_net_driver):
+                                                   mock_get_net_driver,
+                                                   mock_notifier):
         lb_mock = mock.Mock()
         listener_mock = mock.Mock()
         listener_mock.id = '123'
@@ -141,7 +160,10 @@ class TestLoadBalancerFlows(base.TestCase):
         self.assertEqual(1, len(lb_flow.provides))
         self.assertEqual(4, len(lb_flow.requires))
 
-    def test_get_update_load_balancer_flow(self, mock_get_net_driver):
+    @mock.patch('octavia.common.rpc.NOTIFIER',
+                new_callable=MockNOTIFIER)
+    def test_get_update_load_balancer_flow(self, mock_get_net_driver,
+                                           mock_notifier):
 
         lb_flow = self.LBFlow.get_update_load_balancer_flow()
 
@@ -153,7 +175,10 @@ class TestLoadBalancerFlows(base.TestCase):
         self.assertEqual(0, len(lb_flow.provides))
         self.assertEqual(3, len(lb_flow.requires))
 
-    def test_get_post_lb_amp_association_flow(self, mock_get_net_driver):
+    @mock.patch('octavia.common.rpc.NOTIFIER',
+                new_callable=MockNOTIFIER)
+    def test_get_post_lb_amp_association_flow(self, mock_get_net_driver,
+                                              mock_notifier):
         amp_flow = self.LBFlow.get_post_lb_amp_association_flow(
             '123', constants.TOPOLOGY_SINGLE)
 
@@ -200,8 +225,10 @@ class TestLoadBalancerFlows(base.TestCase):
         self.assertEqual(2, len(amp_flow.requires), amp_flow.requires)
         self.assertEqual(4, len(amp_flow.provides), amp_flow.provides)
 
+    @mock.patch('octavia.common.rpc.NOTIFIER',
+                new_callable=MockNOTIFIER)
     def test_get_create_load_balancer_flows_single_listeners(
-            self, mock_get_net_driver):
+            self, mock_get_net_driver, mock_notifier):
         create_flow = (
             self.LBFlow.get_create_load_balancer_flow(
                 constants.TOPOLOGY_SINGLE, True
@@ -229,8 +256,10 @@ class TestLoadBalancerFlows(base.TestCase):
         self.assertEqual(13, len(create_flow.provides),
                          create_flow.provides)
 
+    @mock.patch('octavia.common.rpc.NOTIFIER',
+                new_callable=MockNOTIFIER)
     def test_get_create_load_balancer_flows_active_standby_listeners(
-            self, mock_get_net_driver):
+            self, mock_get_net_driver, mock_notifier):
         create_flow = (
             self.LBFlow.get_create_load_balancer_flow(
                 constants.TOPOLOGY_ACTIVE_STANDBY, True
@@ -299,10 +328,16 @@ class TestLoadBalancerFlows(base.TestCase):
         self.assertEqual(12, len(failover_flow.provides),
                          failover_flow.provides)
 
-    def test_get_failover_LB_flow_no_amps_single(self, mock_get_net_driver):
+    @mock.patch('octavia.common.rpc.NOTIFIER',
+                new_callable=MockNOTIFIER)
+    def test_get_failover_LB_flow_no_amps_single(self, mock_get_net_driver,
+                                                 mock_notifier):
         self._test_get_failover_LB_flow_single([])
 
-    def test_get_failover_LB_flow_one_amp_single(self, mock_get_net_driver):
+    @mock.patch('octavia.common.rpc.NOTIFIER',
+                new_callable=MockNOTIFIER)
+    def test_get_failover_LB_flow_one_amp_single(self, mock_get_net_driver,
+                                                 mock_notifier):
         amphora_dict = {constants.ID: uuidutils.generate_uuid(),
                         constants.ROLE: constants.ROLE_STANDALONE,
                         constants.COMPUTE_ID: uuidutils.generate_uuid(),
@@ -310,8 +345,11 @@ class TestLoadBalancerFlows(base.TestCase):
 
         self._test_get_failover_LB_flow_single([amphora_dict])
 
+    @mock.patch('octavia.common.rpc.NOTIFIER',
+                new_callable=MockNOTIFIER)
     def test_get_failover_LB_flow_one_bogus_amp_single(self,
-                                                       mock_get_net_driver):
+                                                       mock_get_net_driver,
+                                                       mock_notifier):
         amphora_dict = {constants.ID: uuidutils.generate_uuid(),
                         constants.ROLE: 'bogus',
                         constants.COMPUTE_ID: uuidutils.generate_uuid(),
@@ -319,7 +357,10 @@ class TestLoadBalancerFlows(base.TestCase):
 
         self._test_get_failover_LB_flow_single([amphora_dict])
 
-    def test_get_failover_LB_flow_two_amp_single(self, mock_get_net_driver):
+    @mock.patch('octavia.common.rpc.NOTIFIER',
+                new_callable=MockNOTIFIER)
+    def test_get_failover_LB_flow_two_amp_single(self, mock_get_net_driver,
+                                                 mock_notifier):
         amphora_dict = {constants.ID: uuidutils.generate_uuid()}
         amphora2_dict = {constants.ID: uuidutils.generate_uuid(),
                          constants.ROLE: constants.ROLE_STANDALONE,
@@ -362,10 +403,16 @@ class TestLoadBalancerFlows(base.TestCase):
         self.assertEqual(12, len(failover_flow.provides),
                          failover_flow.provides)
 
-    def test_get_failover_LB_flow_no_amps_act_stdby(self, mock_get_net_driver):
+    @mock.patch('octavia.common.rpc.NOTIFIER',
+                new_callable=MockNOTIFIER)
+    def test_get_failover_LB_flow_no_amps_act_stdby(self, mock_get_net_driver,
+                                                    mock_notifier):
         self._test_get_failover_LB_flow_no_amps_act_stdby([])
 
-    def test_get_failover_LB_flow_one_amps_act_stdby(self, amphorae):
+    @mock.patch('octavia.common.rpc.NOTIFIER',
+                new_callable=MockNOTIFIER)
+    def test_get_failover_LB_flow_one_amps_act_stdby(self, amphorae,
+                                                     mock_notifier):
         amphora_dict = {constants.ID: uuidutils.generate_uuid(),
                         constants.ROLE: constants.ROLE_MASTER,
                         constants.COMPUTE_ID: uuidutils.generate_uuid(),
@@ -373,8 +420,11 @@ class TestLoadBalancerFlows(base.TestCase):
 
         self._test_get_failover_LB_flow_no_amps_act_stdby([amphora_dict])
 
+    @mock.patch('octavia.common.rpc.NOTIFIER',
+                new_callable=MockNOTIFIER)
     def test_get_failover_LB_flow_two_amps_act_stdby(self,
-                                                     mock_get_net_driver):
+                                                     mock_get_net_driver,
+                                                     mock_notifier):
         amphora_dict = {constants.ID: uuidutils.generate_uuid(),
                         constants.ROLE: constants.ROLE_MASTER,
                         constants.COMPUTE_ID: uuidutils.generate_uuid(),
@@ -389,8 +439,11 @@ class TestLoadBalancerFlows(base.TestCase):
         self._test_get_failover_LB_flow_no_amps_act_stdby([amphora_dict,
                                                            amphora2_dict])
 
+    @mock.patch('octavia.common.rpc.NOTIFIER',
+                new_callable=MockNOTIFIER)
     def test_get_failover_LB_flow_three_amps_act_stdby(self,
-                                                       mock_get_net_driver):
+                                                       mock_get_net_driver,
+                                                       mock_notifier):
         amphora_dict = {constants.ID: uuidutils.generate_uuid(),
                         constants.ROLE: constants.ROLE_MASTER,
                         constants.COMPUTE_ID: uuidutils.generate_uuid(),
@@ -409,8 +462,10 @@ class TestLoadBalancerFlows(base.TestCase):
         self._test_get_failover_LB_flow_no_amps_act_stdby(
             [amphora_dict, amphora2_dict, amphora3_dict])
 
+    @mock.patch('octavia.common.rpc.NOTIFIER',
+                new_callable=MockNOTIFIER)
     def test_get_failover_LB_flow_two_amps_bogus_act_stdby(
-            self, mock_get_net_driver):
+            self, mock_get_net_driver, mock_notifier):
         amphora_dict = {constants.ID: uuidutils.generate_uuid(),
                         constants.ROLE: 'bogus',
                         constants.COMPUTE_ID: uuidutils.generate_uuid(),
@@ -425,8 +480,10 @@ class TestLoadBalancerFlows(base.TestCase):
         self._test_get_failover_LB_flow_no_amps_act_stdby([amphora_dict,
                                                            amphora2_dict])
 
+    @mock.patch('octavia.common.rpc.NOTIFIER',
+                new_callable=MockNOTIFIER)
     def test_get_failover_LB_flow_two_amps_standalone_act_stdby(
-            self, mock_get_net_driver):
+            self, mock_get_net_driver, mock_notifier):
         amphora_dict = {constants.ID: uuidutils.generate_uuid(),
                         constants.ROLE: constants.ROLE_STANDALONE,
                         constants.COMPUTE_ID: uuidutils.generate_uuid(),

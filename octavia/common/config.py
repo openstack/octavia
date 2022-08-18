@@ -529,6 +529,7 @@ controller_worker_opts = [
                help=_('Number of times an amphora delete should be retried.')),
     cfg.IntOpt('amphora_delete_retry_interval', default=5,
                help=_('Time, in seconds, between amphora delete retries.')),
+    cfg.BoolOpt('event_notifications', default=True),
 ]
 
 task_flow_opts = [
