@@ -1,0 +1,13 @@
+---
+features:
+  - |
+    The cpu-pinning element for the amphora image sets the kernel bootarg
+    nohz_full=1-N to enable
+    full dynticks on all CPUs except the first one (on single CPU images this
+    will have no effect). This should reduce kernel noise on those CPUs to a
+    minimum and reduce latency.
+upgrade:
+  - |
+    In order for the full dynticks optimization to become effective a new 
+    amphora image needs to be built with the new optional CPU pinning 
+    feature enabled.
