@@ -88,10 +88,10 @@ elif [ "$1" == "delete" ]; then
             nft flush chain ip octavia-ipv4 output
             nft delete chain ip octavia-ipv4 output
         elif [ "$2" == "ipv6" ]; then
-            nft flush chain ip6 octavia-ipv6 ip-udp-masq
-            nft delete chain ip6 octavia-ipv6 ip-udp-masq
-            nft flush chain ip6 octavia-ipv6 ip-sctp-masq
-            nft delete chain ip6 octavia-ipv6 ip-sctp-masq
+            nft flush chain ip6 octavia-ipv6 ip6-udp-masq
+            nft delete chain ip6 octavia-ipv6 ip6-udp-masq
+            nft flush chain ip6 octavia-ipv6 ip6-sctp-masq
+            nft delete chain ip6 octavia-ipv6 ip6-sctp-masq
             nft flush chain ip6 octavia-ipv6 prerouting
             nft delete chain ip6 octavia-ipv6 prerouting
             nft flush chain ip6 octavia-ipv6 output
