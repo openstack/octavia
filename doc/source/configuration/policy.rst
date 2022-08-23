@@ -92,10 +92,18 @@ requirement. Please see the README.rst in that directory for more information.
 This policy will honor the following `Keystone Default Roles`_ in the Octavia
 API:
 
+* Admin
+* Project scoped - Reader
+* Project scoped - Member
+
+In addition, there is an alternate policy file that enables system scoped
+tokens checking called keystone_default_roles_scoped-policy.yaml.
+
 * System scoped - Admin
 * System scoped - Reader
 * Project scoped - Reader
 * Project scoped - Member
+
 
 Managing Octavia User Roles
 ---------------------------
