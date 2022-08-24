@@ -29,6 +29,7 @@ class SampleDriverDataModels(object):
         self.project_id = uuidutils.generate_uuid()
         self.lb_id = uuidutils.generate_uuid()
         self.ip_address = '192.0.2.30'
+        self.ip_address2 = '192.0.2.31'
         self.port_id = uuidutils.generate_uuid()
         self.network_id = uuidutils.generate_uuid()
         self.subnet_id = uuidutils.generate_uuid()
@@ -597,12 +598,30 @@ class SampleDriverDataModels(object):
             lib_consts.VIP_QOS_POLICY_ID: self.qos_policy_id,
             constants.OCTAVIA_OWNED: None}
 
+        self.test_additional_vip_dict = {
+            constants.IP_ADDRESS: self.ip_address2,
+            constants.NETWORK_ID: self.network_id,
+            constants.PORT_ID: self.port_id,
+            lib_consts.SUBNET_ID: self.subnet_id}
+
+        self.provider_additional_vip_dict = {
+            constants.IP_ADDRESS: self.ip_address2,
+            constants.NETWORK_ID: self.network_id,
+            constants.PORT_ID: self.port_id,
+            lib_consts.SUBNET_ID: self.subnet_id}
+
         self.db_vip = data_models.Vip(
             ip_address=self.ip_address,
             network_id=self.network_id,
             port_id=self.port_id,
             subnet_id=self.subnet_id,
             qos_policy_id=self.qos_policy_id)
+
+        self.db_additional_vip = data_models.AdditionalVip(
+            ip_address=self.ip_address2,
+            network_id=self.network_id,
+            port_id=self.port_id,
+            subnet_id=self.subnet_id)
 
         self.test_loadbalancer1_dict = {
             lib_consts.NAME: self.lb_name,
@@ -635,7 +654,7 @@ class SampleDriverDataModels(object):
             lib_consts.VIP_SUBNET_ID: self.subnet_id}
 
         self.provider_loadbalancer_tree_dict = {
-            lib_consts.ADDITIONAL_VIPS: None,
+            lib_consts.ADDITIONAL_VIPS: [],
             lib_consts.ADMIN_STATE_UP: True,
             lib_consts.AVAILABILITY_ZONE: None,
             lib_consts.DESCRIPTION: self.lb_description,

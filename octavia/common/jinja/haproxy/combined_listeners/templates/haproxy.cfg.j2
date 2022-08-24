@@ -52,7 +52,8 @@ backend prometheus-exporter-internal
 {% block proxies %}
     {% if loadbalancer.enabled %}
          {% for listener in loadbalancer.listeners if listener.enabled %}
-             {{- frontend_macro(constants, lib_consts, listener, loadbalancer.vip_address) }}
+             {{- frontend_macro(constants, lib_consts, listener, loadbalancer.vip_address,
+                                loadbalancer.additional_vips) }}
              {% for pool in listener.pools if pool.enabled %}
                {{- backend_macro(constants, lib_consts, listener, pool, loadbalancer) }}
              {% endfor %}

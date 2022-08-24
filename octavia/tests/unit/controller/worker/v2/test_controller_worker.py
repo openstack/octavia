@@ -1423,7 +1423,8 @@ class TestControllerWorker(base.TestCase):
             constants.LOADBALANCER: mock_provider_lb.to_dict(),
             constants.LOADBALANCER_ID: LB_ID,
             constants.SERVER_GROUP_ID: None,
-            constants.VIP: mock_lb.vip.to_dict()}
+            constants.VIP: mock_lb.vip.to_dict(),
+            constants.ADDITIONAL_VIPS: []}
 
         cw = controller_worker.ControllerWorker()
         cw.services_controller.reset_mock()
@@ -1477,7 +1478,8 @@ class TestControllerWorker(base.TestCase):
             constants.LOADBALANCER: mock_provider_lb.to_dict(),
             constants.LOADBALANCER_ID: LB_ID,
             constants.SERVER_GROUP_ID: None,
-            constants.VIP: mock_lb.vip.to_dict()}
+            constants.VIP: mock_lb.vip.to_dict(),
+            constants.ADDITIONAL_VIPS: []}
 
         cw = controller_worker.ControllerWorker()
         cw.services_controller.reset_mock()
@@ -1531,7 +1533,8 @@ class TestControllerWorker(base.TestCase):
             constants.LOADBALANCER: mock_provider_lb.to_dict(),
             constants.LOADBALANCER_ID: LB_ID,
             constants.SERVER_GROUP_ID: SERVER_GROUP_ID,
-            constants.VIP: mock_lb.vip.to_dict()}
+            constants.VIP: mock_lb.vip.to_dict(),
+            constants.ADDITIONAL_VIPS: []}
 
         cw = controller_worker.ControllerWorker()
         cw.services_controller.reset_mock()
@@ -1582,7 +1585,8 @@ class TestControllerWorker(base.TestCase):
             constants.LOADBALANCER: mock_provider_lb.to_dict(),
             constants.LOADBALANCER_ID: LB_ID,
             constants.SERVER_GROUP_ID: SERVER_GROUP_ID,
-            constants.VIP: mock_lb.vip.to_dict()}
+            constants.VIP: mock_lb.vip.to_dict(),
+            constants.ADDITIONAL_VIPS: []}
 
         cw = controller_worker.ControllerWorker()
         cw.services_controller.reset_mock()
@@ -1637,7 +1641,8 @@ class TestControllerWorker(base.TestCase):
             constants.LOADBALANCER: mock_provider_lb.to_dict(),
             constants.LOADBALANCER_ID: LB_ID,
             constants.SERVER_GROUP_ID: None,
-            constants.VIP: mock_lb.vip.to_dict()}
+            constants.VIP: mock_lb.vip.to_dict(),
+            constants.ADDITIONAL_VIPS: []}
         mock_get_flavor_meta.return_value = {'taste': 'spicy'}
 
         cw = controller_worker.ControllerWorker()
@@ -1692,8 +1697,70 @@ class TestControllerWorker(base.TestCase):
             constants.LOADBALANCER: mock_provider_lb.to_dict(),
             constants.LOADBALANCER_ID: LB_ID,
             constants.SERVER_GROUP_ID: None,
-            constants.VIP: mock_lb.vip.to_dict()}
+            constants.VIP: mock_lb.vip.to_dict(),
+            constants.ADDITIONAL_VIPS: []}
         mock_get_az_meta.return_value = {'planet': 'jupiter'}
+
+        cw = controller_worker.ControllerWorker()
+        cw.services_controller.reset_mock()
+        cw.failover_amphora(AMP_ID)
+
+        print(cw, flush=True)
+        print(cw.services_controller, flush=True)
+        print(cw.services_controller.run_poster, flush=True)
+        cw.services_controller.run_poster.assert_called_once_with(
+            flow_utils.get_failover_amphora_flow,
+            mock_amphora.to_dict(), 1, store=expected_stored_params)
+
+    @mock.patch('octavia.api.drivers.utils.'
+                'db_loadbalancer_to_provider_loadbalancer')
+    @mock.patch('octavia.db.repositories.LoadBalancerRepository.update')
+    def test_failover_amphora_with_add_vips(self,
+                                            mock_update,
+                                            mock_lb_db_to_provider,
+                                            mock_api_get_session,
+                                            mock_dyn_log_listener,
+                                            mock_taskflow_load,
+                                            mock_pool_repo_get,
+                                            mock_member_repo_get,
+                                            mock_l7rule_repo_get,
+                                            mock_l7policy_repo_get,
+                                            mock_listener_repo_get,
+                                            mock_lb_repo_get,
+                                            mock_health_mon_repo_get,
+                                            mock_amp_repo_get):
+        mock_additional_vips = [mock.MagicMock()]
+        # mock_additional_vips[0].ip_address = mock.Mock()
+        mock_lb = mock.MagicMock()
+        mock_lb.id = LB_ID
+        mock_lb.topology = constants.TOPOLOGY_SINGLE
+        mock_lb.flavor_id = None
+        mock_lb.availability_zone = None
+        mock_lb.server_group_id = None
+        mock_lb.additional_vips = mock_additional_vips
+        mock_lb_repo_get.return_value = mock_lb
+        mock_provider_lb = mock.MagicMock()
+        mock_lb_db_to_provider.return_value = mock_provider_lb
+        mock_amphora = mock.MagicMock()
+        mock_amphora.load_balancer_id = None
+        mock_amphora.id = AMP_ID
+        mock_amphora.load_balancer_id = LB_ID
+        mock_amphora.status = constants.AMPHORA_READY
+        mock_amp_repo_get.return_value = mock_amphora
+        expected_stored_params = {
+            constants.AVAILABILITY_ZONE: {},
+            constants.BUILD_TYPE_PRIORITY:
+                constants.LB_CREATE_FAILOVER_PRIORITY,
+            constants.FLAVOR: {constants.LOADBALANCER_TOPOLOGY:
+                               constants.TOPOLOGY_SINGLE},
+            constants.LOADBALANCER: mock_provider_lb.to_dict(),
+            constants.LOADBALANCER_ID: LB_ID,
+            constants.SERVER_GROUP_ID: None,
+            constants.VIP: mock_lb.vip.to_dict(),
+            constants.ADDITIONAL_VIPS: [
+                add_vips.to_dict()
+                for add_vips in mock_additional_vips
+            ]}
 
         cw = controller_worker.ControllerWorker()
         cw.services_controller.reset_mock()
@@ -1807,7 +1874,8 @@ class TestControllerWorker(base.TestCase):
                                   constants.LOADBALANCER: None,
                                   constants.LOADBALANCER_ID: None,
                                   constants.SERVER_GROUP_ID: None,
-                                  constants.VIP: {}}
+                                  constants.VIP: {},
+                                  constants.ADDITIONAL_VIPS: []}
 
         cw = controller_worker.ControllerWorker()
         cw.services_controller.reset_mock()

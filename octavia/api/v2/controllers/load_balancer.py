@@ -223,6 +223,31 @@ class LoadBalancersController(base.BaseController):
                 "VIP port's subnet could not be determined. Please "
                 "specify either a VIP subnet or address."))
 
+    @staticmethod
+    def _validate_subnets_share_network_but_no_duplicates(load_balancer):
+        # Validate that no subnet_id is used more than once
+        subnet_use_counts = {load_balancer.vip_subnet_id: 1}
+        for vip in load_balancer.additional_vips:
+            if vip.subnet_id in subnet_use_counts:
+                raise exceptions.ValidationException(detail=_(
+                    'Duplicate VIP subnet(s) specified. Only one IP can be '
+                    'bound per subnet.'))
+            subnet_use_counts[vip.subnet_id] = 1
+
+        # Validate that all subnets belong to the same network
+        network_driver = utils.get_network_driver()
+        used_subnets = {}
+        for subnet_id in subnet_use_counts:
+            used_subnets[subnet_id] = network_driver.get_subnet(subnet_id)
+        all_networks = [subnet.network_id for subnet in used_subnets.values()]
+        if len(set(all_networks)) > 1:
+            raise exceptions.ValidationException(detail=_(
+                'All VIP subnets must belong to the same network.'
+            ))
+        # Fill the network_id for each additional_vip
+        for vip in load_balancer.additional_vips:
+            vip.network_id = used_subnets[vip.subnet_id].network_id
+
     def _validate_vip_request_object(self, load_balancer, context=None):
         allowed_network_objects = []
         if CONF.networking.allow_vip_port_id:
@@ -270,7 +295,18 @@ class LoadBalancersController(base.BaseController):
             validate.qos_policy_exists(
                 qos_policy_id=load_balancer.vip_qos_policy_id)
 
-    def _create_vip_port_if_not_exist(self, load_balancer_db):
+        # Even though we've just validated the subnet or else retrieved its ID
+        # directly from the port, we might still be missing the network.
+        if not load_balancer.vip_network_id:
+            subnet = validate.subnet_exists(
+                subnet_id=load_balancer.vip_subnet_id)
+            load_balancer.vip_network_id = subnet.network_id
+
+        # Multi-vip validation for ensuring subnets are "sane"
+        self._validate_subnets_share_network_but_no_duplicates(load_balancer)
+
+    @staticmethod
+    def _create_vip_port_if_not_exist(load_balancer_db):
         """Create vip port."""
         network_driver = utils.get_network_driver()
         try:
@@ -436,6 +472,7 @@ class LoadBalancersController(base.BaseController):
                 render_unsets=False
             ))
             vip_dict = lb_dict.pop('vip', {})
+            additional_vip_dicts = lb_dict.pop('additional_vips', [])
 
             # Make sure we store the right provider in the DB
             lb_dict['provider'] = driver.name
@@ -455,7 +492,7 @@ class LoadBalancersController(base.BaseController):
                 valid_networks=az_dict.get(constants.VALID_VIP_NETWORKS))
 
             db_lb = self.repositories.create_load_balancer_and_vip(
-                lock_session, lb_dict, vip_dict)
+                lock_session, lb_dict, vip_dict, additional_vip_dicts)
 
             # Pass the flavor dictionary through for the provider drivers
             # This is a "virtual" lb_dict item that includes the expanded
@@ -473,14 +510,20 @@ class LoadBalancersController(base.BaseController):
             try:
                 provider_vip_dict = driver_utils.vip_dict_to_provider_dict(
                     vip_dict)
-                vip_dict = driver_utils.call_provider(
+                provider_additional_vips = [
+                    driver_utils.additional_vip_dict_to_provider_dict(add_vip)
+                    for add_vip in additional_vip_dicts]
+                vip_dict, additional_vip_dicts = driver_utils.call_provider(
                     driver.name, driver.create_vip_port, db_lb.id,
-                    db_lb.project_id, provider_vip_dict)
+                    db_lb.project_id, provider_vip_dict,
+                    provider_additional_vips)
                 vip = driver_utils.provider_vip_dict_to_vip_obj(vip_dict)
+                add_vips = [data_models.AdditionalVip(**add_vip)
+                            for add_vip in additional_vip_dicts]
             except exceptions.ProviderNotImplementedError:
                 # create vip port if not exist, driver didn't want to create
                 # the VIP port
-                vip = self._create_vip_port_if_not_exist(db_lb)
+                vip, add_vips = self._create_vip_port_if_not_exist(db_lb)
                 LOG.info('Created VIP port %s for provider %s.',
                          vip.port_id, driver.name)
                 # If a port_id wasn't passed in and we made it this far
@@ -496,6 +539,11 @@ class LoadBalancersController(base.BaseController):
                 lock_session, db_lb.id, ip_address=vip.ip_address,
                 port_id=vip.port_id, network_id=vip.network_id,
                 subnet_id=vip.subnet_id, octavia_owned=octavia_owned)
+            for add_vip in add_vips:
+                self.repositories.additional_vip.update(
+                    lock_session, db_lb.id, ip_address=add_vip.ip_address,
+                    port_id=add_vip.port_id, network_id=add_vip.network_id,
+                    subnet_id=add_vip.subnet_id)
 
             if listeners or pools:
                 db_pools, db_lists = self._graph_create(
@@ -503,7 +551,7 @@ class LoadBalancersController(base.BaseController):
 
             # Prepare the data for the driver data model
             driver_lb_dict = driver_utils.lb_dict_to_provider_dict(
-                lb_dict, vip, db_pools, db_lists)
+                lb_dict, vip, add_vips, db_pools, db_lists)
 
             # Dispatch to the driver
             LOG.info("Sending create Load Balancer %s to provider %s",

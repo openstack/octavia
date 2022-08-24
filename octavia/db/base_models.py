@@ -51,6 +51,9 @@ class OctaviaBase(models.ModelBase):
             return obj.__class__.__name__ + obj.project_id
         if obj.__class__.__name__ in ['AvailabilityZone']:
             return obj.__class__.__name__ + obj.name
+        if obj.__class__.__name__ in ['AdditionalVip']:
+            return (obj.__class__.__name__ +
+                    obj.load_balancer_id + obj.subnet_id)
         raise NotImplementedError
 
     def to_data_model(self, _graph_nodes=None):

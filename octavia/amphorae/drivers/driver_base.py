@@ -151,7 +151,8 @@ class AmphoraLoadBalancerDriver(object, metaclass=abc.ABCMeta):
         """
 
     def post_vip_plug(self, amphora, load_balancer, amphorae_network_config,
-                      vrrp_port=None, vip_subnet=None):
+                      vrrp_port=None, vip_subnet=None,
+                      additional_vip_data=None):
         """Called after network driver has allocated and plugged the VIP
 
         :param amphora:
@@ -171,7 +172,12 @@ class AmphoraLoadBalancerDriver(object, metaclass=abc.ABCMeta):
         :type vip_subnet: octavia.network.data_models.Subnet
 
         :type vip_network: octavia.network.data_models.AmphoraNetworkConfig
+
+        :type additional_vip_data: list of
+                                   octavia.network.data_models.AdditionalVipData
+
         :returns: None
+
 
         This is to do any additional work needed on the amphorae to plug
         the vip, such as bring up interfaces.

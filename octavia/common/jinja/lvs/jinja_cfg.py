@@ -103,11 +103,19 @@ class LvsJinjaTemplater(object):
            be processed by the templating system
         """
         t_listener = self._transform_listener(listener)
+        vips = [
+            {
+                'ip_address': vip.ip_address,
+                'ip_version': octavia_utils.ip_version(
+                    vip.ip_address),
+            }
+            for vip in [loadbalancer.vip] + loadbalancer.additional_vips
+        ]
         ret_value = {
             'id': loadbalancer.id,
-            'vip_address': loadbalancer.vip.ip_address,
+            'vips': vips,
             'listener': t_listener,
-            'enabled': loadbalancer.enabled
+            'enabled': loadbalancer.enabled,
         }
         return ret_value
 
@@ -182,6 +190,8 @@ class LvsJinjaTemplater(object):
         return {
             'id': member.id,
             'address': member.ip_address,
+            'ip_version': octavia_utils.ip_version(
+                member.ip_address),
             'protocol_port': member.protocol_port,
             'weight': member.weight,
             'enabled': member.enabled,

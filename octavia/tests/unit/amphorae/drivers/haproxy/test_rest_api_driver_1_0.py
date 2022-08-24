@@ -112,7 +112,8 @@ class TestHaproxyAmphoraLoadBalancerDriverTest(base.TestCase):
                             'mac_address': FAKE_MAC_ADDRESS,
                             'vrrp_ip': self.amp.vrrp_ip,
                             'mtu': FAKE_MTU,
-                            'host_routes': host_routes_data}
+                            'host_routes': host_routes_data,
+                            'additional_vips': []}
 
         self.timeout_dict = {constants.REQ_CONN_TIMEOUT: 1,
                              constants.REQ_READ_TIMEOUT: 2,
@@ -713,6 +714,39 @@ class TestHaproxyAmphoraLoadBalancerDriverTest(base.TestCase):
         self.driver.clients[API_VERSION].plug_vip.assert_called_once_with(
             self.amp, self.lb.vip.ip_address, self.subnet_info)
 
+    def test_post_vip_plug_additional_vips(self):
+        amphorae_network_config = mock.MagicMock()
+        amphorae_network_config.get().vip_subnet.cidr = FAKE_CIDR
+        amphorae_network_config.get().vip_subnet.gateway_ip = FAKE_GATEWAY
+        amphorae_network_config.get().vip_subnet.host_routes = self.host_routes
+        amphorae_network_config.get().vip_subnet.to_dict.return_value = {
+            'cidr': FAKE_CIDR,
+            'gateway_ip': FAKE_GATEWAY,
+            'host_routes': [
+                hr.to_dict(recurse=True)
+                for hr in self.host_routes]
+        }
+        amphorae_network_config.get().vrrp_port = self.port
+        additional_vip1 = mock.MagicMock()
+        additional_vip1.ip_address = mock.Mock()
+        additional_vip1.subnet.cidr = mock.Mock()
+        additional_vip1.subnet.gateway_ip = mock.Mock()
+        additional_vip1.subnet.host_routes = self.host_routes
+        additional_vip_data = [additional_vip1]
+        self.driver.post_vip_plug(self.amp, self.lb, amphorae_network_config,
+                                  additional_vip_data=additional_vip_data)
+        netinfo = self.subnet_info.copy()
+        netinfo['additional_vips'] = [
+            {
+                'ip_address': additional_vip1.ip_address,
+                'subnet_cidr': additional_vip1.subnet.cidr,
+                'gateway': additional_vip1.subnet.gateway_ip,
+                'host_routes': netinfo['host_routes']
+            }
+        ]
+        self.driver.clients[API_VERSION].plug_vip.assert_called_once_with(
+            self.amp, self.lb.vip.ip_address, netinfo)
+
     def test_post_network_plug(self):
         # Test dhcp path
         port = network_models.Port(mac_address=FAKE_MAC_ADDRESS,
@@ -758,6 +792,7 @@ class TestHaproxyAmphoraLoadBalancerDriverTest(base.TestCase):
                                gateway=None,
                                vrrp_ip=self.amp.vrrp_ip,
                                host_routes=[],
+                               additional_vips=[],
                                mtu=FAKE_MTU
                            )))
 

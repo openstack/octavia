@@ -123,14 +123,14 @@ class AllowedAddressPairsDriver(neutron_base.BaseNeutronDriver):
             raise base.PlugVIPException(message) from e
         return interface
 
-    def _add_vip_address_pair(self, port_id, vip_address):
+    def _add_vip_address_pairs(self, port_id, vip_address_list):
         try:
-            self._add_allowed_address_pair_to_port(port_id, vip_address)
+            self._add_allowed_address_pairs_to_port(port_id, vip_address_list)
         except neutron_client_exceptions.PortNotFoundClient as e:
             raise base.PortNotFound(str(e))
         except Exception as e:
-            message = _('Error adding allowed address pair {ip} '
-                        'to port {port_id}.').format(ip=vip_address,
+            message = _('Error adding allowed address pair(s) {ips} '
+                        'to port {port_id}.').format(ips=vip_address_list,
                                                      port_id=port_id)
             LOG.exception(message)
             raise base.PlugVIPException(message) from e
@@ -216,13 +216,19 @@ class AllowedAddressPairsDriver(neutron_base.BaseNeutronDriver):
                     LOG.info("Security group rule %s not found, will assume "
                              "it is already deleted.", rule_id)
 
-        ethertype = self._get_ethertype_for_ip(load_balancer.vip.ip_address)
+        ethertypes = set()
+        primary_ethertype = self._get_ethertype_for_ip(
+            load_balancer.vip.ip_address)
+        ethertypes.add(primary_ethertype)
+        for add_vip in load_balancer.additional_vips:
+            ethertypes.add(self._get_ethertype_for_ip(add_vip.ip_address))
         for port_protocol in add_ports:
-            self._create_security_group_rule(sec_grp_id, port_protocol[1],
-                                             port_min=port_protocol[0],
-                                             port_max=port_protocol[0],
-                                             ethertype=ethertype,
-                                             cidr=port_protocol[2])
+            for ethertype in ethertypes:
+                self._create_security_group_rule(sec_grp_id, port_protocol[1],
+                                                 port_min=port_protocol[0],
+                                                 port_max=port_protocol[0],
+                                                 ethertype=ethertype,
+                                                 cidr=port_protocol[2])
 
         # Currently we are using the VIP network for VRRP
         # so we need to open up the protocols for it
@@ -232,7 +238,7 @@ class AllowedAddressPairsDriver(neutron_base.BaseNeutronDriver):
                     sec_grp_id,
                     constants.VRRP_PROTOCOL_NUM,
                     direction='ingress',
-                    ethertype=ethertype)
+                    ethertype=primary_ethertype)
             except neutron_client_exceptions.Conflict:
                 # It's ok if this rule already exists
                 pass
@@ -242,7 +248,7 @@ class AllowedAddressPairsDriver(neutron_base.BaseNeutronDriver):
             try:
                 self._create_security_group_rule(
                     sec_grp_id, constants.AUTH_HEADER_PROTOCOL_NUMBER,
-                    direction='ingress', ethertype=ethertype)
+                    direction='ingress', ethertype=primary_ethertype)
             except neutron_client_exceptions.Conflict:
                 # It's ok if this rule already exists
                 pass
@@ -401,7 +407,11 @@ class AllowedAddressPairsDriver(neutron_base.BaseNeutronDriver):
         if not interface:
             interface = self._plug_amphora_vip(amphora, subnet)
 
-        self._add_vip_address_pair(interface.port_id, vip.ip_address)
+        aap_address_list = [vip.ip_address]
+        for add_vip in load_balancer.additional_vips:
+            aap_address_list.append(add_vip.ip_address)
+        self._add_vip_address_pairs(interface.port_id, aap_address_list)
+
         if self.sec_grp_enabled:
             self._add_vip_security_group_to_port(load_balancer.id,
                                                  interface.port_id)
@@ -505,6 +515,22 @@ class AllowedAddressPairsDriver(neutron_base.BaseNeutronDriver):
         if load_balancer.vip.ip_address:
             fixed_ip[constants.IP_ADDRESS] = load_balancer.vip.ip_address
 
+        fixed_ips = []
+        if fixed_ip:
+            fixed_ips.append(fixed_ip)
+
+        for add_vip in load_balancer.additional_vips:
+            add_ip = {}
+            if add_vip.subnet_id:
+                add_ip['subnet_id'] = add_vip.subnet_id
+            if add_vip.ip_address:
+                add_ip['ip_address'] = add_vip.ip_address
+            if add_ip:
+                fixed_ips.append(add_ip)
+            else:
+                LOG.warning('Additional VIP contains neither subnet_id nor '
+                            'ip_address, ignoring.')
+
         # Make sure we are backward compatible with older neutron
         if self._check_extension_enabled(PROJECT_ID_ALIAS):
             project_id_key = 'project_id'
@@ -520,8 +546,8 @@ class AllowedAddressPairsDriver(neutron_base.BaseNeutronDriver):
             constants.DEVICE_OWNER: OCTAVIA_OWNER,
             project_id_key: load_balancer.project_id}}
 
-        if fixed_ip:
-            port[constants.PORT][constants.FIXED_IPS] = [fixed_ip]
+        if fixed_ips:
+            port[constants.PORT][constants.FIXED_IPS] = fixed_ips
         try:
             new_port = self.neutron_client.create_port(port)
         except Exception as e:
@@ -709,7 +735,8 @@ class AllowedAddressPairsDriver(neutron_base.BaseNeutronDriver):
 
         return plugged_interface
 
-    def _get_amp_net_configs(self, amp, amp_configs, vip_subnet, vip_port):
+    def _get_amp_net_configs(self, amp, amp_configs, vip_subnet, vip_port,
+                             additional_vips):
         if amp.status != constants.DELETED:
             LOG.debug("Retrieving network details for amphora %s", amp.id)
             vrrp_port = self.get_port(amp.vrrp_port_id)
@@ -720,6 +747,15 @@ class AllowedAddressPairsDriver(neutron_base.BaseNeutronDriver):
             ha_subnet = self.get_subnet(
                 ha_port.get_subnet_id(amp.ha_ip))
 
+            additional_vip_data = []
+            for add_vip in additional_vips:
+                add_vip_subnet = self.get_subnet(add_vip.subnet_id)
+                add_vip_data = n_data_models.AdditionalVipData(
+                    ip_address=add_vip.ip_address,
+                    subnet=add_vip_subnet
+                )
+                additional_vip_data.append(add_vip_data)
+
             amp_configs[amp.id] = n_data_models.AmphoraNetworkConfig(
                 amphora=amp,
                 vip_subnet=vip_subnet,
@@ -727,7 +763,8 @@ class AllowedAddressPairsDriver(neutron_base.BaseNeutronDriver):
                 vrrp_subnet=vrrp_subnet,
                 vrrp_port=vrrp_port,
                 ha_subnet=ha_subnet,
-                ha_port=ha_port
+                ha_port=ha_port,
+                additional_vip_data=additional_vip_data
             )
 
     def get_network_configs(self, loadbalancer, amphora=None):
@@ -736,12 +773,14 @@ class AllowedAddressPairsDriver(neutron_base.BaseNeutronDriver):
         amp_configs = {}
         if amphora:
             self._get_amp_net_configs(amphora, amp_configs,
-                                      vip_subnet, vip_port)
+                                      vip_subnet, vip_port,
+                                      loadbalancer.additional_vips)
         else:
             for amp in loadbalancer.amphorae:
                 try:
                     self._get_amp_net_configs(amp, amp_configs,
-                                              vip_subnet, vip_port)
+                                              vip_subnet, vip_port,
+                                              loadbalancer.additional_vips)
                 except Exception as e:
                     LOG.warning('Getting network configurations for amphora '
                                 '%(amp)s failed due to %(err)s.',

@@ -350,9 +350,25 @@ class AmphoraPostVIPPlug(BaseAmphoraTask):
             vip_subnet = data_models.Subnet(**vip_arg)
         else:
             vip_subnet = data_models.Subnet()
+
+        additional_vip_data = []
+        for add_vip in amphorae_network_config[
+                amphora[constants.ID]]['additional_vip_data']:
+
+            subnet_arg = copy.deepcopy(add_vip['subnet'])
+            subnet_arg['host_routes'] = [
+                data_models.HostRoute(**hr)
+                for hr in subnet_arg['host_routes']]
+            subnet = data_models.Subnet(**subnet_arg)
+
+            additional_vip_data.append(
+                data_models.AdditionalVipData(
+                    ip_address=add_vip['ip_address'],
+                    subnet=subnet))
+
         self.amphora_driver.post_vip_plug(
             db_amp, db_lb, amphorae_network_config, vrrp_port=vrrp_port,
-            vip_subnet=vip_subnet)
+            vip_subnet=vip_subnet, additional_vip_data=additional_vip_data)
         LOG.debug("Notified amphora of vip plug")
 
     def revert(self, result, amphora, loadbalancer, *args, **kwargs):

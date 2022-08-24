@@ -69,6 +69,20 @@ class TestAmphoraDriver(base.TestRpc):
                           self.sample_data.lb_id, self.sample_data.project_id,
                           self.sample_data.provider_vip_dict)
 
+    @mock.patch('octavia.common.utils.get_network_driver')
+    def test_create_vip_with_additional_vips(self, mock_get_net_driver):
+        mock_net_driver = mock.MagicMock()
+        mock_get_net_driver.return_value = mock_net_driver
+        mock_net_driver.allocate_vip.return_value = self.sample_data.db_vip
+
+        additional_vips = [{
+            consts.SUBNET_ID: uuidutils.generate_uuid()
+        }]
+        self.assertRaises(exceptions.UnsupportedOptionError,
+                          self.amp_driver.create_vip_port,
+                          self.sample_data.lb_id, self.sample_data.project_id,
+                          self.sample_data.provider_vip_dict, additional_vips)
+
     # Load Balancer
     @mock.patch('oslo_messaging.RPCClient.cast')
     def test_loadbalancer_create(self, mock_cast):

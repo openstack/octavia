@@ -158,7 +158,7 @@ bind {{ lb_vip_address }}:{{ listener.protocol_port }} {{
 {% endmacro %}
 
 
-{% macro frontend_macro(constants, lib_consts, listener, lb_vip_address) %}
+{% macro frontend_macro(constants, lib_consts, listener, lb_vip_address, additional_vips) %}
 frontend {{ listener.id }}
     {% if listener.connection_limit is defined %}
     maxconn {{ listener.connection_limit }}
@@ -168,6 +168,9 @@ frontend {{ listener.id }}
     redirect scheme https if !{ ssl_fc }
     {% endif %}
     {{ bind_macro(constants, lib_consts, listener, lb_vip_address)|trim() }}
+    {% for add_vip in additional_vips %}
+    {{ bind_macro(constants, lib_consts, listener, add_vip)|trim() }}
+    {% endfor %}
     mode {{ listener.protocol_mode }}
     {% for l7policy in listener.l7policies if (l7policy.enabled and
                                                l7policy.l7rules|length > 0) %}

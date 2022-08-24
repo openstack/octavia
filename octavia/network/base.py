@@ -100,7 +100,8 @@ class AbstractNetworkDriver(object, metaclass=abc.ABCMeta):
         balancer.
 
         :param load_balancer: octavia.common.data_models.LoadBalancer instance
-        :return: octavia.common.data_models.VIP
+        :return: octavia.common.data_models.Vip,
+                 list(octavia.common.data_models.AdditionalVip)
         :raises: AllocateVIPException, PortNotFound, SubnetNotFound
         """
 

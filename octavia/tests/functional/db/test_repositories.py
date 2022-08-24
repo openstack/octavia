@@ -121,7 +121,8 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
                            'amphorahealth', 'vrrpgroup', 'l7rule', 'l7policy',
                            'amp_build_slots', 'amp_build_req', 'quotas',
                            'flavor', 'flavor_profile', 'listener_cidr',
-                           'availability_zone', 'availability_zone_profile')
+                           'availability_zone', 'availability_zone_profile',
+                           'additional_vip')
         for repo_attr in repo_attr_names:
             single_repo = getattr(self.repos, repo_attr, None)
             message = ("Class Repositories should have %s instance"
@@ -159,9 +160,13 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
                'subnet_id': uuidutils.generate_uuid(),
                'network_id': uuidutils.generate_uuid(),
                'qos_policy_id': None, 'octavia_owned': True}
-        lb_dm = self.repos.create_load_balancer_and_vip(self.session, lb, vip)
+        additional_vips = [{'subnet_id': uuidutils.generate_uuid(),
+                            'ip_address': '192.0.2.2'}]
+        lb_dm = self.repos.create_load_balancer_and_vip(self.session, lb, vip,
+                                                        additional_vips)
         lb_dm_dict = lb_dm.to_dict()
         del lb_dm_dict['vip']
+        del lb_dm_dict['additional_vips']
         del lb_dm_dict['listeners']
         del lb_dm_dict['amphorae']
         del lb_dm_dict['pools']

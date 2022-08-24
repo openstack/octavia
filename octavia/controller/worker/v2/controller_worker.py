@@ -949,6 +949,7 @@ class ControllerWorker(object):
             flavor_dict = {}
             lb_id = None
             vip_dict = {}
+            additional_vip_dicts = []
             server_group_id = None
             if loadbalancer:
                 lb_id = loadbalancer.id
@@ -968,6 +969,9 @@ class ControllerWorker(object):
                             db_apis.get_session(),
                             loadbalancer.availability_zone))
                 vip_dict = loadbalancer.vip.to_dict()
+                additional_vip_dicts = [
+                    av.to_dict()
+                    for av in loadbalancer.additional_vips]
                 server_group_id = loadbalancer.server_group_id
             provider_lb_dict = (provider_utils.
                                 db_loadbalancer_to_provider_loadbalancer)(
@@ -980,7 +984,8 @@ class ControllerWorker(object):
                              constants.LOADBALANCER: provider_lb_dict,
                              constants.SERVER_GROUP_ID: server_group_id,
                              constants.LOADBALANCER_ID: lb_id,
-                             constants.VIP: vip_dict}
+                             constants.VIP: vip_dict,
+                             constants.ADDITIONAL_VIPS: additional_vip_dicts}
 
             self.run_flow(
                 flow_utils.get_failover_amphora_flow,

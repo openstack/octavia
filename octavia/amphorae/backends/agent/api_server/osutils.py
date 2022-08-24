@@ -63,19 +63,13 @@ class BaseOS(object):
         )
         interface.write()
 
-    def write_vip_interface_file(self, interface, vip, ip_version,
-                                 prefixlen, gateway,
-                                 mtu, vrrp_ip,
-                                 host_routes, fixed_ips=None):
+    def write_vip_interface_file(self, interface, vips, mtu, vrrp_info,
+                                 fixed_ips=None):
         vip_interface = interface_file.VIPInterfaceFile(
             name=interface,
             mtu=mtu,
-            vip=vip,
-            ip_version=ip_version,
-            prefixlen=prefixlen,
-            gateway=gateway,
-            vrrp_ip=vrrp_ip,
-            host_routes=host_routes,
+            vips=vips,
+            vrrp_info=vrrp_info,
             fixed_ips=fixed_ips,
             topology=CONF.controller_worker.loadbalancer_topology)
         vip_interface.write()

@@ -295,7 +295,7 @@ class TestAmphoraFlows(base.TestCase):
         self.assertIn(constants.SERVER_PEM, amp_flow.provides)
         self.assertIn(constants.VIP_SG_ID, amp_flow.provides)
 
-        self.assertEqual(7, len(amp_flow.requires))
+        self.assertEqual(8, len(amp_flow.requires))
         self.assertEqual(13, len(amp_flow.provides))
 
     def test_get_failover_flow_standalone(self, mock_get_net_driver):
@@ -329,7 +329,7 @@ class TestAmphoraFlows(base.TestCase):
         self.assertIn(constants.SERVER_PEM, amp_flow.provides)
         self.assertIn(constants.VIP_SG_ID, amp_flow.provides)
 
-        self.assertEqual(7, len(amp_flow.requires))
+        self.assertEqual(8, len(amp_flow.requires))
         self.assertEqual(12, len(amp_flow.provides))
 
     def test_get_failover_flow_bogus_role(self, mock_get_net_driver):

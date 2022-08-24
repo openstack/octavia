@@ -140,6 +140,9 @@ class RootController(object):
         self._add_a_version(versions, 'v2.24', 'v2', 'SUPPORTED',
                             '2020-10-15T00:00:00Z', host_url)
         # PROMETHEUS listeners
-        self._add_a_version(versions, 'v2.25', 'v2', 'CURRENT',
+        self._add_a_version(versions, 'v2.25', 'v2', 'SUPPORTED',
                             '2021-10-02T00:00:00Z', host_url)
+        # Additional VIPs
+        self._add_a_version(versions, 'v2.26', 'v2', 'CURRENT',
+                            '2022-08-29T00:00:00Z', host_url)
         return {'versions': versions}

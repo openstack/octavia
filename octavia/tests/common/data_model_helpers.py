@@ -17,10 +17,11 @@ from octavia.common import data_models
 from octavia.tests.common import constants as ut_constants
 
 
-def generate_load_balancer_tree():
+def generate_load_balancer_tree(additional_vips=None):
     vip = generate_vip()
     amps = [generate_amphora(), generate_amphora()]
-    lb = generate_load_balancer(vip=vip, amphorae=amps)
+    lb = generate_load_balancer(vip=vip, amphorae=amps,
+                                additional_vips=additional_vips)
     return lb
 
 
@@ -28,8 +29,10 @@ LB_SEED = 0
 
 
 def generate_load_balancer(vip=None, amphorae=None,
-                           topology=constants.TOPOLOGY_SINGLE):
+                           topology=constants.TOPOLOGY_SINGLE,
+                           additional_vips=None):
     amphorae = amphorae or []
+    additional_vips = additional_vips or []
     global LB_SEED
     LB_SEED += 1
     lb = data_models.LoadBalancer(id='lb{0}-id'.format(LB_SEED),
@@ -46,6 +49,16 @@ def generate_load_balancer(vip=None, amphorae=None,
     if vip:
         vip.load_balancer = lb
         vip.load_balancer_id = lb.id
+    for add_vip in additional_vips:
+        add_vip_obj = data_models.AdditionalVip(
+            load_balancer_id=lb.id,
+            ip_address=add_vip.get('ip_address'),
+            subnet_id=add_vip.get('subnet_id'),
+            network_id=vip.network_id,
+            port_id=vip.port_id,
+            load_balancer=lb
+        )
+        lb.additional_vips.append(add_vip_obj)
     return lb
 
 

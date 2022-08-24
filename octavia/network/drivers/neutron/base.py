@@ -73,24 +73,38 @@ class BaseNeutronDriver(base.AbstractNetworkDriver):
 
     def _port_to_vip(self, port, load_balancer, octavia_owned=False):
         fixed_ip = None
+        additional_ips = []
         for port_fixed_ip in port.fixed_ips:
-            if port_fixed_ip.subnet_id == load_balancer.vip.subnet_id:
+            if (not fixed_ip and
+                    port_fixed_ip.subnet_id == load_balancer.vip.subnet_id):
                 fixed_ip = port_fixed_ip
-                break
+            else:
+                additional_ips.append(port_fixed_ip)
         if fixed_ip:
-            return data_models.Vip(ip_address=fixed_ip.ip_address,
-                                   subnet_id=fixed_ip.subnet_id,
-                                   network_id=port.network_id,
-                                   port_id=port.id,
-                                   load_balancer=load_balancer,
-                                   load_balancer_id=load_balancer.id,
-                                   octavia_owned=octavia_owned)
-        return data_models.Vip(ip_address=None, subnet_id=None,
-                               network_id=port.network_id,
-                               port_id=port.id,
-                               load_balancer=load_balancer,
-                               load_balancer_id=load_balancer.id,
-                               octavia_owned=octavia_owned)
+            primary_vip = data_models.Vip(ip_address=fixed_ip.ip_address,
+                                          subnet_id=fixed_ip.subnet_id,
+                                          network_id=port.network_id,
+                                          port_id=port.id,
+                                          load_balancer=load_balancer,
+                                          load_balancer_id=load_balancer.id,
+                                          octavia_owned=octavia_owned)
+        else:
+            primary_vip = data_models.Vip(ip_address=None, subnet_id=None,
+                                          network_id=port.network_id,
+                                          port_id=port.id,
+                                          load_balancer=load_balancer,
+                                          load_balancer_id=load_balancer.id,
+                                          octavia_owned=octavia_owned)
+        additional_vips = [
+            data_models.AdditionalVip(
+                ip_address=add_fixed_ip.ip_address,
+                subnet_id=add_fixed_ip.subnet_id,
+                network_id=port.network_id,
+                port_id=port.id,
+                load_balancer=load_balancer,
+                load_balancer_id=load_balancer.id)
+            for add_fixed_ip in additional_ips]
+        return primary_vip, additional_vips
 
     def _nova_interface_to_octavia_interface(self, compute_id, nova_interface):
         fixed_ips = [utils.convert_fixed_ip_dict_to_model(fixed_ip)
@@ -108,11 +122,11 @@ class BaseNeutronDriver(base.AbstractNetworkDriver):
                                         port_id=port['id'],
                                         fixed_ips=fixed_ips)
 
-    def _add_allowed_address_pair_to_port(self, port_id, ip_address):
+    def _add_allowed_address_pairs_to_port(self, port_id, ip_address_list):
         aap = {
             'port': {
                 'allowed_address_pairs': [
-                    {'ip_address': ip_address}
+                    {'ip_address': ip} for ip in ip_address_list
                 ]
             }
         }

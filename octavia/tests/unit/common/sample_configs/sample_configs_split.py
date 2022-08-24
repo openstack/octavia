@@ -383,6 +383,7 @@ RET_AMPHORA = {
     'vrrp_priority': None}
 
 RET_LB = {
+    'additional_vips': [],
     'host_amphora': RET_AMPHORA,
     'id': 'sample_loadbalancer_id_1',
     'vip_address': '10.0.0.2',
@@ -392,6 +393,7 @@ RET_LB = {
     'global_connection_limit': constants.HAPROXY_MAX_MAXCONN}
 
 RET_LB_L7 = {
+    'additional_vips': [],
     'host_amphora': RET_AMPHORA,
     'id': 'sample_loadbalancer_id_1',
     'vip_address': '10.0.0.2',
@@ -521,7 +523,7 @@ def sample_loadbalancer_tuple(proto=None, monitor=True, persistence=True,
 
 
 def sample_listener_loadbalancer_tuple(proto=None, topology=None,
-                                       enabled=True):
+                                       enabled=True, additional_vips=False):
     proto = 'HTTP' if proto is None else proto
     if topology and topology in ['ACTIVE_STANDBY', 'ACTIVE_ACTIVE']:
         more_amp = True
@@ -530,7 +532,7 @@ def sample_listener_loadbalancer_tuple(proto=None, topology=None,
         topology = constants.TOPOLOGY_SINGLE
     in_lb = collections.namedtuple(
         'load_balancer', 'id, name, protocol, vip, amphorae, topology, '
-        'listeners, enabled, project_id')
+        'listeners, enabled, project_id, additional_vips')
     return in_lb(
         id='sample_loadbalancer_id_1',
         name='test-lb',
@@ -546,7 +548,10 @@ def sample_listener_loadbalancer_tuple(proto=None, topology=None,
         topology=topology,
         listeners=[],
         enabled=enabled,
-        project_id='12345'
+        project_id='12345',
+        additional_vips=[sample_vip_tuple('10.0.1.2'),
+                         sample_vip_tuple('2001:db8::2')]
+        if additional_vips else []
     )
 
 
@@ -627,7 +632,8 @@ def sample_listener_tuple(proto=None, monitor=True, alloc_default_pool=True,
                           pool_ca_cert=False, pool_crl=False,
                           tls_enabled=False, hm_host_http_check=False,
                           id='sample_listener_id_1', recursive_nest=False,
-                          provisioning_status=constants.ACTIVE):
+                          provisioning_status=constants.ACTIVE,
+                          additional_vips=False):
     proto = 'HTTP' if proto is None else proto
     if be_proto is None:
         be_proto = 'HTTP' if proto == 'TERMINATED_HTTPS' else proto
@@ -691,8 +697,8 @@ def sample_listener_tuple(proto=None, monitor=True, alloc_default_pool=True,
         project_id='12345',
         protocol_port=port,
         protocol=proto,
-        load_balancer=sample_listener_loadbalancer_tuple(proto=proto,
-                                                         topology=topology),
+        load_balancer=sample_listener_loadbalancer_tuple(
+            proto=proto, topology=topology, additional_vips=additional_vips),
         peer_port=peer_port,
         default_pool=sample_pool_tuple(
             proto=be_proto, monitor=monitor, persistence=persistence,

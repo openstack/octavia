@@ -210,6 +210,7 @@ class Repositories(object):
     def __init__(self):
         self.load_balancer = LoadBalancerRepository()
         self.vip = VipRepository()
+        self.additional_vip = AdditionalVipRepository()
         self.health_monitor = HealthMonitorRepository()
         self.session_persistence = SessionPersistenceRepository()
         self.pool = PoolRepository()
@@ -231,7 +232,8 @@ class Repositories(object):
         self.availability_zone = AvailabilityZoneRepository()
         self.availability_zone_profile = AvailabilityZoneProfileRepository()
 
-    def create_load_balancer_and_vip(self, session, lb_dict, vip_dict):
+    def create_load_balancer_and_vip(self, session, lb_dict, vip_dict,
+                                     additional_vip_dicts=None):
         """Inserts load balancer and vip entities into the database.
 
         Inserts load balancer and vip entities into the database in one
@@ -240,8 +242,10 @@ class Repositories(object):
         :param session: A Sql Alchemy database session.
         :param lb_dict: Dictionary representation of a load balancer
         :param vip_dict: Dictionary representation of a vip
+        :param additional_vip_dicts: Dict representations of additional vips
         :returns: octavia.common.data_models.LoadBalancer
         """
+        additional_vip_dicts = additional_vip_dicts or []
         with session.begin(subtransactions=True):
             if not lb_dict.get('id'):
                 lb_dict['id'] = uuidutils.generate_uuid()
@@ -250,6 +254,13 @@ class Repositories(object):
             vip_dict['load_balancer_id'] = lb_dict['id']
             vip = models.Vip(**vip_dict)
             session.add(vip)
+            for add_vip_dict in additional_vip_dicts:
+                add_vip_dict['load_balancer_id'] = lb_dict['id']
+                add_vip_dict['network_id'] = vip_dict.get('network_id')
+                add_vip_dict['port_id'] = vip_dict.get('port_id')
+                add_vip = models.AdditionalVip(**add_vip_dict)
+                session.add(add_vip)
+
         return self.load_balancer.get(session, id=lb.id)
 
     def create_pool_on_load_balancer(self, session, pool_dict,
@@ -655,6 +666,7 @@ class Repositories(object):
     def create_load_balancer_tree(self, session, lock_session, lb_dict):
         listener_dicts = lb_dict.pop('listeners', [])
         vip_dict = lb_dict.pop('vip')
+        additional_vip_dicts = lb_dict.pop('additional_vips', [])
         try:
             if self.check_quota_met(session,
                                     lock_session,
@@ -663,7 +675,7 @@ class Repositories(object):
                 raise exceptions.QuotaException(
                     resource=data_models.LoadBalancer._name())
             lb_dm = self.create_load_balancer_and_vip(
-                lock_session, lb_dict, vip_dict)
+                lock_session, lb_dict, vip_dict, additional_vip_dicts)
             for listener_dict in listener_dicts:
                 # Add listener quota check
                 if self.check_quota_met(session,
@@ -848,6 +860,7 @@ class LoadBalancerRepository(BaseRepository):
         # no-load (blank) the tables we don't need
         query_options = (
             subqueryload(models.LoadBalancer.vip),
+            subqueryload(models.LoadBalancer.additional_vips),
             subqueryload(models.LoadBalancer.amphorae),
             subqueryload(models.LoadBalancer.pools),
             subqueryload(models.LoadBalancer.listeners),
@@ -926,6 +939,21 @@ class VipRepository(BaseRepository):
         with session.begin(subtransactions=True):
             session.query(self.model_class).filter_by(
                 load_balancer_id=load_balancer_id).update(model_kwargs)
+
+
+class AdditionalVipRepository(BaseRepository):
+    model_class = models.AdditionalVip
+
+    def update(self, session, load_balancer_id, subnet_id,
+               **model_kwargs):
+        """Updates an additional vip entity in the database.
+
+        Uses load_balancer_id + subnet_id.
+        """
+        with session.begin(subtransactions=True):
+            session.query(self.model_class).filter_by(
+                load_balancer_id=load_balancer_id,
+                subnet_id=subnet_id).update(model_kwargs)
 
 
 class HealthMonitorRepository(BaseRepository):

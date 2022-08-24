@@ -623,14 +623,20 @@ class AllocateVIP(BaseNetworkTask):
                   loadbalancer[constants.LOADBALANCER_ID])
         db_lb = self.loadbalancer_repo.get(
             db_apis.get_session(), id=loadbalancer[constants.LOADBALANCER_ID])
-        vip = self.network_driver.allocate_vip(db_lb)
+        vip, additional_vips = self.network_driver.allocate_vip(db_lb)
         LOG.info("Allocated vip with port id %s, subnet id %s, ip address %s "
                  "for load balancer %s",
                  loadbalancer[constants.VIP_PORT_ID],
                  loadbalancer[constants.VIP_SUBNET_ID],
                  loadbalancer[constants.VIP_ADDRESS],
                  loadbalancer[constants.LOADBALANCER_ID])
-        return vip.to_dict()
+        for add_vip in additional_vips:
+            LOG.debug('Allocated an additional VIP: subnet=%(subnet)s '
+                      'ip_address=%(ip)s', {'subnet': add_vip.subnet_id,
+                                            'ip': add_vip.ip_address})
+        return (vip.to_dict(),
+                [additional_vip.to_dict()
+                 for additional_vip in additional_vips])
 
     def revert(self, result, loadbalancer, *args, **kwargs):
         """Handle a failure to allocate vip."""
@@ -638,7 +644,8 @@ class AllocateVIP(BaseNetworkTask):
         if isinstance(result, failure.Failure):
             LOG.exception("Unable to allocate VIP")
             return
-        vip = data_models.Vip(**result)
+        vip, additional_vips = result
+        vip = data_models.Vip(**vip)
         LOG.warning("Deallocating vip %s", vip.ip_address)
         try:
             self.network_driver.deallocate_vip(vip)
@@ -657,7 +664,8 @@ class AllocateVIPforFailover(AllocateVIP):
         if isinstance(result, failure.Failure):
             LOG.exception("Unable to allocate VIP")
             return
-        vip = data_models.Vip(**result)
+        vip, additional_vips = result
+        vip = data_models.Vip(**vip)
         LOG.info("Failover revert is not deallocating vip %s because this is "
                  "a failover.", vip.ip_address)
 
@@ -968,22 +976,26 @@ class CreateVIPBasePort(BaseNetworkTask):
                         multiplier=CONF.networking.retry_backoff,
                         min=CONF.networking.retry_interval,
                         max=CONF.networking.retry_max), reraise=True)
-    def execute(self, vip, vip_sg_id, amphora_id):
+    def execute(self, vip, vip_sg_id, amphora_id, additional_vips):
         port_name = constants.AMP_BASE_PORT_PREFIX + amphora_id
         fixed_ips = [{constants.SUBNET_ID: vip[constants.SUBNET_ID]}]
         sg_id = []
         if vip_sg_id:
             sg_id = [vip_sg_id]
+        secondary_ips = [vip[constants.IP_ADDRESS]]
+        for add_vip in additional_vips:
+            secondary_ips.append(add_vip[constants.IP_ADDRESS])
         port = self.network_driver.create_port(
             vip[constants.NETWORK_ID], name=port_name, fixed_ips=fixed_ips,
-            secondary_ips=[vip[constants.IP_ADDRESS]],
+            secondary_ips=secondary_ips,
             security_group_ids=sg_id,
             qos_policy_id=vip[constants.QOS_POLICY_ID])
         LOG.info('Created port %s with ID %s for amphora %s',
                  port_name, port.id, amphora_id)
         return port.to_dict(recurse=True)
 
-    def revert(self, result, vip, vip_sg_id, amphora_id, *args, **kwargs):
+    def revert(self, result, vip, vip_sg_id, amphora_id, additional_vips,
+               *args, **kwargs):
         if isinstance(result, failure.Failure):
             return
         try:

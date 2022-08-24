@@ -27,6 +27,7 @@ MOCK_NETWORK_ID2 = 'mock-network-2'
 MOCK_NETWORK_NAME = 'TestNet1'
 MOCK_SUBNET_ID = 'mock-subnet-1'
 MOCK_SUBNET_ID2 = 'mock-subnet-2'
+MOCK_SUBNET_ID3 = 'mock-subnet-3'
 MOCK_SUBNET_NAME = 'TestSubnet1'
 MOCK_PORT_ID = 'mock-port-1'
 MOCK_PORT_ID2 = 'mock-port-2'
@@ -215,6 +216,7 @@ MOCK_MANAGEMENT_PORT2 = {'port': {'network_id': MOCK_MANAGEMENT_NET_ID,
                                   'fixed_ips': MOCK_MANAGEMENT_FIXED_IPS2}}
 
 MOCK_VIP_SUBNET_ID = 'vip-subnet-1'
+MOCK_VIP_SUBNET_ID2 = 'vip-subnet-2'
 MOCK_VIP_NET_ID = 'vip-net-1'
 MOCK_VRRP_PORT_ID1 = 'vrrp-port-1'
 MOCK_VRRP_PORT_ID2 = 'vrrp-port-2'

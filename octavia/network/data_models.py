@@ -135,7 +135,7 @@ class AmphoraNetworkConfig(data_models.BaseDataModel):
 
     def __init__(self, amphora=None, vip_subnet=None, vip_port=None,
                  vrrp_subnet=None, vrrp_port=None, ha_subnet=None,
-                 ha_port=None):
+                 ha_port=None, additional_vip_data=None):
         self.amphora = amphora
         self.vip_subnet = vip_subnet
         self.vip_port = vip_port
@@ -143,6 +143,14 @@ class AmphoraNetworkConfig(data_models.BaseDataModel):
         self.vrrp_port = vrrp_port
         self.ha_subnet = ha_subnet
         self.ha_port = ha_port
+        self.additional_vip_data = additional_vip_data or []
+
+
+class AdditionalVipData(data_models.BaseDataModel):
+
+    def __init__(self, ip_address=None, subnet=None):
+        self.ip_address = ip_address
+        self.subnet = subnet
 
 
 class HostRoute(data_models.BaseDataModel):

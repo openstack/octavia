@@ -17,7 +17,6 @@ import ipaddress
 import os
 import socket
 import stat
-import subprocess
 
 from oslo_config import cfg
 from oslo_log import log as logging
@@ -43,17 +42,62 @@ class Plug(object):
             ip_address="127.0.0.1",
             prefixlen=8)
 
+    def render_vips(self, vips):
+        rendered_vips = []
+        for vip in vips:
+            ip_address = ipaddress.ip_address(vip['ip_address'])
+            subnet_cidr = ipaddress.ip_network(vip['subnet_cidr'])
+            prefixlen = subnet_cidr.prefixlen
+            host_routes = vip['host_routes']
+            gateway = vip['gateway']
+            rendered_vips.append({
+                'ip_address': ip_address.exploded,
+                'ip_version': ip_address.version,
+                'gateway': gateway,
+                'host_routes': host_routes,
+                'prefixlen': prefixlen
+            })
+        return rendered_vips
+
+    def build_vrrp_info(self, vrrp_ip, subnet_cidr, gateway, host_routes):
+        vrrp_info = {}
+        if vrrp_ip:
+            ip_address = ipaddress.ip_address(vrrp_ip)
+            subnet_cidr = ipaddress.ip_network(subnet_cidr)
+            prefixlen = subnet_cidr.prefixlen
+            vrrp_info.update({
+                'ip': ip_address.exploded,
+                'ip_version': ip_address.version,
+                'gateway': gateway,
+                'host_routes': host_routes,
+                'prefixlen': prefixlen
+            })
+        return vrrp_info
+
     def plug_vip(self, vip, subnet_cidr, gateway,
-                 mac_address, mtu=None, vrrp_ip=None, host_routes=None):
-        # Validate vip and subnet_cidr, calculate broadcast address and netmask
+                 mac_address, mtu=None, vrrp_ip=None, host_routes=(),
+                 additional_vips=()):
+        vips = [{
+            'ip_address': vip,
+            'subnet_cidr': subnet_cidr,
+            'gateway': gateway,
+            'host_routes': host_routes
+        }] + list(additional_vips)
+
         try:
-            ip = ipaddress.ip_address(vip)
-            network = ipaddress.ip_network(subnet_cidr)
-            vip = ip.exploded
-            prefixlen = network.prefixlen
-        except ValueError:
-            return webob.Response(json=dict(message="Invalid VIP"),
+            rendered_vips = self.render_vips(vips)
+        except ValueError as e:
+            vip_error_message = "Invalid VIP: {}".format(e)
+            return webob.Response(json=dict(message=vip_error_message),
                                   status=400)
+
+        try:
+            vrrp_info = self.build_vrrp_info(vrrp_ip, subnet_cidr,
+                                             gateway, host_routes)
+        except ValueError as e:
+            return webob.Response(
+                json=dict(message="Invalid VRRP Address: {}".format(e)),
+                status=400)
 
         # Check if the interface is already in the network namespace
         # Do not attempt to re-plug the VIP if it is already in the
@@ -70,45 +114,13 @@ class Plug(object):
 
         self._osutils.write_vip_interface_file(
             interface=primary_interface,
-            vip=vip,
-            ip_version=ip.version,
-            prefixlen=prefixlen,
-            gateway=gateway,
+            vips=rendered_vips,
             mtu=mtu,
-            vrrp_ip=vrrp_ip,
-            host_routes=host_routes)
+            vrrp_info=vrrp_info)
 
         # Update the list of interfaces to add to the namespace
         # This is used in the amphora reboot case to re-establish the namespace
         self._update_plugged_interfaces_file(primary_interface, mac_address)
-
-        # Create the namespace
-        netns = pyroute2.NetNS(consts.AMPHORA_NAMESPACE, flags=os.O_CREAT)
-        netns.close()
-
-        # Load sysctl in new namespace
-        sysctl = pyroute2.NSPopen(consts.AMPHORA_NAMESPACE,
-                                  [consts.SYSCTL_CMD, '--system'],
-                                  stdout=subprocess.PIPE)
-
-        sysctl.communicate()
-        sysctl.wait()
-        sysctl.release()
-
-        cmd_list = [['modprobe', 'ip_vs'],
-                    [consts.SYSCTL_CMD, '-w', 'net.ipv4.vs.conntrack=1']]
-        if ip.version == 4:
-            # For lvs function, enable ip_vs kernel module, enable ip_forward
-            # conntrack in amphora network namespace.
-            cmd_list.append([consts.SYSCTL_CMD, '-w', 'net.ipv4.ip_forward=1'])
-        elif ip.version == 6:
-            cmd_list.append([consts.SYSCTL_CMD, '-w',
-                             'net.ipv6.conf.all.forwarding=1'])
-        for cmd in cmd_list:
-            ns_exec = pyroute2.NSPopen(consts.AMPHORA_NAMESPACE, cmd,
-                                       stdout=subprocess.PIPE)
-            ns_exec.wait()
-            ns_exec.release()
 
         with pyroute2.IPRoute() as ipr:
             # Move the interfaces into the namespace
@@ -119,10 +131,14 @@ class Plug(object):
         # bring interfaces up
         self._osutils.bring_interface_up(primary_interface, 'VIP')
 
+        vip_message = "VIPs plugged on interface {interface}: {vips}".format(
+            interface=primary_interface,
+            vips=", ".join(v['ip_address'] for v in rendered_vips)
+        )
+
         return webob.Response(json=dict(
             message="OK",
-            details="VIP {vip} plugged on interface {interface}".format(
-                vip=vip, interface=primary_interface)), status=202)
+            details=vip_message), status=202)
 
     def _check_ip_addresses(self, fixed_ips):
         if fixed_ips:
@@ -150,24 +166,26 @@ class Plug(object):
             # If we have net_info, this is the special case of plugging a new
             # subnet on the vrrp port, which is essentially a re-vip-plug
             if vip_net_info:
-                ip = ipaddress.ip_address(vip_net_info['vip'])
-                network = ipaddress.ip_network(vip_net_info['subnet_cidr'])
-                vip = ip.exploded
-                prefixlen = network.prefixlen
-
                 vrrp_ip = vip_net_info.get('vrrp_ip')
+                subnet_cidr = vip_net_info['subnet_cidr']
                 gateway = vip_net_info['gateway']
-                host_routes = vip_net_info.get('host_routes', ())
+                host_routes = vip_net_info.get('host_routes', [])
+
+                vips = [{
+                    'ip_address': vip_net_info['vip'],
+                    'subnet_cidr': subnet_cidr,
+                    'gateway': gateway,
+                    'host_routes': host_routes
+                }] + vip_net_info.get('additional_vips', [])
+                rendered_vips = self.render_vips(vips)
+                vrrp_info = self.build_vrrp_info(vrrp_ip, subnet_cidr,
+                                                 gateway, host_routes)
 
                 self._osutils.write_vip_interface_file(
                     interface=existing_interface,
-                    vip=vip,
-                    ip_version=ip.version,
-                    prefixlen=prefixlen,
-                    gateway=gateway,
-                    vrrp_ip=vrrp_ip,
-                    host_routes=host_routes,
+                    vips=rendered_vips,
                     mtu=mtu,
+                    vrrp_info=vrrp_info,
                     fixed_ips=fixed_ips)
                 self._osutils.bring_interface_up(existing_interface, 'vip')
             # Otherwise, we are just plugging a run-of-the-mill network

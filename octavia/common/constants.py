@@ -302,6 +302,7 @@ SUPPORTED_TASKFLOW_ENGINE_TYPES = ['serial', 'parallel']
 ACTIVE_CONNECTIONS = 'active_connections'
 ADD_NICS = 'add_nics'
 ADD_SUBNETS = 'add_subnets'
+ADDITIONAL_VIPS = 'additional_vips'
 ADMIN_STATE_UP = 'admin_state_up'
 ALLOWED_ADDRESS_PAIRS = 'allowed_address_pairs'
 AMP_DATA = 'amp_data'

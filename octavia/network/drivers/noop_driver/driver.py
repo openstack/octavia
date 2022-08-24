@@ -21,8 +21,13 @@ from octavia.network import data_models as network_models
 
 LOG = logging.getLogger(__name__)
 
-_PLUGGED_NETWORKS = {}
-_PORTS = {}
+_NOOP_MANAGER_VARS = {
+    'networks': {},
+    'subnets': {},
+    'ports': {},
+    'interfaces': {},
+    'current_network': None
+}
 
 
 class NoopManager(object):
@@ -46,11 +51,21 @@ class NoopManager(object):
             network_id = loadbalancer.vip.network_id or network_id
             port_id = loadbalancer.vip.port_id or port_id
             ip_address = loadbalancer.vip.ip_address or ip_address
-        return data_models.Vip(ip_address=ip_address,
-                               subnet_id=subnet_id,
-                               network_id=network_id,
-                               port_id=port_id,
-                               load_balancer_id=loadbalancer.id)
+        return_vip = data_models.Vip(ip_address=ip_address,
+                                     subnet_id=subnet_id,
+                                     network_id=network_id,
+                                     port_id=port_id,
+                                     load_balancer_id=loadbalancer.id)
+        additional_vips = [
+            data_models.AdditionalVip(
+                ip_address=add_vip.ip_address,
+                subnet_id=add_vip.subnet_id,
+                network_id=network_id,
+                port_id=port_id,
+                load_balancer=loadbalancer,
+                load_balancer_id=loadbalancer.id)
+            for add_vip in loadbalancer.additional_vips]
+        return return_vip, additional_vips
 
     def deallocate_vip(self, vip):
         LOG.debug("Network %s no-op, deallocate_vip vip %s",
@@ -127,10 +142,12 @@ class NoopManager(object):
             fixed_ips=[],
             port_id=uuidutils.generate_uuid()
         )
-        _PORTS[interface.port_id] = network_models.Port(
-            id=interface.port_id,
-            network_id=network_id)
-        _PLUGGED_NETWORKS[(network_id, compute_id)] = interface
+        _NOOP_MANAGER_VARS['ports'][interface.port_id] = (
+            network_models.Port(
+                id=interface.port_id,
+                network_id=network_id))
+        _NOOP_MANAGER_VARS['interfaces'][(network_id, compute_id)] = (
+            interface)
         return interface
 
     def unplug_network(self, compute_id, network_id):
@@ -139,14 +156,14 @@ class NoopManager(object):
                   self.__class__.__name__, compute_id, network_id)
         self.networkconfigconfig[(compute_id, network_id)] = (
             compute_id, network_id, 'unplug_network')
-        _PLUGGED_NETWORKS.pop((network_id, compute_id), None)
+        _NOOP_MANAGER_VARS['interfaces'].pop((network_id, compute_id), None)
 
     def get_plugged_networks(self, compute_id):
         LOG.debug("Network %s no-op, get_plugged_networks amphora_id %s",
                   self.__class__.__name__, compute_id)
         self.networkconfigconfig[compute_id] = (
             compute_id, 'get_plugged_networks')
-        return [pn for pn in _PLUGGED_NETWORKS.values()
+        return [pn for pn in _NOOP_MANAGER_VARS['interfaces'].values()
                 if pn.compute_id == compute_id]
 
     def update_vip(self, loadbalancer, for_delete=False):
@@ -160,57 +177,114 @@ class NoopManager(object):
         LOG.debug("Network %s no-op, get_network network_id %s",
                   self.__class__.__name__, network_id)
         self.networkconfigconfig[network_id] = (network_id, 'get_network')
-        network = network_models.Network(id=uuidutils.generate_uuid(),
+        if network_id in _NOOP_MANAGER_VARS['networks']:
+            return _NOOP_MANAGER_VARS['networks'][network_id]
+
+        network = network_models.Network(id=network_id,
                                          port_security_enabled=True)
 
-        class ItIsInsideMe(network_models.Subnet):
+        class ItIsInsideMe(list):
+            known_subnets = None
+
+            def __init__(self, network, parent):
+                super().__init__()
+                self.network = network
+                self.parent = parent
+                self.known_subnets = {}
+
             def to_dict(self, **kwargs):
                 return [{}]
 
             def __contains__(self, item):
+                self.known_subnets[item] = self.parent.get_subnet(item)
+                self.known_subnets[item].network_id = self.network.id
                 return True
 
-            def __iter__(self):
-                yield uuidutils.generate_uuid()
+            def __len__(self):
+                return len(self.known_subnets) + 1
 
-        network.subnets = ItIsInsideMe()
+            def __iter__(self):
+                for subnet_id in self.known_subnets:
+                    yield subnet_id
+                subnet = network_models.Subnet(id=uuidutils.generate_uuid(),
+                                               network_id=self.network.id)
+                self.known_subnets[subnet.id] = subnet
+                _NOOP_MANAGER_VARS['subnets'][subnet.id] = subnet
+                yield subnet.id
+
+        network.subnets = ItIsInsideMe(network, self)
+        _NOOP_MANAGER_VARS['networks'][network_id] = network
+        _NOOP_MANAGER_VARS['current_network'] = network_id
         return network
 
     def get_subnet(self, subnet_id):
         LOG.debug("Subnet %s no-op, get_subnet subnet_id %s",
                   self.__class__.__name__, subnet_id)
         self.networkconfigconfig[subnet_id] = (subnet_id, 'get_subnet')
-        return network_models.Subnet(id=uuidutils.generate_uuid())
+        if subnet_id in _NOOP_MANAGER_VARS['subnets']:
+            return _NOOP_MANAGER_VARS['subnets'][subnet_id]
+
+        subnet = network_models.Subnet(
+            id=subnet_id,
+            network_id=_NOOP_MANAGER_VARS['current_network'])
+        _NOOP_MANAGER_VARS['subnets'][subnet_id] = subnet
+        return subnet
 
     def get_port(self, port_id):
         LOG.debug("Port %s no-op, get_port port_id %s",
                   self.__class__.__name__, port_id)
         self.networkconfigconfig[port_id] = (port_id, 'get_port')
-        if port_id in _PORTS:
-            return _PORTS[port_id]
-        return network_models.Port(id=uuidutils.generate_uuid(),
-                                   network_id=uuidutils.generate_uuid())
+        if port_id in _NOOP_MANAGER_VARS['ports']:
+            return _NOOP_MANAGER_VARS['ports'][port_id]
+
+        port = network_models.Port(id=port_id)
+        _NOOP_MANAGER_VARS['ports'][port_id] = port
+        return port
 
     def get_network_by_name(self, network_name):
         LOG.debug("Network %s no-op, get_network_by_name network_name %s",
                   self.__class__.__name__, network_name)
         self.networkconfigconfig[network_name] = (network_name,
                                                   'get_network_by_name')
-        return network_models.Network(id=uuidutils.generate_uuid(),
-                                      port_security_enabled=True)
+        by_name = {n.name: n for n in _NOOP_MANAGER_VARS['networks'].values()}
+        if network_name in by_name:
+            return by_name[network_name]
+
+        network = network_models.Network(id=uuidutils.generate_uuid(),
+                                         port_security_enabled=True,
+                                         name=network_name)
+        _NOOP_MANAGER_VARS['networks'][network.id] = network
+        _NOOP_MANAGER_VARS['current_network'] = network.id
+        return network
 
     def get_subnet_by_name(self, subnet_name):
         LOG.debug("Subnet %s no-op, get_subnet_by_name subnet_name %s",
                   self.__class__.__name__, subnet_name)
         self.networkconfigconfig[subnet_name] = (subnet_name,
                                                  'get_subnet_by_name')
-        return network_models.Subnet(id=uuidutils.generate_uuid())
+        by_name = {s.name: s for s in _NOOP_MANAGER_VARS['subnets'].values()}
+        if subnet_name in by_name:
+            return by_name[subnet_name]
+
+        subnet = network_models.Subnet(
+            id=uuidutils.generate_uuid(),
+            name=subnet_name,
+            network_id=_NOOP_MANAGER_VARS['current_network'])
+        _NOOP_MANAGER_VARS['subnets'][subnet.id] = subnet
+        return subnet
 
     def get_port_by_name(self, port_name):
         LOG.debug("Port %s no-op, get_port_by_name port_name %s",
                   self.__class__.__name__, port_name)
         self.networkconfigconfig[port_name] = (port_name, 'get_port_by_name')
-        return network_models.Port(id=uuidutils.generate_uuid())
+        by_name = {p.name: p for p in _NOOP_MANAGER_VARS['ports'].values()}
+        if port_name in by_name:
+            return by_name[port_name]
+
+        port = network_models.Port(id=uuidutils.generate_uuid(),
+                                   name=port_name)
+        _NOOP_MANAGER_VARS['ports'][port.id] = port
+        return port
 
     def get_port_by_net_id_device_id(self, network_id, device_id):
         LOG.debug("Port %s no-op, get_port_by_net_id_device_id network_id %s"
@@ -218,7 +292,16 @@ class NoopManager(object):
                   self.__class__.__name__, network_id, device_id)
         self.networkconfigconfig[(network_id, device_id)] = (
             network_id, device_id, 'get_port_by_net_id_device_id')
-        return network_models.Port(id=uuidutils.generate_uuid())
+        by_net_dev_id = {(p.network_id, p.device_id): p
+                         for p in _NOOP_MANAGER_VARS['ports'].values()}
+        if (network_id, device_id) in by_net_dev_id:
+            return by_net_dev_id[(network_id, device_id)]
+
+        port = network_models.Port(id=uuidutils.generate_uuid(),
+                                   network_id=network_id,
+                                   device_id=device_id)
+        _NOOP_MANAGER_VARS['ports'][port.id] = port
+        return port
 
     def get_security_group(self, sg_name):
         LOG.debug("Network %s no-op, get_security_group name %s",
@@ -297,8 +380,7 @@ class NoopManager(object):
         ip_avail = network_models.Network_IP_Availability(
             network_id=network.id)
         subnet_ip_availability = []
-        network.subnets = list(network.subnets)
-        for subnet_id in network.subnets:
+        for subnet_id in list(network.subnets):
             subnet_ip_availability.append({'subnet_id': subnet_id,
                                           'used_ips': 0, 'total_ips': 254})
         ip_avail.subnet_ip_availability = subnet_ip_availability
@@ -360,7 +442,7 @@ class NoopManager(object):
 
         port = network_models.Port(id=port_id,
                                    network_id=uuidutils.generate_uuid())
-        _PORTS[port.id] = port
+        _NOOP_MANAGER_VARS['ports'][port.id] = port
         return port
 
     def unplug_fixed_ip(self, port_id, subnet_id):
@@ -370,7 +452,7 @@ class NoopManager(object):
         self.networkconfigconfig[(port_id, subnet_id)] = (
             port_id, subnet_id, 'unplug_fixed_ip')
 
-        return _PORTS.pop(port_id, None)
+        return _NOOP_MANAGER_VARS['ports'].pop(port_id, None)
 
 
 class NoopNetworkDriver(driver_base.AbstractNetworkDriver):

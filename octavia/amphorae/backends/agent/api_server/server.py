@@ -202,7 +202,8 @@ class Server(object):
                                    net_info['mac_address'],
                                    net_info.get('mtu'),
                                    net_info.get('vrrp_ip'),
-                                   net_info.get('host_routes'))
+                                   net_info.get('host_routes', ()),
+                                   net_info.get('additional_vips', ()))
 
     def plug_network(self):
         try:

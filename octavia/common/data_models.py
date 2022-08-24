@@ -489,7 +489,8 @@ class LoadBalancer(BaseDataModel):
                  topology=None, vip=None, listeners=None, amphorae=None,
                  pools=None, vrrp_group=None, server_group_id=None,
                  created_at=None, updated_at=None, provider=None, tags=None,
-                 flavor_id=None, availability_zone=None):
+                 flavor_id=None, availability_zone=None,
+                 additional_vips=None):
 
         self.id = id
         self.project_id = project_id
@@ -511,6 +512,7 @@ class LoadBalancer(BaseDataModel):
         self.tags = tags or []
         self.flavor_id = flavor_id
         self.availability_zone = availability_zone
+        self.additional_vips = additional_vips or []
 
     def update(self, update_dict):
         for key, value in update_dict.items():
@@ -551,6 +553,18 @@ class Vip(BaseDataModel):
         self.load_balancer = load_balancer
         self.qos_policy_id = qos_policy_id
         self.octavia_owned = octavia_owned
+
+
+class AdditionalVip(BaseDataModel):
+
+    def __init__(self, load_balancer_id=None, ip_address=None, subnet_id=None,
+                 network_id=None, port_id=None, load_balancer=None):
+        self.load_balancer_id = load_balancer_id
+        self.ip_address = ip_address
+        self.subnet_id = subnet_id
+        self.network_id = network_id
+        self.port_id = port_id
+        self.load_balancer = load_balancer
 
 
 class SNI(BaseDataModel):

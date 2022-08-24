@@ -121,10 +121,11 @@ class TestOSUtils(base.TestCase):
         DEST2 = u'203.0.113.0/24'
         NEXTHOP = u'192.0.2.1'
         MTU = 1450
-        FIXED_IP_IPV6 = u'2001:0db8:0000:0000:0000:0000:0000:0001'
+        FIXED_IP_IPV6 = u'2001:0db8:0000:0000:0000:0000:0000:000a'
         # Subnet prefix is purposefully not 32, because that coincidentally
         # matches the result of any arbitrary IPv4->prefixlen conversion
         SUBNET_CIDR_IPV6 = u'2001:db8::/70'
+        GATEWAY_IPV6 = u'2001:0db8:0000:0000:0000:0000:0000:0001'
 
         ip = ipaddress.ip_address(FIXED_IP)
         network = ipaddress.ip_network(SUBNET_CIDR)
@@ -139,23 +140,28 @@ class TestOSUtils(base.TestCase):
 
         self.ubuntu_os_util.write_vip_interface_file(
             interface=netns_interface,
-            vip=FIXED_IP,
-            ip_version=ip.version,
-            prefixlen=network.prefixlen,
-            gateway=GATEWAY,
+            vips={
+                'address': FIXED_IP,
+                'ip_version': ip.version,
+                'prefixlen': network.prefixlen,
+                'gateway': GATEWAY,
+                'host_routes': host_routes
+            },
             mtu=MTU,
-            vrrp_ip=None,
-            host_routes=host_routes)
+            vrrp_info=None
+        )
 
         mock_vip_interface_file.assert_called_once_with(
             name=netns_interface,
-            vip=FIXED_IP,
-            ip_version=ip.version,
-            prefixlen=network.prefixlen,
-            gateway=GATEWAY,
+            vips={
+                'address': FIXED_IP,
+                'ip_version': ip.version,
+                'prefixlen': network.prefixlen,
+                'gateway': GATEWAY,
+                'host_routes': host_routes
+            },
             mtu=MTU,
-            vrrp_ip=None,
-            host_routes=host_routes,
+            vrrp_info=None,
             fixed_ips=None,
             topology="SINGLE")
         mock_vip_interface_file.return_value.write.assert_called_once()
@@ -165,23 +171,27 @@ class TestOSUtils(base.TestCase):
 
         self.ubuntu_os_util.write_vip_interface_file(
             interface=netns_interface,
-            vip=FIXED_IP_IPV6,
-            ip_version=ipv6.version,
-            prefixlen=networkv6.prefixlen,
-            gateway=GATEWAY,
+            vips={
+                'address': FIXED_IP_IPV6,
+                'ip_version': ipv6.version,
+                'prefixlen': networkv6.prefixlen,
+                'gateway': GATEWAY_IPV6,
+                'host_routes': host_routes
+            },
             mtu=MTU,
-            vrrp_ip=None,
-            host_routes=host_routes)
+            vrrp_info=None)
 
         mock_vip_interface_file.assert_called_once_with(
             name=netns_interface,
-            vip=FIXED_IP_IPV6,
-            ip_version=ipv6.version,
-            prefixlen=networkv6.prefixlen,
-            gateway=GATEWAY,
+            vips={
+                'address': FIXED_IP_IPV6,
+                'ip_version': ipv6.version,
+                'prefixlen': networkv6.prefixlen,
+                'gateway': GATEWAY_IPV6,
+                'host_routes': host_routes
+            },
             mtu=MTU,
-            vrrp_ip=None,
-            host_routes=host_routes,
+            vrrp_info=None,
             fixed_ips=None,
             topology="SINGLE")
 

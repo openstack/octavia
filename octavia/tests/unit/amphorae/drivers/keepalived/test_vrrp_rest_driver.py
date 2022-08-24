@@ -18,6 +18,7 @@ from oslo_utils import uuidutils
 
 from octavia.amphorae.drivers.keepalived import vrrp_rest_driver
 from octavia.common import constants
+from octavia.network import data_models as n_data_models
 import octavia.tests.unit.base as base
 
 # Version 1.0 is functionally identical to all versions before it
@@ -42,8 +43,11 @@ class TestVRRPRestDriver(base.TestCase):
         self.lb_mock.amphorae = [self.amphora_mock]
         self.amphorae_network_config = {}
         vip_subnet = mock.MagicMock()
-        vip_subnet.cidr = '192.0.2.0/24'
-        self.amphorae_network_config[self.amphora_mock.id] = vip_subnet
+        self.vip_cidr = vip_subnet.cidr = '192.0.2.0/24'
+        one_amp_net_config = n_data_models.AmphoraNetworkConfig(
+            vip_subnet=vip_subnet
+        )
+        self.amphorae_network_config[self.amphora_mock.id] = one_amp_net_config
 
         super().setUp()
 
@@ -56,6 +60,9 @@ class TestVRRPRestDriver(base.TestCase):
         self.keepalived_mixin.update_vrrp_conf(
             self.lb_mock, self.amphorae_network_config, self.amphora_mock)
 
+        mock_templater.assert_called_with(
+            self.lb_mock, self.amphora_mock,
+            self.amphorae_network_config[self.amphora_mock.id])
         self.clients[API_VERSION].upload_vrrp_config.assert_called_once_with(
             self.amphora_mock,
             self.FAKE_CONFIG)

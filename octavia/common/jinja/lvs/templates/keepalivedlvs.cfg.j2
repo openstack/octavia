@@ -23,7 +23,7 @@ net_namespace {{ constants.AMPHORA_NAMESPACE }}
     {% if loadbalancer.enabled and loadbalancer.listener.enabled %}
         {{- virtualserver_macro(constants, lib_consts,
                                 loadbalancer.listener,
-                                loadbalancer.vip_address,
+                                loadbalancer.vips,
                                 loadbalancer.listener.get('default_pool', None)) }}
     {% endif %}
 {% endblock proxies %}
