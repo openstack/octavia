@@ -20,7 +20,9 @@ global
     log {{ log_http | default('/run/rsyslog/octavia/log', true)}} local{{ user_log_facility }}
     log {{ log_server | default('/run/rsyslog/octavia/log', true)}} local{{ administrative_log_facility }} notice
     stats socket {{ sock_path }} mode 0666 level user
+    {% if state_file %}
     server-state-file {{ state_file }}
+    {% endif %}
     {% if loadbalancer.global_connection_limit is defined %}
     maxconn {{ loadbalancer.global_connection_limit }}
     {% endif %}
