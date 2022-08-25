@@ -792,6 +792,7 @@ AMP_NETNS_SVC_PREFIX = 'amphora-netns'
 
 # Amphora Feature Compatibility
 HTTP_REUSE = 'has_http_reuse'
+SERVER_STATE_FILE = 'has_server_state_file'
 POOL_ALPN = 'has_pool_alpn'
 
 # TODO(johnsom) convert these to octavia_lib constants
