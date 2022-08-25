@@ -337,13 +337,6 @@ class MembersController(MemberController):
             self._auth_validate_action(context, project_id,
                                        constants.RBAC_DELETE)
 
-        # Validate member subnets
-        for member in members:
-            if member.subnet_id and not validate.subnet_exists(
-                    member.subnet_id, context=context):
-                raise exceptions.NotFound(resource='Subnet',
-                                          id=member.subnet_id)
-
         # Load the driver early as it also provides validation
         driver = driver_factory.get_driver(provider)
 
@@ -389,8 +382,27 @@ class MembersController(MemberController):
                     resource=data_models.Member._name())
 
             provider_members = []
+            valid_subnets = set()
             # Create new members
             for m in new_members:
+                # NOTE(mnaser): In order to avoid hitting the Neutron API hard
+                # when creating many new members, we cache the
+                # validation results. We also validate new
+                # members only since subnet ID is immutable.
+                # If the member doesn't have a subnet, or the subnet is
+                # already valid, move on. Run validate and add it to
+                # cache otherwise.
+                if m.subnet_id and m.subnet_id not in valid_subnets:
+                    # If the subnet does not exist,
+                    # raise an exception and get out.
+                    if not validate.subnet_exists(
+                            m.subnet_id, context=context):
+                        raise exceptions.NotFound(
+                            resource='Subnet', id=m.subnet_id)
+
+                    # Mark the subnet as valid for future runs.
+                    valid_subnets.add(m.subnet_id)
+
                 m = m.to_dict(render_unsets=False)
                 m['project_id'] = db_pool.project_id
                 created_member = self._graph_create(lock_session, m)
