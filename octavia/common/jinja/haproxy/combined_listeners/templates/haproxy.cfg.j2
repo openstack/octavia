@@ -33,7 +33,7 @@
          {% for listener in loadbalancer.listeners if listener.enabled %}
              {{- frontend_macro(constants, listener, loadbalancer.vip_address) }}
              {% for pool in listener.pools if pool.enabled %}
-               {{- backend_macro(constants, listener, pool, loadbalancer) }}
+               {{- backend_macro(constants, listener, pool, loadbalancer, state_file) }}
              {% endfor %}
          {% endfor %}
     {% endif %}

@@ -32,8 +32,6 @@ class HAProxyCompatTestCase(base.TestCase):
             "    log /run/rsyslog/octavia/log local1 notice\n"
             "    stats socket /var/lib/octavia/sample_loadbalancer_id_1.sock"
             " mode 0666 level user\n"
-            "    server-state-file /var/lib/octavia/sample_loadbalancer_id_1"
-            "/servers-state\n"
             "    maxconn {maxconn}\n\n"
             "defaults\n"
             "    log global\n"
