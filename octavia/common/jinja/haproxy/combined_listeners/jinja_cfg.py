@@ -98,6 +98,7 @@ class JinjaTemplater(object):
         # Is it newer than haproxy 1.5?
         if not (int(haproxy_versions[0]) < 2 and int(haproxy_versions[1]) < 6):
             feature_compatibility[constants.HTTP_REUSE] = True
+            feature_compatibility[constants.SERVER_STATE_FILE] = True
 
         return self.render_loadbalancer_obj(
             host_amphora, listeners, tls_certs=tls_certs,
@@ -160,7 +161,8 @@ class JinjaTemplater(object):
                                           listeners[0].load_balancer.id)
         state_file_path = '%s/%s/servers-state' % (
             self.base_amp_path,
-            listeners[0].load_balancer.id)
+            listeners[0].load_balancer.id) if feature_compatibility.get(
+            constants.SERVER_STATE_FILE) else ''
         return self._get_template().render(
             {'loadbalancer': loadbalancer,
              'stats_sock': socket_path,

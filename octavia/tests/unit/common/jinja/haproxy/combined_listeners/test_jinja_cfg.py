@@ -62,7 +62,6 @@ class TestHaproxyCfg(base.TestCase):
               "    mode http\n"
               "    balance roundrobin\n"
               "    cookie SRV insert indirect nocache\n"
-              "    load-server-state-from-file global\n"
               "    timeout check 31s\n"
               "    option httpchk GET /index.html HTTP/1.0\\r\\n\n"
               "    http-check expect rstatus 418\n"
@@ -116,7 +115,6 @@ class TestHaproxyCfg(base.TestCase):
               "    mode http\n"
               "    balance roundrobin\n"
               "    cookie SRV insert indirect nocache\n"
-              "    load-server-state-from-file global\n"
               "    timeout check 31s\n"
               "    option httpchk GET /index.html HTTP/1.0\\r\\n\n"
               "    http-check expect rstatus 418\n"
@@ -165,7 +163,6 @@ class TestHaproxyCfg(base.TestCase):
               "    mode http\n"
               "    balance roundrobin\n"
               "    cookie SRV insert indirect nocache\n"
-              "    load-server-state-from-file global\n"
               "    timeout check 31s\n"
               "    option httpchk GET /index.html HTTP/1.0\\r\\n\n"
               "    http-check expect rstatus 418\n"
@@ -200,7 +197,6 @@ class TestHaproxyCfg(base.TestCase):
               "    mode http\n"
               "    balance roundrobin\n"
               "    cookie SRV insert indirect nocache\n"
-              "    load-server-state-from-file global\n"
               "    timeout check 31s\n"
               "    option httpchk GET /index.html HTTP/1.0\\r\\n\n"
               "    http-check expect rstatus 418\n"
@@ -227,7 +223,6 @@ class TestHaproxyCfg(base.TestCase):
               "    mode http\n"
               "    balance roundrobin\n"
               "    cookie SRV insert indirect nocache\n"
-              "    load-server-state-from-file global\n"
               "    timeout check 31s\n"
               "    option httpchk GET /index.html HTTP/1.0\\r\\n\n"
               "    http-check expect rstatus 418\n"
@@ -264,7 +259,6 @@ class TestHaproxyCfg(base.TestCase):
               "    mode http\n"
               "    balance roundrobin\n"
               "    cookie SRV insert indirect nocache\n"
-              "    load-server-state-from-file global\n"
               "    timeout check 31s\n"
               "    option httpchk GET /index.html HTTP/1.0\\r\\n\n"
               "    http-check expect rstatus 418\n"
@@ -300,7 +294,6 @@ class TestHaproxyCfg(base.TestCase):
               "    mode http\n"
               "    balance roundrobin\n"
               "    cookie SRV insert indirect nocache\n"
-              "    load-server-state-from-file global\n"
               "    timeout check 31s\n"
               "    option httpchk GET /index.html HTTP/1.0\\r\\n\n"
               "    http-check expect rstatus 418\n"
@@ -329,7 +322,6 @@ class TestHaproxyCfg(base.TestCase):
               "    mode http\n"
               "    balance roundrobin\n"
               "    cookie SRV insert indirect nocache\n"
-              "    load-server-state-from-file global\n"
               "    timeout check 31s\n"
               "    option httpchk GET /index.html HTTP/1.0\\r\\n\n"
               "    http-check expect rstatus 418\n"
@@ -370,7 +362,6 @@ class TestHaproxyCfg(base.TestCase):
               "    mode tcp\n"
               "    balance roundrobin\n"
               "    cookie SRV insert indirect nocache\n"
-              "    load-server-state-from-file global\n"
               "    timeout check 31s\n"
               "    option httpchk GET /index.html HTTP/1.0\\r\\n\n"
               "    http-check expect rstatus 418\n"
@@ -407,7 +398,6 @@ class TestHaproxyCfg(base.TestCase):
               "    mode tcp\n"
               "    balance roundrobin\n"
               "    cookie SRV insert indirect nocache\n"
-              "    load-server-state-from-file global\n"
               "    timeout check 31s\n"
               "    option ssl-hello-chk\n"
               "    fullconn {maxconn}\n"
@@ -475,7 +465,6 @@ class TestHaproxyCfg(base.TestCase):
               "    mode http\n"
               "    balance roundrobin\n"
               "    cookie SRV insert indirect nocache\n"
-              "    load-server-state-from-file global\n"
               "    timeout check 31s\n"
               "    option external-check\n"
               "    external-check command /var/lib/octavia/ping-wrapper.sh\n"
@@ -536,7 +525,6 @@ class TestHaproxyCfg(base.TestCase):
               "    mode http\n"
               "    balance roundrobin\n"
               "    cookie SRV insert indirect nocache\n"
-              "    load-server-state-from-file global\n"
               "    timeout check 31s\n"
               "    option httpchk GET /index.html HTTP/1.1\\r\\nHost:\\ "
               "testlab.com\n"
@@ -614,7 +602,6 @@ class TestHaproxyCfg(base.TestCase):
               "    balance roundrobin\n"
               "    stick-table type ip size 10k\n"
               "    stick on src\n"
-              "    load-server-state-from-file global\n"
               "    timeout check 31s\n"
               "    option httpchk GET /index.html HTTP/1.0\\r\\n\n"
               "    http-check expect rstatus 418\n"
@@ -642,7 +629,6 @@ class TestHaproxyCfg(base.TestCase):
               "    stick-table type string len 64 size 10k\n"
               "    stick store-response res.cook(JSESSIONID)\n"
               "    stick match req.cook(JSESSIONID)\n"
-              "    load-server-state-from-file global\n"
               "    timeout check 31s\n"
               "    option httpchk GET /index.html HTTP/1.0\\r\\n\n"
               "    http-check expect rstatus 418\n"
@@ -766,7 +752,6 @@ class TestHaproxyCfg(base.TestCase):
               "    mode http\n"
               "    balance roundrobin\n"
               "    cookie SRV insert indirect nocache\n"
-              "    load-server-state-from-file global\n"
               "    timeout check 31s\n"
               "    option httpchk GET /index.html HTTP/1.0\\r\\n\n"
               "    http-check expect rstatus 418\n"
@@ -783,7 +768,6 @@ class TestHaproxyCfg(base.TestCase):
               "    mode http\n"
               "    balance roundrobin\n"
               "    cookie SRV insert indirect nocache\n"
-              "    load-server-state-from-file global\n"
               "    timeout check 31s\n"
               "    option httpchk GET /healthmon.html HTTP/1.0\\r\\n\n"
               "    http-check expect rstatus 418\n"
@@ -805,7 +789,6 @@ class TestHaproxyCfg(base.TestCase):
               "    mode http\n"
               "    balance roundrobin\n"
               "    cookie SRV insert indirect nocache\n"
-              "    load-server-state-from-file global\n"
               "    timeout check 31s\n"
               "    option httpchk GET /index.html HTTP/1.0\\r\\n\n"
               "    http-check expect rstatus 418\n"
@@ -834,7 +817,6 @@ class TestHaproxyCfg(base.TestCase):
               "    mode http\n"
               "    balance roundrobin\n"
               "    cookie SRV insert indirect nocache\n"
-              "    load-server-state-from-file global\n"
               "    timeout check 31s\n"
               "    option httpchk GET /index.html HTTP/1.0\\r\\n\n"
               "    http-check expect rstatus 418\n"
@@ -865,7 +847,6 @@ class TestHaproxyCfg(base.TestCase):
               "    mode http\n"
               "    balance roundrobin\n"
               "    cookie SRV insert indirect nocache\n"
-              "    load-server-state-from-file global\n"
               "    timeout check 31s\n"
               "    fullconn {maxconn}\n"
               "    option allbackups\n"
@@ -892,7 +873,6 @@ class TestHaproxyCfg(base.TestCase):
               "    mode http\n"
               "    balance roundrobin\n"
               "    cookie SRV insert indirect nocache\n"
-              "    load-server-state-from-file global\n"
               "    timeout check 31s\n"
               "    option httpchk GET /index.html HTTP/1.0\\r\\n\n"
               "    http-check expect rstatus 418\n"
@@ -929,7 +909,6 @@ class TestHaproxyCfg(base.TestCase):
               "    mode http\n"
               "    balance roundrobin\n"
               "    cookie SRV insert indirect nocache\n"
-              "    load-server-state-from-file global\n"
               "    timeout check 31s\n"
               "    option httpchk GET /index.html HTTP/1.0\\r\\n\n"
               "    http-check expect rstatus 418\n"
@@ -965,7 +944,6 @@ class TestHaproxyCfg(base.TestCase):
               "    mode http\n"
               "    balance roundrobin\n"
               "    cookie SRV insert indirect nocache\n"
-              "    load-server-state-from-file global\n"
               "    timeout check 31s\n"
               "    option httpchk GET /index.html HTTP/1.0\\r\\n\n"
               "    http-check expect rstatus 418\n"
@@ -1166,7 +1144,7 @@ class TestHaproxyCfg(base.TestCase):
                 defaults=defaults, logging="\n"),
             rendered_obj)
 
-    def test_http_reuse(self):
+    def test_haproxy_cfg_1_8_vs_1_5(self):
         j_cfg = jinja_cfg.JinjaTemplater(
             base_amp_path='/var/lib/octavia',
             base_crt_dir='/var/lib/octavia/certs')
@@ -1174,7 +1152,12 @@ class TestHaproxyCfg(base.TestCase):
         sample_amphora = sample_configs_combined.sample_amphora_tuple()
         sample_proxy_listener = sample_configs_combined.sample_listener_tuple(
             be_proto='PROXY')
-        # With http-reuse
+        # With http-reuse and server-state-file
+        go = (
+            "    server-state-file /var/lib/octavia/sample_loadbalancer_id_1/"
+            "servers-state\n"
+            "    maxconn {maxconn}\n\n").format(
+            maxconn=constants.HAPROXY_DEFAULT_MAXCONN)
         be = ("backend {pool_id}:{listener_id}\n"
               "    mode http\n"
               "    http-reuse safe\n"
@@ -1201,15 +1184,15 @@ class TestHaproxyCfg(base.TestCase):
             tls_certs=None,
             haproxy_versions=("1", "8", "1"))
         self.assertEqual(
-            sample_configs_combined.sample_base_expected_config(backend=be),
+            sample_configs_combined.sample_base_expected_config(
+                global_opts=go, backend=be),
             rendered_obj)
 
-        # Without http-reuse
+        # Without http-reuse and server-state-file
         be = ("backend {pool_id}:{listener_id}\n"
               "    mode http\n"
               "    balance roundrobin\n"
               "    cookie SRV insert indirect nocache\n"
-              "    load-server-state-from-file global\n"
               "    timeout check 31s\n"
               "    fullconn {maxconn}\n"
               "    option allbackups\n"
@@ -1281,7 +1264,6 @@ class TestHaproxyCfg(base.TestCase):
               "    mode http\n"
               "    balance roundrobin\n"
               "    cookie SRV insert indirect nocache\n"
-              "    load-server-state-from-file global\n"
               "    timeout check 31s\n"
               "    option httpchk GET /index.html HTTP/1.0\\r\\n\n"
               "    http-check expect rstatus 418\n"
@@ -1297,7 +1279,6 @@ class TestHaproxyCfg(base.TestCase):
               "    mode http\n"
               "    balance roundrobin\n"
               "    cookie SRV insert indirect nocache\n"
-              "    load-server-state-from-file global\n"
               "    timeout check 31s\n"
               "    option httpchk GET /healthmon.html HTTP/1.0\\r\\n\n"
               "    http-check expect rstatus 418\n"
