@@ -17,8 +17,8 @@
 Barbican ACL auth class for Barbican certificate handling
 """
 from barbicanclient import client as barbican_client
-from keystoneauth1.identity.generic import token
 from keystoneauth1 import session
+from keystoneauth1 import token_endpoint
 
 from oslo_config import cfg
 from oslo_log import log as logging
@@ -79,20 +79,21 @@ class BarbicanACLAuth(barbican_common.BarbicanAuth):
 
     @classmethod
     def get_barbican_client_user_auth(cls, context):
-        # get a normal session
-        ksession = keystone.KeystoneSession()
-        service_auth = ksession.get_auth()
+        barbican_endpoint = CONF.certificates.endpoint
+        if not barbican_endpoint:
+            ksession = keystone.KeystoneSession().get_session()
+            endpoint_data = ksession.get_endpoint_data(
+                service_type='key-manager',
+                region_name=CONF.certificates.region_name,
+                interface=CONF.certificates.endpoint_type)
+            barbican_endpoint = endpoint_data.catalog_url
 
-        # make our own auth and swap it in
-        user_auth = token.Token(auth_url=service_auth.auth_url,
-                                token=context.auth_token,
-                                project_id=context.project_id)
+        auth_token = token_endpoint.Token(barbican_endpoint,
+                                          context.auth_token)
+
         user_session = session.Session(
-            auth=user_auth,
+            auth=auth_token,
             verify=CONF.certificates.ca_certificates_file)
-
-        # create a special barbican client with our user's session
         return barbican_client.Client(
             session=user_session,
-            region_name=CONF.certificates.region_name,
-            interface=CONF.certificates.endpoint_type)
+            endpoint=barbican_endpoint)
