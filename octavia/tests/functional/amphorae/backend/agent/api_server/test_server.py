@@ -1660,7 +1660,7 @@ class TestServerTestCase(base.TestCase):
                         consts.PREFIXLEN: 24
                     }, {
                         consts.ADDRESS: "203.0.113.2",
-                        consts.PREFIXLEN: 24
+                        consts.PREFIXLEN: 32
                     }
                 ],
                 consts.ROUTES: [
@@ -1784,7 +1784,7 @@ class TestServerTestCase(base.TestCase):
                         consts.DHCP: True
                     }, {
                         consts.ADDRESS: "203.0.113.2",
-                        consts.PREFIXLEN: 24
+                        consts.PREFIXLEN: 32
                     }
                 ],
                 consts.ROUTES: [
@@ -1836,7 +1836,6 @@ class TestServerTestCase(base.TestCase):
                  consts.NETNS_PRIMARY_INTERFACE], stderr=-2)
 
         mock_check_output.side_effect = [
-            'unplug1',
             subprocess.CalledProcessError(
                 7, 'test', RANDOM_ERROR), subprocess.CalledProcessError(
                 7, 'test', RANDOM_ERROR)]
@@ -2024,7 +2023,7 @@ class TestServerTestCase(base.TestCase):
                         consts.PREFIXLEN: 32
                     }, {
                         consts.ADDRESS: '2001:0db8::2',
-                        consts.PREFIXLEN: 32
+                        consts.PREFIXLEN: 128
                     }
                 ],
                 consts.ROUTES: [
@@ -2145,7 +2144,7 @@ class TestServerTestCase(base.TestCase):
                     },
                     {
                         consts.ADDRESS: '2001:db8::2',
-                        consts.PREFIXLEN: 32
+                        consts.PREFIXLEN: 128
                     }
                 ],
                 consts.ROUTES: [
@@ -2196,7 +2195,6 @@ class TestServerTestCase(base.TestCase):
                     'amphora-interface', 'up', '{netns_int}'.format(
                         netns_int=consts.NETNS_PRIMARY_INTERFACE)], stderr=-2)
         mock_check_output.side_effect = [
-            'unplug1',
             subprocess.CalledProcessError(
                 7, 'test', RANDOM_ERROR), subprocess.CalledProcessError(
                 7, 'test', RANDOM_ERROR)]
