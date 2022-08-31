@@ -58,6 +58,9 @@ _LB_mock = {
     constants.LOADBALANCER_ID: LB_ID,
 }
 _amphorae_mock = [_db_amphora_mock]
+_amphora_network_config_mock = mock.MagicMock()
+_amphorae_network_config_mock = {
+    _amphora_mock[constants.ID]: _amphora_network_config_mock}
 _network_mock = mock.MagicMock()
 _session_mock = mock.MagicMock()
 
@@ -68,7 +71,7 @@ _session_mock = mock.MagicMock()
 @mock.patch('octavia.db.repositories.ListenerRepository.get',
             return_value=_listener_mock)
 @mock.patch('octavia.db.api.get_session', return_value=_session_mock)
-@mock.patch('octavia.controller.worker.v2.tasks.amphora_driver_tasks.LOG')
+@mock.patch('octavia.controller.worker.v1.tasks.amphora_driver_tasks.LOG')
 @mock.patch('oslo_utils.uuidutils.generate_uuid', return_value=AMP_ID)
 @mock.patch('stevedore.driver.DriverManager.driver')
 class TestAmphoraDriverTasks(base.TestCase):
@@ -385,11 +388,13 @@ class TestAmphoraDriverTasks(base.TestCase):
         port_mock = {constants.NETWORK: mock.MagicMock(),
                      constants.FIXED_IPS: fixed_ips,
                      constants.ID: uuidutils.generate_uuid()}
-        amphora_post_network_plug_obj.execute(_amphora_mock, [port_mock])
+        amphora_post_network_plug_obj.execute(_amphora_mock, [port_mock],
+                                              _amphora_network_config_mock)
 
         (mock_driver.post_network_plug.
             assert_called_once_with)(_db_amphora_mock,
-                                     network_data_models.Port(**port_mock))
+                                     network_data_models.Port(**port_mock),
+                                     _amphora_network_config_mock)
 
         # Test revert
         amp = amphora_post_network_plug_obj.revert(None, _amphora_mock)
@@ -434,11 +439,13 @@ class TestAmphoraDriverTasks(base.TestCase):
         port_mock = {constants.NETWORK: mock.MagicMock(),
                      constants.FIXED_IPS: fixed_ips,
                      constants.ID: uuidutils.generate_uuid()}
-        amphora_post_network_plug_obj.execute(_amphora_mock, [port_mock])
+        amphora_post_network_plug_obj.execute(_amphora_mock, [port_mock],
+                                              _amphora_network_config_mock)
 
         (mock_driver.post_network_plug.
             assert_called_once_with)(_db_amphora_mock,
-                                     network_data_models.Port(**port_mock))
+                                     network_data_models.Port(**port_mock),
+                                     _amphora_network_config_mock)
 
         call_args = mock_driver.post_network_plug.call_args[0]
         port_arg = call_args[1]
@@ -472,18 +479,21 @@ class TestAmphoraDriverTasks(base.TestCase):
                      constants.ID: uuidutils.generate_uuid()}
         _deltas_mock = {_db_amphora_mock.id: [port_mock]}
 
-        amphora_post_network_plug_obj.execute(_LB_mock, _deltas_mock)
+        amphora_post_network_plug_obj.execute(_LB_mock, _deltas_mock,
+                                              _amphorae_network_config_mock)
 
         (mock_driver.post_network_plug.
          assert_called_once_with(_db_amphora_mock,
-                                 network_data_models.Port(**port_mock)))
+                                 network_data_models.Port(**port_mock),
+                                 _amphora_network_config_mock))
 
         # Test with no ports to plug
         mock_driver.post_network_plug.reset_mock()
 
         _deltas_mock = {'0': [port_mock]}
 
-        amphora_post_network_plug_obj.execute(_LB_mock, _deltas_mock)
+        amphora_post_network_plug_obj.execute(_LB_mock, _deltas_mock,
+                                              _amphora_network_config_mock)
         mock_driver.post_network_plug.assert_not_called()
 
         # Test revert

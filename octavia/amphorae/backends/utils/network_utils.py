@@ -15,6 +15,7 @@ import ipaddress
 
 import pyroute2
 
+from octavia.common import constants as consts
 from octavia.common import exceptions
 
 
@@ -47,7 +48,7 @@ def _find_interface(ip_address, rtnl_api, normalized_addr):
                     for int_attr in lookup_int[0]['attrs']:
                         # Look for the attribute name/value pair that includes
                         # the interface name
-                        if int_attr[0] == 'IFLA_IFNAME':
+                        if int_attr[0] == consts.IFLA_IFNAME:
                             # Return the matching interface name that is in
                             # int_attr[1] for the matching interface attribute
                             # name

@@ -196,10 +196,11 @@ class AmphoraFinalize(BaseAmphoraTask):
 class AmphoraPostNetworkPlug(BaseAmphoraTask):
     """Task to notify the amphora post network plug."""
 
-    def execute(self, amphora, ports):
+    def execute(self, amphora, ports, amphora_network_config):
         """Execute post_network_plug routine."""
         for port in ports:
-            self.amphora_driver.post_network_plug(amphora, port)
+            self.amphora_driver.post_network_plug(
+                amphora, port, amphora_network_config)
             LOG.debug("post_network_plug called on compute instance "
                       "%(compute_id)s for port %(port_id)s",
                       {"compute_id": amphora.compute_id, "port_id": port.id})
@@ -215,7 +216,7 @@ class AmphoraPostNetworkPlug(BaseAmphoraTask):
 class AmphoraePostNetworkPlug(BaseAmphoraTask):
     """Task to notify the amphorae post network plug."""
 
-    def execute(self, loadbalancer, added_ports):
+    def execute(self, loadbalancer, updated_ports, amphorae_network_config):
         """Execute post_network_plug routine."""
         amp_post_plug = AmphoraPostNetworkPlug()
         # We need to make sure we have the fresh list of amphora
@@ -223,10 +224,11 @@ class AmphoraePostNetworkPlug(BaseAmphoraTask):
             db_apis.get_session(), load_balancer_id=loadbalancer.id,
             status=constants.AMPHORA_ALLOCATED)[0]
         for amphora in amphorae:
-            if amphora.id in added_ports:
-                amp_post_plug.execute(amphora, added_ports[amphora.id])
+            if amphora.id in updated_ports:
+                amp_post_plug.execute(amphora, updated_ports[amphora.id],
+                                      amphorae_network_config[amphora.id])
 
-    def revert(self, result, loadbalancer, added_ports, *args, **kwargs):
+    def revert(self, result, loadbalancer, updated_ports, *args, **kwargs):
         """Handle a failed post network plug."""
         if isinstance(result, failure.Failure):
             return
