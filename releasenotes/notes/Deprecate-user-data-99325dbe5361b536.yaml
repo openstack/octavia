@@ -1,0 +1,7 @@
+---
+deprecations:
+  - |
+    The configuration option *user_data_config_drive* is deprecated. The nova
+    user_data option is too small to replace the normal file based config_drive
+    provisioning for cloud-init. This option has never been functional in
+    Octavia and will be removed to reduce confusion.
