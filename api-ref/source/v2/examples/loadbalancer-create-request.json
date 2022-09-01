@@ -5,6 +5,10 @@
         "project_id": "e3cd678b11784734bc366148aa37580e",
         "vip_subnet_id": "d4af86e1-0051-488c-b7a0-527f97490c9a",
         "vip_address": "203.0.113.50",
+        "additional_vips": [
+            {"subnet_id": "3ca40b2e-c286-4e53-bdb9-dd01c8a0ad6d", "ip_address": "2001:db8::b33f"},
+            {"subnet_id": "44d92b92-510f-4c05-8058-bf5a17b4d41c"}
+        ],
         "provider": "octavia",
         "name": "best_load_balancer",
         "vip_qos_policy_id": "ec4f78ca-8da8-4e99-8a1a-e3b94595a7a3",

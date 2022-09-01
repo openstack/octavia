@@ -386,6 +386,7 @@ RET_AMPHORA = {
     'vrrp_priority': None}
 
 RET_LB = {
+    'additional_vips': [],
     'host_amphora': RET_AMPHORA,
     'id': 'sample_loadbalancer_id_1',
     'vip_address': '10.0.0.2',
@@ -397,6 +398,7 @@ RET_LB = {
     'amphorae': [sample_amphora_tuple()]}
 
 RET_LB_L7 = {
+    'additional_vips': [],
     'host_amphora': RET_AMPHORA,
     'id': 'sample_loadbalancer_id_1',
     'vip_address': '10.0.0.2',
@@ -427,6 +429,7 @@ RET_UDP_HEALTH_MONITOR = {
 RET_UDP_MEMBER = {
     'id': 'member_id_1',
     'address': '192.0.2.10',
+    'ip_version': 4,
     'protocol_port': 82,
     'weight': 13,
     'enabled': True,
@@ -437,6 +440,7 @@ RET_UDP_MEMBER = {
 RET_UDP_MEMBER_MONITOR_IP_PORT = {
     'id': 'member_id_1',
     'address': '192.0.2.10',
+    'ip_version': 4,
     'protocol_port': 82,
     'weight': 13,
     'enabled': True,
@@ -447,6 +451,7 @@ RET_UDP_MEMBER_MONITOR_IP_PORT = {
 UDP_MEMBER_1 = {
     'id': 'sample_member_id_1',
     'address': '10.0.0.99',
+    'ip_version': 4,
     'enabled': True,
     'protocol_port': 82,
     'weight': 13,
@@ -457,6 +462,7 @@ UDP_MEMBER_1 = {
 UDP_MEMBER_2 = {
     'id': 'sample_member_id_2',
     'address': '10.0.0.98',
+    'ip_version': 4,
     'enabled': True,
     'protocol_port': 82,
     'weight': 13,
@@ -510,6 +516,7 @@ RET_SCTP_HEALTH_MONITOR = {
 RET_SCTP_MEMBER = {
     'id': 'member_id_1',
     'address': '192.0.2.10',
+    'ip_version': 4,
     'protocol_port': 82,
     'weight': 13,
     'enabled': True,
@@ -520,6 +527,7 @@ RET_SCTP_MEMBER = {
 RET_SCTP_MEMBER_MONITOR_IP_PORT = {
     'id': 'member_id_1',
     'address': '192.0.2.10',
+    'ip_version': 4,
     'protocol_port': 82,
     'weight': 13,
     'enabled': True,
@@ -530,6 +538,7 @@ RET_SCTP_MEMBER_MONITOR_IP_PORT = {
 SCTP_MEMBER_1 = {
     'id': 'sample_member_id_1',
     'address': '10.0.0.99',
+    'ip_version': 4,
     'enabled': True,
     'protocol_port': 82,
     'weight': 13,
@@ -540,6 +549,7 @@ SCTP_MEMBER_1 = {
 SCTP_MEMBER_2 = {
     'id': 'sample_member_id_2',
     'address': '10.0.0.98',
+    'ip_version': 4,
     'enabled': True,
     'protocol_port': 82,
     'weight': 13,
@@ -576,7 +586,7 @@ RET_SCTP_LISTENER = {
 
 
 def sample_listener_loadbalancer_tuple(
-        topology=None, enabled=True, pools=None):
+        topology=None, enabled=True, pools=None, additional_vips=False):
     if topology and topology in ['ACTIVE_STANDBY', 'ACTIVE_ACTIVE']:
         more_amp = True
     else:
@@ -584,7 +594,7 @@ def sample_listener_loadbalancer_tuple(
         topology = constants.TOPOLOGY_SINGLE
     in_lb = collections.namedtuple(
         'load_balancer', 'id, name, vip, amphorae, topology, '
-        'pools, listeners, enabled, project_id')
+        'pools, listeners, enabled, project_id, additional_vips')
     return in_lb(
         id='sample_loadbalancer_id_1',
         name='test-lb',
@@ -601,6 +611,9 @@ def sample_listener_loadbalancer_tuple(
         listeners=[],
         enabled=enabled,
         project_id='12345',
+        additional_vips=[sample_vip_tuple('10.0.1.2'),
+                         sample_vip_tuple('2001:db8::2')]
+        if additional_vips else []
     )
 
 
@@ -620,7 +633,7 @@ def sample_lb_with_udp_listener_tuple(
 
     in_lb = collections.namedtuple(
         'load_balancer', 'id, name, vip, amphorae, topology, '
-        'pools, enabled, project_id, listeners')
+        'pools, enabled, project_id, listeners, additional_vips')
     return in_lb(
         id='sample_loadbalancer_id_1',
         name='test-lb',
@@ -636,7 +649,8 @@ def sample_lb_with_udp_listener_tuple(
         listeners=listeners,
         pools=pools or [],
         enabled=enabled,
-        project_id='12345'
+        project_id='12345',
+        additional_vips=[]
     )
 
 
@@ -691,7 +705,8 @@ def sample_listener_tuple(proto=None, monitor=True, alloc_default_pool=True,
                           pool_enabled=True,
                           backend_alpn_protocols=constants.
                           AMPHORA_SUPPORTED_ALPN_PROTOCOLS,
-                          include_pools=True):
+                          include_pools=True,
+                          additional_vips=False):
     proto = 'HTTP' if proto is None else proto
     if be_proto is None:
         be_proto = 'HTTP' if proto == 'TERMINATED_HTTPS' else proto
@@ -778,7 +793,7 @@ def sample_listener_tuple(proto=None, monitor=True, alloc_default_pool=True,
         protocol_port=port,
         protocol=proto,
         load_balancer=sample_listener_loadbalancer_tuple(
-            topology=topology, pools=pools),
+            topology=topology, pools=pools, additional_vips=additional_vips),
         peer_port=peer_port,
         default_pool=sample_pool_tuple(
             listener_id='sample_listener_id_1',

@@ -101,9 +101,25 @@ TCP_CHECK {
 {% endif %}
 {% endmacro %}
 
-{% macro virtualserver_macro(constants, lib_consts, listener, lb_vip_address, default_pool) %}
+{% macro virtualserver_macro(constants, lib_consts, listener, vips, default_pool) %}
 {% if default_pool %}
-virtual_server {{ lb_vip_address }} {{ listener.protocol_port }} {
+{% for ip_version in (4, 6) %}
+{%- set has_vip = namespace(found=False) %}
+{%- for vip in vips %}
+    {%- if vip.ip_version == ip_version %}
+        {%- set has_vip.found = True %}
+    {%- endif %}
+{%- endfor %}
+{% if has_vip.found %}
+virtual_server_group ipv{{ ip_version }}-group {
+    {% for vip in vips %}
+    {% if vip.ip_version == ip_version %}
+    {{ vip.ip_address }} {{ listener.protocol_port }}
+    {% endif %}
+    {% endfor %}
+}
+
+virtual_server group ipv{{ ip_version }}-group {
     {{ lb_algo_macro(default_pool) }}
     lb_kind NAT
     protocol {{ listener.protocol_mode.upper() }}
@@ -134,10 +150,14 @@ virtual_server {{ lb_vip_address }} {{ listener.protocol_port }} {
     {% endif %}
     {% if default_pool.enabled %}
       {% for member in default_pool.members %}
-        {{- realserver_macro(constants, lib_consts, default_pool, member, listener) }}
+        {% if member.ip_version == ip_version %}
+          {{- realserver_macro(constants, lib_consts, default_pool, member, listener) }}
+        {% endif %}
       {% endfor %}
     {% endif %}
 {% endif %}
 }
+{% endif %}
+{% endfor %}
 {% endif %}
 {% endmacro %}

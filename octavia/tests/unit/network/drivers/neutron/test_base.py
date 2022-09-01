@@ -74,8 +74,8 @@ class TestBaseNeutronNetworkDriver(base.TestCase):
         self.assertNotIn(mock.call('TEST2'), show_extension.mock_calls)
 
     def test__add_allowed_address_pair_to_port(self):
-        self.driver._add_allowed_address_pair_to_port(
-            t_constants.MOCK_PORT_ID, t_constants.MOCK_IP_ADDRESS)
+        self.driver._add_allowed_address_pairs_to_port(
+            t_constants.MOCK_PORT_ID, [t_constants.MOCK_IP_ADDRESS])
         expected_aap_dict = {
             'port': {
                 'allowed_address_pairs': [
@@ -156,9 +156,11 @@ class TestBaseNeutronNetworkDriver(base.TestCase):
     def test__port_to_vip(self):
         lb = dmh.generate_load_balancer_tree()
         lb.vip.subnet_id = t_constants.MOCK_SUBNET_ID
+        lb.vip.ip_address = t_constants.MOCK_IP_ADDRESS
         port = utils.convert_port_dict_to_model(t_constants.MOCK_NEUTRON_PORT)
-        vip = self.driver._port_to_vip(port, lb)
+        vip, additional_vips = self.driver._port_to_vip(port, lb)
         self.assertIsInstance(vip, data_models.Vip)
+        self.assertIsInstance(additional_vips, list)
         self.assertEqual(t_constants.MOCK_IP_ADDRESS, vip.ip_address)
         self.assertEqual(t_constants.MOCK_SUBNET_ID, vip.subnet_id)
         self.assertEqual(t_constants.MOCK_PORT_ID, vip.port_id)

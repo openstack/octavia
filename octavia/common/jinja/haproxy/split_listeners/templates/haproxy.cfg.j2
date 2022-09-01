@@ -32,7 +32,7 @@
 {% block proxies %}
     {% if loadbalancer.enabled and loadbalancer.listener.enabled %}
         {{- frontend_macro(constants, loadbalancer.listener,
-                           loadbalancer.vip_address) }}
+                           loadbalancer.vip_address, loadbalancer.additional_vips) }}
         {% for pool in loadbalancer.listener.pools if pool.enabled %}
             {{- backend_macro(constants, loadbalancer.listener, pool) }}
         {% endfor %}

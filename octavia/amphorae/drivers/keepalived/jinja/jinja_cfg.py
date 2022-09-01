@@ -17,6 +17,7 @@ import os
 
 import jinja2
 from oslo_config import cfg
+from oslo_log import log as logging
 
 from octavia.amphorae.backends.agent.api_server import util
 from octavia.common import constants
@@ -26,6 +27,7 @@ KEEPALIVED_TEMPLATE = os.path.abspath(
     os.path.join(os.path.dirname(__file__),
                  'templates/keepalived_base.template'))
 CONF = cfg.CONF
+LOG = logging.getLogger(__name__)
 
 
 class KeepalivedJinjaTemplater(object):
@@ -53,12 +55,14 @@ class KeepalivedJinjaTemplater(object):
                 lstrip_blocks=True)
         return self._jinja_env.get_template(os.path.basename(template_file))
 
-    def build_keepalived_config(self, loadbalancer, amphora, vip_cidr):
+    def build_keepalived_config(self, loadbalancer, amphora, amp_net_config):
         """Renders the loadblanacer keepalived configuration for Active/Standby
 
-        :param loadbalancer: A lodabalancer object
-        :param amp: An amphora object
-        :param vip_cidr: The VIP subnet cidr
+        :param loadbalancer: A loadbalancer object
+        :param amphora: An amphora object
+        :param amp_net_config: The amphora network config,
+                               an AmphoraeNetworkConfig object in amphorav1,
+                               a dict in amphorav2
         """
         # Note on keepalived configuration: The current base configuration
         # enforced Master election whenever a high priority VRRP instance
@@ -69,17 +73,57 @@ class KeepalivedJinjaTemplater(object):
         #  to add the "nopreempt" flag in the backup instance section.
         peers_ips = []
 
-        # Validate the VIP address and see if it is IPv6
-        vip = loadbalancer.vip.ip_address
-        vip_addr = ipaddress.ip_address(vip)
-        vip_ipv6 = vip_addr.version == 6
-
-        # Normalize and validate the VIP subnet CIDR
-        vip_network_cidr = None
-        if vip_ipv6:
-            vip_network_cidr = ipaddress.IPv6Network(vip_cidr).with_prefixlen
+        # Get the VIP subnet for the amphora
+        # For amphorav2 amphorae_network_config will be list of dicts
+        if isinstance(amp_net_config, dict):
+            additional_vip_data = amp_net_config['additional_vip_data']
+            vip_subnet = amp_net_config[constants.VIP_SUBNET]
         else:
-            vip_network_cidr = ipaddress.IPv4Network(vip_cidr).with_prefixlen
+            additional_vip_data = [
+                add_vip.to_dict(recurse=True)
+                for add_vip in amp_net_config.additional_vip_data]
+            vip_subnet = amp_net_config.vip_subnet.to_dict()
+
+        # Sort VIPs by their IP so we can guarantee interface_index matching
+        sorted_add_vips = sorted(additional_vip_data,
+                                 key=lambda x: x['ip_address'])
+
+        # The primary VIP is always first in the list
+        vip_list = [{
+            'ip_address': loadbalancer.vip.ip_address,
+            'subnet': vip_subnet
+        }] + sorted_add_vips
+
+        # Handle the case of multiple IP family types
+        vrrp_addr = ipaddress.ip_address(amphora.vrrp_ip)
+        vrrp_ipv6 = vrrp_addr.version == 6
+
+        # Handle all VIPs:
+        rendered_vips = []
+        for index, add_vip in enumerate(vip_list):
+            # Validate the VIP address and see if it is IPv6
+            vip = add_vip['ip_address']
+            vip_addr = ipaddress.ip_address(vip)
+            vip_ipv6 = vip_addr.version == 6
+            vip_cidr = add_vip['subnet']['cidr']
+
+            # Normalize and validate the VIP subnet CIDR
+            vip_network_cidr = ipaddress.ip_network(
+                vip_cidr).with_prefixlen
+
+            host_routes = add_vip['subnet'].get('host_routes', [])
+
+            # Addresses that aren't the same family as the VRRP
+            # interface will be in the "excluded" block
+            rendered_vips.append({
+                'ip_address': vip,
+                'network_cidr': vip_network_cidr,
+                'ipv6': vip_ipv6,
+                'interface_index': index,
+                'gateway': add_vip['subnet']['gateway_ip'],
+                'excluded': vip_ipv6 != vrrp_ipv6,
+                'host_routes': host_routes
+            })
 
         for amp in filter(
             lambda amp: amp.status == constants.AMPHORA_ALLOCATED,
@@ -100,7 +144,6 @@ class KeepalivedJinjaTemplater(object):
              'vrrp_auth_pass': loadbalancer.vrrp_group.vrrp_auth_pass,
              'amp_vrrp_ip': amphora.vrrp_ip,
              'peers_vrrp_ips': peers_ips,
-             'vip_ip_address': vip,
              'advert_int': loadbalancer.vrrp_group.advert_int,
              'check_script_path': util.keepalived_check_script_path(),
              'vrrp_check_interval':
@@ -108,6 +151,5 @@ class KeepalivedJinjaTemplater(object):
              'vrrp_fail_count': CONF.keepalived_vrrp.vrrp_fail_count,
              'vrrp_success_count':
                  CONF.keepalived_vrrp.vrrp_success_count,
-             'vip_network_cidr': vip_network_cidr,
-             'vip_ipv6': vip_ipv6},
+             'vips': rendered_vips},
             constants=constants)

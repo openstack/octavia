@@ -365,7 +365,8 @@ class AmphoraFlows(object):
         amp_for_failover_flow.add(network_tasks.CreateVIPBasePort(
             name=prefix + '-' + constants.CREATE_VIP_BASE_PORT,
             requires=(constants.VIP, constants.VIP_SG_ID,
-                      constants.AMPHORA_ID),
+                      constants.AMPHORA_ID,
+                      constants.ADDITIONAL_VIPS),
             provides=constants.BASE_PORT))
 
         # Attach the VIP base (aka VRRP) port to the amphora.

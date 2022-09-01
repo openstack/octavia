@@ -52,17 +52,10 @@ class KeepalivedAmphoraDriverMixin(driver_base.VRRPDriverMixin):
 
         self._populate_amphora_api_version(amphora,
                                            timeout_dict=timeout_dict)
-        # Get the VIP subnet prefix for the amphora
-        # For amphorav2 amphorae_network_config will be list of dicts
-        try:
-            vip_cidr = amphorae_network_config[amphora.id].vip_subnet.cidr
-        except AttributeError:
-            vip_cidr = amphorae_network_config[amphora.id][
-                constants.VIP_SUBNET][constants.CIDR]
 
         # Generate Keepalived configuration from loadbalancer object
         config = templater.build_keepalived_config(
-            loadbalancer, amphora, vip_cidr)
+            loadbalancer, amphora, amphorae_network_config[amphora.id])
         self.clients[amphora.api_version].upload_vrrp_config(amphora, config)
 
     def stop_vrrp_service(self, loadbalancer):

@@ -494,6 +494,24 @@ class TestHaproxyCfg(base.TestCase):
                 frontend=fe, backend=be, logging=logging, defaults=defaults),
             rendered_obj)
 
+    def test_render_template_additional_vips(self):
+        fe = ("frontend sample_listener_id_1\n"
+              "    maxconn {maxconn}\n"
+              "    bind 10.0.0.2:80\n"
+              "    bind 10.0.1.2:80\n"
+              "    bind 2001:db8::2:80\n"
+              "    mode http\n"
+              "    default_backend sample_pool_id_1:sample_listener_id_1\n"
+              "    timeout client 50000\n").format(
+            maxconn=constants.HAPROXY_DEFAULT_MAXCONN)
+        rendered_obj = self.jinja_cfg.render_loadbalancer_obj(
+            sample_configs_combined.sample_amphora_tuple(),
+            [sample_configs_combined.sample_listener_tuple(
+                additional_vips=True)])
+        self.assertEqual(
+            sample_configs_combined.sample_base_expected_config(frontend=fe),
+            rendered_obj)
+
     def test_render_template_member_backup(self):
         be = ("backend sample_pool_id_1:sample_listener_id_1\n"
               "    mode http\n"

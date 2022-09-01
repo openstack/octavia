@@ -164,56 +164,79 @@ class TestNoopNetworkDriver(base.TestCase):
                          )])
 
     def test_get_network(self):
-        self.driver.get_network(self.network_id)
+        network = self.driver.get_network(self.network_id)
         self.assertEqual(
             (self.network_id, 'get_network'),
             self.driver.driver.networkconfigconfig[self.network_id]
         )
+        self.assertEqual(self.network_id, network.id)
+        network_again = self.driver.get_network(self.network_id)
+        self.assertEqual(network, network_again)
 
     def test_get_subnet(self):
-        self.driver.get_subnet(self.subnet_id)
+        subnet = self.driver.get_subnet(self.subnet_id)
         self.assertEqual(
             (self.subnet_id, 'get_subnet'),
             self.driver.driver.networkconfigconfig[self.subnet_id]
         )
+        self.assertEqual(self.subnet_id, subnet.id)
+        subnet_again = self.driver.get_subnet(self.subnet_id)
+        self.assertEqual(subnet, subnet_again)
 
     def test_get_port(self):
-        self.driver.get_port(self.port_id)
+        port = self.driver.get_port(self.port_id)
         self.assertEqual(
             (self.port_id, 'get_port'),
             self.driver.driver.networkconfigconfig[self.port_id]
         )
+        self.assertEqual(self.port_id, port.id)
+        port_again = self.driver.get_port(self.port_id)
+        self.assertEqual(port, port_again)
 
     def test_get_network_by_name(self):
-        self.driver.get_network_by_name(self.network_name)
+        network = self.driver.get_network_by_name(self.network_name)
         self.assertEqual(
             (self.network_name, 'get_network_by_name'),
             self.driver.driver.networkconfigconfig[self.network_name]
         )
+        self.assertEqual(self.network_name, network.name)
+        network_again = self.driver.get_network_by_name(self.network_name)
+        self.assertEqual(network, network_again)
 
     def test_get_subnet_by_name(self):
-        self.driver.get_subnet_by_name(self.subnet_name)
+        subnet = self.driver.get_subnet_by_name(self.subnet_name)
         self.assertEqual(
             (self.subnet_name, 'get_subnet_by_name'),
             self.driver.driver.networkconfigconfig[self.subnet_name]
         )
+        self.assertEqual(self.subnet_name, subnet.name)
+        subnet_again = self.driver.get_subnet_by_name(self.subnet_name)
+        self.assertEqual(subnet, subnet_again)
 
     def test_get_port_by_name(self):
-        self.driver.get_port_by_name(self.port_name)
+        port = self.driver.get_port_by_name(self.port_name)
         self.assertEqual(
             (self.port_name, 'get_port_by_name'),
             self.driver.driver.networkconfigconfig[self.port_name]
         )
+        self.assertEqual(self.port_name, port.name)
+        port_again = self.driver.get_port_by_name(self.port_name)
+        self.assertEqual(port, port_again)
 
     def test_get_port_by_net_id_device_id(self):
-        self.driver.get_port_by_net_id_device_id(self.network_id,
-                                                 self.device_id)
+        port = self.driver.get_port_by_net_id_device_id(
+            self.network_id, self.device_id)
         self.assertEqual(
             (self.network_id, self.device_id,
              'get_port_by_net_id_device_id'),
             self.driver.driver.networkconfigconfig[(self.network_id,
                                                     self.device_id)]
         )
+        self.assertEqual(self.network_id, port.network_id)
+        self.assertEqual(self.device_id, port.device_id)
+        port_again = self.driver.get_port_by_net_id_device_id(
+            self.network_id, self.device_id)
+        self.assertEqual(port, port_again)
 
     def test_get_security_group(self):
         FAKE_SG_NAME = 'fake_sg_name'

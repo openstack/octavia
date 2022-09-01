@@ -18,6 +18,8 @@ from oslo_utils import uuidutils
 from octavia_lib.api.drivers import data_models
 from octavia_lib.api.drivers import provider_base as driver_base
 
+from octavia.api.drivers import utils as driver_utils
+
 LOG = logging.getLogger(__name__)
 
 
@@ -27,12 +29,14 @@ class NoopManager(object):
         self.driverconfig = {}
 
     # Load Balancer
-    def create_vip_port(self, loadbalancer_id, project_id, vip_dictionary):
+    def create_vip_port(self, loadbalancer_id, project_id, vip_dictionary,
+                        additional_vip_dicts):
         LOG.debug('Provider %s no-op, create_vip_port loadbalancer %s',
                   self.__class__.__name__, loadbalancer_id)
 
         self.driverconfig[loadbalancer_id] = (loadbalancer_id, project_id,
                                               vip_dictionary,
+                                              additional_vip_dicts,
                                               'create_vip_port')
 
         vip_address = vip_dictionary.get('vip_address', '198.0.2.5')
@@ -43,10 +47,16 @@ class NoopManager(object):
         vip_subnet_id = vip_dictionary.get('vip_subnet_id',
                                            uuidutils.generate_uuid())
 
-        return data_models.VIP(vip_address=vip_address,
-                               vip_network_id=vip_network_id,
-                               vip_port_id=vip_port_id,
-                               vip_subnet_id=vip_subnet_id).to_dict()
+        vip = data_models.VIP(vip_address=vip_address,
+                              vip_network_id=vip_network_id,
+                              vip_port_id=vip_port_id,
+                              vip_subnet_id=vip_subnet_id)
+
+        vip_return_dict = vip.to_dict()
+        additional_vip_dicts = additional_vip_dicts or []
+        add_return_dicts = [driver_utils.additional_vip_dict_to_provider_dict(
+            add_vip) for add_vip in additional_vip_dicts]
+        return vip_return_dict, add_return_dicts
 
     def loadbalancer_create(self, loadbalancer):
         LOG.debug('Provider %s no-op, loadbalancer_create loadbalancer %s',
@@ -266,9 +276,11 @@ class NoopProviderDriver(driver_base.ProviderDriver):
         self.driver = NoopManager()
 
     # Load Balancer
-    def create_vip_port(self, loadbalancer_id, project_id, vip_dictionary):
+    def create_vip_port(self, loadbalancer_id, project_id, vip_dictionary,
+                        additional_vip_dicts):
         return self.driver.create_vip_port(loadbalancer_id, project_id,
-                                           vip_dictionary)
+                                           vip_dictionary,
+                                           additional_vip_dicts)
 
     def loadbalancer_create(self, loadbalancer):
         self.driver.loadbalancer_create(loadbalancer)

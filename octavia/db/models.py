@@ -427,6 +427,9 @@ class LoadBalancer(base_models.BASE, base_models.IdMixin,
     provider = sa.Column(sa.String(64), nullable=True)
     vip = orm.relationship('Vip', cascade='delete', uselist=False,
                            backref=orm.backref('load_balancer', uselist=False))
+    additional_vips = orm.relationship(
+        'AdditionalVip', cascade='delete', uselist=True,
+        backref=orm.backref('load_balancer', uselist=False))
     pools = orm.relationship('Pool', cascade='delete', uselist=True,
                              back_populates="load_balancer")
     listeners = orm.relationship('Listener', cascade='delete', uselist=True,
@@ -496,6 +499,28 @@ class Vip(base_models.BASE):
     network_id = sa.Column(sa.String(36), nullable=True)
     qos_policy_id = sa.Column(sa.String(36), nullable=True)
     octavia_owned = sa.Column(sa.Boolean(), nullable=True)
+
+
+class AdditionalVip(base_models.BASE):
+
+    __data_model__ = data_models.AdditionalVip
+
+    __tablename__ = "additional_vip"
+
+    __table_args__ = (
+        sa.PrimaryKeyConstraint('load_balancer_id', 'subnet_id',
+                                name='pk_add_vip_load_balancer_subnet'),
+    )
+
+    load_balancer_id = sa.Column(
+        sa.String(36),
+        sa.ForeignKey("load_balancer.id",
+                      name="fk_add_vip_load_balancer_id"),
+        nullable=False, index=True)
+    ip_address = sa.Column(sa.String(64), nullable=True)
+    port_id = sa.Column(sa.String(36), nullable=True)
+    subnet_id = sa.Column(sa.String(36), nullable=True)
+    network_id = sa.Column(sa.String(36), nullable=True)
 
 
 class Listener(base_models.BASE, base_models.IdMixin,

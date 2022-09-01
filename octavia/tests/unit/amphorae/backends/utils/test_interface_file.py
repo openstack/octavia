@@ -39,14 +39,20 @@ class TestInterfaceFile(base.TestCase):
         vip_interface_file = interface_file.VIPInterfaceFile(
             name=netns_interface,
             mtu=MTU,
-            vip=VIP_ADDRESS,
-            ip_version=cidr.version,
-            prefixlen=prefixlen,
-            gateway=GATEWAY,
-            vrrp_ip=VRRP_IP_ADDRESS,
-            host_routes=[
-                {'destination': DEST1, 'nexthop': NEXTHOP}
-            ],
+            vips=[{
+                'ip_address': VIP_ADDRESS,
+                'ip_version': cidr.version,
+                'prefixlen': prefixlen,
+                'gateway': GATEWAY,
+                'host_routes': [
+                    {'destination': DEST1, 'nexthop': NEXTHOP}
+                ],
+            }],
+            vrrp_info={
+                'ip': VRRP_IP_ADDRESS,
+                'prefixlen': prefixlen
+            },
+            fixed_ips=[],
             topology=TOPOLOGY)
 
         expected_dict = {
@@ -152,14 +158,19 @@ class TestInterfaceFile(base.TestCase):
         vip_interface_file = interface_file.VIPInterfaceFile(
             name=netns_interface,
             mtu=MTU,
-            vip=VIP_ADDRESS,
-            ip_version=cidr.version,
-            prefixlen=prefixlen,
-            gateway=GATEWAY,
-            vrrp_ip=VRRP_IP_ADDRESS,
-            host_routes=[
-                {'destination': DEST1, 'nexthop': NEXTHOP}
-            ],
+            vips=[{
+                'ip_address': VIP_ADDRESS,
+                'ip_version': cidr.version,
+                'prefixlen': prefixlen,
+                'gateway': GATEWAY,
+                'host_routes': [
+                    {'destination': DEST1, 'nexthop': NEXTHOP}
+                ],
+            }],
+            vrrp_info={
+                'ip': VRRP_IP_ADDRESS,
+                'prefixlen': prefixlen,
+            },
             fixed_ips=[{'ip_address': FIXED_IP,
                         'subnet_cidr': SUBNET2_CIDR,
                         'host_routes': [
@@ -268,12 +279,15 @@ class TestInterfaceFile(base.TestCase):
         vip_interface_file = interface_file.VIPInterfaceFile(
             name=netns_interface,
             mtu=MTU,
-            vip=VIP_ADDRESS,
-            ip_version=cidr.version,
-            prefixlen=prefixlen,
-            gateway=None,
-            vrrp_ip=None,
-            host_routes=[],
+            vips=[{
+                'ip_address': VIP_ADDRESS,
+                'ip_version': cidr.version,
+                'prefixlen': prefixlen,
+                'gateway': None,
+                'host_routes': [],
+            }],
+            vrrp_info=None,
+            fixed_ips=[],
             topology=TOPOLOGY)
 
         expected_dict = {
@@ -291,7 +305,8 @@ class TestInterfaceFile(base.TestCase):
                 {
                     consts.DST: cidr.exploded,
                     consts.SCOPE: 'link',
-                }, {
+                },
+                {
                     consts.DST: cidr.exploded,
                     consts.PREFSRC: VIP_ADDRESS,
                     consts.SCOPE: 'link',
@@ -345,12 +360,18 @@ class TestInterfaceFile(base.TestCase):
         vip_interface_file = interface_file.VIPInterfaceFile(
             name=netns_interface,
             mtu=MTU,
-            vip=VIP_ADDRESS,
-            ip_version=cidr.version,
-            prefixlen=prefixlen,
-            gateway=GATEWAY,
-            vrrp_ip=VRRP_IP_ADDRESS,
-            host_routes=[],
+            vips=[{
+                'ip_address': VIP_ADDRESS,
+                'ip_version': cidr.version,
+                'prefixlen': prefixlen,
+                'gateway': GATEWAY,
+                'host_routes': [],
+            }],
+            vrrp_info={
+                'ip': VRRP_IP_ADDRESS,
+                'prefixlen': prefixlen
+            },
+            fixed_ips=[],
             topology=TOPOLOGY)
 
         expected_dict = {
@@ -371,9 +392,11 @@ class TestInterfaceFile(base.TestCase):
                 {
                     consts.DST: "0.0.0.0/0",
                     consts.GATEWAY: GATEWAY,
-                    consts.FLAGS: [consts.ONLINK]
-                }, {
+                    consts.FLAGS: [consts.ONLINK],
+                },
+                {
                     consts.DST: SUBNET_CIDR,
+                    consts.PREFSRC: VIP_ADDRESS,
                     consts.SCOPE: 'link'
                 }
             ],
@@ -420,14 +443,20 @@ class TestInterfaceFile(base.TestCase):
         vip_interface_file = interface_file.VIPInterfaceFile(
             name=netns_interface,
             mtu=MTU,
-            vip=VIP_ADDRESS,
-            ip_version=cidr.version,
-            prefixlen=prefixlen,
-            gateway=GATEWAY,
-            vrrp_ip=VRRP_IP_ADDRESS,
-            host_routes=[
-                {'destination': DEST1, 'nexthop': NEXTHOP}
-            ],
+            vips=[{
+                'ip_address': VIP_ADDRESS,
+                'ip_version': cidr.version,
+                'prefixlen': prefixlen,
+                'gateway': GATEWAY,
+                'host_routes': [
+                    {'destination': DEST1, 'nexthop': NEXTHOP}
+                ],
+            }],
+            vrrp_info={
+                'ip': VRRP_IP_ADDRESS,
+                'prefixlen': prefixlen,
+            },
+            fixed_ips=[],
             topology=TOPOLOGY)
 
         expected_dict = {

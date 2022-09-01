@@ -120,7 +120,7 @@ def _base_to_provider_dict(current_dict, include_project_id=False):
 
 # Note: The provider dict returned from this method will have provider
 #       data model objects in it.
-def lb_dict_to_provider_dict(lb_dict, vip=None, db_pools=None,
+def lb_dict_to_provider_dict(lb_dict, vip=None, add_vips=None, db_pools=None,
                              db_listeners=None, for_delete=False):
     new_lb_dict = _base_to_provider_dict(lb_dict, include_project_id=True)
     new_lb_dict['loadbalancer_id'] = new_lb_dict.pop('id')
@@ -134,6 +134,9 @@ def lb_dict_to_provider_dict(lb_dict, vip=None, db_pools=None,
         flavor_repo = repositories.FlavorRepository()
         new_lb_dict['flavor'] = flavor_repo.get_flavor_metadata_dict(
             db_api.get_session(), lb_dict['flavor_id'])
+    if add_vips:
+        new_lb_dict['additional_vips'] = db_additional_vips_to_provider_vips(
+            add_vips)
     if db_pools:
         new_lb_dict['pools'] = db_pools_to_provider_pools(
             db_pools, for_delete=for_delete)
@@ -326,6 +329,14 @@ def listener_dict_to_provider_dict(listener_dict, for_delete=False):
             provider_l7policies.append(provider_l7policy)
         new_listener_dict['l7policies'] = provider_l7policies
     return new_listener_dict
+
+
+def db_additional_vips_to_provider_vips(db_add_vips):
+    provider_add_vips = []
+    for add_vip in db_add_vips:
+        provider_add_vips.append(
+            additional_vip_dict_to_provider_dict(add_vip.to_dict()))
+    return provider_add_vips
 
 
 def db_pools_to_provider_pools(db_pools, for_delete=False):
@@ -558,6 +569,19 @@ def vip_dict_to_provider_dict(vip_dict):
     return new_vip_dict
 
 
+def additional_vip_dict_to_provider_dict(vip_dict):
+    new_vip_dict = {}
+    if 'ip_address' in vip_dict:
+        new_vip_dict['ip_address'] = vip_dict['ip_address']
+    if 'network_id' in vip_dict:
+        new_vip_dict['network_id'] = vip_dict['network_id']
+    if 'port_id' in vip_dict:
+        new_vip_dict['port_id'] = vip_dict['port_id']
+    if 'subnet_id' in vip_dict:
+        new_vip_dict['subnet_id'] = vip_dict['subnet_id']
+    return new_vip_dict
+
+
 def provider_vip_dict_to_vip_obj(vip_dictionary):
     vip_obj = data_models.Vip()
     if 'vip_address' in vip_dictionary:
@@ -572,4 +596,17 @@ def provider_vip_dict_to_vip_obj(vip_dictionary):
         vip_obj.qos_policy_id = vip_dictionary['vip_qos_policy_id']
     if constants.OCTAVIA_OWNED in vip_dictionary:
         vip_obj.octavia_owned = vip_dictionary[constants.OCTAVIA_OWNED]
+    return vip_obj
+
+
+def provider_additional_vip_dict_to_additional_vip_obj(vip_dictionary):
+    vip_obj = data_models.AdditionalVip()
+    if 'ip_address' in vip_dictionary:
+        vip_obj.ip_address = vip_dictionary['ip_address']
+    if 'network_id' in vip_dictionary:
+        vip_obj.network_id = vip_dictionary['network_id']
+    if 'port_id' in vip_dictionary:
+        vip_obj.port_id = vip_dictionary['port_id']
+    if 'subnet_id' in vip_dictionary:
+        vip_obj.subnet_id = vip_dictionary['subnet_id']
     return vip_obj

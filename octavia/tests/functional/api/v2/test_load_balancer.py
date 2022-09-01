@@ -27,6 +27,7 @@ from octavia.common import constants
 import octavia.common.context
 from octavia.common import data_models
 from octavia.common import exceptions
+from octavia.common import utils
 from octavia.network import base as network_base
 from octavia.network import data_models as network_models
 from octavia.tests.functional.api.v2 import base
@@ -63,6 +64,33 @@ class TestLoadBalancer(base.BaseAPITest):
         response = self.get(self.LBS_PATH)
         api_list = response.json.get(self.root_tag_list)
         self.assertEqual([], api_list)
+
+    def _test_create_noop(self, **optionals):
+        self.conf.config(group='controller_worker',
+                         network_driver='network_noop_driver')
+        self.conf.config(group='controller_worker',
+                         compute_driver='compute_noop_driver')
+        self.conf.config(group='controller_worker',
+                         amphora_driver='amphora_noop_driver')
+        lb_json = {'name': 'test_noop',
+                   'project_id': self.project_id
+                   }
+        lb_json.update(optionals)
+        body = self._build_body(lb_json)
+        response = self.post(self.LBS_PATH, body)
+        api_lb = response.json.get(self.root_tag)
+        self._assert_request_matches_response(lb_json, api_lb)
+        return api_lb
+
+    def test_create_noop_subnet_only(self):
+        self._test_create_noop(vip_subnet_id=uuidutils.generate_uuid())
+
+    def test_create_noop_network_only(self):
+        self._test_create_noop(vip_network_id=uuidutils.generate_uuid())
+
+    def test_create_noop_network_and_subnet(self):
+        self._test_create_noop(vip_network_id=uuidutils.generate_uuid(),
+                               vip_subnet_id=uuidutils.generate_uuid())
 
     def test_create(self, **optionals):
         lb_json = {'name': 'test1',
@@ -196,7 +224,7 @@ class TestLoadBalancer(base.BaseAPITest):
             "octavia.network.drivers.noop_driver.driver.NoopManager"
                 ".get_subnet") as mock_get_subnet:
             mock_get_network.return_value = network
-            mock_get_subnet.side_effect = [subnet1, subnet2]
+            mock_get_subnet.side_effect = [subnet1, subnet2, subnet2]
             response = self.post(self.LBS_PATH, body)
         api_lb = response.json.get(self.root_tag)
         self._assert_request_matches_response(lb_json, api_lb)
@@ -332,7 +360,7 @@ class TestLoadBalancer(base.BaseAPITest):
             "octavia.network.drivers.noop_driver.driver.NoopManager"
                 ".get_subnet") as mock_get_subnet:
             mock_get_network.return_value = network
-            mock_get_subnet.side_effect = [subnet1, subnet2]
+            mock_get_subnet.side_effect = [subnet1, subnet2, subnet2]
             response = self.post(self.LBS_PATH, body)
         api_lb = response.json.get(self.root_tag)
         self._assert_request_matches_response(lb_json, api_lb)
@@ -401,7 +429,7 @@ class TestLoadBalancer(base.BaseAPITest):
         self.assertEqual(ip_address, api_lb.get('vip_address'))
 
     # Note: This test is using the unique local address range to
-    #       validate that we handle a fully expaned IP address properly.
+    #       validate that we handle a fully expanded IP address properly.
     #       This is not possible with the documentation/testnet range.
     def test_create_with_vip_network_and_address_full_ipv6(self):
         ip_address = 'fdff:ffff:ffff:ffff:ffff:ffff:ffff:ffff'
@@ -436,8 +464,9 @@ class TestLoadBalancer(base.BaseAPITest):
 
     def test_create_with_vip_port_1_fixed_ip(self):
         ip_address = '198.51.100.1'
-        subnet = network_models.Subnet(id=uuidutils.generate_uuid())
-        network = network_models.Network(id=uuidutils.generate_uuid(),
+        subnet = network_models.Subnet(id=uuidutils.generate_uuid(),
+                                       network_id=uuidutils.generate_uuid())
+        network = network_models.Network(id=subnet.network_id,
                                          subnets=[subnet])
         fixed_ip = network_models.FixedIP(subnet_id=subnet.id,
                                           ip_address=ip_address)
@@ -457,10 +486,13 @@ class TestLoadBalancer(base.BaseAPITest):
             "octavia.network.drivers.noop_driver.driver.NoopManager"
                 ".get_port") as mock_get_port, mock.patch(
             "octavia.api.drivers.noop_driver.driver.NoopManager."
-                "create_vip_port") as mock_provider:
+                "create_vip_port") as mock_provider, mock.patch(
+            "octavia.network.drivers.noop_driver.driver.NoopManager."
+                "get_subnet") as mock_get_subnet:
             mock_get_network.return_value = network
             mock_get_port.return_value = port
             mock_provider.side_effect = lib_exceptions.NotImplementedError()
+            mock_get_subnet.return_value = subnet
             response = self.post(self.LBS_PATH, body)
         api_lb = response.json.get(self.root_tag)
         self._assert_request_matches_response(lb_json, api_lb)
@@ -501,8 +533,9 @@ class TestLoadBalancer(base.BaseAPITest):
 
     def test_create_with_vip_port_and_address(self):
         ip_address = '198.51.100.1'
-        subnet = network_models.Subnet(id=uuidutils.generate_uuid())
-        network = network_models.Network(id=uuidutils.generate_uuid(),
+        subnet = network_models.Subnet(id=uuidutils.generate_uuid(),
+                                       network_id=uuidutils.generate_uuid())
+        network = network_models.Network(id=subnet.network_id,
                                          subnets=[subnet])
         fixed_ip = network_models.FixedIP(subnet_id=subnet.id,
                                           ip_address=ip_address)
@@ -518,9 +551,12 @@ class TestLoadBalancer(base.BaseAPITest):
                 "octavia.network.drivers.noop_driver.driver.NoopManager"
                 ".get_network") as mock_get_network, mock.patch(
             "octavia.network.drivers.noop_driver.driver.NoopManager"
-                ".get_port") as mock_get_port:
+                ".get_port") as mock_get_port, mock.patch(
+            "octavia.network.drivers.noop_driver.driver.NoopManager."
+                "get_subnet") as mock_get_subnet:
             mock_get_network.return_value = network
             mock_get_port.return_value = port
+            mock_get_subnet.return_value = subnet
             response = self.post(self.LBS_PATH, body)
         api_lb = response.json.get(self.root_tag)
         self._assert_request_matches_response(lb_json, api_lb)
@@ -558,8 +594,9 @@ class TestLoadBalancer(base.BaseAPITest):
         self.assertEqual(err_msg, response.json.get('faultstring'))
 
     def test_create_with_vip_full(self):
-        subnet = network_models.Subnet(id=uuidutils.generate_uuid())
-        network = network_models.Network(id=uuidutils.generate_uuid(),
+        subnet = network_models.Subnet(id=uuidutils.generate_uuid(),
+                                       network_id=uuidutils.generate_uuid())
+        network = network_models.Network(id=subnet.network_id,
                                          subnets=[subnet])
         port = network_models.Port(id=uuidutils.generate_uuid(),
                                    network_id=network.id)
@@ -573,9 +610,12 @@ class TestLoadBalancer(base.BaseAPITest):
                 "octavia.network.drivers.noop_driver.driver.NoopManager"
                 ".get_network") as mock_get_network, mock.patch(
             "octavia.network.drivers.noop_driver.driver.NoopManager"
-                ".get_port") as mock_get_port:
+                ".get_port") as mock_get_port, mock.patch(
+            "octavia.network.drivers.noop_driver.driver.NoopManager."
+                "get_subnet") as mock_get_subnet:
             mock_get_network.return_value = network
             mock_get_port.return_value = port
+            mock_get_subnet.return_value = subnet
             response = self.post(self.LBS_PATH, body)
         api_lb = response.json.get(self.root_tag)
         self._assert_request_matches_response(lb_json, api_lb)
@@ -583,6 +623,59 @@ class TestLoadBalancer(base.BaseAPITest):
         self.assertEqual(subnet.id, api_lb.get('vip_subnet_id'))
         self.assertEqual(network.id, api_lb.get('vip_network_id'))
         self.assertEqual(port.id, api_lb.get('vip_port_id'))
+
+    def test_create_with_multiple_vips(self):
+        subnet1 = network_models.Subnet(id=uuidutils.generate_uuid(),
+                                        cidr='10.0.0.0/24',
+                                        ip_version=4,
+                                        network_id=uuidutils.generate_uuid())
+        subnet2 = network_models.Subnet(id=uuidutils.generate_uuid(),
+                                        cidr='fc00::/7',
+                                        ip_version=6,
+                                        network_id=subnet1.network_id)
+        subnet3 = network_models.Subnet(id=uuidutils.generate_uuid(),
+                                        cidr='10.1.0.0/24',
+                                        ip_version=4,
+                                        network_id=subnet1.network_id)
+        network = network_models.Network(id=subnet1.network_id,
+                                         subnets=[subnet1, subnet2, subnet3])
+        port = network_models.Port(id=uuidutils.generate_uuid(),
+                                   network_id=network.id)
+        lb_json = {
+            'name': 'test1', 'description': 'test1_desc',
+            'vip_address': '10.0.0.1', 'vip_subnet_id': subnet1.id,
+            'vip_network_id': network.id, 'vip_port_id': port.id,
+            'project_id': self.project_id,
+            'additional_vips': [
+                {'subnet_id': subnet2.id,
+                 'ip_address': 'fdff:ffff:ffff:ffff:ffff:ffff:ffff:ffff'},
+                {'subnet_id': subnet3.id,
+                 'ip_address': '10.1.0.1'},
+            ],
+
+        }
+        body = self._build_body(lb_json)
+        with mock.patch(
+                "octavia.network.drivers.noop_driver.driver.NoopManager"
+                ".get_network") as mock_get_network, mock.patch(
+            "octavia.network.drivers.noop_driver.driver.NoopManager"
+                ".get_port") as mock_get_port, mock.patch(
+            "octavia.network.drivers.noop_driver.driver.NoopManager"
+                ".get_subnet") as mock_get_subnet:
+            mock_get_network.return_value = network
+            mock_get_port.return_value = port
+            mock_get_subnet.side_effect = [subnet1, subnet2, subnet3, subnet1]
+            response = self.post(self.LBS_PATH, body)
+        api_lb = response.json.get(self.root_tag)
+        self._assert_request_matches_response(lb_json, api_lb)
+        self.assertEqual('10.0.0.1', api_lb.get('vip_address'))
+        self.assertEqual(subnet1.id, api_lb.get('vip_subnet_id'))
+        self.assertEqual(network.id, api_lb.get('vip_network_id'))
+
+        self.assertEqual(
+            # Sort by ip_address so the list order will be guaranteed
+            sorted(lb_json['additional_vips'], key=lambda x: x['ip_address']),
+            sorted(api_lb['additional_vips'], key=lambda x: x['ip_address']))
 
     def test_create_neutron_failure(self):
 
@@ -595,8 +688,9 @@ class TestLoadBalancer(base.BaseAPITest):
             def __str__(self):
                 return repr(self.message)
 
-        subnet = network_models.Subnet(id=uuidutils.generate_uuid())
-        network = network_models.Network(id=uuidutils.generate_uuid(),
+        subnet = network_models.Subnet(id=uuidutils.generate_uuid(),
+                                       network_id=uuidutils.generate_uuid())
+        network = network_models.Network(id=subnet.network_id,
                                          subnets=[subnet])
         port = network_models.Port(id=uuidutils.generate_uuid(),
                                    network_id=network.id)
@@ -616,12 +710,15 @@ class TestLoadBalancer(base.BaseAPITest):
             "octavia.network.drivers.noop_driver.driver.NoopManager"
                 ".allocate_vip") as mock_allocate_vip, mock.patch(
             "octavia.api.drivers.noop_driver.driver.NoopManager."
-                "create_vip_port") as mock_provider:
+                "create_vip_port") as mock_provider, mock.patch(
+            "octavia.network.drivers.noop_driver.driver.NoopManager"
+                ".get_subnet") as mock_get_subnet:
             mock_get_network.return_value = network
             mock_get_port.return_value = port
             mock_allocate_vip.side_effect = TestNeutronException(
                 "octavia_msg", "neutron_msg", 409)
             mock_provider.side_effect = lib_exceptions.NotImplementedError()
+            mock_get_subnet.return_value = subnet
             response = self.post(self.LBS_PATH, body, status=409)
         # Make sure the faultstring contains the neutron error and not
         # the octavia error message
@@ -654,7 +751,7 @@ class TestLoadBalancer(base.BaseAPITest):
                                        network_id=uuidutils.generate_uuid())
         port_qos_policy_id = uuidutils.generate_uuid()
         ip_address = '192.168.50.50'
-        network = network_models.Network(id=uuidutils.generate_uuid(),
+        network = network_models.Network(id=subnet.network_id,
                                          subnets=[subnet])
         fixed_ip = network_models.FixedIP(subnet_id=subnet.id,
                                           ip_address=ip_address)
@@ -673,13 +770,16 @@ class TestLoadBalancer(base.BaseAPITest):
             "octavia.network.drivers.noop_driver.driver.NoopManager"
                 ".allocate_vip") as mock_allocate_vip, mock.patch(
             "octavia.common.validate."
-                "qos_policy_exists") as m_get_qos:
+                "qos_policy_exists") as m_get_qos, mock.patch(
+            "octavia.network.drivers.noop_driver.driver.NoopManager."
+                "get_subnet") as mock_get_subnet:
             m_get_qos.return_value = port_qos_policy_id
             mock_allocate_vip.return_value = data_models.Vip(
                 ip_address=ip_address, subnet_id=subnet.id,
                 network_id=network.id, port_id=port.id)
             m_get_network.return_value = network
             mock_get_port.return_value = port
+            mock_get_subnet.return_value = subnet
             response = self.post(self.LBS_PATH, body)
         api_lb = response.json.get(self.root_tag)
         self._assert_request_matches_response(lb_json, api_lb)
@@ -695,7 +795,7 @@ class TestLoadBalancer(base.BaseAPITest):
         port_qos_policy_id = uuidutils.generate_uuid()
         new_qos_policy_id = uuidutils.generate_uuid()
         ip_address = '192.168.50.50'
-        network = network_models.Network(id=uuidutils.generate_uuid(),
+        network = network_models.Network(id=subnet.network_id,
                                          subnets=[subnet])
         fixed_ip = network_models.FixedIP(subnet_id=subnet.id,
                                           ip_address=ip_address)
@@ -715,13 +815,16 @@ class TestLoadBalancer(base.BaseAPITest):
             "octavia.network.drivers.noop_driver.driver.NoopManager"
                 ".allocate_vip") as mock_allocate_vip, mock.patch(
             "octavia.common.validate."
-                "qos_policy_exists") as m_get_qos:
+                "qos_policy_exists") as m_get_qos, mock.patch(
+            "octavia.network.drivers.noop_driver.driver.NoopManager."
+                "get_subnet") as mock_get_subnet:
             m_get_qos.return_value = mock.ANY
             mock_allocate_vip.return_value = data_models.Vip(
                 ip_address=ip_address, subnet_id=subnet.id,
                 network_id=network.id, port_id=port.id)
             m_get_network.return_value = network
             mock_get_port.return_value = port
+            mock_get_subnet.return_value = subnet
             response = self.post(self.LBS_PATH, body)
         api_lb = response.json.get(self.root_tag)
         self._assert_request_matches_response(lb_json, api_lb)
@@ -873,7 +976,6 @@ class TestLoadBalancer(base.BaseAPITest):
         self._assert_request_matches_response(lb_json, api_lb)
 
     def test_create_authorized(self, **optionals):
-        self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
         auth_strategy = self.conf.conf.api_settings.get('auth_strategy')
         self.conf.config(group='api_settings', auth_strategy=constants.TESTING)
         project_id = uuidutils.generate_uuid()
@@ -907,7 +1009,6 @@ class TestLoadBalancer(base.BaseAPITest):
         self._assert_request_matches_response(lb_json, api_lb)
 
     def test_create_not_authorized(self, **optionals):
-        self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
         auth_strategy = self.conf.conf.api_settings.get('auth_strategy')
         self.conf.config(group='api_settings', auth_strategy=constants.TESTING)
         lb_json = {'name': 'test1',
@@ -1305,7 +1406,6 @@ class TestLoadBalancer(base.BaseAPITest):
                                   name='lb2', project_id=project_id)
         self.create_load_balancer(uuidutils.generate_uuid(),
                                   name='lb3', project_id=project_id)
-        self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
         auth_strategy = self.conf.conf.api_settings.get('auth_strategy')
         self.conf.config(group='api_settings', auth_strategy=constants.TESTING)
         LB_PROJECT_PATH = '{}?project_id={}'.format(self.LBS_PATH, project_id)
@@ -1693,8 +1793,9 @@ class TestLoadBalancer(base.BaseAPITest):
 
     def test_get(self):
         project_id = uuidutils.generate_uuid()
-        subnet = network_models.Subnet(id=uuidutils.generate_uuid())
-        network = network_models.Network(id=uuidutils.generate_uuid(),
+        subnet = network_models.Subnet(id=uuidutils.generate_uuid(),
+                                       network_id=uuidutils.generate_uuid())
+        network = network_models.Network(id=subnet.network_id,
                                          subnets=[subnet])
         port = network_models.Port(id=uuidutils.generate_uuid(),
                                    network_id=network.id)
@@ -1702,9 +1803,12 @@ class TestLoadBalancer(base.BaseAPITest):
                 "octavia.network.drivers.noop_driver.driver.NoopManager"
                 ".get_network") as mock_get_network, mock.patch(
             "octavia.network.drivers.noop_driver.driver.NoopManager"
-                ".get_port") as mock_get_port:
+                ".get_port") as mock_get_port, mock.patch(
+            "octavia.network.drivers.noop_driver.driver.NoopManager."
+                "get_subnet") as mock_get_subnet:
             mock_get_network.return_value = network
             mock_get_port.return_value = port
+            mock_get_subnet.return_value = subnet
 
             lb = self.create_load_balancer(subnet.id,
                                            vip_address='10.0.0.1',
@@ -1744,8 +1848,9 @@ class TestLoadBalancer(base.BaseAPITest):
 
     def test_get_authorized(self):
         project_id = uuidutils.generate_uuid()
-        subnet = network_models.Subnet(id=uuidutils.generate_uuid())
-        network = network_models.Network(id=uuidutils.generate_uuid(),
+        subnet = network_models.Subnet(id=uuidutils.generate_uuid(),
+                                       network_id=uuidutils.generate_uuid())
+        network = network_models.Network(id=subnet.network_id,
                                          subnets=[subnet])
         port = network_models.Port(id=uuidutils.generate_uuid(),
                                    network_id=network.id)
@@ -1753,9 +1858,12 @@ class TestLoadBalancer(base.BaseAPITest):
                 "octavia.network.drivers.noop_driver.driver.NoopManager"
                 ".get_network") as mock_get_network, mock.patch(
             "octavia.network.drivers.noop_driver.driver.NoopManager"
-                ".get_port") as mock_get_port:
+                ".get_port") as mock_get_port, mock.patch(
+            "octavia.network.drivers.noop_driver.driver.NoopManager."
+                "get_subnet") as mock_get_subnet:
             mock_get_network.return_value = network
             mock_get_port.return_value = port
+            mock_get_subnet.return_value = subnet
 
             lb = self.create_load_balancer(subnet.id,
                                            vip_address='10.0.0.1',
@@ -1766,7 +1874,6 @@ class TestLoadBalancer(base.BaseAPITest):
                                            description='desc1',
                                            admin_state_up=False)
         lb_dict = lb.get(self.root_tag)
-        self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
         auth_strategy = self.conf.conf.api_settings.get('auth_strategy')
         self.conf.config(group='api_settings', auth_strategy=constants.TESTING)
         with mock.patch.object(octavia.common.context.Context, 'project_id',
@@ -1801,8 +1908,9 @@ class TestLoadBalancer(base.BaseAPITest):
 
     def test_get_not_authorized(self):
         project_id = uuidutils.generate_uuid()
-        subnet = network_models.Subnet(id=uuidutils.generate_uuid())
-        network = network_models.Network(id=uuidutils.generate_uuid(),
+        subnet = network_models.Subnet(id=uuidutils.generate_uuid(),
+                                       network_id=uuidutils.generate_uuid())
+        network = network_models.Network(id=subnet.network_id,
                                          subnets=[subnet])
         port = network_models.Port(id=uuidutils.generate_uuid(),
                                    network_id=network.id)
@@ -1810,9 +1918,12 @@ class TestLoadBalancer(base.BaseAPITest):
                 "octavia.network.drivers.noop_driver.driver.NoopManager"
                 ".get_network") as mock_get_network, mock.patch(
             "octavia.network.drivers.noop_driver.driver.NoopManager"
-                ".get_port") as mock_get_port:
+                ".get_port") as mock_get_port, mock.patch(
+            "octavia.network.drivers.noop_driver.driver.NoopManager."
+                "get_subnet") as mock_get_subnet:
             mock_get_network.return_value = network
             mock_get_port.return_value = port
+            mock_get_subnet.return_value = subnet
 
             lb = self.create_load_balancer(subnet.id,
                                            vip_address='10.0.0.1',
@@ -1823,7 +1934,6 @@ class TestLoadBalancer(base.BaseAPITest):
                                            description='desc1',
                                            admin_state_up=False)
         lb_dict = lb.get(self.root_tag)
-        self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
         auth_strategy = self.conf.conf.api_settings.get('auth_strategy')
         self.conf.config(group='api_settings', auth_strategy=constants.TESTING)
         with mock.patch.object(octavia.common.context.Context, 'project_id',
@@ -1891,7 +2001,7 @@ class TestLoadBalancer(base.BaseAPITest):
                                        admin_state_up=False)
         lb_dict = lb.get(self.root_tag)
         lb_json = self._build_body({'vip_subnet_id': '1234'})
-        lb = self.set_lb_status(lb_dict.get('id'))
+        self.set_lb_status(lb_dict.get('id'))
         self.put(self.LB_PATH.format(lb_id=lb_dict.get('id')),
                  lb_json, status=400)
 
@@ -1960,9 +2070,8 @@ class TestLoadBalancer(base.BaseAPITest):
                                        admin_state_up=False)
         lb_dict = lb.get(self.root_tag)
         lb_json = self._build_body({'name': 'lb2'})
-        lb = self.set_lb_status(lb_dict.get('id'))
+        self.set_lb_status(lb_dict.get('id'))
 
-        self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
         auth_strategy = self.conf.conf.api_settings.get('auth_strategy')
         self.conf.config(group='api_settings', auth_strategy=constants.TESTING)
         with mock.patch.object(octavia.common.context.Context, 'project_id',
@@ -2006,9 +2115,8 @@ class TestLoadBalancer(base.BaseAPITest):
                                        admin_state_up=False)
         lb_dict = lb.get(self.root_tag)
         lb_json = self._build_body({'name': 'lb2'})
-        lb = self.set_lb_status(lb_dict.get('id'))
+        self.set_lb_status(lb_dict.get('id'))
 
-        self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
         auth_strategy = self.conf.conf.api_settings.get('auth_strategy')
         self.conf.config(group='api_settings', auth_strategy=constants.TESTING)
         with mock.patch.object(octavia.common.context.Context, 'project_id',
@@ -2146,7 +2254,6 @@ class TestLoadBalancer(base.BaseAPITest):
                                        admin_state_up=False)
         lb_dict = lb.get(self.root_tag)
         lb = self.set_lb_status(lb_dict.get('id'))
-        self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
         auth_strategy = self.conf.conf.api_settings.get('auth_strategy')
         self.conf.config(group='api_settings', auth_strategy=constants.TESTING)
         with mock.patch.object(octavia.common.context.Context, 'project_id',
@@ -2188,8 +2295,7 @@ class TestLoadBalancer(base.BaseAPITest):
                                        description='desc1',
                                        admin_state_up=False)
         lb_dict = lb.get(self.root_tag)
-        lb = self.set_lb_status(lb_dict.get('id'))
-        self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
+        self.set_lb_status(lb_dict.get('id'))
         auth_strategy = self.conf.conf.api_settings.get('auth_strategy')
         self.conf.config(group='api_settings', auth_strategy=constants.TESTING)
         with mock.patch.object(octavia.common.context.Context, 'project_id',
@@ -2310,11 +2416,10 @@ class TestLoadBalancer(base.BaseAPITest):
                                        description='desc1',
                                        admin_state_up=False)
         lb_dict = lb.get(self.root_tag)
-        lb = self.set_lb_status(lb_dict.get('id'))
+        self.set_lb_status(lb_dict.get('id'))
 
         path = self._get_full_path(self.LB_PATH.format(
             lb_id=lb_dict.get('id')) + "/failover")
-        self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
         auth_strategy = self.conf.conf.api_settings.get('auth_strategy')
         self.conf.config(group='api_settings', auth_strategy=constants.TESTING)
         with mock.patch.object(octavia.common.context.Context, 'project_id',
@@ -2331,11 +2436,10 @@ class TestLoadBalancer(base.BaseAPITest):
                                        description='desc1',
                                        admin_state_up=False)
         lb_dict = lb.get(self.root_tag)
-        lb = self.set_lb_status(lb_dict.get('id'))
+        self.set_lb_status(lb_dict.get('id'))
 
         path = self._get_full_path(self.LB_PATH.format(
             lb_id=lb_dict.get('id')) + "/failover")
-        self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
         auth_strategy = self.conf.conf.api_settings.get('auth_strategy')
         self.conf.config(group='api_settings', auth_strategy=constants.TESTING)
         with mock.patch.object(octavia.common.context.Context, 'project_id',
@@ -2369,11 +2473,10 @@ class TestLoadBalancer(base.BaseAPITest):
                                        description='desc1',
                                        admin_state_up=False)
         lb_dict = lb.get(self.root_tag)
-        lb = self.set_lb_status(lb_dict.get('id'))
+        self.set_lb_status(lb_dict.get('id'))
 
         path = self._get_full_path(self.LB_PATH.format(
             lb_id=lb_dict.get('id')) + "/failover")
-        self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
         auth_strategy = self.conf.conf.api_settings.get('auth_strategy')
         self.conf.config(group='api_settings', auth_strategy=constants.TESTING)
         with mock.patch.object(octavia.common.context.Context, 'project_id',
@@ -2406,11 +2509,10 @@ class TestLoadBalancer(base.BaseAPITest):
                                        description='desc1',
                                        admin_state_up=False)
         lb_dict = lb.get(self.root_tag)
-        lb = self.set_lb_status(lb_dict.get('id'))
+        self.set_lb_status(lb_dict.get('id'))
 
         path = self._get_full_path(self.LB_PATH.format(
             lb_id=lb_dict.get('id')) + "/failover")
-        self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
         auth_strategy = self.conf.conf.api_settings.get('auth_strategy')
         self.conf.config(group='api_settings', auth_strategy=constants.NOAUTH)
         with mock.patch.object(octavia.common.context.Context, 'project_id',
@@ -2462,6 +2564,7 @@ class TestLoadBalancer(base.BaseAPITest):
 
     @mock.patch('octavia.api.drivers.utils.call_provider')
     def test_update_with_bad_provider(self, mock_provider):
+        mock_provider.return_value = (mock.MagicMock(), [])
         api_lb = self.create_load_balancer(
             uuidutils.generate_uuid()).get(self.root_tag)
         self.set_lb_status(lb_id=api_lb.get('id'))
@@ -2475,6 +2578,7 @@ class TestLoadBalancer(base.BaseAPITest):
 
     @mock.patch('octavia.api.drivers.utils.call_provider')
     def test_delete_with_bad_provider(self, mock_provider):
+        mock_provider.return_value = (mock.MagicMock(), [])
         api_lb = self.create_load_balancer(
             uuidutils.generate_uuid()).get(self.root_tag)
         self.set_lb_status(lb_id=api_lb.get('id'))
@@ -2505,6 +2609,7 @@ class TestLoadBalancer(base.BaseAPITest):
 
     @mock.patch('octavia.api.drivers.utils.call_provider')
     def test_update_with_provider_not_implemented(self, mock_provider):
+        mock_provider.return_value = (mock.MagicMock(), [])
         api_lb = self.create_load_balancer(
             uuidutils.generate_uuid()).get(self.root_tag)
         self.set_lb_status(lb_id=api_lb.get('id'))
@@ -2518,6 +2623,7 @@ class TestLoadBalancer(base.BaseAPITest):
 
     @mock.patch('octavia.api.drivers.utils.call_provider')
     def test_delete_with_provider_not_implemented(self, mock_provider):
+        mock_provider.return_value = (mock.MagicMock(), [])
         api_lb = self.create_load_balancer(
             uuidutils.generate_uuid()).get(self.root_tag)
         self.set_lb_status(lb_id=api_lb.get('id'))
@@ -2548,6 +2654,7 @@ class TestLoadBalancer(base.BaseAPITest):
 
     @mock.patch('octavia.api.drivers.utils.call_provider')
     def test_update_with_provider_unsupport_option(self, mock_provider):
+        mock_provider.return_value = (mock.MagicMock(), [])
         api_lb = self.create_load_balancer(
             uuidutils.generate_uuid()).get(self.root_tag)
         self.set_lb_status(lb_id=api_lb.get('id'))
@@ -2561,6 +2668,7 @@ class TestLoadBalancer(base.BaseAPITest):
 
     @mock.patch('octavia.api.drivers.utils.call_provider')
     def test_delete_with_provider_unsupport_option(self, mock_provider):
+        mock_provider.return_value = (mock.MagicMock(), [])
         api_lb = self.create_load_balancer(
             uuidutils.generate_uuid()).get(self.root_tag)
         self.set_lb_status(lb_id=api_lb.get('id'))
@@ -2603,6 +2711,9 @@ class TestLoadBalancerGraph(base.BaseAPITest):
         observed_listeners = observed_graph_copy.pop('listeners', [])
         expected_pools = expected_graph.pop('pools', [])
         observed_pools = observed_graph_copy.pop('pools', [])
+        expected_additional_vips = expected_graph.pop('additional_vips', [])
+        observed_additional_vips = observed_graph_copy.pop('additional_vips',
+                                                           [])
         self.assertEqual(expected_graph, observed_graph_copy)
 
         self.assertEqual(len(expected_pools), len(observed_pools))
@@ -2660,9 +2771,15 @@ class TestLoadBalancerGraph(base.BaseAPITest):
                                          l7rule.pop('tenant_id'))
                         self.assertTrue(l7rule.pop('id'))
             self.assertIn(observed_listener, expected_listeners)
+        self.assertEqual(len(expected_additional_vips),
+                         len(observed_additional_vips))
+        for observed_add_vip in observed_additional_vips:
+            if not observed_add_vip['ip_address']:
+                del observed_add_vip['ip_address']
+            self.assertIn(observed_add_vip, expected_additional_vips)
 
     def _get_lb_bodies(self, create_listeners, expected_listeners,
-                       create_pools=None):
+                       create_pools=None, additional_vips=None):
         create_lb = {
             'name': 'lb1',
             'project_id': self._project_id,
@@ -2673,6 +2790,8 @@ class TestLoadBalancerGraph(base.BaseAPITest):
             'listeners': create_listeners,
             'pools': create_pools or []
         }
+        if additional_vips:
+            create_lb.update({'additional_vips': additional_vips})
         expected_lb = {
             'description': '',
             'admin_state_up': True,
@@ -2998,6 +3117,58 @@ class TestLoadBalancerGraph(base.BaseAPITest):
         }]
         expected_l7rules[0].update(create_l7rules[0])
         return create_l7rules, expected_l7rules
+
+    def test_with_additional_vips(self):
+        create_lb, expected_lb = self._get_lb_bodies(
+            [], [], additional_vips=[
+                {'subnet_id': uuidutils.generate_uuid()}])
+
+        # Pre-populate test subnet/network data
+        network_driver = utils.get_network_driver()
+        vip_subnet = network_driver.get_subnet(create_lb['vip_subnet_id'])
+        additional_subnet = network_driver.get_subnet(
+            create_lb['additional_vips'][0]['subnet_id'])
+        additional_subnet.network_id = vip_subnet.network_id
+
+        body = self._build_body(create_lb)
+        response = self.post(self.LBS_PATH, body)
+        api_lb = response.json.get(self.root_tag)
+        self._assert_graphs_equal(expected_lb, api_lb)
+
+    def test_with_additional_vips_duplicate_subnet(self):
+        create_lb, expected_lb = self._get_lb_bodies(
+            [], [])
+        create_lb['additional_vips'] = [
+            {'subnet_id': create_lb['vip_subnet_id']}]
+
+        # Pre-populate test subnet/network data
+        network_driver = utils.get_network_driver()
+        vip_subnet = network_driver.get_subnet(create_lb['vip_subnet_id'])
+        additional_subnet = network_driver.get_subnet(
+            create_lb['additional_vips'][0]['subnet_id'])
+        additional_subnet.network_id = vip_subnet.network_id
+
+        body = self._build_body(create_lb)
+        response = self.post(self.LBS_PATH, body, status=400)
+        error_text = response.json.get('faultstring')
+        self.assertIn('Duplicate VIP subnet(s) specified.', error_text)
+
+    def test_with_additional_vips_different_networks(self):
+        create_lb, expected_lb = self._get_lb_bodies(
+            [], [], additional_vips=[
+                {'subnet_id': uuidutils.generate_uuid()}])
+
+        # Pre-populate test subnet/network data
+        network_driver = utils.get_network_driver()
+        additional_subnet = network_driver.get_subnet(
+            create_lb['additional_vips'][0]['subnet_id'])
+        additional_subnet.network_id = uuidutils.generate_uuid()
+
+        body = self._build_body(create_lb)
+        response = self.post(self.LBS_PATH, body, status=400)
+        error_text = response.json.get('faultstring')
+        self.assertIn('All VIP subnets must belong to the same network.',
+                      error_text)
 
     def test_with_one_listener(self):
         create_listener, expected_listener = self._get_listener_bodies()
@@ -3784,7 +3955,6 @@ class TestLoadBalancerGraph(base.BaseAPITest):
             uuidutils.generate_uuid(),
             project_id=project_id).get('loadbalancer')
 
-        self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
         auth_strategy = self.conf.conf.api_settings.get('auth_strategy')
         self.conf.config(group='api_settings', auth_strategy=constants.TESTING)
 
@@ -3819,7 +3989,6 @@ class TestLoadBalancerGraph(base.BaseAPITest):
     def test_statuses_not_authorized(self):
         lb = self.create_load_balancer(
             uuidutils.generate_uuid()).get('loadbalancer')
-        self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
         auth_strategy = self.conf.conf.api_settings.get('auth_strategy')
         self.conf.config(group='api_settings', auth_strategy=constants.TESTING)
         with mock.patch.object(octavia.common.context.Context, 'project_id',
@@ -3885,7 +4054,6 @@ class TestLoadBalancerGraph(base.BaseAPITest):
             total_connections=random.randint(1, 9),
             request_errors=random.randint(1, 9))
 
-        self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
         auth_strategy = self.conf.conf.api_settings.get('auth_strategy')
         self.conf.config(group='api_settings', auth_strategy=constants.TESTING)
 
@@ -3932,7 +4100,6 @@ class TestLoadBalancerGraph(base.BaseAPITest):
             bytes_in=random.randint(1, 9),
             bytes_out=random.randint(1, 9),
             total_connections=random.randint(1, 9))
-        self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
         auth_strategy = self.conf.conf.api_settings.get('auth_strategy')
         self.conf.config(group='api_settings', auth_strategy=constants.TESTING)
         with mock.patch.object(octavia.common.context.Context, 'project_id',

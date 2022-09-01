@@ -14,47 +14,65 @@
 # under the License.
 #}
 vrrp_script check_script {
-  script {{ check_script_path }}
-  interval {{ vrrp_check_interval }}
-  fall {{ vrrp_fail_count }}
-  rise {{ vrrp_success_count }}
+    script {{ check_script_path }}
+    interval {{ vrrp_check_interval }}
+    fall {{ vrrp_fail_count }}
+    rise {{ vrrp_success_count }}
 }
 
 vrrp_instance {{ vrrp_group_name }} {
-  state {{ amp_role }}
-  interface {{ amp_intf }}
-  virtual_router_id {{ amp_vrrp_id }}
-  priority {{ amp_priority }}
-  nopreempt
-  accept
-  garp_master_refresh {{ vrrp_garp_refresh }}
-  garp_master_refresh_repeat {{ vrrp_garp_refresh_repeat }}
-  advert_int {{ advert_int }}
-  authentication {
-    auth_type {{ vrrp_auth_type }}
-    auth_pass {{ vrrp_auth_pass }}
-  }
+    state {{ amp_role }}
+    interface {{ amp_intf }}
+    virtual_router_id {{ amp_vrrp_id }}
+    priority {{ amp_priority }}
+    nopreempt
+    accept
+    garp_master_refresh {{ vrrp_garp_refresh }}
+    garp_master_refresh_repeat {{ vrrp_garp_refresh_repeat }}
+    advert_int {{ advert_int }}
+    authentication {
+        auth_type {{ vrrp_auth_type }}
+        auth_pass {{ vrrp_auth_pass }}
+    }
 
-  unicast_src_ip {{ amp_vrrp_ip }}
-  unicast_peer {
+    unicast_src_ip {{ amp_vrrp_ip }}
+    unicast_peer {
 {% for amp_vrrp_ip in peers_vrrp_ips %}
-    {{ amp_vrrp_ip }}
+        {{ amp_vrrp_ip }}
 {% endfor %}
-  }
+    }
 
-  virtual_ipaddress {
-    {{ vip_ip_address }}
-  }
+    virtual_ipaddress {
+{% for vip in vips if not vip.excluded %}
+        {{ vip.ip_address }}
+{% endfor %}
+    }
 
-  virtual_routes {
-    {{ vip_network_cidr }} dev {{ amp_intf }} src {{ vip_ip_address }} scope link table 1
-  }
+    virtual_ipaddress_excluded {
+{% for vip in vips if vip.excluded %}
+        {{ vip.ip_address }}
+{% endfor %}
+    }
 
-  virtual_rules {
-    from {{ vip_ip_address }}/{{ '128' if vip_ipv6 else '32' }} table 1 priority 100
-  }
+    virtual_routes {
+{% for vip in vips %}
+        {{ vip.network_cidr }} dev {{ amp_intf }} src {{ vip.ip_address }} scope link table 1
+    {% if vip.gateway %}
+        default via {{ vip.gateway }} dev {{ amp_intf }} onlink table 1
+    {% endif %}
+    {% for host_route in vip.host_routes %}
+        {{ host_route.destination }} dev {{ amp_intf }} gateway {{ host_route.nexthop }} onlink table 1
+    {% endfor %}
+{% endfor %}
+    }
 
-  track_script {
-    check_script
-  }
+    virtual_rules {
+{% for vip in vips %}
+        from {{ vip.ip_address }}/{{ '128' if vip.ipv6 else '32' }} table 1 priority 100
+{% endfor %}
+    }
+
+    track_script {
+        check_script
+    }
 }

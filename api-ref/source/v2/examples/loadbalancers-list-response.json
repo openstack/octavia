@@ -15,6 +15,7 @@
             "vip_address": "203.0.113.50",
             "vip_network_id": "d0d217df-3958-4fbf-a3c2-8dad2908c709",
             "vip_port_id": "b4ca07d1-a31e-43e2-891a-7d14f419f342",
+            "additional_vips": [],
             "provider": "octavia",
             "pools": [
                 {

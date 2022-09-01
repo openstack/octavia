@@ -200,10 +200,13 @@ class JinjaTemplater(object):
                 continue
             listener_transforms.append(self._transform_listener(
                 listener, tls_certs, feature_compatibility, loadbalancer))
+        additional_vips = [
+            vip.ip_address for vip in loadbalancer.additional_vips]
 
         ret_value = {
             'id': loadbalancer.id,
             'vip_address': loadbalancer.vip.ip_address,
+            'additional_vips': additional_vips,
             'listeners': listener_transforms,
             'topology': loadbalancer.topology,
             'enabled': loadbalancer.enabled,

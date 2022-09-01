@@ -30,10 +30,9 @@ V4_HEX_IP_REGEX = re.compile(r"(\w{2})(\w{2})(\w{2})(\w{2})")
 V6_RS_VALUE_REGEX = re.compile(r"(\[[\[\w{4}:]+\b\]:\w{4})\s+(.*$)")
 
 NS_REGEX = re.compile(r"net_namespace\s(\w+-\w+)")
-V4_VS_REGEX = re.compile(r"virtual_server\s([\d+\.]+\b)\s(\d{1,5})")
-V4_RS_REGEX = re.compile(r"real_server\s([\d+\.]+\b)\s(\d{1,5})")
-V6_VS_REGEX = re.compile(r"virtual_server\s([\w*:]+\b)\s(\d{1,5})")
-V6_RS_REGEX = re.compile(r"real_server\s([\w*:]+\b)\s(\d{1,5})")
+VS_ADDRESS_REGEX = re.compile(r"virtual_server_group .* \{\n"
+                              r"\s+([a-f\d\.:]+)\s(\d{1,5})\n")
+RS_ADDRESS_REGEX = re.compile(r"real_server\s([a-f\d\.:]+)\s(\d{1,5})")
 CONFIG_COMMENT_REGEX = re.compile(
     r"#\sConfiguration\sfor\s(\w+)\s(\w{8}-\w{4}-\w{4}-\w{4}-\w{12})")
 DISABLED_CONFIG_COMMENT_REGEX = re.compile(
@@ -60,7 +59,7 @@ def read_kernel_file(ns_name, file_path):
     return output
 
 
-def get_listener_realserver_mapping(ns_name, listener_ip_port,
+def get_listener_realserver_mapping(ns_name, listener_ip_ports,
                                     health_monitor_enabled):
     # returned result:
     # actual_member_result = {'rs_ip:listened_port': {
@@ -70,15 +69,18 @@ def get_listener_realserver_mapping(ns_name, listener_ip_port,
     #   'ActiveConn': 0,
     #   'InActConn': 0
     # }}
-    listener_ip, listener_port = listener_ip_port.rsplit(':', 1)
-    ip_obj = ipaddress.ip_address(listener_ip.strip('[]'))
-    output = read_kernel_file(ns_name, KERNEL_LVS_PATH).split('\n')
-    if ip_obj.version == 4:
-        ip_to_hex_format = "%.8X" % ip_obj._ip
-    else:
-        ip_to_hex_format = r'\[' + ip_obj.exploded + r'\]'
-    port_hex_format = "%.4X" % int(listener_port)
-    idex = ip_to_hex_format + ':' + port_hex_format
+    idex_list = []
+    for listener_ip_port in listener_ip_ports:
+        listener_ip, listener_port = listener_ip_port.rsplit(':', 1)
+        ip_obj = ipaddress.ip_address(listener_ip.strip('[]'))
+        output = read_kernel_file(ns_name, KERNEL_LVS_PATH).split('\n')
+        if ip_obj.version == 4:
+            ip_to_hex_format = "%.8X" % ip_obj._ip
+        else:
+            ip_to_hex_format = r'\[' + ip_obj.exploded + r'\]'
+        port_hex_format = "%.4X" % int(listener_port)
+        idex_list.append(ip_to_hex_format + ':' + port_hex_format)
+    idex = "({})".format("|".join(idex_list))
 
     if health_monitor_enabled:
         member_status = constants.UP
@@ -139,7 +141,7 @@ def get_listener_realserver_mapping(ns_name, listener_ip_port,
 
 def get_lvs_listener_resource_ipports_nsname(listener_id):
     # resource_ipport_mapping = {'Listener': {'id': listener-id,
-    #                                         'ipport': ipport},
+    #                                         'ipports': [ipport1, ipport2]},
     #                            'Pool': {'id': pool-id},
     #                            'Members': [{'id': member-id-1,
     #                                        'ipport': ipport},
@@ -150,11 +152,21 @@ def get_lvs_listener_resource_ipports_nsname(listener_id):
     with open(util.keepalived_lvs_cfg_path(listener_id),
               'r', encoding='utf-8') as f:
         cfg = f.read()
+
+        ret = VS_ADDRESS_REGEX.findall(cfg)
+
+        def _escape_ip(ip):
+            ret = ipaddress.ip_address(ip)
+            if ret.version == 6:
+                return "[" + ret.compressed + "]"
+            return ret.compressed
+
+        listener_ip_ports = [
+            _escape_ip(ip_port[0]) + ":" + ip_port[1]
+            for ip_port in ret
+        ]
+
         ns_name = NS_REGEX.findall(cfg)[0]
-        listener_ip_port = V4_VS_REGEX.findall(cfg)
-        if not listener_ip_port:
-            listener_ip_port = V6_VS_REGEX.findall(cfg)
-        listener_ip_port = listener_ip_port[0] if listener_ip_port else []
 
         disabled_resource_ids = DISABLED_CONFIG_COMMENT_REGEX.findall(cfg)
 
@@ -164,7 +176,7 @@ def get_lvs_listener_resource_ipports_nsname(listener_id):
         if listener_disabled:
             return None, ns_name
 
-        if not listener_ip_port:
+        if not listener_ip_ports:
             # If not get listener_ip_port from the lvs config file,
             # that means the listener's default pool have no enabled member
             # yet. But at this moment, we can get listener_id and ns_name, so
@@ -175,9 +187,7 @@ def get_lvs_listener_resource_ipports_nsname(listener_id):
         rs_ip_port_list = []
         for line in cfg_line:
             if 'real_server' in line:
-                res = V4_RS_REGEX.findall(line)
-                if not res:
-                    res = V6_RS_REGEX.findall(line)
+                res = RS_ADDRESS_REGEX.findall(line)
                 rs_ip_port_list.append(res[0])
 
         resource_type_ids = CONFIG_COMMENT_REGEX.findall(cfg)
@@ -220,12 +230,8 @@ def get_lvs_listener_resource_ipports_nsname(listener_id):
                     rs_ip_port_list[index][0] + ':' +
                     rs_ip_port_list[index][1])
 
-        listener_ip = ipaddress.ip_address(listener_ip_port[0])
-        if listener_ip.version == 6:
-            listener_ip_port = (
-                '[' + listener_ip.compressed + ']', listener_ip_port[1])
-        resource_ipport_mapping['Listener']['ipport'] = (
-            listener_ip_port[0] + ':' + listener_ip_port[1])
+        resource_ipport_mapping['Listener']['ipports'] = (
+            listener_ip_ports)
 
     return resource_ipport_mapping, ns_name
 
@@ -262,7 +268,7 @@ def get_lvs_listener_pool_status(listener_id):
         hm_enabled = len(CHECKER_REGEX.findall(cfg)) > 0
 
     _, realserver_result = get_listener_realserver_mapping(
-        ns_name, resource_ipport_mapping['Listener']['ipport'],
+        ns_name, resource_ipport_mapping['Listener']['ipports'],
         hm_enabled)
     pool_status = constants.UP
     member_results = {}
@@ -436,30 +442,37 @@ def get_lvs_listeners_stats():
     stats_res = get_ipvsadm_info(constants.AMPHORA_NAMESPACE,
                                  is_stats_cmd=True)
     for listener_id, ipport in ipport_mapping.items():
-        listener_ipport = ipport['Listener']['ipport']
+        listener_ipports = ipport['Listener']['ipports']
         # This would be in Error, wait for the next loop to sync for the
         # listener at this moment. Also this is for skip the case no enabled
         # member in UDP listener, so we don't check it for failover.
-        if listener_ipport not in scur_res or listener_ipport not in stats_res:
+        scur_found = stats_found = False
+        for listener_ipport in listener_ipports:
+            if listener_ipport in scur_res:
+                scur_found = True
+            if listener_ipport in stats_res:
+                stats_found = True
+        if not scur_found or not stats_found:
             continue
 
         scur, bout, bin, stot, ereq = 0, 0, 0, 0, 0
         # As all results contain this listener, so its status should be OPEN
         status = constants.OPEN
         # Get scur
-        for m in scur_res[listener_ipport]['Members']:
-            for item in m:
-                if item[0] == 'ActiveConn':
-                    scur += int(item[1])
+        for listener_ipport in listener_ipports:
+            for m in scur_res[listener_ipport]['Members']:
+                for item in m:
+                    if item[0] == 'ActiveConn':
+                        scur += int(item[1])
 
-        # Get bout, bin, stot
-        for item in stats_res[listener_ipport]['Listener']:
-            if item[0] == 'Conns':
-                stot = int(item[1])
-            elif item[0] == 'OutBytes':
-                bout = int(item[1])
-            elif item[0] == 'InBytes':
-                bin = int(item[1])
+            # Get bout, bin, stot
+            for item in stats_res[listener_ipport]['Listener']:
+                if item[0] == 'Conns':
+                    stot += int(item[1])
+                elif item[0] == 'OutBytes':
+                    bout += int(item[1])
+                elif item[0] == 'InBytes':
+                    bin += int(item[1])
 
         listener_stats_res.update({
             listener_id: {

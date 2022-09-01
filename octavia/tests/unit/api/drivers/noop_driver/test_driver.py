@@ -148,9 +148,11 @@ class TestNoopProviderDriver(base.TestCase):
                             "loadbalancer."}
 
     def test_create_vip_port(self):
-        vip_dict = self.driver.create_vip_port(self.loadbalancer_id,
-                                               self.project_id,
-                                               self.ref_vip.to_dict())
+        vip_dict, additional_vip_dicts = self.driver.create_vip_port(
+            self.loadbalancer_id,
+            self.project_id,
+            self.ref_vip.to_dict(),
+            None)
 
         self.assertEqual(self.ref_vip.to_dict(), vip_dict)
 

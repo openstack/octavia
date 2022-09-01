@@ -15,6 +15,7 @@ from unittest import mock
 
 from octavia_lib.api.drivers import data_models as driver_dm
 from octavia_lib.api.drivers import exceptions
+from octavia_lib.common import constants as lib_consts
 from oslo_utils import uuidutils
 
 from octavia.api.drivers.amphora_driver.v2 import driver
@@ -22,7 +23,6 @@ from octavia.common import constants as consts
 from octavia.network import base as network_base
 from octavia.tests.common import sample_data_models
 from octavia.tests.unit import base
-from octavia_lib.common import constants as lib_consts
 
 
 class TestAmphoraDriver(base.TestRpc):
@@ -35,13 +35,15 @@ class TestAmphoraDriver(base.TestRpc):
     def test_create_vip_port(self, mock_get_net_driver):
         mock_net_driver = mock.MagicMock()
         mock_get_net_driver.return_value = mock_net_driver
-        mock_net_driver.allocate_vip.return_value = self.sample_data.db_vip
+        mock_net_driver.allocate_vip.return_value = self.sample_data.db_vip, []
 
-        provider_vip_dict = self.amp_driver.create_vip_port(
+        provider_vip_dict, add_vip_dicts = self.amp_driver.create_vip_port(
             self.sample_data.lb_id, self.sample_data.project_id,
-            self.sample_data.provider_vip_dict)
+            self.sample_data.provider_vip_dict,
+            [self.sample_data.provider_additional_vip_dict])
 
         self.assertEqual(self.sample_data.provider_vip_dict, provider_vip_dict)
+        self.assertFalse(add_vip_dicts)
 
     @mock.patch('octavia.common.utils.get_network_driver')
     def test_create_vip_port_without_port_security_enabled(
@@ -56,7 +58,8 @@ class TestAmphoraDriver(base.TestRpc):
         self.assertRaises(exceptions.DriverError,
                           self.amp_driver.create_vip_port,
                           self.sample_data.lb_id, self.sample_data.project_id,
-                          self.sample_data.provider_vip_dict)
+                          self.sample_data.provider_vip_dict,
+                          [self.sample_data.provider_additional_vip_dict])
 
     @mock.patch('octavia.common.utils.get_network_driver')
     def test_create_vip_port_failed(self, mock_get_net_driver):
@@ -68,7 +71,8 @@ class TestAmphoraDriver(base.TestRpc):
         self.assertRaises(exceptions.DriverError,
                           self.amp_driver.create_vip_port,
                           self.sample_data.lb_id, self.sample_data.project_id,
-                          self.sample_data.provider_vip_dict)
+                          self.sample_data.provider_vip_dict,
+                          [self.sample_data.provider_additional_vip_dict])
 
     # Load Balancer
     @mock.patch('oslo_messaging.RPCClient.cast')

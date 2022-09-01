@@ -1,0 +1,12 @@
+---
+features:
+  - |
+    It is now possible to create a loadbalancer with more than one VIP. There
+    is a new structure ``additional_vips`` in the create body, which allows a
+    subnet, and optionally an IP, to be specified. All VIP subnets must be part
+    of the same network.
+upgrade:
+  - |
+    To support multi-VIP loadbalancers, a new amphora image must be built. It is
+    safe to upload the new image before the upgrade, as it is fully backwards
+    compatible.

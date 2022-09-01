@@ -12,7 +12,6 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 import os
-import subprocess
 from unittest import mock
 
 from oslo_config import cfg
@@ -112,20 +111,9 @@ class TestPlug(base.TestCase):
             )
         mock_webob.Response.assert_any_call(json={
             'message': 'OK',
-            'details': 'VIP {vip} plugged on interface {interface}'.format(
-                vip=FAKE_IP_IPV4, interface='eth1')
+            'details': 'VIPs plugged on interface {interface}: {vips}'.format(
+                vips=FAKE_IP_IPV4, interface='eth1')
         }, status=202)
-        calls = [mock.call('amphora-haproxy', ['/sbin/sysctl', '--system'],
-                           stdout=subprocess.PIPE),
-                 mock.call('amphora-haproxy', ['modprobe', 'ip_vs'],
-                           stdout=subprocess.PIPE),
-                 mock.call('amphora-haproxy',
-                           ['/sbin/sysctl', '-w', 'net.ipv4.ip_forward=1'],
-                           stdout=subprocess.PIPE),
-                 mock.call('amphora-haproxy',
-                           ['/sbin/sysctl', '-w', 'net.ipv4.vs.conntrack=1'],
-                           stdout=subprocess.PIPE)]
-        mock_nspopen.assert_has_calls(calls, any_order=True)
 
     @mock.patch('octavia.amphorae.backends.agent.api_server.plug.Plug.'
                 '_interface_by_mac', return_value=FAKE_INTERFACE)
@@ -152,21 +140,45 @@ class TestPlug(base.TestCase):
             )
         mock_webob.Response.assert_any_call(json={
             'message': 'OK',
-            'details': 'VIP {vip} plugged on interface {interface}'.format(
-                vip=FAKE_IP_IPV6_EXPANDED, interface='eth1')
+            'details': 'VIPs plugged on interface {interface}: {vips}'.format(
+                vips=FAKE_IP_IPV6_EXPANDED, interface='eth1')
         }, status=202)
-        calls = [mock.call('amphora-haproxy', ['/sbin/sysctl', '--system'],
-                           stdout=subprocess.PIPE),
-                 mock.call('amphora-haproxy', ['modprobe', 'ip_vs'],
-                           stdout=subprocess.PIPE),
-                 mock.call('amphora-haproxy',
-                           ['/sbin/sysctl', '-w',
-                            'net.ipv6.conf.all.forwarding=1'],
-                           stdout=subprocess.PIPE),
-                 mock.call('amphora-haproxy',
-                           ['/sbin/sysctl', '-w', 'net.ipv4.vs.conntrack=1'],
-                           stdout=subprocess.PIPE)]
-        mock_nspopen.assert_has_calls(calls, any_order=True)
+
+    @mock.patch('octavia.amphorae.backends.agent.api_server.plug.Plug.'
+                '_interface_by_mac', return_value=FAKE_INTERFACE)
+    @mock.patch('pyroute2.NSPopen', create=True)
+    @mock.patch.object(plug, "webob")
+    @mock.patch('pyroute2.IPRoute', create=True)
+    @mock.patch('pyroute2.NetNS', create=True)
+    @mock.patch('subprocess.check_output')
+    @mock.patch('shutil.copytree')
+    @mock.patch('os.makedirs')
+    def test_plug_vip_ipv4_and_ipv6(
+            self, mock_makedirs, mock_copytree,
+            mock_check_output, mock_netns,
+            mock_pyroute2, mock_webob, mock_nspopen, mock_by_mac):
+        conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
+        conf.config(group='controller_worker',
+                    loadbalancer_topology=constants.TOPOLOGY_ACTIVE_STANDBY)
+        additional_vips = [
+            {'ip_address': FAKE_IP_IPV4, 'subnet_cidr': FAKE_CIDR_IPV4,
+             'host_routes': [], 'gateway': FAKE_GATEWAY_IPV4}
+        ]
+        m = mock.mock_open()
+        with mock.patch('os.open'), mock.patch.object(os, 'fdopen', m):
+            self.test_plug.plug_vip(
+                vip=FAKE_IP_IPV6,
+                subnet_cidr=FAKE_CIDR_IPV6,
+                gateway=FAKE_GATEWAY_IPV6,
+                mac_address=FAKE_MAC_ADDRESS,
+                additional_vips=additional_vips
+            )
+        mock_webob.Response.assert_any_call(json={
+            'message': 'OK',
+            'details': 'VIPs plugged on interface {interface}: {vips}'.format(
+                vips=", ".join([FAKE_IP_IPV6_EXPANDED, FAKE_IP_IPV4]),
+                interface='eth1')
+        }, status=202)
 
     @mock.patch.object(plug, "webob")
     @mock.patch('pyroute2.IPRoute', create=True)
@@ -178,15 +190,44 @@ class TestPlug(base.TestCase):
                              mock_check_output, mock_netns, mock_pyroute2,
                              mock_webob):
         m = mock.mock_open()
+        BAD_IP_ADDRESS = "error"
         with mock.patch('os.open'), mock.patch.object(os, 'fdopen', m):
             self.test_plug.plug_vip(
-                vip="error",
+                vip=BAD_IP_ADDRESS,
                 subnet_cidr=FAKE_CIDR_IPV4,
                 gateway=FAKE_GATEWAY_IPV4,
                 mac_address=FAKE_MAC_ADDRESS
             )
-        mock_webob.Response.assert_any_call(json={'message': 'Invalid VIP'},
-                                            status=400)
+        mock_webob.Response.assert_any_call(
+            json={'message': ("Invalid VIP: '{ip}' does not appear to be an "
+                              "IPv4 or IPv6 address").format(
+                                  ip=BAD_IP_ADDRESS)},
+            status=400)
+
+    @mock.patch.object(plug, "webob")
+    @mock.patch('pyroute2.IPRoute', create=True)
+    @mock.patch('pyroute2.NetNS', create=True)
+    @mock.patch('subprocess.check_output')
+    @mock.patch('shutil.copytree')
+    @mock.patch('os.makedirs')
+    def test_plug_vip_bad_vrrp_ip(self, mock_makedirs, mock_copytree,
+                                  mock_check_output, mock_netns, mock_pyroute2,
+                                  mock_webob):
+        m = mock.mock_open()
+        BAD_IP_ADDRESS = "error"
+        with mock.patch('os.open'), mock.patch.object(os, 'fdopen', m):
+            self.test_plug.plug_vip(
+                vip=FAKE_IP_IPV4,
+                subnet_cidr=FAKE_CIDR_IPV4,
+                gateway=FAKE_GATEWAY_IPV4,
+                mac_address=FAKE_MAC_ADDRESS,
+                vrrp_ip=BAD_IP_ADDRESS
+            )
+        mock_webob.Response.assert_any_call(
+            json={'message': ("Invalid VRRP Address: '{ip}' does not appear "
+                              "to be an IPv4 or IPv6 address").format(
+                                  ip=BAD_IP_ADDRESS)},
+            status=400)
 
     @mock.patch("octavia.amphorae.backends.agent.api_server.osutils."
                 "BaseOS.write_interface_file")
@@ -336,12 +377,20 @@ class TestPlug(base.TestCase):
 
         mock_write_vip_interface.assert_called_once_with(
             interface=FAKE_INTERFACE,
-            vip=vip_net_info['vip'],
-            ip_version=4,
-            prefixlen=25,
-            gateway=vip_net_info['gateway'],
-            vrrp_ip=vip_net_info['vrrp_ip'],
-            host_routes=[],
+            vips=[{
+                'ip_address': vip_net_info['vip'],
+                'ip_version': 4,
+                'prefixlen': 25,
+                'gateway': vip_net_info['gateway'],
+                'host_routes': [],
+            }],
+            vrrp_info={
+                'ip': vip_net_info['vrrp_ip'],
+                'ip_version': 4,
+                'prefixlen': 25,
+                'gateway': vip_net_info['gateway'],
+                'host_routes': [],
+            },
             fixed_ips=fixed_ips, mtu=mtu)
 
         mock_if_up.assert_called_once_with(FAKE_INTERFACE, 'vip')

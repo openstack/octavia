@@ -34,6 +34,12 @@ class BaseLoadBalancerType(types.BaseType):
         'qos_policy_id': 'vip_qos_policy_id'}}
 
 
+class AdditionalVipsType(types.BaseType):
+    """Type for additional vips"""
+    subnet_id = wtypes.wsattr(wtypes.UuidType(), mandatory=True)
+    ip_address = wtypes.wsattr(types.IPAddressType())
+
+
 class LoadBalancerResponse(BaseLoadBalancerType):
     """Defines which attributes are to be shown on any response."""
     id = wtypes.wsattr(wtypes.UuidType())
@@ -49,6 +55,7 @@ class LoadBalancerResponse(BaseLoadBalancerType):
     vip_port_id = wtypes.wsattr(wtypes.UuidType())
     vip_subnet_id = wtypes.wsattr(wtypes.UuidType())
     vip_network_id = wtypes.wsattr(wtypes.UuidType())
+    additional_vips = wtypes.wsattr([AdditionalVipsType])
     listeners = wtypes.wsattr([types.IdOnlyType])
     pools = wtypes.wsattr([types.IdOnlyType])
     provider = wtypes.wsattr(wtypes.StringType())
@@ -67,6 +74,9 @@ class LoadBalancerResponse(BaseLoadBalancerType):
             result.vip_address = data_model.vip.ip_address
             result.vip_network_id = data_model.vip.network_id
             result.vip_qos_policy_id = data_model.vip.qos_policy_id
+        result.additional_vips = [
+            AdditionalVipsType.from_data_model(i)
+            for i in data_model.additional_vips]
         if cls._full_response():
             listener_model = listener.ListenerFullResponse
             pool_model = pool.PoolFullResponse
@@ -117,6 +127,7 @@ class LoadBalancerPOST(BaseLoadBalancerType):
     vip_subnet_id = wtypes.wsattr(wtypes.UuidType())
     vip_network_id = wtypes.wsattr(wtypes.UuidType())
     vip_qos_policy_id = wtypes.wsattr(wtypes.UuidType())
+    additional_vips = wtypes.wsattr([AdditionalVipsType], default=[])
     project_id = wtypes.wsattr(wtypes.StringType(max_length=36))
     listeners = wtypes.wsattr([listener.ListenerSingleCreate], default=[])
     pools = wtypes.wsattr([pool.PoolSingleCreate], default=[])

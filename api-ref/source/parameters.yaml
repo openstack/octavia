@@ -135,6 +135,17 @@ active_connections:
   in: body
   required: true
   type: integer
+additional_vips:
+  description: |
+    A list of JSON objects defining "additional VIPs". The format for these
+    is ``{"subnet_id": <subnet_id>, "ip_address": <ip_address>}``, where
+    the ``subnet_id`` field is mandatory and the ``ip_address`` field is
+    optional. Additional VIP subnets must all belong to the same network as
+    the primary VIP.
+  in: body
+  required: false
+  type: array
+  min_version: 2.26
 address:
   description: |
     The IP address of the resource.
@@ -1511,14 +1522,14 @@ tags:
   in: body
   min_version: 2.5
   required: true
-  type: list
+  type: array
 tags-optional:
   description: |
     A list of simple strings assigned to the resource.
   in: body
   min_version: 2.5
   required: false
-  type: list
+  type: array
 timeout_client_data:
   description: |
     Frontend client inactivity timeout in milliseconds. Default: 50000.

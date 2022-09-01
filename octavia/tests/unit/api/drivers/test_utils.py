@@ -450,7 +450,44 @@ class TestUtils(base.TestCase):
             {'ip_address': '192.0.2.44'})
         self.assertEqual({'vip_address': '192.0.2.44'}, new_vip_dict)
 
+    def test_additional_vip_dict_to_provider_dict(self):
+        new_additional_vip_dict = (
+            utils.additional_vip_dict_to_provider_dict(
+                self.sample_data.test_additional_vip_dict))
+        self.assertEqual(self.sample_data.provider_additional_vip_dict,
+                         new_additional_vip_dict)
+
+        vip_dict = {
+            constants.IP_ADDRESS: mock.Mock()}
+        new_additional_vip_dict = (
+            utils.additional_vip_dict_to_provider_dict(vip_dict))
+        expected_dict = vip_dict
+        self.assertEqual(expected_dict, new_additional_vip_dict)
+
     def test_provider_vip_dict_to_vip_obj(self):
         new_provider_vip = utils.provider_vip_dict_to_vip_obj(
             self.sample_data.provider_vip_dict)
         self.assertEqual(self.sample_data.db_vip, new_provider_vip)
+
+    def test_provider_additional_vip_to_vip_obj(self):
+        new_additional_vip = (
+            utils.provider_additional_vip_dict_to_additional_vip_obj(
+                self.sample_data.provider_additional_vip_dict))
+        self.assertEqual(self.sample_data.db_additional_vip,
+                         new_additional_vip)
+
+        vip_dict = {constants.IP_ADDRESS: mock.Mock()}
+        new_additional_vip = (
+            utils.provider_additional_vip_dict_to_additional_vip_obj(
+                vip_dict))
+        expected_obj = data_models.AdditionalVip(
+            ip_address=vip_dict[constants.IP_ADDRESS])
+        self.assertEqual(expected_obj, new_additional_vip)
+
+        vip_dict = {constants.SUBNET_ID: mock.Mock()}
+        new_additional_vip = (
+            utils.provider_additional_vip_dict_to_additional_vip_obj(
+                vip_dict))
+        expected_obj = data_models.AdditionalVip(
+            subnet_id=vip_dict[constants.SUBNET_ID])
+        self.assertEqual(expected_obj, new_additional_vip)

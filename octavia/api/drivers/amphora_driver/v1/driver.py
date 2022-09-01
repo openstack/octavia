@@ -104,7 +104,13 @@ class AmphoraProviderDriver(driver_base.ProviderDriver):
                 operator_fault_string=msg)
 
     # Load Balancer
-    def create_vip_port(self, loadbalancer_id, project_id, vip_dictionary):
+    def create_vip_port(self, loadbalancer_id, project_id, vip_dictionary,
+                        additional_vip_dicts=None):
+        if additional_vip_dicts:
+            msg = ('Amphora v1 driver does not support additional_vips.')
+            raise exceptions.UnsupportedOptionError(
+                user_fault_string=msg,
+                operator_fault_string=msg)
         vip_obj = driver_utils.provider_vip_dict_to_vip_obj(vip_dictionary)
         lb_obj = data_models.LoadBalancer(id=loadbalancer_id,
                                           project_id=project_id, vip=vip_obj)

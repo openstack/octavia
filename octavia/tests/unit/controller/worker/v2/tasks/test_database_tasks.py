@@ -40,12 +40,18 @@ POOL_ID = uuidutils.generate_uuid()
 HM_ID = uuidutils.generate_uuid()
 MEMBER_ID = uuidutils.generate_uuid()
 PORT_ID = uuidutils.generate_uuid()
+PORT_ID2 = uuidutils.generate_uuid()
+PORT_ID3 = uuidutils.generate_uuid()
 SUBNET_ID = uuidutils.generate_uuid()
+SUBNET_ID2 = uuidutils.generate_uuid()
+SUBNET_ID3 = uuidutils.generate_uuid()
 VRRP_PORT_ID = uuidutils.generate_uuid()
 HA_PORT_ID = uuidutils.generate_uuid()
 L7POLICY_ID = uuidutils.generate_uuid()
 L7RULE_ID = uuidutils.generate_uuid()
 VIP_IP = '192.0.5.2'
+VIP_IP2 = '192.0.5.5'
+VIP_IP3 = '192.0.5.6'
 VRRP_ID = 1
 VRRP_IP = '192.0.5.3'
 HA_IP = '192.0.5.4'
@@ -491,6 +497,41 @@ class TestDatabaseTasks(base.TestCase):
                                                 ip_address=VIP_IP)
         mock_loadbalancer_get.assert_called_once_with('TEST',
                                                       id=LB_ID)
+
+    @mock.patch('octavia.db.repositories.LoadBalancerRepository.get',
+                return_value=_db_loadbalancer_mock)
+    @mock.patch('octavia.db.repositories.AdditionalVipRepository.update')
+    def test_update_additional_vips_after_allocation(
+            self,
+            mock_additional_vip_update,
+            mock_loadbalancer_get,
+            mock_generate_uuid,
+            mock_LOG,
+            mock_get_session,
+            mock_loadbalancer_repo_update,
+            mock_listener_repo_update,
+            mock_amphora_repo_update,
+            mock_amphora_repo_delete):
+
+        additional_vip1_dict = {
+            "subnet_id": SUBNET_ID2,
+            "ip_address": VIP_IP2,
+            "port_id": PORT_ID2
+        }
+        additional_vip2_dict = {
+            "subnet_id": SUBNET_ID3,
+            "ip_address": VIP_IP3,
+            "port_id": PORT_ID3
+        }
+
+        update_additional_vips = (
+            database_tasks.UpdateAdditionalVIPsAfterAllocation())
+        update_additional_vips.execute(
+            LB_ID, [additional_vip1_dict, additional_vip2_dict])
+        mock_additional_vip_update.assert_any_call(
+            'TEST', LB_ID, SUBNET_ID2, ip_address=VIP_IP2, port_id=PORT_ID2)
+        mock_additional_vip_update.assert_any_call(
+            'TEST', LB_ID, SUBNET_ID3, ip_address=VIP_IP3, port_id=PORT_ID3)
 
     def test_update_amphora_vip_data(self,
                                      mock_generate_uuid,

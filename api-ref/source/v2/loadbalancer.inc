@@ -45,6 +45,7 @@ Response Parameters
 
 .. rest_parameters:: ../parameters.yaml
 
+   - additional_vips: additional_vips
    - admin_state_up: admin_state_up
    - availability_zone: availability-zone-name
    - created_at: created_at
@@ -145,6 +146,11 @@ a VIP network for the load balancer:
    octavia will attempt to allocate the ``vip_address`` from the subnet for
    the VIP address.
 
+Additional VIPs may also be specified in the ``additional_vips`` field, by
+providing a list of JSON objects containing a ``subnet_id`` and optionally
+an ``ip_address``. All additional subnets must be part of the same network
+as the primary VIP.
+
 .. rest_status_code:: success ../http-status.yaml
 
    - 201
@@ -163,6 +169,7 @@ Request
 
 .. rest_parameters:: ../parameters.yaml
 
+   - additional_vips: additional_vips
    - admin_state_up: admin_state_up-default-optional
    - availability_zone: availability-zone-name-optional
    - description: description-optional
@@ -196,6 +203,7 @@ Response Parameters
 
 .. rest_parameters:: ../parameters.yaml
 
+   - additional_vips: additional_vips
    - admin_state_up: admin_state_up
    - availability_zone: availability-zone-name
    - created_at: created_at
@@ -290,6 +298,7 @@ Response Parameters
 
 .. rest_parameters:: ../parameters.yaml
 
+   - additional_vips: additional_vips
    - admin_state_up: admin_state_up
    - availability_zone: availability-zone-name
    - created_at: created_at
@@ -377,6 +386,7 @@ Response Parameters
 
 .. rest_parameters:: ../parameters.yaml
 
+   - additional_vips: additional_vips
    - admin_state_up: admin_state_up
    - created_at: created_at
    - description: description

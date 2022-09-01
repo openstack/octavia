@@ -1322,24 +1322,29 @@ class TestNetworkTasks(base.TestCase):
         mock_get_net_driver.return_value = mock_driver
         net = network_tasks.AllocateVIP()
 
-        mock_driver.allocate_vip.return_value = LB.vip
+        additional_vip = mock.Mock()
+        additional_vip.subnet_id = uuidutils.generate_uuid()
+        additional_vip.ip_address = IP_ADDRESS
+        mock_driver.allocate_vip.return_value = LB.vip, [additional_vip]
 
         mock_driver.reset_mock()
-        self.assertEqual(LB.vip.to_dict(),
+        self.assertEqual((LB.vip.to_dict(), [additional_vip.to_dict()]),
                          net.execute(self.load_balancer_mock))
         mock_driver.allocate_vip.assert_called_once_with(LB)
 
         # revert
         vip_mock = VIP.to_dict()
-        net.revert(vip_mock, self.load_balancer_mock)
+        additional_vips_mock = mock.MagicMock()
+        net.revert((vip_mock, additional_vips_mock), self.load_balancer_mock)
         mock_driver.deallocate_vip.assert_called_once_with(
             o_data_models.Vip(**vip_mock))
 
         # revert exception
         mock_driver.reset_mock()
+        additional_vips_mock.reset_mock()
         mock_driver.deallocate_vip.side_effect = Exception('DeallVipException')
         vip_mock = VIP.to_dict()
-        net.revert(vip_mock, self.load_balancer_mock)
+        net.revert((vip_mock, additional_vips_mock), self.load_balancer_mock)
         mock_driver.deallocate_vip.assert_called_once_with(o_data_models.Vip(
             **vip_mock))
 
@@ -1352,16 +1357,17 @@ class TestNetworkTasks(base.TestCase):
         mock_get_net_driver.return_value = mock_driver
         net = network_tasks.AllocateVIPforFailover()
 
-        mock_driver.allocate_vip.return_value = LB.vip
+        mock_driver.allocate_vip.return_value = LB.vip, []
 
         mock_driver.reset_mock()
-        self.assertEqual(LB.vip.to_dict(),
+        self.assertEqual((LB.vip.to_dict(), []),
                          net.execute(self.load_balancer_mock))
         mock_driver.allocate_vip.assert_called_once_with(LB)
 
         # revert
         vip_mock = VIP.to_dict()
-        net.revert(vip_mock, self.load_balancer_mock)
+        additional_vips_mock = mock.MagicMock()
+        net.revert((vip_mock, additional_vips_mock), self.load_balancer_mock)
         mock_driver.deallocate_vip.assert_not_called()
 
     @mock.patch('octavia.db.repositories.LoadBalancerRepository.get')
@@ -1667,6 +1673,7 @@ class TestNetworkTasks(base.TestCase):
         VIP_SG_ID = uuidutils.generate_uuid()
         VIP_SUBNET_ID = uuidutils.generate_uuid()
         VIP_IP_ADDRESS = '203.0.113.81'
+        VIP_IP_ADDRESS2 = 'fd08::1'
         mock_driver = mock.MagicMock()
         mock_get_net_driver.return_value = mock_driver
         vip_dict = {constants.IP_ADDRESS: VIP_IP_ADDRESS,
@@ -1675,6 +1682,7 @@ class TestNetworkTasks(base.TestCase):
                     constants.SUBNET_ID: VIP_SUBNET_ID}
         port_mock = mock.MagicMock()
         port_mock.id = PORT_ID
+        additional_vips = [{constants.IP_ADDRESS: VIP_IP_ADDRESS2}]
 
         mock_driver.create_port.side_effect = [
             port_mock, exceptions.OctaviaException('boom'),
@@ -1688,40 +1696,43 @@ class TestNetworkTasks(base.TestCase):
         net_task.execute.retry.stop = tenacity.stop_after_attempt(2)
 
         # Test execute
-        result = net_task.execute(vip_dict, VIP_SG_ID, AMP_ID)
+        result = net_task.execute(vip_dict, VIP_SG_ID, AMP_ID, additional_vips)
 
         self.assertEqual(port_mock.to_dict(), result)
         mock_driver.create_port.assert_called_once_with(
             VIP_NETWORK_ID, name=constants.AMP_BASE_PORT_PREFIX + AMP_ID,
             fixed_ips=[{constants.SUBNET_ID: VIP_SUBNET_ID}],
-            secondary_ips=[VIP_IP_ADDRESS], security_group_ids=[VIP_SG_ID],
+            secondary_ips=[VIP_IP_ADDRESS, VIP_IP_ADDRESS2],
+            security_group_ids=[VIP_SG_ID],
             qos_policy_id=VIP_QOS_ID)
 
         # Test execute exception
         mock_driver.reset_mock()
 
         self.assertRaises(exceptions.OctaviaException, net_task.execute,
-                          vip_dict, None, AMP_ID)
+                          vip_dict, None, AMP_ID, additional_vips)
 
         # Test revert when this task failed
         mock_driver.reset_mock()
 
         net_task.revert(failure.Failure.from_exception(Exception('boom')),
-                        vip_dict, VIP_SG_ID, AMP_ID)
+                        vip_dict, VIP_SG_ID, AMP_ID, additional_vips)
 
         mock_driver.delete_port.assert_not_called()
 
         # Test revert
         mock_driver.reset_mock()
 
-        net_task.revert([port_mock], vip_dict, VIP_SG_ID, AMP_ID)
+        net_task.revert([port_mock], vip_dict, VIP_SG_ID, AMP_ID,
+                        additional_vips)
 
         mock_driver.delete_port.assert_called_once_with(PORT_ID)
 
         # Test revert exception
         mock_driver.reset_mock()
 
-        net_task.revert([port_mock], vip_dict, VIP_SG_ID, AMP_ID)
+        net_task.revert([port_mock], vip_dict, VIP_SG_ID, AMP_ID,
+                        additional_vips)
 
         mock_driver.delete_port.assert_called_once_with(PORT_ID)
 

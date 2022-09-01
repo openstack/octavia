@@ -16,6 +16,7 @@ import os
 import re
 
 import jinja2
+from oslo_log import log as logging
 
 from octavia.common.config import cfg
 from octavia.common import constants
@@ -50,6 +51,7 @@ HAPROXY_TEMPLATE = os.path.abspath(
                  'templates/haproxy.cfg.j2'))
 
 CONF = cfg.CONF
+LOG = logging.getLogger(__name__)
 
 JINJA_ENV = None
 
@@ -180,9 +182,12 @@ class JinjaTemplater(object):
             listener, feature_compatibility, loadbalancer,
             client_ca_filename=client_ca_filename, client_crl=client_crl,
             pool_tls_certs=pool_tls_certs)
+        additional_vips = [
+            vip.ip_address for vip in loadbalancer.additional_vips]
         ret_value = {
             'id': loadbalancer.id,
             'vip_address': loadbalancer.vip.ip_address,
+            'additional_vips': additional_vips,
             'listener': t_listener,
             'topology': loadbalancer.topology,
             'enabled': loadbalancer.enabled,

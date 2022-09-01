@@ -409,11 +409,13 @@ class HaproxyAmphoraLoadBalancerDriver(
                     'mac_address': port[consts.MAC_ADDRESS],
                     'vrrp_ip': amphora[consts.VRRP_IP],
                     'mtu': mtu or port[consts.NETWORK][consts.MTU],
-                    'host_routes': host_routes}
+                    'host_routes': host_routes,
+                    'additional_vips': []}
         return net_info
 
     def post_vip_plug(self, amphora, load_balancer, amphorae_network_config,
-                      vrrp_port=None, vip_subnet=None):
+                      vrrp_port=None, vip_subnet=None,
+                      additional_vip_data=None):
         if amphora.status != consts.DELETED:
             self._populate_amphora_api_version(amphora)
             if vip_subnet is None:
@@ -429,6 +431,18 @@ class HaproxyAmphoraLoadBalancerDriver(
             net_info = self._build_net_info(
                 port.to_dict(recurse=True), amphora.to_dict(),
                 vip_subnet.to_dict(recurse=True), mtu)
+            if additional_vip_data is None:
+                additional_vip_data = amphorae_network_config.get(
+                    amphora.id).additional_vip_data
+            for add_vip in additional_vip_data:
+                add_host_routes = [{'nexthop': hr.nexthop,
+                                    'destination': hr.destination}
+                                   for hr in add_vip.subnet.host_routes]
+                add_net_info = {'subnet_cidr': add_vip.subnet.cidr,
+                                'ip_address': add_vip.ip_address,
+                                'gateway': add_vip.subnet.gateway_ip,
+                                'host_routes': add_host_routes}
+                net_info['additional_vips'].append(add_net_info)
             try:
                 self.clients[amphora.api_version].plug_vip(
                     amphora, load_balancer.vip.ip_address, net_info)
