@@ -1,0 +1,5 @@
+---
+deprecations:
+  - |
+    The 'amphorav1' provider is deprecated and will be removed in a future
+    release. Use the 'amphora' provider (an alias for 'amphorav2') instead.

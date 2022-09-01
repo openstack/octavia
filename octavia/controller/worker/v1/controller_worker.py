@@ -48,6 +48,10 @@ class ControllerWorker(base_taskflow.BaseTaskFlowEngine):
 
     def __init__(self):
 
+        LOG.warning("The 'amphorav1' provider is deprecated and will be "
+                    "removed in a future release. Use the 'amphora' driver "
+                    "instead.")
+
         self._amphora_flows = amphora_flows.AmphoraFlows()
         self._health_monitor_flows = health_monitor_flows.HealthMonitorFlows()
         self._lb_flows = load_balancer_flows.LoadBalancerFlows()
