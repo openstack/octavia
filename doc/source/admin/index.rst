@@ -36,6 +36,7 @@ Optional Installation and Configuration Guides
    healthcheck.rst
    flavors.rst
    apache-httpd.rst
+   failover-circuit-breaker.rst
 
 Maintanence and Operations
 --------------------------

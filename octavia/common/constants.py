@@ -161,6 +161,8 @@ AMPHORA_ALLOCATED = lib_consts.AMPHORA_ALLOCATED
 AMPHORA_BOOTING = lib_consts.AMPHORA_BOOTING
 # Amphora is ready to be allocated to a load balancer 'READY'
 AMPHORA_READY = lib_consts.AMPHORA_READY
+# 'FAILOVER_STOPPED'. Failover threshold level has been reached.
+AMPHORA_FAILOVER_STOPPED = lib_consts.AMPHORA_FAILOVER_STOPPED
 # 'ACTIVE'
 ACTIVE = lib_consts.ACTIVE
 # 'PENDING_DELETE'
@@ -247,13 +249,6 @@ DEFAULT_TIMEOUT_TCP_INSPECT = 0
 MUTABLE_STATUSES = (lib_consts.ACTIVE,)
 DELETABLE_STATUSES = (lib_consts.ACTIVE, lib_consts.ERROR)
 FAILOVERABLE_STATUSES = (lib_consts.ACTIVE, lib_consts.ERROR)
-
-# Note: The database Amphora table has a foreign key constraint against
-#       the provisioning_status table
-SUPPORTED_AMPHORA_STATUSES = (
-    lib_consts.AMPHORA_ALLOCATED, lib_consts.AMPHORA_BOOTING, lib_consts.ERROR,
-    lib_consts.AMPHORA_READY, lib_consts.DELETED, lib_consts.PENDING_CREATE,
-    lib_consts.PENDING_DELETE)
 
 AMPHORA_VM = 'VM'
 SUPPORTED_AMPHORA_TYPES = (AMPHORA_VM,)
