@@ -1,0 +1,19 @@
+#!/bin/bash
+
+if [ ${DIB_DEBUG_TRACE:-0} -gt 0 ]; then
+    set -x
+fi
+set -eu
+set -o pipefail
+
+enable_selinux_bool () {
+    policy=$1
+    if semanage boolean -l | grep $policy; then
+        echo "Enabling $policy SELinux policy"
+        semanage boolean -N -m --on $policy
+    fi
+}
+
+enable_selinux_bool os_haproxy_enable_nsfs
+enable_selinux_bool os_haproxy_ping
+enable_selinux_bool cluster_use_execmem
