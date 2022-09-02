@@ -32,6 +32,9 @@ global
                   found_ns.found == false %}
                 {% set found_ns.found = true %}
     external-check
+                {% if require_insecure_fork %}
+    insecure-fork-wanted
+                {% endif %}
             {% endif %}
         {% endfor %}
     {% endfor %}

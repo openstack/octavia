@@ -810,6 +810,7 @@ AMP_NETNS_SVC_PREFIX = 'amphora-netns'
 # Amphora Feature Compatibility
 HTTP_REUSE = 'has_http_reuse'
 POOL_ALPN = 'has_pool_alpn'
+INSECURE_FORK = 'requires_insecure_fork'
 
 # TODO(johnsom) convert these to octavia_lib constants
 # once octavia is transitioned to use octavia_lib

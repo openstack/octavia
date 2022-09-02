@@ -17,6 +17,7 @@ import re
 
 import jinja2
 from octavia_lib.common import constants as lib_consts
+from oslo_utils import versionutils
 
 from octavia.common.config import cfg
 from octavia.common import constants
@@ -98,13 +99,17 @@ class JinjaTemplater(object):
         # pair might be running an older amphora version.
 
         feature_compatibility = {}
+        version = ".".join(haproxy_versions)
         # Is it newer than haproxy 1.5?
-        if not (int(haproxy_versions[0]) < 2 and int(haproxy_versions[1]) < 6):
+        if versionutils.is_compatible("1.6.0", version, same_major=False):
             feature_compatibility[constants.HTTP_REUSE] = True
-        if not (int(haproxy_versions[0]) < 2 and int(haproxy_versions[1]) < 9):
+        if versionutils.is_compatible("1.9.0", version, same_major=False):
             feature_compatibility[constants.POOL_ALPN] = True
         if int(haproxy_versions[0]) >= 2:
             feature_compatibility[lib_consts.PROTOCOL_PROMETHEUS] = True
+        # haproxy 2.2 requires insecure-fork-wanted for PING healthchecks
+        if versionutils.is_compatible("2.2.0", version, same_major=False):
+            feature_compatibility[constants.INSECURE_FORK] = True
 
         return self.render_loadbalancer_obj(
             host_amphora, listeners, tls_certs=tls_certs,
@@ -173,6 +178,8 @@ class JinjaTemplater(object):
             if listener.protocol == lib_consts.PROTOCOL_PROMETHEUS:
                 prometheus_listener = True
                 break
+        require_insecure_fork = feature_compatibility.get(
+            constants.INSECURE_FORK)
         enable_prometheus = prometheus_listener and feature_compatibility.get(
             lib_consts.PROTOCOL_PROMETHEUS, False)
         return self._get_template().render(
@@ -185,7 +192,8 @@ class JinjaTemplater(object):
                  CONF.amphora_agent.administrative_log_facility,
              'user_log_facility': CONF.amphora_agent.user_log_facility,
              'connection_logging': self.connection_logging,
-             'enable_prometheus': enable_prometheus},
+             'enable_prometheus': enable_prometheus,
+             'require_insecure_fork': require_insecure_fork},
             constants=constants, lib_consts=lib_consts)
 
     def _transform_loadbalancer(self, host_amphora, loadbalancer, listeners,
