@@ -1729,14 +1729,15 @@ class TestAllowedAddressPairsDriver(base.TestCase):
                              'stateful': None,
                              'project_id': t_constants.MOCK_PROJECT_ID}
 
-        self.driver.neutron_client.list_security_groups.side_effect = [
+        neutron_client = self.driver.neutron_client
+        neutron_client.list_security_groups.side_effect = [
             FAKE_NEUTRON_SECURITY_GROUPS, None, Exception('boom')]
 
         self.driver.sec_grp_enabled = False
         result = self.driver.get_security_group(FAKE_SG_NAME)
 
         self.assertIsNone(result)
-        self.driver.neutron_client.list_security_groups.assert_not_called()
+        neutron_client.list_security_groups.assert_not_called()
 
         # Test successful get of the security group
         self.driver.sec_grp_enabled = True
@@ -1744,7 +1745,7 @@ class TestAllowedAddressPairsDriver(base.TestCase):
         result = self.driver.get_security_group(FAKE_SG_NAME)
 
         self.assertEqual(reference_sg_dict, result.to_dict())
-        self.driver.neutron_client.list_security_groups.called_once_with(
+        neutron_client.list_security_groups.assert_called_once_with(
             name=FAKE_SG_NAME)
 
         # Test no security groups returned

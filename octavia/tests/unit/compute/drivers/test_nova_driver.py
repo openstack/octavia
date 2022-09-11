@@ -291,7 +291,7 @@ class TestNovaClient(base.TestCase):
         amphora, fault = self.manager.get_amphora(self.amphora.compute_id)
         self.assertEqual(self.amphora, amphora)
         self.assertEqual(self.nova_response.fault, fault)
-        self.manager.manager.get.called_with(server=amphora.id)
+        self.manager.manager.get.assert_called_once_with(amphora.compute_id)
 
     def test_bad_get_amphora(self):
         self.manager.manager.get.side_effect = Exception
@@ -303,27 +303,29 @@ class TestNovaClient(base.TestCase):
         amphora, fault = self.manager.get_amphora(self.amphora.compute_id)
         self.assertEqual(self.amphora, amphora)
         self.assertEqual(self.nova_response.fault, fault)
-        self.manager.manager.get.called_with(server=amphora.id)
+        self.assertEqual(2, self.manager.manager.get.call_count)
+        self.manager.manager.get.assert_has_calls(
+            [mock.call(amphora.compute_id)] * 2)
 
     def test_translate_amphora(self):
         amphora, fault = self.manager._translate_amphora(self.nova_response)
         self.assertEqual(self.amphora, amphora)
         self.assertEqual(self.nova_response.fault, fault)
-        self.nova_response.interface_list.called_with()
+        self.nova_response.interface_list.assert_called_once_with()
 
     def test_translate_amphora_no_availability_zone(self):
         delattr(self.nova_response, 'OS-EXT-AZ:availability_zone')
         amphora, fault = self.manager._translate_amphora(self.nova_response)
         self.assertEqual(self.amphora, amphora)
         self.assertEqual(self.nova_response.fault, fault)
-        self.nova_response.interface_list.called_with()
+        self.nova_response.interface_list.assert_called_once_with()
 
     def test_bad_translate_amphora(self):
         self.nova_response.interface_list.side_effect = Exception
         self.manager._nova_client.networks.get.side_effect = Exception
         amphora, fault = self.manager._translate_amphora(self.nova_response)
         self.assertIsNone(amphora.lb_network_ip)
-        self.nova_response.interface_list.called_with()
+        self.nova_response.interface_list.assert_called_once_with()
 
     @mock.patch('stevedore.driver.DriverManager.driver')
     def test_translate_amphora_use_cinder(self, mock_driver):
@@ -336,7 +338,7 @@ class TestNovaClient(base.TestCase):
         amphora, fault = self.manager._translate_amphora(self.nova_response)
         self.assertEqual(self.amphora, amphora)
         self.assertEqual(self.nova_response.fault, fault)
-        self.nova_response.interface_list.called_with()
+        self.nova_response.interface_list.assert_called_once_with()
         volumes_manager.get_server_volumes.assert_called_with(
             self.nova_response.id)
         mock_driver.get_image_from_volume.assert_called_with('1')
@@ -350,7 +352,7 @@ class TestNovaClient(base.TestCase):
         self.assertEqual(sg.id, self.server_group_id)
         self.assertEqual(sg.name, self.server_group_name)
         self.assertEqual(sg.policy, self.server_group_policy)
-        self.manager.server_groups.create.called_with(
+        self.manager.server_groups.create.assert_called_once_with(
             **self.server_group_kwargs)
 
     def test_bad_create_server_group(self):
@@ -358,12 +360,13 @@ class TestNovaClient(base.TestCase):
         self.assertRaises(exceptions.ServerGroupObjectCreateException,
                           self.manager.create_server_group,
                           self.server_group_name, self.server_group_policy)
-        self.manager.server_groups.create.called_with(
+        self.manager.server_groups.create.assert_called_once_with(
             **self.server_group_kwargs)
 
     def test_delete_server_group(self):
         self.manager.delete_server_group(self.server_group_id)
-        self.manager.server_groups.delete.called_with(self.server_group_id)
+        self.manager.server_groups.delete.assert_called_once_with(
+            self.server_group_id)
 
     def test_bad_delete_server_group(self):
         self.manager.server_groups.delete.side_effect = [
@@ -372,14 +375,17 @@ class TestNovaClient(base.TestCase):
         # NotFound should not raise an exception
 
         self.manager.delete_server_group(self.server_group_id)
-        self.manager.server_groups.delete.called_with(self.server_group_id)
+        self.manager.server_groups.delete.assert_called_once_with(
+            self.server_group_id)
 
         # Catch the exception for server group object delete exception
 
+        self.manager.server_groups.delete.reset_mock()
         self.assertRaises(exceptions.ServerGroupObjectDeleteException,
                           self.manager.delete_server_group,
                           self.server_group_id)
-        self.manager.server_groups.delete.called_with(self.server_group_id)
+        self.manager.server_groups.delete.assert_called_once_with(
+            self.server_group_id)
 
     def test_attach_network_or_port(self):
         self.manager.attach_network_or_port(self.compute_id,

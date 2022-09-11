@@ -1234,7 +1234,7 @@ class TestDatabaseTasks(base.TestCase):
             lb.id,
             provisioning_status=constants.ACTIVE)
         self.assertEqual(2, repo.ListenerRepository.update.call_count)
-        repo.ListenerRepository.update.has_calls(
+        repo.ListenerRepository.update.assert_has_calls(
             [mock.call('TEST', listeners[0].id,
                        provisioning_status=constants.ACTIVE),
              mock.call('TEST', listeners[1].id,
@@ -1246,7 +1246,7 @@ class TestDatabaseTasks(base.TestCase):
 
         repo.LoadBalancerRepository.update.assert_not_called()
         self.assertEqual(2, repo.ListenerRepository.update.call_count)
-        repo.ListenerRepository.update.has_calls(
+        repo.ListenerRepository.update.assert_has_calls(
             [mock.call('TEST', listeners[0].id,
                        provisioning_status=constants.ERROR),
              mock.call('TEST', listeners[1].id,
@@ -1306,24 +1306,24 @@ class TestDatabaseTasks(base.TestCase):
             'TEST',
             lb.id,
             provisioning_status=constants.ACTIVE)
-        repo.ListenerRepository.update.has_calls(
+        repo.ListenerRepository.update.assert_has_calls(
             [mock.call('TEST', listeners[0].id,
                        provisioning_status=constants.ACTIVE),
              mock.call('TEST', listeners[1].id,
                        provisioning_status=constants.ACTIVE)])
-        repo.PoolRepository.update.has_calls(
+        repo.PoolRepository.update.assert_has_calls(
             [mock.call('TEST', default_pool.id,
                        provisioning_status=constants.ACTIVE),
              mock.call('TEST', redirect_pool.id,
                        provisioning_status=constants.ACTIVE)])
-        repo.HealthMonitorRepository.update.has_calls(
+        repo.HealthMonitorRepository.update.assert_has_calls(
             [mock.call('TEST', health_monitor.id,
                        provisioning_status=constants.ACTIVE)])
-        repo.L7PolicyRepository.update.has_calls(
+        repo.L7PolicyRepository.update.assert_has_calls(
             [mock.call('TEST', l7policies[0].id,
                        provisioning_status=constants.ACTIVE)])
         self.assertEqual(1, repo.L7RuleRepository.update.call_count)
-        repo.L7RuleRepository.update.has_calls(
+        repo.L7RuleRepository.update.assert_has_calls(
             [mock.call('TEST', l7rules[0].id,
                        provisioning_status=constants.ACTIVE)])
 
@@ -1338,26 +1338,26 @@ class TestDatabaseTasks(base.TestCase):
 
         repo.LoadBalancerRepository.update.assert_not_called()
         self.assertEqual(2, repo.ListenerRepository.update.call_count)
-        repo.ListenerRepository.update.has_calls(
+        repo.ListenerRepository.update.assert_has_calls(
             [mock.call('TEST', listeners[0].id,
                        provisioning_status=constants.ERROR),
              mock.call('TEST', listeners[1].id,
                        provisioning_status=constants.ERROR)])
-        repo.PoolRepository.update.has_calls(
+        repo.PoolRepository.update.assert_has_calls(
             [mock.call('TEST', default_pool.id,
                        provisioning_status=constants.ERROR),
              mock.call('TEST', redirect_pool.id,
                        provisioning_status=constants.ERROR)])
         self.assertEqual(1, repo.HealthMonitorRepository.update.call_count)
-        repo.HealthMonitorRepository.update.has_calls(
+        repo.HealthMonitorRepository.update.assert_has_calls(
             [mock.call('TEST', health_monitor.id,
                        provisioning_status=constants.ERROR)])
         self.assertEqual(1, repo.L7PolicyRepository.update.call_count)
-        repo.L7PolicyRepository.update.has_calls(
+        repo.L7PolicyRepository.update.assert_has_calls(
             [mock.call('TEST', l7policies[0].id,
                        provisioning_status=constants.ERROR)])
         self.assertEqual(1, repo.L7RuleRepository.update.call_count)
-        repo.L7RuleRepository.update.has_calls(
+        repo.L7RuleRepository.update.assert_has_calls(
             [mock.call('TEST', l7rules[0].id,
                        provisioning_status=constants.ERROR)])
 

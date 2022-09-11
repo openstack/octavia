@@ -182,7 +182,7 @@ class TestAmphoraDriverTasks(base.TestCase):
                              mock.call(_session_mock,
                                        id=listeners[1].id,
                                        provisioning_status=constants.ERROR)]
-        repo.ListenerRepository.update.has_calls(expected_db_calls)
+        repo.ListenerRepository.update.assert_has_calls(expected_db_calls)
         self.assertEqual(2, repo.ListenerRepository.update.call_count)
         self.assertIsNone(amp)
 

@@ -157,18 +157,27 @@ class TestDriverAgentCMD(base.TestCase):
         mock_stats_listener_proc.start.assert_called_once()
         mock_get_listener_proc.start.assert_called_once()
         process_calls = [mock.call(
-            args=mock_exit_event, name='status_listener',
-            target=(octavia.api.drivers.driver_agent.driver_listener.
-                    status_listener)),
+            args=(mock_exit_event,
+                  'status_listener',
+                  octavia.api.drivers.driver_agent.driver_listener.
+                  status_listener),
+            name='status_listener',
+            target=driver_agent._process_wrapper),
             mock.call(
-                args=mock_exit_event, name='stats_listener',
-                target=(octavia.api.drivers.driver_agent.driver_listener.
-                        stats_listener)),
+                args=(mock_exit_event,
+                      'stats_listener',
+                      octavia.api.drivers.driver_agent.driver_listener.
+                      stats_listener),
+                name='stats_listener',
+                target=driver_agent._process_wrapper),
             mock.call(
-                args=mock_exit_event, name='get_listener',
-                target=(octavia.api.drivers.driver_agent.driver_listener.
-                        get_listener))]
-        mock_multiprocessing.Process.has_calls(process_calls, any_order=True)
+                args=(mock_exit_event,
+                      'get_listener',
+                      octavia.api.drivers.driver_agent.driver_listener.
+                      get_listener),
+                name='get_listener',
+                target=driver_agent._process_wrapper)]
+        mock_multiprocessing.Process.assert_has_calls(process_calls)
 
         # Test keyboard interrupt path
         mock_stats_listener_proc.join.side_effect = [KeyboardInterrupt, None]
