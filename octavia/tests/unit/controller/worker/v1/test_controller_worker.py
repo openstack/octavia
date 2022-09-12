@@ -852,6 +852,8 @@ class TestControllerWorker(base.TestCase):
                                         constants.LISTENERS: [_listener_mock],
                                         constants.LOADBALANCER:
                                             _load_balancer_mock,
+                                        constants.LOADBALANCER_ID:
+                                            _load_balancer_mock.id,
                                         constants.POOL: _pool_mock,
                                         constants.AVAILABILITY_ZONE: {}}))
 
