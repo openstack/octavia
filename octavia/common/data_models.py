@@ -26,6 +26,55 @@ LOG = logging.getLogger(__name__)
 
 
 class BaseDataModel(object):
+    def _to_dict(self, value, calling_classes=None, recurse=False):
+        calling_classes = calling_classes or []
+        # We need to have json convertible data for storing it in
+        # persistence jobboard backend.
+        if isinstance(value, datetime.datetime):
+            ret = value.isoformat()
+        elif isinstance(value, bytes):
+            ret = value.decode()
+        elif recurse:
+            if isinstance(value, list):
+                ret = []
+                for item in value:
+                    if isinstance(item, BaseDataModel):
+                        if type(self) not in calling_classes:
+                            ret.append(
+                                item.to_dict(calling_classes=(
+                                    calling_classes + [type(self)]),
+                                    recurse=recurse))
+                        else:
+                            # TODO(rm_work): Is the idea that if this list
+                            #  contains ANY BaseDataModel, that all of them
+                            #  are data models, and we may as well quit?
+                            #  Or, were we supposed to append a `None` for
+                            #  each one? I assume the former?
+                            ret = None
+                            break
+                    else:
+                        ret.append(
+                            self._to_dict(item,
+                                          calling_classes=calling_classes,
+                                          recurse=recurse))
+            elif isinstance(value, BaseDataModel):
+                if type(self) not in calling_classes:
+                    ret = value.to_dict(
+                        calling_classes=calling_classes + [type(self)],
+                        recurse=recurse)
+                else:
+                    ret = None
+            else:
+                ret = value
+        else:
+            if isinstance(value, BaseDataModel):
+                ret = None
+            elif isinstance(value, list):
+                ret = []
+            else:
+                ret = value
+        return ret
+
     def to_dict(self, calling_classes=None, recurse=False, **kwargs):
         """Converts a data model to a dictionary."""
         calling_classes = calling_classes or []
@@ -37,50 +86,8 @@ class BaseDataModel(object):
                 # tags is a list, it doesn't need recurse
                 ret[attr] = value
                 continue
-            # We need to have json convertible data for storing it in
-            # persistence jobboard backend.
-            if isinstance(value, datetime.datetime):
-                ret[attr] = value.isoformat()
-                continue
-            if isinstance(value, bytes):
-                ret[attr] = value.decode()
-                continue
-            if recurse:
-                if isinstance(getattr(self, attr), list):
-                    ret[attr] = []
-                    for item in value:
-                        if isinstance(item, BaseDataModel):
-                            if type(self) not in calling_classes:
-                                ret[attr].append(
-                                    item.to_dict(calling_classes=(
-                                        calling_classes + [type(self)]),
-                                        recurse=recurse))
-                            else:
-                                # TODO(rm_work): Is the idea that if this list
-                                #  contains ANY BaseDataModel, that all of them
-                                #  are data models, and we may as well quit?
-                                #  Or, were we supposed to append a `None` for
-                                #  each one? I assume the former?
-                                ret[attr] = None
-                                break
-                        else:
-                            ret[attr].append(item)
-                elif isinstance(getattr(self, attr), BaseDataModel):
-                    if type(self) not in calling_classes:
-                        ret[attr] = value.to_dict(
-                            calling_classes=calling_classes + [type(self)],
-                            recurse=recurse)
-                    else:
-                        ret[attr] = None
-                else:
-                    ret[attr] = value
-            else:
-                if isinstance(getattr(self, attr), BaseDataModel):
-                    ret[attr] = None
-                elif isinstance(getattr(self, attr), list):
-                    ret[attr] = []
-                else:
-                    ret[attr] = value
+            ret[attr] = self._to_dict(value, calling_classes=calling_classes,
+                                      recurse=recurse)
 
         return ret
 
