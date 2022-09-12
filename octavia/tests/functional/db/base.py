@@ -17,7 +17,7 @@ import os
 from oslo_config import cfg
 from oslo_config import fixture as oslo_fixture
 from oslo_db.sqlalchemy import session as db_session
-from oslo_db.sqlalchemy import test_base
+from oslotest import base as test_base
 
 from octavia.common import config
 from octavia.common import constants
@@ -26,7 +26,7 @@ from octavia.db import base_models
 from octavia.db import models
 
 
-class OctaviaDBTestBase(test_base.DbTestCase):
+class OctaviaDBTestBase(test_base.BaseTestCase):
 
     def setUp(self, connection_string='sqlite://'):
         super().setUp()
