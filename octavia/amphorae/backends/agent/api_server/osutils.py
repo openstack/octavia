@@ -104,7 +104,7 @@ class Ubuntu(BaseOS):
 
     @classmethod
     def is_os_name(cls, os_name):
-        return os_name in ['ubuntu']
+        return os_name in ['ubuntu', 'debian']
 
     def cmd_get_version_of_installed_package(self, package_name):
         name = self._map_package_name(package_name)
