@@ -49,7 +49,8 @@ certgen_opts = [
     cfg.StrOpt('ca_private_key_passphrase',
                default=TLS_PKP_DEFAULT,
                help='Passphrase for the Private Key. Defaults'
-                    ' to env[OS_OCTAVIA_CA_KEY_PASS] or None.'),
+                    ' to env[OS_OCTAVIA_CA_KEY_PASS] or None.',
+               secret=True),
     cfg.StrOpt('server_certs_key_passphrase',
                default=TLS_PASS_AMPS_DEFAULT,
                help='Passphrase for encrypting Amphora Certificates and '
@@ -57,7 +58,8 @@ certgen_opts = [
                     'characters long. Defaults to env[TLS_PASS_AMPS_DEFAULT] '
                     'or insecure-key-do-not-use-this-key',
                regex=r'^[A-Za-z0-9\-_=]{32}$',
-               required=True),
+               required=True,
+               secret=True),
     cfg.StrOpt('signing_digest',
                default=TLS_DIGEST_DEFAULT,
                help='Certificate signing digest. Defaults'
