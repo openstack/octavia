@@ -1308,7 +1308,7 @@ class TestNetworkTasks(base.TestCase):
         mock_get_net_driver.return_value = mock_driver
         net = network_tasks.AllocateVIP()
 
-        mock_driver.allocate_vip.return_value = LB.vip
+        mock_driver.allocate_vip.return_value = (LB.vip, [])
 
         mock_driver.reset_mock()
         self.assertEqual(LB.vip, net.execute(LB))
@@ -1331,7 +1331,7 @@ class TestNetworkTasks(base.TestCase):
         mock_get_net_driver.return_value = mock_driver
         net = network_tasks.AllocateVIPforFailover()
 
-        mock_driver.allocate_vip.return_value = LB.vip
+        mock_driver.allocate_vip.return_value = (LB.vip, [])
 
         mock_driver.reset_mock()
         self.assertEqual(LB.vip, net.execute(LB))

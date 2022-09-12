@@ -124,7 +124,9 @@ class AmphoraProviderDriver(driver_base.ProviderDriver):
                                          operator_fault_string=message)
 
         try:
-            vip = network_driver.allocate_vip(lb_obj)
+            # allocated_vip returns (vip, add_vips), skipping the 2nd element
+            # as amphorav1 doesn't support add_vips
+            vip = network_driver.allocate_vip(lb_obj)[0]
         except network_base.AllocateVIPException as e:
             message = str(e)
             if getattr(e, 'orig_msg', None) is not None:
@@ -134,7 +136,7 @@ class AmphoraProviderDriver(driver_base.ProviderDriver):
 
         LOG.info('Amphora provider created VIP port %s for load balancer %s.',
                  vip.port_id, loadbalancer_id)
-        return driver_utils.vip_dict_to_provider_dict(vip.to_dict())
+        return driver_utils.vip_dict_to_provider_dict(vip.to_dict()), []
 
     # TODO(johnsom) convert this to octavia_lib constant flavor
     # once octavia is transitioned to use octavia_lib

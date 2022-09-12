@@ -585,7 +585,9 @@ class AllocateVIP(BaseNetworkTask):
                   loadbalancer.vip.subnet_id,
                   loadbalancer.vip.ip_address,
                   loadbalancer.id)
-        vip = self.network_driver.allocate_vip(loadbalancer)
+        # allocated_vips returns (vip, add_vips), skipping the 2nd element as
+        # amphorav1 doesn't support add_vips
+        vip = self.network_driver.allocate_vip(loadbalancer)[0]
         LOG.info("Allocated vip with port id %s, subnet id %s, ip address %s "
                  "for load balancer %s",
                  loadbalancer.vip.port_id,
