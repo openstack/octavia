@@ -5,7 +5,7 @@
       - check-requirements
       - periodic-stable-jobs-neutron
       - openstack-cover-jobs
-      - openstack-python3-zed-jobs
+      - openstack-python3-jobs
       - publish-openstack-docs-pti
       - release-notes-jobs-python3
       - octavia-tox-tips
