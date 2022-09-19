@@ -331,7 +331,7 @@ health_manager_opts = [
 ]
 
 oslo_messaging_opts = [
-    cfg.StrOpt('topic'),
+    cfg.StrOpt('topic', help=_('Topic (i.e. Queue) Name')),
 ]
 
 haproxy_amphora_opts = [
@@ -531,7 +531,10 @@ controller_worker_opts = [
                help=_('Number of times an amphora delete should be retried.')),
     cfg.IntOpt('amphora_delete_retry_interval', default=5,
                help=_('Time, in seconds, between amphora delete retries.')),
-    cfg.BoolOpt('event_notifications', default=True),
+    cfg.BoolOpt('event_notifications', default=True,
+                help=_('Enable octavia event notifications. See '
+                       'oslo_messaging_notifications section for additional '
+                       'requirements.'))
 ]
 
 task_flow_opts = [
