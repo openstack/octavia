@@ -1,0 +1,7 @@
+---
+fixes:
+  - |
+    Fixed backwards compatibility issue with the feature that preserves HAProxy 
+    server states between reloads.
+    HAProxy version 1.5 or below do not support this feature, so Octavia 
+    will not to activate it on amphorae with those versions.
