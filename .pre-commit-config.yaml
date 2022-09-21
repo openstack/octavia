@@ -1,0 +1,32 @@
+# See https://pre-commit.com for more information
+# See https://pre-commit.com/hooks.html for more hooks
+repos:
+- repo: https://github.com/pre-commit/pre-commit-hooks
+  rev: 3298ddab3c13dd77d6ce1fc0baf97691430d84b0 # v4.3.0
+  hooks:
+    - id: trailing-whitespace
+    # Replaces or checks mixed line ending
+    - id: mixed-line-ending
+      args: ['--fix', 'lf']
+      exclude: '.*\.(svg)$'
+    - id: end-of-file-fixer
+    # Forbid files which have a UTF-8 byte-order marker
+    - id: check-byte-order-marker
+    # Checks that non-binary executables have a proper shebang
+    - id: check-executables-have-shebangs
+    # Check for files that contain merge conflict strings.
+    - id: check-merge-conflict
+    - id: debug-statements
+    - id: check-yaml
+      files: .*\.(yaml|yml)$
+    - id: check-added-large-files
+- repo: local
+  hooks:
+    - id: flake8
+      name: flake8
+      additional_dependencies:
+        - hacking>=3.1.0,<3.2.0
+      language: python
+      entry: flake8
+      files: '^.*\.py$'
+      exclude: '^(doc|releasenotes|tools)/.*$'
