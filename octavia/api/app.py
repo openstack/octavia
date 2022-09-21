@@ -86,6 +86,14 @@ def setup_app(pecan_config=None, debug=False, argv=None):
 
 def _wrap_app(app):
     """Wraps wsgi app with additional middlewares."""
+
+    # This needs to be the first middleware (and the last in the chain)
+    try:
+        from uwsgi_middleware import uwsgi
+        app = uwsgi.Uwsgi(app)
+    except (EnvironmentError, OSError, ImportError) as e:
+        LOG.debug("Could not load uwsgi middleware: %s", e)
+
     app = request_id.RequestId(app)
 
     if CONF.audit.enabled:
@@ -129,12 +137,6 @@ def _wrap_app(app):
         )
         profiler_factory = profiler_web.WsgiMiddleware.factory(None, hmac_keys=CONF.profiler.hmac_keys, enabled=True)
         app = profiler_factory(app)
-
-    try:
-        from uwsgi_middleware import uwsgi
-        app = uwsgi.Uwsgi(app)
-    except (EnvironmentError, OSError, ImportError) as e:
-        LOG.debug("Could not load uwsgi middleware: %s", e)
 
     if cfg.CONF.api_settings.auth_strategy == constants.KEYSTONE:
         app = keystone.SkippingAuthProtocol(app, {})
