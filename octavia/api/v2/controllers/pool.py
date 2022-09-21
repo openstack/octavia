@@ -125,14 +125,19 @@ class PoolsController(base.BaseController):
                 pool_dict.get('ca_tls_certificate_id'),
                 pool_dict.get('crl_container_id', None))
 
-        # Check TLS cipher prohibit list
+        # Check TLS cipher prohibit list and allow list
         if 'tls_ciphers' in pool_dict and pool_dict['tls_ciphers']:
             rejected_ciphers = validate.check_cipher_prohibit_list(
                 pool_dict['tls_ciphers'])
+            rejected_ciphers.extend(validate.check_cipher_allow_list(
+                pool_dict['tls_ciphers']))
             if rejected_ciphers:
-                raise exceptions.ValidationException(detail=_(
-                    'The following ciphers have been prohibited by an '
-                    'administrator: ' + ', '.join(rejected_ciphers)))
+                detail = 'The following ciphers have been prohibited by an '\
+                         'administrator: ' + ', '.join(rejected_ciphers)
+                if CONF.api_settings.tls_cipher_allow_list is not None:
+                    detail += '. The allowed cipher suites are defined by this cipher string: '\
+                              + CONF.api_settings.tls_cipher_allow_list
+                raise exceptions.ValidationException(detail=detail)
 
         if pool_dict['tls_enabled']:
             # Validate TLS version list
@@ -417,14 +422,19 @@ class PoolsController(base.BaseController):
         if ca_ref:
             self._validate_client_ca_and_crl_refs(ca_ref, crl_ref)
 
-        # Check TLS cipher prohibit list
+        # Check TLS cipher prohibit list and allow list
         if pool.tls_ciphers:
             rejected_ciphers = validate.check_cipher_prohibit_list(
                 pool.tls_ciphers)
+            rejected_ciphers.extend(validate.check_cipher_allow_list(
+                pool.tls_ciphers))
             if rejected_ciphers:
-                raise exceptions.ValidationException(detail=_(
-                    "The following ciphers have been prohibited by an "
-                    "administrator: " + ', '.join(rejected_ciphers)))
+                detail = 'The following ciphers have been prohibited by an '\
+                         'administrator: ' + ', '.join(rejected_ciphers)
+                if CONF.api_settings.tls_cipher_allow_list is not None:
+                    detail += '. The allowed cipher suites are defined by this cipher string: '\
+                              + CONF.api_settings.tls_cipher_allow_list
+                raise exceptions.ValidationException(detail=detail)
 
         if pool.tls_versions is not wtypes.Unset:
             # Validate TLS version list

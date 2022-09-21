@@ -268,14 +268,20 @@ class ListenersController(base.BaseController):
                 "A client authentication CA reference is required to "
                 "specify a client authentication revocation list."))
 
-        # Check TLS cipher prohibit list
+        # Check TLS cipher prohibit list and allow list
         if 'tls_ciphers' in listener_dict and listener_dict['tls_ciphers']:
             rejected_ciphers = validate.check_cipher_prohibit_list(
                 listener_dict['tls_ciphers'])
+            rejected_ciphers.extend(validate.check_cipher_allow_list(
+                listener_dict['tls_ciphers']))
             if rejected_ciphers:
-                raise exceptions.ValidationException(detail=_(
-                    'The following ciphers have been prohibited by an '
-                    'administrator: ' + ', '.join(rejected_ciphers)))
+                detail = 'The following ciphers have been prohibited by an '\
+                         'administrator: ' + ', '.join(rejected_ciphers)
+                if CONF.api_settings.tls_cipher_allow_list is not None:
+                    detail += '. The allowed cipher suites are defined by this cipher string: '\
+                              + CONF.api_settings.tls_cipher_allow_list
+                raise exceptions.ValidationException(detail=detail)
+
 
         # Validate the TLS containers
         sni_containers = listener_dict.pop('sni_containers', [])
@@ -566,14 +572,19 @@ class ListenersController(base.BaseController):
                 db_listener.load_balancer.vip,
                 vip_addresses, listener.allowed_cidrs)
 
-        # Check TLS cipher prohibit list
+        # Check TLS cipher prohibit list and allow list
         if listener.tls_ciphers:
             rejected_ciphers = validate.check_cipher_prohibit_list(
                 listener.tls_ciphers)
+            rejected_ciphers.extend(validate.check_cipher_allow_list(
+                listener.tls_ciphers))
             if rejected_ciphers:
-                raise exceptions.ValidationException(detail=_(
-                    'The following ciphers have been prohibited by an '
-                    'administrator: ' + ', '.join(rejected_ciphers)))
+                detail = 'The following ciphers have been prohibited by an '\
+                         'administrator: ' + ', '.join(rejected_ciphers)
+                if CONF.api_settings.tls_cipher_allow_list is not None:
+                    detail += '. The allowed cipher suites are defined by this cipher string: '\
+                              + CONF.api_settings.tls_cipher_allow_list
+                raise exceptions.ValidationException(detail=detail)
 
         if listener.tls_versions is not wtypes.Unset:
             # Validate TLS version list

@@ -462,6 +462,7 @@ class TestValidations(base.TestCase):
                           '2001:0DB8::5')
 
     def test_check_default_ciphers_prohibit_list_conflict(self):
+        self.conf.config(group='api_settings', tls_cipher_allow_list=None)
         self.conf.config(group='api_settings',
                          tls_cipher_prohibit_list='PSK-AES128-CBC-SHA')
         self.conf.config(group='api_settings',
@@ -470,7 +471,45 @@ class TestValidations(base.TestCase):
 
         self.assertRaises(
             exceptions.ValidationException,
-            validate.check_default_ciphers_prohibit_list_conflict)
+            validate.check_default_ciphers_conflict)
+
+    def test_check_default_ciphers_allow_list_conflict(self):
+        self.conf.config(group='api_settings',
+                         tls_cipher_allow_list='PSK-AES128-CBC-SHA')
+        self.conf.config(group='api_settings', tls_cipher_prohibit_list='')
+
+        # default listener ciphers conflict
+        self.conf.config(group='api_settings',
+                         default_listener_ciphers='ECDHE-ECDSA-AES256-SHA:'
+                         'PSK-AES128-CBC-SHA:TLS_AES_256_GCM_SHA384')
+        self.conf.config(group='api_settings', default_pool_ciphers='')
+        self.assertRaises(
+            exceptions.ValidationException,
+            validate.check_default_ciphers_conflict)
+
+        # default pool ciphers conflict
+        self.conf.config(group='api_settings', default_listener_ciphers='')
+        self.conf.config(group='api_settings',
+                         default_pool_ciphers='ECDHE-ECDSA-AES256-SHA:'
+                         'PSK-AES128-CBC-SHA:TLS_AES_256_GCM_SHA384')
+        self.assertRaises(
+            exceptions.ValidationException,
+            validate.check_default_ciphers_conflict)
+
+    def test_check_default_ciphers_allow_list_no_conflict(self):
+        self.conf.config(group='api_settings',
+                         tls_cipher_allow_list='PSK-AES128-CBC-SHA:'
+                         'ECDHE-ECDSA-AES256-SHA:TLS_AES_256_GCM_SHA384')
+        self.conf.config(group='api_settings',
+                         tls_cipher_prohibit_list='')
+
+        self.conf.config(group='api_settings',
+                         default_listener_ciphers=
+                         'ECDHE-ECDSA-AES256-SHA:TLS_AES_256_GCM_SHA384')
+        self.conf.config(group='api_settings',
+                         default_pool_ciphers=
+                         'PSK-AES128-CBC-SHA:TLS_AES_256_GCM_SHA384')
+        self.assertTrue(validate.check_default_ciphers_conflict() is None)
 
     def test_check_tls_version_list(self):
         # Test valid list

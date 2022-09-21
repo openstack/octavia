@@ -112,6 +112,10 @@ api_opts = [
                deprecated_name='tls_cipher_blacklist',
                help=_("Colon separated list of OpenSSL ciphers. "
                       "Usage of these ciphers will be blocked.")),
+    cfg.StrOpt('tls_cipher_allow_list', default=None,
+               help=_("Colon separated list of OpenSSL ciphers (cipher suites). "
+                      "Usage of all other ciphers will be blocked."
+                      "If unset, ciphers are checked only against tls_cipher_prohibit_list.")),
     cfg.ListOpt('default_listener_tls_versions',
                 default=constants.TLS_VERSIONS_OWASP_SUITE_B,
                 help=_('List of TLS versions to use for new TLS-enabled '
@@ -1027,7 +1031,7 @@ def init(args, **kwargs):
              **kwargs)
     validate.check_default_tls_versions_min_conflict()
     setup_remote_debugger()
-    validate.check_default_ciphers_prohibit_list_conflict()
+    validate.check_default_ciphers_conflict()
 
     # Override default auth_type for plugins with the default from service_auth
     auth_type = cfg.CONF.service_auth.auth_type
