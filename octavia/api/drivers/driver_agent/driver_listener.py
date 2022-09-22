@@ -51,7 +51,11 @@ class StatusRequestHandler(socketserver.BaseRequestHandler):
 
     def handle(self):
         # Get the update data
-        status = _recv(self.request)
+        try:
+            status = _recv(self.request)
+        except Exception:
+            LOG.exception("Error while receiving data.")
+            return
 
         # Process the update
         updater = driver_updater.DriverUpdater()
@@ -60,15 +64,22 @@ class StatusRequestHandler(socketserver.BaseRequestHandler):
         # Send the response
         json_data = jsonutils.dump_as_bytes(response)
         len_str = '{}\n'.format(len(json_data)).encode('utf-8')
-        self.request.send(len_str)
-        self.request.sendall(json_data)
+        try:
+            self.request.send(len_str)
+            self.request.sendall(json_data)
+        except Exception:
+            LOG.exception("Error while sending data.")
 
 
 class StatsRequestHandler(socketserver.BaseRequestHandler):
 
     def handle(self):
         # Get the update data
-        stats = _recv(self.request)
+        try:
+            stats = _recv(self.request)
+        except Exception:
+            LOG.exception("Error while receiving data.")
+            return
 
         # Process the update
         updater = driver_updater.DriverUpdater()
@@ -77,15 +88,22 @@ class StatsRequestHandler(socketserver.BaseRequestHandler):
         # Send the response
         json_data = jsonutils.dump_as_bytes(response)
         len_str = '{}\n'.format(len(json_data)).encode('utf-8')
-        self.request.send(len_str)
-        self.request.sendall(json_data)
+        try:
+            self.request.send(len_str)
+            self.request.sendall(json_data)
+        except Exception:
+            LOG.exception("Error while sending data.")
 
 
 class GetRequestHandler(socketserver.BaseRequestHandler):
 
     def handle(self):
         # Get the data request
-        get_data = _recv(self.request)
+        try:
+            get_data = _recv(self.request)
+        except Exception:
+            LOG.exception("Error while receiving data.")
+            return
 
         # Process the get
         response = driver_get.process_get(get_data)
@@ -93,8 +111,11 @@ class GetRequestHandler(socketserver.BaseRequestHandler):
         # Send the response
         json_data = jsonutils.dump_as_bytes(response)
         len_str = '{}\n'.format(len(json_data)).encode('utf-8')
-        self.request.send(len_str)
-        self.request.sendall(json_data)
+        try:
+            self.request.send(len_str)
+            self.request.sendall(json_data)
+        except Exception:
+            LOG.exception("Error while sending data.")
 
 
 class ForkingUDSServer(socketserver.ForkingMixIn,
