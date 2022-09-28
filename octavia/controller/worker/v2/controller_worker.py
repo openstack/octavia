@@ -105,8 +105,9 @@ class ControllerWorker(object):
             LOG.info("Taskflow job will execute flow %s with id %s",
                      func.__name__, job_id)
         else:
+            store = kwargs.pop('store', None)
             tf = self.tf_engine.taskflow_load(
-                func(*args), **kwargs)
+                func(*args, **kwargs), store=store)
             with tf_logging.DynamicLoggingListener(tf, log=LOG):
                 tf.run()
 
