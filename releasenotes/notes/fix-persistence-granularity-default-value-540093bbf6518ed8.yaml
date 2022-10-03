@@ -1,0 +1,5 @@
+---
+fixes:
+  - |
+    Modified default Keepalived LVS persistence granularity
+    configuration value so it would be ipv6 compatible.
