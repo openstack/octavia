@@ -32,13 +32,13 @@
     name: octavia-grenade
     parent: grenade
     nodeset: octavia-single-node-ubuntu-focal
-    required-projects:
+    required-projects: &o-grenade-required-projects
       - opendev.org/openstack/grenade
       - opendev.org/openstack/octavia
       - opendev.org/openstack/octavia-lib
       - opendev.org/openstack/octavia-tempest-plugin
       - opendev.org/openstack/python-octaviaclient
-    vars:
+    vars: &o-grenade-vars
       grenade_devstack_localrc:
         shared:
           DIB_LOCAL_ELEMENTS: openstack-ci-mirrors
@@ -78,10 +78,14 @@
         '/var/log/octavia-amphora.log': 'logs'
 
 - job:
-    name: octavia-grenade-ffu
-    parent: octavia-grenade
-    vars:
-      grenade_from_branch: stable/stein
+    name: octavia-grenade-skip-level
+    description: |
+      Grenade job that skips a release, validating that deployers can skip
+      specific releases as prescribed by our process.
+    parent: grenade-skip-level
+    nodeset: octavia-single-node-ubuntu-focal
+    required-projects: *o-grenade-required-projects
+    vars: *o-grenade-vars
 
 - job:
     name: octavia-v2-dsvm-scenario-amphora-v2
