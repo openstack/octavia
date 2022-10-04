@@ -42,13 +42,13 @@
     name: octavia-grenade
     parent: grenade
     nodeset: octavia-single-node-ubuntu-focal
-    required-projects:
+    required-projects: &o-grenade-required-projects
       - opendev.org/openstack/grenade
       - opendev.org/openstack/octavia
       - opendev.org/openstack/octavia-lib
       - opendev.org/openstack/octavia-tempest-plugin
       - opendev.org/openstack/python-octaviaclient
-    vars:
+    vars: &o-grenade-vars
       grenade_devstack_localrc:
         shared:
           DIB_LOCAL_ELEMENTS: openstack-ci-mirrors
@@ -88,10 +88,46 @@
         '/var/log/octavia-amphora.log': 'logs'
 
 - job:
-    name: octavia-grenade-ffu
-    parent: octavia-grenade
+    name: octavia-grenade-skip-level
+    description: |
+      Grenade job that skips a release, validating that deployers can skip
+      specific releases as prescribed by our process.
+    parent: grenade-skip-level
+    nodeset: octavia-single-node-ubuntu-focal
+    required-projects: *o-grenade-required-projects
     vars:
-      grenade_from_branch: stable/stein
+      <<: *o-grenade-vars
+      grenade_devstack_localrc:
+        shared:
+          DIB_LOCAL_ELEMENTS: openstack-ci-mirrors
+          LIBVIRT_TYPE: kvm
+          LIBVIRT_CPU_MODE: host-passthrough
+          # Required for the update from yoga (ML2/OVS is the default) to
+          # 2023.1 (ML2/OVN is the default)
+          Q_AGENT: openvswitch
+          Q_ML2_TENANT_NETWORK_TYPE: vxlan
+          Q_ML2_PLUGIN_MECHANISM_DRIVERS: openvswitch
+      devstack_services:
+        s-account: false
+        s-container: false
+        s-object: false
+        s-proxy: false
+        c-api: false
+        c-bak: false
+        c-vol: false
+        cinder: false
+        octavia: true
+        o-api: true
+        o-cw: true
+        o-hm: true
+        o-hk: true
+        ovn-northd: false
+        ovn-controller: false
+        q-ovn-metadata-agent: false
+        q-agt: true
+        q-dhcp: true
+        q-l3: true
+        q-meta: true
 
 - job:
     name: octavia-v2-dsvm-scenario-amphora-v2
