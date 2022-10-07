@@ -66,11 +66,6 @@ class WarningsFixture(fixtures.Fixture):
 
         warnings.filterwarnings(
             'ignore',
-            message=r'The "whens" argument to case\(\), ',
-            category=sqla_exc.SADeprecationWarning)
-
-        warnings.filterwarnings(
-            'ignore',
             message='The create_engine.convert_unicode parameter and ',
             category=sqla_exc.SADeprecationWarning)
 
