@@ -1572,7 +1572,7 @@ class AmphoraHealthRepository(BaseRepository):
         # Handle expired amphora
         expired_ids_query = select(self.model_class.amphora_id).where(
             self.model_class.busy == false()).where(
-                self.model_class.last_update < expired_time)
+                self.model_class.last_update < expired_time).subquery()
 
         expired_count = lock_session.scalar(
             select(func.count()).select_from(expired_ids_query))

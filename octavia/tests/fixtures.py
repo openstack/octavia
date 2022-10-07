@@ -61,11 +61,6 @@ class WarningsFixture(fixtures.Fixture):
 
         warnings.filterwarnings(
             'ignore',
-            message='Implicit coercion of SELECT and textual SELECT ',
-            category=sqla_exc.SADeprecationWarning)
-
-        warnings.filterwarnings(
-            'ignore',
             message='The create_engine.convert_unicode parameter and ',
             category=sqla_exc.SADeprecationWarning)
 
