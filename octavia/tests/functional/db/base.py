@@ -25,11 +25,16 @@ from octavia.db import api as db_api
 from octavia.db import base_models
 from octavia.db import models
 
+from octavia.tests import fixtures as oc_fixtures
+
 
 class OctaviaDBTestBase(test_base.BaseTestCase):
 
     def setUp(self, connection_string='sqlite://'):
         super().setUp()
+
+        self.warning_fixture = self.useFixture(oc_fixtures.WarningsFixture())
+
         # NOTE(blogan): doing this for now because using the engine and
         # session set up in the fixture for test_base.DbTestCase does not work
         # with the API functional tests.  Need to investigate more if this
