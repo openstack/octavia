@@ -12,6 +12,7 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 from oslo_log import log as logging
+from sqlalchemy import text
 
 from octavia.i18n import _
 
@@ -28,7 +29,7 @@ def check_database_connection(session):
     :returns: True if the connection check is successful, False if not.
     """
     try:
-        session.execute('SELECT 1;')
+        session.execute(text('SELECT 1;'))
         return True, None
     except Exception as e:
         message = _('Database health check failed due to: {err}.').format(
