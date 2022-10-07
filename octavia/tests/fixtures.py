@@ -46,11 +46,6 @@ class WarningsFixture(fixtures.Fixture):
 
         warnings.filterwarnings(
             'ignore',
-            message='.* object is being merged into a Session along the ',
-            category=sqla_exc.SADeprecationWarning)
-
-        warnings.filterwarnings(
-            'ignore',
             message='The create_engine.convert_unicode parameter and ',
             category=sqla_exc.SADeprecationWarning)
 

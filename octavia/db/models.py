@@ -353,7 +353,8 @@ class Pool(base_models.BASE, base_models.IdMixin, base_models.ProjectMixin,
         "SessionPersistence", uselist=False, cascade="delete",
         back_populates="pool")
     _default_listeners = orm.relationship("Listener", uselist=True,
-                                          back_populates="default_pool")
+                                          back_populates="default_pool",
+                                          cascade_backrefs=False)
     l7policies = orm.relationship("L7Policy", uselist=True,
                                   back_populates="redirect_pool")
     _tags = orm.relationship(
@@ -573,7 +574,8 @@ class Listener(base_models.BASE, base_models.IdMixin,
     load_balancer = orm.relationship("LoadBalancer", uselist=False,
                                      back_populates="listeners")
     default_pool = orm.relationship("Pool", uselist=False,
-                                    back_populates="_default_listeners")
+                                    back_populates="_default_listeners",
+                                    cascade_backrefs=False)
     sni_containers = orm.relationship(
         'SNI', cascade='all,delete-orphan',
         uselist=True, backref=orm.backref('listener', uselist=False))
