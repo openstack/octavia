@@ -2832,6 +2832,7 @@ class TestListener(base.BaseAPITest):
             bytes_out=random.randint(1, 9),
             total_connections=random.randint(1, 9),
             request_errors=random.randint(1, 9))
+        self.session.commit()
 
         response = self._getStats(li['id'])
         self.assertEqual(ls['bytes_in'], response['bytes_in'])
@@ -2862,6 +2863,7 @@ class TestListener(base.BaseAPITest):
         self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
         auth_strategy = self.conf.conf.api_settings.get('auth_strategy')
         self.conf.config(group='api_settings', auth_strategy=constants.TESTING)
+        self.session.commit()
 
         with mock.patch.object(octavia.common.context.RequestContext,
                                'project_id',

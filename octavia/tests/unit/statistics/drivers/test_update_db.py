@@ -30,7 +30,7 @@ class TestStatsUpdateDb(base.TestCase):
         self.listener_id = uuidutils.generate_uuid()
 
     @mock.patch('octavia.db.repositories.ListenerStatisticsRepository')
-    @mock.patch('octavia.db.api.get_session')
+    @mock.patch('octavia.db.api.session')
     def test_update_stats(self, mock_get_session, mock_listener_stats_repo):
         bytes_in1 = random.randrange(1000000000)
         bytes_out1 = random.randrange(1000000000)
@@ -61,18 +61,20 @@ class TestStatsUpdateDb(base.TestCase):
             request_errors=request_errors2
         )
 
+        mock_session = mock_get_session().begin().__enter__()
+
         update_db.StatsUpdateDb().update_stats(
             [stats_1, stats_2], deltas=False)
 
         mock_listener_stats_repo().replace.assert_has_calls([
-            mock.call(mock_get_session(), stats_1),
-            mock.call(mock_get_session(), stats_2)
+            mock.call(mock_session, stats_1),
+            mock.call(mock_session, stats_2)
         ])
 
         update_db.StatsUpdateDb().update_stats(
             [stats_1, stats_2], deltas=True)
 
         mock_listener_stats_repo().increment.assert_has_calls([
-            mock.call(mock_get_session(), stats_1),
-            mock.call(mock_get_session(), stats_2)
+            mock.call(mock_session, stats_1),
+            mock.call(mock_session, stats_2)
         ])

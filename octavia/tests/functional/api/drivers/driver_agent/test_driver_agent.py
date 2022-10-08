@@ -31,6 +31,9 @@ from octavia.tests.common import sample_certs
 from octavia.tests.common import sample_data_models
 from octavia.tests.functional.db import base
 
+from oslo_log import log as logging
+LOG = logging.getLogger(__name__)
+
 CONF = cfg.CONF
 
 
@@ -266,6 +269,8 @@ class DriverAgentTest(base.OctaviaDBTestBase):
         self.repos.l7rule.create(self.session, **l7rule_dict)
         l7rule2_dict = copy.deepcopy(self.sample_data.test_l7rule2_dict)
         self.repos.l7rule.create(self.session, **l7rule2_dict)
+
+        self.session.commit()
 
         self.provider_lb_dict = copy.deepcopy(
             self.sample_data.provider_loadbalancer_tree_dict)
@@ -594,6 +599,7 @@ class DriverAgentTest(base.OctaviaDBTestBase):
         # Add a new member
         member_dict = copy.deepcopy(self.sample_data.test_member2_dict)
         self.repos.member.create(self.session, **member_dict)
+        self.session.commit()
 
         result = self.driver_lib.get_member(member_dict[lib_consts.ID])
         self.assertEqual(self.sample_data.provider_member2_dict,

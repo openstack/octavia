@@ -169,6 +169,8 @@ def create_pool(pool_dict, lb_id=None):
 
 
 def create_member(member_dict, pool_id, has_health_monitor=False):
+    if not member_dict.get('id'):
+        member_dict['id'] = uuidutils.generate_uuid()
     member_dict['pool_id'] = pool_id
     member_dict[constants.PROVISIONING_STATUS] = constants.PENDING_CREATE
     if has_health_monitor:

@@ -28,7 +28,6 @@ from octavia.api.v2.controllers import base
 from octavia.api.v2.types import availability_zone_profile as profile_types
 from octavia.common import constants
 from octavia.common import exceptions
-from octavia.db import api as db_api
 
 LOG = logging.getLogger(__name__)
 
@@ -49,8 +48,9 @@ class AvailabilityZoneProfileController(base.BaseController):
         if id == constants.NIL_UUID:
             raise exceptions.NotFound(resource='Availability Zone Profile',
                                       id=constants.NIL_UUID)
-        db_availability_zone_profile = self._get_db_availability_zone_profile(
-            context.session, id)
+        with context.session.begin():
+            db_availability_zone_profile = (
+                self._get_db_availability_zone_profile(context.session, id))
         result = self._convert_db_to_type(
             db_availability_zone_profile,
             profile_types.AvailabilityZoneProfileResponse)
@@ -67,10 +67,12 @@ class AvailabilityZoneProfileController(base.BaseController):
         context = pcontext.get('octavia_context')
         self._auth_validate_action(context, context.project_id,
                                    constants.RBAC_GET_ALL)
-        db_availability_zone_profiles, links = (
-            self.repositories.availability_zone_profile.get_all(
-                context.session,
-                pagination_helper=pcontext.get(constants.PAGINATION_HELPER)))
+        with context.session.begin():
+            db_availability_zone_profiles, links = (
+                self.repositories.availability_zone_profile.get_all(
+                    context.session,
+                    pagination_helper=pcontext.get(
+                        constants.PAGINATION_HELPER)))
         result = self._convert_db_to_type(
             db_availability_zone_profiles,
             [profile_types.AvailabilityZoneProfileResponse])
@@ -106,21 +108,21 @@ class AvailabilityZoneProfileController(base.BaseController):
             driver.name, driver.validate_availability_zone,
             availability_zone_data_dict)
 
-        lock_session = db_api.get_session(autocommit=False)
+        context.session.begin()
         try:
             availability_zone_profile_dict = availability_zone_profile.to_dict(
                 render_unsets=True)
             availability_zone_profile_dict['id'] = uuidutils.generate_uuid()
             db_availability_zone_profile = (
                 self.repositories.availability_zone_profile.create(
-                    lock_session, **availability_zone_profile_dict))
-            lock_session.commit()
+                    context.session, **availability_zone_profile_dict))
+            context.session.commit()
         except odb_exceptions.DBDuplicateEntry as e:
-            lock_session.rollback()
+            context.session.rollback()
             raise exceptions.IDAlreadyExists() from e
         except Exception:
             with excutils.save_and_reraise_exception():
-                lock_session.rollback()
+                context.session.rollback()
         result = self._convert_db_to_type(
             db_availability_zone_profile,
             profile_types.AvailabilityZoneProfileResponse)
@@ -159,7 +161,8 @@ class AvailabilityZoneProfileController(base.BaseController):
         self._auth_validate_action(context, context.project_id,
                                    constants.RBAC_PUT)
 
-        self._validate_update_azp(context, id, availability_zone_profile)
+        with context.session.begin():
+            self._validate_update_azp(context, id, availability_zone_profile)
         if id == constants.NIL_UUID:
             raise exceptions.NotFound(resource='Availability Zone Profile',
                                       id=constants.NIL_UUID)
@@ -177,9 +180,10 @@ class AvailabilityZoneProfileController(base.BaseController):
 
             if isinstance(availability_zone_profile.provider_name,
                           wtypes.UnsetType):
-                db_availability_zone_profile = (
-                    self._get_db_availability_zone_profile(
-                        context.session, id))
+                with context.session.begin():
+                    db_availability_zone_profile = (
+                        self._get_db_availability_zone_profile(
+                            context.session, id))
                 provider_driver = db_availability_zone_profile.provider_name
             else:
                 provider_driver = availability_zone_profile.provider_name
@@ -190,23 +194,25 @@ class AvailabilityZoneProfileController(base.BaseController):
                 driver.name, driver.validate_availability_zone,
                 availability_zone_data_dict)
 
-        lock_session = db_api.get_session(autocommit=False)
+        context.session.begin()
         try:
             availability_zone_profile_dict = availability_zone_profile.to_dict(
                 render_unsets=False)
             if availability_zone_profile_dict:
                 self.repositories.availability_zone_profile.update(
-                    lock_session, id, **availability_zone_profile_dict)
-            lock_session.commit()
+                    context.session, id, **availability_zone_profile_dict)
+            context.session.commit()
         except Exception:
             with excutils.save_and_reraise_exception():
-                lock_session.rollback()
+                context.session.rollback()
 
         # Force SQL alchemy to query the DB, otherwise we get inconsistent
         # results
         context.session.expire_all()
-        db_availability_zone_profile = self._get_db_availability_zone_profile(
-            context.session, id)
+        with context.session.begin():
+            db_availability_zone_profile = (
+                self._get_db_availability_zone_profile(context.session,
+                                                       id))
         result = self._convert_db_to_type(
             db_availability_zone_profile,
             profile_types.AvailabilityZoneProfileResponse)
@@ -224,14 +230,18 @@ class AvailabilityZoneProfileController(base.BaseController):
             raise exceptions.NotFound(resource='Availability Zone Profile',
                                       id=constants.NIL_UUID)
         # Don't allow it to be deleted if it is in use by an availability zone
-        if self.repositories.availability_zone.count(
-                context.session,
-                availability_zone_profile_id=availability_zone_profile_id) > 0:
-            raise exceptions.ObjectInUse(object='Availability Zone Profile',
-                                         id=availability_zone_profile_id)
-        try:
-            self.repositories.availability_zone_profile.delete(
-                context.session, id=availability_zone_profile_id)
-        except sa_exception.NoResultFound as e:
-            raise exceptions.NotFound(resource='Availability Zone Profile',
-                                      id=availability_zone_profile_id) from e
+        with context.session.begin():
+            if self.repositories.availability_zone.count(
+                    context.session,
+                    availability_zone_profile_id=availability_zone_profile_id
+            ) > 0:
+                raise exceptions.ObjectInUse(
+                    object='Availability Zone Profile',
+                    id=availability_zone_profile_id)
+            try:
+                self.repositories.availability_zone_profile.delete(
+                    context.session, id=availability_zone_profile_id)
+            except sa_exception.NoResultFound as e:
+                raise exceptions.NotFound(
+                    resource='Availability Zone Profile',
+                    id=availability_zone_profile_id) from e

@@ -27,7 +27,7 @@ class TestDriverGet(base.TestCase):
     @mock.patch('octavia.db.api.get_session')
     def _test_process_get_object(self, object_name, mock_object_repo,
                                  mock_object_to_provider, mock_get_session):
-        mock_get_session.return_value = 'bogus_session'
+        mock_get_session.return_value = mock.MagicMock()
         object_repo_mock = mock.MagicMock()
         mock_object_repo.return_value = object_repo_mock
         db_object_mock = mock.MagicMock()
@@ -47,7 +47,7 @@ class TestDriverGet(base.TestCase):
 
         mock_object_repo.assert_called_once_with()
         object_repo_mock.get.assert_called_once_with(
-            'bogus_session', id=object_id, show_deleted=False)
+            mock_get_session(), id=object_id, show_deleted=False)
         mock_object_to_provider.assert_called_once_with(db_object_mock)
         self.assertEqual(ref_prov_dict, result)
 
@@ -61,7 +61,7 @@ class TestDriverGet(base.TestCase):
 
         mock_object_repo.assert_called_once_with()
         object_repo_mock.get.assert_called_once_with(
-            'bogus_session', id=object_id, show_deleted=False)
+            mock_get_session(), id=object_id, show_deleted=False)
         mock_object_to_provider.assert_not_called()
         self.assertEqual({}, result)
 

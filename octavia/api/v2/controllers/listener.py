@@ -35,7 +35,6 @@ from octavia.common import exceptions
 from octavia.common import stats
 from octavia.common import utils as common_utils
 from octavia.common import validate
-from octavia.db import api as db_api
 from octavia.db import prepare as db_prepare
 from octavia.i18n import _
 
@@ -55,8 +54,9 @@ class ListenersController(base.BaseController):
     def get_one(self, id, fields=None):
         """Gets a single listener's details."""
         context = pecan_request.context.get('octavia_context')
-        db_listener = self._get_db_listener(context.session, id,
-                                            show_deleted=False)
+        with context.session.begin():
+            db_listener = self._get_db_listener(context.session, id,
+                                                show_deleted=False)
 
         if not db_listener:
             raise exceptions.NotFound(resource=data_models.Listener._name(),
@@ -80,10 +80,11 @@ class ListenersController(base.BaseController):
 
         query_filter = self._auth_get_all(context, project_id)
 
-        db_listeners, links = self.repositories.listener.get_all_API_list(
-            context.session, show_deleted=False,
-            pagination_helper=pcontext.get(constants.PAGINATION_HELPER),
-            **query_filter)
+        with context.session.begin():
+            db_listeners, links = self.repositories.listener.get_all_API_list(
+                context.session, show_deleted=False,
+                pagination_helper=pcontext.get(constants.PAGINATION_HELPER),
+                **query_filter)
         result = self._convert_db_to_type(
             db_listeners, [listener_types.ListenerResponse])
         if fields is not None:
@@ -327,12 +328,14 @@ class ListenersController(base.BaseController):
         try:
             db_listener = self.repositories.listener.create(
                 lock_session, **listener_dict)
+            lock_session.flush()
             if sni_containers:
                 for container in sni_containers:
                     sni_dict = {'listener_id': db_listener.id,
                                 'tls_container_id': container.get(
                                     'tls_container_id')}
                     self.repositories.sni.create(lock_session, **sni_dict)
+                lock_session.flush()
                 # DB listener needs to be refreshed
                 db_listener = self.repositories.listener.get(
                     lock_session, id=db_listener.id)
@@ -355,8 +358,9 @@ class ListenersController(base.BaseController):
         context = pecan_request.context.get('octavia_context')
 
         load_balancer_id = listener.loadbalancer_id
-        listener.project_id, provider = self._get_lb_project_id_provider(
-            context.session, load_balancer_id)
+        with context.session.begin():
+            listener.project_id, provider = self._get_lb_project_id_provider(
+                context.session, load_balancer_id)
 
         self._auth_validate_action(context, listener.project_id,
                                    constants.RBAC_POST)
@@ -364,11 +368,11 @@ class ListenersController(base.BaseController):
         # Load the driver early as it also provides validation
         driver = driver_factory.get_driver(provider)
 
-        lock_session = db_api.get_session(autocommit=False)
+        context.session.begin()
         try:
             if self.repositories.check_quota_met(
                     context.session,
-                    lock_session,
+                    context.session,
                     data_models.Listener,
                     listener.project_id):
                 raise exceptions.QuotaException(
@@ -387,10 +391,10 @@ class ListenersController(base.BaseController):
                                     listener.protocol)
 
             self._test_lb_and_listener_statuses(
-                lock_session, lb_id=load_balancer_id)
+                context.session, lb_id=load_balancer_id)
 
             db_listener = self._validate_create_listener(
-                lock_session, listener_dict)
+                context.session, listener_dict)
 
             # Prepare the data for the driver data model
             provider_listener = (
@@ -408,12 +412,14 @@ class ListenersController(base.BaseController):
             driver_utils.call_provider(
                 driver.name, driver.listener_create, provider_listener)
 
-            lock_session.commit()
+            context.session.commit()
         except Exception:
             with excutils.save_and_reraise_exception():
-                lock_session.rollback()
+                context.session.rollback()
 
-        db_listener = self._get_db_listener(context.session, db_listener.id)
+        with context.session.begin():
+            db_listener = self._get_db_listener(context.session,
+                                                db_listener.id)
         result = self._convert_db_to_type(db_listener,
                                           listener_types.ListenerResponse)
         return listener_types.ListenerRootResponse(listener=result)
@@ -599,12 +605,13 @@ class ListenersController(base.BaseController):
         """Updates a listener on a load balancer."""
         listener = listener_.listener
         context = pecan_request.context.get('octavia_context')
-        db_listener = self._get_db_listener(context.session, id,
-                                            show_deleted=False)
-        load_balancer_id = db_listener.load_balancer_id
+        with context.session.begin():
+            db_listener = self._get_db_listener(context.session, id,
+                                                show_deleted=False)
+            load_balancer_id = db_listener.load_balancer_id
 
-        project_id, provider = self._get_lb_project_id_provider(
-            context.session, load_balancer_id)
+            project_id, provider = self._get_lb_project_id_provider(
+                context.session, load_balancer_id)
 
         self._auth_validate_action(context, project_id, constants.RBAC_PUT)
 
@@ -616,14 +623,16 @@ class ListenersController(base.BaseController):
             if db_listener.protocol == lib_consts.PROTOCOL_PROMETHEUS:
                 raise exceptions.ListenerNoChildren(
                     protocol=lib_consts.PROTOCOL_PROMETHEUS)
-            self._validate_pool(context.session, load_balancer_id,
-                                listener.default_pool_id, db_listener.protocol)
+            with context.session.begin():
+                self._validate_pool(context.session, load_balancer_id,
+                                    listener.default_pool_id,
+                                    db_listener.protocol)
 
         # Load the driver early as it also provides validation
         driver = driver_factory.get_driver(provider)
 
-        with db_api.get_lock_session() as lock_session:
-            self._test_lb_and_listener_statuses(lock_session,
+        with context.session.begin():
+            self._test_lb_and_listener_statuses(context.session,
                                                 load_balancer_id, id=id)
 
             # Prepare the data for the driver data model
@@ -648,12 +657,13 @@ class ListenersController(base.BaseController):
 
             # Update the database to reflect what the driver just accepted
             self.repositories.listener.update(
-                lock_session, id, **listener.to_dict(render_unsets=False))
+                context.session, id, **listener.to_dict(render_unsets=False))
 
         # Force SQL alchemy to query the DB, otherwise we get inconsistent
         # results
         context.session.expire_all()
-        db_listener = self._get_db_listener(context.session, id)
+        with context.session.begin():
+            db_listener = self._get_db_listener(context.session, id)
         result = self._convert_db_to_type(db_listener,
                                           listener_types.ListenerResponse)
         return listener_types.ListenerRootResponse(listener=result)
@@ -662,22 +672,22 @@ class ListenersController(base.BaseController):
     def delete(self, id):
         """Deletes a listener from a load balancer."""
         context = pecan_request.context.get('octavia_context')
-        db_listener = self._get_db_listener(context.session, id,
-                                            show_deleted=False)
-        load_balancer_id = db_listener.load_balancer_id
+        with context.session.begin():
+            db_listener = self._get_db_listener(context.session, id,
+                                                show_deleted=False)
+            load_balancer_id = db_listener.load_balancer_id
 
-        project_id, provider = self._get_lb_project_id_provider(
-            context.session, load_balancer_id)
+            project_id, provider = self._get_lb_project_id_provider(
+                context.session, load_balancer_id)
 
         self._auth_validate_action(context, project_id, constants.RBAC_DELETE)
 
         # Load the driver early as it also provides validation
         driver = driver_factory.get_driver(provider)
 
-        with db_api.get_lock_session() as lock_session:
-
+        with context.session.begin():
             self._test_lb_and_listener_statuses(
-                lock_session, load_balancer_id,
+                context.session, load_balancer_id,
                 id=id, listener_status=constants.PENDING_DELETE)
 
             LOG.info("Sending delete Listener %s to provider %s", id,
@@ -711,18 +721,19 @@ class StatisticsController(base.BaseController, stats.StatsMixin):
                          status_code=200)
     def get(self):
         context = pecan_request.context.get('octavia_context')
-        db_listener = self._get_db_listener(context.session, self.id,
-                                            show_deleted=False)
-        if not db_listener:
-            LOG.info("Listener %s not found.", id)
-            raise exceptions.NotFound(
-                resource=data_models.Listener._name(),
-                id=id)
+        with context.session.begin():
+            db_listener = self._get_db_listener(context.session, self.id,
+                                                show_deleted=False)
+            if not db_listener:
+                LOG.info("Listener %s not found.", id)
+                raise exceptions.NotFound(
+                    resource=data_models.Listener._name(),
+                    id=id)
 
-        self._auth_validate_action(context, db_listener.project_id,
-                                   constants.RBAC_GET_STATS)
+            self._auth_validate_action(context, db_listener.project_id,
+                                       constants.RBAC_GET_STATS)
 
-        listener_stats = self.get_listener_stats(context.session, self.id)
+            listener_stats = self.get_listener_stats(context.session, self.id)
 
         result = self._convert_db_to_type(
             listener_stats, listener_types.ListenerStatisticsResponse)

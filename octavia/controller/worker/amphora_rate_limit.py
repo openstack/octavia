@@ -35,10 +35,11 @@ class AmphoraBuildRateLimit(object):
         self.amp_build_req_repo = repo.AmphoraBuildReqRepository()
 
     def add_to_build_request_queue(self, amphora_id, build_priority):
-        self.amp_build_req_repo.add_to_build_queue(
-            db_apis.get_session(),
-            amphora_id=amphora_id,
-            priority=build_priority)
+        with db_apis.session().begin() as session:
+            self.amp_build_req_repo.add_to_build_queue(
+                session,
+                amphora_id=amphora_id,
+                priority=build_priority)
         LOG.debug("Added build request for amphora %s to the queue",
                   amphora_id)
         self.wait_for_build_slot(amphora_id)

@@ -273,8 +273,10 @@ class AmphoraProviderDriver(driver_base.ProviderDriver):
     # Member
     def member_create(self, member):
         pool_id = member.pool_id
-        db_pool = self.repositories.pool.get(db_apis.get_session(),
-                                             id=pool_id)
+        session = db_apis.get_session()
+        with session.begin():
+            db_pool = self.repositories.pool.get(session,
+                                                 id=pool_id)
         self._validate_members(db_pool, [member])
 
         payload = {consts.MEMBER: member.to_dict()}
@@ -296,7 +298,9 @@ class AmphoraProviderDriver(driver_base.ProviderDriver):
 
     def member_batch_update(self, pool_id, members):
         # The DB should not have updated yet, so we can still use the pool
-        db_pool = self.repositories.pool.get(db_apis.get_session(), id=pool_id)
+        session = db_apis.get_session()
+        with session.begin():
+            db_pool = self.repositories.pool.get(session, id=pool_id)
 
         self._validate_members(db_pool, members)
 
@@ -385,8 +389,10 @@ class AmphoraProviderDriver(driver_base.ProviderDriver):
 
     # L7 Policy
     def l7policy_create(self, l7policy):
-        db_listener = self.repositories.listener.get(db_apis.get_session(),
-                                                     id=l7policy.listener_id)
+        session = db_apis.get_session()
+        with session.begin():
+            db_listener = self.repositories.listener.get(
+                session, id=l7policy.listener_id)
         if db_listener.protocol not in VALID_L7POLICY_LISTENER_PROTOCOLS:
             msg = ('%s protocol listeners do not support L7 policies' % (
                 db_listener.protocol))

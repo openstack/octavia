@@ -48,9 +48,10 @@ class TaskUtils(object):
         LOG.debug('Unmarking health monitoring busy on amphora: %s',
                   amphora_id)
         try:
-            self.amp_health_repo.update(db_apis.get_session(),
-                                        amphora_id=amphora_id,
-                                        busy=False)
+            with db_apis.session().begin() as session:
+                self.amp_health_repo.update(session,
+                                            amphora_id=amphora_id,
+                                            busy=False)
         except Exception as e:
             LOG.debug('Failed to update amphora health record %(amp)s '
                       'due to: %(except)s',
@@ -64,9 +65,10 @@ class TaskUtils(object):
         :param amphora_id: Amphora ID to set the status to ERROR
         """
         try:
-            self.amphora_repo.update(db_apis.get_session(),
-                                     id=amphora_id,
-                                     status=constants.ERROR)
+            with db_apis.session().begin() as session:
+                self.amphora_repo.update(session,
+                                         id=amphora_id,
+                                         status=constants.ERROR)
         except Exception as e:
             LOG.error("Failed to update amphora %(amp)s "
                       "status to ERROR due to: "
@@ -80,9 +82,10 @@ class TaskUtils(object):
         :param health_mon_id: Health Monitor ID to set prov status to ERROR
         """
         try:
-            self.health_mon_repo.update(db_apis.get_session(),
-                                        id=health_mon_id,
-                                        provisioning_status=constants.ERROR)
+            with db_apis.session().begin() as session:
+                self.health_mon_repo.update(
+                    session, id=health_mon_id,
+                    provisioning_status=constants.ERROR)
         except Exception as e:
             LOG.error("Failed to update health monitor %(health)s "
                       "provisioning status to ERROR due to: "
@@ -97,9 +100,10 @@ class TaskUtils(object):
         :param l7policy_id: L7 Policy ID to set provisioning status to ACTIVE
         """
         try:
-            self.l7policy_repo.update(db_apis.get_session(),
-                                      id=l7policy_id,
-                                      provisioning_status=constants.ACTIVE)
+            with db_apis.session().begin() as session:
+                self.l7policy_repo.update(session,
+                                          id=l7policy_id,
+                                          provisioning_status=constants.ACTIVE)
         except Exception as e:
             LOG.error("Failed to update l7policy %(l7p)s "
                       "provisioning status to ACTIVE due to: "
@@ -113,9 +117,10 @@ class TaskUtils(object):
         :param l7policy_id: L7 Policy ID to set provisioning status to ERROR
         """
         try:
-            self.l7policy_repo.update(db_apis.get_session(),
-                                      id=l7policy_id,
-                                      provisioning_status=constants.ERROR)
+            with db_apis.session().begin() as session:
+                self.l7policy_repo.update(session,
+                                          id=l7policy_id,
+                                          provisioning_status=constants.ERROR)
         except Exception as e:
             LOG.error("Failed to update l7policy %(l7p)s "
                       "provisioning status to ERROR due to: "
@@ -129,9 +134,10 @@ class TaskUtils(object):
         :param l7rule_id: L7 Rule ID to set provisioning status to ERROR
         """
         try:
-            self.l7rule_repo.update(db_apis.get_session(),
-                                    id=l7rule_id,
-                                    provisioning_status=constants.ERROR)
+            with db_apis.session().begin() as session:
+                self.l7rule_repo.update(session,
+                                        id=l7rule_id,
+                                        provisioning_status=constants.ERROR)
         except Exception as e:
             LOG.error("Failed to update l7rule %(l7r)s "
                       "provisioning status to ERROR due to: "
@@ -145,9 +151,10 @@ class TaskUtils(object):
         :param listener_id: Listener ID to set provisioning status to ERROR
         """
         try:
-            self.listener_repo.update(db_apis.get_session(),
-                                      id=listener_id,
-                                      provisioning_status=constants.ERROR)
+            with db_apis.session().begin() as session:
+                self.listener_repo.update(session,
+                                          id=listener_id,
+                                          provisioning_status=constants.ERROR)
         except Exception as e:
             LOG.error("Failed to update listener %(list)s "
                       "provisioning status to ERROR due to: "
@@ -162,9 +169,11 @@ class TaskUtils(object):
                                 status to ERROR
         """
         try:
-            self.loadbalancer_repo.update(db_apis.get_session(),
-                                          id=loadbalancer_id,
-                                          provisioning_status=constants.ERROR)
+            with db_apis.session().begin() as session:
+                self.loadbalancer_repo.update(
+                    session,
+                    id=loadbalancer_id,
+                    provisioning_status=constants.ERROR)
         except Exception as e:
             LOG.error("Failed to update load balancer %(lb)s "
                       "provisioning status to ERROR due to: "
@@ -179,9 +188,10 @@ class TaskUtils(object):
                             status to ACTIVE
         """
         try:
-            self.listener_repo.update(db_apis.get_session(),
-                                      id=listener_id,
-                                      provisioning_status=constants.ACTIVE)
+            with db_apis.session().begin() as session:
+                self.listener_repo.update(session,
+                                          id=listener_id,
+                                          provisioning_status=constants.ACTIVE)
         except Exception as e:
             LOG.error("Failed to update listener %(list)s "
                       "provisioning status to ACTIVE due to: "
@@ -195,9 +205,10 @@ class TaskUtils(object):
         :param pool_id: Pool ID to set provisioning status to ACTIVE
         """
         try:
-            self.pool_repo.update(db_apis.get_session(),
-                                  id=pool_id,
-                                  provisioning_status=constants.ACTIVE)
+            with db_apis.session().begin() as session:
+                self.pool_repo.update(session,
+                                      id=pool_id,
+                                      provisioning_status=constants.ACTIVE)
         except Exception as e:
             LOG.error("Failed to update pool %(pool)s provisioning status "
                       "to ACTIVE due to: %(except)s", {'pool': pool_id,
@@ -212,9 +223,11 @@ class TaskUtils(object):
                                 status to ACTIVE
         """
         try:
-            self.loadbalancer_repo.update(db_apis.get_session(),
-                                          id=loadbalancer_id,
-                                          provisioning_status=constants.ACTIVE)
+            with db_apis.session().begin() as session:
+                self.loadbalancer_repo.update(
+                    session,
+                    id=loadbalancer_id,
+                    provisioning_status=constants.ACTIVE)
         except Exception as e:
             LOG.error("Failed to update load balancer %(lb)s "
                       "provisioning status to ACTIVE due to: "
@@ -228,9 +241,10 @@ class TaskUtils(object):
         :param member_id: Member ID to set provisioning status to ERROR
         """
         try:
-            self.member_repo.update(db_apis.get_session(),
-                                    id=member_id,
-                                    provisioning_status=constants.ERROR)
+            with db_apis.session().begin() as session:
+                self.member_repo.update(session,
+                                        id=member_id,
+                                        provisioning_status=constants.ERROR)
         except Exception as e:
             LOG.error("Failed to update member %(member)s "
                       "provisioning status to ERROR due to: "
@@ -244,9 +258,10 @@ class TaskUtils(object):
         :param pool_id: Pool ID to set provisioning status to ERROR
         """
         try:
-            self.pool_repo.update(db_apis.get_session(),
-                                  id=pool_id,
-                                  provisioning_status=constants.ERROR)
+            with db_apis.session().begin() as session:
+                self.pool_repo.update(session,
+                                      id=pool_id,
+                                      provisioning_status=constants.ERROR)
         except Exception as e:
             LOG.error("Failed to update pool %(pool)s "
                       "provisioning status to ERROR due to: "
@@ -258,8 +273,9 @@ class TaskUtils(object):
         :param: loadbalancer_id: Load balancer ID which to get from db
         """
         try:
-            return self.loadbalancer_repo.get(db_apis.get_session(),
-                                              id=loadbalancer_id)
+            with db_apis.session().begin() as session:
+                return self.loadbalancer_repo.get(session,
+                                                  id=loadbalancer_id)
         except Exception as e:
             LOG.error("Failed to get loadbalancer %(loadbalancer)s "
                       "due to: %(except)s",

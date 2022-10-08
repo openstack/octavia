@@ -46,7 +46,8 @@ class DriverUpdater(object):
         super().__init__(**kwargs)
 
     def _check_for_lb_vip_deallocate(self, repo, lb_id):
-        lb = repo.get(self.db_session, id=lb_id)
+        with self.db_session.begin():
+            lb = repo.get(self.db_session, id=lb_id)
         if lb.vip.octavia_owned:
             vip = lb.vip
             # We need a backreference
@@ -56,7 +57,8 @@ class DriverUpdater(object):
             network_driver.deallocate_vip(vip)
 
     def _decrement_quota(self, repo, object_name, record_id):
-        lock_session = db_apis.get_session(autocommit=False)
+        lock_session = self.db_session
+        lock_session.begin()
         db_object = repo.get(lock_session, id=record_id)
         if db_object is None:
             lock_session.rollback()
@@ -106,7 +108,8 @@ class DriverUpdater(object):
                         return
 
                     if delete_record and object_name != consts.LOADBALANCERS:
-                        repo.delete(self.db_session, id=record_id)
+                        with self.db_session.begin():
+                            repo.delete(self.db_session, id=record_id)
                         return
 
                 record_kwargs[consts.PROVISIONING_STATUS] = prov_status
@@ -114,7 +117,8 @@ class DriverUpdater(object):
             if op_status:
                 record_kwargs[consts.OPERATING_STATUS] = op_status
             if prov_status or op_status:
-                repo.update(self.db_session, record_id, **record_kwargs)
+                with self.db_session.begin():
+                    repo.update(self.db_session, record_id, **record_kwargs)
         except Exception as e:
             # We need to raise a failure here to notify the driver it is
             # sending bad status data.

@@ -132,8 +132,10 @@ def lb_dict_to_provider_dict(lb_dict, vip=None, add_vips=None, db_pools=None,
         new_lb_dict['vip_qos_policy_id'] = vip.qos_policy_id
     if 'flavor_id' in lb_dict and lb_dict['flavor_id']:
         flavor_repo = repositories.FlavorRepository()
-        new_lb_dict['flavor'] = flavor_repo.get_flavor_metadata_dict(
-            db_api.get_session(), lb_dict['flavor_id'])
+        session = db_api.get_session()
+        with session.begin():
+            new_lb_dict['flavor'] = flavor_repo.get_flavor_metadata_dict(
+                session, lb_dict['flavor_id'])
     if add_vips:
         new_lb_dict['additional_vips'] = db_additional_vips_to_provider_vips(
             add_vips)

@@ -39,24 +39,26 @@ class DatabaseCleanup(object):
             seconds=CONF.house_keeping.amphora_expiry_age)
 
         session = db_api.get_session()
-        amp_ids = self.amp_repo.get_all_deleted_expiring(session,
-                                                         exp_age=exp_age)
+        with session.begin():
+            amp_ids = self.amp_repo.get_all_deleted_expiring(session,
+                                                             exp_age=exp_age)
 
-        for amp_id in amp_ids:
-            # If we're here, we already think the amp is expiring according to
-            # the amphora table. Now check it is expired in the health table.
-            # In this way, we ensure that amps aren't deleted unless they are
-            # both expired AND no longer receiving zombie heartbeats.
-            if self.amp_health_repo.check_amphora_health_expired(
-                    session, amp_id, exp_age):
-                LOG.debug('Attempting to purge db record for Amphora ID: %s',
-                          amp_id)
-                self.amp_repo.delete(session, id=amp_id)
-                try:
-                    self.amp_health_repo.delete(session, amphora_id=amp_id)
-                except sqlalchemy_exceptions.NoResultFound:
-                    pass  # Best effort delete, this record might not exist
-                LOG.info('Purged db record for Amphora ID: %s', amp_id)
+            for amp_id in amp_ids:
+                # If we're here, we already think the amp is expiring according
+                # to the amphora table. Now check it is expired in the health
+                # table.
+                # In this way, we ensure that amps aren't deleted unless they
+                # are both expired AND no longer receiving zombie heartbeats.
+                if self.amp_health_repo.check_amphora_health_expired(
+                        session, amp_id, exp_age):
+                    LOG.debug('Attempting to purge db record for Amphora ID: '
+                              '%s', amp_id)
+                    self.amp_repo.delete(session, id=amp_id)
+                    try:
+                        self.amp_health_repo.delete(session, amphora_id=amp_id)
+                    except sqlalchemy_exceptions.NoResultFound:
+                        pass  # Best effort delete, this record might not exist
+                    LOG.info('Purged db record for Amphora ID: %s', amp_id)
 
     def cleanup_load_balancers(self):
         """Checks the DB for old load balancers and triggers their removal."""
@@ -64,13 +66,14 @@ class DatabaseCleanup(object):
             seconds=CONF.house_keeping.load_balancer_expiry_age)
 
         session = db_api.get_session()
-        lb_ids = self.lb_repo.get_all_deleted_expiring(session,
-                                                       exp_age=exp_age)
+        with session.begin():
+            lb_ids = self.lb_repo.get_all_deleted_expiring(session,
+                                                           exp_age=exp_age)
 
-        for lb_id in lb_ids:
-            LOG.info('Attempting to delete load balancer id : %s', lb_id)
-            self.lb_repo.delete(session, id=lb_id)
-            LOG.info('Deleted load balancer id : %s', lb_id)
+            for lb_id in lb_ids:
+                LOG.info('Attempting to delete load balancer id : %s', lb_id)
+                self.lb_repo.delete(session, id=lb_id)
+                LOG.info('Deleted load balancer id : %s', lb_id)
 
 
 class CertRotation(object):
@@ -83,14 +86,15 @@ class CertRotation(object):
         amp_repo = repo.AmphoraRepository()
 
         with futures.ThreadPoolExecutor(max_workers=self.threads) as executor:
-            session = db_api.get_session()
             rotation_count = 0
             while True:
-                amp = amp_repo.get_cert_expiring_amphora(session)
-                if not amp:
-                    break
-                rotation_count += 1
-                LOG.debug("Cert expired amphora's id is: %s", amp.id)
-                executor.submit(self.cw.amphora_cert_rotation, amp.id)
+                session = db_api.get_session()
+                with session.begin():
+                    amp = amp_repo.get_cert_expiring_amphora(session)
+                    if not amp:
+                        break
+                    rotation_count += 1
+                    LOG.debug("Cert expired amphora's id is: %s", amp.id)
+                    executor.submit(self.cw.amphora_cert_rotation, amp.id)
             if rotation_count > 0:
                 LOG.info("Rotated certificates for %s amphora", rotation_count)

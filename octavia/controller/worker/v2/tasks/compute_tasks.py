@@ -210,8 +210,10 @@ class DeleteAmphoraeOnLoadBalancer(BaseComputeTask):
     """
 
     def execute(self, loadbalancer):
-        db_lb = self.loadbalancer_repo.get(
-            db_apis.get_session(), id=loadbalancer[constants.LOADBALANCER_ID])
+        session = db_apis.get_session()
+        with session.begin():
+            db_lb = self.loadbalancer_repo.get(
+                session, id=loadbalancer[constants.LOADBALANCER_ID])
         for amp in db_lb.amphorae:
             # The compute driver will already handle NotFound
             try:

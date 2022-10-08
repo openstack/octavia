@@ -29,7 +29,6 @@ from octavia.api.v2.controllers import base
 from octavia.api.v2.types import flavor_profile as profile_types
 from octavia.common import constants
 from octavia.common import exceptions
-from octavia.db import api as db_api
 
 LOG = logging.getLogger(__name__)
 
@@ -50,7 +49,9 @@ class FlavorProfileController(base.BaseController):
         if id == constants.NIL_UUID:
             raise exceptions.NotFound(resource='Flavor profile',
                                       id=constants.NIL_UUID)
-        db_flavor_profile = self._get_db_flavor_profile(context.session, id)
+        with context.session.begin():
+            db_flavor_profile = self._get_db_flavor_profile(context.session,
+                                                            id)
         result = self._convert_db_to_type(db_flavor_profile,
                                           profile_types.FlavorProfileResponse)
         if fields is not None:
@@ -65,9 +66,12 @@ class FlavorProfileController(base.BaseController):
         context = pcontext.get('octavia_context')
         self._auth_validate_action(context, context.project_id,
                                    constants.RBAC_GET_ALL)
-        db_flavor_profiles, links = self.repositories.flavor_profile.get_all(
-            context.session,
-            pagination_helper=pcontext.get(constants.PAGINATION_HELPER))
+        with context.session.begin():
+            db_flavor_profiles, links = (
+                self.repositories.flavor_profile.get_all(
+                    context.session,
+                    pagination_helper=pcontext.get(
+                        constants.PAGINATION_HELPER)))
         result = self._convert_db_to_type(
             db_flavor_profiles, [profile_types.FlavorProfileResponse])
         if fields is not None:
@@ -97,19 +101,19 @@ class FlavorProfileController(base.BaseController):
         driver_utils.call_provider(driver.name, driver.validate_flavor,
                                    flavor_data_dict)
 
-        lock_session = db_api.get_session(autocommit=False)
+        context.session.begin()
         try:
             flavorprofile_dict = flavorprofile.to_dict(render_unsets=True)
             flavorprofile_dict['id'] = uuidutils.generate_uuid()
             db_flavor_profile = self.repositories.flavor_profile.create(
-                lock_session, **flavorprofile_dict)
-            lock_session.commit()
+                context.session, **flavorprofile_dict)
+            context.session.commit()
         except odb_exceptions.DBDuplicateEntry as e:
-            lock_session.rollback()
+            context.session.rollback()
             raise exceptions.IDAlreadyExists() from e
         except Exception:
             with excutils.save_and_reraise_exception():
-                lock_session.rollback()
+                context.session.rollback()
         result = self._convert_db_to_type(
             db_flavor_profile, profile_types.FlavorProfileResponse)
         return profile_types.FlavorProfileRootResponse(flavorprofile=result)
@@ -142,7 +146,8 @@ class FlavorProfileController(base.BaseController):
         self._auth_validate_action(context, context.project_id,
                                    constants.RBAC_PUT)
 
-        self._validate_update_fp(context, id, flavorprofile)
+        with context.session.begin():
+            self._validate_update_fp(context, id, flavorprofile)
         if id == constants.NIL_UUID:
             raise exceptions.NotFound(resource='Flavor profile',
                                       id=constants.NIL_UUID)
@@ -157,8 +162,9 @@ class FlavorProfileController(base.BaseController):
                     option=constants.FLAVOR_DATA) from e
 
             if isinstance(flavorprofile.provider_name, wtypes.UnsetType):
-                db_flavor_profile = self._get_db_flavor_profile(
-                    context.session, id)
+                with context.session.begin():
+                    db_flavor_profile = self._get_db_flavor_profile(
+                        context.session, id)
                 provider_driver = db_flavor_profile.provider_name
             else:
                 provider_driver = flavorprofile.provider_name
@@ -168,21 +174,23 @@ class FlavorProfileController(base.BaseController):
             driver_utils.call_provider(driver.name, driver.validate_flavor,
                                        flavor_data_dict)
 
-        lock_session = db_api.get_session(autocommit=False)
+        context.session.begin()
         try:
             flavorprofile_dict = flavorprofile.to_dict(render_unsets=False)
             if flavorprofile_dict:
-                self.repositories.flavor_profile.update(lock_session, id,
+                self.repositories.flavor_profile.update(context.session, id,
                                                         **flavorprofile_dict)
-            lock_session.commit()
+            context.session.commit()
         except Exception:
             with excutils.save_and_reraise_exception():
-                lock_session.rollback()
+                context.session.rollback()
 
         # Force SQL alchemy to query the DB, otherwise we get inconsistent
         # results
         context.session.expire_all()
-        db_flavor_profile = self._get_db_flavor_profile(context.session, id)
+        with context.session.begin():
+            db_flavor_profile = self._get_db_flavor_profile(context.session,
+                                                            id)
         result = self._convert_db_to_type(
             db_flavor_profile, profile_types.FlavorProfileResponse)
         return profile_types.FlavorProfileRootResponse(flavorprofile=result)
@@ -200,13 +208,14 @@ class FlavorProfileController(base.BaseController):
                                       id=constants.NIL_UUID)
 
         # Don't allow it to be deleted if it is in use by a flavor
-        if self.repositories.flavor.count(
-                context.session, flavor_profile_id=flavor_profile_id) > 0:
-            raise exceptions.ObjectInUse(object='Flavor profile',
-                                         id=flavor_profile_id)
-        try:
-            self.repositories.flavor_profile.delete(context.session,
-                                                    id=flavor_profile_id)
-        except sa_exception.NoResultFound as e:
-            raise exceptions.NotFound(
-                resource='Flavor profile', id=flavor_profile_id) from e
+        with context.session.begin():
+            if self.repositories.flavor.count(
+                    context.session, flavor_profile_id=flavor_profile_id) > 0:
+                raise exceptions.ObjectInUse(object='Flavor profile',
+                                             id=flavor_profile_id)
+            try:
+                self.repositories.flavor_profile.delete(context.session,
+                                                        id=flavor_profile_id)
+            except sa_exception.NoResultFound as e:
+                raise exceptions.NotFound(
+                    resource='Flavor profile', id=flavor_profile_id) from e

@@ -531,6 +531,7 @@ class TestAvailabilityZoneProfiles(base.BaseAPITest):
     def test_delete_authorized(self):
         azp = self.create_availability_zone_profile(
             'test1', 'noop_driver', '{"compute_zone": "my_az_1"}')
+        self.session.commit()
         self.assertTrue(uuidutils.is_uuid_like(azp.get('id')))
         self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
         auth_strategy = self.conf.conf.api_settings.get('auth_strategy')

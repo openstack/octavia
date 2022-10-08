@@ -47,7 +47,8 @@ class FlavorsController(base.BaseController):
                                    constants.RBAC_GET_ONE)
         if id == constants.NIL_UUID:
             raise exceptions.NotFound(resource='Flavor', id=constants.NIL_UUID)
-        db_flavor = self._get_db_flavor(context.session, id)
+        with context.session.begin():
+            db_flavor = self._get_db_flavor(context.session, id)
         result = self._convert_db_to_type(db_flavor,
                                           flavor_types.FlavorResponse)
         if fields is not None:
@@ -62,9 +63,10 @@ class FlavorsController(base.BaseController):
         context = pcontext.get('octavia_context')
         self._auth_validate_action(context, context.project_id,
                                    constants.RBAC_GET_ALL)
-        db_flavors, links = self.repositories.flavor.get_all(
-            context.session,
-            pagination_helper=pcontext.get(constants.PAGINATION_HELPER))
+        with context.session.begin():
+            db_flavors, links = self.repositories.flavor.get_all(
+                context.session,
+                pagination_helper=pcontext.get(constants.PAGINATION_HELPER))
         result = self._convert_db_to_type(
             db_flavors, [flavor_types.FlavorResponse])
         if fields is not None:
@@ -83,20 +85,20 @@ class FlavorsController(base.BaseController):
 
         # TODO(johnsom) Validate the flavor profile ID
 
-        lock_session = db_api.get_session(autocommit=False)
+        context.session.begin()
         try:
             flavor_dict = flavor.to_dict(render_unsets=True)
             flavor_dict['id'] = uuidutils.generate_uuid()
-            db_flavor = self.repositories.flavor.create(lock_session,
+            db_flavor = self.repositories.flavor.create(context.session,
                                                         **flavor_dict)
-            lock_session.commit()
+            context.session.commit()
         except odb_exceptions.DBDuplicateEntry as e:
-            lock_session.rollback()
+            context.session.rollback()
             raise exceptions.RecordAlreadyExists(field='flavor',
                                                  name=flavor.name) from e
         except Exception:
             with excutils.save_and_reraise_exception():
-                lock_session.rollback()
+                context.session.rollback()
         result = self._convert_db_to_type(db_flavor,
                                           flavor_types.FlavorResponse)
         return flavor_types.FlavorRootResponse(flavor=result)
@@ -111,21 +113,22 @@ class FlavorsController(base.BaseController):
                                    constants.RBAC_PUT)
         if id == constants.NIL_UUID:
             raise exceptions.NotFound(resource='Flavor', id=constants.NIL_UUID)
-        lock_session = db_api.get_session(autocommit=False)
+        context.session.begin()
         try:
             flavor_dict = flavor.to_dict(render_unsets=False)
             if flavor_dict:
-                self.repositories.flavor.update(lock_session, id,
+                self.repositories.flavor.update(context.session, id,
                                                 **flavor_dict)
-            lock_session.commit()
+            context.session.commit()
         except Exception:
             with excutils.save_and_reraise_exception():
-                lock_session.rollback()
+                context.session.rollback()
 
         # Force SQL alchemy to query the DB, otherwise we get inconsistent
         # results
         context.session.expire_all()
-        db_flavor = self._get_db_flavor(context.session, id)
+        with context.session.begin():
+            db_flavor = self._get_db_flavor(context.session, id)
         result = self._convert_db_to_type(db_flavor,
                                           flavor_types.FlavorResponse)
         return flavor_types.FlavorRootResponse(flavor=result)
@@ -140,7 +143,8 @@ class FlavorsController(base.BaseController):
                                    constants.RBAC_DELETE)
         if flavor_id == constants.NIL_UUID:
             raise exceptions.NotFound(resource='Flavor', id=constants.NIL_UUID)
-        serial_session = db_api.get_session(autocommit=False)
+        serial_session = db_api.get_session()
+        serial_session.begin()
         serial_session.connection(
             execution_options={'isolation_level': 'SERIALIZABLE'})
         try:

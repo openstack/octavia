@@ -31,21 +31,6 @@ class WarningsFixture(fixtures.Fixture):
 
         warnings.filterwarnings(
             'ignore',
-            message='The Session.begin.subtransactions flag is deprecated ',
-            category=sqla_exc.SADeprecationWarning)
-
-        warnings.filterwarnings(
-            'ignore',
-            message='The Session.autocommit parameter is deprecated ',
-            category=sqla_exc.SADeprecationWarning)
-
-        warnings.filterwarnings(
-            'ignore',
-            message='The current statement is being autocommitted ',
-            category=sqla_exc.SADeprecationWarning)
-
-        warnings.filterwarnings(
-            'ignore',
             message='The create_engine.convert_unicode parameter and ',
             category=sqla_exc.SADeprecationWarning)
 

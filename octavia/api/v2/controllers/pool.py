@@ -34,7 +34,6 @@ from octavia.common import constants
 from octavia.common import data_models
 from octavia.common import exceptions
 from octavia.common import validate
-from octavia.db import api as db_api
 from octavia.db import prepare as db_prepare
 from octavia.i18n import _
 
@@ -54,7 +53,9 @@ class PoolsController(base.BaseController):
     def get(self, id, fields=None):
         """Gets a pool's details."""
         context = pecan_request.context.get('octavia_context')
-        db_pool = self._get_db_pool(context.session, id, show_deleted=False)
+        with context.session.begin():
+            db_pool = self._get_db_pool(context.session, id,
+                                        show_deleted=False)
 
         self._auth_validate_action(context, db_pool.project_id,
                                    constants.RBAC_GET_ONE)
@@ -73,10 +74,11 @@ class PoolsController(base.BaseController):
 
         query_filter = self._auth_get_all(context, project_id)
 
-        db_pools, links = self.repositories.pool.get_all_API_list(
-            context.session, show_deleted=False,
-            pagination_helper=pcontext.get(constants.PAGINATION_HELPER),
-            **query_filter)
+        with context.session.begin():
+            db_pools, links = self.repositories.pool.get_all_API_list(
+                context.session, show_deleted=False,
+                pagination_helper=pcontext.get(constants.PAGINATION_HELPER),
+                **query_filter)
         result = self._convert_db_to_type(db_pools, [pool_types.PoolResponse])
         if fields is not None:
             result = self._filter_fields(result, fields)
@@ -141,9 +143,11 @@ class PoolsController(base.BaseController):
             validate.check_alpn_protocols(pool_dict['alpn_protocols'])
 
         try:
-            return self.repositories.create_pool_on_load_balancer(
+            ret = self.repositories.create_pool_on_load_balancer(
                 lock_session, pool_dict,
                 listener_id=listener_id)
+            lock_session.flush()
+            return ret
         except odb_exceptions.DBDuplicateEntry as e:
             raise exceptions.IDAlreadyExists() from e
         except odb_exceptions.DBReferenceError as e:
@@ -211,19 +215,20 @@ class PoolsController(base.BaseController):
         pool = pool_.pool
         context = pecan_request.context.get('octavia_context')
         listener = None
-        if pool.loadbalancer_id:
-            pool.project_id, provider = self._get_lb_project_id_provider(
-                context.session, pool.loadbalancer_id)
-        elif pool.listener_id:
-            listener = self.repositories.listener.get(
-                context.session, id=pool.listener_id)
-            pool.loadbalancer_id = listener.load_balancer_id
-            pool.project_id, provider = self._get_lb_project_id_provider(
-                context.session, pool.loadbalancer_id)
-        else:
-            msg = _("Must provide at least one of: "
-                    "loadbalancer_id, listener_id")
-            raise exceptions.ValidationException(detail=msg)
+        with context.session.begin():
+            if pool.loadbalancer_id:
+                pool.project_id, provider = self._get_lb_project_id_provider(
+                    context.session, pool.loadbalancer_id)
+            elif pool.listener_id:
+                listener = self.repositories.listener.get(
+                    context.session, id=pool.listener_id)
+                pool.loadbalancer_id = listener.load_balancer_id
+                pool.project_id, provider = self._get_lb_project_id_provider(
+                    context.session, pool.loadbalancer_id)
+            else:
+                msg = _("Must provide at least one of: "
+                        "loadbalancer_id, listener_id")
+                raise exceptions.ValidationException(detail=msg)
 
         self._auth_validate_action(context, pool.project_id,
                                    constants.RBAC_POST)
@@ -252,11 +257,11 @@ class PoolsController(base.BaseController):
         # Load the driver early as it also provides validation
         driver = driver_factory.get_driver(provider)
 
-        lock_session = db_api.get_session(autocommit=False)
+        context.session.begin()
         try:
             if self.repositories.check_quota_met(
                     context.session,
-                    lock_session,
+                    context.session,
                     data_models.Pool,
                     pool.project_id):
                 raise exceptions.QuotaException(
@@ -268,16 +273,16 @@ class PoolsController(base.BaseController):
 
             listener_id = pool_dict.pop('listener_id', None)
             if listener_id:
-                if listener_repo.has_default_pool(lock_session,
+                if listener_repo.has_default_pool(context.session,
                                                   listener_id):
                     raise exceptions.DuplicatePoolEntry()
 
             self._test_lb_and_listener_statuses(
-                lock_session, lb_id=pool_dict['load_balancer_id'],
+                context.session, lb_id=pool_dict['load_balancer_id'],
                 listener_ids=[listener_id] if listener_id else [])
 
             db_pool = self._validate_create_pool(
-                lock_session, pool_dict, listener_id)
+                context.session, pool_dict, listener_id)
 
             # Prepare the data for the driver data model
             provider_pool = (
@@ -289,12 +294,13 @@ class PoolsController(base.BaseController):
             driver_utils.call_provider(
                 driver.name, driver.pool_create, provider_pool)
 
-            lock_session.commit()
+            context.session.commit()
         except Exception:
             with excutils.save_and_reraise_exception():
-                lock_session.rollback()
+                context.session.rollback()
 
-        db_pool = self._get_db_pool(context.session, db_pool.id)
+        with context.session.begin():
+            db_pool = self._get_db_pool(context.session, db_pool.id)
         result = self._convert_db_to_type(db_pool, pool_types.PoolResponse)
         return pool_types.PoolRootResponse(pool=result)
 
@@ -435,10 +441,12 @@ class PoolsController(base.BaseController):
         """Updates a pool on a load balancer."""
         pool = pool_.pool
         context = pecan_request.context.get('octavia_context')
-        db_pool = self._get_db_pool(context.session, id, show_deleted=False)
+        with context.session.begin():
+            db_pool = self._get_db_pool(context.session, id,
+                                        show_deleted=False)
 
-        project_id, provider = self._get_lb_project_id_provider(
-            context.session, db_pool.load_balancer_id)
+            project_id, provider = self._get_lb_project_id_provider(
+                context.session, db_pool.load_balancer_id)
 
         self._auth_validate_action(context, project_id, constants.RBAC_PUT)
 
@@ -458,9 +466,9 @@ class PoolsController(base.BaseController):
         # Load the driver early as it also provides validation
         driver = driver_factory.get_driver(provider)
 
-        with db_api.get_lock_session() as lock_session:
+        with context.session.begin():
             self._test_lb_and_listener_statuses(
-                lock_session, lb_id=db_pool.load_balancer_id,
+                context.session, lb_id=db_pool.load_balancer_id,
                 listener_ids=self._get_affected_listener_ids(db_pool))
 
             # Prepare the data for the driver data model
@@ -483,13 +491,14 @@ class PoolsController(base.BaseController):
             # Update the database to reflect what the driver just accepted
             pool.provisioning_status = constants.PENDING_UPDATE
             db_pool_dict = pool.to_dict(render_unsets=False)
-            self.repositories.update_pool_and_sp(lock_session, id,
+            self.repositories.update_pool_and_sp(context.session, id,
                                                  db_pool_dict)
 
         # Force SQL alchemy to query the DB, otherwise we get inconsistent
         # results
         context.session.expire_all()
-        db_pool = self._get_db_pool(context.session, id)
+        with context.session.begin():
+            db_pool = self._get_db_pool(context.session, id)
         result = self._convert_db_to_type(db_pool, pool_types.PoolResponse)
         return pool_types.PoolRootResponse(pool=result)
 
@@ -497,10 +506,12 @@ class PoolsController(base.BaseController):
     def delete(self, id):
         """Deletes a pool from a load balancer."""
         context = pecan_request.context.get('octavia_context')
-        db_pool = self._get_db_pool(context.session, id, show_deleted=False)
+        with context.session.begin():
+            db_pool = self._get_db_pool(context.session, id,
+                                        show_deleted=False)
 
-        project_id, provider = self._get_lb_project_id_provider(
-            context.session, db_pool.load_balancer_id)
+            project_id, provider = self._get_lb_project_id_provider(
+                context.session, db_pool.load_balancer_id)
 
         self._auth_validate_action(context, project_id, constants.RBAC_DELETE)
 
@@ -511,12 +522,12 @@ class PoolsController(base.BaseController):
         # Load the driver early as it also provides validation
         driver = driver_factory.get_driver(provider)
 
-        with db_api.get_lock_session() as lock_session:
+        with context.session.begin():
             self._test_lb_and_listener_statuses(
-                lock_session, lb_id=db_pool.load_balancer_id,
+                context.session, lb_id=db_pool.load_balancer_id,
                 listener_ids=self._get_affected_listener_ids(db_pool))
             self.repositories.pool.update(
-                lock_session, db_pool.id,
+                context.session, db_pool.id,
                 provisioning_status=constants.PENDING_DELETE)
 
             LOG.info("Sending delete Pool %s to provider %s", id, driver.name)
@@ -536,7 +547,9 @@ class PoolsController(base.BaseController):
         context = pecan_request.context.get('octavia_context')
         if pool_id and remainder and remainder[0] == 'members':
             remainder = remainder[1:]
-            db_pool = self.repositories.pool.get(context.session, id=pool_id)
+            with context.session.begin():
+                db_pool = self.repositories.pool.get(context.session,
+                                                     id=pool_id)
             if not db_pool:
                 LOG.info("Pool %s not found.", pool_id)
                 raise exceptions.NotFound(resource=data_models.Pool._name(),

@@ -12,15 +12,13 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-import contextlib
 import time
 
 from sqlalchemy.sql.expression import select
 
 from oslo_config import cfg
-from oslo_db.sqlalchemy import session as db_session
+from oslo_db.sqlalchemy import enginefacade
 from oslo_log import log as logging
-from oslo_utils import excutils
 
 LOG = logging.getLogger(__name__)
 _FACADE = None
@@ -29,32 +27,37 @@ _FACADE = None
 def _create_facade_lazily():
     global _FACADE
     if _FACADE is None:
-        _FACADE = db_session.EngineFacade.from_config(cfg.CONF, sqlite_fk=True)
-    return _FACADE
+        _FACADE = True
+        enginefacade.configure(sqlite_fk=True, expire_on_commit=True)
+
+
+def _get_transaction_context(reader=False):
+    _create_facade_lazily()
+    # TODO(gthiemonge) Create and use new functions to get read-only sessions
+    if reader:
+        context = enginefacade.reader
+    else:
+        context = enginefacade.writer
+    return context
+
+
+def _get_sessionmaker(reader=False):
+    context = _get_transaction_context(reader)
+    return context.get_sessionmaker()
 
 
 def get_engine():
-    facade = _create_facade_lazily()
-    return facade.get_engine()
+    context = _get_transaction_context()
+    return context.get_engine()
 
 
-def get_session(expire_on_commit=True, autocommit=True):
+def get_session():
     """Helper method to grab session."""
-    facade = _create_facade_lazily()
-    return facade.get_session(expire_on_commit=expire_on_commit,
-                              autocommit=autocommit)
+    return _get_sessionmaker()()
 
 
-@contextlib.contextmanager
-def get_lock_session():
-    """Context manager for using a locking (not auto-commit) session."""
-    lock_session = get_session(autocommit=False)
-    try:
-        yield lock_session
-        lock_session.commit()
-    except Exception:
-        with excutils.save_and_reraise_exception():
-            lock_session.rollback()
+def session():
+    return _get_sessionmaker()
 
 
 def wait_for_connection(exit_event):

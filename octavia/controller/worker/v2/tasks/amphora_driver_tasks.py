@@ -80,20 +80,23 @@ class AmpListenersUpdate(BaseAmphoraTask):
         # health manager fix it.
         # TODO(johnsom) Optimize this to use the dicts and not need the
         #               DB lookups
-        db_amp = self.amphora_repo.get(db_apis.get_session(),
-                                       id=amphora[constants.ID])
         try:
-            db_lb = self.loadbalancer_repo.get(
-                db_apis.get_session(),
-                id=loadbalancer[constants.LOADBALANCER_ID])
+            session = db_apis.get_session()
+            with session.begin():
+                db_amp = self.amphora_repo.get(session,
+                                               id=amphora[constants.ID])
+                db_lb = self.loadbalancer_repo.get(
+                    session,
+                    id=loadbalancer[constants.LOADBALANCER_ID])
             self.amphora_driver.update_amphora_listeners(
                 db_lb, db_amp, timeout_dict)
         except Exception as e:
             LOG.error('Failed to update listeners on amphora %s. Skipping '
                       'this amphora as it is failing to update due to: %s',
                       db_amp.id, str(e))
-            self.amphora_repo.update(db_apis.get_session(), db_amp.id,
-                                     status=constants.ERROR)
+            with session.begin():
+                self.amphora_repo.update(session, db_amp.id,
+                                         status=constants.ERROR)
 
 
 class AmphoraIndexListenerUpdate(BaseAmphoraTask):
@@ -106,12 +109,14 @@ class AmphoraIndexListenerUpdate(BaseAmphoraTask):
         try:
             # TODO(johnsom) Optimize this to use the dicts and not need the
             #               DB lookups
-            db_amp = self.amphora_repo.get(
-                db_apis.get_session(),
-                id=amphorae[amphora_index][constants.ID])
-            db_lb = self.loadbalancer_repo.get(
-                db_apis.get_session(),
-                id=loadbalancer[constants.LOADBALANCER_ID])
+            session = db_apis.get_session()
+            with session.begin():
+                db_amp = self.amphora_repo.get(
+                    session,
+                    id=amphorae[amphora_index][constants.ID])
+                db_lb = self.loadbalancer_repo.get(
+                    session,
+                    id=loadbalancer[constants.LOADBALANCER_ID])
             self.amphora_driver.update_amphora_listeners(
                 db_lb, db_amp, timeout_dict)
         except Exception as e:
@@ -119,8 +124,10 @@ class AmphoraIndexListenerUpdate(BaseAmphoraTask):
             LOG.error('Failed to update listeners on amphora %s. Skipping '
                       'this amphora as it is failing to update due to: %s',
                       amphora_id, str(e))
-            self.amphora_repo.update(db_apis.get_session(), amphora_id,
-                                     status=constants.ERROR)
+            session = db_apis.get_session()
+            with session.begin():
+                self.amphora_repo.update(session, amphora_id,
+                                         status=constants.ERROR)
 
 
 class ListenersUpdate(BaseAmphoraTask):
@@ -128,8 +135,10 @@ class ListenersUpdate(BaseAmphoraTask):
 
     def execute(self, loadbalancer_id):
         """Execute updates per listener for an amphora."""
-        loadbalancer = self.loadbalancer_repo.get(db_apis.get_session(),
-                                                  id=loadbalancer_id)
+        session = db_apis.get_session()
+        with session.begin():
+            loadbalancer = self.loadbalancer_repo.get(session,
+                                                      id=loadbalancer_id)
         if loadbalancer:
             self.amphora_driver.update(loadbalancer)
         else:
@@ -140,8 +149,10 @@ class ListenersUpdate(BaseAmphoraTask):
         """Handle failed listeners updates."""
 
         LOG.warning("Reverting listeners updates.")
-        loadbalancer = self.loadbalancer_repo.get(db_apis.get_session(),
-                                                  id=loadbalancer_id)
+        session = db_apis.get_session()
+        with session.begin():
+            loadbalancer = self.loadbalancer_repo.get(session,
+                                                      id=loadbalancer_id)
         for listener in loadbalancer.listeners:
             self.task_utils.mark_listener_prov_status_error(
                 listener.id)
@@ -152,12 +163,15 @@ class ListenersStart(BaseAmphoraTask):
 
     def execute(self, loadbalancer, amphora=None):
         """Execute listener start routines for listeners on an amphora."""
-        db_lb = self.loadbalancer_repo.get(
-            db_apis.get_session(), id=loadbalancer[constants.LOADBALANCER_ID])
+        session = db_apis.get_session()
+        with session.begin():
+            db_lb = self.loadbalancer_repo.get(
+                session, id=loadbalancer[constants.LOADBALANCER_ID])
         if db_lb.listeners:
             if amphora is not None:
-                db_amp = self.amphora_repo.get(db_apis.get_session(),
-                                               id=amphora[constants.ID])
+                with session.begin():
+                    db_amp = self.amphora_repo.get(session,
+                                                   id=amphora[constants.ID])
             else:
                 db_amp = amphora
             self.amphora_driver.start(db_lb, db_amp)
@@ -167,8 +181,10 @@ class ListenersStart(BaseAmphoraTask):
         """Handle failed listeners starts."""
 
         LOG.warning("Reverting listeners starts.")
-        db_lb = self.loadbalancer_repo.get(
-            db_apis.get_session(), id=loadbalancer[constants.LOADBALANCER_ID])
+        session = db_apis.get_session()
+        with session.begin():
+            db_lb = self.loadbalancer_repo.get(
+                session, id=loadbalancer[constants.LOADBALANCER_ID])
         for listener in db_lb.listeners:
             self.task_utils.mark_listener_prov_status_error(listener.id)
 
@@ -183,11 +199,13 @@ class AmphoraIndexListenersReload(BaseAmphoraTask):
             return
         # TODO(johnsom) Optimize this to use the dicts and not need the
         #               DB lookups
-        db_amp = self.amphora_repo.get(
-            db_apis.get_session(), id=amphorae[amphora_index][constants.ID])
-        db_lb = self.loadbalancer_repo.get(
-            db_apis.get_session(),
-            id=loadbalancer[constants.LOADBALANCER_ID])
+        session = db_apis.get_session()
+        with session.begin():
+            db_amp = self.amphora_repo.get(
+                session, id=amphorae[amphora_index][constants.ID])
+            db_lb = self.loadbalancer_repo.get(
+                session,
+                id=loadbalancer[constants.LOADBALANCER_ID])
         if db_lb.listeners:
             try:
                 self.amphora_driver.reload(db_lb, db_amp, timeout_dict)
@@ -196,8 +214,9 @@ class AmphoraIndexListenersReload(BaseAmphoraTask):
                 LOG.warning('Failed to reload listeners on amphora %s. '
                             'Skipping this amphora as it is failing to '
                             'reload due to: %s', amphora_id, str(e))
-                self.amphora_repo.update(db_apis.get_session(), amphora_id,
-                                         status=constants.ERROR)
+                with session.begin():
+                    self.amphora_repo.update(session, amphora_id,
+                                             status=constants.ERROR)
 
 
 class ListenerDelete(BaseAmphoraTask):
@@ -205,8 +224,10 @@ class ListenerDelete(BaseAmphoraTask):
 
     def execute(self, listener):
         """Execute listener delete routines for an amphora."""
-        db_listener = self.listener_repo.get(
-            db_apis.get_session(), id=listener[constants.LISTENER_ID])
+        session = db_apis.get_session()
+        with session.begin():
+            db_listener = self.listener_repo.get(
+                session, id=listener[constants.LISTENER_ID])
         self.amphora_driver.delete(db_listener)
         LOG.debug("Deleted the listener on the vip")
 
@@ -224,8 +245,10 @@ class AmphoraGetInfo(BaseAmphoraTask):
 
     def execute(self, amphora):
         """Execute get_info routine for an amphora."""
-        db_amp = self.amphora_repo.get(db_apis.get_session(),
-                                       id=amphora[constants.ID])
+        session = db_apis.get_session()
+        with session.begin():
+            db_amp = self.amphora_repo.get(session,
+                                           id=amphora[constants.ID])
         self.amphora_driver.get_info(db_amp)
 
 
@@ -242,8 +265,10 @@ class AmphoraFinalize(BaseAmphoraTask):
 
     def execute(self, amphora):
         """Execute finalize_amphora routine."""
-        db_amp = self.amphora_repo.get(db_apis.get_session(),
-                                       id=amphora.get(constants.ID))
+        session = db_apis.get_session()
+        with session.begin():
+            db_amp = self.amphora_repo.get(session,
+                                           id=amphora.get(constants.ID))
         self.amphora_driver.finalize_amphora(db_amp)
         LOG.debug("Finalized the amphora.")
 
@@ -261,8 +286,10 @@ class AmphoraPostNetworkPlug(BaseAmphoraTask):
 
     def execute(self, amphora, ports, amphora_network_config):
         """Execute post_network_plug routine."""
-        db_amp = self.amphora_repo.get(db_apis.get_session(),
-                                       id=amphora[constants.ID])
+        session = db_apis.get_session()
+        with session.begin():
+            db_amp = self.amphora_repo.get(session,
+                                           id=amphora[constants.ID])
 
         for port in ports:
             net = data_models.Network(**port.pop(constants.NETWORK))
@@ -302,8 +329,10 @@ class AmphoraePostNetworkPlug(BaseAmphoraTask):
     def execute(self, loadbalancer, updated_ports, amphorae_network_config):
         """Execute post_network_plug routine."""
         amp_post_plug = AmphoraPostNetworkPlug()
-        db_lb = self.loadbalancer_repo.get(
-            db_apis.get_session(), id=loadbalancer[constants.LOADBALANCER_ID])
+        session = db_apis.get_session()
+        with session.begin():
+            db_lb = self.loadbalancer_repo.get(
+                session, id=loadbalancer[constants.LOADBALANCER_ID])
         for amphora in db_lb.amphorae:
             if amphora.id in updated_ports:
                 amp_post_plug.execute(amphora.to_dict(),
@@ -314,8 +343,10 @@ class AmphoraePostNetworkPlug(BaseAmphoraTask):
         """Handle a failed post network plug."""
         if isinstance(result, failure.Failure):
             return
-        db_lb = self.loadbalancer_repo.get(
-            db_apis.get_session(), id=loadbalancer[constants.LOADBALANCER_ID])
+        session = db_apis.get_session()
+        with session.begin():
+            db_lb = self.loadbalancer_repo.get(
+                session, id=loadbalancer[constants.LOADBALANCER_ID])
         LOG.warning("Reverting post network plug.")
         for amphora in filter(
             lambda amp: amp.status == constants.AMPHORA_ALLOCATED,
@@ -329,10 +360,12 @@ class AmphoraPostVIPPlug(BaseAmphoraTask):
 
     def execute(self, amphora, loadbalancer, amphorae_network_config):
         """Execute post_vip_routine."""
-        db_amp = self.amphora_repo.get(db_apis.get_session(),
-                                       id=amphora.get(constants.ID))
-        db_lb = self.loadbalancer_repo.get(
-            db_apis.get_session(), id=loadbalancer[constants.LOADBALANCER_ID])
+        session = db_apis.get_session()
+        with session.begin():
+            db_amp = self.amphora_repo.get(session,
+                                           id=amphora.get(constants.ID))
+            db_lb = self.loadbalancer_repo.get(
+                session, id=loadbalancer[constants.LOADBALANCER_ID])
         vrrp_port = data_models.Port(
             **amphorae_network_config[
                 amphora.get(constants.ID)][constants.VRRP_PORT])
@@ -385,8 +418,10 @@ class AmphoraePostVIPPlug(BaseAmphoraTask):
     def execute(self, loadbalancer, amphorae_network_config):
         """Execute post_vip_plug across the amphorae."""
         amp_post_vip_plug = AmphoraPostVIPPlug()
-        db_lb = self.loadbalancer_repo.get(
-            db_apis.get_session(), id=loadbalancer[constants.LOADBALANCER_ID])
+        session = db_apis.get_session()
+        with session.begin():
+            db_lb = self.loadbalancer_repo.get(
+                session, id=loadbalancer[constants.LOADBALANCER_ID])
         for amphora in db_lb.amphorae:
             amp_post_vip_plug.execute(amphora.to_dict(),
                                       loadbalancer,
@@ -401,8 +436,10 @@ class AmphoraCertUpload(BaseAmphoraTask):
         LOG.debug("Upload cert in amphora REST driver")
         key = utils.get_compatible_server_certs_key_passphrase()
         fer = fernet.Fernet(key)
-        db_amp = self.amphora_repo.get(db_apis.get_session(),
-                                       id=amphora.get(constants.ID))
+        session = db_apis.get_session()
+        with session.begin():
+            db_amp = self.amphora_repo.get(session,
+                                           id=amphora.get(constants.ID))
         self.amphora_driver.upload_cert_amp(
             db_amp, fer.decrypt(server_pem.encode('utf-8')))
 
@@ -415,8 +452,10 @@ class AmphoraUpdateVRRPInterface(BaseAmphoraTask):
         try:
             # TODO(johnsom) Optimize this to use the dicts and not need the
             #               DB lookups
-            db_amp = self.amphora_repo.get(db_apis.get_session(),
-                                           id=amphora[constants.ID])
+            session = db_apis.get_session()
+            with session.begin():
+                db_amp = self.amphora_repo.get(session,
+                                               id=amphora[constants.ID])
             interface = self.amphora_driver.get_interface_from_ip(
                 db_amp, db_amp.vrrp_ip, timeout_dict=timeout_dict)
         except Exception as e:
@@ -424,13 +463,15 @@ class AmphoraUpdateVRRPInterface(BaseAmphoraTask):
             LOG.error('Failed to get amphora VRRP interface on amphora '
                       '%s. Skipping this amphora as it is failing due to: '
                       '%s', amphora.get(constants.ID), str(e))
-            self.amphora_repo.update(db_apis.get_session(),
-                                     amphora.get(constants.ID),
-                                     status=constants.ERROR)
+            with session.begin():
+                self.amphora_repo.update(session,
+                                         amphora.get(constants.ID),
+                                         status=constants.ERROR)
             return None
 
-        self.amphora_repo.update(db_apis.get_session(), amphora[constants.ID],
-                                 vrrp_interface=interface)
+        with session.begin():
+            self.amphora_repo.update(session, amphora[constants.ID],
+                                     vrrp_interface=interface)
         return interface
 
 
@@ -442,8 +483,10 @@ class AmphoraIndexUpdateVRRPInterface(BaseAmphoraTask):
         try:
             # TODO(johnsom) Optimize this to use the dicts and not need the
             #               DB lookups
-            db_amp = self.amphora_repo.get(db_apis.get_session(),
-                                           id=amphora_id)
+            session = db_apis.get_session()
+            with session.begin():
+                db_amp = self.amphora_repo.get(session,
+                                               id=amphora_id)
             interface = self.amphora_driver.get_interface_from_ip(
                 db_amp, db_amp.vrrp_ip, timeout_dict=timeout_dict)
         except Exception as e:
@@ -451,12 +494,14 @@ class AmphoraIndexUpdateVRRPInterface(BaseAmphoraTask):
             LOG.error('Failed to get amphora VRRP interface on amphora '
                       '%s. Skipping this amphora as it is failing due to: '
                       '%s', amphora_id, str(e))
-            self.amphora_repo.update(db_apis.get_session(), amphora_id,
-                                     status=constants.ERROR)
+            with session.begin():
+                self.amphora_repo.update(session, amphora_id,
+                                         status=constants.ERROR)
             return None
 
-        self.amphora_repo.update(db_apis.get_session(), amphora_id,
-                                 vrrp_interface=interface)
+        with session.begin():
+            self.amphora_repo.update(session, amphora_id,
+                                     vrrp_interface=interface)
         return interface
 
 
@@ -473,10 +518,12 @@ class AmphoraVRRPUpdate(BaseAmphoraTask):
         try:
             # TODO(johnsom) Optimize this to use the dicts and not need the
             #               DB lookups
-            db_amp = self.amphora_repo.get(db_apis.get_session(),
-                                           id=amphora_id)
-            loadbalancer = self.loadbalancer_repo.get(db_apis.get_session(),
-                                                      id=loadbalancer_id)
+            session = db_apis.get_session()
+            with session.begin():
+                db_amp = self.amphora_repo.get(session,
+                                               id=amphora_id)
+                loadbalancer = self.loadbalancer_repo.get(session,
+                                                          id=loadbalancer_id)
             db_amp.vrrp_interface = amp_vrrp_int
             self.amphora_driver.update_vrrp_conf(
                 loadbalancer, amphorae_network_config, db_amp, timeout_dict)
@@ -484,8 +531,9 @@ class AmphoraVRRPUpdate(BaseAmphoraTask):
             LOG.error('Failed to update VRRP configuration amphora %s. '
                       'Skipping this amphora as it is failing to update due '
                       'to: %s', amphora_id, str(e))
-            self.amphora_repo.update(db_apis.get_session(), amphora_id,
-                                     status=constants.ERROR)
+            with session.begin():
+                self.amphora_repo.update(session, amphora_id,
+                                         status=constants.ERROR)
 
         LOG.debug("Uploaded VRRP configuration of amphora %s.", amphora_id)
 
@@ -503,10 +551,12 @@ class AmphoraIndexVRRPUpdate(BaseAmphoraTask):
         try:
             # TODO(johnsom) Optimize this to use the dicts and not need the
             #               DB lookups
-            db_amp = self.amphora_repo.get(db_apis.get_session(),
-                                           id=amphora_id)
-            loadbalancer = self.loadbalancer_repo.get(db_apis.get_session(),
-                                                      id=loadbalancer_id)
+            session = db_apis.get_session()
+            with session.begin():
+                db_amp = self.amphora_repo.get(session,
+                                               id=amphora_id)
+                loadbalancer = self.loadbalancer_repo.get(session,
+                                                          id=loadbalancer_id)
             db_amp.vrrp_interface = amp_vrrp_int
             self.amphora_driver.update_vrrp_conf(
                 loadbalancer, amphorae_network_config, db_amp, timeout_dict)
@@ -514,8 +564,9 @@ class AmphoraIndexVRRPUpdate(BaseAmphoraTask):
             LOG.error('Failed to update VRRP configuration amphora %s. '
                       'Skipping this amphora as it is failing to update due '
                       'to: %s', amphora_id, str(e))
-            self.amphora_repo.update(db_apis.get_session(), amphora_id,
-                                     status=constants.ERROR)
+            with session.begin():
+                self.amphora_repo.update(session, amphora_id,
+                                         status=constants.ERROR)
             return
         LOG.debug("Uploaded VRRP configuration of amphora %s.", amphora_id)
 
@@ -529,8 +580,10 @@ class AmphoraVRRPStart(BaseAmphoraTask):
     def execute(self, amphora, timeout_dict=None):
         # TODO(johnsom) Optimize this to use the dicts and not need the
         #               DB lookups
-        db_amp = self.amphora_repo.get(
-            db_apis.get_session(), id=amphora[constants.ID])
+        session = db_apis.get_session()
+        with session.begin():
+            db_amp = self.amphora_repo.get(
+                session, id=amphora[constants.ID])
         self.amphora_driver.start_vrrp_service(db_amp, timeout_dict)
         LOG.debug("Started VRRP on amphora %s.", amphora[constants.ID])
 
@@ -545,15 +598,18 @@ class AmphoraIndexVRRPStart(BaseAmphoraTask):
         # TODO(johnsom) Optimize this to use the dicts and not need the
         #               DB lookups
         amphora_id = amphorae[amphora_index][constants.ID]
-        db_amp = self.amphora_repo.get(db_apis.get_session(), id=amphora_id)
+        session = db_apis.get_session()
+        with session.begin():
+            db_amp = self.amphora_repo.get(session, id=amphora_id)
         try:
             self.amphora_driver.start_vrrp_service(db_amp, timeout_dict)
         except Exception as e:
             LOG.error('Failed to start VRRP on amphora %s. '
                       'Skipping this amphora as it is failing to start due '
                       'to: %s', amphora_id, str(e))
-            self.amphora_repo.update(db_apis.get_session(), amphora_id,
-                                     status=constants.ERROR)
+            with session.begin():
+                self.amphora_repo.update(session, amphora_id,
+                                         status=constants.ERROR)
             return
         LOG.debug("Started VRRP on amphora %s.",
                   amphorae[amphora_index][constants.ID])
@@ -565,8 +621,10 @@ class AmphoraComputeConnectivityWait(BaseAmphoraTask):
     def execute(self, amphora, raise_retry_exception=False):
         """Execute get_info routine for an amphora until it responds."""
         try:
-            db_amphora = self.amphora_repo.get(
-                db_apis.get_session(), id=amphora.get(constants.ID))
+            session = db_apis.get_session()
+            with session.begin():
+                db_amphora = self.amphora_repo.get(
+                    session, id=amphora.get(constants.ID))
             amp_info = self.amphora_driver.get_info(
                 db_amphora, raise_retry_exception=raise_retry_exception)
             LOG.debug('Successfuly connected to amphora %s: %s',
@@ -576,9 +634,10 @@ class AmphoraComputeConnectivityWait(BaseAmphoraTask):
                       "This either means the compute driver failed to fully "
                       "boot the instance inside the timeout interval or the "
                       "instance is not reachable via the lb-mgmt-net.")
-            self.amphora_repo.update(db_apis.get_session(),
-                                     amphora.get(constants.ID),
-                                     status=constants.ERROR)
+            with session.begin():
+                self.amphora_repo.update(session,
+                                         amphora.get(constants.ID),
+                                         status=constants.ERROR)
             raise
 
 
@@ -597,8 +656,10 @@ class AmphoraConfigUpdate(BaseAmphoraTask):
         agent_cfg_tmpl = agent_jinja_cfg.AgentJinjaTemplater()
         agent_config = agent_cfg_tmpl.build_agent_config(
             amphora.get(constants.ID), topology)
-        db_amp = self.amphora_repo.get(db_apis.get_session(),
-                                       id=amphora[constants.ID])
+        session = db_apis.get_session()
+        with session.begin():
+            db_amp = self.amphora_repo.get(session,
+                                           id=amphora[constants.ID])
         # Push the new configuration to the amphora
         try:
             self.amphora_driver.update_amphora_agent_config(db_amp,

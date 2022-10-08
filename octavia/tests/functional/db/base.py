@@ -33,6 +33,7 @@ class OctaviaDBTestBase(test_base.BaseTestCase):
     def setUp(self, connection_string='sqlite://'):
         super().setUp()
 
+        self.connection_string = connection_string
         self.warning_fixture = self.useFixture(oc_fixtures.WarningsFixture())
 
         # NOTE(blogan): doing this for now because using the engine and
@@ -42,21 +43,12 @@ class OctaviaDBTestBase(test_base.BaseTestCase):
         conf = self.useFixture(oslo_fixture.Config(config.cfg.CONF))
         conf.config(group="database", connection=connection_string)
 
-        # We need to get our own Facade so that the file backed sqlite tests
-        # don't use the _FACADE singleton. Some tests will use in-memory
-        # sqlite, some will use a file backed sqlite.
-        if 'sqlite:///' in connection_string:
-            facade = db_session.EngineFacade.from_config(cfg.CONF,
-                                                         sqlite_fk=True)
-            engine = facade.get_engine()
-            self.session = facade.get_session(expire_on_commit=True,
-                                              autocommit=True)
-        else:
-            engine = db_api.get_engine()
-            self.session = db_api.get_session()
+        engine, self.session = self._get_db_engine_session()
 
         base_models.BASE.metadata.create_all(engine)
-        self._seed_lookup_tables(self.session)
+
+        with self.session.begin():
+            self._seed_lookup_tables(self.session)
 
         def clear_tables():
             """Unregister all data models."""
@@ -66,6 +58,20 @@ class OctaviaDBTestBase(test_base.BaseTestCase):
                 os.remove(connection_string.replace('sqlite:///', ''))
 
         self.addCleanup(clear_tables)
+
+    def _get_db_engine_session(self):
+        # We need to get our own Facade so that the file backed sqlite tests
+        # don't use the _FACADE singleton. Some tests will use in-memory
+        # sqlite, some will use a file backed sqlite.
+        if 'sqlite:///' in self.connection_string:
+            facade = db_session.EngineFacade.from_config(cfg.CONF,
+                                                         sqlite_fk=True)
+            engine = facade.get_engine()
+            session = facade.get_session(expire_on_commit=True)
+        else:
+            engine = db_api.get_engine()
+            session = db_api.get_session()
+        return engine, session
 
     def _seed_lookup_tables(self, session):
         self._seed_lookup_table(
@@ -128,6 +134,5 @@ class OctaviaDBTestBase(test_base.BaseTestCase):
 
     def _seed_lookup_table(self, session, name_list, model_cls):
         for name in name_list:
-            with session.begin():
-                model = model_cls(name=name)
-                session.add(model)
+            model = model_cls(name=name)
+            session.add(model)

@@ -36,7 +36,7 @@ class TestAmphoraBuildRateLimit(base.TestCase):
         self.amp_build_req_repo = mock.MagicMock()
         self.conf.config(group='haproxy_amphora', build_rate_limit=1)
 
-    @mock.patch('octavia.db.api.get_session', mock.MagicMock())
+    @mock.patch('octavia.db.api.session', mock.MagicMock())
     @mock.patch('octavia.controller.worker.amphora_rate_limit'
                 '.AmphoraBuildRateLimit.wait_for_build_slot')
     @mock.patch('octavia.db.repositories.AmphoraBuildReqRepository'

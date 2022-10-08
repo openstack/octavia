@@ -74,8 +74,10 @@ class CalculateAmphoraDelta(BaseNetworkTask):
         else:
             management_nets = CONF.controller_worker.amp_boot_network_list
 
-        db_lb = self.loadbalancer_repo.get(
-            db_apis.get_session(), id=loadbalancer[constants.LOADBALANCER_ID])
+        session = db_apis.get_session()
+        with session.begin():
+            db_lb = self.loadbalancer_repo.get(
+                session, id=loadbalancer[constants.LOADBALANCER_ID])
 
         desired_subnet_to_net_map = {}
         for mgmt_net_id in management_nets:
@@ -183,8 +185,10 @@ class CalculateDelta(BaseNetworkTask):
 
         calculate_amp = CalculateAmphoraDelta()
         deltas = {}
-        db_lb = self.loadbalancer_repo.get(
-            db_apis.get_session(), id=loadbalancer[constants.LOADBALANCER_ID])
+        session = db_apis.get_session()
+        with session.begin():
+            db_lb = self.loadbalancer_repo.get(
+                session, id=loadbalancer[constants.LOADBALANCER_ID])
         for amphora in filter(
             lambda amp: amp.status == constants.AMPHORA_ALLOCATED,
                 db_lb.amphorae):
@@ -317,8 +321,10 @@ class HandleNetworkDelta(BaseNetworkTask):
 
     def execute(self, amphora, delta):
         """Handle network plugging based off deltas."""
-        db_amp = self.amphora_repo.get(db_apis.get_session(),
-                                       id=amphora.get(constants.ID))
+        session = db_apis.get_session()
+        with session.begin():
+            db_amp = self.amphora_repo.get(session,
+                                           id=amphora.get(constants.ID))
         updated_ports = {}
         for nic in delta[constants.ADD_NICS]:
             subnet_id = nic[constants.FIXED_IPS][0][constants.SUBNET_ID]
@@ -432,8 +438,10 @@ class HandleNetworkDeltas(BaseNetworkTask):
 
     def execute(self, deltas, loadbalancer):
         """Handle network plugging based off deltas."""
-        db_lb = self.loadbalancer_repo.get(
-            db_apis.get_session(), id=loadbalancer[constants.LOADBALANCER_ID])
+        session = db_apis.get_session()
+        with session.begin():
+            db_lb = self.loadbalancer_repo.get(
+                session, id=loadbalancer[constants.LOADBALANCER_ID])
         amphorae = {amp.id: amp for amp in db_lb.amphorae}
 
         updated_ports = {}
@@ -481,9 +489,11 @@ class PlugVIP(BaseNetworkTask):
 
         LOG.debug("Plumbing VIP for loadbalancer id: %s",
                   loadbalancer[constants.LOADBALANCER_ID])
-        db_lb = self.loadbalancer_repo.get(
-            db_apis.get_session(),
-            id=loadbalancer[constants.LOADBALANCER_ID])
+        session = db_apis.get_session()
+        with session.begin():
+            db_lb = self.loadbalancer_repo.get(
+                session,
+                id=loadbalancer[constants.LOADBALANCER_ID])
         amps_data = self.network_driver.plug_vip(db_lb,
                                                  db_lb.vip)
         return [amp.to_dict() for amp in amps_data]
@@ -496,9 +506,11 @@ class PlugVIP(BaseNetworkTask):
         LOG.warning("Unable to plug VIP for loadbalancer id %s",
                     loadbalancer[constants.LOADBALANCER_ID])
 
-        db_lb = self.loadbalancer_repo.get(
-            db_apis.get_session(),
-            id=loadbalancer[constants.LOADBALANCER_ID])
+        session = db_apis.get_session()
+        with session.begin():
+            db_lb = self.loadbalancer_repo.get(
+                session,
+                id=loadbalancer[constants.LOADBALANCER_ID])
         try:
             # Make sure we have the current port IDs for cleanup
             for amp_data in result:
@@ -524,8 +536,10 @@ class UpdateVIPSecurityGroup(BaseNetworkTask):
 
         LOG.debug("Setting up VIP SG for load balancer id: %s",
                   loadbalancer_id)
-        db_lb = self.loadbalancer_repo.get(
-            db_apis.get_session(), id=loadbalancer_id)
+        session = db_apis.get_session()
+        with session.begin():
+            db_lb = self.loadbalancer_repo.get(
+                session, id=loadbalancer_id)
 
         sg_id = self.network_driver.update_vip_sg(db_lb, db_lb.vip)
         LOG.info("Set up VIP SG %s for load balancer %s complete",
@@ -557,11 +571,13 @@ class PlugVIPAmphora(BaseNetworkTask):
 
         LOG.debug("Plumbing VIP for amphora id: %s",
                   amphora.get(constants.ID))
-        db_amp = self.amphora_repo.get(db_apis.get_session(),
-                                       id=amphora.get(constants.ID))
-        db_subnet = self.network_driver.get_subnet(subnet[constants.ID])
-        db_lb = self.loadbalancer_repo.get(
-            db_apis.get_session(), id=loadbalancer[constants.LOADBALANCER_ID])
+        session = db_apis.get_session()
+        with session.begin():
+            db_amp = self.amphora_repo.get(session,
+                                           id=amphora.get(constants.ID))
+            db_subnet = self.network_driver.get_subnet(subnet[constants.ID])
+            db_lb = self.loadbalancer_repo.get(
+                session, id=loadbalancer[constants.LOADBALANCER_ID])
         amp_data = self.network_driver.plug_aap_port(
             db_lb, db_lb.vip, db_amp, db_subnet)
         return amp_data.to_dict()
@@ -576,14 +592,17 @@ class PlugVIPAmphora(BaseNetworkTask):
                     loadbalancer[constants.LOADBALANCER_ID])
 
         try:
-            db_amp = self.amphora_repo.get(db_apis.get_session(),
-                                           id=amphora.get(constants.ID))
-            db_amp.vrrp_port_id = result[constants.VRRP_PORT_ID]
-            db_amp.ha_port_id = result[constants.HA_PORT_ID]
-            db_subnet = self.network_driver.get_subnet(subnet[constants.ID])
-            db_lb = self.loadbalancer_repo.get(
-                db_apis.get_session(),
-                id=loadbalancer[constants.LOADBALANCER_ID])
+            session = db_apis.get_session()
+            with session.begin():
+                db_amp = self.amphora_repo.get(session,
+                                               id=amphora.get(constants.ID))
+                db_amp.vrrp_port_id = result[constants.VRRP_PORT_ID]
+                db_amp.ha_port_id = result[constants.HA_PORT_ID]
+                db_subnet = self.network_driver.get_subnet(
+                    subnet[constants.ID])
+                db_lb = self.loadbalancer_repo.get(
+                    session,
+                    id=loadbalancer[constants.LOADBALANCER_ID])
 
             self.network_driver.unplug_aap_port(db_lb.vip,
                                                 db_amp, db_subnet)
@@ -600,9 +619,11 @@ class UnplugVIP(BaseNetworkTask):
 
         LOG.debug("Unplug vip on amphora")
         try:
-            db_lb = self.loadbalancer_repo.get(
-                db_apis.get_session(),
-                id=loadbalancer[constants.LOADBALANCER_ID])
+            session = db_apis.get_session()
+            with session.begin():
+                db_lb = self.loadbalancer_repo.get(
+                    session,
+                    id=loadbalancer[constants.LOADBALANCER_ID])
             self.network_driver.unplug_vip(db_lb, db_lb.vip)
         except Exception:
             LOG.exception("Unable to unplug vip from load balancer %s",
@@ -621,8 +642,10 @@ class AllocateVIP(BaseNetworkTask):
                   loadbalancer[constants.VIP_SUBNET_ID],
                   loadbalancer[constants.VIP_ADDRESS],
                   loadbalancer[constants.LOADBALANCER_ID])
-        db_lb = self.loadbalancer_repo.get(
-            db_apis.get_session(), id=loadbalancer[constants.LOADBALANCER_ID])
+        session = db_apis.get_session()
+        with session.begin():
+            db_lb = self.loadbalancer_repo.get(
+                session, id=loadbalancer[constants.LOADBALANCER_ID])
         vip, additional_vips = self.network_driver.allocate_vip(db_lb)
         LOG.info("Allocated vip with port id %s, subnet id %s, ip address %s "
                  "for load balancer %s",
@@ -682,10 +705,12 @@ class DeallocateVIP(BaseNetworkTask):
         # will need access to the load balancer that the vip is/was attached
         # to.  However the data model serialization for the vip does not give a
         # backref to the loadbalancer if accessed through the loadbalancer.
-        db_lb = self.loadbalancer_repo.get(
-            db_apis.get_session(), id=loadbalancer[constants.LOADBALANCER_ID])
-        vip = db_lb.vip
-        vip.load_balancer = db_lb
+        session = db_apis.get_session()
+        with session.begin():
+            db_lb = self.loadbalancer_repo.get(
+                session, id=loadbalancer[constants.LOADBALANCER_ID])
+            vip = db_lb.vip
+            vip.load_balancer = db_lb
         self.network_driver.deallocate_vip(vip)
 
 
@@ -693,8 +718,10 @@ class UpdateVIP(BaseNetworkTask):
     """Task to update a VIP."""
 
     def execute(self, listeners):
-        loadbalancer = self.loadbalancer_repo.get(
-            db_apis.get_session(), id=listeners[0][constants.LOADBALANCER_ID])
+        session = db_apis.get_session()
+        with session.begin():
+            loadbalancer = self.loadbalancer_repo.get(
+                session, id=listeners[0][constants.LOADBALANCER_ID])
 
         LOG.debug("Updating VIP of load_balancer %s.", loadbalancer.id)
 
@@ -705,8 +732,10 @@ class UpdateVIPForDelete(BaseNetworkTask):
     """Task to update a VIP for listener delete flows."""
 
     def execute(self, loadbalancer_id):
-        loadbalancer = self.loadbalancer_repo.get(
-            db_apis.get_session(), id=loadbalancer_id)
+        session = db_apis.get_session()
+        with session.begin():
+            loadbalancer = self.loadbalancer_repo.get(
+                session, id=loadbalancer_id)
         LOG.debug("Updating VIP for listener delete on load_balancer %s.",
                   loadbalancer.id)
         self.network_driver.update_vip(loadbalancer, for_delete=True)
@@ -717,10 +746,12 @@ class GetAmphoraNetworkConfigs(BaseNetworkTask):
 
     def execute(self, loadbalancer, amphora=None):
         LOG.debug("Retrieving vip network details.")
-        db_amp = self.amphora_repo.get(db_apis.get_session(),
-                                       id=amphora.get(constants.ID))
-        db_lb = self.loadbalancer_repo.get(
-            db_apis.get_session(), id=loadbalancer[constants.LOADBALANCER_ID])
+        session = db_apis.get_session()
+        with session.begin():
+            db_amp = self.amphora_repo.get(session,
+                                           id=amphora.get(constants.ID))
+            db_lb = self.loadbalancer_repo.get(
+                session, id=loadbalancer[constants.LOADBALANCER_ID])
         db_configs = self.network_driver.get_network_configs(
             db_lb, amphora=db_amp)
         provider_dict = {}
@@ -734,9 +765,11 @@ class GetAmphoraNetworkConfigsByID(BaseNetworkTask):
 
     def execute(self, loadbalancer_id, amphora_id=None):
         LOG.debug("Retrieving vip network details.")
-        loadbalancer = self.loadbalancer_repo.get(db_apis.get_session(),
-                                                  id=loadbalancer_id)
-        amphora = self.amphora_repo.get(db_apis.get_session(), id=amphora_id)
+        session = db_apis.get_session()
+        with session.begin():
+            loadbalancer = self.loadbalancer_repo.get(session,
+                                                      id=loadbalancer_id)
+            amphora = self.amphora_repo.get(session, id=amphora_id)
         db_configs = self.network_driver.get_network_configs(loadbalancer,
                                                              amphora=amphora)
         provider_dict = {}
@@ -750,8 +783,10 @@ class GetAmphoraeNetworkConfigs(BaseNetworkTask):
 
     def execute(self, loadbalancer_id):
         LOG.debug("Retrieving vip network details.")
-        db_lb = self.loadbalancer_repo.get(
-            db_apis.get_session(), id=loadbalancer_id)
+        session = db_apis.get_session()
+        with session.begin():
+            db_lb = self.loadbalancer_repo.get(
+                session, id=loadbalancer_id)
         db_configs = self.network_driver.get_network_configs(db_lb)
         provider_dict = {}
         for amp_id, amp_conf in db_configs.items():
@@ -763,8 +798,10 @@ class FailoverPreparationForAmphora(BaseNetworkTask):
     """Task to prepare an amphora for failover."""
 
     def execute(self, amphora):
-        db_amp = self.amphora_repo.get(db_apis.get_session(),
-                                       id=amphora[constants.ID])
+        session = db_apis.get_session()
+        with session.begin():
+            db_amp = self.amphora_repo.get(session,
+                                           id=amphora[constants.ID])
         LOG.debug("Prepare amphora %s for failover.", amphora[constants.ID])
 
         self.network_driver.failover_preparation(db_amp)
@@ -799,8 +836,10 @@ class PlugPorts(BaseNetworkTask):
     """Task to plug neutron ports into a compute instance."""
 
     def execute(self, amphora, ports):
-        db_amp = self.amphora_repo.get(db_apis.get_session(),
-                                       id=amphora[constants.ID])
+        session = db_apis.get_session()
+        with session.begin():
+            db_amp = self.amphora_repo.get(session,
+                                           id=amphora[constants.ID])
         for port in ports:
             LOG.debug('Plugging port ID: %(port_id)s into compute instance: '
                       '%(compute_id)s.',
@@ -816,15 +855,17 @@ class ApplyQos(BaseNetworkTask):
                                  is_revert=False, request_qos_id=None):
         """Call network driver to apply QoS Policy on the vrrp ports."""
 
-        if not amps_data:
-            db_lb = self.loadbalancer_repo.get(
-                db_apis.get_session(),
-                id=loadbalancer[constants.LOADBALANCER_ID])
-            amps_data = db_lb.amphorae
+        session = db_apis.get_session()
+        with session.begin():
+            if not amps_data:
+                db_lb = self.loadbalancer_repo.get(
+                    session,
+                    id=loadbalancer[constants.LOADBALANCER_ID])
+                amps_data = db_lb.amphorae
 
-        amps_data = [amp
-                     for amp in amps_data
-                     if amp.status == constants.AMPHORA_ALLOCATED]
+            amps_data = [amp
+                         for amp in amps_data
+                         if amp.status == constants.AMPHORA_ALLOCATED]
 
         apply_qos = ApplyQosAmphora()
         for amp_data in amps_data:
@@ -833,9 +874,11 @@ class ApplyQos(BaseNetworkTask):
 
     def execute(self, loadbalancer, amps_data=None, update_dict=None):
         """Apply qos policy on the vrrp ports which are related with vip."""
-        db_lb = self.loadbalancer_repo.get(
-            db_apis.get_session(),
-            id=loadbalancer[constants.LOADBALANCER_ID])
+        session = db_apis.get_session()
+        with session.begin():
+            db_lb = self.loadbalancer_repo.get(
+                session,
+                id=loadbalancer[constants.LOADBALANCER_ID])
 
         qos_policy_id = db_lb.vip.qos_policy_id
         if not qos_policy_id and (
