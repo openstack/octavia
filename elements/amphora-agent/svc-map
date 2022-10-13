@@ -1,3 +1,6 @@
 amphora-agent:
   default: amphora-agent
   redhat: octavia-amphora-agent
+prometheus-proxy:
+  default: prometheus-proxy
+  redhat: octavia-prometheus-proxy
