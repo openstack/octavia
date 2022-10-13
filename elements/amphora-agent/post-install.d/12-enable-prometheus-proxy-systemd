@@ -8,5 +8,5 @@ set -eu
 set -o pipefail
 
 if [ "$DIB_INIT_SYSTEM" == "systemd" ]; then
-    systemctl enable prometheus-proxy
+    systemctl enable $(svc-map prometheus-proxy)
 fi
