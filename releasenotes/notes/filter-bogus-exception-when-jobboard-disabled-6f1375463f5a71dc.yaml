@@ -1,0 +1,7 @@
+---
+fixes:
+  - |
+    Added a filter to hide a bogus ComputeWaitTimeoutException exception when
+    creating an amphora when jobboard is disabled. This exception is part of
+    the flow when creating a load balancer or an amphora and should not be shown
+    to the user.
