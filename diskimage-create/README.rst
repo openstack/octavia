@@ -102,7 +102,7 @@ Command syntax:
             [-a i386 | **amd64** | armhf | aarch64 | ppc64le ]
             [-b **haproxy** ]
             [-c **~/.cache/image-create** | <cache directory> ]
-            [-d **focal**/**9-stream**/**9** | <other release id> ]
+            [-d **jammy**/**9-stream**/**9** | <other release id> ]
             [-e]
             [-f]
             [-g **repository branch** | stable/train | stable/stein | ... ]
@@ -124,7 +124,7 @@ Command syntax:
         '-a' is the architecture type for the image (default: amd64)
         '-b' is the backend type (default: haproxy)
         '-c' is the path to the cache directory (default: ~/.cache/image-create)
-        '-d' distribution release id (default on ubuntu: focal)
+        '-d' distribution release id (default on ubuntu: jammy)
         '-e' enable complete mandatory access control systems when available (default: permissive)
         '-f' disable tmpfs for build
         '-g' build the image for a specific OpenStack Git branch (default: current repository branch)

@@ -1,0 +1,5 @@
+---
+upgrade:
+  - |
+    ``diskimage-create.sh`` has been updated to build Ubuntu Jammy (22.04)
+    amphora images per default.
