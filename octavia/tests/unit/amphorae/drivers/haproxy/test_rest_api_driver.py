@@ -13,6 +13,7 @@
 # under the License.
 from unittest import mock
 
+from octavia.amphorae.driver_exceptions.exceptions import AmpVersionUnsupported
 from octavia.amphorae.drivers.haproxy import exceptions as exc
 from octavia.amphorae.drivers.haproxy import rest_api_driver
 import octavia.tests.unit.base as base
@@ -81,3 +82,11 @@ class TestHAProxyAmphoraDriver(base.TestCase):
         mock_api_version.assert_called_once_with(amphora_mock, None)
         client_mock.get_interface.assert_called_once_with(
             amphora_mock, IP_ADDRESS, None, log_error=False)
+
+    def test_unsupported_api_version(self):
+        mock_amp = mock.MagicMock()
+        mock_amp.api_version = "0.5"
+
+        self.assertRaises(AmpVersionUnsupported,
+                          self.driver._populate_amphora_api_version,
+                          mock_amp)

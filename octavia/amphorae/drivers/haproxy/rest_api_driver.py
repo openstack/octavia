@@ -17,6 +17,7 @@ import hashlib
 import os
 import ssl
 import time
+from typing import Optional
 import warnings
 
 from oslo_context import context as oslo_context
@@ -33,20 +34,16 @@ from octavia.amphorae.drivers.keepalived import vrrp_rest_driver
 from octavia.common.config import cfg
 from octavia.common import constants as consts
 import octavia.common.jinja.haproxy.combined_listeners.jinja_cfg as jinja_combo
-import octavia.common.jinja.haproxy.split_listeners.jinja_cfg as jinja_split
 from octavia.common.jinja.lvs import jinja_cfg as jinja_udp_cfg
 from octavia.common.tls_utils import cert_parser
 from octavia.common import utils
 from octavia.db import api as db_apis
+from octavia.db import models as db_models
 from octavia.db import repositories as repo
 from octavia.network import data_models as network_models
 
 
 LOG = logging.getLogger(__name__)
-API_VERSION = consts.API_VERSION
-OCTAVIA_API_CLIENT = (
-    "Octavia HaProxy Rest Client/{version} "
-    "(https://wiki.openstack.org/wiki/Octavia)").format(version=API_VERSION)
 CONF = cfg.CONF
 
 
@@ -58,7 +55,6 @@ class HaproxyAmphoraLoadBalancerDriver(
         super().__init__()
         self.clients = {
             'base': AmphoraAPIClientBase(),
-            '0.5': AmphoraAPIClient0_5(),
             '1.0': AmphoraAPIClient1_0(),
         }
         self.cert_manager = stevedore_driver.DriverManager(
@@ -68,11 +64,6 @@ class HaproxyAmphoraLoadBalancerDriver(
         ).driver
 
         self.jinja_combo = jinja_combo.JinjaTemplater(
-            base_amp_path=CONF.haproxy_amphora.base_path,
-            base_crt_dir=CONF.haproxy_amphora.base_cert_dir,
-            haproxy_template=CONF.haproxy_amphora.haproxy_template,
-            connection_logging=CONF.haproxy_amphora.connection_logging)
-        self.jinja_split = jinja_split.JinjaTemplater(
             base_amp_path=CONF.haproxy_amphora.base_path,
             base_crt_dir=CONF.haproxy_amphora.base_cert_dir,
             haproxy_template=CONF.haproxy_amphora.haproxy_template,
@@ -113,7 +104,13 @@ class HaproxyAmphoraLoadBalancerDriver(
                 amphora.api_version = '0.5'
         LOG.debug('Amphora %s has API version %s',
                   amphora.id, amphora.api_version)
-        return list(map(int, amphora.api_version.split('.')))
+        api_version = list(map(int, amphora.api_version.split('.')))
+
+        if api_version[0] == 0 and api_version[1] <= 5:  # 0.5 or earlier
+            raise driver_except.AmpVersionUnsupported(
+                version=amphora.api_version)
+
+        return api_version
 
     def update_amphora_listeners(self, loadbalancer, amphora,
                                  timeout_dict=None):
@@ -141,17 +138,8 @@ class HaproxyAmphoraLoadBalancerDriver(
         # Check which HAProxy version is on the amp
         haproxy_versions = self._get_haproxy_versions(
             amphora, timeout_dict=timeout_dict)
-        # Check which config style to use
-        api_version = self._populate_amphora_api_version(amphora)
-        if api_version[0] == 0 and api_version[1] <= 5:  # 0.5 or earlier
-            split_config = True
-            LOG.warning(
-                'Amphora %s for loadbalancer %s needs upgrade to single '
-                'process mode.', amphora.id, loadbalancer.id)
-        else:
-            split_config = False
-            LOG.debug('Amphora %s for loadbalancer %s is already in single '
-                      'process mode.', amphora.id, loadbalancer.id)
+        # Check if version is supported
+        self._populate_amphora_api_version(amphora)
 
         has_tcp = False
         certs = {}
@@ -168,10 +156,7 @@ class HaproxyAmphoraLoadBalancerDriver(
                     amphora, listener.id, timeout_dict=timeout_dict)
             else:
                 has_tcp = True
-                if split_config:
-                    obj_id = listener.id
-                else:
-                    obj_id = loadbalancer.id
+                obj_id = loadbalancer.id
 
                 try:
                     certs.update({
@@ -192,21 +177,7 @@ class HaproxyAmphoraLoadBalancerDriver(
                     certs.update(self._process_listener_pool_certs(
                         listener, amphora, obj_id))
 
-                    if split_config:
-                        config = self.jinja_split.build_config(
-                            host_amphora=amphora, listener=listener,
-                            haproxy_versions=haproxy_versions,
-                            client_ca_filename=certs[
-                                listener.client_ca_tls_certificate_id],
-                            client_crl=certs[listener.client_crl_container_id],
-                            pool_tls_certs=certs)
-                        self.clients[amphora.api_version].upload_config(
-                            amphora, listener.id, config,
-                            timeout_dict=timeout_dict)
-                        self.clients[amphora.api_version].reload_listener(
-                            amphora, listener.id, timeout_dict=timeout_dict)
-                    else:
-                        listeners_to_update.append(listener)
+                    listeners_to_update.append(listener)
                 except Exception as e:
                     LOG.exception('Unable to update listener %s due to '
                                   '"%s". Skipping this listener.',
@@ -216,7 +187,7 @@ class HaproxyAmphoraLoadBalancerDriver(
                                          provisioning_status=consts.ERROR,
                                          operating_status=consts.ERROR)
 
-        if has_tcp and not split_config:
+        if has_tcp:
             if listeners_to_update:
                 # Generate HaProxy configuration from listener object
                 amp_details = self.clients[amphora.api_version].get_details(
@@ -272,35 +243,20 @@ class HaproxyAmphoraLoadBalancerDriver(
         else:
             amphorae = [amphora]
 
-        timeout_dict = args[0]
-
         for amp in amphorae:
             if amp.status != consts.DELETED:
-                api_version = self._populate_amphora_api_version(
-                    amp, timeout_dict=timeout_dict)
-                # Check which config style to use
-                if api_version[0] == 0 and api_version[1] <= 5:
-                    # 0.5 or earlier
-                    LOG.warning(
-                        'Amphora %s for loadbalancer %s needs upgrade to '
-                        'single process mode.', amp.id, loadbalancer.id)
-                    for listener in loadbalancer.listeners:
+                self._populate_amphora_api_version(
+                    amp, timeout_dict=args[0])
+                has_tcp = False
+                for listener in loadbalancer.listeners:
+                    if listener.protocol in consts.LVS_PROTOCOLS:
                         getattr(self.clients[amp.api_version], func_name)(
                             amp, listener.id, *args)
-                else:
-                    LOG.debug(
-                        'Amphora %s for loadbalancer %s is already in single '
-                        'process mode.', amp.id, loadbalancer.id)
-                    has_tcp = False
-                    for listener in loadbalancer.listeners:
-                        if listener.protocol in consts.LVS_PROTOCOLS:
-                            getattr(self.clients[amp.api_version], func_name)(
-                                amp, listener.id, *args)
-                        else:
-                            has_tcp = True
-                    if has_tcp:
-                        getattr(self.clients[amp.api_version], func_name)(
-                            amp, loadbalancer.id, *args)
+                    else:
+                        has_tcp = True
+                if has_tcp:
+                    getattr(self.clients[amp.api_version], func_name)(
+                        amp, loadbalancer.id, *args)
 
     def reload(self, loadbalancer, amphora=None, timeout_dict=None):
         self._apply('reload_listener', loadbalancer, amphora, timeout_dict)
@@ -321,24 +277,9 @@ class HaproxyAmphoraLoadBalancerDriver(
             return
 
         # In case the listener is not UDP or SCTP, things get more complicated.
-        # We need to do this individually for each amphora in case some are
-        # using split config and others are using combined config.
         for amp in loadbalancer.amphorae:
             if amp.status != consts.DELETED:
-                api_version = self._populate_amphora_api_version(amp)
-                # Check which config style to use
-                if api_version[0] == 0 and api_version[1] <= 5:
-                    # 0.5 or earlier
-                    LOG.warning(
-                        'Amphora %s for loadbalancer %s needs upgrade to '
-                        'single process mode.', amp.id, loadbalancer.id)
-                    self.clients[amp.api_version].delete_listener(
-                        amp, listener.id)
-                else:
-                    LOG.debug(
-                        'Amphora %s for loadbalancer %s is already in single '
-                        'process mode.', amp.id, loadbalancer.id)
-                    self._combined_config_delete(amp, listener)
+                self._combined_config_delete(amp, listener)
 
     def _combined_config_delete(self, amphora, listener):
         # Remove the listener from the listener list on the LB before
@@ -706,8 +647,10 @@ class AmphoraAPIClientBase(object):
             ip=ip,
             port=CONF.haproxy_amphora.bind_port)
 
-    def request(self, method, amp, path='/', timeout_dict=None,
-                retry_404=True, raise_retry_exception=False, **kwargs):
+    def request(self, method: str, amp: db_models.Amphora, path: str = '/',
+                timeout_dict: Optional[dict] = None,
+                retry_404: bool = True, raise_retry_exception: bool = False,
+                **kwargs):
         cfg_ha_amp = CONF.haproxy_amphora
         if timeout_dict is None:
             timeout_dict = {}
@@ -731,7 +674,9 @@ class AmphoraAPIClientBase(object):
         reqargs.update(kwargs)
         headers = reqargs.setdefault('headers', {})
 
-        headers['User-Agent'] = OCTAVIA_API_CLIENT
+        headers['User-Agent'] = (
+            f"Octavia HaProxy Rest Client/{amp.api_version} "
+            f"(https://wiki.openstack.org/wiki/Octavia)")
         self.ssl_adapter.uuid = amp.id
         exception = None
         # Keep retrying
@@ -795,123 +740,6 @@ class AmphoraAPIClientBase(object):
         if r.status_code == 404:
             raise exc.NotFound()
         return r.json()
-
-
-class AmphoraAPIClient0_5(AmphoraAPIClientBase):
-    def __init__(self):
-        super().__init__()
-
-        self.start_listener = functools.partial(self._action,
-                                                consts.AMP_ACTION_START)
-        self.reload_listener = functools.partial(self._action,
-                                                 consts.AMP_ACTION_RELOAD)
-
-        self.start_vrrp = functools.partial(self._vrrp_action,
-                                            consts.AMP_ACTION_START)
-        self.stop_vrrp = functools.partial(self._vrrp_action,
-                                           consts.AMP_ACTION_STOP)
-        self.reload_vrrp = functools.partial(self._vrrp_action,
-                                             consts.AMP_ACTION_RELOAD)
-
-    def upload_config(self, amp, listener_id, config, timeout_dict=None):
-        r = self.put(
-            amp,
-            'listeners/{amphora_id}/{listener_id}/haproxy'.format(
-                amphora_id=amp.id, listener_id=listener_id), timeout_dict,
-            data=config)
-        return exc.check_exception(r)
-
-    def _action(self, action, amp, listener_id, timeout_dict=None):
-        r = self.put(amp, 'listeners/{listener_id}/{action}'.format(
-            listener_id=listener_id, action=action), timeout_dict=timeout_dict)
-        return exc.check_exception(r)
-
-    def upload_cert_pem(self, amp, listener_id, pem_filename, pem_file):
-        r = self.put(
-            amp, 'listeners/{listener_id}/certificates/{filename}'.format(
-                listener_id=listener_id, filename=pem_filename),
-            data=pem_file)
-        return exc.check_exception(r)
-
-    def get_cert_md5sum(self, amp, listener_id, pem_filename, ignore=tuple()):
-        r = self.get(
-            amp, 'listeners/{listener_id}/certificates/{filename}'.format(
-                listener_id=listener_id, filename=pem_filename))
-        if exc.check_exception(r, ignore):
-            return r.json().get("md5sum")
-        return None
-
-    def delete_cert_pem(self, amp, listener_id, pem_filename):
-        r = self.delete(
-            amp, 'listeners/{listener_id}/certificates/{filename}'.format(
-                listener_id=listener_id, filename=pem_filename))
-        return exc.check_exception(r, (404,))
-
-    def update_cert_for_rotation(self, amp, pem_file):
-        r = self.put(amp, 'certificate', data=pem_file)
-        return exc.check_exception(r)
-
-    def delete_listener(self, amp, listener_id):
-        r = self.delete(
-            amp, 'listeners/{listener_id}'.format(listener_id=listener_id))
-        return exc.check_exception(r, (404,))
-
-    def get_info(self, amp, raise_retry_exception=False,
-                 timeout_dict=None):
-        r = self.get(amp, "info", raise_retry_exception=raise_retry_exception,
-                     timeout_dict=timeout_dict)
-        if exc.check_exception(r):
-            return r.json()
-        return None
-
-    def get_details(self, amp):
-        r = self.get(amp, "details")
-        if exc.check_exception(r):
-            return r.json()
-        return None
-
-    def get_all_listeners(self, amp):
-        r = self.get(amp, "listeners")
-        if exc.check_exception(r):
-            return r.json()
-        return None
-
-    def plug_network(self, amp, port):
-        r = self.post(amp, 'plug/network',
-                      json=port)
-        return exc.check_exception(r)
-
-    def plug_vip(self, amp, vip, net_info):
-        r = self.post(amp,
-                      'plug/vip/{vip}'.format(vip=vip),
-                      json=net_info)
-        return exc.check_exception(r)
-
-    def upload_vrrp_config(self, amp, config):
-        r = self.put(amp, 'vrrp/upload', data=config)
-        return exc.check_exception(r)
-
-    def _vrrp_action(self, action, amp, timeout_dict=None):
-        r = self.put(amp, 'vrrp/{action}'.format(action=action),
-                     timeout_dict=timeout_dict)
-        return exc.check_exception(r)
-
-    def get_interface(self, amp, ip_addr, timeout_dict=None, log_error=True):
-        r = self.get(amp, 'interface/{ip_addr}'.format(ip_addr=ip_addr),
-                     timeout_dict=timeout_dict)
-        return exc.check_exception(r, log_error=log_error).json()
-
-    def upload_udp_config(self, amp, listener_id, config, timeout_dict=None):
-        r = self.put(
-            amp,
-            'listeners/{amphora_id}/{listener_id}/udp_listener'.format(
-                amphora_id=amp.id, listener_id=listener_id), timeout_dict,
-            data=config)
-        return exc.check_exception(r)
-
-    def update_agent_config(self, amp, agent_config, timeout_dict=None):
-        r = self.put(amp, 'config', timeout_dict, data=agent_config)
-        return exc.check_exception(r)
 
 
 class AmphoraAPIClient1_0(AmphoraAPIClientBase):
