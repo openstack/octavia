@@ -12,6 +12,7 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 #
+import copy
 from unittest import mock
 
 from oslo_config import cfg
@@ -1333,20 +1334,19 @@ class TestNetworkTasks(base.TestCase):
         mock_driver.allocate_vip.assert_called_once_with(LB)
 
         # revert
-        vip_mock = VIP.to_dict()
+        vip_model = copy.deepcopy(VIP)
+        vip_model.load_balancer = LB
+        vip_dict = vip_model.to_dict(recurse=True)
         additional_vips_mock = mock.MagicMock()
-        net.revert((vip_mock, additional_vips_mock), self.load_balancer_mock)
-        mock_driver.deallocate_vip.assert_called_once_with(
-            o_data_models.Vip(**vip_mock))
+        net.revert((vip_dict, additional_vips_mock), self.load_balancer_mock)
+        mock_driver.deallocate_vip.assert_called_once_with(vip_model)
 
         # revert exception
         mock_driver.reset_mock()
         additional_vips_mock.reset_mock()
         mock_driver.deallocate_vip.side_effect = Exception('DeallVipException')
-        vip_mock = VIP.to_dict()
-        net.revert((vip_mock, additional_vips_mock), self.load_balancer_mock)
-        mock_driver.deallocate_vip.assert_called_once_with(o_data_models.Vip(
-            **vip_mock))
+        net.revert((vip_dict, additional_vips_mock), self.load_balancer_mock)
+        mock_driver.deallocate_vip.assert_called_once_with(vip_model)
 
     @mock.patch('octavia.db.repositories.LoadBalancerRepository.get')
     @mock.patch('octavia.db.api.get_session', return_value=_session_mock)

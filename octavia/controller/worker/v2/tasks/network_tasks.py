@@ -634,8 +634,8 @@ class AllocateVIP(BaseNetworkTask):
             LOG.debug('Allocated an additional VIP: subnet=%(subnet)s '
                       'ip_address=%(ip)s', {'subnet': add_vip.subnet_id,
                                             'ip': add_vip.ip_address})
-        return (vip.to_dict(),
-                [additional_vip.to_dict()
+        return (vip.to_dict(recurse=True),
+                [additional_vip.to_dict(recurse=True)
                  for additional_vip in additional_vips])
 
     def revert(self, result, loadbalancer, *args, **kwargs):
@@ -644,8 +644,10 @@ class AllocateVIP(BaseNetworkTask):
         if isinstance(result, failure.Failure):
             LOG.exception("Unable to allocate VIP")
             return
-        vip, additional_vips = result
-        vip = data_models.Vip(**vip)
+        vip_dict, additional_vips = result
+        vip = data_models.Vip(**vip_dict)
+        vip.load_balancer = data_models.LoadBalancer(
+            **vip_dict['load_balancer'])
         LOG.warning("Deallocating vip %s", vip.ip_address)
         try:
             self.network_driver.deallocate_vip(vip)
