@@ -224,7 +224,7 @@ class AbstractNetworkDriver(object, metaclass=abc.ABCMeta):
         :return: [octavia.network.data_models.Instance]
         """
 
-    def update_vip(self, load_balancer, for_delete):
+    def update_vip(self, load_balancer, for_delete=False):
         """Hook for the driver to update the VIP information.
 
         This method will be called upon the change of a load_balancer
