@@ -91,11 +91,17 @@ class LoadBalancerFlows(object):
 
         post_amp_prefix = constants.POST_LB_AMP_ASSOCIATION_SUBFLOW
         lb_create_flow.add(
-            self.get_post_lb_amp_association_flow(
-                post_amp_prefix, topology, mark_active=not listeners))
+            self.get_post_lb_amp_association_flow(post_amp_prefix, topology))
 
         if listeners:
             lb_create_flow.add(*self._create_listeners_flow())
+
+        lb_create_flow.add(
+            database_tasks.MarkLBActiveInDB(
+                mark_subobjects=True,
+                requires=constants.LOADBALANCER
+            )
+        )
 
         if CONF.controller_worker.event_notifications:
             lb_create_flow.add(
@@ -225,16 +231,9 @@ class LoadBalancerFlows(object):
         flows.append(
             self.listener_flows.get_create_all_listeners_flow()
         )
-        flows.append(
-            database_tasks.MarkLBActiveInDB(
-                mark_subobjects=True,
-                requires=constants.LOADBALANCER
-            )
-        )
         return flows
 
-    def get_post_lb_amp_association_flow(self, prefix, topology,
-                                         mark_active=True):
+    def get_post_lb_amp_association_flow(self, prefix, topology):
         """Reload the loadbalancer and create networking subflows for
 
         created/allocated amphorae.
@@ -257,10 +256,6 @@ class LoadBalancerFlows(object):
 
         post_create_LB_flow.add(database_tasks.UpdateLoadbalancerInDB(
             requires=[constants.LOADBALANCER, constants.UPDATE_DICT]))
-        if mark_active:
-            post_create_LB_flow.add(database_tasks.MarkLBActiveInDB(
-                name=sf_name + '-' + constants.MARK_LB_ACTIVE_INDB,
-                requires=constants.LOADBALANCER))
         return post_create_LB_flow
 
     def _get_delete_listeners_flow(self, listeners):
