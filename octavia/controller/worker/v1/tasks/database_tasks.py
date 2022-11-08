@@ -936,6 +936,8 @@ class MarkLBActiveInDB(BaseDatabaseTask):
                       loadbalancer.id)
             for listener in loadbalancer.listeners:
                 self._mark_listener_status(listener, constants.ACTIVE)
+            for pool in loadbalancer.pools:
+                self._mark_pool_status(pool, constants.ACTIVE)
 
         LOG.info("Mark ACTIVE in DB for load balancer id: %s",
                  loadbalancer.id)
@@ -1010,14 +1012,20 @@ class MarkLBActiveInDB(BaseDatabaseTask):
         """
 
         if self.mark_subobjects:
-            LOG.debug("Marking all listeners of loadbalancer %s ERROR",
-                      loadbalancer.id)
+            LOG.debug("Marking all listeners and pools of loadbalancer %s"
+                      " ERROR", loadbalancer.id)
             for listener in loadbalancer.listeners:
                 try:
                     self._mark_listener_status(listener, constants.ERROR)
                 except Exception:
                     LOG.warning("Error updating listener %s provisioning "
                                 "status", listener.id)
+            for pool in loadbalancer.pools:
+                try:
+                    self._mark_pool_status(pool, constants.ERROR)
+                except Exception:
+                    LOG.warning("Error updating pool %s provisioning "
+                                "status", pool.id)
 
 
 class UpdateLBServerGroupInDB(BaseDatabaseTask):
