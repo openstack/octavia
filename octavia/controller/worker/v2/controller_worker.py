@@ -102,8 +102,9 @@ class ControllerWorker(object):
         if CONF.task_flow.jobboard_enabled:
             self.services_controller.run_poster(func, *args, **kwargs)
         else:
+            store = kwargs.pop('store', None)
             tf = self.tf_engine.taskflow_load(
-                func(*args), **kwargs)
+                func(*args, **kwargs), store=store)
             with tf_logging.DynamicLoggingListener(tf, log=LOG):
                 tf.run()
 
