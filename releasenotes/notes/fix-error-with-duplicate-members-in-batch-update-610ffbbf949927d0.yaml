@@ -1,0 +1,10 @@
+---
+fixes:
+  - |
+    Added a validation step in the batch member API request that checks if a
+    member is included multiple times in the list of updated members, this
+    additional check prevents the load balancer from being stuck in
+    PENDING_UPDATE. Duplicate members in the batch member flow triggered an
+    exception in Taskflow.
+    The API now returns 400 (ValidationException) if a member is already
+    present in the body of the request.
