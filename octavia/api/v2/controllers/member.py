@@ -32,6 +32,7 @@ from octavia.common import exceptions
 from octavia.common import validate
 from octavia.db import api as db_api
 from octavia.db import prepare as db_prepare
+from octavia.i18n import _
 
 
 LOG = logging.getLogger(__name__)
@@ -351,12 +352,21 @@ class MembersController(MemberController):
             # Find members that are brand new or updated
             new_members = []
             updated_members = []
+            updated_member_uniques = set()
             for m in members:
-                if (m.address, m.protocol_port) not in old_member_uniques:
+                key = (m.address, m.protocol_port)
+                if key not in old_member_uniques:
                     validate.ip_not_reserved(m.address)
                     new_members.append(m)
                 else:
-                    m.id = old_member_uniques[(m.address, m.protocol_port)]
+                    m.id = old_member_uniques[key]
+                    if key in updated_member_uniques:
+                        LOG.error("Member %s is updated multiple times in "
+                                  "the same batch request.", m.id)
+                        raise exceptions.ValidationException(
+                            detail=_("Member must be updated only once in the "
+                                     "same request."))
+                    updated_member_uniques.add(key)
                     updated_members.append(m)
 
             # Find members that are deleted
