@@ -200,38 +200,30 @@
 - job:
     name: octavia-v2-dsvm-scenario-fips
     parent: octavia-v2-dsvm-scenario
-    nodeset: octavia-single-node-centos-8-stream
+    nodeset: octavia-single-node-centos-9-stream
     description: |
-      Functional testing for a FIPS enabled Centos 8 system.
+      Functional testing for a FIPS enabled Centos 9 system.
     pre-run: playbooks/enable-fips.yaml
     timeout: 10800
     vars:
+      nslookup_target: 'opendev.org'
       devstack_localrc:
         OCTAVIA_AMP_BASE_OS: centos
-        OCTAVIA_AMP_DISTRIBUTION_RELEASE_ID: 8-stream
+        OCTAVIA_AMP_DISTRIBUTION_RELEASE_ID: 9-stream
         OCTAVIA_AMP_IMAGE_SIZE: 3
         OCTAVIA_AMP_ENABLE_FIPS: True
-      devstack_local_conf:
-        test-config:
-          "$TEMPEST_CONFIG":
-            validation:
-              ssh_key_type: 'ecdsa'
 
 - job:
     name: octavia-v2-dsvm-tls-barbican-fips
     parent: octavia-v2-dsvm-tls-barbican
-    nodeset: octavia-single-node-centos-8-stream
+    nodeset: octavia-single-node-centos-9-stream
     description: |
-      Functional testing for a FIPS enabled Centos 8 system
+      Functional testing for a FIPS enabled Centos 9 system
     pre-run: playbooks/enable-fips.yaml
     vars:
+      nslookup_target: 'opendev.org'
       devstack_localrc:
         OCTAVIA_AMP_BASE_OS: centos
-        OCTAVIA_AMP_DISTRIBUTION_RELEASE_ID: 8-stream
+        OCTAVIA_AMP_DISTRIBUTION_RELEASE_ID: 9-stream
         OCTAVIA_AMP_IMAGE_SIZE: 3
         OCTAVIA_AMP_ENABLE_FIPS: True
-      devstack_local_conf:
-        test-config:
-          "$TEMPEST_CONFIG":
-            validation:
-              ssh_key_type: 'ecdsa'
