@@ -1,0 +1,7 @@
+---
+fixes:
+  - |
+    Ensure that the provided rsyslog configuration file is used by rsyslog in
+    the amphora by restarting the service when using the amphorav1 provider, it
+    fixes the log offloading feature on distributions that start rsyslog before
+    cloud-init.
