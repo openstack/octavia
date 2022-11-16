@@ -59,7 +59,7 @@ class TestInterfaceFile(base.TestCase):
                 },
                 {
                     consts.ADDRESS: VIP_ADDRESS,
-                    consts.PREFIXLEN: prefixlen
+                    consts.PREFIXLEN: 32,
                 }
             ],
             consts.ROUTES: [
@@ -124,6 +124,129 @@ class TestInterfaceFile(base.TestCase):
             test_utils.assert_interface_files_equal(
                 self, expected_dict, args[0])
 
+    def test_vip_interface_file_with_fixed_ips(self):
+        netns_interface = 'eth1234'
+        MTU = 1450
+        VIP_ADDRESS = '192.0.2.2'
+        FIXED_IP = '10.0.0.1'
+        SUBNET_CIDR = '192.0.2.0/24'
+        SUBNET2_CIDR = '10.0.0.0/16'
+        GATEWAY = '192.0.2.1'
+        DEST1 = '198.51.100.0/24'
+        DEST2 = '203.0.113.0/24'
+        NEXTHOP = '192.0.2.1'
+        NEXTHOP2 = '10.0.1.254'
+        VRRP_IP_ADDRESS = '192.10.2.4'
+        TOPOLOGY = 'SINGLE'
+
+        cidr = ipaddress.ip_network(SUBNET_CIDR)
+        prefixlen = cidr.prefixlen
+
+        cidr2 = ipaddress.ip_network(SUBNET2_CIDR)
+        prefixlen2 = cidr2.prefixlen
+
+        vip_interface_file = interface_file.VIPInterfaceFile(
+            name=netns_interface,
+            mtu=MTU,
+            vip=VIP_ADDRESS,
+            ip_version=cidr.version,
+            prefixlen=prefixlen,
+            gateway=GATEWAY,
+            vrrp_ip=VRRP_IP_ADDRESS,
+            host_routes=[
+                {'destination': DEST1, 'nexthop': NEXTHOP}
+            ],
+            fixed_ips=[{'ip_address': FIXED_IP,
+                        'subnet_cidr': SUBNET2_CIDR,
+                        'host_routes': [
+                            {'destination': DEST2, 'nexthop': NEXTHOP2}
+                        ]}],
+            topology=TOPOLOGY)
+
+        expected_dict = {
+            consts.NAME: netns_interface,
+            consts.MTU: MTU,
+            consts.ADDRESSES: [
+                {
+                    consts.ADDRESS: VRRP_IP_ADDRESS,
+                    consts.PREFIXLEN: prefixlen
+                },
+                {
+                    consts.ADDRESS: VIP_ADDRESS,
+                    consts.PREFIXLEN: 32
+                },
+                {
+                    consts.ADDRESS: FIXED_IP,
+                    consts.PREFIXLEN: prefixlen2
+                },
+            ],
+            consts.ROUTES: [
+                {
+                    consts.DST: "0.0.0.0/0",
+                    consts.GATEWAY: GATEWAY,
+                    consts.FLAGS: [consts.ONLINK],
+                },
+                {
+                    consts.DST: "0.0.0.0/0",
+                    consts.GATEWAY: GATEWAY,
+                    consts.FLAGS: [consts.ONLINK],
+                    consts.TABLE: 1
+                },
+                {
+                    consts.DST: cidr.exploded,
+                    consts.PREFSRC: VIP_ADDRESS,
+                    consts.SCOPE: 'link',
+                    consts.TABLE: 1
+                },
+                {
+                    consts.DST: DEST1,
+                    consts.GATEWAY: NEXTHOP,
+                    consts.FLAGS: [consts.ONLINK]
+                },
+                {
+                    consts.DST: DEST1,
+                    consts.GATEWAY: NEXTHOP,
+                    consts.TABLE: 1,
+                    consts.FLAGS: [consts.ONLINK]
+                },
+                {
+                    consts.DST: DEST2,
+                    consts.GATEWAY: NEXTHOP2,
+                    consts.FLAGS: [consts.ONLINK]
+                }
+            ],
+            consts.RULES: [
+                {
+                    consts.SRC: VIP_ADDRESS,
+                    consts.SRC_LEN: 32,
+                    consts.TABLE: 1
+                }
+            ],
+            consts.SCRIPTS: {
+                consts.IFACE_UP: [{
+                    consts.COMMAND: (
+                        "/usr/local/bin/lvs-masquerade.sh add ipv4 "
+                        "{}".format(netns_interface))
+                }],
+                consts.IFACE_DOWN: [{
+                    consts.COMMAND: (
+                        "/usr/local/bin/lvs-masquerade.sh delete ipv4 "
+                        "{}".format(netns_interface))
+                }]
+            }
+        }
+
+        with mock.patch('os.open'), mock.patch('os.fdopen'), mock.patch(
+                'octavia.amphorae.backends.utils.interface_file.'
+                'InterfaceFile.dump') as mock_dump:
+            vip_interface_file.write()
+
+            mock_dump.assert_called_once()
+
+            args = mock_dump.mock_calls[0][1]
+            test_utils.assert_interface_files_equal(
+                self, expected_dict, args[0])
+
     def test_vip_interface_file_dhcp(self):
         netns_interface = 'eth1234'
         MTU = 1450
@@ -153,7 +276,7 @@ class TestInterfaceFile(base.TestCase):
                     consts.DHCP: True
                 }, {
                     consts.ADDRESS: VIP_ADDRESS,
-                    consts.PREFIXLEN: prefixlen
+                    consts.PREFIXLEN: 32,
                 }
             ],
             consts.ROUTES: [
@@ -226,6 +349,11 @@ class TestInterfaceFile(base.TestCase):
                 {
                     consts.ADDRESS: VRRP_IP_ADDRESS,
                     consts.PREFIXLEN: prefixlen
+                },
+                {
+                    consts.ADDRESS: VIP_ADDRESS,
+                    consts.PREFIXLEN: 32,
+                    consts.OCTAVIA_OWNED: False
                 }
             ],
             consts.ROUTES: [
@@ -304,7 +432,7 @@ class TestInterfaceFile(base.TestCase):
                 },
                 {
                     consts.ADDRESS: VIP_ADDRESS,
-                    consts.PREFIXLEN: prefixlen
+                    consts.PREFIXLEN: 128
                 }
             ],
             consts.ROUTES: [
