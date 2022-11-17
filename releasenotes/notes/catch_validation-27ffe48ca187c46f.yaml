@@ -1,0 +1,8 @@
+---
+fixes:
+  - |
+    In order to avoid hitting the Neutron API hard
+    when batch update with creating many new members, we cache the
+    subnet validation results in batch update members API call.
+    We also change to validate new members only during batch update
+    members since subnet ID is immutable.
