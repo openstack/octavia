@@ -160,7 +160,7 @@ class HAProxyQuery(object):
             result = self._query('show servers state')
             # No need for binary mode, the _query converts bytes to ascii.
             with open(state_file_path, 'w', encoding='utf-8') as fh:
-                fh.write(result)
+                fh.write(result + "\n")
             return True
         except Exception as e:
             # Catch any exception - may be socket issue, or write permission

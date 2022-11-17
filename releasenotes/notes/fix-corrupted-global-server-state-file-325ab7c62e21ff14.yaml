@@ -1,0 +1,7 @@
+---
+fixes:
+  - |
+    Fixed a "corrupted global server state file" error in Centos 9 Stream when
+    reloading the state of the servers after restarting haproxy.
+    It also fixed the recovering of the operational state of the servers in
+    haproxy after its restart.
