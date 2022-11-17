@@ -55,7 +55,7 @@ backend prometheus-exporter-internal
              {{- frontend_macro(constants, lib_consts, listener, loadbalancer.vip_address,
                                 loadbalancer.additional_vips) }}
              {% for pool in listener.pools if pool.enabled %}
-               {{- backend_macro(constants, lib_consts, listener, pool, loadbalancer) }}
+               {{- backend_macro(constants, lib_consts, listener, pool, loadbalancer, state_file) }}
              {% endfor %}
          {% endfor %}
     {% endif %}
