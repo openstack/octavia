@@ -158,7 +158,7 @@ class QueryTestCase(base.TestCase):
 
             self.q.save_state(filename)
 
-            mock_fh.write.assert_called_once_with('DATA')
+            mock_fh.write.assert_called_once_with('DATA\n')
 
     def test_save_state_error(self):
         """save_state() should swallow exceptions"""
