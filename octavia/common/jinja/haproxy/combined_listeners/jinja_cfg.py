@@ -101,6 +101,7 @@ class JinjaTemplater(object):
         # Is it newer than haproxy 1.5?
         if not (int(haproxy_versions[0]) < 2 and int(haproxy_versions[1]) < 6):
             feature_compatibility[constants.HTTP_REUSE] = True
+            feature_compatibility[constants.SERVER_STATE_FILE] = True
         if not (int(haproxy_versions[0]) < 2 and int(haproxy_versions[1]) < 9):
             feature_compatibility[constants.POOL_ALPN] = True
         if int(haproxy_versions[0]) >= 2:
@@ -167,7 +168,8 @@ class JinjaTemplater(object):
                                           listeners[0].load_balancer.id)
         state_file_path = '%s/%s/servers-state' % (
             self.base_amp_path,
-            listeners[0].load_balancer.id)
+            listeners[0].load_balancer.id) if feature_compatibility.get(
+            constants.SERVER_STATE_FILE) else ''
         prometheus_listener = False
         for listener in listeners:
             if listener.protocol == lib_consts.PROTOCOL_PROMETHEUS:
