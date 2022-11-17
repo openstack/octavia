@@ -1128,7 +1128,6 @@ def sample_base_expected_config(frontend=None, logging=None, backend=None,
                    "    mode http\n"
                    "    balance roundrobin\n"
                    "    cookie SRV insert indirect nocache\n"
-                   "    load-server-state-from-file global\n"
                    "    timeout check 31s\n"
                    "    option httpchk GET /index.html HTTP/1.0\\r\\n\n"
                    "    http-check expect rstatus 418\n"
@@ -1162,7 +1161,5 @@ def sample_base_expected_config(frontend=None, logging=None, backend=None,
             "    log /run/rsyslog/octavia/log local0\n"
             "    log /run/rsyslog/octavia/log local1 notice\n"
             "    stats socket /var/lib/octavia/sample_loadbalancer_id_1.sock"
-            " mode 0666 level user\n"
-            "    server-state-file /var/lib/octavia/sample_loadbalancer_id_1"
-            "/servers-state\n" +
+            " mode 0666 level user\n" +
             global_opts + defaults + peers + frontend + logging + backend)

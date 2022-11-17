@@ -292,7 +292,7 @@ frontend {{ listener.id }}
 {% endmacro %}
 
 
-{% macro backend_macro(constants, lib_consts, listener, pool, loadbalancer) %}
+{% macro backend_macro(constants, lib_consts, listener, pool, loadbalancer, state_file) %}
 backend {{ pool.id }}:{{ listener.id }}
     {% if pool.proxy_protocol is not none %}
     mode {{ listener.protocol_mode }}
@@ -334,7 +334,9 @@ backend {{ pool.id }}:{{ listener.id }}
         {% endif %}
     {% endif %}
     {% if pool.health_monitor and pool.health_monitor.enabled %}
+    {% if state_file %}
     load-server-state-from-file global
+    {% endif %}
     timeout check {{ pool.health_monitor.timeout }}s
         {% if (pool.health_monitor.type ==
                constants.HEALTH_MONITOR_HTTP or pool.health_monitor.type ==
