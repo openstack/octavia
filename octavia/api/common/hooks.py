@@ -11,12 +11,42 @@
 #    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 #    License for the specific language governing permissions and limitations
 #    under the License.
-
 from pecan import hooks
+from webob import acceptparse
+from webob import exc
 
 from octavia.api.common import pagination
+from octavia.api.common import utils
 from octavia.common import constants
 from octavia.common import context
+from octavia.i18n import _
+
+_HEALTHCHECK_PATHS = ['/healthcheck', '/load-balancer/healthcheck']
+
+
+class ContentTypeHook(hooks.PecanHook):
+    """Force the request content type to JSON if that is acceptable."""
+
+    def on_route(self, state):
+        # Oslo healthcheck middleware has its own content type handling
+        # so we need to bypass the Octavia content type restrictions.
+        if state.request.path in _HEALTHCHECK_PATHS:
+            return
+        if state.request.accept:
+            best_matches = state.request.accept.acceptable_offers(
+                [constants.APPLICATION_JSON])
+            if not best_matches:
+                # The API reference says we always respond with JSON
+                state.request.accept = acceptparse.create_accept_header(
+                    constants.APPLICATION_JSON)
+                msg = _('Only content type %s is accepted.')
+                raise exc.HTTPNotAcceptable(
+                    msg % constants.APPLICATION_JSON,
+                    json_formatter=utils.json_error_formatter)
+
+        # Force application/json with no other options for the request
+        state.request.accept = acceptparse.create_accept_header(
+            constants.APPLICATION_JSON)
 
 
 class ContextHook(hooks.PecanHook):

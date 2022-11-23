@@ -20,6 +20,7 @@ app = {
     'root': 'octavia.api.root_controller.RootController',
     'modules': ['octavia.api'],
     'hooks': [
+        hooks.ContentTypeHook(),
         hooks.ContextHook(),
         hooks.QueryParametersHook()],
     'debug': False
