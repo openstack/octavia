@@ -407,7 +407,7 @@ class PoolsController(base.BaseController):
 
         with db_api.get_lock_session() as lock_session:
             self._test_lb_and_listener_statuses(
-                context.session, lb_id=db_pool.load_balancer_id,
+                lock_session, lb_id=db_pool.load_balancer_id,
                 listener_ids=self._get_affected_listener_ids(db_pool))
 
             # Prepare the data for the driver data model
