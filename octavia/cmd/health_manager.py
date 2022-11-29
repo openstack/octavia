@@ -87,6 +87,9 @@ def _handle_mutate_config(listener_proc_pid, check_proc_pid, *args, **kwargs):
 def main():
     service.prepare_service(sys.argv)
 
+    LOG.debug('Full set of CONF:')
+    CONF.log_opt_values(LOG, logging.DEBUG)
+
     gmr.TextGuruMeditation.setup_autorun(version)
 
     processes = []
