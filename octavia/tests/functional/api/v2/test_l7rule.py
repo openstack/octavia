@@ -1304,3 +1304,19 @@ class TestL7Rule(base.BaseAPITest):
         self.set_lb_status(self.lb_id, status=constants.DELETED)
         self.delete(self.l7rule_path.format(l7rule_id=l7rule.get('id')),
                     status=404)
+
+    @mock.patch("octavia.api.drivers.noop_driver.driver.NoopManager."
+                "l7rule_create")
+    def test_create_with_exception_in_provider_driver(self,
+                                                      l7rule_create_mock):
+        l7rule_create_mock.side_effect = Exception("Provider error")
+
+        self.create_l7rule(
+            self.l7policy_id, constants.L7RULE_TYPE_PATH,
+            constants.L7RULE_COMPARE_TYPE_STARTS_WITH,
+            '/api', status=500)
+
+        lb = self.get(self.LB_PATH.format(lb_id=self.lb_id)).json.get(
+            "loadbalancer")
+        self.assertEqual(lb[constants.PROVISIONING_STATUS],
+                         constants.ACTIVE)
