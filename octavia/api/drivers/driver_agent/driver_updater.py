@@ -25,6 +25,11 @@ from octavia.db import repositories as repo
 LOG = logging.getLogger(__name__)
 
 
+# Define NotFound exception for releases that don't have octavia-lib>=2.1.0
+class NotFound(Exception):
+    pass
+
+
 class DriverUpdater(object):
 
     def __init__(self, **kwargs):
@@ -54,6 +59,13 @@ class DriverUpdater(object):
     def _decrement_quota(self, repo, object_name, record_id):
         lock_session = db_apis.get_session(autocommit=False)
         db_object = repo.get(lock_session, id=record_id)
+        if db_object is None:
+            lock_session.rollback()
+            msg = ('{} with ID of {} is not present in the '
+                   'database, it might have already been deleted. '
+                   'Skipping quota update.'.format(
+                       object_name, record_id))
+            raise NotFound(msg)
         try:
             if db_object.provisioning_status == consts.DELETED:
                 LOG.info('%(name)s with ID of %(id)s is already in the '
@@ -87,7 +99,12 @@ class DriverUpdater(object):
                     if object_name == consts.LOADBALANCERS:
                         self._check_for_lb_vip_deallocate(repo, record_id)
 
-                    self._decrement_quota(repo, object_name, record_id)
+                    try:
+                        self._decrement_quota(repo, object_name, record_id)
+                    except NotFound:
+                        # prov_status is DELETED and the object no longer
+                        # exists in the DB, ignore the update.
+                        return
 
                     if delete_record and object_name != consts.LOADBALANCERS:
                         repo.delete(self.db_session, id=record_id)
