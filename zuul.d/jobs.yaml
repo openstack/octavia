@@ -9,13 +9,14 @@
         - openstack/octavia-lib
 
 - job:
-    name: publish-openstack-octavia-amphora-image-bionic
+    name: publish-openstack-octavia-amphora-image-focal
     parent: publish-openstack-octavia-amphora-image
+    nodeset: ubuntu-focal
     description: |
-      Publish Ubuntu Bionic (18.04) based amphora image to tarballs.o.o.
+      Publish Ubuntu Focal (20.04) based amphora image to tarballs.o.o.
     vars:
         amphora_os: ubuntu
-        amphora_os_release: bionic
+        amphora_os_release: focal
 
 - job:
     name: publish-openstack-octavia-amphora-image-centos8
@@ -30,7 +31,7 @@
 - job:
     name: octavia-grenade
     parent: grenade
-    nodeset: octavia-single-node-ubuntu-bionic
+    nodeset: octavia-single-node-ubuntu-focal
     required-projects:
       - opendev.org/openstack/grenade
       - opendev.org/openstack/octavia
@@ -151,13 +152,13 @@
         - openstack/octavia-lib
     vars:
         amphora_os: ubuntu
-        amphora_os_release: bionic
+        amphora_os_release: focal
 
 - job:
-    name: octavia-amphora-image-build-live-bionic
+    name: octavia-amphora-image-build-live-focal
     parent: octavia-amphora-image-build
     description: |
-      Builds an Ubuntu Bionic amphora image using diskimage-builder from Git
+      Builds an Ubuntu Focal amphora image using diskimage-builder from Git
       master. This job does not publish the image.
     required-projects:
         - openstack/diskimage-builder

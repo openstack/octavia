@@ -91,7 +91,7 @@
         - octavia-v2-act-stdby-dsvm-scenario
     periodic:
       jobs:
-        - publish-openstack-octavia-amphora-image-bionic:
+        - publish-openstack-octavia-amphora-image-focal:
             branches: ^(?!stable/.*).*$
         - publish-openstack-octavia-amphora-image-centos8:
             branches: ^(?!stable/.*).*$
