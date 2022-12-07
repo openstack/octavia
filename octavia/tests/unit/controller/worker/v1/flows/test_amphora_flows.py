@@ -256,7 +256,7 @@ class TestAmphoraFlows(base.TestCase):
         self.assertIn(constants.LOADBALANCER_ID, amp_flow.requires)
         self.assertIn(constants.VIP, amp_flow.requires)
 
-        self.assertIn(constants.ADDED_PORTS, amp_flow.provides)
+        self.assertIn(constants.UPDATED_PORTS, amp_flow.provides)
         self.assertIn(constants.AMP_VRRP_INT, amp_flow.provides)
         self.assertIn(constants.AMPHORA, amp_flow.provides)
         self.assertIn(constants.AMPHORA_ID, amp_flow.provides)
@@ -290,7 +290,7 @@ class TestAmphoraFlows(base.TestCase):
         self.assertIn(constants.LOADBALANCER_ID, amp_flow.requires)
         self.assertIn(constants.VIP, amp_flow.requires)
 
-        self.assertIn(constants.ADDED_PORTS, amp_flow.provides)
+        self.assertIn(constants.UPDATED_PORTS, amp_flow.provides)
         self.assertIn(constants.AMPHORA, amp_flow.provides)
         self.assertIn(constants.AMPHORA_ID, amp_flow.provides)
         self.assertIn(constants.AMPHORAE, amp_flow.provides)
@@ -460,7 +460,7 @@ class TestAmphoraFlows(base.TestCase):
         self.assertIn(constants.VIP, get_amp_flow.requires)
         self.assertIn(constants.VIP_SG_ID, get_amp_flow.requires)
 
-        self.assertIn(constants.ADDED_PORTS, get_amp_flow.provides)
+        self.assertIn(constants.UPDATED_PORTS, get_amp_flow.provides)
         self.assertIn(constants.AMPHORA, get_amp_flow.provides)
         self.assertIn(constants.AMPHORA_ID, get_amp_flow.provides)
         self.assertIn(constants.AMPHORAE_NETWORK_CONFIG, get_amp_flow.provides)
@@ -491,7 +491,7 @@ class TestAmphoraFlows(base.TestCase):
         self.assertIn(constants.VIP, get_amp_flow.requires)
         self.assertIn(constants.VIP_SG_ID, get_amp_flow.requires)
 
-        self.assertIn(constants.ADDED_PORTS, get_amp_flow.provides)
+        self.assertIn(constants.UPDATED_PORTS, get_amp_flow.provides)
         self.assertIn(constants.AMPHORA, get_amp_flow.provides)
         self.assertIn(constants.AMPHORA_ID, get_amp_flow.provides)
         self.assertIn(constants.AMPHORAE_NETWORK_CONFIG, get_amp_flow.provides)

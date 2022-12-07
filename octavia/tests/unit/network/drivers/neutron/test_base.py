@@ -563,3 +563,144 @@ class TestBaseNeutronNetworkDriver(base.TestCase):
         self.assertEqual(t_constants.MOCK_NETWORK_ID, ip_avail.network_id)
         self.assertEqual(t_constants.MOCK_SUBNET_IP_AVAILABILITY,
                          ip_avail.subnet_ip_availability)
+
+    def test_plug_fixed_ip(self):
+        show_port = self.driver.neutron_client.show_port
+        show_port.return_value = {
+            'id': t_constants.MOCK_PORT_ID,
+            'fixed_ips': [
+                {
+                    'subnet_id': t_constants.MOCK_SUBNET_ID,
+                    'ip_address': t_constants.MOCK_IP_ADDRESS,
+                    'subnet': None
+                }]
+        }
+
+        self.driver.plug_fixed_ip(t_constants.MOCK_PORT_ID,
+                                  t_constants.MOCK_SUBNET_ID2,
+                                  t_constants.MOCK_IP_ADDRESS2)
+
+        expected_body = {
+            'port': {
+                'fixed_ips': [
+                    {
+                        'subnet_id': t_constants.MOCK_SUBNET_ID,
+                        'ip_address': t_constants.MOCK_IP_ADDRESS,
+                        'subnet': None
+                    }, {
+                        'subnet_id': t_constants.MOCK_SUBNET_ID2,
+                        'ip_address': t_constants.MOCK_IP_ADDRESS2
+                    }
+                ]
+            }
+
+        }
+        self.driver.neutron_client.update_port.assert_called_once_with(
+            t_constants.MOCK_PORT_ID,
+            expected_body)
+
+    def test_plug_fixed_ip_no_ip_address(self):
+        show_port = self.driver.neutron_client.show_port
+        show_port.return_value = {
+            'id': t_constants.MOCK_PORT_ID,
+            'fixed_ips': [
+                {
+                    'subnet_id': t_constants.MOCK_SUBNET_ID,
+                    'ip_address': t_constants.MOCK_IP_ADDRESS,
+                    'subnet': None
+                }]
+        }
+
+        self.driver.plug_fixed_ip(t_constants.MOCK_PORT_ID,
+                                  t_constants.MOCK_SUBNET_ID2)
+
+        expected_body = {
+            'port': {
+                'fixed_ips': [
+                    {
+                        'subnet_id': t_constants.MOCK_SUBNET_ID,
+                        'ip_address': t_constants.MOCK_IP_ADDRESS,
+                        'subnet': None
+                    }, {
+                        'subnet_id': t_constants.MOCK_SUBNET_ID2,
+                    }
+                ]
+            }
+
+        }
+        self.driver.neutron_client.update_port.assert_called_once_with(
+            t_constants.MOCK_PORT_ID,
+            expected_body)
+
+    def test_plug_fixed_ip_exception(self):
+        show_port = self.driver.neutron_client.show_port
+        show_port.return_value = {
+            'id': t_constants.MOCK_PORT_ID,
+            'fixed_ips': [
+                {
+                    'subnet_id': t_constants.MOCK_SUBNET_ID,
+                    'ip_address': t_constants.MOCK_IP_ADDRESS,
+                    'subnet': None
+                }]
+        }
+
+        self.driver.neutron_client.update_port.side_effect = Exception
+
+        self.assertRaises(network_base.NetworkException,
+                          self.driver.plug_fixed_ip,
+                          t_constants.MOCK_PORT_ID,
+                          t_constants.MOCK_SUBNET_ID2)
+
+    def test_unplug_fixed_ip(self):
+        show_port = self.driver.neutron_client.show_port
+        show_port.return_value = {
+            'id': t_constants.MOCK_PORT_ID,
+            'fixed_ips': [
+                {
+                    'subnet_id': t_constants.MOCK_SUBNET_ID,
+                    'ip_address': t_constants.MOCK_IP_ADDRESS,
+                    'subnet': None
+                }, {
+                    'subnet_id': t_constants.MOCK_SUBNET_ID2,
+                    'ip_address': t_constants.MOCK_IP_ADDRESS2,
+                    'subnet': None
+                }]
+        }
+
+        self.driver.unplug_fixed_ip(t_constants.MOCK_PORT_ID,
+                                    t_constants.MOCK_SUBNET_ID)
+
+        expected_body = {
+            'port': {
+                'fixed_ips': [
+                    {
+                        'subnet_id': t_constants.MOCK_SUBNET_ID2,
+                        'ip_address': t_constants.MOCK_IP_ADDRESS2,
+                        'subnet': None
+                    }
+                ]
+            }
+
+        }
+        self.driver.neutron_client.update_port.assert_called_once_with(
+            t_constants.MOCK_PORT_ID,
+            expected_body)
+
+    def test_unplug_fixed_ip_exception(self):
+        show_port = self.driver.neutron_client.show_port
+        show_port.return_value = {
+            'id': t_constants.MOCK_PORT_ID,
+            'fixed_ips': [
+                {
+                    'subnet_id': t_constants.MOCK_SUBNET_ID,
+                    'ip_address': t_constants.MOCK_IP_ADDRESS,
+                    'subnet': None
+                }]
+        }
+
+        self.driver.neutron_client.update_port.side_effect = Exception
+
+        self.assertRaises(network_base.NetworkException,
+                          self.driver.unplug_fixed_ip,
+                          t_constants.MOCK_PORT_ID,
+                          t_constants.MOCK_SUBNET_ID)

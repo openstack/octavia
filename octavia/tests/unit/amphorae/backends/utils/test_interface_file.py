@@ -76,6 +76,10 @@ class TestInterfaceFile(base.TestCase):
                 },
                 {
                     consts.DST: cidr.exploded,
+                    consts.SCOPE: 'link'
+                },
+                {
+                    consts.DST: cidr.exploded,
                     consts.PREFSRC: VIP_ADDRESS,
                     consts.SCOPE: 'link',
                     consts.TABLE: 1
@@ -194,6 +198,10 @@ class TestInterfaceFile(base.TestCase):
                 },
                 {
                     consts.DST: cidr.exploded,
+                    consts.SCOPE: 'link'
+                },
+                {
+                    consts.DST: cidr.exploded,
                     consts.PREFSRC: VIP_ADDRESS,
                     consts.SCOPE: 'link',
                     consts.TABLE: 1
@@ -282,6 +290,9 @@ class TestInterfaceFile(base.TestCase):
             consts.ROUTES: [
                 {
                     consts.DST: cidr.exploded,
+                    consts.SCOPE: 'link',
+                }, {
+                    consts.DST: cidr.exploded,
                     consts.PREFSRC: VIP_ADDRESS,
                     consts.SCOPE: 'link',
                     consts.TABLE: 1
@@ -360,13 +371,10 @@ class TestInterfaceFile(base.TestCase):
                 {
                     consts.DST: "0.0.0.0/0",
                     consts.GATEWAY: GATEWAY,
-                    consts.FLAGS: [consts.ONLINK],
-                },
-                {
-                    consts.DST: "0.0.0.0/0",
-                    consts.GATEWAY: GATEWAY,
-                    consts.FLAGS: [consts.ONLINK],
-                    consts.TABLE: 1
+                    consts.FLAGS: [consts.ONLINK]
+                }, {
+                    consts.DST: SUBNET_CIDR,
+                    consts.SCOPE: 'link'
                 }
             ],
             consts.RULES: [],
@@ -446,6 +454,10 @@ class TestInterfaceFile(base.TestCase):
                     consts.GATEWAY: GATEWAY,
                     consts.TABLE: 1,
                     consts.FLAGS: [consts.ONLINK]
+                },
+                {
+                    consts.DST: cidr.exploded,
+                    consts.SCOPE: 'link',
                 },
                 {
                     consts.DST: cidr.exploded,

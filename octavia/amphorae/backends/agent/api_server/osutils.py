@@ -66,7 +66,7 @@ class BaseOS(object):
     def write_vip_interface_file(self, interface, vip, ip_version,
                                  prefixlen, gateway,
                                  mtu, vrrp_ip,
-                                 host_routes):
+                                 host_routes, fixed_ips=None):
         vip_interface = interface_file.VIPInterfaceFile(
             name=interface,
             mtu=mtu,
@@ -76,6 +76,7 @@ class BaseOS(object):
             gateway=gateway,
             vrrp_ip=vrrp_ip,
             host_routes=host_routes,
+            fixed_ips=fixed_ips,
             topology=CONF.controller_worker.loadbalancer_topology)
         vip_interface.write()
 
@@ -94,7 +95,8 @@ class BaseOS(object):
         try:
             out = subprocess.check_output(cmd.split(),
                                           stderr=subprocess.STDOUT)
-            LOG.debug(out)
+            for line in out.decode('utf-8').split('\n'):
+                LOG.debug(line)
         except subprocess.CalledProcessError as e:
             LOG.error('Failed to set up %s due to error: %s %s', interface,
                       e, e.output)

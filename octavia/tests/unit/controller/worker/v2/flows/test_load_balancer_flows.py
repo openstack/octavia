@@ -210,8 +210,14 @@ class TestLoadBalancerFlows(base.TestCase):
         self.assertIsInstance(create_flow, flow.Flow)
         self.assertIn(constants.LOADBALANCER_ID, create_flow.requires)
         self.assertIn(constants.UPDATE_DICT, create_flow.requires)
+        self.assertIn(constants.BUILD_TYPE_PRIORITY, create_flow.requires)
+        self.assertIn(constants.FLAVOR, create_flow.requires)
+        self.assertIn(constants.AMPHORAE_NETWORK_CONFIG, create_flow.requires)
+        self.assertIn(constants.AVAILABILITY_ZONE, create_flow.requires)
+        self.assertIn(constants.SERVER_GROUP_ID, create_flow.requires)
 
         self.assertIn(constants.LISTENERS, create_flow.provides)
+        self.assertIn(constants.SUBNET, create_flow.provides)
         self.assertIn(constants.AMPHORA, create_flow.provides)
         self.assertIn(constants.AMPHORA_ID, create_flow.provides)
         self.assertIn(constants.AMPHORA_NETWORK_CONFIG, create_flow.provides)
@@ -220,12 +226,11 @@ class TestLoadBalancerFlows(base.TestCase):
         self.assertIn(constants.COMPUTE_OBJ, create_flow.provides)
         self.assertIn(constants.LOADBALANCER, create_flow.provides)
         self.assertIn(constants.DELTAS, create_flow.provides)
-        self.assertIn(constants.ADDED_PORTS, create_flow.provides)
+        self.assertIn(constants.UPDATED_PORTS, create_flow.provides)
         self.assertIn(constants.SERVER_PEM, create_flow.provides)
-        self.assertIn(constants.SUBNET, create_flow.provides)
         self.assertIn(constants.VIP, create_flow.provides)
 
-        self.assertEqual(6, len(create_flow.requires))
+        self.assertEqual(7, len(create_flow.requires))
         self.assertEqual(13, len(create_flow.provides),
                          create_flow.provides)
 
@@ -244,7 +249,7 @@ class TestLoadBalancerFlows(base.TestCase):
         self.assertIn(constants.SERVER_GROUP_ID, create_flow.requires)
         self.assertIn(constants.UPDATE_DICT, create_flow.requires)
 
-        self.assertIn(constants.ADDED_PORTS, create_flow.provides)
+        self.assertIn(constants.UPDATED_PORTS, create_flow.provides)
         self.assertIn(constants.AMP_DATA, create_flow.provides)
         self.assertIn(constants.AMP_VRRP_INT, create_flow.provides)
         self.assertIn(constants.AMPHORA, create_flow.provides)
@@ -280,7 +285,7 @@ class TestLoadBalancerFlows(base.TestCase):
         self.assertIn(constants.LOADBALANCER, failover_flow.requires)
         self.assertIn(constants.LOADBALANCER_ID, failover_flow.requires)
 
-        self.assertIn(constants.ADDED_PORTS, failover_flow.provides)
+        self.assertIn(constants.UPDATED_PORTS, failover_flow.provides)
         self.assertIn(constants.AMPHORA, failover_flow.provides)
         self.assertIn(constants.AMPHORA_ID, failover_flow.provides)
         self.assertIn(constants.AMPHORAE_NETWORK_CONFIG,
@@ -352,7 +357,7 @@ class TestLoadBalancerFlows(base.TestCase):
         self.assertIn(constants.LOADBALANCER, failover_flow.requires)
         self.assertIn(constants.LOADBALANCER_ID, failover_flow.requires)
 
-        self.assertIn(constants.ADDED_PORTS, failover_flow.provides)
+        self.assertIn(constants.UPDATED_PORTS, failover_flow.provides)
         self.assertIn(constants.AMPHORA, failover_flow.provides)
         self.assertIn(constants.AMPHORA_ID, failover_flow.provides)
         self.assertIn(constants.AMPHORAE_NETWORK_CONFIG,
