@@ -403,18 +403,17 @@ class AmphoraFlows(object):
         amp_for_failover_flow.add(network_tasks.CalculateAmphoraDelta(
             name=prefix + '-' + constants.CALCULATE_AMPHORA_DELTA,
             requires=(constants.LOADBALANCER, constants.AMPHORA,
-                      constants.AVAILABILITY_ZONE, constants.VRRP_PORT),
-            rebind={constants.VRRP_PORT: constants.BASE_PORT},
+                      constants.AVAILABILITY_ZONE),
             provides=constants.DELTA))
 
         amp_for_failover_flow.add(network_tasks.HandleNetworkDelta(
             name=prefix + '-' + constants.HANDLE_NETWORK_DELTA,
             requires=(constants.AMPHORA, constants.DELTA),
-            provides=constants.ADDED_PORTS))
+            provides=constants.UPDATED_PORTS))
 
         amp_for_failover_flow.add(amphora_driver_tasks.AmphoraePostNetworkPlug(
             name=prefix + '-' + constants.AMPHORAE_POST_NETWORK_PLUG,
-            requires=(constants.LOADBALANCER, constants.ADDED_PORTS)))
+            requires=(constants.LOADBALANCER, constants.UPDATED_PORTS)))
 
         return amp_for_failover_flow
 
