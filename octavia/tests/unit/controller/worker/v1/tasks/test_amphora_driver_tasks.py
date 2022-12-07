@@ -50,6 +50,9 @@ _vip_mock = mock.MagicMock()
 _load_balancer_mock.vip = _vip_mock
 _LB_mock = mock.MagicMock()
 _amphorae_mock = [_amphora_mock]
+_amphora_network_config_mock = mock.MagicMock()
+_amphorae_network_config_mock = {
+    _amphora_mock.id: _amphora_network_config_mock}
 _network_mock = mock.MagicMock()
 _port_mock = mock.MagicMock()
 _ports_mock = [_port_mock]
@@ -379,10 +382,12 @@ class TestAmphoraDriverTasks(base.TestCase):
 
         amphora_post_network_plug_obj = (amphora_driver_tasks.
                                          AmphoraPostNetworkPlug())
-        amphora_post_network_plug_obj.execute(_amphora_mock, _ports_mock)
+        amphora_post_network_plug_obj.execute(_amphora_mock, _ports_mock,
+                                              _amphora_network_config_mock)
 
         (mock_driver.post_network_plug.
-            assert_called_once_with)(_amphora_mock, _port_mock)
+            assert_called_once_with)(_amphora_mock, _port_mock,
+                                     _amphora_network_config_mock)
 
         # Test revert
         amp = amphora_post_network_plug_obj.revert(None, _amphora_mock)
@@ -428,17 +433,20 @@ class TestAmphoraDriverTasks(base.TestCase):
         port_mock = mock.Mock()
         _deltas_mock = {_amphora_mock.id: [port_mock]}
 
-        amphora_post_network_plug_obj.execute(_LB_mock, _deltas_mock)
+        amphora_post_network_plug_obj.execute(_LB_mock, _deltas_mock,
+                                              _amphorae_network_config_mock)
 
         (mock_driver.post_network_plug.
-            assert_called_once_with(_amphora_mock, port_mock))
+            assert_called_once_with(_amphora_mock, port_mock,
+                                    _amphora_network_config_mock))
 
         # Test with no ports to plug
         mock_driver.post_network_plug.reset_mock()
 
         _deltas_mock = {'0': [port_mock]}
 
-        amphora_post_network_plug_obj.execute(_LB_mock, _deltas_mock)
+        amphora_post_network_plug_obj.execute(_LB_mock, _deltas_mock,
+                                              _amphora_network_config_mock)
         mock_driver.post_network_plug.assert_not_called()
 
         # Test revert

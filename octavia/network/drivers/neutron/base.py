@@ -275,3 +275,35 @@ class BaseNeutronDriver(base.AbstractNetworkDriver):
 
     def get_network_ip_availability(self, network):
         return self._get_resource('network_ip_availability', network.id)
+
+    def plug_fixed_ip(self, port_id, subnet_id, ip_address=None):
+        port = self.get_port(port_id).to_dict(recurse=True)
+        fixed_ips = port['fixed_ips']
+
+        new_fixed_ip_dict = {'subnet_id': subnet_id}
+        if ip_address:
+            new_fixed_ip_dict['ip_address'] = ip_address
+
+        fixed_ips.append(new_fixed_ip_dict)
+
+        body = {'port': {'fixed_ips': fixed_ips}}
+        try:
+            updated_port = self.neutron_client.update_port(port_id, body)
+            return utils.convert_port_dict_to_model(updated_port)
+        except Exception as e:
+            raise base.NetworkException(str(e))
+
+    def unplug_fixed_ip(self, port_id, subnet_id):
+        port = self.get_port(port_id)
+        fixed_ips = [
+            fixed_ip.to_dict()
+            for fixed_ip in port.fixed_ips
+            if fixed_ip.subnet_id != subnet_id
+        ]
+
+        body = {'port': {'fixed_ips': fixed_ips}}
+        try:
+            updated_port = self.neutron_client.update_port(port_id, body)
+            return utils.convert_port_dict_to_model(updated_port)
+        except Exception as e:
+            raise base.NetworkException(str(e))
