@@ -1739,6 +1739,38 @@ class MarkHealthMonitorPendingUpdateInDB(BaseDatabaseTask):
         self.task_utils.mark_health_mon_prov_status_error(health_mon.id)
 
 
+class MarkHealthMonitorsOnlineInDB(BaseDatabaseTask):
+    """Mark all enabled health monitors Online
+
+    :param loadbalancer: The Load Balancer that has associated health monitors
+    :returns: None
+    """
+
+    def execute(self, loadbalancer):
+        db_lb = self.loadbalancer_repo.get(
+            db_apis.get_session(),
+            id=loadbalancer.id)
+
+        # Update the healthmonitors of either attached listeners or l7policies
+        hms_to_update = []
+
+        for listener in db_lb.listeners:
+            if listener.default_pool and listener.default_pool.health_monitor:
+                hm = listener.default_pool.health_monitor
+                if hm.enabled:
+                    hms_to_update.append(hm.id)
+            for l7policy in listener.l7policies:
+                if l7policy.redirect_pool and (
+                        l7policy.redirect_pool.health_monitor):
+                    hm = l7policy.redirect_pool.health_monitor
+                    if hm.enabled:
+                        hms_to_update.append(hm.id)
+
+        for hm_id in hms_to_update:
+            self.health_mon_repo.update(db_apis.get_session(), hm_id,
+                                        operating_status=constants.ONLINE)
+
+
 class MarkL7PolicyActiveInDB(BaseDatabaseTask):
     """Mark the l7policy ACTIVE in the DB.
 
