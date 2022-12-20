@@ -12,7 +12,9 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-from neutronclient.common import exceptions as neutron_client_exceptions
+from openstack.connection import Connection
+import openstack.exceptions as os_exceptions
+from openstack.network.v2._proxy import Proxy
 from oslo_config import cfg
 from oslo_log import log as logging
 
@@ -23,33 +25,28 @@ from octavia.network import base
 from octavia.network import data_models as network_models
 from octavia.network.drivers.neutron import utils
 
-
 LOG = logging.getLogger(__name__)
 DNS_INT_EXT_ALIAS = 'dns-integration'
 SEC_GRP_EXT_ALIAS = 'security-group'
 QOS_EXT_ALIAS = 'qos'
+CONF_GROUP = 'neutron'
 
 CONF = cfg.CONF
 
 
 class BaseNeutronDriver(base.AbstractNetworkDriver):
-
     def __init__(self):
-        self.neutron_client = clients.NeutronAuth.get_neutron_client(
-            endpoint=CONF.neutron.endpoint,
-            region=CONF.neutron.region_name,
-            endpoint_type=CONF.neutron.endpoint_type,
-            service_name=CONF.neutron.service_name,
-            insecure=CONF.neutron.insecure,
-            ca_cert=CONF.neutron.ca_certificates_file
-        )
+        self.network_proxy: Proxy = self.os_connection.network
         self._check_extension_cache = {}
         self.sec_grp_enabled = self._check_extension_enabled(SEC_GRP_EXT_ALIAS)
         self.dns_integration_enabled = self._check_extension_enabled(
             DNS_INT_EXT_ALIAS)
         self._qos_enabled = self._check_extension_enabled(QOS_EXT_ALIAS)
-        self.project_id = self.neutron_client.get_auth_info().get(
-            'auth_tenant_id')
+        self.project_id = self.os_connection.current_project_id
+
+    @property
+    def os_connection(self) -> Connection:
+        return clients.NeutronAuth.get_neutron_client()
 
     def _check_extension_enabled(self, extension_alias):
         if extension_alias in self._check_extension_cache:
@@ -60,12 +57,11 @@ class BaseNeutronDriver(base.AbstractNetworkDriver):
                           'status': 'enabled' if status else 'disabled'
                       })
         else:
-            try:
-                self.neutron_client.show_extension(extension_alias)
+            if self.network_proxy.find_extension(extension_alias):
                 LOG.debug('Neutron extension %(ext)s found enabled',
                           {'ext': extension_alias})
                 self._check_extension_cache[extension_alias] = True
-            except neutron_client_exceptions.NotFound:
+            else:
                 LOG.debug('Neutron extension %(ext)s is not enabled',
                           {'ext': extension_alias})
                 self._check_extension_cache[extension_alias] = False
@@ -123,64 +119,51 @@ class BaseNeutronDriver(base.AbstractNetworkDriver):
                                         fixed_ips=fixed_ips)
 
     def _add_allowed_address_pairs_to_port(self, port_id, ip_address_list):
-        aap = {
-            'port': {
-                'allowed_address_pairs': [
-                    {'ip_address': ip} for ip in ip_address_list
-                ]
-            }
-        }
-        self.neutron_client.update_port(port_id, aap)
+        aap = [{'ip_address': ip} for ip in ip_address_list]
+        self.network_proxy.update_port(port_id,
+                                       allowed_address_pairs=aap)
 
     def _add_security_group_to_port(self, sec_grp_id, port_id):
-        port_update = {'port': {'security_groups': [sec_grp_id]}}
         # Note: Neutron accepts the SG even if it already exists
         try:
-            self.neutron_client.update_port(port_id, port_update)
-        except neutron_client_exceptions.PortNotFoundClient as e:
+            self.network_proxy.update_port(
+                port_id, security_groups=[sec_grp_id])
+        except os_exceptions.NotFoundException as e:
             raise base.PortNotFound(str(e))
         except Exception as e:
             raise base.NetworkException(str(e))
 
     def _get_ports_by_security_group(self, sec_grp_id):
-        all_ports = self.neutron_client.list_ports(project_id=self.project_id)
-        filtered_ports = []
-        for port in all_ports.get('ports', []):
-            if sec_grp_id in port.get('security_groups', []):
-                filtered_ports.append(port)
+        all_ports = self.network_proxy.ports(project_id=self.project_id)
+        filtered_ports = [
+            p for p in all_ports if (p.security_group_ids and
+                                     sec_grp_id in p.security_group_ids)]
         return filtered_ports
 
     def _create_security_group(self, name):
-        new_sec_grp = {'security_group': {'name': name}}
-        sec_grp = self.neutron_client.create_security_group(new_sec_grp)
-        return sec_grp['security_group']
+        sec_grp = self.network_proxy.create_security_group(name=name)
+        return sec_grp
 
     def _create_security_group_rule(self, sec_grp_id, protocol,
                                     direction='ingress', port_min=None,
                                     port_max=None, ethertype='IPv6',
                                     cidr=None):
         rule = {
-            'security_group_rule': {
-                'security_group_id': sec_grp_id,
-                'direction': direction,
-                'protocol': protocol,
-                'port_range_min': port_min,
-                'port_range_max': port_max,
-                'ethertype': ethertype,
-                'remote_ip_prefix': cidr,
-            }
+            'security_group_id': sec_grp_id,
+            'direction': direction,
+            'protocol': protocol,
+            'port_range_min': port_min,
+            'port_range_max': port_max,
+            'ethertype': ethertype,
+            'remote_ip_prefix': cidr,
         }
 
-        self.neutron_client.create_security_group_rule(rule)
+        self.network_proxy.create_security_group_rule(**rule)
 
     def apply_qos_on_port(self, qos_id, port_id):
-        body = {
-            'port':
-                {'qos_policy_id': qos_id}
-        }
         try:
-            self.neutron_client.update_port(port_id, body)
-        except neutron_client_exceptions.PortNotFoundClient as e:
+            self.network_proxy.update_port(port_id, qos_policy_id=qos_id)
+        except os_exceptions.ResourceNotFound as e:
             raise base.PortNotFound(str(e))
         except Exception as e:
             raise base.NetworkException(str(e))
@@ -188,26 +171,26 @@ class BaseNeutronDriver(base.AbstractNetworkDriver):
     def get_plugged_networks(self, compute_id):
         # List neutron ports associated with the Amphora
         try:
-            ports = self.neutron_client.list_ports(device_id=compute_id)
+            ports = self.network_proxy.ports(device_id=compute_id)
         except Exception:
             LOG.debug('Error retrieving plugged networks for compute '
                       'device %s.', compute_id)
-            ports = {'ports': []}
-        return [self._port_to_octavia_interface(
-                compute_id, port) for port in ports['ports']]
+            ports = tuple()
+        return [self._port_to_octavia_interface(compute_id, port) for port in
+                ports]
 
     def _get_resource(self, resource_type, resource_id, context=None):
-        neutron_client = self.neutron_client
+        network = self.network_proxy
         if context and not CONF.networking.allow_invisible_resource_usage:
-            neutron_client = clients.NeutronAuth.get_user_neutron_client(
+            network = clients.NeutronAuth.get_user_neutron_client(
                 context)
 
         try:
-            resource = getattr(neutron_client, 'show_%s' %
-                               resource_type)(resource_id)
-            return getattr(utils, 'convert_%s_dict_to_model' %
+            resource = getattr(
+                network, f"get_{resource_type}")(resource_id)
+            return getattr(utils, 'convert_%s_to_model' %
                            resource_type)(resource)
-        except neutron_client_exceptions.NotFound as e:
+        except os_exceptions.ResourceNotFound as e:
             message = _('{resource_type} not found '
                         '({resource_type} id: {resource_id}).').format(
                 resource_type=resource_type, resource_id=resource_id)
@@ -228,20 +211,25 @@ class BaseNeutronDriver(base.AbstractNetworkDriver):
         If unique_item set to True, only the first resource is returned.
         """
         try:
-            resource = getattr(self.neutron_client, 'list_%ss' %
-                               resource_type)(**filters)
+            resources = getattr(
+                self.network_proxy, f"{resource_type}s")(**filters)
             conversion_function = getattr(
                 utils,
-                'convert_%s_dict_to_model' % resource_type)
-            if not resource['%ss' % resource_type]:
-                # no items found
-                raise neutron_client_exceptions.NotFound()
-            if unique_item:
-                return conversion_function(resource['%ss' % resource_type][0])
+                'convert_%s_to_model' % resource_type)
+            try:
+                # get first item to see if there is at least one resource
+                res_list = [conversion_function(next(resources))]
+            except StopIteration:
+                # pylint: disable=raise-missing-from
+                raise os_exceptions.NotFoundException(
+                    f'No resource of type {resource_type} found that matches '
+                    f'given filter criteria: {filters}.')
 
-            return list(map(conversion_function,
-                            resource['%ss' % resource_type]))
-        except neutron_client_exceptions.NotFound as e:
+            if unique_item:
+                return res_list[0]
+            return res_list + [conversion_function(r) for r in resources]
+
+        except os_exceptions.NotFoundException as e:
             message = _('{resource_type} not found '
                         '({resource_type} Filters: {filters}.').format(
                 resource_type=resource_type, filters=filters)
@@ -300,10 +288,10 @@ class BaseNeutronDriver(base.AbstractNetworkDriver):
 
         fixed_ips.append(new_fixed_ip_dict)
 
-        body = {'port': {'fixed_ips': fixed_ips}}
         try:
-            updated_port = self.neutron_client.update_port(port_id, body)
-            return utils.convert_port_dict_to_model(updated_port)
+            updated_port = self.network_proxy.update_port(
+                port_id, fixed_ips=fixed_ips)
+            return utils.convert_port_to_model(updated_port)
         except Exception as e:
             raise base.NetworkException(str(e))
 
@@ -315,9 +303,9 @@ class BaseNeutronDriver(base.AbstractNetworkDriver):
             if fixed_ip.subnet_id != subnet_id
         ]
 
-        body = {'port': {'fixed_ips': fixed_ips}}
         try:
-            updated_port = self.neutron_client.update_port(port_id, body)
-            return utils.convert_port_dict_to_model(updated_port)
+            updated_port = self.network_proxy.update_port(
+                port_id, fixed_ips=fixed_ips)
+            return utils.convert_port_to_model(updated_port)
         except Exception as e:
             raise base.NetworkException(str(e))

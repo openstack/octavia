@@ -13,11 +13,9 @@
 #    under the License.
 from unittest import mock
 
-from neutronclient.common import exceptions as neutron_client_exceptions
 from oslo_config import cfg
 from oslo_config import fixture as oslo_fixture
 
-from octavia.common import clients
 from octavia.common import data_models
 from octavia.network import base as network_base
 from octavia.network import data_models as network_models
@@ -26,6 +24,12 @@ from octavia.network.drivers.neutron import utils
 from octavia.tests.common import constants as t_constants
 from octavia.tests.common import data_model_helpers as dmh
 from octavia.tests.unit import base
+import openstack.exceptions as os_exceptions
+from openstack.network.v2.network import Network
+from openstack.network.v2.network_ip_availability import NetworkIPAvailability
+from openstack.network.v2.port import Port
+from openstack.network.v2.qos_policy import QoSPolicy
+from openstack.network.v2.subnet import Subnet
 
 
 class TestBaseNeutronNetworkDriver(base.TestCase):
@@ -42,95 +46,88 @@ class TestBaseNeutronNetworkDriver(base.TestCase):
 
     def setUp(self):
         super().setUp()
-        with mock.patch('octavia.common.clients.neutron_client.Client',
-                        autospec=True) as neutron_client:
-            client = neutron_client(clients.NEUTRON_VERSION)
-            client.list_extensions.return_value = {
-                'extensions': [
-                    {'alias': neutron_base.SEC_GRP_EXT_ALIAS}
-                ]
-            }
+        with mock.patch('octavia.common.clients.openstack.connection.'
+                        'Connection', autospec=True) as os_connection:
+            self._original_find_extension = (
+                os_connection.return_value.network.find_extension)
+            os_connection.return_value.network.find_extension = (
+                lambda x: 'alias' if x == neutron_base.SEC_GRP_EXT_ALIAS else
+                None)
             self.k_session = mock.patch(
                 'keystoneauth1.session.Session').start()
             self.driver = self._instantiate_partial_abc(
                 neutron_base.BaseNeutronDriver)
 
     def test__check_extension_enabled(self):
-        show_extension = self.driver.neutron_client.show_extension
-        show_extension.side_effect = [None, neutron_client_exceptions.NotFound]
-
-        self.assertTrue(self.driver._check_extension_enabled('TEST1'))
-        self.assertFalse(self.driver._check_extension_enabled('TEST2'))
-        show_extension.assert_has_calls(
-            [mock.call('TEST1'), mock.call('TEST2')])
+        with mock.patch.object(self.driver.network_proxy, "find_extension",
+                               side_effect=[True, False]) as show_extension:
+            self.assertTrue(self.driver._check_extension_enabled('TEST1'))
+            self.assertFalse(self.driver._check_extension_enabled('TEST2'))
+            show_extension.assert_has_calls(
+                [mock.call('TEST1'), mock.call('TEST2')])
 
     def test__check_extension_enabled_cached(self):
-        show_extension = self.driver.neutron_client.show_extension
-
-        self.driver._check_extension_cache = {'TEST1': True, 'TEST2': False}
-        self.assertTrue(self.driver._check_extension_enabled('TEST1'))
-        self.assertFalse(self.driver._check_extension_enabled('TEST2'))
-        self.assertNotIn(mock.call('TEST1'), show_extension.mock_calls)
-        self.assertNotIn(mock.call('TEST2'), show_extension.mock_calls)
+        with mock.patch.object(self.driver.network_proxy, "find_extension",
+                               ) as show_extension:
+            self.driver._check_extension_cache = {'TEST1': True,
+                                                  'TEST2': False}
+            self.assertTrue(self.driver._check_extension_enabled('TEST1'))
+            self.assertFalse(self.driver._check_extension_enabled('TEST2'))
+            self.assertNotIn(mock.call('TEST1'), show_extension.mock_calls)
+            self.assertNotIn(mock.call('TEST2'), show_extension.mock_calls)
 
     def test__add_allowed_address_pair_to_port(self):
         self.driver._add_allowed_address_pairs_to_port(
             t_constants.MOCK_PORT_ID, [t_constants.MOCK_IP_ADDRESS])
         expected_aap_dict = {
-            'port': {
-                'allowed_address_pairs': [
-                    {'ip_address': t_constants.MOCK_IP_ADDRESS}]}}
-        self.driver.neutron_client.update_port.assert_has_calls([
-            mock.call(t_constants.MOCK_PORT_ID, expected_aap_dict)])
+            'allowed_address_pairs': [
+                {'ip_address': t_constants.MOCK_IP_ADDRESS}]}
+        self.driver.network_proxy.update_port.assert_has_calls([
+            mock.call(t_constants.MOCK_PORT_ID, **expected_aap_dict)])
 
     def test__add_security_group_to_port(self):
         self.driver._add_security_group_to_port(
             t_constants.MOCK_SECURITY_GROUP_ID, t_constants.MOCK_PORT_ID)
         expected_sg_dict = {
-            'port': {
-                'security_groups': [
-                    t_constants.MOCK_SECURITY_GROUP_ID]}}
-        self.driver.neutron_client.update_port.assert_has_calls([
-            mock.call(t_constants.MOCK_PORT_ID, expected_sg_dict)])
+            'security_groups': [
+                t_constants.MOCK_SECURITY_GROUP_ID]}
+        self.driver.network_proxy.update_port.assert_has_calls([
+            mock.call(t_constants.MOCK_PORT_ID, **expected_sg_dict)])
 
     def test__add_security_group_to_port_with_port_not_found(self):
-        self.driver.neutron_client.update_port.side_effect = (
-            neutron_client_exceptions.PortNotFoundClient)
+        self.driver.network_proxy.update_port.side_effect = (
+            os_exceptions.ResourceNotFound)
         self.assertRaises(
             network_base.PortNotFound,
             self.driver._add_security_group_to_port,
             t_constants.MOCK_SECURITY_GROUP_ID, t_constants.MOCK_PORT_ID)
 
     def test__add_security_group_to_port_with_other_exception(self):
-        self.driver.neutron_client.update_port.side_effect = IOError
+        self.driver.network_proxy.update_port.side_effect = IOError
         self.assertRaises(
             network_base.NetworkException,
             self.driver._add_security_group_to_port,
             t_constants.MOCK_SECURITY_GROUP_ID, t_constants.MOCK_PORT_ID)
 
     def test__get_ports_by_security_group(self):
-        self.driver.neutron_client.list_ports.return_value = {
-            "ports": [
-                t_constants.MOCK_NEUTRON_PORT['port'],
-                t_constants.MOCK_NEUTRON_PORT2['port']]
-        }
+        self.driver.network_proxy.ports.return_value = [
+            t_constants.MOCK_NEUTRON_PORT,
+            t_constants.MOCK_NEUTRON_PORT2]
         ports = self.driver._get_ports_by_security_group(
             t_constants.MOCK_SECURITY_GROUP_ID)
         self.assertEqual(1, len(ports))
-        self.assertIn(t_constants.MOCK_NEUTRON_PORT['port'], ports)
+        self.assertIn(t_constants.MOCK_NEUTRON_PORT, ports)
 
     def test__create_security_group(self):
         sg_return = self.driver._create_security_group(
             t_constants.MOCK_SECURITY_GROUP_NAME)
         expected_sec_grp_dict = {
-            'security_group': {
-                'name': t_constants.MOCK_SECURITY_GROUP_NAME}}
-        self.driver.neutron_client.create_security_group.assert_has_calls([
-            mock.call(expected_sec_grp_dict)])
+            'name': t_constants.MOCK_SECURITY_GROUP_NAME}
+        self.driver.network_proxy.create_security_group.assert_has_calls([
+            mock.call(**expected_sec_grp_dict)])
         self.assertEqual(
             sg_return,
-            self.driver.neutron_client.create_security_group()[
-                'security_group'])
+            self.driver.network_proxy.create_security_group())
 
     def test__create_security_group_rule(self):
         self.driver._create_security_group_rule(
@@ -142,22 +139,21 @@ class TestBaseNeutronNetworkDriver(base.TestCase):
             ethertype=5,
             cidr="10.0.0.0/24")
         expected_sec_grp_rule_dict = {
-            'security_group_rule': {
-                'security_group_id': t_constants.MOCK_SECURITY_GROUP_ID,
-                'direction': 1,
-                'protocol': 2,
-                'port_range_min': 3,
-                'port_range_max': 4,
-                'ethertype': 5,
-                'remote_ip_prefix': '10.0.0.0/24'}}
-        self.driver.neutron_client.create_security_group_rule.assert_has_calls(
-            [mock.call(expected_sec_grp_rule_dict)])
+            'security_group_id': t_constants.MOCK_SECURITY_GROUP_ID,
+            'direction': 1,
+            'protocol': 2,
+            'port_range_min': 3,
+            'port_range_max': 4,
+            'ethertype': 5,
+            'remote_ip_prefix': '10.0.0.0/24'}
+        self.driver.network_proxy.create_security_group_rule.assert_has_calls(
+            [mock.call(**expected_sec_grp_rule_dict)])
 
     def test__port_to_vip(self):
         lb = dmh.generate_load_balancer_tree()
         lb.vip.subnet_id = t_constants.MOCK_SUBNET_ID
         lb.vip.ip_address = t_constants.MOCK_IP_ADDRESS
-        port = utils.convert_port_dict_to_model(t_constants.MOCK_NEUTRON_PORT)
+        port = utils.convert_port_to_model(t_constants.MOCK_NEUTRON_PORT)
         vip, additional_vips = self.driver._port_to_vip(port, lb)
         self.assertIsInstance(vip, data_models.Vip)
         self.assertIsInstance(additional_vips, list)
@@ -179,19 +175,19 @@ class TestBaseNeutronNetworkDriver(base.TestCase):
         self.assertIn('10.0.0.1', ips)
 
     def test_get_plugged_networks(self):
-        list_ports = self.driver.neutron_client.list_ports
+        list_ports = self.driver.network_proxy.ports
         list_ports.side_effect = TypeError
         o_ifaces = self.driver.get_plugged_networks(
             t_constants.MOCK_DEVICE_ID)
         self.assertEqual(0, len(o_ifaces))
         list_ports.side_effect = None
         list_ports.reset_mock()
-        port1 = t_constants.MOCK_NEUTRON_PORT['port']
+        port1 = t_constants.MOCK_NEUTRON_PORT
         port2 = {
             'id': '4', 'network_id': '3', 'fixed_ips':
-            [{'ip_address': '10.0.0.2'}]
+                [{'ip_address': '10.0.0.2'}]
         }
-        list_ports.return_value = {'ports': [port1, port2]}
+        list_ports.return_value = [port1, port2]
         plugged_networks = self.driver.get_plugged_networks(
             t_constants.MOCK_DEVICE_ID)
         for pn in plugged_networks:
@@ -207,10 +203,10 @@ class TestBaseNeutronNetworkDriver(base.TestCase):
         config = self.useFixture(oslo_fixture.Config(cfg.CONF))
         config.config(group="networking", allow_invisible_resource_usage=True)
 
-        show_network = self.driver.neutron_client.show_network
-        show_network.return_value = {'network': {
+        show_network = self.driver.network_proxy.get_network
+        show_network.return_value = Network(**{
             'id': t_constants.MOCK_NETWORK_ID,
-            'subnets': [t_constants.MOCK_SUBNET_ID]}}
+            'subnets': [t_constants.MOCK_SUBNET_ID]})
         network = self.driver.get_network(t_constants.MOCK_NETWORK_ID)
         self.assertIsInstance(network, network_models.Network)
         self.assertEqual(t_constants.MOCK_NETWORK_ID, network.id)
@@ -219,10 +215,10 @@ class TestBaseNeutronNetworkDriver(base.TestCase):
 
     @mock.patch("octavia.common.clients.NeutronAuth.get_user_neutron_client")
     def test_get_user_network(self, neutron_client_mock):
-        show_network = neutron_client_mock.return_value.show_network
-        show_network.return_value = {'network': {
+        show_network = neutron_client_mock.return_value.get_network
+        show_network.return_value = Network(**{
             'id': t_constants.MOCK_NETWORK_ID,
-            'subnets': [t_constants.MOCK_SUBNET_ID]}}
+            'subnets': [t_constants.MOCK_SUBNET_ID]})
 
         network = self.driver.get_network(t_constants.MOCK_NETWORK_ID,
                                           context=mock.ANY)
@@ -236,11 +232,11 @@ class TestBaseNeutronNetworkDriver(base.TestCase):
         config = self.useFixture(oslo_fixture.Config(cfg.CONF))
         config.config(group="networking", allow_invisible_resource_usage=True)
 
-        show_subnet = self.driver.neutron_client.show_subnet
-        show_subnet.return_value = {'subnet': {
+        show_subnet = self.driver.network_proxy.get_subnet
+        show_subnet.return_value = Subnet(**{
             'id': t_constants.MOCK_SUBNET_ID,
             'gateway_ip': t_constants.MOCK_IP_ADDRESS,
-            'cidr': t_constants.MOCK_CIDR}}
+            'cidr': t_constants.MOCK_CIDR})
         subnet = self.driver.get_subnet(t_constants.MOCK_SUBNET_ID)
         self.assertIsInstance(subnet, network_models.Subnet)
         self.assertEqual(t_constants.MOCK_SUBNET_ID, subnet.id)
@@ -249,11 +245,11 @@ class TestBaseNeutronNetworkDriver(base.TestCase):
 
     @mock.patch("octavia.common.clients.NeutronAuth.get_user_neutron_client")
     def test_get_user_subnet(self, neutron_client_mock):
-        show_subnet = neutron_client_mock.return_value.show_subnet
-        show_subnet.return_value = {'subnet': {
+        show_subnet = neutron_client_mock.return_value.get_subnet
+        show_subnet.return_value = Subnet(**{
             'id': t_constants.MOCK_SUBNET_ID,
             'gateway_ip': t_constants.MOCK_IP_ADDRESS,
-            'cidr': t_constants.MOCK_CIDR}}
+            'cidr': t_constants.MOCK_CIDR})
 
         subnet = self.driver.get_subnet(t_constants.MOCK_SUBNET_ID,
                                         context=mock.ANY)
@@ -267,15 +263,15 @@ class TestBaseNeutronNetworkDriver(base.TestCase):
         config = self.useFixture(oslo_fixture.Config(cfg.CONF))
         config.config(group="networking", allow_invisible_resource_usage=True)
 
-        show_port = self.driver.neutron_client.show_port
-        show_port.return_value = {'port': {
+        show_port = self.driver.network_proxy.get_port
+        show_port.return_value = Port(**{
             'id': t_constants.MOCK_PORT_ID,
             'mac_address': t_constants.MOCK_MAC_ADDR,
             'network_id': t_constants.MOCK_NETWORK_ID,
             'fixed_ips': [{
                 'subnet_id': t_constants.MOCK_SUBNET_ID,
                 'ip_address': t_constants.MOCK_IP_ADDRESS
-            }]}}
+            }]})
         port = self.driver.get_port(t_constants.MOCK_PORT_ID)
         self.assertIsInstance(port, network_models.Port)
         self.assertEqual(t_constants.MOCK_PORT_ID, port.id)
@@ -290,15 +286,15 @@ class TestBaseNeutronNetworkDriver(base.TestCase):
 
     @mock.patch("octavia.common.clients.NeutronAuth.get_user_neutron_client")
     def test_get_user_port(self, neutron_client_mock):
-        show_port = neutron_client_mock.return_value.show_port
-        show_port.return_value = {'port': {
+        show_port = neutron_client_mock.return_value.get_port
+        show_port.return_value = Port(**{
             'id': t_constants.MOCK_PORT_ID,
             'mac_address': t_constants.MOCK_MAC_ADDR,
             'network_id': t_constants.MOCK_NETWORK_ID,
             'fixed_ips': [{
                 'subnet_id': t_constants.MOCK_SUBNET_ID,
                 'ip_address': t_constants.MOCK_IP_ADDRESS
-            }]}}
+            }]})
 
         port = self.driver.get_port(t_constants.MOCK_PORT_ID, context=mock.ANY)
 
@@ -314,11 +310,11 @@ class TestBaseNeutronNetworkDriver(base.TestCase):
                          port.fixed_ips[0].ip_address)
 
     def test_get_network_by_name(self):
-        list_network = self.driver.neutron_client.list_networks
-        list_network.return_value = {'networks': [{'network': {
+        list_network = self.driver.network_proxy.networks
+        list_network.return_value = iter([Network(**{
             'id': t_constants.MOCK_NETWORK_ID,
             'name': t_constants.MOCK_NETWORK_NAME,
-            'subnets': [t_constants.MOCK_SUBNET_ID]}}]}
+            'subnets': [t_constants.MOCK_SUBNET_ID]})])
         network = self.driver.get_network_by_name(
             t_constants.MOCK_NETWORK_NAME)
         self.assertIsInstance(network, network_models.Network)
@@ -327,7 +323,7 @@ class TestBaseNeutronNetworkDriver(base.TestCase):
         self.assertEqual(1, len(network.subnets))
         self.assertEqual(t_constants.MOCK_SUBNET_ID, network.subnets[0])
         # Negative
-        list_network.side_effect = neutron_client_exceptions.NotFound
+        list_network.side_effect = os_exceptions.ResourceNotFound
         self.assertRaises(network_base.NetworkNotFound,
                           self.driver.get_network_by_name,
                           t_constants.MOCK_NETWORK_NAME)
@@ -337,12 +333,12 @@ class TestBaseNeutronNetworkDriver(base.TestCase):
                           t_constants.MOCK_NETWORK_NAME)
 
     def test_get_subnet_by_name(self):
-        list_subnet = self.driver.neutron_client.list_subnets
-        list_subnet.return_value = {'subnets': [{'subnet': {
+        list_subnet = self.driver.network_proxy.subnets
+        list_subnet.return_value = iter([Subnet(**{
             'id': t_constants.MOCK_SUBNET_ID,
             'name': t_constants.MOCK_SUBNET_NAME,
             'gateway_ip': t_constants.MOCK_IP_ADDRESS,
-            'cidr': t_constants.MOCK_CIDR}}]}
+            'cidr': t_constants.MOCK_CIDR})])
         subnet = self.driver.get_subnet_by_name(t_constants.MOCK_SUBNET_NAME)
         self.assertIsInstance(subnet, network_models.Subnet)
         self.assertEqual(t_constants.MOCK_SUBNET_ID, subnet.id)
@@ -350,7 +346,7 @@ class TestBaseNeutronNetworkDriver(base.TestCase):
         self.assertEqual(t_constants.MOCK_IP_ADDRESS, subnet.gateway_ip)
         self.assertEqual(t_constants.MOCK_CIDR, subnet.cidr)
         # Negative
-        list_subnet.side_effect = neutron_client_exceptions.NotFound
+        list_subnet.side_effect = os_exceptions.ResourceNotFound
         self.assertRaises(network_base.SubnetNotFound,
                           self.driver.get_subnet_by_name,
                           t_constants.MOCK_SUBNET_NAME)
@@ -360,8 +356,8 @@ class TestBaseNeutronNetworkDriver(base.TestCase):
                           t_constants.MOCK_SUBNET_NAME)
 
     def test_get_port_by_name(self):
-        list_port = self.driver.neutron_client.list_ports
-        list_port.return_value = {'ports': [{'port': {
+        list_port = self.driver.network_proxy.ports
+        list_port.return_value = iter([Port(**{
             'id': t_constants.MOCK_PORT_ID,
             'name': t_constants.MOCK_PORT_NAME,
             'mac_address': t_constants.MOCK_MAC_ADDR,
@@ -369,7 +365,7 @@ class TestBaseNeutronNetworkDriver(base.TestCase):
             'fixed_ips': [{
                 'subnet_id': t_constants.MOCK_SUBNET_ID,
                 'ip_address': t_constants.MOCK_IP_ADDRESS
-            }]}}]}
+            }]})])
         port = self.driver.get_port_by_name(t_constants.MOCK_PORT_NAME)
         self.assertIsInstance(port, network_models.Port)
         self.assertEqual(t_constants.MOCK_PORT_ID, port.id)
@@ -383,7 +379,7 @@ class TestBaseNeutronNetworkDriver(base.TestCase):
         self.assertEqual(t_constants.MOCK_IP_ADDRESS,
                          port.fixed_ips[0].ip_address)
         # Negative
-        list_port.side_effect = neutron_client_exceptions.NotFound
+        list_port.side_effect = os_exceptions.ResourceNotFound
         self.assertRaises(network_base.PortNotFound,
                           self.driver.get_port_by_name,
                           t_constants.MOCK_PORT_NAME)
@@ -393,8 +389,8 @@ class TestBaseNeutronNetworkDriver(base.TestCase):
                           t_constants.MOCK_PORT_NAME)
 
     def test_get_port_by_net_id_device_id(self):
-        list_port = self.driver.neutron_client.list_ports
-        list_port.return_value = {'ports': [{'port': {
+        list_port = self.driver.network_proxy.ports
+        list_port.return_value = iter([Port(**{
             'id': t_constants.MOCK_PORT_ID,
             'name': t_constants.MOCK_PORT_NAME,
             'mac_address': t_constants.MOCK_MAC_ADDR,
@@ -403,7 +399,7 @@ class TestBaseNeutronNetworkDriver(base.TestCase):
             'fixed_ips': [{
                 'subnet_id': t_constants.MOCK_SUBNET_ID,
                 'ip_address': t_constants.MOCK_IP_ADDRESS
-            }]}}]}
+            }]})])
         port = self.driver.get_port_by_net_id_device_id(
             t_constants.MOCK_NETWORK_ID, t_constants.MOCK_DEVICE_ID)
         self.assertIsInstance(port, network_models.Port)
@@ -419,7 +415,7 @@ class TestBaseNeutronNetworkDriver(base.TestCase):
         self.assertEqual(t_constants.MOCK_IP_ADDRESS,
                          port.fixed_ips[0].ip_address)
         # Negative
-        list_port.side_effect = neutron_client_exceptions.NotFound
+        list_port.side_effect = os_exceptions.ResourceNotFound
         self.assertRaises(network_base.PortNotFound,
                           self.driver.get_port_by_net_id_device_id,
                           t_constants.MOCK_PORT_NAME,
@@ -436,12 +432,10 @@ class TestBaseNeutronNetworkDriver(base.TestCase):
         The expected result is: only the first port is returned.
         """
 
-        list_port = self.driver.neutron_client.list_ports
-        list_port.return_value = {
-            'ports': [t_constants.MOCK_NEUTRON_PORT,
-                      t_constants.MOCK_NEUTRON_PORT2,
-                      ],
-        }
+        list_port = self.driver.network_proxy.ports
+        list_port.return_value = iter([t_constants.MOCK_NEUTRON_PORT,
+                                       t_constants.MOCK_NEUTRON_PORT2,
+                                       ])
 
         port = self.driver.get_port_by_net_id_device_id(
             t_constants.MOCK_NETWORK_ID, t_constants.MOCK_DEVICE_ID)
@@ -458,7 +452,7 @@ class TestBaseNeutronNetworkDriver(base.TestCase):
         self.assertEqual(t_constants.MOCK_IP_ADDRESS,
                          port.fixed_ips[0].ip_address)
         # Negative
-        list_port.side_effect = neutron_client_exceptions.NotFound
+        list_port.side_effect = os_exceptions.ResourceNotFound
         self.assertRaises(network_base.PortNotFound,
                           self.driver.get_port_by_net_id_device_id,
                           t_constants.MOCK_PORT_NAME,
@@ -471,12 +465,10 @@ class TestBaseNeutronNetworkDriver(base.TestCase):
 
     def test_get_multiple_ports_by_net_id_device_id(self):
         """Test _get_resources_by_filters, when result is not unique"""
-        list_port = self.driver.neutron_client.list_ports
-        list_port.return_value = {
-            'ports': [t_constants.MOCK_NEUTRON_PORT,
-                      t_constants.MOCK_NEUTRON_PORT2,
-                      ],
-        }
+        list_port = self.driver.network_proxy.ports
+        list_port.return_value = iter([t_constants.MOCK_NEUTRON_PORT,
+                                       t_constants.MOCK_NEUTRON_PORT2,
+                                       ])
 
         ports = self.driver._get_resources_by_filters(
             'port',
@@ -495,10 +487,8 @@ class TestBaseNeutronNetworkDriver(base.TestCase):
 
     def test_get_unique_port_by_name(self):
         """Test _get_resources_by_filters, when result is unique"""
-        list_port = self.driver.neutron_client.list_ports
-        list_port.return_value = {
-            'ports': [t_constants.MOCK_NEUTRON_PORT]
-        }
+        list_port = self.driver.network_proxy.ports
+        list_port.return_value = iter([t_constants.MOCK_NEUTRON_PORT])
 
         port = self.driver._get_resources_by_filters(
             'port', unique_item=True, name=t_constants.MOCK_PORT_NAME)
@@ -508,44 +498,54 @@ class TestBaseNeutronNetworkDriver(base.TestCase):
 
     def test_get_non_existing_port_by_name(self):
         """Test _get_resources_by_filters, when result is empty"""
-        list_port = self.driver.neutron_client.list_ports
-        list_port.return_value = {'ports': []}
+        list_port = self.driver.network_proxy.ports
+        list_port.return_value = iter([])
 
         self.assertRaises(network_base.PortNotFound,
                           self.driver._get_resources_by_filters,
                           'port', unique_item=True, name='port1')
 
     def test_get_qos_policy(self):
-        get_qos = self.driver.neutron_client.show_qos_policy
-        get_qos.return_value = {'policy': {
-            'id': t_constants.MOCK_NEUTRON_QOS_POLICY_ID}}
+        get_qos = self.driver.network_proxy.get_qos_policy
+        get_qos.return_value = QoSPolicy(**{
+            'id': t_constants.MOCK_NEUTRON_QOS_POLICY_ID})
         qos = self.driver.get_qos_policy(
             t_constants.MOCK_NEUTRON_QOS_POLICY_ID)
         self.assertIsInstance(qos, network_models.QosPolicy)
         self.assertEqual(t_constants.MOCK_NEUTRON_QOS_POLICY_ID,
                          qos.id)
 
-        get_qos.side_effect = neutron_client_exceptions.NotFound
+        get_qos.side_effect = os_exceptions.ResourceNotFound
         self.assertRaises(network_base.QosPolicyNotFound,
                           self.driver.get_qos_policy,
                           t_constants.MOCK_NEUTRON_QOS_POLICY_ID)
 
-        get_qos.side_effect = neutron_client_exceptions.ServiceUnavailable
+        get_qos.side_effect = os_exceptions.SDKException
         self.assertRaises(network_base.NetworkException,
                           self.driver.get_qos_policy,
                           t_constants.MOCK_NEUTRON_QOS_POLICY_ID)
 
+    def test_apply_qos_on_port(self):
+        update_port = self.driver.network_proxy.update_port
+        self.driver.apply_qos_on_port(
+            t_constants.MOCK_NEUTRON_QOS_POLICY_ID,
+            t_constants.MOCK_PORT_ID
+        )
+        update_port.assert_called_once_with(
+            t_constants.MOCK_PORT_ID,
+            qos_policy_id=t_constants.MOCK_NEUTRON_QOS_POLICY_ID)
+
     def test_apply_or_undo_qos_on_port(self):
         # The apply and undo qos function use the same "update_port" with
         # neutron client. So testing them in one Uts.
-        update_port = self.driver.neutron_client.update_port
-        update_port.side_effect = neutron_client_exceptions.PortNotFoundClient
+        update_port = self.driver.network_proxy.update_port
+        update_port.side_effect = os_exceptions.ResourceNotFound
         self.assertRaises(network_base.PortNotFound,
                           self.driver.apply_qos_on_port,
                           t_constants.MOCK_PORT_ID,
                           t_constants.MOCK_NEUTRON_QOS_POLICY_ID)
 
-        update_port.side_effect = neutron_client_exceptions.ServiceUnavailable
+        update_port.side_effect = os_exceptions.SDKException
         self.assertRaises(network_base.NetworkException,
                           self.driver.apply_qos_on_port,
                           t_constants.MOCK_PORT_ID,
@@ -553,12 +553,13 @@ class TestBaseNeutronNetworkDriver(base.TestCase):
 
     def test_get_network_ip_availability(self):
         show_network_ip_availability = (
-            self.driver.neutron_client.show_network_ip_availability)
+            self.driver.network_proxy.get_network_ip_availability)
         show_network_ip_availability.return_value = (
-            {'network_ip_availability': {
-             'network_id': t_constants.MOCK_NETWORK_ID,
-             'subnet_ip_availability': t_constants.MOCK_SUBNET_IP_AVAILABILITY
-             }})
+            NetworkIPAvailability(**{
+                'network_id': t_constants.MOCK_NETWORK_ID,
+                'subnet_ip_availability':
+                    t_constants.MOCK_SUBNET_IP_AVAILABILITY
+            }))
         ip_avail = self.driver.get_network_ip_availability(
             network_models.Network(t_constants.MOCK_NETWORK_ID))
         self.assertIsInstance(ip_avail, network_models.Network_IP_Availability)
@@ -567,8 +568,8 @@ class TestBaseNeutronNetworkDriver(base.TestCase):
                          ip_avail.subnet_ip_availability)
 
     def test_plug_fixed_ip(self):
-        show_port = self.driver.neutron_client.show_port
-        show_port.return_value = {
+        show_port = self.driver.network_proxy.get_port
+        show_port.return_value = Port(**{
             'id': t_constants.MOCK_PORT_ID,
             'fixed_ips': [
                 {
@@ -576,34 +577,31 @@ class TestBaseNeutronNetworkDriver(base.TestCase):
                     'ip_address': t_constants.MOCK_IP_ADDRESS,
                     'subnet': None
                 }]
-        }
+        })
 
         self.driver.plug_fixed_ip(t_constants.MOCK_PORT_ID,
                                   t_constants.MOCK_SUBNET_ID2,
                                   t_constants.MOCK_IP_ADDRESS2)
 
         expected_body = {
-            'port': {
-                'fixed_ips': [
-                    {
-                        'subnet_id': t_constants.MOCK_SUBNET_ID,
-                        'ip_address': t_constants.MOCK_IP_ADDRESS,
-                        'subnet': None
-                    }, {
-                        'subnet_id': t_constants.MOCK_SUBNET_ID2,
-                        'ip_address': t_constants.MOCK_IP_ADDRESS2
-                    }
-                ]
-            }
-
+            'fixed_ips': [
+                {
+                    'subnet_id': t_constants.MOCK_SUBNET_ID,
+                    'ip_address': t_constants.MOCK_IP_ADDRESS,
+                    'subnet': None
+                }, {
+                    'subnet_id': t_constants.MOCK_SUBNET_ID2,
+                    'ip_address': t_constants.MOCK_IP_ADDRESS2
+                }
+            ]
         }
-        self.driver.neutron_client.update_port.assert_called_once_with(
+        self.driver.network_proxy.update_port.assert_called_once_with(
             t_constants.MOCK_PORT_ID,
-            expected_body)
+            **expected_body)
 
     def test_plug_fixed_ip_no_ip_address(self):
-        show_port = self.driver.neutron_client.show_port
-        show_port.return_value = {
+        show_port = self.driver.network_proxy.get_port
+        show_port.return_value = Port(**{
             'id': t_constants.MOCK_PORT_ID,
             'fixed_ips': [
                 {
@@ -611,31 +609,27 @@ class TestBaseNeutronNetworkDriver(base.TestCase):
                     'ip_address': t_constants.MOCK_IP_ADDRESS,
                     'subnet': None
                 }]
-        }
+        })
 
         self.driver.plug_fixed_ip(t_constants.MOCK_PORT_ID,
                                   t_constants.MOCK_SUBNET_ID2)
 
         expected_body = {
-            'port': {
-                'fixed_ips': [
-                    {
-                        'subnet_id': t_constants.MOCK_SUBNET_ID,
-                        'ip_address': t_constants.MOCK_IP_ADDRESS,
-                        'subnet': None
-                    }, {
-                        'subnet_id': t_constants.MOCK_SUBNET_ID2,
-                    }
-                ]
-            }
-
+            'fixed_ips': [
+                {
+                    'subnet_id': t_constants.MOCK_SUBNET_ID,
+                    'ip_address': t_constants.MOCK_IP_ADDRESS,
+                    'subnet': None
+                }, {
+                    'subnet_id': t_constants.MOCK_SUBNET_ID2,
+                }
+            ]
         }
-        self.driver.neutron_client.update_port.assert_called_once_with(
-            t_constants.MOCK_PORT_ID,
-            expected_body)
+        self.driver.network_proxy.update_port.assert_called_once_with(
+            t_constants.MOCK_PORT_ID, **expected_body)
 
     def test_plug_fixed_ip_exception(self):
-        show_port = self.driver.neutron_client.show_port
+        show_port = self.driver.network_proxy.get_port
         show_port.return_value = {
             'id': t_constants.MOCK_PORT_ID,
             'fixed_ips': [
@@ -646,7 +640,7 @@ class TestBaseNeutronNetworkDriver(base.TestCase):
                 }]
         }
 
-        self.driver.neutron_client.update_port.side_effect = Exception
+        self.driver.network_proxy.update_port.side_effect = Exception
 
         self.assertRaises(network_base.NetworkException,
                           self.driver.plug_fixed_ip,
@@ -654,8 +648,8 @@ class TestBaseNeutronNetworkDriver(base.TestCase):
                           t_constants.MOCK_SUBNET_ID2)
 
     def test_unplug_fixed_ip(self):
-        show_port = self.driver.neutron_client.show_port
-        show_port.return_value = {
+        show_port = self.driver.network_proxy.get_port
+        show_port.return_value = Port(**{
             'id': t_constants.MOCK_PORT_ID,
             'fixed_ips': [
                 {
@@ -667,40 +661,33 @@ class TestBaseNeutronNetworkDriver(base.TestCase):
                     'ip_address': t_constants.MOCK_IP_ADDRESS2,
                     'subnet': None
                 }]
-        }
+        })
 
         self.driver.unplug_fixed_ip(t_constants.MOCK_PORT_ID,
                                     t_constants.MOCK_SUBNET_ID)
 
         expected_body = {
-            'port': {
-                'fixed_ips': [
-                    {
-                        'subnet_id': t_constants.MOCK_SUBNET_ID2,
-                        'ip_address': t_constants.MOCK_IP_ADDRESS2,
-                        'subnet': None
-                    }
-                ]
-            }
-
-        }
-        self.driver.neutron_client.update_port.assert_called_once_with(
-            t_constants.MOCK_PORT_ID,
-            expected_body)
-
-    def test_unplug_fixed_ip_exception(self):
-        show_port = self.driver.neutron_client.show_port
-        show_port.return_value = {
-            'id': t_constants.MOCK_PORT_ID,
             'fixed_ips': [
                 {
-                    'subnet_id': t_constants.MOCK_SUBNET_ID,
-                    'ip_address': t_constants.MOCK_IP_ADDRESS,
+                    'subnet_id': t_constants.MOCK_SUBNET_ID2,
+                    'ip_address': t_constants.MOCK_IP_ADDRESS2,
                     'subnet': None
-                }]
+                }
+            ]
         }
+        self.driver.network_proxy.update_port.assert_called_once_with(
+            t_constants.MOCK_PORT_ID,
+            **expected_body)
 
-        self.driver.neutron_client.update_port.side_effect = Exception
+    def test_unplug_fixed_ip_exception(self):
+        show_port = self.driver.network_proxy.get_port
+        show_port.return_value = Port(
+            device_id=t_constants.MOCK_PORT_ID,
+            fixed_ips=[(t_constants.MOCK_IP_ADDRESS,
+                        t_constants.MOCK_SUBNET_ID)],
+        )
+
+        self.driver.network_proxy.update_port.side_effect = Exception
 
         self.assertRaises(network_base.NetworkException,
                           self.driver.unplug_fixed_ip,

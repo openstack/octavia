@@ -1,0 +1,23 @@
+---
+upgrade:
+  - |
+    Authentication settings for Neutron should be added
+    directly to the [neutron] section of the configuration now. The exact
+    settings depend on the `auth_type` used. Refer to
+    https://docs.openstack.org/keystoneauth/latest/plugin-options.html
+    for a list of possible options.
+deprecations:
+  - |
+    In a future release Octavia will no longer take the authentication
+    settings for Neutron from the [service_auth] as a fallback. It will
+    require them to be in the [neutron] section. The *endpoint* option is now
+    deprecated and replaced by *endpoint_override*. Similarly, the
+    new name of the *endpoint_type* option is now *valid_interfaces* and
+    the new name of the *ca_certificates_file* option is now *cafile*.
+    Note that [service_auth]
+    settings will still be used for other services like Nova and Glance.
+other:
+  - |
+    Replaced code that uses the deprecated python-neutronclient library with
+    code that uses openstacksdk and removed python-neutronclient as a
+    dependency.

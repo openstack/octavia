@@ -37,10 +37,6 @@ from octavia import version
 
 LOG = logging.getLogger(__name__)
 
-EXTRA_LOG_LEVEL_DEFAULTS = [
-    'neutronclient.v2_0.client=INFO',
-]
-
 core_opts = [
     cfg.HostnameOpt('host', default=utils.get_hostname(),
                     sample_default='<server-hostname.example.com>',
@@ -89,7 +85,7 @@ api_opts = [
                        'octavia.api.drivers entrypoint.'),
                 default={'amphora': 'The Octavia Amphora driver.',
                          'octavia': 'Deprecated alias of the Octavia Amphora '
-                         'driver.',
+                                    'driver.',
                          }),
     cfg.StrOpt('default_provider_driver', default='amphora',
                help=_('Default provider driver.')),
@@ -747,21 +743,27 @@ cinder_opts = [
 ]
 
 neutron_opts = [
-    cfg.StrOpt('service_name',
-               help=_('The name of the neutron service in the '
-                      'keystone catalog')),
     cfg.StrOpt('endpoint', help=_('A new endpoint to override the endpoint '
-                                  'in the keystone catalog.')),
-    cfg.StrOpt('region_name',
-               help=_('Region in Identity service catalog to use for '
-                      'communication with the OpenStack services.')),
-    cfg.StrOpt('endpoint_type', default='publicURL',
-               help=_('Endpoint interface in identity service to use')),
+                                  'in the keystone catalog.'),
+               deprecated_for_removal=True,
+               deprecated_reason=_('The endpoint_override option defined by '
+                                   'keystoneauth1 is the new name for this '
+                                   'option.'),
+               deprecated_since='2023.2/Bobcat'),
+    cfg.StrOpt('endpoint_type', help=_('Endpoint interface in identity '
+                                       'service to use'),
+               deprecated_for_removal=True,
+               deprecated_reason=_('This option was replaced by the '
+                                   'valid_interfaces option defined by '
+                                   'keystoneauth.'),
+               deprecated_since='2023.2/Bobcat'),
     cfg.StrOpt('ca_certificates_file',
-               help=_('CA certificates file path')),
-    cfg.BoolOpt('insecure',
-                default=False,
-                help=_('Disable certificate validation on SSL connections ')),
+               help=_('CA certificates file path'),
+               deprecated_for_removal=True,
+               deprecated_reason=_('The cafile option defined by '
+                                   'keystoneauth1 is the new name for this '
+                                   'option.'),
+               deprecated_since='2023.2/Bobcat'),
 ]
 
 glance_opts = [
@@ -902,13 +904,46 @@ _SQL_CONNECTION_DEFAULT = 'sqlite://'
 db_options.set_defaults(cfg.CONF, connection=_SQL_CONNECTION_DEFAULT,
                         max_pool_size=10, max_overflow=20, pool_timeout=10)
 
-ks_loading.register_auth_conf_options(cfg.CONF, constants.SERVICE_AUTH)
-ks_loading.register_session_conf_options(cfg.CONF, constants.SERVICE_AUTH)
+
+def register_ks_options(group):
+    ks_loading.register_auth_conf_options(cfg.CONF, group)
+    ks_loading.register_session_conf_options(cfg.CONF, group)
+    ks_loading.register_adapter_conf_options(cfg.CONF, group,
+                                             include_deprecated=False)
+
+
+register_ks_options(constants.SERVICE_AUTH)
+register_ks_options('neutron')
 
 
 def register_cli_opts():
     cfg.CONF.register_cli_opts(core_cli_opts)
     logging.register_options(cfg.CONF)
+
+
+def handle_neutron_deprecations():
+    # Apply neutron deprecated options to their new setting if needed
+
+    # Basicaly: if the value of the deprecated option is not the default:
+    # * convert it to a valid "new" value if needed
+    # * set it as the default for the new option
+    # Thus [neutron].<new_option> has an higher precedence than
+    # [neutron].<deprecated_option>
+    loc = cfg.CONF.get_location('endpoint', 'neutron')
+    if loc and loc.location != cfg.Locations.opt_default:
+        cfg.CONF.set_default('endpoint_override', cfg.CONF.neutron.endpoint,
+                             'neutron')
+
+    loc = cfg.CONF.get_location('endpoint_type', 'neutron')
+    if loc and loc.location != cfg.Locations.opt_default:
+        endpoint_type = cfg.CONF.neutron.endpoint_type.replace('URL', '')
+        cfg.CONF.set_default('valid_interfaces', [endpoint_type],
+                             'neutron')
+
+    loc = cfg.CONF.get_location('ca_certificates_file', 'neutron')
+    if loc and loc.location != cfg.Locations.opt_default:
+        cfg.CONF.set_default('cafile', cfg.CONF.neutron.ca_certificates_file,
+                             'neutron')
 
 
 def init(args, **kwargs):
@@ -920,14 +955,20 @@ def init(args, **kwargs):
     setup_remote_debugger()
     validate.check_default_ciphers_prohibit_list_conflict()
 
+    # Override default auth_type for plugins with the default from service_auth
+    auth_type = cfg.CONF.service_auth.auth_type
+    cfg.CONF.set_default('auth_type', auth_type, 'neutron')
+
+    handle_neutron_deprecations()
+
 
 def setup_logging(conf):
     """Sets up the logging options for a log with supplied name.
 
     :param conf: a cfg.ConfOpts object
     """
-    logging.set_defaults(default_log_levels=logging.get_default_log_levels() +
-                         EXTRA_LOG_LEVEL_DEFAULTS)
+    ll = logging.get_default_log_levels()
+    logging.set_defaults(default_log_levels=ll)
     product_name = "octavia"
     logging.setup(conf, product_name)
     LOG.info("Logging enabled!")
