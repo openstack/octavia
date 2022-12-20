@@ -1,0 +1,5 @@
+---
+fixes:
+  - |
+    Fixed a bug that didn't set all the active load balancer Health Monitors
+    ONLINE in populated LB single-create calls.
