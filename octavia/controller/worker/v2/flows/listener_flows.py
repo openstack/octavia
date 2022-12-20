@@ -60,6 +60,9 @@ class ListenerFlows(object):
             requires=constants.LOADBALANCER_ID))
         create_all_listeners_flow.add(network_tasks.UpdateVIP(
             requires=constants.LISTENERS))
+        create_all_listeners_flow.add(
+            database_tasks.MarkHealthMonitorsOnlineInDB(
+                requires=constants.LOADBALANCER))
         return create_all_listeners_flow
 
     def get_delete_listener_flow(self):
