@@ -38,7 +38,7 @@ Optional Installation and Configuration Guides
    apache-httpd.rst
    failover-circuit-breaker.rst
 
-Maintanence and Operations
+Maintenance and Operations
 --------------------------
 
 .. toctree::
