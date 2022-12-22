@@ -1,0 +1,5 @@
+---
+fixes:
+  - |
+    Fixed a bug that prevented Octavia from creating listeners with the
+    fully-populated load balancer API in SINGLE topology mode.
