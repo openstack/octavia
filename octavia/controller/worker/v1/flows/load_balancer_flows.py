@@ -207,8 +207,15 @@ class LoadBalancerFlows(object):
             )
         )
         flows.append(
+            network_tasks.GetAmphoraeNetworkConfigs(
+                requires=constants.LOADBALANCER_ID,
+                provides=constants.AMPHORAE_NETWORK_CONFIG
+            )
+        )
+        flows.append(
             amphora_driver_tasks.AmphoraePostNetworkPlug(
-                requires=(constants.LOADBALANCER, constants.UPDATED_PORTS)
+                requires=(constants.LOADBALANCER, constants.UPDATED_PORTS,
+                          constants.AMPHORAE_NETWORK_CONFIG)
             )
         )
         flows.append(
