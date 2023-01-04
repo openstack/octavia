@@ -20,7 +20,7 @@ set -e
 usage() {
     echo
     echo "Usage: $(basename "$0")"
-    echo "            [-a i386 | **amd64** | armhf | aarch64 | ppc64le]"
+    echo "            [-a **amd64** | armhf | aarch64 | ppc64le]"
     echo "            [-b **haproxy** ]"
     echo "            [-c **~/.cache/image-create** | <cache directory> ]"
     echo "            [-d **focal**/**9-stream**/**9** | <other release id> ]"
@@ -96,8 +96,7 @@ while getopts "a:b:c:d:efg:hi:k:l:no:pt:r:s:vw:xy" opt; do
     case $opt in
         a)
             AMP_ARCH=$OPTARG
-            if [ "$AMP_ARCH" != "i386" ] && \
-                [ "$AMP_ARCH" != "amd64" ] && \
+            if [ "$AMP_ARCH" != "amd64" ] && \
                 [ "$AMP_ARCH" != "ppc64le" ] && \
                 [ "$AMP_ARCH" != "aarch64" ] && \
                 [ "$AMP_ARCH" != "armhf" ]; then
