@@ -24,7 +24,8 @@ class MockNOTIFIER(mock.MagicMock):
 
 @mock.patch('octavia.common.rpc.NOTIFIER',
             new_callable=MockNOTIFIER)
-@mock.patch('octavia.common.context.Context', new_callable=mock.MagicMock)
+@mock.patch('octavia.common.context.RequestContext',
+            new_callable=mock.MagicMock)
 @mock.patch('octavia.api.v2.types.load_balancer.LoadBalancerFullResponse.'
             'from_data_model',
             new_callable=mock.MagicMock)
@@ -35,7 +36,7 @@ class TestNotificationTasks(base.TestCase):
         lb = {constants.PROJECT_ID: id,
               constants.LOADBALANCER_ID: id}
         noti.execute(lb)
-        octavia.common.context.Context.assert_called_with(project_id=id)
+        octavia.common.context.RequestContext.assert_called_with(project_id=id)
         call_args, call_kwargs = octavia.common.rpc.NOTIFIER.info.call_args
         self.assertEqual('octavia.loadbalancer.update.end', call_args[1])
 
@@ -45,7 +46,7 @@ class TestNotificationTasks(base.TestCase):
         lb = {constants.PROJECT_ID: id,
               constants.LOADBALANCER_ID: id}
         noti.execute(lb)
-        octavia.common.context.Context.assert_called_with(project_id=id)
+        octavia.common.context.RequestContext.assert_called_with(project_id=id)
         call_args, call_kwargs = octavia.common.rpc.NOTIFIER.info.call_args
         self.assertEqual('octavia.loadbalancer.create.end', call_args[1])
 
@@ -55,6 +56,6 @@ class TestNotificationTasks(base.TestCase):
         lb = {constants.PROJECT_ID: id,
               constants.LOADBALANCER_ID: id}
         noti.execute(lb)
-        octavia.common.context.Context.assert_called_with(project_id=id)
+        octavia.common.context.RequestContext.assert_called_with(project_id=id)
         call_args, call_kwargs = octavia.common.rpc.NOTIFIER.info.call_args
         self.assertEqual('octavia.loadbalancer.delete.end', call_args[1])
