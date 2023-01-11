@@ -149,3 +149,18 @@ By "industry standards" we either mean RFCs or well-established best practices.
 We are generally not interested in defining new standards if a prior open
 standard already exists. We should also avoid doing things which directly
 or indirectly contradict established standards.
+
+Use of pre-commit checks
+------------------------
+`pre-commit`_ is a software tool that allows us to manage pre-commit checks as
+part of the Git repository's configuration
+and to run checks as Git pre-commit hooks (or other types of Git hooks)
+automatically on developer machines.
+It helps to catch and fix common issues before they get pushed to the server.
+After the installation of the tool (e.g. on Fedora via
+`sudo dnf install pre-commit`) simply `cd` to the Git repository and run
+`pre-commit install` to let the tool install its Git pre-commit hook.
+From now on these predefined checks will run on files that you change in new
+Git commits.
+
+.. _pre-commit: https://pre-commit.com/
