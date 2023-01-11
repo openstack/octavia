@@ -239,7 +239,6 @@ class TestLoadBalancerFlows(base.TestCase):
         self.assertIn(constants.UPDATE_DICT, create_flow.requires)
         self.assertIn(constants.BUILD_TYPE_PRIORITY, create_flow.requires)
         self.assertIn(constants.FLAVOR, create_flow.requires)
-        self.assertIn(constants.AMPHORAE_NETWORK_CONFIG, create_flow.requires)
         self.assertIn(constants.AVAILABILITY_ZONE, create_flow.requires)
         self.assertIn(constants.SERVER_GROUP_ID, create_flow.requires)
 
@@ -257,9 +256,10 @@ class TestLoadBalancerFlows(base.TestCase):
         self.assertIn(constants.SERVER_PEM, create_flow.provides)
         self.assertIn(constants.VIP, create_flow.provides)
         self.assertIn(constants.ADDITIONAL_VIPS, create_flow.provides)
+        self.assertIn(constants.AMPHORAE_NETWORK_CONFIG, create_flow.provides)
 
-        self.assertEqual(7, len(create_flow.requires))
-        self.assertEqual(14, len(create_flow.provides))
+        self.assertEqual(6, len(create_flow.requires))
+        self.assertEqual(15, len(create_flow.provides))
 
     @mock.patch('octavia.common.rpc.NOTIFIER',
                 new_callable=MockNOTIFIER)
