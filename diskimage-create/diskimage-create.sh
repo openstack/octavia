@@ -31,6 +31,7 @@ usage() {
     echo "            [-i **ubuntu-minimal** | fedora | centos-minimal | rhel ]"
     echo "            [-k <kernel package name> ]"
     echo "            [-l <log file> ]"
+    echo "            [-m]"
     echo "            [-n]"
     echo "            [-o **amphora-x64-haproxy.qcow2** | <filename> ]"
     echo "            [-p]"
@@ -52,6 +53,7 @@ usage() {
     echo "        '-i' is the base OS (default: ubuntu-minimal)"
     echo "        '-k' is the kernel meta package name, currently only for ubuntu-minimal base OS (default: linux-image-virtual)"
     echo "        '-l' is output logfile (default: none)"
+    echo "        '-m' enable vCPU pinning optimizations (default: disabled)"
     echo "        '-n' disable sshd (default: enabled)"
     echo "        '-o' is the output image file name"
     echo "        '-p' install amphora-agent from distribution packages (default: disabled)"
@@ -92,7 +94,7 @@ dib_enable_tracing=
 
 AMP_LOGFILE=""
 
-while getopts "a:b:c:d:efg:hi:k:l:no:pt:r:s:vw:xy" opt; do
+while getopts "a:b:c:d:efg:hi:k:l:mno:pt:r:s:vw:xy" opt; do
     case $opt in
         a)
             AMP_ARCH=$OPTARG
@@ -164,6 +166,9 @@ while getopts "a:b:c:d:efg:hi:k:l:no:pt:r:s:vw:xy" opt; do
         ;;
         l)
             AMP_LOGFILE="--logfile=$OPTARG"
+        ;;
+        m)
+            AMP_ENABLE_CPUPINNING=1
         ;;
         n)
             AMP_DISABLE_SSHD=1
@@ -251,6 +256,8 @@ AMP_IMAGESIZE=${AMP_IMAGESIZE:-2}
 if [ "$AMP_BASEOS" = "ubuntu-minimal" ]; then
     export DIB_UBUNTU_KERNEL=${AMP_KERNEL:-"linux-image-virtual"}
 fi
+
+AMP_ENABLE_CPUPINNING=${AMP_ENABLE_CPUPINNING:-0}
 
 AMP_DISABLE_SSHD=${AMP_DISABLE_SSHD:-0}
 
@@ -474,6 +481,11 @@ AMP_element_sequence="$AMP_element_sequence pip-cache"
 
 # Add certificate ramfs element
 AMP_element_sequence="$AMP_element_sequence certs-ramfs"
+
+# Add cpu-pinning element
+if [ "$AMP_ENABLE_CPUPINNING" -eq 1 ]; then
+    AMP_element_sequence="$AMP_element_sequence cpu-pinning"
+fi
 
 # Disable SSHD if requested
 if [ "$AMP_DISABLE_SSHD" -eq 1 ]; then

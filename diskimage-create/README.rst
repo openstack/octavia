@@ -110,6 +110,7 @@ Command syntax:
             [-i **ubuntu-minimal** | fedora | centos-minimal | rhel ]
             [-k <kernel package name> ]
             [-l <log file> ]
+            [-m]
             [-n]
             [-o **amphora-x64-haproxy** | <filename> ]
             [-p]
@@ -132,6 +133,7 @@ Command syntax:
         '-i' is the base OS (default: ubuntu-minimal)
         '-k' is the kernel meta package name, currently only for ubuntu-minimal base OS (default: linux-image-virtual)
         '-l' is output logfile (default: none)
+        '-m' enable vCPU pinning optimizations (default: disabled)
         '-n' disable sshd (default: enabled)
         '-o' is the output image file name
         '-p' install amphora-agent from distribution packages (default: disabled)"
