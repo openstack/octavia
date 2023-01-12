@@ -1,0 +1,9 @@
+---
+features:
+  - |
+    Amphora agent has been adjusted to complement the vertical scaling
+    optimizations implemented in the new cpu-pinning element. If the flavor
+    uses multiple vCPUs it will
+    configure HAProxy automatically to pin each of its worker threads
+    to an individual CPU that was isolated by the element (all vCPUs starting
+    from the second one).

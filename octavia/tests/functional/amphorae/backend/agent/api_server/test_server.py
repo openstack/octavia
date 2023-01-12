@@ -2964,10 +2964,14 @@ class TestServerTestCase(base.TestCase):
 
         haproxy_count = random.randrange(0, 100)
         mock_count_haproxy.return_value = haproxy_count
+        tuned_profiles = "virtual-guest optimize-serial-console amphora"
 
-        expected_dict = {'active': True, 'api_version': '1.0',
+        expected_dict = {'active': True,
+                         'active_tuned_profiles': tuned_profiles,
+                         'api_version': '1.0',
                          'cpu': {'soft_irq': cpu_softirq, 'system': cpu_system,
                                  'total': cpu_total, 'user': cpu_user},
+                         'cpu_count': os.cpu_count(),
                          'disk': {'available': disk_available,
                                   'used': disk_used},
                          'haproxy_count': haproxy_count,
@@ -2995,10 +2999,13 @@ class TestServerTestCase(base.TestCase):
                          'topology_status': consts.TOPOLOGY_STATUS_OK,
                          'lvs_listener_process_count': 0}
 
-        if distro == consts.UBUNTU:
-            rv = self.ubuntu_app.get('/' + api_server.VERSION + '/details')
-        elif distro == consts.CENTOS:
-            rv = self.centos_app.get('/' + api_server.VERSION + '/details')
+        with mock.patch("octavia.amphorae.backends.agent.api_server"
+                        ".amphora_info.open",
+                        mock.mock_open(read_data=tuned_profiles)):
+            if distro == consts.UBUNTU:
+                rv = self.ubuntu_app.get('/' + api_server.VERSION + '/details')
+            elif distro == consts.CENTOS:
+                rv = self.centos_app.get('/' + api_server.VERSION + '/details')
 
         self.assertEqual(200, rv.status_code)
         self.assertEqual(expected_dict,

@@ -219,10 +219,13 @@ class HaproxyAmphoraLoadBalancerDriver(
         if has_tcp and not split_config:
             if listeners_to_update:
                 # Generate HaProxy configuration from listener object
+                amp_details = self.clients[amphora.api_version].get_details(
+                    amphora)
                 config = self.jinja_combo.build_config(
                     host_amphora=amphora, listeners=listeners_to_update,
                     tls_certs=certs,
-                    haproxy_versions=haproxy_versions)
+                    haproxy_versions=haproxy_versions,
+                    amp_details=amp_details)
                 self.clients[amphora.api_version].upload_config(
                     amphora, loadbalancer.id, config,
                     timeout_dict=timeout_dict)
