@@ -187,6 +187,9 @@ class JinjaTemplater(object):
             constants.INSECURE_FORK)
         enable_prometheus = prometheus_listener and feature_compatibility.get(
             lib_consts.PROTOCOL_PROMETHEUS, False)
+        term_https_listener = any(
+            lsnr.protocol == lib_consts.PROTOCOL_TERMINATED_HTTPS for lsnr in
+            listeners)
 
         jinja_dict = {
             'loadbalancer': loadbalancer,
@@ -208,6 +211,25 @@ class JinjaTemplater(object):
                 jinja_dict["cpu_count"] = int(amp_details["cpu_count"])
         except (KeyError, TypeError):
             pass
+
+        if term_https_listener:
+            try:
+                mem = amp_details["memory"]
+                # Account for 32 KB per established connection for each
+                # pair of HAProxy network sockets. Use 1024 as fallback
+                # because that is what ulimit -n typically returns.
+                max_conn_mem_kb = 32 * loadbalancer.get(
+                    "global_connection_limit", 1024)
+                # Use half of the remaining memory for SSL caches
+                ssl_cache_mem_kb = (mem["free"] + mem["buffers"] +
+                                    mem["cached"] - max_conn_mem_kb) // 2
+                # A cache block uses about 200 bytes of data.
+                # The HAProxy default of ssl_cache (20000) would take up
+                # 4000 KB. We don't want to go below that.
+                if ssl_cache_mem_kb > 4000:
+                    jinja_dict["ssl_cache"] = ssl_cache_mem_kb * 5
+            except (KeyError, TypeError):
+                pass
 
         return self._get_template().render(
             jinja_dict, constants=constants, lib_consts=lib_consts)

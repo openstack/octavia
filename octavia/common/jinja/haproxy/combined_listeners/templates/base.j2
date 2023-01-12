@@ -26,6 +26,9 @@ global
     {% if loadbalancer.global_connection_limit is defined %}
     maxconn {{ loadbalancer.global_connection_limit }}
     {% endif %}
+    {% if ssl_cache is defined %}
+    tune.ssl.cachesize {{ ssl_cache }}
+    {% endif %}
     {%- if cpu_count is defined and cpu_count > 1 %}
     nbthread {{ cpu_count - 1 }}
     cpu-map auto:1/1-{{ cpu_count - 1 }} 1-{{ cpu_count - 1 }}
