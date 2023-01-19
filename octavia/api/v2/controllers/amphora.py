@@ -176,11 +176,10 @@ class AmphoraUpdateController(base.BaseController):
         else:
             topic = constants.TOPIC_AMPHORA_V2
             version = "2.0"
-        self.transport = messaging.get_rpc_transport(cfg.CONF)
         self.target = messaging.Target(
             namespace=constants.RPC_NAMESPACE_CONTROLLER_AGENT,
             topic=topic, version=version, fanout=False)
-        self.client = messaging.RPCClient(self.transport, target=self.target)
+        self.client = rpc.get_client(self.target)
         self.amp_id = amp_id
 
     @wsme_pecan.wsexpose(None, wtypes.text, status_code=202)
