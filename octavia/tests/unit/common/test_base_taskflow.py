@@ -18,6 +18,7 @@ from unittest import mock
 from oslo_config import cfg
 from oslo_config import fixture as oslo_fixture
 from taskflow import engines as tf_engines
+from taskflow.jobs.base import Job
 
 from octavia.common import base_taskflow
 import octavia.tests.unit.base as base
@@ -154,3 +155,62 @@ class TestTaskFlowServiceController(base.TestCase):
             "test2", self.jobboard_mock.__enter__(),
             persistence=self.persistence_mock.__enter__(),
             engine='parallel')
+
+
+class TestJobDetailsFilter(base.TestCase):
+    def test_filter(self):
+        log_filter = base_taskflow.JobDetailsFilter()
+
+        tls_container_data = {
+            'certificate': '<CERTIFICATE>',
+            'private_key': '<PRIVATE_KEY>',
+            'passphrase': '<PASSPHRASE>',
+            'intermediates': [
+                '<INTERMEDIATE1>',
+                '<INTERMEDIATE2>'
+            ]
+        }
+
+        job = mock.Mock(spec=Job)
+        job.details = {
+            'store': {
+                'listeners': [
+                    {
+                        'name': 'listener_name',
+                        'default_tls_container_data': tls_container_data
+                    }
+                ],
+                'any_recursive': {
+                    'type': [
+                        {
+                            'other_list': [
+                                tls_container_data,
+                                {
+                                    'test': tls_container_data,
+                                }
+                            ]
+                        }
+                    ]
+                }
+            }
+        }
+
+        record = mock.Mock()
+        record.args = (job, 'something')
+
+        ret = log_filter.filter(record)
+        self.assertTrue(ret)
+
+        self.assertNotIn(tls_container_data['certificate'], record.args[0])
+        self.assertNotIn(tls_container_data['private_key'], record.args[0])
+        self.assertNotIn(tls_container_data['passphrase'], record.args[0])
+        self.assertNotIn(tls_container_data['intermediates'][0],
+                         record.args[0])
+        self.assertNotIn(tls_container_data['intermediates'][1],
+                         record.args[0])
+        self.assertIn('listener_name', record.args[0])
+
+        record.args = ('arg1', 2)
+
+        ret = log_filter.filter(record)
+        self.assertTrue(ret)
