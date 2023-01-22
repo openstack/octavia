@@ -23,6 +23,7 @@ from oslo_utils import uuidutils
 from taskflow.conductors.backends import impl_blocking
 from taskflow import engines
 from taskflow import exceptions as taskflow_exc
+from taskflow.jobs.base import Job
 from taskflow.listeners import base
 from taskflow.listeners import logging
 from taskflow.persistence import models
@@ -45,6 +46,44 @@ def retryMaskFilter(record):
 
 
 LOG.logger.addFilter(retryMaskFilter)
+
+
+def _details_filter(obj):
+    if isinstance(obj, dict):
+        ret = {}
+        for key in obj:
+            if (key in ('certificate', 'private_key', 'passphrase') and
+                    isinstance(obj[key], str)):
+                ret[key] = '***'
+            elif key == 'intermediates' and isinstance(obj[key], list):
+                ret[key] = ['***'] * len(obj[key])
+            else:
+                ret[key] = _details_filter(obj[key])
+        return ret
+    if isinstance(obj, list):
+        return [_details_filter(e) for e in obj]
+    return obj
+
+
+class FilteredJob(Job):
+    def __str__(self):
+        # Override the detault __str__ method from taskflow.job.base.Job,
+        # filter out private information from details
+        cls_name = type(self).__name__
+        details = _details_filter(self.details)
+        return "%s: %s (priority=%s, uuid=%s, details=%s)" % (
+            cls_name, self.name, self.priority,
+            self.uuid, details)
+
+
+class JobDetailsFilter(log.logging.Filter):
+    def filter(self, record):
+        # If the first arg is a Job, convert it now to a string with our custom
+        # method
+        if isinstance(record.args[0], Job):
+            arg0 = record.args[0]
+            record.args = (FilteredJob.__str__(arg0),) + record.args[1:]
+        return True
 
 
 class BaseTaskFlowEngine(object):
@@ -125,6 +164,11 @@ class TaskFlowServiceController(object):
 
     def __init__(self, driver):
         self.driver = driver
+
+        # Install filter for taskflow executor logger
+        taskflow_logger = log.logging.getLogger(
+            "taskflow.conductors.backends.impl_executor")
+        taskflow_logger.addFilter(JobDetailsFilter())
 
     def run_poster(self, flow_factory, *args, **kwargs):
         with self.driver.persistence_driver.get_persistence() as persistence:
