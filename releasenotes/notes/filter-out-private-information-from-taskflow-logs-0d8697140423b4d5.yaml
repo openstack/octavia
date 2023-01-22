@@ -1,0 +1,12 @@
+---
+security:
+  - |
+    Filter out private information from the taskflow logs when ''INFO'' level
+    messages are enabled and when jobboard is enabled. Logs might have included
+    TLS certificates and private_key. By default, in Octavia only WARNING and
+    above messages are enabled in taskflow and jobboard is disabled.
+fixes:
+  - |
+    The parameters of a taskflow Flow were logged in ''INFO'' level messages by
+    taskflow, it included TLS-enabled listeners and pools parameters, such as
+    certificates and private_key.
