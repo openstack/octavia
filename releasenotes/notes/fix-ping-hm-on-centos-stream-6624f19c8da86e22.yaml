@@ -1,0 +1,6 @@
+---
+fixes:
+  - |
+    Fix an issue with PING health-monitors on Centos 8 Stream. Changes in
+    Centos and systemd prevent an unprivileged user from sending ping requests
+    from a network namespace.
