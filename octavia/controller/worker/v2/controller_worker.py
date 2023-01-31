@@ -41,7 +41,9 @@ LOG = logging.getLogger(__name__)
 #  to instance" will be logged as usual.
 def retryMaskFilter(record):
     if record.exc_info is not None and isinstance(
-            record.exc_info[1], driver_exc.AmpConnectionRetry):
+            record.exc_info[1], (
+                driver_exc.AmpConnectionRetry,
+                exceptions.ComputeWaitTimeoutException)):
         return False
     return True
 
