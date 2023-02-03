@@ -148,10 +148,10 @@ class KeepalivedLvs(lvs_listener_base.LvsListenerApiServerBase):
                 LOG.debug('Failed to enable '
                           'octavia-keepalivedlvs service: '
                           '%(err)s', {'err': str(e)})
-                return webob.Response(json=dict(
-                    message="Error enabling "
-                            "octavia-keepalivedlvs service",
-                    details=e.output), status=500)
+                return webob.Response(json={
+                    'message': ("Error enabling "
+                                "octavia-keepalivedlvs service"),
+                    'details': e.output}, status=500)
 
         if NEED_CHECK:
             # inject the check script for keepalived process
@@ -178,10 +178,10 @@ class KeepalivedLvs(lvs_listener_base.LvsListenerApiServerBase):
     def _check_lvs_listener_exists(self, listener_id):
         if not os.path.exists(util.keepalived_lvs_cfg_path(listener_id)):
             raise exceptions.HTTPException(
-                response=webob.Response(json=dict(
-                    message='UDP Listener Not Found',
-                    details="No UDP listener with UUID: {0}".format(
-                        listener_id)), status=404))
+                response=webob.Response(json={
+                    'message': 'UDP Listener Not Found',
+                    'details': "No UDP listener with UUID: {0}".format(
+                        listener_id)}, status=404))
 
     def get_lvs_listener_config(self, listener_id):
         """Gets the keepalivedlvs config
@@ -200,9 +200,9 @@ class KeepalivedLvs(lvs_listener_base.LvsListenerApiServerBase):
         if action not in [consts.AMP_ACTION_START,
                           consts.AMP_ACTION_STOP,
                           consts.AMP_ACTION_RELOAD]:
-            return webob.Response(json=dict(
-                message='Invalid Request',
-                details="Unknown action: {0}".format(action)), status=400)
+            return webob.Response(json={
+                'message': 'Invalid Request',
+                'details': "Unknown action: {0}".format(action)}, status=400)
 
         # When octavia requests a reload of keepalived, force a restart since
         # a keepalived reload doesn't restore members in their initial state.
@@ -225,16 +225,16 @@ class KeepalivedLvs(lvs_listener_base.LvsListenerApiServerBase):
         except subprocess.CalledProcessError as e:
             LOG.debug('Failed to %s keepalivedlvs listener %s',
                       listener_id + ' : ' + action, str(e))
-            return webob.Response(json=dict(
-                message=("Failed to {0} keepalivedlvs listener {1}"
-                         .format(action, listener_id)),
-                details=e.output), status=500)
+            return webob.Response(json={
+                'message': ("Failed to {0} keepalivedlvs listener {1}"
+                            .format(action, listener_id)),
+                'details': e.output}, status=500)
 
         return webob.Response(
-            json=dict(message='OK',
-                      details='keepalivedlvs listener {listener_id} '
-                              '{action}ed'.format(listener_id=listener_id,
-                                                  action=action)),
+            json={'message': 'OK',
+                  'details': 'keepalivedlvs listener {listener_id} '
+                             '{action}ed'.format(listener_id=listener_id,
+                                                 action=action)},
             status=202)
 
     def _check_lvs_listener_status(self, listener_id):
@@ -286,9 +286,9 @@ class KeepalivedLvs(lvs_listener_base.LvsListenerApiServerBase):
                 subprocess.check_output(cmd.split(), stderr=subprocess.STDOUT)
             except subprocess.CalledProcessError as e:
                 LOG.error("Failed to stop keepalivedlvs service: %s", str(e))
-                return webob.Response(json=dict(
-                    message="Error stopping keepalivedlvs",
-                    details=e.output), status=500)
+                return webob.Response(json={
+                    'message': "Error stopping keepalivedlvs",
+                    'details': e.output}, status=500)
 
         # Since the lvs check script based on the keepalived pid file for
         # checking whether it is alived. So here, we had stop the keepalived
@@ -319,11 +319,11 @@ class KeepalivedLvs(lvs_listener_base.LvsListenerApiServerBase):
                 LOG.error("Failed to disable "
                           "octavia-keepalivedlvs-%(list)s service: "
                           "%(err)s", {'list': listener_id, 'err': str(e)})
-                return webob.Response(json=dict(
-                    message=(
+                return webob.Response(json={
+                    'message': (
                         "Error disabling octavia-keepalivedlvs-"
                         "{0} service".format(listener_id)),
-                    details=e.output), status=500)
+                    'details': e.output}, status=500)
 
         # delete init script ,config file and log file for that listener
         if os.path.exists(init_path):

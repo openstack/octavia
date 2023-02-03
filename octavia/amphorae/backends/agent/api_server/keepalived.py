@@ -124,9 +124,9 @@ class Keepalived(object):
             except subprocess.CalledProcessError as e:
                 LOG.debug('Failed to enable octavia-keepalived service: '
                           '%(err)s %(output)s', {'err': e, 'output': e.output})
-                return webob.Response(json=dict(
-                    message="Error enabling octavia-keepalived service",
-                    details=e.output), status=500)
+                return webob.Response(json={
+                    'message': "Error enabling octavia-keepalived service",
+                    'details': e.output}, status=500)
 
         res = webob.Response(json={'message': 'OK'}, status=200)
         res.headers['ETag'] = stream.get_md5()
@@ -138,9 +138,9 @@ class Keepalived(object):
         if action not in [consts.AMP_ACTION_START,
                           consts.AMP_ACTION_STOP,
                           consts.AMP_ACTION_RELOAD]:
-            return webob.Response(json=dict(
-                message='Invalid Request',
-                details="Unknown action: {0}".format(action)), status=400)
+            return webob.Response(json={
+                'message': 'Invalid Request',
+                'details': "Unknown action: {0}".format(action)}, status=400)
 
         if action == consts.AMP_ACTION_START:
             keepalived_pid_path = util.keepalived_pid_path()
@@ -165,11 +165,12 @@ class Keepalived(object):
         except subprocess.CalledProcessError as e:
             LOG.debug('Failed to %s octavia-keepalived service: %s %s',
                       action, e, e.output)
-            return webob.Response(json=dict(
-                message="Failed to {0} octavia-keepalived service".format(
-                    action), details=e.output), status=500)
+            return webob.Response(json={
+                'message': "Failed to {0} octavia-keepalived service".format(
+                    action),
+                'details': e.output}, status=500)
 
         return webob.Response(
-            json=dict(message='OK',
-                      details='keepalived {action}ed'.format(action=action)),
+            json={'message': 'OK',
+                  'details': 'keepalived {action}ed'.format(action=action)},
             status=202)

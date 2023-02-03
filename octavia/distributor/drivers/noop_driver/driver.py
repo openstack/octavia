@@ -55,7 +55,7 @@ class NoopManager(object):
         LOG.debug('Distributor %s delete_distributor', self.__class__.__name__)
         delete_distributor_flow = linear_flow.Flow('delete-distributor')
         delete_distributor_flow.add(NoopProvidesRequiresTask(
-            'delete-distributor-task', requires=('distributor_id')))
+            'delete-distributor-task', requires='distributor_id'))
         return delete_distributor_flow
 
     def get_add_vip_subflow(self):

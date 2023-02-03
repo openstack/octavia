@@ -413,7 +413,7 @@ class UpdateHealthDb:
             try:
                 self.amphora_health_repo.replace(
                     lock_session, health['id'],
-                    last_update=(datetime.datetime.utcnow()))
+                    last_update=datetime.datetime.utcnow())
                 lock_session.commit()
             except Exception:
                 with excutils.save_and_reraise_exception():

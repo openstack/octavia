@@ -129,7 +129,7 @@ class HAProxyQuery(object):
                 continue
 
             if line['pxname'] not in final_results:
-                final_results[line['pxname']] = dict(members={})
+                final_results[line['pxname']] = {'members': {}}
 
             if line['svname'] == 'BACKEND':
                 # BACKEND describes a pool of servers in HAProxy

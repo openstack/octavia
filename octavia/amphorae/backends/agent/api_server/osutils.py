@@ -95,9 +95,9 @@ class BaseOS(object):
             LOG.error('Failed to set up %s due to error: %s %s', interface,
                       e, e.output)
             raise exceptions.HTTPException(
-                response=webob.Response(json=dict(
-                    message='Error plugging {0}'.format(name),
-                    details=e.output), status=500))
+                response=webob.Response(json={
+                    'message': 'Error plugging {0}'.format(name),
+                    'details': e.output}, status=500))
 
 
 class Ubuntu(BaseOS):

@@ -176,9 +176,9 @@ class AmphoraInfo(object):
                     if item[0] == consts.IFLA_IFNAME:
                         interface_name = item[1]
                     if item[0] == 'IFLA_STATS64':
-                        networks[interface_name] = dict(
-                            network_tx=item[1]['tx_bytes'],
-                            network_rx=item[1]['rx_bytes'])
+                        networks[interface_name] = {
+                            'network_tx': item[1]['tx_bytes'],
+                            'network_rx': item[1]['rx_bytes']}
         return networks
 
     def get_interface(self, ip_addr):
@@ -186,13 +186,13 @@ class AmphoraInfo(object):
             interface = network_utils.get_interface_name(
                 ip_addr, net_ns=consts.AMPHORA_NAMESPACE)
         except exceptions.InvalidIPAddress:
-            return webob.Response(json=dict(message="Invalid IP address"),
+            return webob.Response(json={'message': "Invalid IP address"},
                                   status=400)
         except exceptions.NotFound:
             return webob.Response(
-                json=dict(message="Error interface not found for IP address"),
+                json={'message': "Error interface not found for IP address"},
                 status=404)
-        return webob.Response(json=dict(message='OK', interface=interface),
+        return webob.Response(json={'message': 'OK', 'interface': interface},
                               status=200)
 
     def _get_active_tuned_profiles(self) -> str:

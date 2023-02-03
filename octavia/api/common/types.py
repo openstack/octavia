@@ -101,7 +101,7 @@ class URLPathType(wtypes.UserType):
 
 
 class BaseMeta(wtypes.BaseMeta):
-    def __new__(cls, name, bases, dct):
+    def __new__(mcs, name, bases, dct):
         def get_tenant_id(self):
             tenant_id = getattr(self, '_tenant_id', wtypes.Unset)
             # If tenant_id was explicitly set to Unset, return that
@@ -127,7 +127,7 @@ class BaseMeta(wtypes.BaseMeta):
                 get_tenant_id, set_tenant_id)
             # This will let us know if tenant_id was explicitly set to Unset
             dct['_unset_tenant'] = False
-        return super(BaseMeta, cls).__new__(cls, name, bases, dct)
+        return super(BaseMeta, mcs).__new__(mcs, name, bases, dct)
 
 
 class BaseType(wtypes.Base, metaclass=BaseMeta):

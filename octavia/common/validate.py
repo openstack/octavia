@@ -229,7 +229,7 @@ def validate_l7rule_ssl_types(l7rule):
                 rule_type)
         # log or raise the key must be splited by '-'
         elif not dn_regex.match(req_key):
-            msg = ('Invalid L7rule distinguished name field.')
+            msg = 'Invalid L7rule distinguished name field.'
 
     if msg:
         raise exceptions.InvalidL7Rule(msg=msg)

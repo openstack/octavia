@@ -88,7 +88,7 @@ class Plug(object):
             rendered_vips = self.render_vips(vips)
         except ValueError as e:
             vip_error_message = "Invalid VIP: {}".format(e)
-            return webob.Response(json=dict(message=vip_error_message),
+            return webob.Response(json={'message': vip_error_message},
                                   status=400)
 
         try:
@@ -96,7 +96,7 @@ class Plug(object):
                                              gateway, host_routes)
         except ValueError as e:
             return webob.Response(
-                json=dict(message="Invalid VRRP Address: {}".format(e)),
+                json={'message': "Invalid VRRP Address: {}".format(e)},
                 status=400)
 
         # Check if the interface is already in the network namespace
@@ -104,7 +104,7 @@ class Plug(object):
         # network namespace
         if self._netns_interface_exists(mac_address):
             return webob.Response(
-                json=dict(message="Interface already exists"), status=409)
+                json={'message': "Interface already exists"}, status=409)
 
         # Check that the interface has been fully plugged
         self._interface_by_mac(mac_address)
@@ -136,9 +136,9 @@ class Plug(object):
             vips=", ".join(v['ip_address'] for v in rendered_vips)
         )
 
-        return webob.Response(json=dict(
-            message="OK",
-            details=vip_message), status=202)
+        return webob.Response(json={
+            'message': "OK",
+            'details': vip_message}, status=202)
 
     def _check_ip_addresses(self, fixed_ips):
         if fixed_ips:
@@ -153,8 +153,8 @@ class Plug(object):
         try:
             self._check_ip_addresses(fixed_ips=fixed_ips)
         except socket.error:
-            return webob.Response(json=dict(
-                message="Invalid network port"), status=400)
+            return webob.Response(json={
+                'message': "Invalid network port"}, status=400)
 
         # Check if the interface is already in the network namespace
         # Do not attempt to re-plug the network if it is already in the
@@ -196,12 +196,12 @@ class Plug(object):
                     fixed_ips=fixed_ips,
                     mtu=mtu)
                 self._osutils.bring_interface_up(existing_interface, 'network')
-            return webob.Response(json=dict(
-                message="OK",
-                details="Updated existing interface {interface}".format(
+            return webob.Response(json={
+                'message': "OK",
+                'details': "Updated existing interface {interface}".format(
                     # TODO(rm_work): Everything in this should probably use
                     # HTTP code 200, but continuing to use 202 for consistency.
-                    interface=existing_interface)), status=202)
+                    interface=existing_interface)}, status=202)
 
         # This is the interface as it was initially plugged into the
         # default network namespace, this will likely always be eth1
@@ -237,10 +237,10 @@ class Plug(object):
 
         self._osutils.bring_interface_up(netns_interface, 'network')
 
-        return webob.Response(json=dict(
-            message="OK",
-            details="Plugged on interface {interface}".format(
-                interface=netns_interface)), status=202)
+        return webob.Response(json={
+            'message': "OK",
+            'details': "Plugged on interface {interface}".format(
+                interface=netns_interface)}, status=202)
 
     def _interface_by_mac(self, mac):
         try:
@@ -263,8 +263,8 @@ class Plug(object):
             with os.fdopen(os.open(filename, flags), 'w') as rescan_file:
                 rescan_file.write('1')
         raise exceptions.HTTPException(
-            response=webob.Response(json=dict(
-                details="No suitable network interface found"), status=404))
+            response=webob.Response(json={
+                'details': "No suitable network interface found"}, status=404))
 
     def _update_plugged_interfaces_file(self, interface, mac_address):
         # write interfaces to plugged_interfaces file and prevent duplicates

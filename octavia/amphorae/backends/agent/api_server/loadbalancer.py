@@ -137,7 +137,7 @@ class Loadbalancer(object):
             # Save the last config that failed validation for debugging
             os.rename(name, ''.join([name, '-failed']))
             return webob.Response(
-                json=dict(message="Invalid request", details=e.output),
+                json={'message': "Invalid request", 'details': e.output},
                 status=400)
 
         # file ok - move it
@@ -167,15 +167,15 @@ class Loadbalancer(object):
 
         except util.UnknownInitError:
             LOG.error("Unknown init system found.")
-            return webob.Response(json=dict(
-                message="Unknown init system in amphora",
-                details="The amphora image is running an unknown init "
-                        "system.  We can't create the init configuration "
-                        "file for the load balancing process."), status=500)
+            return webob.Response(json={
+                'message': "Unknown init system in amphora",
+                'details': "The amphora image is running an unknown init "
+                           "system.  We can't create the init configuration "
+                           "file for the load balancing process."}, status=500)
 
         if init_system == consts.INIT_SYSTEMD:
             # mode 00644
-            mode = (stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IROTH)
+            mode = stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IROTH
         else:
             # mode 00755
             mode = (stat.S_IRWXU | stat.S_IRGRP | stat.S_IXGRP |
@@ -215,9 +215,9 @@ class Loadbalancer(object):
                 LOG.error("Failed to enable haproxy-%(lb_id)s service: "
                           "%(err)s %(out)s", {'lb_id': lb_id, 'err': e,
                                               'out': e.output})
-                return webob.Response(json=dict(
-                    message="Error enabling haproxy-{0} service".format(
-                            lb_id), details=e.output), status=500)
+                return webob.Response(json={
+                    'message': "Error enabling haproxy-{0} service".format(
+                        lb_id), 'details': e.output}, status=500)
 
         res = webob.Response(json={'message': 'OK'}, status=202)
         res.headers['ETag'] = stream.get_md5()
@@ -229,9 +229,9 @@ class Loadbalancer(object):
         if action not in [consts.AMP_ACTION_START,
                           consts.AMP_ACTION_STOP,
                           consts.AMP_ACTION_RELOAD]:
-            return webob.Response(json=dict(
-                message='Invalid Request',
-                details="Unknown action: {0}".format(action)), status=400)
+            return webob.Response(json={
+                'message': 'Invalid Request',
+                'details': "Unknown action: {0}".format(action)}, status=400)
 
         self._check_lb_exists(lb_id)
         is_vrrp = (CONF.controller_worker.loadbalancer_topology ==
@@ -268,9 +268,9 @@ class Loadbalancer(object):
                     "Failed to %(action)s haproxy-%(lb_id)s service: %(err)s "
                     "%(out)s", {'action': action, 'lb_id': lb_id,
                                 'err': e, 'out': e.output})
-                return webob.Response(json=dict(
-                    message="Error {0}ing haproxy".format(action),
-                    details=e.output), status=500)
+                return webob.Response(json={
+                    'message': "Error {0}ing haproxy".format(action),
+                    'details': e.output}, status=500)
 
         # If we are not in active/standby we need to send an IP
         # advertisement (GARP or NA). Keepalived handles this for
@@ -281,17 +281,17 @@ class Loadbalancer(object):
 
         if action in [consts.AMP_ACTION_STOP,
                       consts.AMP_ACTION_RELOAD]:
-            return webob.Response(json=dict(
-                message='OK',
-                details='Listener {lb_id} {action}ed'.format(
-                    lb_id=lb_id, action=action)), status=202)
+            return webob.Response(json={
+                'message': 'OK',
+                'details': 'Listener {lb_id} {action}ed'.format(
+                    lb_id=lb_id, action=action)}, status=202)
 
         details = (
             'Configuration file is valid\n'
             'haproxy daemon for {0} started'.format(lb_id)
         )
 
-        return webob.Response(json=dict(message='OK', details=details),
+        return webob.Response(json={'message': 'OK', 'details': details},
                               status=202)
 
     def delete_lb(self, lb_id):
@@ -309,9 +309,9 @@ class Loadbalancer(object):
             except subprocess.CalledProcessError as e:
                 LOG.error("Failed to stop haproxy-%s service: %s %s",
                           lb_id, e, e.output)
-                return webob.Response(json=dict(
-                    message="Error stopping haproxy",
-                    details=e.output), status=500)
+                return webob.Response(json={
+                    'message': "Error stopping haproxy",
+                    'details': e.output}, status=500)
 
         # parse config and delete stats socket
         try:
@@ -354,9 +354,9 @@ class Loadbalancer(object):
                 LOG.error("Failed to disable haproxy-%(lb_id)s service: "
                           "%(err)s %(out)s", {'lb_id': lb_id, 'err': e,
                                               'out': e.output})
-                return webob.Response(json=dict(
-                    message="Error disabling haproxy-{0} service".format(
-                            lb_id), details=e.output), status=500)
+                return webob.Response(json={
+                    'message': "Error disabling haproxy-{0} service".format(
+                        lb_id), 'details': e.output}, status=500)
 
         # delete the directory + init script for that listener
         shutil.rmtree(util.haproxy_dir(lb_id))
@@ -408,7 +408,7 @@ class Loadbalancer(object):
                 crt_file.write(b)
                 b = stream.read(BUFFER)
 
-        resp = webob.Response(json=dict(message='OK'))
+        resp = webob.Response(json={'message': 'OK'})
         resp.headers['ETag'] = stream.get_md5()
         return resp
 
@@ -418,16 +418,16 @@ class Loadbalancer(object):
         cert_path = self._cert_file_path(lb_id, filename)
         path_exists = os.path.exists(cert_path)
         if not path_exists:
-            return webob.Response(json=dict(
-                message='Certificate Not Found',
-                details="No certificate with filename: {f}".format(
-                    f=filename)), status=404)
+            return webob.Response(json={
+                'message': 'Certificate Not Found',
+                'details': "No certificate with filename: {f}".format(
+                    f=filename)}, status=404)
 
         with open(cert_path, 'r', encoding='utf-8') as crt_file:
             cert = crt_file.read()
             md5sum = md5(octavia_utils.b(cert),
                          usedforsecurity=False).hexdigest()  # nosec
-            resp = webob.Response(json=dict(md5sum=md5sum))
+            resp = webob.Response(json={'md5sum': md5sum})
             resp.headers['ETag'] = md5sum
             return resp
 
@@ -435,7 +435,7 @@ class Loadbalancer(object):
         self._check_ssl_filename_format(filename)
         if os.path.exists(self._cert_file_path(lb_id, filename)):
             os.remove(self._cert_file_path(lb_id, filename))
-        return webob.Response(json=dict(message='OK'))
+        return webob.Response(json={'message': 'OK'})
 
     def _get_listeners_on_lb(self, lb_id):
         if os.path.exists(util.pid_path(lb_id)):
@@ -456,17 +456,17 @@ class Loadbalancer(object):
         # check if we know about that lb
         if lb_id not in util.get_loadbalancers():
             raise exceptions.HTTPException(
-                response=webob.Response(json=dict(
-                    message='Loadbalancer Not Found',
-                    details="No loadbalancer with UUID: {0}".format(
-                        lb_id)), status=404))
+                response=webob.Response(json={
+                    'message': 'Loadbalancer Not Found',
+                    'details': "No loadbalancer with UUID: {0}".format(
+                        lb_id)}, status=404))
 
     def _check_ssl_filename_format(self, filename):
         # check if the format is (xxx.)*xxx.pem
         if not re.search(r'(\w.)+pem', filename):
             raise exceptions.HTTPException(
-                response=webob.Response(json=dict(
-                    message='Filename has wrong format'), status=400))
+                response=webob.Response(json={
+                    'message': 'Filename has wrong format'}, status=400))
 
     def _cert_dir(self, lb_id):
         return os.path.join(util.CONF.haproxy_amphora.base_cert_dir, lb_id)

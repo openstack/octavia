@@ -32,6 +32,8 @@ disable=
  unused-argument,
  unused-variable,
  useless-super-delegation,
+ # TODO(gthiemonge) Re-enable this checker and fix too general exceptions
+ broad-exception-raised,
 # "C" Coding convention violations
  invalid-name,
  line-too-long,

@@ -246,7 +246,7 @@ def get_os_init_system():
 def install_netns_systemd_service():
     flags = os.O_WRONLY | os.O_CREAT | os.O_TRUNC
     # mode 00644
-    mode = (stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IROTH)
+    mode = stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IROTH
 
     # TODO(bcafarel): implement this for other init systems
     # netns handling depends on a separate unit file

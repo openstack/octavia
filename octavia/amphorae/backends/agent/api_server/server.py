@@ -248,9 +248,9 @@ class Server(object):
         except Exception as e:
             LOG.error("Unable to update amphora-agent configuration: %s",
                       str(e))
-            return webob.Response(json=dict(
-                message="Unable to update amphora-agent configuration.",
-                details=str(e)), status=500)
+            return webob.Response(json={
+                'message': "Unable to update amphora-agent configuration.",
+                'details': str(e)}, status=500)
 
         return webob.Response(json={'message': 'OK'}, status=202)
 

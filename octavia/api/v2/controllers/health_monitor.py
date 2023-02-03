@@ -248,7 +248,7 @@ class HealthMonitorController(base.BaseController):
             db_hm = self._validate_create_hm(lock_session, hm_dict)
 
             # Prepare the data for the driver data model
-            provider_healthmon = (driver_utils.db_HM_to_provider_HM(db_hm))
+            provider_healthmon = driver_utils.db_HM_to_provider_HM(db_hm)
 
             # Dispatch to the driver
             LOG.info("Sending create Health Monitor %s to provider %s",

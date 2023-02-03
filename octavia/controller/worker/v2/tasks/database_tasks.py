@@ -1501,7 +1501,7 @@ class UpdatePoolInDB(BaseDatabaseTask):
         try:
             self.repos.update_pool_and_sp(
                 db_apis.get_session(), pool_id,
-                dict(provisioning_status=constants.ERROR))
+                {'provisioning_status': constants.ERROR})
         except Exception as e:
             LOG.error("Failed to update pool %(pool)s provisioning_status to "
                       "ERROR due to: %(except)s", {'pool': pool_id,

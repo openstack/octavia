@@ -107,7 +107,7 @@ class AmphoraProviderDriver(driver_base.ProviderDriver):
     def create_vip_port(self, loadbalancer_id, project_id, vip_dictionary,
                         additional_vip_dicts=None):
         if additional_vip_dicts:
-            msg = ('Amphora v1 driver does not support additional_vips.')
+            msg = 'Amphora v1 driver does not support additional_vips.'
             raise exceptions.UnsupportedOptionError(
                 user_fault_string=msg,
                 operator_fault_string=msg)

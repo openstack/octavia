@@ -92,7 +92,7 @@ class LoadBalancerFlows(object):
         post_amp_prefix = constants.POST_LB_AMP_ASSOCIATION_SUBFLOW
         lb_create_flow.add(
             self.get_post_lb_amp_association_flow(
-                post_amp_prefix, topology, mark_active=(not listeners)))
+                post_amp_prefix, topology, mark_active=not listeners))
 
         if listeners:
             lb_create_flow.add(*self._create_listeners_flow())
