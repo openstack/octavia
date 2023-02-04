@@ -1,0 +1,6 @@
+---
+deprecations:
+  - |
+    Amphora load balancers support single process mode only now. Split listener
+    configuration, which was used up to API version 0.5, has been
+    removed from the codebase.

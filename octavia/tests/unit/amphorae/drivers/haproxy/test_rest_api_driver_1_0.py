@@ -934,7 +934,7 @@ class TestAmphoraAPIClientTest(base.TestCase):
     @requests_mock.mock()
     def test_get_info(self, m):
         info = {"hostname": "some_hostname", "version": "some_version",
-                "api_version": "0.5", "uuid": FAKE_UUID_1}
+                "api_version": "1.0", "uuid": FAKE_UUID_1}
         m.get("{base}/info".format(base=self.base_url_ver),
               json=info)
         information = self.driver.get_info(self.amp)
@@ -943,7 +943,7 @@ class TestAmphoraAPIClientTest(base.TestCase):
     @requests_mock.mock()
     def test_get_info_with_timeout_dict(self, m):
         info = {"hostname": "some_hostname", "version": "some_version",
-                "api_version": "0.5", "uuid": FAKE_UUID_1}
+                "api_version": "1.0", "uuid": FAKE_UUID_1}
         m.get("{base}/info".format(base=self.base_url_ver),
               json=info)
         timeout_dict = {
@@ -983,7 +983,7 @@ class TestAmphoraAPIClientTest(base.TestCase):
     @requests_mock.mock()
     def test_get_details(self, m):
         details = {"hostname": "some_hostname", "version": "some_version",
-                   "api_version": "0.5", "uuid": FAKE_UUID_1,
+                   "api_version": "1.0", "uuid": FAKE_UUID_1,
                    "network_tx": "some_tx", "network_rx": "some_rx",
                    "active": True, "haproxy_count": 10}
         m.get("{base}/details".format(base=self.base_url_ver),

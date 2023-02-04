@@ -125,3 +125,8 @@ class AmpConnectionRetry(AmphoraDriverError):
 
     message = _('Could not connect to amphora, exception caught: '
                 '%(exception)s')
+
+
+class AmpVersionUnsupported(AmphoraDriverError):
+
+    message = _('Amphora version %(version)s is no longer supported.')

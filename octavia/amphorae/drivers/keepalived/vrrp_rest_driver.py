@@ -19,7 +19,6 @@ from octavia.amphorae.drivers.keepalived.jinja import jinja_cfg
 from octavia.common import constants
 
 LOG = logging.getLogger(__name__)
-API_VERSION = constants.API_VERSION
 
 
 class KeepalivedAmphoraDriverMixin(driver_base.VRRPDriverMixin):
