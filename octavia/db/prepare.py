@@ -23,43 +23,6 @@ from octavia.common import validate
 CONF = cfg.CONF
 
 
-def create_load_balancer_tree(lb_dict):
-    listeners = lb_dict.pop('listeners') or []
-    prepped_lb = create_load_balancer(lb_dict)
-    prepped_lb['listeners'] = []
-    for listener_dict in listeners:
-        pool = listener_dict.pop('default_pool') or None
-        listener_dict['project_id'] = prepped_lb.get('project_id')
-        prepped_listener = create_listener(listener_dict, prepped_lb.get('id'))
-        if pool:
-            hm = pool.pop('health_monitor') or None
-            members = pool.pop('members') or []
-            pool['project_id'] = prepped_lb.get('project_id')
-            prepped_pool = create_pool(pool)
-            pool_id = prepped_pool.get('id')
-            prepped_pool['load_balancer_id'] = prepped_lb.get('id')
-            if hm:
-                hm['project_id'] = lb_dict.get('project_id')
-                prepped_hm = create_health_monitor(hm, pool_id)
-                prepped_pool['health_monitor'] = prepped_hm
-            prepped_pool['members'] = []
-            for member_dict in members:
-                member_dict['project_id'] = prepped_lb.get('project_id')
-                prepped_pool['members'].append(
-                    create_member(member_dict, pool_id))
-            prepped_listener['default_pool'] = prepped_pool
-            prepped_listener['default_pool_id'] = prepped_pool['id']
-        if listener_dict.get('l7policies'):
-            prepped_l7policies = []
-            for l7policy in listener_dict.get('l7policies'):
-                prepped_l7policy = create_l7policy(
-                    l7policy, prepped_lb.get('id'), listener_dict.get('id'))
-                prepped_l7policies.append(prepped_l7policy)
-            prepped_listener['l7policies'] = prepped_l7policies
-        prepped_lb['listeners'].append(prepped_listener)
-    return prepped_lb
-
-
 def create_load_balancer(lb_dict):
     if not lb_dict.get('id'):
         lb_dict['id'] = uuidutils.generate_uuid()
