@@ -39,10 +39,11 @@
       - opendev.org/openstack/octavia-tempest-plugin
       - opendev.org/openstack/python-octaviaclient
     vars:
-      devstack_localrc:
-        DIB_LOCAL_ELEMENTS: openstack-ci-mirrors
-        LIBVIRT_TYPE: kvm
-        LIBVIRT_CPU_MODE: host-passthrough
+      grenade_devstack_localrc:
+        shared:
+          DIB_LOCAL_ELEMENTS: openstack-ci-mirrors
+          LIBVIRT_TYPE: kvm
+          LIBVIRT_CPU_MODE: host-passthrough
       devstack_local_conf:
         test-config:
           "$TEMPEST_CONFIG":
