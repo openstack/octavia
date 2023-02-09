@@ -15,6 +15,7 @@
 
 import copy
 import os
+from unittest import mock
 
 from oslo_config import cfg
 from oslo_config import fixture as oslo_fixture
@@ -703,6 +704,36 @@ class TestHaproxyCfg(base.TestCase):
             sample_configs_combined.sample_amphora_tuple(),
             [sample_configs_combined.sample_listener_tuple(
                 proto='HTTP', monitor_proto='PING')])
+        self.assertEqual(sample_configs_combined.sample_base_expected_config(
+            backend=be, global_opts=go), rendered_obj)
+
+    def test_render_template_ping_monitor_http_insecure_fork(self):
+        be = ("backend sample_pool_id_1:sample_listener_id_1\n"
+              "    mode http\n"
+              "    balance roundrobin\n"
+              "    cookie SRV insert indirect nocache\n"
+              "    timeout check 31s\n"
+              "    option external-check\n"
+              "    external-check command /var/lib/octavia/ping-wrapper.sh\n"
+              "    fullconn {maxconn}\n"
+              "    option allbackups\n"
+              "    timeout connect 5000\n"
+              "    timeout server 50000\n"
+              "    server sample_member_id_1 10.0.0.99:82 "
+              "weight 13 check inter 30s fall 3 rise 2 "
+              "cookie sample_member_id_1\n"
+              "    server sample_member_id_2 10.0.0.98:82 "
+              "weight 13 check inter 30s fall 3 rise 2 "
+              "cookie sample_member_id_2\n\n").format(
+            maxconn=constants.HAPROXY_DEFAULT_MAXCONN)
+        go = (f"    maxconn {constants.HAPROXY_DEFAULT_MAXCONN}\n"
+              "    external-check\n    insecure-fork-wanted\n\n")
+        rendered_obj = self.jinja_cfg.render_loadbalancer_obj(
+            sample_configs_combined.sample_amphora_tuple(),
+            [sample_configs_combined.sample_listener_tuple(
+                proto='HTTP', monitor_proto='PING')],
+            feature_compatibility={
+                "requires_insecure_fork": True})
         self.assertEqual(sample_configs_combined.sample_base_expected_config(
             backend=be, global_opts=go), rendered_obj)
 
@@ -1672,3 +1703,109 @@ class TestHaproxyCfg(base.TestCase):
             sample_configs_combined.sample_base_expected_config(
                 frontend=fe, backend=be),
             rendered_obj)
+
+    @mock.patch("octavia.common.jinja.haproxy.combined_listeners.jinja_cfg."
+                "JinjaTemplater.render_loadbalancer_obj")
+    def test_build_config(self, mock_render_loadbalancer_obj):
+        mock_amp = mock.Mock()
+        mock_listeners = mock.Mock()
+        mock_tls_certs = mock.Mock()
+        mock_socket_path = mock.Mock()
+
+        j_cfg = jinja_cfg.JinjaTemplater()
+        j_cfg.build_config(mock_amp, mock_listeners, mock_tls_certs,
+                           haproxy_versions=("0", "7", "0"),
+                           socket_path=mock_socket_path)
+
+        expected_fc = {}
+        mock_render_loadbalancer_obj.assert_called_once_with(
+            mock_amp, mock_listeners, tls_certs=mock_tls_certs,
+            socket_path=mock_socket_path,
+            feature_compatibility=expected_fc)
+
+        mock_render_loadbalancer_obj.reset_mock()
+
+        j_cfg.build_config(mock_amp, mock_listeners, mock_tls_certs,
+                           haproxy_versions=("1", "6", "0"),
+                           socket_path=mock_socket_path)
+
+        expected_fc = {
+            constants.HTTP_REUSE: True,
+            constants.SERVER_STATE_FILE: True
+
+        }
+        mock_render_loadbalancer_obj.assert_called_once_with(
+            mock_amp, mock_listeners, tls_certs=mock_tls_certs,
+            socket_path=mock_socket_path,
+            feature_compatibility=expected_fc)
+
+        mock_render_loadbalancer_obj.reset_mock()
+
+        j_cfg.build_config(mock_amp, mock_listeners, mock_tls_certs,
+                           haproxy_versions=("1", "9", "0"),
+                           socket_path=mock_socket_path)
+
+        expected_fc = {
+            constants.HTTP_REUSE: True,
+            constants.SERVER_STATE_FILE: True,
+            constants.POOL_ALPN: True
+        }
+        mock_render_loadbalancer_obj.assert_called_once_with(
+            mock_amp, mock_listeners, tls_certs=mock_tls_certs,
+            socket_path=mock_socket_path,
+            feature_compatibility=expected_fc)
+
+        mock_render_loadbalancer_obj.reset_mock()
+
+        j_cfg.build_config(mock_amp, mock_listeners, mock_tls_certs,
+                           haproxy_versions=("2", "1", "1"),
+                           socket_path=mock_socket_path)
+
+        expected_fc = {
+            constants.HTTP_REUSE: True,
+            constants.SERVER_STATE_FILE: True,
+            constants.POOL_ALPN: True
+        }
+        mock_render_loadbalancer_obj.assert_called_once_with(
+            mock_amp, mock_listeners, tls_certs=mock_tls_certs,
+            socket_path=mock_socket_path,
+            feature_compatibility=expected_fc)
+
+        mock_render_loadbalancer_obj.reset_mock()
+
+        j_cfg.build_config(mock_amp, mock_listeners, mock_tls_certs,
+                           haproxy_versions=("2", "2", "1"),
+                           socket_path=mock_socket_path)
+
+        expected_fc = {
+            constants.HTTP_REUSE: True,
+            constants.SERVER_STATE_FILE: True,
+            constants.POOL_ALPN: True,
+            constants.INSECURE_FORK: True
+        }
+        mock_render_loadbalancer_obj.assert_called_once_with(
+            mock_amp, mock_listeners, tls_certs=mock_tls_certs,
+            socket_path=mock_socket_path,
+            feature_compatibility=expected_fc)
+
+        mock_render_loadbalancer_obj.reset_mock()
+
+        j_cfg.build_config(mock_amp, mock_listeners, mock_tls_certs,
+                           haproxy_versions=("2", "4", "0"),
+                           socket_path=mock_socket_path)
+
+        mock_render_loadbalancer_obj.assert_called_once_with(
+            mock_amp, mock_listeners, tls_certs=mock_tls_certs,
+            socket_path=mock_socket_path,
+            feature_compatibility=expected_fc)
+
+        mock_render_loadbalancer_obj.reset_mock()
+
+        j_cfg.build_config(mock_amp, mock_listeners, mock_tls_certs,
+                           haproxy_versions=("3", "1", "0"),
+                           socket_path=mock_socket_path)
+
+        mock_render_loadbalancer_obj.assert_called_once_with(
+            mock_amp, mock_listeners, tls_certs=mock_tls_certs,
+            socket_path=mock_socket_path,
+            feature_compatibility=expected_fc)
