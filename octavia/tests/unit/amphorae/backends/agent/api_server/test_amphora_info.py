@@ -39,6 +39,7 @@ class TestAmphoraInfo(base.TestCase):
     FAKE_LISTENER_ID_3 = uuidutils.generate_uuid()
     FAKE_LISTENER_ID_4 = uuidutils.generate_uuid()
     LB_ID_1 = uuidutils.generate_uuid()
+    LB_ID_2 = uuidutils.generate_uuid()
 
     def setUp(self):
         super().setUp()
@@ -113,6 +114,8 @@ class TestAmphoraInfo(base.TestCase):
     @mock.patch('octavia.amphorae.backends.agent.api_server.util.'
                 'get_listeners', return_value=[FAKE_LISTENER_ID_1,
                                                FAKE_LISTENER_ID_2])
+    @mock.patch('octavia.amphorae.backends.agent.api_server.util.'
+                'get_loadbalancers', return_value=[LB_ID_1, LB_ID_2])
     @mock.patch('octavia.amphorae.backends.agent.api_server.'
                 'amphora_info.AmphoraInfo._get_meminfo')
     @mock.patch('octavia.amphorae.backends.agent.api_server.'
@@ -129,7 +132,8 @@ class TestAmphoraInfo(base.TestCase):
     @mock.patch('socket.gethostname', return_value='FAKE_HOST')
     def test_compile_amphora_details(self, mhostname, m_count, m_pkg_version,
                                      m_load, m_get_nets, m_os, m_cpu,
-                                     mget_mem, mget_listener):
+                                     mget_mem, mget_loadbalancers,
+                                     mget_listeners):
         mget_mem.return_value = {'SwapCached': 0, 'Buffers': 344792,
                                  'MemTotal': 21692784, 'Cached': 4271856,
                                  'Slab': 534384, 'MemFree': 12685624,
@@ -183,6 +187,7 @@ class TestAmphoraInfo(base.TestCase):
                          u'topology_status': u'OK'}
         actual = self.amp_info.compile_amphora_details()
         self.assertEqual(expected_dict, actual.json)
+        m_count.assert_called_once_with(sorted(mget_loadbalancers()))
         api_server.VERSION = original_version
 
     @mock.patch('octavia.amphorae.backends.agent.api_server.util.'
