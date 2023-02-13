@@ -8,7 +8,7 @@ set -eu
 set -o pipefail
 
 case $DISTRO_NAME in
-    fedora | centos* | rhel* )
+    fedora | centos* | rhel* | rocky )
         systemctl disable dnf-makecache.timer || true
     ;;
     *)

@@ -1,0 +1,8 @@
+---
+features:
+  - |
+    Added support for Rocky Linux controllers in devstack.
+  - |
+    Added support for Rocky Linux amphora images. To enable it, users have to
+    build their amphora images with the ``OCTAVIA_AMP_BASE_OS=rocky`` and
+    ``OCTAVIA_AMP_DISTRIBUTION_RELEASE_ID=9`` parameters.

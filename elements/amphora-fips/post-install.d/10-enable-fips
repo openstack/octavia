@@ -12,7 +12,7 @@ case $DISTRO_NAME in
         echo "ERROR: $DISTRO_NAME is not supported for FIPS mode."
         exit 1
     ;;
-    fedora | centos* | rhel* )
+    fedora | centos* | rhel* | rocky )
         update-crypto-policies --no-reload --set FIPS
     ;;
     *)

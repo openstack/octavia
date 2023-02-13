@@ -183,6 +183,19 @@
         amphora_os_release: 9-stream
 
 - job:
+    name: octavia-amphora-image-build-live-rocky-9
+    parent: octavia-amphora-image-build
+    nodeset: centos-9-stream
+    description: |
+      Builds a Rocky Linux 9 amphora image using diskimage-builder from Git
+      master. This job does not publish the image.
+    required-projects:
+        - openstack/diskimage-builder
+    vars:
+        amphora_os: rocky
+        amphora_os_release: 9
+
+- job:
     name: octavia-v2-dsvm-scenario-nftables
     parent: octavia-v2-dsvm-scenario
     vars:

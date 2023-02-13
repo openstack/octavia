@@ -23,7 +23,7 @@ fi
 set -euo pipefail
 
 case $DISTRO_NAME in
-    ubuntu | debian | fedora | centos* | rhel* )
+    ubuntu | debian | fedora | centos* | rhel* | rocky )
         DIB_BOOTLOADER_DEFAULT_CMDLINE+=" irqaffinity=0"
         # This will be ignored on single vCPU systems
         DIB_BOOTLOADER_DEFAULT_CMDLINE+=" isolcpus=1-N"

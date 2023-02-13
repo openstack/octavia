@@ -50,6 +50,7 @@
         - qemu-kvm
         - python3-setuptools
         - yum
+        - podman
       when:
         - ansible_os_family == 'RedHat'
     - name: Install required pip packages
