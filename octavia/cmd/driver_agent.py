@@ -94,6 +94,8 @@ def _start_provider_agents(exit_event):
 
 def main():
     service.prepare_service(sys.argv)
+    LOG.debug('Full set of CONF:')
+    CONF.log_opt_values(LOG, logging.DEBUG)
 
     gmr.TextGuruMeditation.setup_autorun(version)
 
