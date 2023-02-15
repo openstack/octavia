@@ -336,7 +336,7 @@ function octavia_configure {
     iniset $OCTAVIA_CONF house_keeping amphora_expiry_age ${OCTAVIA_AMP_EXPIRY_AGE}
     iniset $OCTAVIA_CONF house_keeping load_balancer_expiry_age ${OCTAVIA_LB_EXPIRY_AGE}
 
-    iniset $OCTAVIA_CONF DEFAULT transport_url $(get_transport_url)
+    iniset_rpc_backend octavia $OCTAVIA_CONF
 
     iniset $OCTAVIA_CONF oslo_messaging rpc_thread_pool_size 2
     iniset $OCTAVIA_CONF oslo_messaging topic octavia_prov
