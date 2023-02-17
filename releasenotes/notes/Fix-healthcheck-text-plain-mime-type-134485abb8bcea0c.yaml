@@ -1,0 +1,5 @@
+---
+fixes:
+  - |
+    Fixed the ability to use the 'text/plain' mime type with the healthcheck
+    endpoint.
