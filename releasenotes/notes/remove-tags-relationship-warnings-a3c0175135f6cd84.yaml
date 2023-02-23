@@ -1,0 +1,5 @@
+---
+fixes:
+  - |
+    Fixed SQLAlchemy warnings about the relationship between the Tags object
+    and the other Octavia resources.
