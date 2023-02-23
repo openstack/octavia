@@ -19,6 +19,7 @@ from oslo_db.sqlalchemy import models
 import sqlalchemy as sa
 from sqlalchemy.ext import orderinglist
 from sqlalchemy import orm
+from sqlalchemy.orm import Mapped
 from sqlalchemy.orm import validates
 from sqlalchemy.sql import func
 from sqlalchemy_utils import ScalarListType
@@ -454,6 +455,7 @@ class LoadBalancer(base_models.BASE, base_models.IdMixin,
         sa.ForeignKey("availability_zone.name",
                       name="fk_load_balancer_availability_zone_name"),
         nullable=True)
+    flavor: Mapped["Flavor"] = orm.relationship("Flavor")
 
     def __str__(self):
         return (f"LoadBalancer(id={self.id!r}, name={self.name!r}, "
@@ -909,6 +911,7 @@ class Flavor(base_models.BASE,
         sa.ForeignKey("flavor_profile.id",
                       name="fk_flavor_flavor_profile_id"),
         nullable=False)
+    flavor_profile: Mapped["FlavorProfile"] = orm.relationship("FlavorProfile")
 
 
 class AvailabilityZoneProfile(base_models.BASE, base_models.IdMixin,
@@ -944,6 +947,8 @@ class AvailabilityZone(base_models.BASE,
         sa.ForeignKey("availability_zone_profile.id",
                       name="fk_az_az_profile_id"),
         nullable=False)
+    availability_zone_profile: Mapped["AvailabilityZoneProfile"] = (
+        orm.relationship("AvailabilityZoneProfile"))
 
 
 class ClientAuthenticationMode(base_models.BASE):
