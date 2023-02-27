@@ -123,7 +123,6 @@ class KeepalivedJinjaTemplater(object):
                 peers_ips.append(amp.vrrp_ip)
         return self.get_template(self.keepalived_template).render(
             {'vrrp_group_name': loadbalancer.vrrp_group.vrrp_group_name,
-             'amp_role': amphora.role,
              'amp_intf': amphora.vrrp_interface,
              'amp_vrrp_id': amphora.vrrp_id,
              'amp_priority': amphora.vrrp_priority,
