@@ -21,7 +21,6 @@ vrrp_script check_script {
 }
 
 vrrp_instance {{ vrrp_group_name }} {
-    state {{ amp_role }}
     interface {{ amp_intf }}
     virtual_router_id {{ amp_vrrp_id }}
     priority {{ amp_priority }}
