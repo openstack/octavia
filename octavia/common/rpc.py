@@ -47,11 +47,10 @@ def get_client(target, version_cap=None, serializer=None,
 
     assert TRANSPORT is not None, _("'TRANSPORT' must not be None")
 
-    return messaging.RPCClient(TRANSPORT,
-                               target,
-                               version_cap=version_cap,
-                               serializer=serializer,
-                               call_monitor_timeout=call_monitor_timeout)
+    return messaging.get_rpc_client(
+        TRANSPORT, target, version_cap=version_cap,
+        serializer=serializer,
+        call_monitor_timeout=call_monitor_timeout)
 
 
 def get_server(target, endpoints, executor='threading',

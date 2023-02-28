@@ -1040,7 +1040,7 @@ class TestLoadBalancer(base.BaseAPITest):
                 ".get_network") as mock_get_network, mock.patch(
                 'oslo_messaging.get_rpc_transport'), mock.patch(
                 'oslo_messaging.Target'), mock.patch(
-                'oslo_messaging.RPCClient'):
+                'oslo_messaging.get_rpc_client'):
             mock_get_network.return_value = mock.MagicMock()
             mock_get_network.return_value.port_security_enabled = True
             response = self.post(self.LBS_PATH, body)
@@ -1061,7 +1061,7 @@ class TestLoadBalancer(base.BaseAPITest):
                 ".get_network") as mock_get_network, mock.patch(
                 'oslo_messaging.get_rpc_transport'), mock.patch(
                 'oslo_messaging.Target'), mock.patch(
-                'oslo_messaging.RPCClient'):
+                'oslo_messaging.get_rpc_client'):
             mock_get_network.return_value = mock.MagicMock()
             mock_get_network.return_value.port_security_enabled = False
             response = self.post(self.LBS_PATH, body, status=500)
