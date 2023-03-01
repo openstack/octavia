@@ -39,7 +39,7 @@ class RootController(object):
 
     # Run the oslo middleware healthcheck for /healthcheck
     @pecan_expose('json')
-    @pecan_expose(content_type='plain/text')
+    @pecan_expose(content_type='text/plain')
     @pecan_expose(content_type='text/html')
     def healthcheck(self):  # pylint: disable=inconsistent-return-statements
         if CONF.api_settings.healthcheck_enabled:
