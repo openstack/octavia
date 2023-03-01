@@ -251,14 +251,6 @@ class TestLvsCfg(base.TestCase):
                "    lb_kind NAT\n"
                "    protocol UDP\n\n\n"
                "    # Pool sample_pool_id_1 is disabled\n"
-               "    # Configuration for Member sample_member_id_1\n"
-               "    real_server 10.0.0.99 82 {\n"
-               "        weight 13\n\n"
-               "    }\n\n"
-               "    # Configuration for Member sample_member_id_2\n"
-               "    real_server 10.0.0.98 82 {\n"
-               "        weight 13\n\n"
-               "    }\n\n"
                "}\n\n")
 
         rendered_obj = self.lvs_jinja_cfg.render_loadbalancer_obj(
