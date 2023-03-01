@@ -94,31 +94,11 @@
       grenade_from_branch: stable/stein
 
 - job:
-    name: octavia-v2-dsvm-scenario-amphora-v2
+    name: octavia-v2-dsvm-scenario-jobboard
     parent: octavia-v2-dsvm-scenario
     vars:
       devstack_localrc:
         OCTAVIA_ENABLE_AMPHORAV2_JOBBOARD: True
-      devstack_local_conf:
-        post-config:
-          $OCTAVIA_CONF:
-            api_settings:
-              default_provider_driver: amphorav2
-              enabled_provider_drivers: amphorav2:The v2 amphora driver.
-            task_flow:
-              jobboard_expiration_time: 100
-        test-config:
-          "$TEMPEST_CONFIG":
-            load_balancer:
-              enabled_provider_drivers: amphorav2:The v2 amphora driver.
-              provider: amphorav2
-
-- job:
-    name: octavia-v2-dsvm-scenario-amphora-v2-no-jobboard
-    parent: octavia-v2-dsvm-scenario-amphora-v2
-    vars:
-      devstack_localrc:
-        OCTAVIA_ENABLE_AMPHORAV2_JOBBOARD: False
 
 - project-template:
     name: octavia-tox-tips

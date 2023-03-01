@@ -53,6 +53,8 @@
               - ^releasenotes/.*$
         - octavia-v2-dsvm-scenario:
             irrelevant-files: *irrelevant-files
+        - octavia-v2-dsvm-scenario-jobboard:
+            irrelevant-files: *irrelevant-files
         - octavia-v2-dsvm-tls-barbican:
             irrelevant-files: *irrelevant-files
         - octavia-grenade:
@@ -79,12 +81,6 @@
             irrelevant-files: *irrelevant-files
             voting: false
         - octavia-v2-dsvm-scenario-ipv6-only:
-            irrelevant-files: *irrelevant-files
-            voting: false
-        - octavia-v2-dsvm-scenario-amphora-v2:
-            irrelevant-files: *irrelevant-files
-            voting: false
-        - octavia-v2-dsvm-scenario-amphora-v2-no-jobboard:
             irrelevant-files: *irrelevant-files
             voting: false
         - octavia-v2-dsvm-scenario-centos-9-stream:
@@ -128,9 +124,3 @@
     experimental:
       jobs:
         - octavia-v2-dsvm-scenario-nftables
-        - octavia-v2-dsvm-noop-api-amphora-v2
-        - octavia-v2-dsvm-tls-barbican-amphora-v2
-        - octavia-v2-act-stdby-dsvm-scenario-amphora-v2
-        - octavia-grenade-amphora-v2
-        - octavia-v2-dsvm-cinder-amphora-v2
-        - octavia-v2-dsvm-scenario-two-node-amphora-v2
