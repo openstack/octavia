@@ -119,13 +119,15 @@ Request format
 --------------
 
 The Octavia API v2 only accepts requests with the JSON data serialization
-format. The ``Content-Type`` header is ignored.
+format. The request must have no ``Accept`` header or an ``Accept`` header that
+is compatible with ``application/json``. The one exception is the Oslo
+middleware healthcheck endpoint.
 
 Response format
 ---------------
 
 The Octavia API v2 always responds with the JSON data serialization
-format. The ``Accept`` header is ignored.
+format. The one exception is the Oslo middleware healthcheck endpoint.
 
 Query extension
     A ``.json`` extension can be added to the request URI. For example, the

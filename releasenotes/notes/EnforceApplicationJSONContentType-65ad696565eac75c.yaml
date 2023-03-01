@@ -1,0 +1,12 @@
+---
+upgrade:
+  - |
+    The Octavia API will now check that the HTTP Accept header, if present, is
+    compatible with the application/json content type. If not the user will
+    get a 406 status code response, Not Acceptable.
+fixes:
+  - |
+    The Octavia API will now check that the HTTP Accept header, if present, is
+    compatible with the application/json content type. If not the user will
+    get a 406 status code response, Not Acceptable. This change also ensures
+    that the API responses have a content type of application/json.
