@@ -1,0 +1,6 @@
+---
+fixes:
+  - |
+    Fixed the policy of the legacy `admin` role, it is still an admin with sRBAC.
+  - |
+    Removed system scope policies, all the policies are now project scoped.

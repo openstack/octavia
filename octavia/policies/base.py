@@ -46,14 +46,14 @@ rules = [
         name='system-admin',
         check_str='role:admin and '
                   'system_scope:all',
-        scope_types=[constants.RBAC_SCOPE_SYSTEM]),
+        scope_types=[constants.RBAC_SCOPE_PROJECT]),
 
     # System scoped Reader
     policy.RuleDefault(
         name='system-reader',
         check_str='role:reader and '
                   'system_scope:all',
-        scope_types=[constants.RBAC_SCOPE_SYSTEM]),
+        scope_types=[constants.RBAC_SCOPE_PROJECT]),
 
     # Project scoped Member
     policy.RuleDefault(
@@ -91,9 +91,10 @@ rules = [
     policy.RuleDefault(
         name='context_is_admin',
         check_str='role:load-balancer_admin or '
-                  'rule:system-admin',
+                  'rule:system-admin or '
+                  'role:admin',
         deprecated_rule=deprecated_context_is_admin,
-        scope_types=[constants.RBAC_SCOPE_SYSTEM]),
+        scope_types=[constants.RBAC_SCOPE_PROJECT]),
 
     # Note: 'is_admin:True' is a policy rule that takes into account the
     # auth_strategy == noauth configuration setting.
@@ -116,7 +117,7 @@ rules = [
         name='load-balancer:global_observer',
         check_str='role:load-balancer_global_observer or '
                   'rule:system-reader',
-        scope_types=[constants.RBAC_SCOPE_SYSTEM]),
+        scope_types=[constants.RBAC_SCOPE_PROJECT]),
 
     policy.RuleDefault(
         name='load-balancer:member_and_owner',
@@ -131,8 +132,9 @@ rules = [
         name='load-balancer:admin',
         check_str='is_admin:True or '
                   'role:load-balancer_admin or '
-                  'rule:system-admin',
-        scope_types=[constants.RBAC_SCOPE_SYSTEM]),
+                  'rule:system-admin or '
+                  'role:admin',
+        scope_types=[constants.RBAC_SCOPE_PROJECT]),
 
     policy.RuleDefault(
         name='load-balancer:read',
@@ -140,21 +142,19 @@ rules = [
                   'rule:load-balancer:global_observer or '
                   'rule:load-balancer:member_and_owner or '
                   'rule:load-balancer:admin',
-        scope_types=[constants.RBAC_SCOPE_PROJECT,
-                     constants.RBAC_SCOPE_SYSTEM]),
+        scope_types=[constants.RBAC_SCOPE_PROJECT]),
 
     policy.RuleDefault(
         name='load-balancer:read-global',
         check_str='rule:load-balancer:global_observer or '
                   'rule:load-balancer:admin',
-        scope_types=[constants.RBAC_SCOPE_SYSTEM]),
+        scope_types=[constants.RBAC_SCOPE_PROJECT]),
 
     policy.RuleDefault(
         name='load-balancer:write',
         check_str='rule:load-balancer:member_and_owner or '
                   'rule:load-balancer:admin',
-        scope_types=[constants.RBAC_SCOPE_PROJECT,
-                     constants.RBAC_SCOPE_SYSTEM]),
+        scope_types=[constants.RBAC_SCOPE_PROJECT]),
 
     policy.RuleDefault(
         name='load-balancer:read-quota',
@@ -163,21 +163,20 @@ rules = [
                   'rule:load-balancer:member_and_owner or '
                   'role:load-balancer_quota_admin or '
                   'rule:load-balancer:admin',
-        scope_types=[constants.RBAC_SCOPE_PROJECT,
-                     constants.RBAC_SCOPE_SYSTEM]),
+        scope_types=[constants.RBAC_SCOPE_PROJECT]),
 
     policy.RuleDefault(
         name='load-balancer:read-quota-global',
         check_str='rule:load-balancer:global_observer or '
                   'role:load-balancer_quota_admin or '
                   'rule:load-balancer:admin',
-        scope_types=[constants.RBAC_SCOPE_SYSTEM]),
+        scope_types=[constants.RBAC_SCOPE_PROJECT]),
 
     policy.RuleDefault(
         name='load-balancer:write-quota',
         check_str='role:load-balancer_quota_admin or '
                   'rule:load-balancer:admin',
-        scope_types=[constants.RBAC_SCOPE_SYSTEM]),
+        scope_types=[constants.RBAC_SCOPE_PROJECT]),
 ]
 
 
