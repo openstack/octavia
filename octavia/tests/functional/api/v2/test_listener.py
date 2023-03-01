@@ -1207,9 +1207,9 @@ class TestListener(base.BaseAPITest):
                       "It must be a valid x509 PEM format certificate.",
                       response['faultstring'])
 
-    def _test_create_with_allowed_cidrs(self, allowed_cidrs):
+    def _test_create_with_allowed_cidrs(self, allowed_cidrs, lb_id):
         listener = self.create_listener(constants.PROTOCOL_TCP,
-                                        80, self.lb_id,
+                                        80, lb_id,
                                         allowed_cidrs=allowed_cidrs)
         listener_path = self.LISTENER_PATH.format(
             listener_id=listener['listener']['id'])
@@ -1218,14 +1218,17 @@ class TestListener(base.BaseAPITest):
 
     def test_create_with_allowed_cidrs_ipv4(self):
         allowed_cidrs = ['10.0.1.0/24', '172.16.55.0/25']
-        self._test_create_with_allowed_cidrs(allowed_cidrs)
+        self._test_create_with_allowed_cidrs(allowed_cidrs, self.lb_id)
 
     def test_create_with_allowed_cidrs_ipv6(self):
+        lb_ipv6 = self.create_load_balancer(
+            uuidutils.generate_uuid(),
+            vip_address='2001:db9:a1b:13f0::1',
+        )
+        lb_id = lb_ipv6.get('loadbalancer').get('id')
+        self.set_lb_status(lb_id)
         allowed_cidrs = ['2001:db8:a0b:12f0::/64', '2a02:8071:69e::/64']
-        with mock.patch('octavia.db.repositories.VipRepository.'
-                        'get') as repo_mock:
-            repo_mock.return_value.ip_address = "2001:db9:a1b:13f0::1"
-            self._test_create_with_allowed_cidrs(allowed_cidrs)
+        self._test_create_with_allowed_cidrs(allowed_cidrs, lb_id)
 
     def test_create_with_bad_allowed_cidrs(self):
         allowed_cidrs = [u'10.0.1.0/33', u'172.16.55.1.0/25']
@@ -1251,24 +1254,42 @@ class TestListener(base.BaseAPITest):
         body = self._build_body(lb_listener)
         response = self.post(self.LISTENERS_PATH, body, status=400).json
         self.assertIn("Validation failure: CIDR 2001:db8:a0b:12f0::/64 IP "
-                      "version incompatible with VIP 198.0.2.5 IP version.",
+                      "version incompatible with all VIPs ['198.0.2.5'] IP "
+                      "version.",
                       response['faultstring'])
 
     def test_create_with_incompatible_allowed_cidrs_ipv4(self):
+        lb_ipv6 = self.create_load_balancer(
+            uuidutils.generate_uuid(),
+            vip_address='2001:db9:a1b:13f0::1',
+        )
+        lb_id = lb_ipv6.get('loadbalancer').get('id')
+        self.set_lb_status(lb_id)
         lb_listener = {
             'protocol': constants.PROTOCOL_TCP,
             'protocol_port': 80,
             'project_id': self.project_id,
-            'loadbalancer_id': self.lb_id,
+            'loadbalancer_id': lb_id,
             'allowed_cidrs': ['10.0.1.0/24']}
-        with mock.patch('octavia.db.repositories.VipRepository.'
-                        'get') as repo_mock:
-            repo_mock.return_value.ip_address = "2001:db9:a1b:13f0::1"
-            body = self._build_body(lb_listener)
-            response = self.post(self.LISTENERS_PATH, body, status=400).json
-            self.assertIn("Validation failure: CIDR 10.0.1.0/24 IP version "
-                          "incompatible with VIP 2001:db9:a1b:13f0::1 IP "
-                          "version.", response['faultstring'])
+        body = self._build_body(lb_listener)
+        response = self.post(self.LISTENERS_PATH, body, status=400).json
+        self.assertIn("Validation failure: CIDR 10.0.1.0/24 IP version "
+                      "incompatible with all VIPs "
+                      "['2001:db9:a1b:13f0::1'] IP version.",
+                      response['faultstring'])
+
+    def test_create_with_mixed_version_allowed_cidrs(self):
+        lb_dualstack = self.create_load_balancer(
+            uuidutils.generate_uuid(),
+            additional_vips=[{'subnet_id': uuidutils.generate_uuid(),
+                              'ip_address': '2001:db9:a1b:13f0::1',
+                              }],
+        )
+        lb_id = lb_dualstack.get('loadbalancer').get('id')
+        self.set_lb_status(lb_id)
+        self._test_create_with_allowed_cidrs(['10.0.1.0/24',
+                                              '2001:db9:a1b:13f0::/64'],
+                                             lb_id)
 
     def test_create_with_duplicated_allowed_cidrs(self):
         allowed_cidrs = ['10.0.1.0/24', '10.0.2.0/24', '10.0.2.0/24']
