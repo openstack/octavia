@@ -151,8 +151,7 @@ class AmphoraLoadBalancerDriver(object, metaclass=abc.ABCMeta):
         """
 
     def post_vip_plug(self, amphora, load_balancer, amphorae_network_config,
-                      vrrp_port=None, vip_subnet=None,
-                      additional_vip_data=None):
+                      vrrp_port, vip_subnet, additional_vip_data=None):
         """Called after network driver has allocated and plugged the VIP
 
         :param amphora:

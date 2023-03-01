@@ -367,8 +367,8 @@ class AmphoraPostVIPPlug(BaseAmphoraTask):
                     subnet=subnet))
 
         self.amphora_driver.post_vip_plug(
-            db_amp, db_lb, amphorae_network_config, vrrp_port=vrrp_port,
-            vip_subnet=vip_subnet, additional_vip_data=additional_vip_data)
+            db_amp, db_lb, amphorae_network_config, vrrp_port,
+            vip_subnet, additional_vip_data=additional_vip_data)
         LOG.debug("Notified amphora of vip plug")
 
     def revert(self, result, amphora, loadbalancer, *args, **kwargs):

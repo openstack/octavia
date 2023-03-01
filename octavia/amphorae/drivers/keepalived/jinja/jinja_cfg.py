@@ -60,9 +60,7 @@ class KeepalivedJinjaTemplater(object):
 
         :param loadbalancer: A loadbalancer object
         :param amphora: An amphora object
-        :param amp_net_config: The amphora network config,
-                               an AmphoraeNetworkConfig object in amphorav1,
-                               a dict in amphorav2
+        :param amp_net_config: The amphora network config, a dict
         """
         # Note on keepalived configuration: The current base configuration
         # enforced Master election whenever a high priority VRRP instance
@@ -74,15 +72,8 @@ class KeepalivedJinjaTemplater(object):
         peers_ips = []
 
         # Get the VIP subnet for the amphora
-        # For amphorav2 amphorae_network_config will be list of dicts
-        if isinstance(amp_net_config, dict):
-            additional_vip_data = amp_net_config['additional_vip_data']
-            vip_subnet = amp_net_config[constants.VIP_SUBNET]
-        else:
-            additional_vip_data = [
-                add_vip.to_dict(recurse=True)
-                for add_vip in amp_net_config.additional_vip_data]
-            vip_subnet = amp_net_config.vip_subnet.to_dict()
+        additional_vip_data = amp_net_config['additional_vip_data']
+        vip_subnet = amp_net_config[constants.VIP_SUBNET]
 
         # Sort VIPs by their IP so we can guarantee interface_index matching
         sorted_add_vips = sorted(additional_vip_data,

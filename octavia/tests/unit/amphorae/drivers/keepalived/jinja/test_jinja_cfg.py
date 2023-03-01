@@ -267,7 +267,7 @@ class TestVRRPRestDriver(base.TestCase):
         mock_subnet.gateway_ip = '10.1.0.1'
         mock_subnet.host_routes = []
         amp_net_config = n_data_models.AmphoraNetworkConfig(
-            vip_subnet=mock_subnet)
+            vip_subnet=mock_subnet).to_dict(recurse=True)
 
         config = self.templater.build_keepalived_config(
             self.lb, self.amphora1, amp_net_config)
@@ -279,7 +279,7 @@ class TestVRRPRestDriver(base.TestCase):
         mock_subnet.gateway_ip = '2001:db8::ff'
         mock_subnet.host_routes = []
         amp_net_config = n_data_models.AmphoraNetworkConfig(
-            vip_subnet=mock_subnet)
+            vip_subnet=mock_subnet).to_dict(recurse=True)
 
         config = self.templater.build_keepalived_config(
             self.lbv6, self.amphora1v6, amp_net_config)
@@ -302,7 +302,7 @@ class TestVRRPRestDriver(base.TestCase):
         )
         amp_net_config = n_data_models.AmphoraNetworkConfig(
             vip_subnet=mock_subnet1,
-            additional_vip_data=[additional_vip])
+            additional_vip_data=[additional_vip]).to_dict(recurse=True)
 
         config = self.templater.build_keepalived_config(
             self.lb, self.amphora1, amp_net_config)
@@ -315,7 +315,7 @@ class TestVRRPRestDriver(base.TestCase):
         )
         amp_net_config = n_data_models.AmphoraNetworkConfig(
             vip_subnet=mock_subnet2,
-            additional_vip_data=[additional_vip])
+            additional_vip_data=[additional_vip]).to_dict(recurse=True)
 
         config = self.templater.build_keepalived_config(
             self.lbv6, self.amphora1v6, amp_net_config)

@@ -560,8 +560,7 @@ class TestAmphoraDriverTasks(base.TestCase):
 
         mock_driver.post_vip_plug.assert_called_once_with(
             _db_amphora_mock, _db_load_balancer_mock, amphorae_net_config_mock,
-            vip_subnet=vip_subnet, vrrp_port=vrrp_port,
-            additional_vip_data=[])
+            vrrp_port, vip_subnet, additional_vip_data=[])
 
         # Test revert
         amp = amphora_post_vip_plug_obj.revert(None, _amphora_mock, _LB_mock)
@@ -628,11 +627,10 @@ class TestAmphoraDriverTasks(base.TestCase):
 
         mock_driver.post_vip_plug.assert_called_once_with(
             _db_amphora_mock, _db_load_balancer_mock, amphorae_net_config_mock,
-            vip_subnet=vip_subnet, vrrp_port=vrrp_port,
-            additional_vip_data=[])
+            vrrp_port, vip_subnet, additional_vip_data=[])
 
-        call_kwargs = mock_driver.post_vip_plug.call_args[1]
-        vip_subnet_arg = call_kwargs.get(constants.VIP_SUBNET)
+        call_args = mock_driver.post_vip_plug.call_args[0]
+        vip_subnet_arg = call_args[4]
         self.assertEqual(2, len(vip_subnet_arg.host_routes))
         for hr1, hr2 in zip(host_routes, vip_subnet_arg.host_routes):
             self.assertEqual(hr1['destination'], hr2.destination)
@@ -691,11 +689,11 @@ class TestAmphoraDriverTasks(base.TestCase):
 
         mock_driver.post_vip_plug.assert_called_once_with(
             _db_amphora_mock, _db_load_balancer_mock, amphorae_net_config_mock,
-            vip_subnet=vip_subnet, vrrp_port=vrrp_port,
-            additional_vip_data=additional_vip_data)
+            vrrp_port, vip_subnet, additional_vip_data=additional_vip_data)
 
+        call_args = mock_driver.post_vip_plug.call_args[0]
         call_kwargs = mock_driver.post_vip_plug.call_args[1]
-        vip_subnet_arg = call_kwargs.get(constants.VIP_SUBNET)
+        vip_subnet_arg = call_args[4]
         self.assertEqual(2, len(vip_subnet_arg.host_routes))
         for hr1, hr2 in zip(host_routes, vip_subnet_arg.host_routes):
             self.assertEqual(hr1['destination'], hr2.destination)
@@ -741,8 +739,7 @@ class TestAmphoraDriverTasks(base.TestCase):
 
         mock_driver.post_vip_plug.assert_called_once_with(
             _db_amphora_mock, _db_load_balancer_mock, amphorae_net_config_mock,
-            vip_subnet=vip_subnet, vrrp_port=vrrp_port,
-            additional_vip_data=[])
+            vrrp_port, vip_subnet, additional_vip_data=[])
 
     def test_amphora_cert_upload(self,
                                  mock_driver,
