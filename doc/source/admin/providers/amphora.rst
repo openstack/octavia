@@ -19,6 +19,9 @@ Amphora
 This is the reference driver for Octavia, meaning it is used for testing the
 Octavia code base. It is an open source, scalable, and highly available load
 balancing provider.
+It adopts taskflow jobboard feature and saves task states into the persistence
+backend, this allows to continue task execution if controller work was
+interrupted.
 
 Default provider name: **amphora**
 
