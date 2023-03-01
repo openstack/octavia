@@ -1,0 +1,10 @@
+---
+upgrade:
+  - |
+    The *amphorav1* provider was removed. It is recommended to the users who
+    have kept using it to switch to the default *amphora* provider, which is an
+    alias for the *amphorav2* provider.
+deprecations:
+  - |
+    The deprecated *amphorav1* provider was removed. The default
+    provider *amphora* is still an alias for the *amphorav2* provider.

@@ -1820,7 +1820,7 @@ class TestControllerWorker(base.TestCase):
             flow_utils.get_failover_amphora_flow,
             mock_amphora.to_dict(), 1, store=expected_stored_params)
 
-    @mock.patch('octavia.controller.worker.v1.flows.amphora_flows.'
+    @mock.patch('octavia.controller.worker.v2.flows.amphora_flows.'
                 'AmphoraFlows.get_failover_amphora_flow')
     def test_failover_amp_missing_amp(self,
                                       mock_get_amp_failover,
@@ -1893,7 +1893,7 @@ class TestControllerWorker(base.TestCase):
                           cw.failover_amphora,
                           AMP_ID, reraise=True)
 
-    @mock.patch('octavia.controller.worker.v1.flows.amphora_flows.'
+    @mock.patch('octavia.controller.worker.v2.flows.amphora_flows.'
                 'AmphoraFlows.get_failover_amphora_flow')
     def test_failover_amp_no_lb(self,
                                 mock_get_failover_amp_flow,

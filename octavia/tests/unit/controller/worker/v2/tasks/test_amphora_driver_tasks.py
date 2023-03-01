@@ -71,7 +71,7 @@ _session_mock = mock.MagicMock()
 @mock.patch('octavia.db.repositories.ListenerRepository.get',
             return_value=_listener_mock)
 @mock.patch('octavia.db.api.get_session', return_value=_session_mock)
-@mock.patch('octavia.controller.worker.v1.tasks.amphora_driver_tasks.LOG')
+@mock.patch('octavia.controller.worker.v2.tasks.amphora_driver_tasks.LOG')
 @mock.patch('oslo_utils.uuidutils.generate_uuid', return_value=AMP_ID)
 @mock.patch('stevedore.driver.DriverManager.driver')
 class TestAmphoraDriverTasks(base.TestCase):

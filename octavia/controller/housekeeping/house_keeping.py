@@ -19,8 +19,6 @@ from oslo_config import cfg
 from oslo_log import log as logging
 from sqlalchemy.orm import exc as sqlalchemy_exceptions
 
-from octavia.common import constants
-from octavia.controller.worker.v1 import controller_worker as cw1
 from octavia.controller.worker.v2 import controller_worker as cw2
 from octavia.db import api as db_api
 from octavia.db import repositories as repo
@@ -78,10 +76,7 @@ class DatabaseCleanup(object):
 class CertRotation(object):
     def __init__(self):
         self.threads = CONF.house_keeping.cert_rotate_threads
-        if CONF.api_settings.default_provider_driver == constants.AMPHORAV1:
-            self.cw = cw1.ControllerWorker()
-        else:
-            self.cw = cw2.ControllerWorker()
+        self.cw = cw2.ControllerWorker()
 
     def rotate(self):
         """Check the amphora db table for expiring auth certs."""
