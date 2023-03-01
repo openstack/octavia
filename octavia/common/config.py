@@ -523,6 +523,10 @@ controller_worker_opts = [
                       'SINGLE - One amphora per load balancer. '
                       'ACTIVE_STANDBY - Two amphora per load balancer.')),
     cfg.BoolOpt('user_data_config_drive', default=False,
+                deprecated_for_removal=True,
+                deprecated_reason=_('User_data nova option is not used and is '
+                                    ' too small to replace the config_drive.'),
+                deprecated_since='Antelope(2023.1)',
                 help=_('If True, build cloud-init user-data that is passed '
                        'to the config drive on Amphora boot instead of '
                        'personality files. If False, utilize personality '
