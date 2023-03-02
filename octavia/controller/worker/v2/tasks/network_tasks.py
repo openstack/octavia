@@ -55,15 +55,9 @@ class CalculateAmphoraDelta(BaseNetworkTask):
 
     default_provides = constants.DELTA
 
-    # TODO(gthiemonge) ensure we no longer need vrrp_port
     def execute(self, loadbalancer, amphora, availability_zone):
         LOG.debug("Calculating network delta for amphora id: %s",
                   amphora.get(constants.ID))
-
-        vip_subnet_to_net_map = {
-            loadbalancer[constants.VIP_SUBNET_ID]:
-            loadbalancer[constants.VIP_NETWORK_ID]
-        }
 
         # Figure out what networks we want
         # seed with lb network(s)
@@ -77,12 +71,10 @@ class CalculateAmphoraDelta(BaseNetworkTask):
         db_lb = self.loadbalancer_repo.get(
             db_apis.get_session(), id=loadbalancer[constants.LOADBALANCER_ID])
 
-        desired_subnet_to_net_map = {}
-        for mgmt_net_id in management_nets:
-            for subnet_id in self.network_driver.get_network(
-                    mgmt_net_id).subnets:
-                desired_subnet_to_net_map[subnet_id] = mgmt_net_id
-        desired_subnet_to_net_map.update(vip_subnet_to_net_map)
+        desired_subnet_to_net_map = {
+            loadbalancer[constants.VIP_SUBNET_ID]:
+            loadbalancer[constants.VIP_NETWORK_ID]
+        }
 
         for pool in db_lb.pools:
             for member in pool.members:
@@ -101,7 +93,12 @@ class CalculateAmphoraDelta(BaseNetworkTask):
         nics = self.network_driver.get_plugged_networks(
             amphora[constants.COMPUTE_ID])
         # we don't have two nics in the same network
-        network_to_nic_map = {nic.network_id: nic for nic in nics}
+        # Don't include the nics connected to the management network, we don't
+        # want to update these interfaces.
+        network_to_nic_map = {
+            nic.network_id: nic
+            for nic in nics
+            if nic.network_id not in management_nets}
 
         plugged_network_ids = set(network_to_nic_map)
 
