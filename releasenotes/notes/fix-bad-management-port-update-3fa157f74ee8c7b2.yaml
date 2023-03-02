@@ -1,0 +1,7 @@
+---
+fixes:
+  - |
+    Fixed an issue when adding or deleting a member, Octavia might have
+    reconfigured the management port of the amphora by adding or removing
+    additional subnets. Octavia no longer updates the management port during
+    those tasks.
