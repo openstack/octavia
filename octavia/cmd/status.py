@@ -22,7 +22,6 @@ from stevedore import driver as stevedore_driver
 # Need to import to load config
 from octavia.common import config  # noqa: F401 pylint: disable=unused-import
 from octavia.common import constants
-from octavia.common import policy
 from octavia.controller.worker.v2 import taskflow_jobboard_driver as tsk_driver
 from octavia.i18n import _
 
@@ -120,7 +119,6 @@ class Checks(upgradecheck.UpgradeCommands):
 
 
 def main():
-    policy.Policy()
     return upgradecheck.main(
         CONF, project='octavia', upgrade_command=Checks())
 
