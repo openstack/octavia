@@ -9,7 +9,7 @@
 
 # Role Rules
 "system_admin": "role:admin"
-"system_reader": "role:reader"
+"system_reader": "role:admin"
 "project_reader": "role:reader and project_id:%(project_id)s"
 "project_member": "role:member and project_id:%(project_id)s"
 
