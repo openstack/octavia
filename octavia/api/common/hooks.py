@@ -32,7 +32,13 @@ class ContentTypeHook(hooks.PecanHook):
         # so we need to bypass the Octavia content type restrictions.
         if state.request.path in _HEALTHCHECK_PATHS:
             return
-        if state.request.accept:
+        # TODO(johnsom) Testing for an empty string is a workaround for an
+        #               openstacksdk bug present up to the initial
+        #               antelope release of openstacksdk. This means the
+        #               octavia dashboard would also be impacted.
+        #               This can be removed once antelope is EOL.
+        # See: https://review.opendev.org/c/openstack/openstacksdk/+/876669
+        if state.request.accept and state.request.accept.header_value != '':
             best_matches = state.request.accept.acceptable_offers(
                 [constants.APPLICATION_JSON])
             if not best_matches:
