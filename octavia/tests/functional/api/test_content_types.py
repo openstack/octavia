@@ -51,6 +51,20 @@ class TestContentTypes(base_db_test.OctaviaDBTestBase):
         self.assertEqual(200, response.status_code)
         self.assertEqual(constants.APPLICATION_JSON, response.content_type)
 
+    # TODO(johnsom) Testing for an empty string is a workaround for an
+    #               openstacksdk bug present up to the initial
+    #               antelope release of openstacksdk. This means the
+    #               octavia dashboard would also be impacted.
+    #               This test should change to a 406 error once the workaround
+    #               is removed.
+    # See: https://review.opendev.org/c/openstack/openstacksdk/+/876669
+    def test_empty_accept_header(self):
+        response = self.app.get(
+            self.test_url, status=200, expect_errors=False,
+            headers={constants.ACCEPT: ''})
+        self.assertEqual(200, response.status_code)
+        self.assertEqual(constants.APPLICATION_JSON, response.content_type)
+
     # Note: webob will treat invalid content types as no accept header provided
     def test_bogus_accept_header(self):
         response = self.app.get(
