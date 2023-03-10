@@ -501,6 +501,9 @@ the client.
 +------+----------------------------------------------------------------+
 | 500  | - Internal server error                                        |
 +------+----------------------------------------------------------------+
+| 501  | - The provider driver does not support this feature            |
+|      | - The provider driver does not support a specified option      |
++------+----------------------------------------------------------------+
 | 503  | - Service unavailable                                          |
 |      | - The project is busy with other requests, try again later     |
 +------+----------------------------------------------------------------+

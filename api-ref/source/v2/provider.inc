@@ -74,6 +74,7 @@ The list might be empty and a provider driver may not implement this feature.
    - 401
    - 403
    - 500
+   - 501
 
 Request
 -------
@@ -128,6 +129,7 @@ The list might be empty and a provider driver may not implement this feature.
    - 401
    - 403
    - 500
+   - 501
 
 Request
 -------

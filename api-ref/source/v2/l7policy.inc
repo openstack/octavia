@@ -131,6 +131,7 @@ response code to the requester.
    - 404
    - 409
    - 500
+   - 501
    - 503
 
 Request
@@ -293,6 +294,7 @@ policy, then the updated policy is inserted at the given position.
    - 404
    - 409
    - 500
+   - 501
 
 Request
 -------
