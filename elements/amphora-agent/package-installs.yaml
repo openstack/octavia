@@ -1,7 +1,32 @@
 amphora-agent:
   installtype: package
+
+# Note: Uninstall of this does not remove all of the development packages.
+#       So some are called out here explicitly to be removed.
 build-essential:
   build-only: True
+gcc:
+  uninstall: True
+gcc-10:
+  uninstall: True
+  when:
+    - DISTRO_NAME = ubuntu
+    - DIB_RELEASE = focal
+gcc-11:
+  uninstall: True
+  when:
+    - DISTRO_NAME = ubuntu
+    - DIB_RELEASE != focal
+gcc-12:
+  uninstall: True
+  when:
+    - DISTRO_NAME = ubuntu
+    - DIB_RELEASE != focal
+git-man:
+  uninstall: True
+perl:
+  uninstall: True
+
 libffi-dev:
   build-only: True
 libssl-dev:
