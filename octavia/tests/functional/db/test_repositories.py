@@ -3683,6 +3683,30 @@ class LoadBalancerRepositoryTest(BaseRepositoryTest):
         lb = self.lb_repo.get(self.session, id=lb_id)
         self.assertEqual(constants.PENDING_DELETE, lb.provisioning_status)
 
+    def test_test_and_set_provisioning_status_concurrent(self):
+        lb_id = uuidutils.generate_uuid()
+        lock_session1 = db_api.get_session(autocommit=False)
+        self.lb_repo.create(lock_session1, id=lb_id,
+                            provisioning_status=constants.ACTIVE,
+                            operating_status=constants.ONLINE,
+                            enabled=True)
+
+        # Create a concurrent session
+        lock_session2 = db_api.get_session(autocommit=False)
+
+        # Load LB into lock_session2's identity map
+        lock_session2.query(db_models.LoadBalancer).filter_by(
+            id=lb_id).one()
+
+        # Update provisioning status in lock_session1
+        self.lb_repo.test_and_set_provisioning_status(
+            self.session, lb_id, constants.PENDING_UPDATE)
+        lock_session1.commit()
+
+        # Assert concurrent updates are rejected
+        self.assertFalse(self.lb_repo.test_and_set_provisioning_status(
+            lock_session2, lb_id, constants.PENDING_UPDATE))
+
     def test_set_status_for_failover_immutable(self):
         lb_id = uuidutils.generate_uuid()
         self.lb_repo.create(self.session, id=lb_id,

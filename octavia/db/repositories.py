@@ -407,8 +407,11 @@ class Repositories(object):
         # Note: You cannot just use the current count as the in-use
         # value as we don't want to lock the whole resource table
         try:
-            quotas = lock_session.query(models.Quotas).filter_by(
-                project_id=project_id).with_for_update().first()
+            quotas = (lock_session.query(models.Quotas)
+                      .filter_by(project_id=project_id)
+                      .populate_existing()
+                      .with_for_update()
+                      .first())
             if _class == data_models.LoadBalancer:
                 # Decide which quota to use
                 if quotas.load_balancer is None:
@@ -576,8 +579,11 @@ class Repositories(object):
 
         # Lock the project record in the database to block other quota checks
         try:
-            quotas = lock_session.query(models.Quotas).filter_by(
-                project_id=project_id).with_for_update().first()
+            quotas = (lock_session.query(models.Quotas)
+                      .filter_by(project_id=project_id)
+                      .populate_existing()
+                      .with_for_update()
+                      .first())
             if not quotas:
                 if not CONF.api_settings.auth_strategy == consts.NOAUTH:
                     LOG.error('Quota decrement on %(clss)s called on '
@@ -891,8 +897,10 @@ class LoadBalancerRepository(BaseRepository):
         :returns: bool
         """
         with session.begin(subtransactions=True):
-            lb = session.query(self.model_class).with_for_update().filter_by(
-                id=id).one()
+            lb = (session.query(self.model_class)
+                  .populate_existing()
+                  .with_for_update()
+                  .filter_by(id=id).one())
             is_delete = status == consts.PENDING_DELETE
             acceptable_statuses = (
                 consts.DELETABLE_STATUSES
@@ -923,8 +931,10 @@ class LoadBalancerRepository(BaseRepository):
         :returns: bool
         """
         with session.begin(subtransactions=True):
-            lb = session.query(self.model_class).with_for_update().filter_by(
-                id=id).one()
+            lb = (session.query(self.model_class)
+                  .populate_existing()
+                  .with_for_update()
+                  .filter_by(id=id).one())
             if lb.provisioning_status not in consts.FAILOVERABLE_STATUSES:
                 if raise_exception:
                     raise exceptions.ImmutableObject(
@@ -1292,10 +1302,13 @@ class ListenerStatisticsRepository(BaseRepository):
                 listener_id=delta_stats.listener_id,
                 amphora_id=delta_stats.amphora_id).count()
             if count:
-                existing_stats = session.query(
-                    self.model_class).with_for_update().filter_by(
-                    listener_id=delta_stats.listener_id,
-                    amphora_id=delta_stats.amphora_id).one()
+                existing_stats = (
+                    session.query(self.model_class)
+                    .populate_existing()
+                    .with_for_update()
+                    .filter_by(
+                        listener_id=delta_stats.listener_id,
+                        amphora_id=delta_stats.amphora_id).one())
                 existing_stats += delta_stats
                 existing_stats.active_connections = (
                     delta_stats.active_connections)
@@ -1378,8 +1391,10 @@ class AmphoraRepository(BaseRepository):
             filters['cached_zone'] = availability_zone
 
         with session.begin(subtransactions=True):
-            amp = session.query(self.model_class).with_for_update().filter_by(
-                **filters).first()
+            amp = (session.query(self.model_class)
+                   .populate_existing()
+                   .with_for_update()
+                   .filter_by(**filters).first())
 
             if amp is None:
                 return None
@@ -1430,12 +1445,15 @@ class AmphoraRepository(BaseRepository):
             seconds=expired_seconds)
 
         with session.begin(subtransactions=True):
-            amp = session.query(self.model_class).with_for_update().filter(
-                self.model_class.status.notin_(
-                    [consts.DELETED, consts.PENDING_DELETE]),
-                self.model_class.cert_busy == false(),
-                self.model_class.cert_expiration < expired_date
-            ).first()
+            amp = (session.query(self.model_class)
+                   .populate_existing()
+                   .with_for_update()
+                   .filter(
+                       self.model_class.status.notin_(
+                           [consts.DELETED, consts.PENDING_DELETE]),
+                       self.model_class.cert_busy == false(),
+                       self.model_class.cert_expiration < expired_date)
+                   .first())
 
             if amp is None:
                 return None
@@ -1534,8 +1552,11 @@ class AmphoraRepository(BaseRepository):
         :raises NoResultFound: The amphora was not found or already deleted.
         :returns: None
         """
-        amp = lock_session.query(self.model_class).with_for_update().filter_by(
-            id=id).filter(self.model_class.status != consts.DELETED).one()
+        amp = (lock_session.query(self.model_class)
+               .populate_existing()
+               .with_for_update()
+               .filter_by(id=id)
+               .filter(self.model_class.status != consts.DELETED).one())
         if amp.status not in [consts.AMPHORA_READY, consts.ERROR]:
             raise exceptions.ImmutableObject(resource=consts.AMPHORA, id=id)
         amp.status = consts.PENDING_DELETE
@@ -1736,6 +1757,7 @@ class AmphoraHealthRepository(BaseRepository):
         # Pick one expired amphora for automatic failover
         amp_health = lock_session.query(
             self.model_class
+        ).populate_existing(
         ).with_for_update(
         ).filter(
             self.model_class.amphora_id.in_(expired_ids_query)
@@ -2060,8 +2082,11 @@ class QuotasRepository(BaseRepository):
     def update(self, session, project_id, **model_kwargs):
         with session.begin(subtransactions=True):
             kwargs_quota = model_kwargs['quota']
-            quotas = session.query(self.model_class).filter_by(
-                project_id=project_id).with_for_update().first()
+            quotas = (
+                session.query(self.model_class)
+                .filter_by(project_id=project_id)
+                .populate_existing()
+                .with_for_update().first())
             if not quotas:
                 quotas = models.Quotas(project_id=project_id)
 
@@ -2073,8 +2098,11 @@ class QuotasRepository(BaseRepository):
 
     def delete(self, session, project_id):
         with session.begin(subtransactions=True):
-            quotas = session.query(self.model_class).filter_by(
-                project_id=project_id).with_for_update().first()
+            quotas = (
+                session.query(self.model_class)
+                .filter_by(project_id=project_id)
+                .populate_existing()
+                .with_for_update().first())
             if not quotas:
                 raise exceptions.NotFound(
                     resource=data_models.Quotas._name(), id=project_id)
