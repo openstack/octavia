@@ -41,7 +41,7 @@
 - job:
     name: octavia-grenade
     parent: grenade
-    nodeset: octavia-single-node-ubuntu-focal
+    nodeset: octavia-single-node-ubuntu-jammy
     required-projects: &o-grenade-required-projects
       - opendev.org/openstack/grenade
       - opendev.org/openstack/octavia
