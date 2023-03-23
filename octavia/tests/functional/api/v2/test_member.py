@@ -882,6 +882,50 @@ class TestMember(base.BaseAPITest):
 
     @mock.patch('octavia.api.drivers.driver_factory.get_driver')
     @mock.patch('octavia.api.drivers.utils.call_provider')
+    def test_update_members_subnet_duplicate(
+            self, mock_provider, mock_get_driver):
+        mock_driver = mock.MagicMock()
+        mock_driver.name = 'noop_driver'
+        mock_get_driver.return_value = mock_driver
+        subnet_id = uuidutils.generate_uuid()
+
+        member1 = {'address': '192.0.2.1', 'protocol_port': 80,
+                   'project_id': self.project_id, 'subnet_id': subnet_id}
+        member2 = {'address': '192.0.2.2', 'protocol_port': 80,
+                   'project_id': self.project_id, 'subnet_id': subnet_id}
+
+        req_dict = [member1, member2]
+        body = {self.root_tag_list: req_dict}
+        path = self.MEMBERS_PATH.format(pool_id=self.pool_id)
+        with mock.patch("octavia.common.validate."
+                        "subnet_exists") as m_subnet_exists:
+            m_subnet_exists.return_value = True
+            self.put(path, body, status=202)
+            m_subnet_exists.assert_called_once_with(
+                member1['subnet_id'], context=mock.ANY)
+
+    @mock.patch('octavia.api.drivers.driver_factory.get_driver')
+    @mock.patch('octavia.api.drivers.utils.call_provider')
+    def test_update_members_subnet_not_found(
+            self, mock_provider, mock_get_driver):
+        mock_driver = mock.MagicMock()
+        mock_driver.name = 'noop_driver'
+        mock_get_driver.return_value = mock_driver
+        fake_subnet_id = uuidutils.generate_uuid()
+
+        member1 = {'address': '192.0.2.1', 'protocol_port': 80,
+                   'project_id': self.project_id, 'subnet_id': fake_subnet_id}
+
+        req_dict = [member1]
+        body = {self.root_tag_list: req_dict}
+        path = self.MEMBERS_PATH.format(pool_id=self.pool_id)
+        with mock.patch("octavia.common.validate."
+                        "subnet_exists") as m_subnet_exists:
+            m_subnet_exists.return_value = False
+            self.put(path, body, status=404)
+
+    @mock.patch('octavia.api.drivers.driver_factory.get_driver')
+    @mock.patch('octavia.api.drivers.utils.call_provider')
     def test_delete_batch_members(self, mock_provider, mock_get_driver):
         mock_driver = mock.MagicMock()
         mock_driver.name = 'noop_driver'
