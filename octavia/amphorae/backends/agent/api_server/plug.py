@@ -246,6 +246,8 @@ class Plug(object):
         try:
             with pyroute2.IPRoute() as ipr:
                 idx = ipr.link_lookup(address=mac)[0]
+                # Workaround for https://github.com/PyCQA/pylint/issues/8497
+                # pylint: disable=E1136, E1121
                 addr = ipr.get_links(idx)[0]
                 for attr in addr['attrs']:
                     if attr[0] == consts.IFLA_IFNAME:

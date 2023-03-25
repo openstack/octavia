@@ -16,6 +16,8 @@ OCTAVIA_DEVSTACK_DIR=$(dirname $(dirname $0))
 source $OCTAVIA_DEVSTACK_DIR/settings
 source $OCTAVIA_DEVSTACK_DIR/plugin.sh
 
+source ${GITDIR[neutron]}/devstack/lib/octavia
+
 set -o xtrace
 
 octavia_stop

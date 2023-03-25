@@ -181,6 +181,8 @@ class InterfaceController(object):
         with pyroute2.IPRoute() as ipr:
             idx = ipr.link_lookup(ifname=interface.name)[0]
 
+            # Workaround for https://github.com/PyCQA/pylint/issues/8497
+            # pylint: disable=E1136, E1121
             link = ipr.get_links(idx)[0]
             current_state = link.get(consts.STATE)
 
@@ -370,6 +372,8 @@ class InterfaceController(object):
         with pyroute2.IPRoute() as ipr:
             idx = ipr.link_lookup(ifname=interface.name)[0]
 
+            # Workaround for https://github.com/PyCQA/pylint/issues/8497
+            # pylint: disable=E1136, E1121
             link = ipr.get_links(idx)[0]
             current_state = link.get(consts.STATE)
 
