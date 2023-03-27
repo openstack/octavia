@@ -425,6 +425,11 @@ function octavia_configure {
 
     if [[ "$OCTAVIA_USE_LEGACY_RBAC" == "True" ]]; then
         cp $OCTAVIA_DIR/etc/policy/admin_or_owner-policy.yaml $OCTAVIA_CONF_DIR/policy.yaml
+        iniset $OCTAVIA_CONF oslo_policy policy_file $OCTAVIA_CONF_DIR/policy.yaml
+    fi
+    if [[ "$OCTAVIA_USE_KEYSTONE_DEFAULT_ROLES" == "True" ]]; then
+        cp $OCTAVIA_DIR/etc/policy/keystone_default_roles-policy.yaml $OCTAVIA_CONF_DIR/policy.yaml
+        iniset $OCTAVIA_CONF oslo_policy policy_file $OCTAVIA_CONF_DIR/policy.yaml
     fi
 
     # create dhclient.conf file for dhclient
