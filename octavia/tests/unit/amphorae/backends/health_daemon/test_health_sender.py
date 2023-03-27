@@ -93,6 +93,24 @@ class TestHealthSender(base.TestCase):
 
         sendto_mock.reset_mock()
 
+        # Test IPv6 path enclosed within square brackets ("[" and "]").
+        self.conf.config(group="health_manager",
+                         controller_ip_port_list=['[2001:0db8::f00d]:80'])
+        mock_getaddrinfo.return_value = [(socket.AF_INET6,
+                                          socket.SOCK_DGRAM,
+                                          socket.IPPROTO_UDP,
+                                          '',
+                                          ('2001:db8::f00d', 80, 0, 0))]
+
+        sender = health_sender.UDPStatusSender()
+
+        sender.dosend(SAMPLE_MSG)
+
+        sendto_mock.assert_called_once_with(SAMPLE_MSG_BIN,
+                                            ('2001:db8::f00d', 80, 0, 0))
+
+        sendto_mock.reset_mock()
+
         # Test IPv6 link-local address path
         self.conf.config(
             group="health_manager",

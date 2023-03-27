@@ -1,0 +1,6 @@
+---
+fixes:
+  - |
+    Fix a bug that prevented the operating_status of a health-monitor to be
+    set to ONLINE when ipv6 addresses were enclosed within square brackets
+    in ``controller_ip_port_list``.
