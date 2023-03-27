@@ -1,0 +1,6 @@
+---
+fixes:
+  - |
+    Fix a python3 error that prevented to use the
+    ``[controller_worker]/user_data_config_drive`` option when building
+    amphorae.
