@@ -32,8 +32,8 @@ class TestUpgradeChecks(base.TestCase):
     def test__check_amphorav2_not_enabled(self):
         self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
         self.conf.config(group='api_settings',
-                         default_provider_driver=constants.AMPHORA,
-                         enabled_provider_drivers={constants.AMPHORA: "Test"})
+                         default_provider_driver='other_provider',
+                         enabled_provider_drivers={'other_provider': "Test"})
         check_result = self.cmd._check_amphorav2()
         self.assertEqual(
             Code.SUCCESS, check_result.code)
