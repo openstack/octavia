@@ -1,0 +1,5 @@
+---
+fixes:
+  - |
+    Fixed a potential race condition in the member batch update API call, the
+    load balancers might not have been locked properly.
