@@ -1,0 +1,5 @@
+---
+fixes:
+  - |
+    Fixed a bug in octavia-status which reported an incorrect status for the
+    *amphorav2* driver when using the default *amphora* alias.
