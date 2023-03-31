@@ -39,7 +39,7 @@ The project source code repository is located at
 https://opendev.org/openstack/octavia
 
 Project status, bugs, and requests for feature enhancements are tracked on
-https://storyboard.openstack.org/#!/project/openstack/octavia
+https://launchpad.net/octavia
 
 For more information on project direction and guiding principles for
 contributors, please see the CONSTITUTION.rst file in this directory, or

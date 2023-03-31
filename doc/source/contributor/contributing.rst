@@ -94,15 +94,14 @@ The Octavia team use both Request For Enhancement (RFE) and Specifications
 
 RFE
     When a feature being proposed is easy to understand and will have limited
-    scope, the requester will create an RFE in Storyboard. This is a story that
-    includes the tag **[RFE]** in the subject prefix and has the "**rfe**" tag
-    added to the story.
+    scope, the requester will create an RFE in Launchpad. This is a bug report
+    that includes the tag **[RFE]** in the subject prefix.
 
-    Once an RFE story is created, a core reviewer or the Project Team Lead
-    (PTL) will approved the RFE by adding the "**rfe-approved**" tag. This
-    signals that the core team understands the feature being proposed and
-    enough detail has been provided to make sure the core team understands the
-    goal of the change.
+    Once an RFE bug report is created, a core reviewer or the Project Team Lead
+    (PTL) will approved the RFE by setting the Importance field to
+    **Wishlist**. This signals that the core team understands the feature being
+    proposed and enough detail has been provided to make sure the core team
+    understands the goal of the change.
 
 specs
     If the new feature is a major change or additon to Octavia that will need
@@ -132,8 +131,8 @@ development cycle available at: https://releases.openstack.org/
 Task Tracking
 ~~~~~~~~~~~~~
 
-We track our tasks in `Storyboard
-<https://storyboard.openstack.org/#!/project/openstack/octavia>`_.
+We track our tasks in `Launchpad
+<https://launchpad.net/octavia>`_.
 
 If you're looking for some smaller, easier work item to pick up and get started
 on, search for the 'low-hanging-fruit' tag.
@@ -148,8 +147,8 @@ Reporting a Bug
 ~~~~~~~~~~~~~~~
 
 You found an issue and want to make sure we are aware of it? You can do so on
-`Storyboard
-<https://storyboard.openstack.org/#!/project/openstack/octavia>`_.
+`Launchpad
+<https://launchpad.net/octavia>`_.
 
 Please remember to include the following information:
 
