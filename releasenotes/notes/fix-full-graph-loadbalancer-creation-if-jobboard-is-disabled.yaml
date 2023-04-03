@@ -1,0 +1,5 @@
+---
+fixes:
+- |
+    Fix a bug when full graph of load balancer is created without
+    listeners if jobboard_enabled=False

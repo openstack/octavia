@@ -719,6 +719,53 @@ class TestControllerWorker(base.TestCase):
             constants.TOPOLOGY_ACTIVE_STANDBY, listeners=dict_listeners,
             store=store)
 
+    @mock.patch('octavia.controller.worker.v2.flows.load_balancer_flows.'
+                'LoadBalancerFlows.get_create_load_balancer_flow')
+    @mock.patch('octavia.common.base_taskflow.BaseTaskFlowEngine.'
+                'taskflow_load')
+    def test_create_load_balancer_full_graph_jobboard_disabled(
+            self,
+            mock_base_taskflow_load,
+            mock_get_create_load_balancer_flow,
+            mock_api_get_session,
+            mock_dyn_log_listener,
+            mock_taskflow_load,
+            mock_pool_repo_get,
+            mock_member_repo_get,
+            mock_l7rule_repo_get,
+            mock_l7policy_repo_get,
+            mock_listener_repo_get,
+            mock_lb_repo_get,
+            mock_health_mon_repo_get,
+            mock_amp_repo_get):
+
+        self.conf.config(group="task_flow", jobboard_enabled=False)
+
+        listeners = [data_models.Listener(id='listener1'),
+                     data_models.Listener(id='listener2')]
+        dict_listeners = [listener.to_dict() for listener in
+                          provider_utils.db_listeners_to_provider_listeners(
+                              listeners)]
+        lb = data_models.LoadBalancer(id=LB_ID, listeners=listeners,
+                                      topology=constants.TOPOLOGY_SINGLE)
+        mock_lb_repo_get.return_value = lb
+        store = {
+            constants.LOADBALANCER_ID: LB_ID,
+            'update_dict': {'topology': constants.TOPOLOGY_SINGLE},
+            constants.BUILD_TYPE_PRIORITY: constants.LB_CREATE_NORMAL_PRIORITY,
+            constants.FLAVOR: None,
+            constants.SERVER_GROUP_ID: None,
+            constants.AVAILABILITY_ZONE: None,
+        }
+
+        cw = controller_worker.ControllerWorker()
+        cw.create_load_balancer(_load_balancer_mock)
+
+        mock_get_create_load_balancer_flow.assert_called_with(
+            constants.TOPOLOGY_SINGLE, listeners=dict_listeners)
+        mock_base_taskflow_load.assert_called_with(
+            mock_get_create_load_balancer_flow.return_value, store=store)
+
     def test_delete_load_balancer_without_cascade(self,
                                                   mock_api_get_session,
                                                   mock_dyn_log_listener,
