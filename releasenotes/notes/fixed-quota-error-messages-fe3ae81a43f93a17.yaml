@@ -1,0 +1,6 @@
+---
+fixes:
+  - |
+    Fixed the format of log messages related to quota decrement errors. They
+    displayed unhelpful information, they now report the correct resource
+    type for which the error occurs.
