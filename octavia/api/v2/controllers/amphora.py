@@ -124,12 +124,8 @@ class FailoverController(base.BaseController):
 
     def __init__(self, amp_id):
         super().__init__()
-        if CONF.api_settings.default_provider_driver == constants.AMPHORAV1:
-            topic = cfg.CONF.oslo_messaging.topic
-            version = "1.0"
-        else:
-            topic = constants.TOPIC_AMPHORA_V2
-            version = "2.0"
+        topic = constants.TOPIC_AMPHORA_V2
+        version = "2.0"
         self.target = messaging.Target(
             namespace=constants.RPC_NAMESPACE_CONTROLLER_AGENT,
             topic=topic, version=version, fanout=False)
@@ -170,12 +166,8 @@ class AmphoraUpdateController(base.BaseController):
     def __init__(self, amp_id):
         super().__init__()
 
-        if CONF.api_settings.default_provider_driver == constants.AMPHORAV1:
-            topic = cfg.CONF.oslo_messaging.topic
-            version = "1.0"
-        else:
-            topic = constants.TOPIC_AMPHORA_V2
-            version = "2.0"
+        topic = constants.TOPIC_AMPHORA_V2
+        version = "2.0"
         self.target = messaging.Target(
             namespace=constants.RPC_NAMESPACE_CONTROLLER_AGENT,
             topic=topic, version=version, fanout=False)

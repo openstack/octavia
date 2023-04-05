@@ -23,7 +23,6 @@ from oslo_log import log as logging
 from oslo_utils import excutils
 
 from octavia.common import constants
-from octavia.controller.worker.v1 import controller_worker as cw1
 from octavia.controller.worker.v2 import controller_worker as cw2
 from octavia.db import api as db_api
 from octavia.db import repositories as repo
@@ -58,10 +57,7 @@ def update_stats_on_done(stats, fut):
 
 class HealthManager(object):
     def __init__(self, exit_event):
-        if CONF.api_settings.default_provider_driver == constants.AMPHORAV1:
-            self.cw = cw1.ControllerWorker()
-        else:
-            self.cw = cw2.ControllerWorker()
+        self.cw = cw2.ControllerWorker()
         self.threads = CONF.health_manager.failover_threads
         self.executor = futures.ThreadPoolExecutor(max_workers=self.threads)
         self.amp_repo = repo.AmphoraRepository()

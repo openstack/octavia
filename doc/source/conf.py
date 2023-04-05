@@ -28,8 +28,6 @@ from tools import create_flow_docs
 
 # Generate our flow diagrams
 create_flow_docs.generate(
-    'tools/flow-list.txt', 'doc/source/contributor/devref/flow_diagrams')
-create_flow_docs.generate(
     'tools/flow-list-v2.txt', 'doc/source/contributor/devref/flow_diagrams_v2')
 
 # Generate entity relationship diagram

@@ -13,7 +13,6 @@ test_files=$(find ${test_path} -iname 'test_*.py')
 ignore_regexes=(
     "^amphorae/drivers/haproxy/test_rest_api_driver_0_5.py$"
     "^amphorae/drivers/haproxy/test_rest_api_driver_1_0.py$"
-    "^controller/worker/v1/tasks/test_database_tasks_quota.py$"
     "^controller/worker/v2/tasks/test_database_tasks_quota.py$"
 )
 
