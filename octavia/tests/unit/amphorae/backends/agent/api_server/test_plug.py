@@ -265,7 +265,10 @@ class TestPlug(base.TestCase):
                 "BaseOS.write_port_interface_file")
     @mock.patch("octavia.amphorae.backends.agent.api_server.osutils."
                 "BaseOS.bring_interface_up")
-    def test_plug_network(self, mock_if_up, mock_write_port_interface,
+    @mock.patch("octavia.amphorae.backends.agent.api_server.util."
+                "send_member_advertisements")
+    def test_plug_network(self, mock_send_member_adv,
+                          mock_if_up, mock_write_port_interface,
                           mock_netns, mock_iproute,
                           mock_by_mac, mock_interface_exists, mock_webob):
         fixed_ips = [
@@ -284,6 +287,7 @@ class TestPlug(base.TestCase):
         mock_write_port_interface.assert_called_once_with(
             interface='eth0', fixed_ips=fixed_ips, mtu=mtu)
         mock_if_up.assert_called_once_with('eth0', 'network')
+        mock_send_member_adv.assert_called_once_with(fixed_ips)
 
         mock_webob.Response.assert_any_call(
             json={'message': 'OK',
@@ -300,7 +304,10 @@ class TestPlug(base.TestCase):
                 "BaseOS.write_port_interface_file")
     @mock.patch("octavia.amphorae.backends.agent.api_server.osutils."
                 "BaseOS.bring_interface_up")
-    def test_plug_network_existing_interface(self, mock_if_up,
+    @mock.patch("octavia.amphorae.backends.agent.api_server.util."
+                "send_member_advertisements")
+    def test_plug_network_existing_interface(self, mock_send_member_adv,
+                                             mock_if_up,
                                              mock_write_port_interface,
                                              mock_netns, mock_by_mac,
                                              mock_interface_exists,
@@ -327,6 +334,7 @@ class TestPlug(base.TestCase):
         mock_write_port_interface.assert_called_once_with(
             interface=FAKE_INTERFACE, fixed_ips=fixed_ips, mtu=mtu)
         mock_if_up.assert_called_once_with(FAKE_INTERFACE, 'network')
+        mock_send_member_adv.assert_called_once_with(fixed_ips)
 
         mock_webob.Response.assert_any_call(
             json={'message': 'OK',
@@ -344,8 +352,10 @@ class TestPlug(base.TestCase):
                 "BaseOS.write_vip_interface_file")
     @mock.patch("octavia.amphorae.backends.agent.api_server.osutils."
                 "BaseOS.bring_interface_up")
+    @mock.patch("octavia.amphorae.backends.agent.api_server.util."
+                "send_member_advertisements")
     def test_plug_network_on_vip(
-            self, mock_if_up, mock_write_vip_interface,
+            self, mock_send_member_adv, mock_if_up, mock_write_vip_interface,
             mock_netns, mock_by_mac, mock_interface_exists, mock_webob):
         fixed_ips = [
             {'ip_address': FAKE_IP_IPV4,
@@ -394,6 +404,7 @@ class TestPlug(base.TestCase):
             fixed_ips=fixed_ips, mtu=mtu)
 
         mock_if_up.assert_called_once_with(FAKE_INTERFACE, 'vip')
+        mock_send_member_adv.assert_called_once_with(fixed_ips)
 
         mock_webob.Response.assert_any_call(
             json={'message': 'OK',
