@@ -24,6 +24,7 @@ import pyroute2
 import webob
 from werkzeug import exceptions
 
+from octavia.amphorae.backends.agent.api_server import util
 from octavia.common import constants as consts
 
 
@@ -196,6 +197,8 @@ class Plug(object):
                     fixed_ips=fixed_ips,
                     mtu=mtu)
                 self._osutils.bring_interface_up(existing_interface, 'network')
+
+            util.send_member_advertisements(fixed_ips)
             return webob.Response(json={
                 'message': "OK",
                 'details': "Updated existing interface {interface}".format(
@@ -236,6 +239,7 @@ class Plug(object):
                      IFLA_IFNAME=netns_interface)
 
         self._osutils.bring_interface_up(netns_interface, 'network')
+        util.send_member_advertisements(fixed_ips)
 
         return webob.Response(json={
             'message': "OK",

@@ -1,0 +1,6 @@
+---
+fixes:
+  - |
+    When plugging a new member subnet, the amphora sends an IP advertisement of
+    the newly allocated IP. It allows the servers on the same L2 network to
+    flush the ARP entries of a previously allocated IP address.
