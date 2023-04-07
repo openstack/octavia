@@ -161,6 +161,9 @@
     required-projects:
         - openstack/octavia
         - openstack/octavia-lib
+    vars:
+        amphora_os: ubuntu
+        amphora_os_release: jammy
 
 - job:
     name: octavia-amphora-image-build-live-focal
