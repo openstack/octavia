@@ -1,0 +1,7 @@
+---
+fixes:
+  - |
+    The validation for the allowed_cidr parameter only took into account the
+    IP version of the primary VIP. CIDRs which only matched the version of an
+    additonal VIP were rejected. This if fixed and CIDRs are now matched
+    against the IP version of all VIPs.
