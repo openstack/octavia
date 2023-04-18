@@ -406,3 +406,38 @@ class TestUtil(base.TestCase):
         util.send_vip_advertisements(LB_ID1)
         mock_get_int_name.assert_not_called()
         mock_send_advert.assert_not_called()
+
+    @mock.patch('octavia.amphorae.backends.utils.ip_advertisement.'
+                'send_ip_advertisement')
+    @mock.patch('octavia.amphorae.backends.utils.network_utils.'
+                'get_interface_name')
+    def test_send_member_advertisements(self, mock_get_int_name,
+                                        mock_send_advert):
+        # IPv4 fixed_ips
+        mock_get_int_name.side_effect = ['fake0', 'fake1']
+        fixed_ips = [{'ip_address': '192.0.2.1'},
+                     {'ip_address': '192.2.0.2'}]
+        util.send_member_advertisements(fixed_ips)
+        mock_send_advert.assert_has_calls(
+            [mock.call('fake0', fixed_ips[0]['ip_address'],
+                       net_ns=consts.AMPHORA_NAMESPACE),
+             mock.call('fake1', fixed_ips[1]['ip_address'],
+                       net_ns=consts.AMPHORA_NAMESPACE)])
+
+        # Mixed IPv4/IPv6
+        mock_send_advert.reset_mock()
+        mock_get_int_name.side_effect = ['fake0', 'fake1']
+        fixed_ips = [{'ip_address': '192.0.2.1'},
+                     {'ip_address': '2001:db8::2'}]
+        util.send_member_advertisements(fixed_ips)
+        mock_send_advert.assert_has_calls(
+            [mock.call('fake0', fixed_ips[0]['ip_address'],
+                       net_ns=consts.AMPHORA_NAMESPACE),
+             mock.call('fake1', fixed_ips[1]['ip_address'],
+                       net_ns=consts.AMPHORA_NAMESPACE)])
+
+        # Exception
+        mock_send_advert.reset_mock()
+        mock_get_int_name.side_effect = Exception('ERROR')
+        util.send_member_advertisements(fixed_ips)
+        mock_send_advert.assert_not_called()
