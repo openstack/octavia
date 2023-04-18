@@ -123,7 +123,7 @@ class TestHaproxyAmphoraLoadBalancerDriverTest(base.TestCase):
             vip_subnet=network_models.Subnet(
                 id=self.lb.vip.subnet_id,
                 cidr=FAKE_VIP_SUBNET,
-                host_routes=[]))
+                host_routes=[])).to_dict(recurse=True)
 
     @mock.patch('octavia.amphorae.drivers.haproxy.rest_api_driver.'
                 'HaproxyAmphoraLoadBalancerDriver._process_secret')
@@ -698,43 +698,64 @@ class TestHaproxyAmphoraLoadBalancerDriverTest(base.TestCase):
         self.assertIsNone(result)
 
     def test_post_vip_plug(self):
-        amphorae_network_config = mock.MagicMock()
-        amphorae_network_config.get().vip_subnet.cidr = FAKE_CIDR
-        amphorae_network_config.get().vip_subnet.gateway_ip = FAKE_GATEWAY
-        amphorae_network_config.get().vip_subnet.host_routes = self.host_routes
-        amphorae_network_config.get().vip_subnet.to_dict.return_value = {
+        vip_subnet = mock.MagicMock()
+        vip_subnet.cidr = FAKE_CIDR
+        vip_subnet.gateway_ip = FAKE_GATEWAY
+        vip_subnet.host_routes = self.host_routes
+        vip_subnet.to_dict.return_value = {
             'cidr': FAKE_CIDR,
             'gateway_ip': FAKE_GATEWAY,
             'host_routes': [
                 hr.to_dict(recurse=True)
                 for hr in self.host_routes]
         }
+
+        amphorae_network_config = mock.MagicMock()
+        amphorae_network_config.get().vip_subnet = vip_subnet
         amphorae_network_config.get().vrrp_port = self.port
-        self.driver.post_vip_plug(self.amp, self.lb, amphorae_network_config)
+        self.driver.post_vip_plug(self.amp, self.lb, amphorae_network_config,
+                                  self.port, vip_subnet,
+                                  additional_vip_data=[])
         self.driver.clients[API_VERSION].plug_vip.assert_called_once_with(
             self.amp, self.lb.vip.ip_address, self.subnet_info)
 
     def test_post_vip_plug_additional_vips(self):
-        amphorae_network_config = mock.MagicMock()
-        amphorae_network_config.get().vip_subnet.cidr = FAKE_CIDR
-        amphorae_network_config.get().vip_subnet.gateway_ip = FAKE_GATEWAY
-        amphorae_network_config.get().vip_subnet.host_routes = self.host_routes
-        amphorae_network_config.get().vip_subnet.to_dict.return_value = {
+        vip_subnet = mock.MagicMock()
+        vip_subnet.cidr = FAKE_CIDR
+        vip_subnet.gateway_ip = FAKE_GATEWAY
+        vip_subnet.host_routes = self.host_routes
+        vip_subnet.to_dict.return_value = {
             'cidr': FAKE_CIDR,
             'gateway_ip': FAKE_GATEWAY,
             'host_routes': [
                 hr.to_dict(recurse=True)
                 for hr in self.host_routes]
         }
+
+        amphorae_network_config = mock.MagicMock()
+        amphorae_network_config.get().vip_subnet = vip_subnet
         amphorae_network_config.get().vrrp_port = self.port
+
+        vip1_subnet = mock.MagicMock()
+        vip1_subnet.cidr = mock.Mock()
+        vip1_subnet.gateway_ip = mock.Mock()
+        vip1_subnet.host_routes = self.host_routes
+        vip1_subnet.to_dict.return_value = {
+            'cidr': vip1_subnet.cidr,
+            'gateway_ip': vip1_subnet.gateway_ip,
+            'host_routes': [
+                hr.to_dict(recurse=True)
+                for hr in self.host_routes]
+        }
         additional_vip1 = mock.MagicMock()
         additional_vip1.ip_address = mock.Mock()
-        additional_vip1.subnet.cidr = mock.Mock()
-        additional_vip1.subnet.gateway_ip = mock.Mock()
-        additional_vip1.subnet.host_routes = self.host_routes
+        additional_vip1.subnet = vip1_subnet
         additional_vip_data = [additional_vip1]
-        self.driver.post_vip_plug(self.amp, self.lb, amphorae_network_config,
-                                  additional_vip_data=additional_vip_data)
+        self.driver.post_vip_plug(
+            self.amp, self.lb,
+            amphorae_network_config,
+            self.port, vip_subnet,
+            additional_vip_data=additional_vip_data)
         netinfo = self.subnet_info.copy()
         netinfo['additional_vips'] = [
             {

@@ -40,7 +40,6 @@ from octavia.common import utils
 from octavia.db import api as db_apis
 from octavia.db import models as db_models
 from octavia.db import repositories as repo
-from octavia.network import data_models as network_models
 
 
 LOG = logging.getLogger(__name__)
@@ -358,26 +357,16 @@ class HaproxyAmphoraLoadBalancerDriver(
         return net_info
 
     def post_vip_plug(self, amphora, load_balancer, amphorae_network_config,
-                      vrrp_port=None, vip_subnet=None,
-                      additional_vip_data=None):
+                      vrrp_port, vip_subnet, additional_vip_data=None):
         if amphora.status != consts.DELETED:
             self._populate_amphora_api_version(amphora)
-            if vip_subnet is None:
-                vip_subnet = amphorae_network_config.get(amphora.id).vip_subnet
-            if vrrp_port is None:
-                port = amphorae_network_config.get(amphora.id).vrrp_port
-                mtu = port.network.mtu
-            else:
-                port = vrrp_port
-                mtu = port.network['mtu']
+            port = vrrp_port.to_dict(recurse=True)
+            mtu = port[consts.NETWORK][consts.MTU]
             LOG.debug("Post-VIP-Plugging with vrrp_ip %s vrrp_port %s",
-                      amphora.vrrp_ip, port.id)
+                      amphora.vrrp_ip, port[consts.ID])
             net_info = self._build_net_info(
-                port.to_dict(recurse=True), amphora.to_dict(),
+                port, amphora.to_dict(),
                 vip_subnet.to_dict(recurse=True), mtu)
-            if additional_vip_data is None:
-                additional_vip_data = amphorae_network_config.get(
-                    amphora.id).additional_vip_data
             for add_vip in additional_vip_data:
                 add_host_routes = [{'nexthop': hr.nexthop,
                                     'destination': hr.destination}
@@ -393,7 +382,7 @@ class HaproxyAmphoraLoadBalancerDriver(
             except exc.Conflict:
                 LOG.warning('VIP with MAC %(mac)s already exists on amphora, '
                             'skipping post_vip_plug',
-                            {'mac': port.mac_address})
+                            {'mac': port[consts.MAC_ADDRESS]})
 
     def post_network_plug(self, amphora, port, amphora_network_config):
         fixed_ips = []
@@ -410,10 +399,6 @@ class HaproxyAmphoraLoadBalancerDriver(
                      'fixed_ips': fixed_ips,
                      'mtu': port.network.mtu}
         if port.id == amphora.vrrp_port_id:
-            if isinstance(amphora_network_config,
-                          network_models.AmphoraNetworkConfig):
-                amphora_network_config = amphora_network_config.to_dict(
-                    recurse=True)
             # We have to special-case sharing the vrrp port and pass through
             # enough extra information to populate the whole VIP port
             net_info = self._build_net_info(

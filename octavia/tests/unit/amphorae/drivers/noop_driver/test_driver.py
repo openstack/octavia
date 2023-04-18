@@ -123,8 +123,11 @@ class TestNoopAmphoraLoadBalancerDriver(base.TestCase):
                              self.amphora.id, self.port.id)])
 
     def test_post_vip_plug(self):
+        port = network_models.Port(id=uuidutils.generate_uuid())
+        subnet = network_models.Subnet(id=uuidutils.generate_uuid())
         self.driver.post_vip_plug(self.amphora, self.load_balancer,
-                                  self.amphorae_net_configs)
+                                  self.amphorae_net_configs,
+                                  port, subnet)
         expected_method_and_args = (self.load_balancer.id,
                                     self.amphorae_net_configs,
                                     'post_vip_plug')
