@@ -145,7 +145,7 @@ def no_log_warn(logical_line):
     O339
     """
     if logical_line.startswith('LOG.warn('):
-        yield(0, "O339:Use LOG.warning() rather than LOG.warn()")
+        yield (0, "O339:Use LOG.warning() rather than LOG.warn()")
 
 
 @core.flake8ext
