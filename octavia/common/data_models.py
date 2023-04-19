@@ -16,6 +16,7 @@
 
 import datetime
 import re
+import typing as tp
 
 from oslo_log import log as logging
 from sqlalchemy.orm import collections
@@ -419,7 +420,8 @@ class Listener(BaseDataModel):
                  tags=None, client_ca_tls_certificate_id=None,
                  client_authentication=None, client_crl_container_id=None,
                  allowed_cidrs=None, tls_ciphers=None, tls_versions=None,
-                 alpn_protocols=None):
+                 alpn_protocols=None, hsts_max_age=None,
+                 hsts_include_subdomains=None, hsts_preload=None):
         self.id = id
         self.project_id = project_id
         self.name = name
@@ -455,6 +457,10 @@ class Listener(BaseDataModel):
         self.tls_ciphers = tls_ciphers
         self.tls_versions = tls_versions
         self.alpn_protocols = alpn_protocols
+        self.hsts_max_age: tp.Optional[int] = hsts_max_age
+        self.hsts_include_subdomains: tp.Optional[bool] = (
+            hsts_include_subdomains)
+        self.hsts_preload: tp.Optional[bool] = hsts_preload
 
     def update(self, update_dict):
         for key, value in update_dict.items():

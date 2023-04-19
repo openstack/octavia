@@ -808,6 +808,62 @@ healthmonitor-url_path-optional:
   in: body
   required: false
   type: string
+hsts_include_subdomains:
+  description: |
+    Defines whether the ``includeSubDomains`` directive should be
+    added to the Strict-Transport-Security HTTP response
+    header.
+  in: body
+  min_version: 2.27
+  required: true
+  type: bool
+hsts_include_subdomains-optional:
+  description: |
+    Defines whether the ``includeSubDomains`` directive should be
+    added to the Strict-Transport-Security HTTP response
+    header. This requires setting the ``hsts_max_age`` option as well in
+    order to become effective.
+  in: body
+  min_version: 2.27
+  required: false
+  type: bool
+hsts_max_age:
+  description: |
+    The value of the ``max_age`` directive for the
+    Strict-Transport-Security HTTP response header.
+  in: body
+  min_version: 2.27
+  required: true
+  type: integer
+hsts_max_age-optional:
+  description: |
+    The value of the ``max_age`` directive for the
+    Strict-Transport-Security HTTP response header.
+    Setting this enables HTTP Strict Transport
+    Security (HSTS) for the TLS-terminated listener.
+  in: body
+  min_version: 2.27
+  required: false
+  type: integer
+hsts_preload:
+  description: |
+    Defines whether the ``preload`` directive should be
+    added to the Strict-Transport-Security HTTP response
+    header.
+  in: body
+  min_version: 2.27
+  required: true
+  type: bool
+hsts_preload-optional:
+  description: |
+    Defines whether the ``preload`` directive should be
+    added to the Strict-Transport-Security HTTP response
+    header. This requires setting the ``hsts_max_age`` option as well in
+    order to become effective.
+  in: body
+  min_version: 2.27
+  required: false
+  type: bool
 id:
   description: |
     The ID of the resource.

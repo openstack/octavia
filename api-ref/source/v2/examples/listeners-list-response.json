@@ -37,7 +37,9 @@
             "timeout_member_connect": 5000,
             "timeout_member_data": 50000,
             "timeout_tcp_inspect": 0,
-            "tags": ["test_tag"],
+            "tags": [
+                "test_tag"
+            ],
             "client_ca_tls_container_ref": "http://198.51.100.10:9311/v1/containers/35649991-49f3-4625-81ce-2465fe8932e5",
             "client_authentication": "NONE",
             "client_crl_container_ref": "http://198.51.100.10:9311/v1/containers/e222b065-b93b-4e2a-9a02-804b7a118c3c",
@@ -46,8 +48,17 @@
                 "198.51.100.0/24"
             ],
             "tls_ciphers": "ECDHE-RSA-AES256-GCM-SHA384:ECDHE-RSA-AES128-GCM-SHA256",
-            "tls_versions": ["TLSv1.2", "TLSv1.3"],
-            "alpn_protocols": ["http/1.1", "http/1.0"]
+            "tls_versions": [
+                "TLSv1.2",
+                "TLSv1.3"
+            ],
+            "alpn_protocols": [
+                "http/1.1",
+                "http/1.0"
+            ],
+            "hsts_include_subdomains": true,
+            "hsts_max_age": 31536000,
+            "hsts_preload": true
         }
     ]
 }

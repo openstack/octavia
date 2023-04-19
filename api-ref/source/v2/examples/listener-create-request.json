@@ -30,6 +30,9 @@
         ],
         "tls_ciphers": "ECDHE-RSA-AES256-GCM-SHA384:ECDHE-RSA-AES128-GCM-SHA256",
         "tls_versions": ["TLSv1.2", "TLSv1.3"],
-        "alpn_protocols": ["http/1.1", "http/1.0"]
+        "alpn_protocols": ["http/1.1", "http/1.0"],
+        "hsts_include_subdomains": true,
+        "hsts_max_age": 31536000,
+        "hsts_preload": true
     }
 }

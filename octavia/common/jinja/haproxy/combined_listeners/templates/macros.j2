@@ -166,6 +166,9 @@ frontend {{ listener.id }}
     {% if (listener.protocol.lower() ==
        constants.PROTOCOL_TERMINATED_HTTPS.lower()) %}
     redirect scheme https if !{ ssl_fc }
+        {% if listener.hsts_directives is defined %}
+    http-response set-header Strict-Transport-Security "{{ listener.hsts_directives }}"
+        {% endif %}
     {% endif %}
     {{ bind_macro(constants, lib_consts, listener, lb_vip_address)|trim() }}
     {% for add_vip in additional_vips %}

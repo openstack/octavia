@@ -324,6 +324,8 @@ class ListenersController(base.BaseController):
             # Validate ALPN protocol list
             validate.check_alpn_protocols(listener_dict['alpn_protocols'])
 
+        validate.check_hsts_options(listener_dict)
+
         try:
             db_listener = self.repositories.listener.create(
                 lock_session, **listener_dict)
@@ -345,7 +347,6 @@ class ListenersController(base.BaseController):
         except odb_exceptions.DBError as e:
             raise exceptions.InvalidOption(value=listener_dict.get('protocol'),
                                            option='protocol') from e
-        return None
 
     @wsme_pecan.wsexpose(listener_types.ListenerRootResponse,
                          body=listener_types.ListenerRootPOST, status_code=201)
@@ -557,6 +558,8 @@ class ListenersController(base.BaseController):
             # Validate ALPN protocol list
             validate.check_alpn_protocols(listener.alpn_protocols)
 
+        validate.check_hsts_options_put(listener, db_listener)
+
     def _set_default_on_none(self, listener):
         """Reset settings to their default values if None/null was passed in
 
@@ -592,10 +595,14 @@ class ListenersController(base.BaseController):
         if listener.alpn_protocols is None:
             listener.alpn_protocols = (
                 CONF.api_settings.default_listener_alpn_protocols)
+        if listener.hsts_include_subdomains is None:
+            listener.hsts_include_subdomains = False
+        if listener.hsts_preload is None:
+            listener.hsts_preload = False
 
     @wsme_pecan.wsexpose(listener_types.ListenerRootResponse, wtypes.text,
                          body=listener_types.ListenerRootPUT, status_code=200)
-    def put(self, id, listener_):
+    def put(self, id, listener_: listener_types.ListenerRootPUT):
         """Updates a listener on a load balancer."""
         listener = listener_.listener
         context = pecan_request.context.get('octavia_context')

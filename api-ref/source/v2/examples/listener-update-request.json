@@ -18,14 +18,25 @@
         "timeout_member_connect": 1000,
         "timeout_member_data": 100000,
         "timeout_tcp_inspect": 5,
-        "tags": ["updated_tag"],
+        "tags": [
+            "updated_tag"
+        ],
         "client_ca_tls_container_ref": null,
         "allowed_cidrs": [
             "192.0.2.0/24",
             "198.51.100.0/24"
         ],
         "tls_ciphers": "ECDHE-RSA-AES256-GCM-SHA384:ECDHE-RSA-AES128-GCM-SHA256",
-        "tls_versions": ["TLSv1.2", "TLSv1.3"],
-        "alpn_protocols": ["http/1.1", "http/1.0"]
+        "tls_versions": [
+            "TLSv1.2",
+            "TLSv1.3"
+        ],
+        "alpn_protocols": [
+            "http/1.1",
+            "http/1.0"
+        ],
+        "hsts_include_subdomains": true,
+        "hsts_max_age": 31536000,
+        "hsts_preload": true
     }
 }

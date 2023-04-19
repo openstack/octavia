@@ -2879,7 +2879,10 @@ class TestLoadBalancerGraph(base.BaseAPITest):
             'allowed_cidrs': None,
             'tls_ciphers': None,
             'tls_versions': None,
-            'alpn_protocols': None
+            'alpn_protocols': None,
+            'hsts_include_subdomains': False,
+            'hsts_max_age': None,
+            'hsts_preload': False,
         }
         if create_sni_containers:
             create_listener['sni_container_refs'] = create_sni_containers

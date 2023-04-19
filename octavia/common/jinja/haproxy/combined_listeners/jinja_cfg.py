@@ -23,6 +23,7 @@ from oslo_utils import versionutils
 from octavia.common.config import cfg
 from octavia.common import constants
 from octavia.common import utils as octavia_utils
+from octavia.db import models
 
 PROTOCOL_MAP = {
     constants.PROTOCOL_TCP: 'tcp',
@@ -298,7 +299,8 @@ class JinjaTemplater(object):
             'vrrp_priority': amphora.vrrp_priority
         }
 
-    def _transform_listener(self, listener, tls_certs, feature_compatibility,
+    def _transform_listener(self, listener: models.Listener, tls_certs,
+                            feature_compatibility,
                             loadbalancer):
         """Transforms a listener into an object that will
 
@@ -363,6 +365,13 @@ class JinjaTemplater(object):
                 ret_value['tls_versions'] = listener.tls_versions
             if listener.alpn_protocols is not None:
                 ret_value['alpn_protocols'] = ",".join(listener.alpn_protocols)
+            if listener.hsts_max_age is not None:
+                hsts_directives = f"max-age={listener.hsts_max_age};"
+                if listener.hsts_include_subdomains:
+                    hsts_directives += " includeSubDomains;"
+                if listener.hsts_preload:
+                    hsts_directives += " preload;"
+                ret_value['hsts_directives'] = hsts_directives
 
         pools = []
         pool_gen = (pool for pool in listener.pools if

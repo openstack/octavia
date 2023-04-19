@@ -707,7 +707,9 @@ def sample_listener_tuple(proto=None, monitor=True, alloc_default_pool=True,
                           backend_alpn_protocols=constants.
                           AMPHORA_SUPPORTED_ALPN_PROTOCOLS,
                           include_pools=True,
-                          additional_vips=False):
+                          additional_vips=False,
+                          hsts_max_age=10_000_000,
+                          hsts_include_subdomains=True, hsts_preload=True):
     proto = 'HTTP' if proto is None else proto
     if be_proto is None:
         be_proto = 'HTTP' if proto == 'TERMINATED_HTTPS' else proto
@@ -731,7 +733,9 @@ def sample_listener_tuple(proto=None, monitor=True, alloc_default_pool=True,
                     'timeout_tcp_inspect, client_ca_tls_certificate_id, '
                     'client_ca_tls_certificate, client_authentication, '
                     'client_crl_container_id, provisioning_status, '
-                    'tls_ciphers, tls_versions, alpn_protocols')
+                    'tls_ciphers, tls_versions, alpn_protocols, '
+                    'hsts_max_age, hsts_include_subdomains, hsts_preload'
+    )
     if l7:
         pools = [
             sample_pool_tuple(
@@ -859,7 +863,10 @@ def sample_listener_tuple(proto=None, monitor=True, alloc_default_pool=True,
         provisioning_status=provisioning_status,
         tls_ciphers=tls_ciphers,
         tls_versions=tls_versions,
-        alpn_protocols=alpn_protocols
+        alpn_protocols=alpn_protocols,
+        hsts_max_age=hsts_max_age,
+        hsts_include_subdomains=hsts_include_subdomains,
+        hsts_preload=hsts_preload,
     )
     if recursive_nest:
         listener.load_balancer.listeners.append(listener)

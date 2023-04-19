@@ -28,11 +28,13 @@ from rfc3986 import validators
 from wsme import types as wtypes
 
 from octavia.common import constants
+from octavia.common import data_models
 from octavia.common import exceptions
 from octavia.common import utils
 from octavia.i18n import _
 
 CONF = cfg.CONF
+_ListenerPUT = 'octavia.api.v2.types.listener.ListenerPUT'
 
 
 def url(url, require_scheme=True):
@@ -531,3 +533,36 @@ def check_alpn_protocols(protocols):
     if invalid_protocols:
         raise exceptions.ValidationException(
             detail=_('Invalid ALPN protocol: ' + ', '.join(invalid_protocols)))
+
+
+def check_hsts_options(listener: dict):
+    if ((listener.get('hsts_include_subdomains') or
+         listener.get('hsts_preload')) and
+            not isinstance(listener.get('hsts_max_age'), int)):
+        raise exceptions.ValidationException(
+            detail=_('HSTS configuration options hsts_include_subdomains and '
+                     'hsts_preload only make sense if hsts_max_age is '
+                     'set as well.'))
+
+    if (isinstance(listener.get('hsts_max_age'), int) and
+            listener['protocol'] != constants.PROTOCOL_TERMINATED_HTTPS):
+        raise exceptions.ValidationException(
+            detail=_('The HSTS feature can only be used for listeners using '
+                     'the TERMINATED_HTTPS protocol.'))
+
+
+def check_hsts_options_put(listener: _ListenerPUT,
+                           db_listener: data_models.Listener):
+    hsts_disabled = all(obj.hsts_max_age in [None, wtypes.Unset] for obj
+                        in (db_listener, listener))
+    if ((listener.hsts_include_subdomains or listener.hsts_preload) and
+            hsts_disabled):
+        raise exceptions.ValidationException(
+            detail=_('Cannot enable hsts_include_subdomains or hsts_preload '
+                     'if hsts_max_age was not set as well.'))
+
+    if (isinstance(listener.hsts_max_age, int) and
+            db_listener.protocol != constants.PROTOCOL_TERMINATED_HTTPS):
+        raise exceptions.ValidationException(
+            detail=_('The HSTS feature can only be used for listeners using '
+                     'the TERMINATED_HTTPS protocol.'))

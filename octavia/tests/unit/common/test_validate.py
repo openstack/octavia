@@ -16,6 +16,7 @@ from unittest import mock
 from oslo_config import cfg
 from oslo_config import fixture as oslo_fixture
 from oslo_utils import uuidutils
+from wsme import types as wtypes
 
 import octavia.common.constants as constants
 import octavia.common.exceptions as exceptions
@@ -536,3 +537,69 @@ class TestValidations(base.TestCase):
                                                       '2001:db8::/32'))
         self.assertFalse(validate.is_ip_member_of_cidr('::ffff:0:203.0.113.5',
                                                        '2001:db8::/32'))
+
+    def test_check_hsts_options(self):
+        self.assertRaises(
+            exceptions.ValidationException,
+            validate.check_hsts_options,
+            {'hsts_include_subdomains': True,
+             'hsts_preload': wtypes.Unset,
+             'hsts_max_age': wtypes.Unset}
+        )
+        self.assertRaises(
+            exceptions.ValidationException,
+            validate.check_hsts_options,
+            {'hsts_include_subdomains': wtypes.Unset,
+             'hsts_preload': True,
+             'hsts_max_age': wtypes.Unset}
+        )
+        self.assertRaises(
+            exceptions.ValidationException,
+            validate.check_hsts_options,
+            {'protocol': constants.PROTOCOL_UDP,
+             'hsts_include_subdomains': wtypes.Unset,
+             'hsts_preload': wtypes.Unset,
+             'hsts_max_age': 1}
+        )
+        self.assertIsNone(
+            validate.check_hsts_options(
+                {'protocol': constants.PROTOCOL_TERMINATED_HTTPS,
+                 'hsts_include_subdomains': wtypes.Unset,
+                 'hsts_preload': wtypes.Unset,
+                 'hsts_max_age': 1})
+        )
+
+    def test_check_hsts_options_put(self):
+        listener = mock.MagicMock()
+        db_listener = mock.MagicMock()
+        db_listener.protocol = constants.PROTOCOL_TERMINATED_HTTPS
+
+        listener.hsts_max_age = wtypes.Unset
+        db_listener.hsts_max_age = None
+        for obj in (listener, db_listener):
+            obj.hsts_include_subdomains = False
+            obj.hsts_preload = False
+        self.assertIsNone(validate.check_hsts_options_put(
+            listener, db_listener))
+
+        for i in range(2):
+            listener.hsts_include_subdomains = bool(i % 2)
+            listener.hsts_preload = not bool(i % 2)
+            self.assertRaises(
+                exceptions.ValidationException,
+                validate.check_hsts_options_put,
+                listener, db_listener)
+
+        listener.hsts_max_age, db_listener.hsts_max_age = wtypes.Unset, 0
+        self.assertIsNone(validate.check_hsts_options_put(
+            listener, db_listener))
+
+        listener.hsts_max_age, db_listener.hsts_max_age = 3, None
+        self.assertIsNone(validate.check_hsts_options_put(
+            listener, db_listener))
+
+        db_listener.protocol = constants.PROTOCOL_HTTP
+        self.assertRaises(
+            exceptions.ValidationException,
+            validate.check_hsts_options_put,
+            listener, db_listener)

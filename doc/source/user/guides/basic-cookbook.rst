@@ -440,6 +440,13 @@ balancer features, like Layer 7 features and header manipulation.
     openstack loadbalancer member create --subnet-id private-subnet --address 192.0.2.10 --protocol-port 80 pool1
     openstack loadbalancer member create --subnet-id private-subnet --address 192.0.2.11 --protocol-port 80 pool1
 
+.. note::
+    A good security practise for production servers is to enable
+    HTTP Strict Transport Security (HSTS),
+    which can be configured during listener creation using the
+    ``--hsts-max-age`` option and optionally ``--hsts-include-subdomains``
+    ``--hsts-prefetch``.
+
 
 Deploy a TLS-terminated HTTPS load balancer with SNI
 ----------------------------------------------------
