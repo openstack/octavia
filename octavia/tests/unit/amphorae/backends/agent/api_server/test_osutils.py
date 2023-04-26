@@ -106,7 +106,7 @@ class TestOSUtils(base.TestCase):
                                                  '192.0.2.2', 16)
 
         mock_interface_file.assert_called_once_with(
-            name='eth1',
+            name='eth1', if_type="lo",
             addresses=[{"address": "192.0.2.2", "prefixlen": 16}])
         mock_interface.write.assert_called_once()
 
