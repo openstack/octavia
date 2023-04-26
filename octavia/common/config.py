@@ -944,6 +944,7 @@ def _enable_pydev(debugger_host, debugger_port):
         import pydevd  # pylint: disable=import-outside-toplevel
 
     pydevd.settrace(debugger_host,
+                    suspend=False,
                     port=int(debugger_port),
                     stdoutToServer=True,
                     stderrToServer=True)
