@@ -691,6 +691,7 @@ class TestInterfaceFile(base.TestCase):
                    '"prefixlen": 26}\n'
                    '],\n'
                    '"mtu": 1450,\n'
+                   '"if_type": "mytype",\n'
                    '"name": "eth1",\n'
                    '"routes": [\n'
                    '{"dst": "0.0.0.0/0",\n'
@@ -717,6 +718,7 @@ class TestInterfaceFile(base.TestCase):
 
         expected_dict = {
             consts.NAME: "eth1",
+            consts.IF_TYPE: "mytype",
             consts.MTU: 1450,
             consts.ADDRESSES: [{
                 consts.ADDRESS: "10.0.0.181",
