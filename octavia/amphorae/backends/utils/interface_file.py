@@ -25,9 +25,11 @@ CONF = cfg.CONF
 
 
 class InterfaceFile(object):
-    def __init__(self, name, mtu=None, addresses=None,
+    def __init__(self, name, if_type,
+                 mtu=None, addresses=None,
                  routes=None, rules=None, scripts=None):
         self.name = name
+        self.if_type = if_type
         self.mtu = mtu
         self.addresses = addresses or []
         self.routes = routes or []
@@ -92,6 +94,7 @@ class InterfaceFile(object):
                                flags, mode), 'w') as fp:
             interface = {
                 consts.NAME: self.name,
+                consts.IF_TYPE: self.if_type,
                 consts.ADDRESSES: self.addresses,
                 consts.ROUTES: self.routes,
                 consts.RULES: self.rules,
@@ -105,7 +108,7 @@ class InterfaceFile(object):
 class VIPInterfaceFile(InterfaceFile):
     def __init__(self, name, mtu, vips, vrrp_info, fixed_ips, topology):
 
-        super().__init__(name, mtu=mtu)
+        super().__init__(name, if_type=consts.VIP, mtu=mtu)
 
         has_ipv4 = any(vip['ip_version'] == 4 for vip in vips)
         has_ipv6 = any(vip['ip_version'] == 6 for vip in vips)
@@ -236,7 +239,7 @@ class VIPInterfaceFile(InterfaceFile):
 
 class PortInterfaceFile(InterfaceFile):
     def __init__(self, name, mtu, fixed_ips):
-        super().__init__(name, mtu=mtu)
+        super().__init__(name, if_type=consts.BACKEND, mtu=mtu)
 
         if fixed_ips:
             ip_versions = set()
