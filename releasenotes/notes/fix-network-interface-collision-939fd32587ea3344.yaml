@@ -1,0 +1,8 @@
+---
+fixes:
+  - |
+    Fixed a potential error when plugging a member from a new network after
+    deleting another member and unplugging its network. Octavia may have tried
+    to plug the new network to a new interface but with an already existing
+    name.
+    This fix requires to update the Amphora image.
