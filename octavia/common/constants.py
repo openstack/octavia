@@ -844,3 +844,5 @@ OCTAVIA_OWNED = 'octavia_owned'
 # but they should be on the pool. Dealing with it until v3.
 LISTENER_PROTOCOLS_SUPPORTING_HEADER_INSERTION = [PROTOCOL_HTTP,
                                                   PROTOCOL_TERMINATED_HTTPS]
+
+IFLA_IFNAME = 'IFLA_IFNAME'

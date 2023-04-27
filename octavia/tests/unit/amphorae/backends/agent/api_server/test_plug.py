@@ -371,3 +371,41 @@ class TestPlugNetwork(base.TestCase):
     def test__generate_network_file_text_two_static_ips_centos(self):
         self._setup("centos")
         self.__generate_network_file_text_two_static_ips()
+
+    @mock.patch('pyroute2.NetNS', create=True)
+    def test__netns_get_next_interface(self, mock_netns):
+        self._setup("centos")
+        netns_handle = mock_netns.return_value.__enter__.return_value
+
+        netns_handle.get_links.return_value = [
+            {'attrs': [['IFLA_IFNAME', 'lo']]},
+        ]
+
+        ifname = self.test_plug._netns_get_next_interface()
+        self.assertEqual('eth2', ifname)
+
+        netns_handle.get_links.return_value = [
+            {'attrs': [['IFLA_IFNAME', 'lo']]},
+            {'attrs': [['IFLA_IFNAME', 'eth1']]},
+            {'attrs': [['IFLA_IFNAME', 'eth2']]},
+            {'attrs': [['IFLA_IFNAME', 'eth3']]},
+        ]
+
+        ifname = self.test_plug._netns_get_next_interface()
+        self.assertEqual('eth4', ifname)
+
+        netns_handle.get_links.return_value = [
+            {'attrs': [['IFLA_IFNAME', 'lo']]},
+            {'attrs': [['IFLA_IFNAME', 'eth1']]},
+            {'attrs': [['IFLA_IFNAME', 'eth3']]},
+        ]
+
+        ifname = self.test_plug._netns_get_next_interface()
+        self.assertEqual('eth2', ifname)
+
+        netns_handle.get_links.return_value = [
+            {'attrs': [['IFLA_IFNAME', f'eth{idx}']]}
+            for idx in range(2, 1000)]
+
+        ifname = self.test_plug._netns_get_next_interface()
+        self.assertEqual('eth1000', ifname)
