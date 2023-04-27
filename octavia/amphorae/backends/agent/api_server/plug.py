@@ -14,6 +14,7 @@
 # under the License.
 
 import ipaddress
+import itertools
 import os
 import socket
 import stat
@@ -188,13 +189,7 @@ class Plug(object):
 
         # We need to determine the interface name when inside the namespace
         # to avoid name conflicts
-        with pyroute2.NetNS(consts.AMPHORA_NAMESPACE,
-                            flags=os.O_CREAT) as netns:
-
-            # 1 means just loopback, but we should already have a VIP. This
-            # works for the add/delete/add case as we don't delete interfaces
-            # Note, eth0 is skipped because that is the VIP interface
-            netns_interface = 'eth{0}'.format(len(netns.get_links()))
+        netns_interface = self._netns_get_next_interface()
 
         LOG.info('Plugged interface %s will become %s in the namespace %s',
                  default_netns_interface, netns_interface,
@@ -269,3 +264,16 @@ class Plug(object):
                     if attr[0] == 'IFLA_ADDRESS' and attr[1] == mac_address:
                         return True
         return False
+
+    def _netns_get_next_interface(self):
+        with pyroute2.NetNS(consts.AMPHORA_NAMESPACE,
+                            flags=os.O_CREAT) as netns:
+            existing_ifaces = [
+                dict(link['attrs']).get(consts.IFLA_IFNAME)
+                for link in netns.get_links()]
+            # find the first unused ethXXX
+            for idx in itertools.count(start=2):
+                iface_name = "eth{idx}".format(idx=idx)
+                if iface_name not in existing_ifaces:
+                    break
+            return iface_name
