@@ -285,13 +285,13 @@ class TestPlug(base.TestCase):
             self.test_plug.plug_network(FAKE_MAC_ADDRESS, fixed_ips, 1400)
 
         mock_write_port_interface.assert_called_once_with(
-            interface='eth0', fixed_ips=fixed_ips, mtu=mtu)
-        mock_if_up.assert_called_once_with('eth0', 'network')
+            interface='eth2', fixed_ips=fixed_ips, mtu=mtu)
+        mock_if_up.assert_called_once_with('eth2', 'network')
         mock_send_member_adv.assert_called_once_with(fixed_ips)
 
         mock_webob.Response.assert_any_call(
             json={'message': 'OK',
-                  'details': 'Plugged on interface eth0'},
+                  'details': 'Plugged on interface eth2'},
             status=202)
 
     @mock.patch.object(plug, "webob")
@@ -411,3 +411,40 @@ class TestPlug(base.TestCase):
                   'details': 'Updated existing interface {}'.format(
                       FAKE_INTERFACE)},
             status=202)
+
+    @mock.patch('pyroute2.NetNS', create=True)
+    def test__netns_get_next_interface(self, mock_netns):
+        netns_handle = mock_netns.return_value.__enter__.return_value
+
+        netns_handle.get_links.return_value = [
+            {'attrs': [['IFLA_IFNAME', 'lo']]},
+        ]
+
+        ifname = self.test_plug._netns_get_next_interface()
+        self.assertEqual('eth2', ifname)
+
+        netns_handle.get_links.return_value = [
+            {'attrs': [['IFLA_IFNAME', 'lo']]},
+            {'attrs': [['IFLA_IFNAME', 'eth1']]},
+            {'attrs': [['IFLA_IFNAME', 'eth2']]},
+            {'attrs': [['IFLA_IFNAME', 'eth3']]},
+        ]
+
+        ifname = self.test_plug._netns_get_next_interface()
+        self.assertEqual('eth4', ifname)
+
+        netns_handle.get_links.return_value = [
+            {'attrs': [['IFLA_IFNAME', 'lo']]},
+            {'attrs': [['IFLA_IFNAME', 'eth1']]},
+            {'attrs': [['IFLA_IFNAME', 'eth3']]},
+        ]
+
+        ifname = self.test_plug._netns_get_next_interface()
+        self.assertEqual('eth2', ifname)
+
+        netns_handle.get_links.return_value = [
+            {'attrs': [['IFLA_IFNAME', f'eth{idx}']]}
+            for idx in range(2, 1000)]
+
+        ifname = self.test_plug._netns_get_next_interface()
+        self.assertEqual('eth1000', ifname)
