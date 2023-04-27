@@ -875,3 +875,5 @@ SUPPORTED_ALPN_PROTOCOLS = [lib_consts.ALPN_PROTOCOL_HTTP_2,
 AMPHORA_SUPPORTED_ALPN_PROTOCOLS = [lib_consts.ALPN_PROTOCOL_HTTP_2,
                                     lib_consts.ALPN_PROTOCOL_HTTP_1_1,
                                     lib_consts.ALPN_PROTOCOL_HTTP_1_0]
+
+IFLA_IFNAME = 'IFLA_IFNAME'
