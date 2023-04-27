@@ -1008,7 +1008,9 @@ class TestServerTestCase(base.TestCase):
 
         mock_int_exists.return_value = False
         netns_handle = mock_netns.return_value.__enter__.return_value
-        netns_handle.get_links.return_value = [0] * test_int_num
+        netns_handle.get_links.return_value = [
+            {'attrs': [['IFLA_IFNAME', f'eth{idx}']]}
+            for idx in range(test_int_num)]
         mock_isfile.return_value = True
 
         mock_check_output.return_value = b"1\n2\n3\n"
@@ -1396,7 +1398,7 @@ class TestServerTestCase(base.TestCase):
 
         netns_handle = mock_netns.return_value.__enter__.return_value
         netns_handle.get_links.return_value = [{
-            'attrs': [['IFLA_IFNAME', consts.NETNS_PRIMARY_INTERFACE]]}]
+            'attrs': [['IFLA_IFNAME', 'eth2']]}]
 
         port_info = {'mac_address': MAC, 'mtu': 1450, 'fixed_ips': [
             {'ip_address': IP, 'subnet_cidr': SUBNET_CIDR,
@@ -1405,8 +1407,7 @@ class TestServerTestCase(base.TestCase):
 
         flags = os.O_WRONLY | os.O_CREAT | os.O_TRUNC
         mode = stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IROTH
-        file_name = '/etc/octavia/interfaces/{}.json'.format(
-            consts.NETNS_PRIMARY_INTERFACE)
+        file_name = '/etc/octavia/interfaces/eth3.json'
 
         m = self.useFixture(test_utils.OpenFixture(file_name)).mock_open
         with mock.patch('os.open') as mock_open, mock.patch.object(
@@ -1436,7 +1437,7 @@ class TestServerTestCase(base.TestCase):
             mock_fdopen.assert_any_call(123, 'r+')
 
             expected_dict = {
-                consts.NAME: consts.NETNS_PRIMARY_INTERFACE,
+                consts.NAME: 'eth3',
                 consts.MTU: 1450,
                 consts.ADDRESSES: [
                     {
@@ -1458,13 +1459,12 @@ class TestServerTestCase(base.TestCase):
                 consts.SCRIPTS: {
                     consts.IFACE_UP: [{
                         consts.COMMAND: (
-                            "/usr/local/bin/lvs-masquerade.sh add ipv4 "
-                            "{}".format(consts.NETNS_PRIMARY_INTERFACE))
+                            "/usr/local/bin/lvs-masquerade.sh add ipv4 eth3")
                     }],
                     consts.IFACE_DOWN: [{
                         consts.COMMAND: (
                             "/usr/local/bin/lvs-masquerade.sh delete ipv4 "
-                            "{}".format(consts.NETNS_PRIMARY_INTERFACE))
+                            "eth3")
                     }]
                 }
             }
@@ -1476,8 +1476,7 @@ class TestServerTestCase(base.TestCase):
 
             mock_check_output.assert_called_with(
                 ['ip', 'netns', 'exec', consts.AMPHORA_NAMESPACE,
-                 'amphora-interface', 'up',
-                 consts.NETNS_PRIMARY_INTERFACE], stderr=-2)
+                 'amphora-interface', 'up', 'eth3'], stderr=-2)
 
     def test_ubuntu_plug_VIP4(self):
         self._test_plug_VIP4(consts.UBUNTU)
