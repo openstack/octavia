@@ -1,0 +1,5 @@
+---
+fixes:
+  - |
+    Fix the rescheduling of taskflow tasks that have been resumed after being
+    interrupted.
