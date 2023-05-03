@@ -37,8 +37,8 @@ class TestNeutronUtils(base.TestCase):
                                 if hay[key] is not None})
         self.assertIn(newneedle, newhaystack)
 
-    def test_convert_subnet_dict_to_model(self):
-        model_obj = utils.convert_subnet_dict_to_model(
+    def test_convert_subnet_to_model(self):
+        model_obj = utils.convert_subnet_to_model(
             t_constants.MOCK_SUBNET)
         assert_dict = dict(
             id=t_constants.MOCK_SUBNET_ID,
@@ -52,8 +52,8 @@ class TestNeutronUtils(base.TestCase):
         )
         self._compare_ignore_value_none(model_obj.to_dict(), assert_dict)
 
-    def test_convert_port_dict_to_model(self):
-        model_obj = utils.convert_port_dict_to_model(
+    def test_convert_port_to_model(self):
+        model_obj = utils.convert_port_to_model(
             t_constants.MOCK_NEUTRON_PORT)
         assert_dict = dict(
             id=t_constants.MOCK_PORT_ID,
@@ -69,12 +69,12 @@ class TestNeutronUtils(base.TestCase):
             security_group_ids=[],
         )
         self._compare_ignore_value_none(model_obj.to_dict(), assert_dict)
-        fixed_ips = t_constants.MOCK_NEUTRON_PORT['port']['fixed_ips']
+        fixed_ips = t_constants.MOCK_NEUTRON_PORT['fixed_ips']
         for ip in model_obj.fixed_ips:
             self._in_ignore_value_none(ip.to_dict(), fixed_ips)
 
-    def test_convert_network_dict_to_model(self):
-        model_obj = utils.convert_network_dict_to_model(
+    def test_convert_network_to_model(self):
+        model_obj = utils.convert_network_to_model(
             t_constants.MOCK_NETWORK)
         assert_dict = dict(
             id=t_constants.MOCK_NETWORK_ID,
@@ -86,11 +86,12 @@ class TestNeutronUtils(base.TestCase):
             provider_network_type=t_constants.MOCK_NETWORK_TYPE,
             provider_physical_network=t_constants.MOCK_NETWORK_NAME,
             provider_segmentation_id=t_constants.MOCK_SEGMENTATION_ID,
-            router_external=t_constants.MOCK_ROUTER_EXTERNAL
+            router_external=t_constants.MOCK_ROUTER_EXTERNAL,
+            port_security_enabled=False,
         )
         model_dict = model_obj.to_dict()
         model_dict['subnets'] = model_obj.subnets
-        self._compare_ignore_value_none(model_dict, assert_dict)
+        self._compare_ignore_value_none(assert_dict, model_dict)
 
     def test_convert_fixed_ip_dict_to_model(self):
         model_obj = utils.convert_fixed_ip_dict_to_model(
@@ -99,31 +100,14 @@ class TestNeutronUtils(base.TestCase):
             subnet_id=t_constants.MOCK_SUBNET_ID,
             ip_address=t_constants.MOCK_IP_ADDRESS
         )
-        self._compare_ignore_value_none(model_obj.to_dict(), assert_dict)
+        self._compare_ignore_value_none(assert_dict, model_obj.to_dict())
 
-    def test_convert_floatingip_dict_to_model(self):
-        model_obj = utils.convert_floatingip_dict_to_model(
-            t_constants.MOCK_FLOATING_IP)
-        assert_dict = dict(
-            id=t_constants.MOCK_FLOATING_IP_ID,
-            description=t_constants.MOCK_FLOATING_IP_DESC,
-            project_id=t_constants.MOCK_PROJECT_ID,
-            status=t_constants.MOCK_STATUS,
-            router_id=t_constants.MOCK_ROUTER_ID,
-            port_id=t_constants.MOCK_PORT_ID,
-            floating_network_id=t_constants.MOCK_NETWORK_ID,
-            network_id=t_constants.MOCK_NETWORK_ID,
-            floating_ip_address=t_constants.MOCK_IP_ADDRESS,
-            fixed_ip_address=t_constants.MOCK_IP_ADDRESS2,
-            fixed_port_id=t_constants.MOCK_PORT_ID2
-        )
-        self._compare_ignore_value_none(model_obj.to_dict(), assert_dict)
-
-    def test_convert_network_ip_availability_dict_to_model(self):
-        model_obj = utils.convert_network_ip_availability_dict_to_model(
+    def test_convert_network_ip_availability_to_model(self):
+        model_obj = utils.convert_network_ip_availability_to_model(
             t_constants.MOCK_NETWORK_IP_AVAILABILITY)
         assert_dict = dict(
             network_id=t_constants.MOCK_NETWORK_ID,
+            project_id=t_constants.MOCK_PROJECT_ID,
             tenant_id=t_constants.MOCK_PROJECT_ID,
             network_name=t_constants.MOCK_NETWORK_NAME,
             total_ips=t_constants.MOCK_NETWORK_TOTAL_IPS,

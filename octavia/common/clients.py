@@ -12,9 +12,11 @@
 
 from cinderclient import client as cinder_client
 from glanceclient import client as glance_client
-from neutronclient.neutron import client as neutron_client
+from keystoneauth1 import session
+from keystoneauth1 import token_endpoint
 from novaclient import api_versions
 from novaclient import client as nova_client
+import openstack
 from oslo_config import cfg
 from oslo_log import log as logging
 from oslo_utils import excutils
@@ -25,7 +27,6 @@ LOG = logging.getLogger(__name__)
 CONF = cfg.CONF
 
 GLANCE_VERSION = '2'
-NEUTRON_VERSION = '2.0'
 NOVA_VERSION = '2.15'
 CINDER_VERSION = '3'
 
@@ -73,38 +74,20 @@ class NeutronAuth(object):
     neutron_client = None
 
     @classmethod
-    def get_neutron_client(cls, region, service_name=None, endpoint=None,
-                           endpoint_type='publicURL', insecure=False,
-                           ca_cert=None):
-        """Create neutron client object.
-
-        :param region: The region of the service
-        :param service_name: The name of the neutron service in the catalog
-        :param endpoint: The endpoint of the service
-        :param endpoint_type: The endpoint_type of the service
-        :param insecure: Turn off certificate validation
-        :param ca_cert: CA Cert file path
-        :return: a Neutron Client object.
-        :raises Exception: if the client cannot be created
-        """
-        ksession = keystone.KeystoneSession()
+    def get_neutron_client(cls):
+        """Create neutron client object."""
+        ksession = keystone.KeystoneSession('neutron')
         if not cls.neutron_client:
-            kwargs = {'region_name': region,
-                      'session': ksession.get_session(),
-                      'endpoint_type': endpoint_type,
-                      'insecure': insecure}
-            if service_name:
-                kwargs['service_name'] = service_name
-            if endpoint:
-                kwargs['endpoint_override'] = endpoint
-            if ca_cert:
-                kwargs['ca_cert'] = ca_cert
-            try:
-                cls.neutron_client = neutron_client.Client(
-                    NEUTRON_VERSION, **kwargs)
-            except Exception:
-                with excutils.save_and_reraise_exception():
-                    LOG.exception("Error creating Neutron client.")
+            sess = ksession.get_session()
+
+            kwargs = {}
+            if CONF.neutron.endpoint_override:
+                kwargs['network_endpoint_override'] = (
+                    CONF.neutron.endpoint_override)
+
+            conn = openstack.connection.Connection(
+                session=sess, **kwargs)
+            cls.neutron_client = conn
         return cls.neutron_client
 
     @classmethod
@@ -113,26 +96,23 @@ class NeutronAuth(object):
 
         It's possible that the token in the context is a trust scoped
         which can't be used to initialize a keystone session.
-
         We directly use the token and endpoint_url to initialize neutron
         client.
         """
-        neutron_endpoint = CONF.neutron.endpoint
-        if not neutron_endpoint:
-            session = keystone.KeystoneSession().get_session()
-            endpoint_data = session.get_endpoint_data(
+        sess = keystone.KeystoneSession('neutron').get_session()
+        neutron_endpoint = CONF.neutron.endpoint_override
+        if neutron_endpoint is None:
+            endpoint_data = sess.get_endpoint_data(
                 service_type='network', interface=CONF.neutron.endpoint_type,
                 region_name=CONF.neutron.region_name)
             neutron_endpoint = endpoint_data.catalog_url
 
-        kwargs = {
-            'token': context.auth_token,
-            'endpoint_url': neutron_endpoint,
-            'insecure': CONF.neutron.insecure,
-            'ca_cert': CONF.neutron.ca_certificates_file
-        }
+        user_auth = token_endpoint.Token(neutron_endpoint, context.auth_token)
+        user_sess = session.Session(auth=user_auth)
 
-        return neutron_client.Client(NEUTRON_VERSION, **kwargs)
+        conn = openstack.connection.Connection(
+            session=user_sess, oslo_conf=CONF)
+        return conn.network
 
 
 class GlanceAuth(object):

@@ -330,7 +330,7 @@ Aside from the API, are there other ways a user will interact with this
 feature? Keep in mind that 'user' in this context could mean either tenant or
 operator.
 
-* Does this change have an impact on python-neutronclient? What does the user
+* Does this change have an impact on openstacksdk? What does the user
   interface there look like?
 
 Performance Impact

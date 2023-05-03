@@ -13,7 +13,6 @@ from unittest import mock
 
 import cinderclient.v3
 import glanceclient.v2
-import neutronclient.v2_0
 import novaclient.v2
 from oslo_config import cfg
 
@@ -59,44 +58,6 @@ class TestNovaAuth(base.TestCase):
         bc2 = clients.NovaAuth.get_nova_client(
             region="test-region", service_name='novaEndpoint1',
             endpoint="test-endpoint", endpoint_type='adminURL', insecure=True)
-        self.assertIs(bc1, bc2)
-
-
-class TestNeutronAuth(base.TestCase):
-
-    def setUp(self):
-        # Reset the session and client
-        clients.NeutronAuth.neutron_client = None
-        keystone._SESSION = None
-
-        super().setUp()
-
-    @mock.patch('keystoneauth1.session.Session', mock.Mock())
-    def test_get_neutron_client(self):
-        # There should be no existing client
-        self.assertIsNone(
-            clients.NeutronAuth.neutron_client
-        )
-
-        # Mock out the keystone session and get the client
-        keystone._SESSION = mock.MagicMock()
-        bc1 = clients.NeutronAuth.get_neutron_client(
-            region=None, endpoint_type='publicURL')
-
-        # Our returned client should also be the saved client
-        self.assertIsInstance(
-            clients.NeutronAuth.neutron_client,
-            neutronclient.v2_0.client.Client
-        )
-        self.assertIs(
-            clients.NeutronAuth.neutron_client,
-            bc1
-        )
-
-        # Getting the session again should return the same object
-        bc2 = clients.NeutronAuth.get_neutron_client(
-            region="test-region", service_name="neutronEndpoint1",
-            endpoint="test-endpoint", endpoint_type='publicURL', insecure=True)
         self.assertIs(bc1, bc2)
 
 

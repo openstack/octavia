@@ -321,6 +321,16 @@ function octavia_configure {
     iniset $OCTAVIA_CONF service_auth cafile $SSL_BUNDLE_FILE
     iniset $OCTAVIA_CONF service_auth memcached_servers $SERVICE_HOST:11211
 
+    # neutron
+    iniset $OCTAVIA_CONF neutron auth_url $KEYSTONE_SERVICE_URI
+    iniset $OCTAVIA_CONF neutron auth_type password
+    iniset $OCTAVIA_CONF neutron username $OCTAVIA_USERNAME
+    iniset $OCTAVIA_CONF neutron password $OCTAVIA_PASSWORD
+    iniset $OCTAVIA_CONF neutron user_domain_name $OCTAVIA_USER_DOMAIN_NAME
+    iniset $OCTAVIA_CONF neutron project_name $OCTAVIA_PROJECT_NAME
+    iniset $OCTAVIA_CONF neutron project_domain_name $OCTAVIA_PROJECT_DOMAIN_NAME
+    iniset $OCTAVIA_CONF neutron cafile $SSL_BUNDLE_FILE
+
     # Setting other required default options
     iniset $OCTAVIA_CONF controller_worker amphora_driver ${OCTAVIA_AMPHORA_DRIVER}
     iniset $OCTAVIA_CONF controller_worker compute_driver ${OCTAVIA_COMPUTE_DRIVER}

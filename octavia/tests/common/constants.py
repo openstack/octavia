@@ -12,6 +12,12 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 from octavia_lib.common import constants as lib_constants
+from openstack.network.v2.floating_ip import FloatingIP
+from openstack.network.v2.network import Network
+from openstack.network.v2.network_ip_availability import NetworkIPAvailability
+from openstack.network.v2.port import Port
+from openstack.network.v2.security_group import SecurityGroup
+from openstack.network.v2.subnet import Subnet
 
 from octavia.common import constants
 
@@ -43,16 +49,16 @@ MOCK_MAC_ADDR = 'fe:16:3e:00:95:5c'
 MOCK_MAC_ADDR2 = 'fe:16:3e:00:95:5d'
 MOCK_PROJECT_ID = 'mock-project-1'
 MOCK_HOST_ROUTES = []
-MOCK_SUBNET = {'subnet': {'id': MOCK_SUBNET_ID,
-                          'network_id': MOCK_NETWORK_ID,
-                          'name': MOCK_SUBNET_NAME,
-                          'tenant_id': MOCK_PROJECT_ID,
-                          'gateway_ip': MOCK_GATEWAY_IP,
-                          'cidr': MOCK_CIDR,
-                          'ip_version': MOCK_IP_VERSION,
-                          'host_routes': MOCK_HOST_ROUTES}}
-MOCK_SUBNET2 = {'subnet': {'id': MOCK_SUBNET_ID2,
-                           'network_id': MOCK_NETWORK_ID2}}
+MOCK_SUBNET = Subnet(**{'id': MOCK_SUBNET_ID,
+                        'network_id': MOCK_NETWORK_ID,
+                        'name': MOCK_SUBNET_NAME,
+                        'tenant_id': MOCK_PROJECT_ID,
+                        'gateway_ip': MOCK_GATEWAY_IP,
+                        'cidr': MOCK_CIDR,
+                        'ip_version': MOCK_IP_VERSION,
+                        'host_routes': MOCK_HOST_ROUTES})
+MOCK_SUBNET2 = Subnet(**{'id': MOCK_SUBNET_ID2,
+                         'network_id': MOCK_NETWORK_ID2})
 MOCK_HOST_ROUTES = []
 
 MOCK_NOVA_INTERFACE = MockNovaInterface()
@@ -69,7 +75,7 @@ MOCK_DEVICE_ID2 = 'Moctavia124'
 MOCK_SECURITY_GROUP_ID = 'security-group-1'
 MOCK_SECURITY_GROUP_NAME = 'SecurityGroup1'
 
-MOCK_SECURITY_GROUP = {
+MOCK_SECURITY_GROUP = SecurityGroup(**{
     "id": MOCK_SECURITY_GROUP_ID,
     "name": MOCK_SECURITY_GROUP_NAME,
     "tenant_id": MOCK_PROJECT_ID,
@@ -113,7 +119,7 @@ MOCK_SECURITY_GROUP = {
     "created_at": "2020-03-12T20:43:31Z",
     "updated_at": "2020-03-12T20:44:48Z",
     "revision_number": 3,
-    "project_id": MOCK_PROJECT_ID}
+    "project_id": MOCK_PROJECT_ID})
 
 MOCK_ADMIN_STATE_UP = True
 MOCK_STATUS = 'ACTIVE'
@@ -122,59 +128,60 @@ MOCK_NETWORK_TYPE = 'flat'
 MOCK_SEGMENTATION_ID = 1
 MOCK_ROUTER_EXTERNAL = False
 
-MOCK_NEUTRON_PORT = {'port': {'network_id': MOCK_NETWORK_ID,
-                              'device_id': MOCK_DEVICE_ID,
-                              'device_owner': MOCK_DEVICE_OWNER,
-                              'id': MOCK_PORT_ID,
-                              'name': MOCK_PORT_NAME,
-                              'tenant_id': MOCK_PROJECT_ID,
-                              'admin_state_up': MOCK_ADMIN_STATE_UP,
-                              'status': MOCK_STATUS,
-                              'mac_address': MOCK_MAC_ADDR,
-                              'fixed_ips': [{'ip_address': MOCK_IP_ADDRESS,
-                                             'subnet_id': MOCK_SUBNET_ID}],
-                              'security_groups': [MOCK_SECURITY_GROUP_ID]}}
+MOCK_NEUTRON_PORT = Port(**{'network_id': MOCK_NETWORK_ID,
+                            'device_id': MOCK_DEVICE_ID,
+                            'device_owner': MOCK_DEVICE_OWNER,
+                            'id': MOCK_PORT_ID,
+                            'name': MOCK_PORT_NAME,
+                            'tenant_id': MOCK_PROJECT_ID,
+                            'admin_state_up': MOCK_ADMIN_STATE_UP,
+                            'status': MOCK_STATUS,
+                            'mac_address': MOCK_MAC_ADDR,
+                            'fixed_ips': [{'ip_address': MOCK_IP_ADDRESS,
+                                           'subnet_id': MOCK_SUBNET_ID}],
+                            'security_groups': [MOCK_SECURITY_GROUP_ID]})
 MOCK_NEUTRON_QOS_POLICY_ID = 'mock-qos-id'
 MOCK_QOS_POLICY_ID1 = 'qos1-id'
 MOCK_QOS_POLICY_ID2 = 'qos2-id'
 
-MOCK_NEUTRON_PORT2 = {'port': {'network_id': MOCK_NETWORK_ID2,
-                               'device_id': MOCK_DEVICE_ID2,
-                               'device_owner': MOCK_DEVICE_OWNER,
-                               'id': MOCK_PORT_ID2,
-                               'name': MOCK_PORT_NAME2,
-                               'tenant_id': MOCK_PROJECT_ID,
-                               'admin_state_up': MOCK_ADMIN_STATE_UP,
-                               'status': MOCK_STATUS,
-                               'mac_address': MOCK_MAC_ADDR2,
-                               'fixed_ips': [{'ip_address': MOCK_IP_ADDRESS2,
-                                              'subnet_id': MOCK_SUBNET_ID2}]}}
+MOCK_NEUTRON_PORT2 = Port(**{'network_id': MOCK_NETWORK_ID2,
+                             'device_id': MOCK_DEVICE_ID2,
+                             'device_owner': MOCK_DEVICE_OWNER,
+                             'id': MOCK_PORT_ID2,
+                             'name': MOCK_PORT_NAME2,
+                             'tenant_id': MOCK_PROJECT_ID,
+                             'admin_state_up': MOCK_ADMIN_STATE_UP,
+                             'status': MOCK_STATUS,
+                             'mac_address': MOCK_MAC_ADDR2,
+                             'fixed_ips': [{'ip_address': MOCK_IP_ADDRESS2,
+                                            'subnet_id': MOCK_SUBNET_ID2}]})
 
-MOCK_NETWORK = {'network': {'id': MOCK_NETWORK_ID,
-                            'name': MOCK_NETWORK_NAME,
-                            'tenant_id': MOCK_PROJECT_ID,
-                            'admin_state_up': MOCK_ADMIN_STATE_UP,
-                            'subnets': [MOCK_SUBNET_ID],
-                            'mtu': MOCK_MTU,
-                            'provider:network_type': 'flat',
-                            'provider:physical_network': MOCK_NETWORK_NAME,
-                            'provider:segmentation_id': MOCK_SEGMENTATION_ID,
-                            'router:external': MOCK_ROUTER_EXTERNAL}}
-MOCK_FIXED_IP = {'fixed_ip': {'subnet_id': MOCK_SUBNET_ID,
-                              'ip_address': MOCK_IP_ADDRESS}}
+MOCK_NETWORK = Network(**{'id': MOCK_NETWORK_ID,
+                          'name': MOCK_NETWORK_NAME,
+                          'project_id': MOCK_PROJECT_ID,
+                          'admin_state_up': MOCK_ADMIN_STATE_UP,
+                          'subnet_ids': [MOCK_SUBNET_ID],
+                          'mtu': MOCK_MTU,
+                          'provider_network_type': 'flat',
+                          'provider_physical_network': MOCK_NETWORK_NAME,
+                          'provider_segmentation_id': MOCK_SEGMENTATION_ID,
+                          'router_external': MOCK_ROUTER_EXTERNAL,
+                          'port_security_enabled': False})
+MOCK_FIXED_IP = {'subnet_id': MOCK_SUBNET_ID,
+                 'ip_address': MOCK_IP_ADDRESS}
 MOCK_FLOATING_IP_ID = 'floating-ip-1'
 MOCK_FLOATING_IP_DESC = 'TestFloatingIP1'
 MOCK_ROUTER_ID = 'mock-router-1'
-MOCK_FLOATING_IP = {'floatingip': {'id': MOCK_FLOATING_IP_ID,
-                                   'description': MOCK_FLOATING_IP_DESC,
-                                   'tenant_id': MOCK_PROJECT_ID,
-                                   'status': MOCK_STATUS,
-                                   'port_id': MOCK_PORT_ID,
-                                   'router_id': MOCK_ROUTER_ID,
-                                   'floating_network_id': MOCK_NETWORK_ID,
-                                   'floating_ip_address': MOCK_IP_ADDRESS,
-                                   'fixed_ip_address': MOCK_IP_ADDRESS2,
-                                   'fixed_port_id': MOCK_PORT_ID2}}
+MOCK_FLOATING_IP = FloatingIP(**{'id': MOCK_FLOATING_IP_ID,
+                                 'description': MOCK_FLOATING_IP_DESC,
+                                 'tenant_id': MOCK_PROJECT_ID,
+                                 'status': MOCK_STATUS,
+                                 'port_id': MOCK_PORT_ID,
+                                 'router_id': MOCK_ROUTER_ID,
+                                 'floating_network_id': MOCK_NETWORK_ID,
+                                 'floating_ip_address': MOCK_IP_ADDRESS,
+                                 'fixed_ip_address': MOCK_IP_ADDRESS2,
+                                 'fixed_port_id': MOCK_PORT_ID2})
 
 MOCK_AMP_ID1 = 'amp1-id'
 MOCK_AMP_ID2 = 'amp2-id'
@@ -205,17 +212,17 @@ MOCK_MANAGEMENT_INTERFACE2.net_id = MOCK_MANAGEMENT_NET_ID
 MOCK_MANAGEMENT_INTERFACE2.port_id = MOCK_MANAGEMENT_PORT_ID2
 MOCK_MANAGEMENT_INTERFACE2.fixed_ips = MOCK_MANAGEMENT_FIXED_IPS2
 
-MOCK_MANAGEMENT_PORT1 = {'port': {'network_id': MOCK_MANAGEMENT_NET_ID,
-                                  'device_id': MOCK_AMP_COMPUTE_ID1,
-                                  'device_owner': MOCK_DEVICE_OWNER,
-                                  'id': MOCK_MANAGEMENT_PORT_ID1,
-                                  'fixed_ips': MOCK_MANAGEMENT_FIXED_IPS1}}
+MOCK_MANAGEMENT_PORT1 = Port(**{'network_id': MOCK_MANAGEMENT_NET_ID,
+                                'device_id': MOCK_AMP_COMPUTE_ID1,
+                                'device_owner': MOCK_DEVICE_OWNER,
+                                'id': MOCK_MANAGEMENT_PORT_ID1,
+                                'fixed_ips': MOCK_MANAGEMENT_FIXED_IPS1})
 
-MOCK_MANAGEMENT_PORT2 = {'port': {'network_id': MOCK_MANAGEMENT_NET_ID,
-                                  'device_id': MOCK_AMP_COMPUTE_ID2,
-                                  'device_owner': MOCK_DEVICE_OWNER,
-                                  'id': MOCK_MANAGEMENT_PORT_ID2,
-                                  'fixed_ips': MOCK_MANAGEMENT_FIXED_IPS2}}
+MOCK_MANAGEMENT_PORT2 = Port(**{'network_id': MOCK_MANAGEMENT_NET_ID,
+                                'device_id': MOCK_AMP_COMPUTE_ID2,
+                                'device_owner': MOCK_DEVICE_OWNER,
+                                'id': MOCK_MANAGEMENT_PORT_ID2,
+                                'fixed_ips': MOCK_MANAGEMENT_FIXED_IPS2})
 
 MOCK_VIP_SUBNET_ID = 'vip-subnet-1'
 MOCK_VIP_SUBNET_ID2 = 'vip-subnet-2'
@@ -242,17 +249,17 @@ MOCK_VRRP_INTERFACE2.net_id = MOCK_VIP_NET_ID
 MOCK_VRRP_INTERFACE2.port_id = MOCK_VRRP_PORT_ID2
 MOCK_VRRP_INTERFACE2.fixed_ips = MOCK_VRRP_FIXED_IPS2
 
-MOCK_VRRP_PORT1 = {'port': {'network_id': MOCK_VIP_NET_ID,
-                            'device_id': MOCK_AMP_COMPUTE_ID1,
-                            'device_owner': MOCK_DEVICE_OWNER,
-                            'id': MOCK_VRRP_PORT_ID1,
-                            'fixed_ips': MOCK_VRRP_FIXED_IPS1}}
+MOCK_VRRP_PORT1 = Port(**{'network_id': MOCK_VIP_NET_ID,
+                          'device_id': MOCK_AMP_COMPUTE_ID1,
+                          'device_owner': MOCK_DEVICE_OWNER,
+                          'id': MOCK_VRRP_PORT_ID1,
+                          'fixed_ips': MOCK_VRRP_FIXED_IPS1})
 
-MOCK_VRRP_PORT2 = {'port': {'network_id': MOCK_VIP_NET_ID,
-                            'device_id': MOCK_AMP_COMPUTE_ID2,
-                            'device_owner': MOCK_DEVICE_OWNER,
-                            'id': MOCK_VRRP_PORT_ID2,
-                            'fixed_ips': MOCK_VRRP_FIXED_IPS2}}
+MOCK_VRRP_PORT2 = Port(**{'network_id': MOCK_VIP_NET_ID,
+                          'device_id': MOCK_AMP_COMPUTE_ID2,
+                          'device_owner': MOCK_DEVICE_OWNER,
+                          'id': MOCK_VRRP_PORT_ID2,
+                          'fixed_ips': MOCK_VRRP_FIXED_IPS2})
 
 MOCK_NETWORK_TOTAL_IPS = 254
 MOCK_NETWORK_USED_IPS = 0
@@ -262,13 +269,13 @@ MOCK_SUBNET_IP_AVAILABILITY = [{'used_ips': MOCK_SUBNET_USED_IPS,
                                 'subnet_id': MOCK_SUBNET_ID,
                                 'total_ips': MOCK_SUBNET_TOTAL_IPS}]
 
-MOCK_NETWORK_IP_AVAILABILITY = {'network_ip_availability': (
-    {'network_id': MOCK_NETWORK_ID,
-     'tenant_id': MOCK_PROJECT_ID,
-     'network_name': MOCK_NETWORK_NAME,
-     'total_ips': MOCK_NETWORK_TOTAL_IPS,
-     'used_ips': MOCK_NETWORK_USED_IPS,
-     'subnet_ip_availability': MOCK_SUBNET_IP_AVAILABILITY})}
+MOCK_NETWORK_IP_AVAILABILITY = NetworkIPAvailability(
+    **{'network_id': MOCK_NETWORK_ID,
+       'tenant_id': MOCK_PROJECT_ID,
+       'network_name': MOCK_NETWORK_NAME,
+       'total_ips': MOCK_NETWORK_TOTAL_IPS,
+       'used_ips': MOCK_NETWORK_USED_IPS,
+       'subnet_ip_availability': MOCK_SUBNET_IP_AVAILABILITY})
 
 INVALID_LISTENER_POOL_PROTOCOL_MAP = {
     constants.PROTOCOL_HTTP: [constants.PROTOCOL_HTTPS,
