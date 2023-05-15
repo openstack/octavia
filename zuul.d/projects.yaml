@@ -51,7 +51,9 @@
               - ^doc/.*$
               - ^octavia/tests/.*$
               - ^releasenotes/.*$
-        - octavia-v2-dsvm-scenario:
+        - octavia-v2-dsvm-scenario-traffic-ops:
+            irrelevant-files: *irrelevant-files
+        - octavia-v2-dsvm-scenario-non-traffic-ops:
             irrelevant-files: *irrelevant-files
         - octavia-v2-dsvm-tls-barbican:
             irrelevant-files: *irrelevant-files
@@ -113,7 +115,8 @@
               - ^octavia/tests/unit/.*$
               - ^releasenotes/.*$
         - octavia-v2-dsvm-noop-api
-        - octavia-v2-dsvm-scenario
+        - octavia-v2-dsvm-scenario-traffic-ops
+        - octavia-v2-dsvm-scenario-non-traffic-ops
         - octavia-v2-dsvm-tls-barbican
         - octavia-grenade
         - octavia-grenade-skip-level

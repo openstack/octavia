@@ -156,6 +156,20 @@
       devstack_localrc:
         OCTAVIA_ENABLE_AMPHORAV2_JOBBOARD: False
 
+- job:
+    name: octavia-v2-dsvm-scenario-traffic-ops-jobboard
+    parent: octavia-v2-dsvm-scenario-traffic-ops
+    vars:
+      devstack_localrc:
+        OCTAVIA_ENABLE_AMPHORAV2_JOBBOARD: True
+
+- job:
+    name: octavia-v2-dsvm-scenario-non-traffic-ops-jobboard
+    parent: octavia-v2-dsvm-scenario-non-traffic-ops
+    vars:
+      devstack_localrc:
+        OCTAVIA_ENABLE_AMPHORAV2_JOBBOARD: True
+
 - project-template:
     name: octavia-tox-tips
     check:
