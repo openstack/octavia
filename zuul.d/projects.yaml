@@ -111,7 +111,8 @@
               - ^octavia/tests/unit/.*$
               - ^releasenotes/.*$
         - octavia-v2-dsvm-noop-api
-        - octavia-v2-dsvm-scenario
+        - octavia-v2-dsvm-scenario-traffic-ops
+        - octavia-v2-dsvm-scenario-non-traffic-ops
         - octavia-v2-dsvm-tls-barbican
         - octavia-grenade
     periodic:
