@@ -98,6 +98,15 @@ Version 14.0 (caracal)
 
    specs/version14.0/*
 
+Version 15.0 (Dalmatian)
+````````````````````````
+
+.. toctree::
+   :glob:
+   :maxdepth: 1
+
+   specs/version15.0/*
+
 .. only:: latex
 
    Module Reference
