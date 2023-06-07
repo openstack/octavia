@@ -17,6 +17,7 @@ import os
 import re
 import stat
 import subprocess
+import typing as tp
 
 import jinja2
 from oslo_config import cfg
@@ -411,3 +412,23 @@ def send_vip_advertisements(lb_id):
     except Exception as e:
         LOG.debug('Send VIP advertisement failed due to :%s. '
                   'This amphora may not be the MASTER. Ignoring.', str(e))
+
+
+def send_member_advertisements(fixed_ips: tp.Iterable[tp.Dict[str, str]]):
+    """Sends advertisements for each fixed_ip of a list
+
+    This method will send either GARP (IPv4) or neighbor advertisements (IPv6)
+    for the addresses of the subnets of the members.
+
+    :param fixed_ips: a list of dicts that contain 'ip_address' elements
+    :returns: None
+    """
+    try:
+        for fixed_ip in fixed_ips:
+            ip_address = fixed_ip[consts.IP_ADDRESS]
+            interface = network_utils.get_interface_name(
+                ip_address, net_ns=consts.AMPHORA_NAMESPACE)
+            ip_advertisement.send_ip_advertisement(
+                interface, ip_address, net_ns=consts.AMPHORA_NAMESPACE)
+    except Exception as e:
+        LOG.debug('Send member advertisement failed due to: %s', str(e))
