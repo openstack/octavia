@@ -185,6 +185,7 @@ class TestAmphoraInfo(base.TestCase):
                          u'packages': {},
                          u'topology': u'SINGLE',
                          u'topology_status': u'OK'}
+        self.useFixture(test_utils.OpenFixture('/etc/tuned/active_profile'))
         actual = self.amp_info.compile_amphora_details()
         self.assertEqual(expected_dict, actual.json)
         m_count.assert_called_once_with(sorted(mget_loadbalancers()))
@@ -277,6 +278,7 @@ class TestAmphoraInfo(base.TestCase):
                          u'packages': {},
                          u'topology': u'SINGLE',
                          u'topology_status': u'OK'}
+        self.useFixture(test_utils.OpenFixture('/etc/tuned/active_profile'))
         actual = self.amp_info.compile_amphora_details(self.lvs_driver)
         self.assertEqual(expected_dict, actual.json)
         api_server.VERSION = original_version
