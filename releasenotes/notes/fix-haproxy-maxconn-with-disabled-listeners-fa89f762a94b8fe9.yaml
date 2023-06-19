@@ -1,0 +1,6 @@
+---
+fixes:
+  - |
+    Fixed the global number of concurrent connections in haproxy when disabling
+    listeners. The connection-limit of disabled listeners was used to compute
+    this value, disabled listeners are now skipped.
