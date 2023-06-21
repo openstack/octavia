@@ -4707,7 +4707,8 @@ class FlavorProfileRepositoryTest(BaseRepositoryTest):
         fp1 = self.create_flavor_profile(fp_id=self.FAKE_UUID_1)
         fp2 = self.create_flavor_profile(fp_id=self.FAKE_UUID_2)
         fp_list, _ = self.flavor_profile_repo.get_all(
-            self.session, query_options=defer('name'))
+            self.session,
+            query_options=defer(db_models.FlavorProfile.name))
         self.assertIsInstance(fp_list, list)
         self.assertEqual(2, len(fp_list))
         self.assertEqual(fp1, fp_list[0])
@@ -4754,8 +4755,9 @@ class FlavorRepositoryTest(BaseRepositoryTest):
     def test_get_all(self):
         fl1 = self.create_flavor(flavor_id=self.FAKE_UUID_2, name='flavor1')
         fl2 = self.create_flavor(flavor_id=self.FAKE_UUID_3, name='flavor2')
-        fl_list, _ = self.flavor_repo.get_all(self.session,
-                                              query_options=defer('enabled'))
+        fl_list, _ = self.flavor_repo.get_all(
+            self.session,
+            query_options=defer(db_models.Flavor.enabled))
         self.assertIsInstance(fl_list, list)
         self.assertEqual(2, len(fl_list))
         self.assertEqual(fl1, fl_list[0])

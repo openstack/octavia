@@ -51,11 +51,6 @@ class WarningsFixture(fixtures.Fixture):
 
         warnings.filterwarnings(
             'ignore',
-            message='Using strings to indicate column or relationship paths ',
-            category=sqla_exc.SADeprecationWarning)
-
-        warnings.filterwarnings(
-            'ignore',
             message='Using plain strings to indicate SQL statements without ',
             category=sqla_exc.SADeprecationWarning)
 
