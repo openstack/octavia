@@ -25,6 +25,8 @@ from octavia.common import rpc
 # needed for tests to function when run independently:
 from octavia.common import config  # noqa: F401
 
+from octavia.tests import fixtures as oc_fixtures
+
 
 class TestCase(testtools.TestCase):
 
@@ -33,6 +35,8 @@ class TestCase(testtools.TestCase):
         config.register_cli_opts()
         self.addCleanup(mock.patch.stopall)
         self.addCleanup(self.clean_caches)
+
+        self.warning_fixture = self.useFixture(oc_fixtures.WarningsFixture())
 
     def clean_caches(self):
         clients.NovaAuth.nova_client = None
@@ -43,6 +47,8 @@ class TestRpc(testtools.TestCase):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._buses = {}
+
+        self.warning_fixture = self.useFixture(oc_fixtures.WarningsFixture())
 
     def _fake_create_transport(self, url):
         if url not in self._buses:
