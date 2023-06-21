@@ -110,7 +110,7 @@ class BaseRepository(object):
         with session.begin(subtransactions=True):
             tags = model_kwargs.pop('tags', None)
             if tags is not None:
-                resource = session.query(self.model_class).get(id)
+                resource = session.get(self.model_class, id)
                 resource.tags = tags
             session.query(self.model_class).filter_by(
                 id=id).update(model_kwargs)
@@ -1051,7 +1051,7 @@ class ListenerRepository(BaseRepository):
                     resource=data_models.Listener._name(), id=id)
             tags = model_kwargs.pop('tags', None)
             if tags is not None:
-                resource = session.query(self.model_class).get(id)
+                resource = session.get(self.model_class, id)
                 resource.tags = tags
             # Verify any newly specified default_pool_id exists
             default_pool_id = model_kwargs.get('default_pool_id')

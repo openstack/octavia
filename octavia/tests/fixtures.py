@@ -41,11 +41,6 @@ class WarningsFixture(fixtures.Fixture):
 
         warnings.filterwarnings(
             'ignore',
-            message=r'The Query.get\(\) method is considered legacy ',
-            category=sqla_exc.SADeprecationWarning)
-
-        warnings.filterwarnings(
-            'ignore',
             message='The current statement is being autocommitted ',
             category=sqla_exc.SADeprecationWarning)
 
