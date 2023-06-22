@@ -33,6 +33,7 @@ from sqlalchemy.orm import subqueryload
 from sqlalchemy import select
 from sqlalchemy.sql.expression import false
 from sqlalchemy.sql import func
+from sqlalchemy import text
 from sqlalchemy import update
 
 from octavia.common import constants as consts
@@ -1335,7 +1336,7 @@ class AmphoraRepository(BaseRepository):
         :param amphora_id: The amphora ID to lookup the load balancer for.
         :returns: A dictionary containing the required load balancer details.
         """
-        rows = session.execute(
+        rows = session.execute(text(
             "SELECT load_balancer.id, load_balancer.enabled, "
             "load_balancer.provisioning_status AS lb_prov_status, "
             "load_balancer.operating_status AS lb_op_status, "
@@ -1353,8 +1354,8 @@ class AmphoraRepository(BaseRepository):
             "LEFT JOIN pool ON load_balancer.id = pool.load_balancer_id "
             "LEFT JOIN member ON pool.id = member.pool_id WHERE "
             "amphora.id = :amp_id AND amphora.status != :deleted AND "
-            "load_balancer.provisioning_status != :deleted;",
-            {'amp_id': amphora_id, 'deleted': consts.DELETED})
+            "load_balancer.provisioning_status != :deleted;").bindparams(
+                amp_id=amphora_id, deleted=consts.DELETED))
 
         lb = {}
         listeners = {}
