@@ -1,0 +1,7 @@
+---
+fixes:
+  - |
+    Fixed an SELinux issues with TCP-based health-monitor on UDP pools, some
+    specific monitoring ports were denied by SELinux. The Amphora image now
+    enables the ``keepalived_connect_any`` SELinux boolean that allows
+    connections to any ports.
