@@ -56,11 +56,6 @@ class WarningsFixture(fixtures.Fixture):
 
         warnings.filterwarnings(
             'ignore',
-            message='Using non-integer/slice indices on Row is deprecated ',
-            category=sqla_exc.SADeprecationWarning)
-
-        warnings.filterwarnings(
-            'ignore',
             message='The create_engine.convert_unicode parameter and ',
             category=sqla_exc.SADeprecationWarning)
 

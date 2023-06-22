@@ -1354,12 +1354,12 @@ class AmphoraRepository(BaseRepository):
             "LEFT JOIN member ON pool.id = member.pool_id WHERE "
             "amphora.id = :amp_id AND amphora.status != :deleted AND "
             "load_balancer.provisioning_status != :deleted;",
-            {'amp_id': amphora_id, 'deleted': consts.DELETED}).fetchall()
+            {'amp_id': amphora_id, 'deleted': consts.DELETED})
 
         lb = {}
         listeners = {}
         pools = {}
-        for row in rows:
+        for row in rows.mappings():
             if not lb:
                 lb['id'] = row['id']
                 lb['enabled'] = row['enabled'] == 1
