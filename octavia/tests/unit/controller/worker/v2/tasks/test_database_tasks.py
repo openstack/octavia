@@ -1315,6 +1315,8 @@ class TestDatabaseTasks(base.TestCase):
             [mock.call('TEST', default_pool.id,
                        provisioning_status=constants.ACTIVE),
              mock.call('TEST', redirect_pool.id,
+                       provisioning_status=constants.ACTIVE),
+             mock.call('TEST', unused_pool.id,
                        provisioning_status=constants.ACTIVE)])
         repo.HealthMonitorRepository.update.assert_has_calls(
             [mock.call('TEST', health_monitor.id,
@@ -1347,9 +1349,12 @@ class TestDatabaseTasks(base.TestCase):
             [mock.call('TEST', default_pool.id,
                        provisioning_status=constants.ERROR),
              mock.call('TEST', redirect_pool.id,
-                       provisioning_status=constants.ERROR)])
-        self.assertEqual(1, repo.HealthMonitorRepository.update.call_count)
-        repo.HealthMonitorRepository.update.assert_has_calls(
+                       provisioning_status=constants.ERROR),
+             mock.call('TEST', unused_pool.id,
+                       provisioning_status=constants.ERROR)
+             ])
+        self.assertEqual(2, repo.HealthMonitorRepository.update.call_count)
+        repo.HealthMonitorRepository.update.has_calls(
             [mock.call('TEST', health_monitor.id,
                        provisioning_status=constants.ERROR)])
         self.assertEqual(1, repo.L7PolicyRepository.update.call_count)
