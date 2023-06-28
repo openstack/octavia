@@ -160,7 +160,6 @@ class TestLoadBalancerFlows(base.TestCase):
         self.assertEqual(4, len(amp_flow.provides))
         self.assertEqual(2, len(amp_flow.requires))
 
-        # Test mark_active=False
         amp_flow = self.LBFlow.get_post_lb_amp_association_flow(
             '123', constants.TOPOLOGY_ACTIVE_STANDBY)
 
