@@ -1195,13 +1195,15 @@ class TestDatabaseTasks(base.TestCase):
                        provisioning_status=constants.ACTIVE),
              mock.call('TEST', listeners[1].id,
                        provisioning_status=constants.ACTIVE)])
-        self.assertEqual(2, repo.PoolRepository.update.call_count)
-        repo.PoolRepository.update.has_calls(
+        self.assertEqual(5, repo.PoolRepository.update.call_count)
+        repo.PoolRepository.update.assert_has_calls(
             [mock.call('TEST', default_pool.id,
                        provisioning_status=constants.ACTIVE),
              mock.call('TEST', redirect_pool.id,
+                       provisioning_status=constants.ACTIVE),
+             mock.call('TEST', unused_pool.id,
                        provisioning_status=constants.ACTIVE)])
-        self.assertEqual(4, repo.MemberRepository.update.call_count)
+        self.assertEqual(8, repo.MemberRepository.update.call_count)
         repo.MemberRepository.update.has_calls(
             [mock.call('TEST', members1[0].id,
                        provisioning_status=constants.ACTIVE),
@@ -1211,7 +1213,7 @@ class TestDatabaseTasks(base.TestCase):
                        provisioning_status=constants.ACTIVE),
              mock.call('TEST', members2[1].id,
                        provisioning_status=constants.ACTIVE)])
-        self.assertEqual(1, repo.HealthMonitorRepository.update.call_count)
+        self.assertEqual(2, repo.HealthMonitorRepository.update.call_count)
         repo.HealthMonitorRepository.update.has_calls(
             [mock.call('TEST', health_monitor.id,
                        provisioning_status=constants.ACTIVE)])
@@ -1240,13 +1242,13 @@ class TestDatabaseTasks(base.TestCase):
                        provisioning_status=constants.ERROR),
              mock.call('TEST', listeners[1].id,
                        provisioning_status=constants.ERROR)])
-        self.assertEqual(2, repo.PoolRepository.update.call_count)
+        self.assertEqual(5, repo.PoolRepository.update.call_count)
         repo.PoolRepository.update.has_calls(
             [mock.call('TEST', default_pool.id,
                        provisioning_status=constants.ERROR),
              mock.call('TEST', redirect_pool.id,
                        provisioning_status=constants.ERROR)])
-        self.assertEqual(4, repo.MemberRepository.update.call_count)
+        self.assertEqual(8, repo.MemberRepository.update.call_count)
         repo.MemberRepository.update.has_calls(
             [mock.call('TEST', members1[0].id,
                        provisioning_status=constants.ERROR),
@@ -1256,7 +1258,7 @@ class TestDatabaseTasks(base.TestCase):
                        provisioning_status=constants.ERROR),
              mock.call('TEST', members2[1].id,
                        provisioning_status=constants.ERROR)])
-        self.assertEqual(1, repo.HealthMonitorRepository.update.call_count)
+        self.assertEqual(2, repo.HealthMonitorRepository.update.call_count)
         repo.HealthMonitorRepository.update.has_calls(
             [mock.call('TEST', health_monitor.id,
                        provisioning_status=constants.ERROR)])

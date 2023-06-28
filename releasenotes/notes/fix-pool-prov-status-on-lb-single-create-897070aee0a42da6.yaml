@@ -1,0 +1,5 @@
+---
+fixes:
+  - |
+    Fixed a bug that didn't set the correct provisioning_status for unattached
+    pools when creating a fully-populated load balancer.
