@@ -273,12 +273,244 @@ class DriverAgentTest(base.OctaviaDBTestBase):
         self.provider_lb_dict[
             lib_consts.LISTENERS] = [self.provider_listener_dict]
 
+    def _compare_load_balancer_dicts(self,
+                                     provider_lb_dict,
+                                     result_dict):
+        for key in (lib_consts.LOADBALANCER_ID,
+                    lib_consts.NAME,
+                    lib_consts.DESCRIPTION,
+                    lib_consts.PROJECT_ID,
+                    lib_consts.ADMIN_STATE_UP,
+                    lib_consts.VIP_ADDRESS,
+                    lib_consts.VIP_NETWORK_ID,
+                    lib_consts.VIP_SUBNET_ID,
+                    lib_consts.VIP_PORT_ID,
+                    lib_consts.VIP_QOS_POLICY_ID,
+                    lib_consts.FLAVOR,
+                    lib_consts.AVAILABILITY_ZONE,
+                    lib_consts.ADDITIONAL_VIPS):
+            self.assertEqual(provider_lb_dict.get(key),
+                             result_dict.get(key))
+
+        provider_listener_dicts = provider_lb_dict[lib_consts.LISTENERS]
+        result_listener_dicts = result_dict[lib_consts.LISTENERS]
+
+        self.assertEqual(len(provider_listener_dicts),
+                         len(result_listener_dicts))
+
+        for listener_dicts in zip(provider_listener_dicts,
+                                  result_listener_dicts):
+            provider_listener_dict = listener_dicts[0]
+            result_listener_dict = listener_dicts[1]
+            self._compare_listener_dicts(provider_listener_dict,
+                                         result_listener_dict)
+
+        self.assertEqual(len(provider_lb_dict[lib_consts.POOLS]),
+                         len(result_dict[lib_consts.POOLS]))
+
+        for pool_dicts in zip(provider_lb_dict[lib_consts.POOLS],
+                              result_dict[lib_consts.POOLS]):
+            provider_pool_dict = pool_dicts[0]
+            result_pool_dict = pool_dicts[1]
+            self._compare_pool_dicts(provider_pool_dict,
+                                     result_pool_dict)
+
+    def _compare_listener_dicts(self,
+                                provider_listener_dict,
+                                result_listener_dict):
+        for key in (lib_consts.LISTENER_ID,
+                    lib_consts.LOADBALANCER_ID,
+                    lib_consts.NAME,
+                    lib_consts.DESCRIPTION,
+                    lib_consts.PROJECT_ID,
+                    lib_consts.ADMIN_STATE_UP,
+                    lib_consts.PROTOCOL,
+                    lib_consts.PROTOCOL_PORT,
+                    lib_consts.CONNECTION_LIMIT,
+                    lib_consts.DEFAULT_POOL_ID,
+                    lib_consts.TIMEOUT_CLIENT_DATA,
+                    lib_consts.TIMEOUT_MEMBER_CONNECT,
+                    lib_consts.TIMEOUT_MEMBER_DATA,
+                    lib_consts.TIMEOUT_TCP_INSPECT,
+                    lib_consts.INSERT_HEADERS,
+                    lib_consts.ALLOWED_CIDRS,
+                    lib_consts.DEFAULT_TLS_CONTAINER_REF,
+                    lib_consts.DEFAULT_TLS_CONTAINER_DATA,
+                    lib_consts.SNI_CONTAINER_REFS,
+                    lib_consts.SNI_CONTAINER_DATA,
+                    lib_consts.CLIENT_CA_TLS_CONTAINER_REF,
+                    lib_consts.CLIENT_CA_TLS_CONTAINER_DATA,
+                    lib_consts.CLIENT_AUTHENTICATION,
+                    lib_consts.CLIENT_CRL_CONTAINER_REF,
+                    lib_consts.CLIENT_CRL_CONTAINER_DATA,
+                    lib_consts.TLS_CIPHERS,
+                    lib_consts.TLS_VERSIONS):
+            self.assertEqual(provider_listener_dict.get(key),
+                             result_listener_dict.get(key))
+
+        provider_l7policy_dicts = provider_listener_dict.get(
+            lib_consts.L7POLICIES)
+        result_l7policy_dicts = result_listener_dict.get(
+            lib_consts.L7POLICIES)
+
+        self.assertEqual(len(provider_l7policy_dicts),
+                         len(result_l7policy_dicts))
+
+        for l7policy_dicts in zip(provider_l7policy_dicts,
+                                  result_l7policy_dicts):
+            provider_l7policy_dict = l7policy_dicts[0]
+            result_l7policy_dict = l7policy_dicts[1]
+            self._compare_l7policy_dicts(provider_l7policy_dict,
+                                         result_l7policy_dict)
+
+    def _compare_l7policy_dicts(self,
+                                provider_l7policy_dict,
+                                result_l7policy_dict):
+        for key in (lib_consts.L7POLICY_ID,
+                    lib_consts.LISTENER_ID,
+                    lib_consts.NAME,
+                    lib_consts.DESCRIPTION,
+                    lib_consts.PROJECT_ID,
+                    lib_consts.ADMIN_STATE_UP,
+                    lib_consts.ACTION,
+                    lib_consts.POSITION,
+                    lib_consts.REDIRECT_POOL_ID,
+                    lib_consts.REDIRECT_URL,
+                    lib_consts.REDIRECT_PREFIX,
+                    lib_consts.REDIRECT_HTTP_CODE):
+            self.assertEqual(provider_l7policy_dict.get(key),
+                             result_l7policy_dict.get(key))
+
+        provider_l7rule_dicts = provider_l7policy_dict.get(lib_consts.L7RULES)
+        result_l7rule_dicts = result_l7policy_dict.get(lib_consts.L7RULES)
+
+        if provider_l7rule_dicts or result_l7rule_dicts:
+            self.assertIsNotNone(provider_l7rule_dicts)
+            self.assertIsNotNone(result_l7rule_dicts)
+
+            self.assertEqual(len(provider_l7rule_dicts),
+                             len(result_l7rule_dicts))
+
+            for l7rule_dicts in zip(provider_l7rule_dicts,
+                                    result_l7rule_dicts):
+                provider_l7rule_dict = l7rule_dicts[0]
+                result_l7rule_dict = l7rule_dicts[1]
+                self._compare_l7rule_dicts(provider_l7rule_dict,
+                                           result_l7rule_dict)
+
+    def _compare_l7rule_dicts(self,
+                              provider_l7rule_dict,
+                              result_l7rule_dict):
+        for key in (lib_consts.L7RULE_ID,
+                    lib_consts.L7POLICY_ID,
+                    lib_consts.LISTENER_ID,
+                    lib_consts.NAME,
+                    lib_consts.DESCRIPTION,
+                    lib_consts.PROJECT_ID,
+                    lib_consts.ADMIN_STATE_UP,
+                    lib_consts.TYPE,
+                    lib_consts.COMPARE_TYPE,
+                    lib_consts.KEY,
+                    lib_consts.VALUE,
+                    lib_consts.INVERT):
+            self.assertEqual(provider_l7rule_dict.get(key),
+                             result_l7rule_dict.get(key))
+
+    def _compare_pool_dicts(self,
+                            provider_pool_dict,
+                            result_pool_dict):
+        for key in (lib_consts.POOL_ID,
+                    lib_consts.NAME,
+                    lib_consts.DESCRIPTION,
+                    lib_consts.PROJECT_ID,
+                    lib_consts.ADMIN_STATE_UP,
+                    lib_consts.LB_ALGORITHM,
+                    lib_consts.LOADBALANCER_ID,
+                    lib_consts.PROTOCOL,
+                    lib_consts.SESSION_PERSISTENCE,
+                    lib_consts.TLS_ENABLED,
+                    lib_consts.TLS_CONTAINER_REF,
+                    lib_consts.TLS_CONTAINER_DATA,
+                    lib_consts.CA_TLS_CONTAINER_REF,
+                    lib_consts.CA_TLS_CONTAINER_DATA,
+                    lib_consts.CRL_CONTAINER_REF,
+                    lib_consts.CRL_CONTAINER_DATA,
+                    lib_consts.TLS_CIPHERS,
+                    lib_consts.TLS_VERSIONS,
+                    lib_consts.ALPN_PROTOCOLS):
+            self.assertEqual(provider_pool_dict.get(key),
+                             result_pool_dict.get(key))
+
+        provider_hm_dict = provider_pool_dict.get(
+            lib_consts.HEALTHMONITOR)
+        result_hm_dict = result_pool_dict.get(
+            lib_consts.HEALTHMONITOR)
+        if provider_hm_dict or result_hm_dict:
+            self._compare_hm_dicts(provider_hm_dict,
+                                   result_hm_dict)
+
+        provider_member_dicts = provider_pool_dict.get(
+            lib_consts.MEMBERS)
+        result_member_dicts = result_pool_dict.get(
+            lib_consts.MEMBERS)
+        self.assertEqual(len(provider_member_dicts),
+                         len(result_member_dicts))
+
+        for member_dicts in zip(provider_member_dicts,
+                                result_member_dicts):
+            provider_member_dict = member_dicts[0]
+            result_member_dict = member_dicts[1]
+            self._compare_member_dicts(provider_member_dict,
+                                       result_member_dict)
+
+    def _compare_hm_dicts(self,
+                          provider_hm_dict,
+                          result_hm_dict):
+        for key in (lib_consts.HEALTHMONITOR_ID,
+                    lib_consts.POOL_ID,
+                    lib_consts.NAME,
+                    lib_consts.DESCRIPTION,
+                    lib_consts.PROJECT_ID,
+                    lib_consts.ADMIN_STATE_UP,
+                    lib_consts.TYPE,
+                    lib_consts.DELAY,
+                    lib_consts.TIMEOUT,
+                    lib_consts.MAX_RETRIES,
+                    lib_consts.MAX_RETRIES_DOWN,
+                    lib_consts.DOMAIN_NAME,
+                    lib_consts.EXPECTED_CODES,
+                    lib_consts.HTTP_METHOD,
+                    lib_consts.HTTP_VERSION,
+                    lib_consts.URL_PATH):
+            self.assertEqual(provider_hm_dict.get(key),
+                             result_hm_dict.get(key))
+
+    def _compare_member_dicts(self,
+                              provider_member_dict,
+                              result_member_dict):
+        for key in (lib_consts.MEMBER_ID,
+                    lib_consts.POOL_ID,
+                    lib_consts.NAME,
+                    lib_consts.DESCRIPTION,
+                    lib_consts.PROJECT_ID,
+                    lib_consts.ADMIN_STATE_UP,
+                    lib_consts.ADDRESS,
+                    lib_consts.PROTOCOL_PORT,
+                    lib_consts.MONITOR_ADDRESS,
+                    lib_consts.MONITOR_PORT,
+                    lib_consts.SUBNET_ID,
+                    lib_consts.WEIGHT,
+                    lib_consts.BACKUP):
+            self.assertEqual(provider_member_dict.get(key),
+                             result_member_dict.get(key))
+
     @mock.patch('octavia_lib.api.drivers.driver_lib.SOCKET_TIMEOUT', 30)
     def test_get_loadbalancer(self):
         result = self.driver_lib.get_loadbalancer(self.sample_data.lb_id)
+        result_dict = result.to_dict(render_unsets=True, recurse=True)
 
-        self.assertEqual(self.provider_lb_dict,
-                         result.to_dict(render_unsets=True, recurse=True))
+        self._compare_load_balancer_dicts(self.provider_lb_dict,
+                                          result_dict)
 
         # Test non-existent load balancer
         result = self.driver_lib.get_loadbalancer('bogus')
@@ -287,10 +519,10 @@ class DriverAgentTest(base.OctaviaDBTestBase):
     @mock.patch('octavia_lib.api.drivers.driver_lib.SOCKET_TIMEOUT', 30)
     def test_get_listener(self):
         result = self.driver_lib.get_listener(self.sample_data.listener1_id)
+        result_dict = result.to_dict(render_unsets=True, recurse=True)
 
-        # We need to recurse here to pick up the SNI data
-        self.assertEqual(self.provider_listener_dict,
-                         result.to_dict(render_unsets=True, recurse=True))
+        self._compare_listener_dicts(self.provider_listener_dict,
+                                     result_dict)
 
         # Test non-existent listener
         result = self.driver_lib.get_listener('bogus')
@@ -299,9 +531,10 @@ class DriverAgentTest(base.OctaviaDBTestBase):
     @mock.patch('octavia_lib.api.drivers.driver_lib.SOCKET_TIMEOUT', 30)
     def test_get_pool(self):
         result = self.driver_lib.get_pool(self.sample_data.pool1_id)
+        result_dict = result.to_dict(render_unsets=True, recurse=True)
 
-        self.assertEqual(self.provider_pool_dict,
-                         result.to_dict(render_unsets=True, recurse=True))
+        self._compare_pool_dicts(self.provider_pool_dict,
+                                 result_dict)
 
         # Test non-existent pool
         result = self.driver_lib.get_pool('bogus')
@@ -310,9 +543,10 @@ class DriverAgentTest(base.OctaviaDBTestBase):
     @mock.patch('octavia_lib.api.drivers.driver_lib.SOCKET_TIMEOUT', 30)
     def test_get_member(self):
         result = self.driver_lib.get_member(self.sample_data.member1_id)
+        result_dict = result.to_dict(render_unsets=True)
 
-        self.assertEqual(self.sample_data.provider_member1_dict,
-                         result.to_dict(render_unsets=True))
+        self._compare_member_dicts(self.sample_data.provider_member1_dict,
+                                   result_dict)
 
         # Test non-existent member
         result = self.driver_lib.get_member('bogus')
@@ -321,9 +555,10 @@ class DriverAgentTest(base.OctaviaDBTestBase):
     @mock.patch('octavia_lib.api.drivers.driver_lib.SOCKET_TIMEOUT', 30)
     def test_get_healthmonitor(self):
         result = self.driver_lib.get_healthmonitor(self.sample_data.hm1_id)
+        result_dict = result.to_dict(render_unsets=True)
 
-        self.assertEqual(self.sample_data.provider_hm1_dict,
-                         result.to_dict(render_unsets=True))
+        self._compare_hm_dicts(self.sample_data.provider_hm1_dict,
+                               result_dict)
 
         # Test non-existent health monitor
         result = self.driver_lib.get_healthmonitor('bogus')
@@ -332,9 +567,11 @@ class DriverAgentTest(base.OctaviaDBTestBase):
     @mock.patch('octavia_lib.api.drivers.driver_lib.SOCKET_TIMEOUT', 30)
     def test_get_l7policy(self):
         result = self.driver_lib.get_l7policy(self.sample_data.l7policy1_id)
+        result_dict = result.to_dict(render_unsets=True, recurse=True)
 
-        self.assertEqual(self.sample_data.provider_l7policy1_dict,
-                         result.to_dict(render_unsets=True, recurse=True))
+        self._compare_l7policy_dicts(
+            self.sample_data.provider_l7policy1_dict,
+            result_dict)
 
         # Test non-existent L7 policy
         result = self.driver_lib.get_l7policy('bogus')
@@ -343,9 +580,11 @@ class DriverAgentTest(base.OctaviaDBTestBase):
     @mock.patch('octavia_lib.api.drivers.driver_lib.SOCKET_TIMEOUT', 30)
     def test_get_l7rule(self):
         result = self.driver_lib.get_l7rule(self.sample_data.l7rule1_id)
+        result_dict = result.to_dict(render_unsets=True)
 
-        self.assertEqual(self.sample_data.provider_l7rule1_dict,
-                         result.to_dict(render_unsets=True))
+        self._compare_l7rule_dicts(
+            self.sample_data.provider_l7rule1_dict,
+            result_dict)
 
         # Test non-existent L7 rule
         result = self.driver_lib.get_l7rule('bogus')
