@@ -17,3 +17,6 @@ enable_selinux_bool () {
 enable_selinux_bool os_haproxy_enable_nsfs
 enable_selinux_bool os_haproxy_ping
 enable_selinux_bool cluster_use_execmem
+# Allows keepalived to connect to any ports (required by TCP-based HMs on UDP
+# pools)
+enable_selinux_bool keepalived_connect_any
