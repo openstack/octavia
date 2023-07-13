@@ -2032,6 +2032,53 @@ class TestDatabaseTasks(base.TestCase):
             id=HM_ID,
             provisioning_status=constants.ERROR)
 
+    @mock.patch('octavia.db.repositories.LoadBalancerRepository.get')
+    @mock.patch('octavia.db.repositories.HealthMonitorRepository.update')
+    def test_mark_health_monitors_online_in_db(self,
+                                               mock_health_mon_repo_update,
+                                               mock_loadbalancer_repo_get,
+                                               mock_generate_uuid,
+                                               mock_LOG,
+                                               mock_get_session,
+                                               mock_loadbalancer_repo_update,
+                                               mock_listener_repo_update,
+                                               mock_amphora_repo_update,
+                                               mock_amphora_repo_delete):
+        # Creating a mock hm for a default pool
+        mock_lb = mock.MagicMock()
+        mock_listener = mock.MagicMock()
+        mock_default_pool = mock_listener.default_pool
+        mock_hm_def_pool = mock_default_pool.health_monitor
+        mock_hm_def_pool.id = uuidutils.generate_uuid()
+        mock_lb.listeners = [mock_listener]
+
+        # Creating a mock hm for a redirect pool of an l7policy
+        mock_l7policy = mock.MagicMock()
+        mock_redirect_pool = mock_l7policy.redirect_pool
+        mock_hm_l7_policy = mock_redirect_pool.health_monitor
+        mock_hm_l7_policy.id = uuidutils.generate_uuid()
+        mock_listener.l7policies = [mock_l7policy]
+
+        # Creating a mock hm for a non default pool - we check its health
+        # monitor won't be updated
+        mock_pool = mock.MagicMock()
+        mock_hm_non_def_pool = mock_pool.health_monitor
+        mock_hm_non_def_pool.id = uuidutils.generate_uuid()
+        mock_lb.pools = [mock_pool]
+
+        mock_loadbalancer_repo_get.return_value = mock_lb
+        mark_health_mon_online = (database_tasks.
+                                  MarkHealthMonitorsOnlineInDB())
+        mark_health_mon_online.execute(mock_lb)
+
+        mock_session = 'TEST'
+        for mock_id in [mock_hm_def_pool.id, mock_hm_l7_policy.id]:
+            mock_health_mon_repo_update.assert_called_with(
+                mock_session,
+                mock_id,
+                operating_status=constants.ONLINE)
+        self.assertEqual(2, mock_health_mon_repo_update.call_count)
+
     @mock.patch('octavia.db.repositories.L7PolicyRepository.update')
     def test_mark_l7policy_active_in_db(self,
                                         mock_l7policy_repo_update,
