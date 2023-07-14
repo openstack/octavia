@@ -922,7 +922,7 @@ class TestHaproxyCfg(base.TestCase):
         be = ("backend sample_pool_id_1:sample_listener_id_1\n"
               "    mode http\n"
               "    balance roundrobin\n"
-              "    stick-table type ip size 10k\n"
+              "    stick-table type ipv6 size 10k\n"
               "    stick on src\n"
               "    timeout check 31s\n"
               "    option httpchk GET /index.html HTTP/1.0\\r\\n\n"
