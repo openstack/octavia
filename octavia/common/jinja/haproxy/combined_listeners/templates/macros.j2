@@ -324,10 +324,10 @@ backend {{ pool.id }}:{{ listener.id }}
         {% if (pool.session_persistence.type ==
                constants.SESSION_PERSISTENCE_SOURCE_IP) %}
             {% if loadbalancer.topology == constants.TOPOLOGY_ACTIVE_STANDBY %}
-    stick-table type ip size {{ pool.stick_size }} peers {{
+    stick-table type ipv6 size {{ pool.stick_size }} peers {{
     "%s_peers"|format(loadbalancer.id.replace("-", ""))|trim() }}
             {% else %}
-    stick-table type ip size {{ pool.stick_size }}
+    stick-table type ipv6 size {{ pool.stick_size }}
             {% endif %}
     stick on src
         {% elif (pool.session_persistence.type ==
