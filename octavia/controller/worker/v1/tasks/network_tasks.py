@@ -70,6 +70,11 @@ class CalculateAmphoraDelta(BaseNetworkTask):
         else:
             management_nets = CONF.controller_worker.amp_boot_network_list
 
+        # Reload the load balancer, the provisioning status of the members may
+        # have been updated by a previous task
+        loadbalancer = self.lb_repo.get(
+            db_apis.get_session(), id=loadbalancer.id)
+
         desired_subnet_to_net_map = {}
         for mgmt_net_id in management_nets:
             for subnet_id in self.network_driver.get_network(
