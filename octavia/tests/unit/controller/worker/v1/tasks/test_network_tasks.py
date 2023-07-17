@@ -65,6 +65,7 @@ AMPS_DATA = [o_data_models.Amphora(id=t_constants.MOCK_AMP_ID1,
                                    vrrp_ip=t_constants.MOCK_VRRP_IP3)
              ]
 UPDATE_DICT = {constants.TOPOLOGY: None}
+_session_mock = mock.MagicMock()
 
 
 class TestException(Exception):
@@ -98,7 +99,10 @@ class TestNetworkTasks(base.TestCase):
         conf.config(group="networking", max_retries=1)
         super().setUp()
 
-    def test_calculate_amphora_delta(self, mock_get_net_driver):
+    @mock.patch('octavia.db.repositories.LoadBalancerRepository.get')
+    @mock.patch('octavia.db.api.get_session', return_value=_session_mock)
+    def test_calculate_amphora_delta(self, mock_get_session, mock_lb_repo_get,
+                                     mock_get_net_driver):
         VRRP_PORT_ID = uuidutils.generate_uuid()
         VIP_NETWORK_ID = uuidutils.generate_uuid()
         VIP_SUBNET_ID = uuidutils.generate_uuid()
@@ -155,6 +159,7 @@ class TestNetworkTasks(base.TestCase):
             id=mock.Mock(),
             network_id=DELETE_NETWORK_ID)
 
+        mock_lb_repo_get.return_value = lb_mock
         mock_driver.get_port.return_value = vrrp_port
         mock_driver.get_subnet.return_value = member_subnet
         mock_driver.get_network.return_value = mgmt_net
@@ -177,8 +182,12 @@ class TestNetworkTasks(base.TestCase):
         mock_driver.get_subnet.assert_called_once_with(MEMBER_SUBNET_ID)
         mock_driver.get_plugged_networks.assert_called_once_with(COMPUTE_ID)
 
-    def test_calculate_delta(self, mock_get_net_driver):
+    @mock.patch('octavia.db.repositories.LoadBalancerRepository.get')
+    @mock.patch('octavia.db.api.get_session', return_value=_session_mock)
+    def test_calculate_delta(self, mock_get_session, mock_get_lb,
+                             mock_get_net_driver):
         mock_driver = mock.MagicMock()
+        mock_get_lb.return_value = self.load_balancer_mock
         mock_get_net_driver.return_value = mock_driver
         empty_deltas = {self.amphora_mock.id: data_models.Delta(
             amphora_id=self.amphora_mock.id,
@@ -572,7 +581,11 @@ class TestNetworkTasks(base.TestCase):
         self.assertEqual({self.amphora_mock.id: ndm},
                          calc_delta.execute(self.load_balancer_mock, {}))
 
-    def test_calculate_delta_ipv6_ipv4_subnets(self, mock_get_net_driver):
+    @mock.patch('octavia.db.repositories.LoadBalancerRepository.get')
+    @mock.patch('octavia.db.api.get_session', return_value=_session_mock)
+    def test_calculate_delta_ipv6_ipv4_subnets(self, mock_get_session,
+                                               mock_get_lb,
+                                               mock_get_net_driver):
         mock_driver = mock.MagicMock()
         mock_get_net_driver.return_value = mock_driver
 
