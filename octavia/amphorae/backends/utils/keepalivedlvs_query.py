@@ -460,6 +460,8 @@ def get_lvs_listeners_stats():
         status = constants.OPEN
         # Get scur
         for listener_ipport in listener_ipports:
+            if listener_ipport not in scur_res:
+                continue
             for m in scur_res[listener_ipport]['Members']:
                 for item in m:
                     if item[0] == 'ActiveConn':
