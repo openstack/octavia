@@ -1,0 +1,6 @@
+---
+fixes:
+  - |
+    Fixed a bug with the status of the members of UDP pools in load balancer
+    with IPv4 and IPv6 VIPs. Some members may have been incorrectly reported as
+    DOWN by the Amphora.

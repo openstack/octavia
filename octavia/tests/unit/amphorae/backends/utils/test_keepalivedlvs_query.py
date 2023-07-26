@@ -52,6 +52,24 @@ KERNAL_FILE_SAMPLE_V6 = (
     "  -> [fd79:35e2::8f3f]:115C       "
     "Masq    2      0          0")
 
+KERNEL_FILE_SAMPLE_MIXED = (
+    "IP Virtual Server version 1.2.1 (size=4096)\n"
+    "Prot LocalAddress:Port Scheduler Flags\n"
+    "  -> RemoteAddress:Port Forward Weight ActiveConn InActConn\n"
+    "UDP  [fd79:35e2:9963:0000:f816:3eff:fe6d:7a2a]:1E61 rr\n"
+    "  -> [fd79:35e2:9963:0000:f816:3eff:feca:b7bf]:08AE      "
+    "Masq    3      0          0\n"
+    "  -> [fd79:35e2:9963:0000:f816:3eff:fe9d:94df]:0D05      "
+    "Masq    2      0          0\n"
+    "  -> [fd79:35e2::8f3f]:115C       "
+    "Masq    2      0          0\n"
+    "UDP  0A000025:1E61 rr\n"
+    "  -> 0A000023:0D05      Masq    2      0          0\n"
+    "  -> 0A000019:08AE      Masq    3      0          0\n"
+    "UDP  0A000025:FF12 rr\n"
+    "  -> 0A000023:12AB      Masq    2      0          0\n"
+    "  -> 0A000019:BF2E      Masq    3      0          0")
+
 CFG_FILE_TEMPLATE_v4 = (
     "# Configuration for Listener %(listener_id)s\n\n"
     "net_namespace %(ns_name)s\n\n"
@@ -345,7 +363,7 @@ class LvsQueryTestCase(base.TestCase):
                                        'Weight': '2',
                                        'ActiveConn': '0',
                                        'InActConn': '0'}}
-        self.assertEqual((True, expected), result)
+        self.assertEqual(expected, result)
 
         # Ipv6 resolver
         input_listener_ip_port = [
@@ -372,7 +390,45 @@ class LvsQueryTestCase(base.TestCase):
                          'Weight': '2',
                          'ActiveConn': '0',
                          'InActConn': '0'}}
-        self.assertEqual((True, expected), result)
+        self.assertEqual(expected, result)
+
+        # mixed resolver
+        input_listener_ip_port = [
+            '[fd79:35e2:9963:0:f816:3eff:fe6d:7a2a]:7777',
+            '10.0.0.37:7777']
+        mock_check_output.return_value = KERNEL_FILE_SAMPLE_MIXED
+        result = lvs_query.get_listener_realserver_mapping(
+            target_ns, input_listener_ip_port,
+            health_monitor_enabled=True)
+        expected = {'[fd79:35e2:9963:0:f816:3eff:feca:b7bf]:2222':
+                    {'status': constants.UP,
+                     'Forward': 'Masq',
+                     'Weight': '3',
+                     'ActiveConn': '0',
+                     'InActConn': '0'},
+                    '[fd79:35e2:9963:0:f816:3eff:fe9d:94df]:3333':
+                        {'status': constants.UP,
+                         'Forward': 'Masq',
+                         'Weight': '2',
+                         'ActiveConn': '0',
+                         'InActConn': '0'},
+                    '[fd79:35e2::8f3f]:4444':
+                        {'status': constants.UP,
+                         'Forward': 'Masq',
+                         'Weight': '2',
+                         'ActiveConn': '0',
+                         'InActConn': '0'},
+                    '10.0.0.25:2222': {'status': 'UP',
+                                       'Forward': 'Masq',
+                                       'Weight': '3',
+                                       'ActiveConn': '0',
+                                       'InActConn': '0'},
+                    '10.0.0.35:3333': {'status': 'UP',
+                                       'Forward': 'Masq',
+                                       'Weight': '2',
+                                       'ActiveConn': '0',
+                                       'InActConn': '0'}}
+        self.assertEqual(expected, result)
 
         # negetive cases
         mock_check_output.return_value = KERNAL_FILE_SAMPLE_V4
@@ -380,7 +436,7 @@ class LvsQueryTestCase(base.TestCase):
             result = lvs_query.get_listener_realserver_mapping(
                 target_ns, [listener_ip_port],
                 health_monitor_enabled=True)
-            self.assertEqual((False, {}), result)
+            self.assertEqual({}, result)
 
         mock_check_output.return_value = KERNAL_FILE_SAMPLE_V6
         for listener_ip_port in [
@@ -389,7 +445,7 @@ class LvsQueryTestCase(base.TestCase):
             result = lvs_query.get_listener_realserver_mapping(
                 target_ns, [listener_ip_port],
                 health_monitor_enabled=True)
-            self.assertEqual((False, {}), result)
+            self.assertEqual({}, result)
 
     def test_get_lvs_listener_resource_ipports_nsname(self):
         # ipv4
@@ -571,7 +627,7 @@ class LvsQueryTestCase(base.TestCase):
             mock.Mock(st_mtime=1234),
             mock.Mock(st_mtime=1234),
         )
-        mock_get_mapping.return_value = (False, {})
+        mock_get_mapping.return_value = {}
         res = lvs_query.get_lvs_listener_pool_status(self.listener_id_v4)
         expected = {
             'lvs':
