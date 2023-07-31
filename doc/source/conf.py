@@ -57,7 +57,6 @@ extensions = [
     'sphinx.ext.autodoc',
     'sphinx.ext.todo',
     'sphinx.ext.viewcode',
-    'sphinxcontrib.blockdiag',
     'sphinxcontrib.actdiag',
     'sphinxcontrib.seqdiag',
     'sphinxcontrib.nwdiag',
