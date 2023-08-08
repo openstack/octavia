@@ -1,0 +1,5 @@
+---
+other:
+  - |
+    Add fake Amphora stats for when Octavia runs in noop mode / using
+    noop drivers.
