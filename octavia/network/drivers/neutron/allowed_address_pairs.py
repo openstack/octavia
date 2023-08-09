@@ -797,57 +797,6 @@ class AllowedAddressPairsDriver(neutron_base.BaseNeutronDriver):
                                 {'amp': amp.id, 'err': str(e)})
         return amp_configs
 
-    # TODO(johnsom) This may be dead code now. Remove in failover for v2 patch
-    def wait_for_port_detach(self, amphora):
-        """Waits for the amphora ports device_id to be unset.
-
-        This method waits for the ports on an amphora device_id
-        parameter to be '' or None which signifies that nova has
-        finished detaching the port from the instance.
-
-        :param amphora: Amphora to wait for ports to detach.
-        :returns: None
-        :raises TimeoutException: Port did not detach in interval.
-        :raises PortNotFound: Port was not found by neutron.
-        """
-        interfaces = self.get_plugged_networks(compute_id=amphora.compute_id)
-
-        ports = []
-        port_detach_timeout = CONF.networking.port_detach_timeout
-        for interface_ in interfaces:
-            port = self.get_port(port_id=interface_.port_id)
-            ips = port.fixed_ips
-            lb_network = False
-            for ip in ips:
-                if ip.ip_address == amphora.lb_network_ip:
-                    lb_network = True
-            if not lb_network:
-                ports.append(port)
-
-        for port in ports:
-            try:
-                neutron_port = self.network_proxy.get_port(
-                    port.id)
-                device_id = neutron_port['device_id']
-                start = int(time.time())
-
-                while device_id:
-                    time.sleep(CONF.networking.retry_interval)
-                    neutron_port = self.network_proxy.get_port(
-                        port.id)
-                    device_id = neutron_port['device_id']
-
-                    timed_out = int(time.time()) - start >= port_detach_timeout
-
-                    if device_id and timed_out:
-                        message = ('Port %s failed to detach (device_id %s) '
-                                   'within the required time (%s s).' %
-                                   (port.id, device_id, port_detach_timeout))
-                        raise base.TimeoutException(message)
-
-            except os_exceptions.ResourceNotFound:
-                pass
-
     def delete_port(self, port_id):
         """delete a neutron port.
 

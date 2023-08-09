@@ -355,20 +355,6 @@ class AbstractNetworkDriver(object, metaclass=abc.ABCMeta):
         """
 
     @abc.abstractmethod
-    def wait_for_port_detach(self, amphora):
-        """Waits for the amphora ports device_id to be unset.
-
-        This method waits for the ports on an amphora device_id
-        parameter to be '' or None which signifies that nova has
-        finished detaching the port from the instance.
-
-        :param amphora: Amphora to wait for ports to detach.
-        :returns: None
-        :raises TimeoutException: Port did not detach in interval.
-        :raises PortNotFound: Port was not found by neutron.
-        """
-
-    @abc.abstractmethod
     def update_vip_sg(self, load_balancer, vip):
         """Updates the security group for a VIP
 
