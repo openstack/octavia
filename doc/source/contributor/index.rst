@@ -90,6 +90,13 @@ Version 1.1 (queens)
 
    specs/version1.1/*
 
+Version 14.0 (caracal)
+``````````````````````
+.. toctree::
+   :glob:
+   :maxdepth: 1
+
+   specs/version14.0/*
 
 .. only:: latex
 
