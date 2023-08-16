@@ -56,6 +56,7 @@ class BaseOS(object):
     def write_interface_file(self, interface, ip_address, prefixlen):
         interface = interface_file.InterfaceFile(
             name=interface,
+            if_type=consts.LO,
             addresses=[{
                 "address": ip_address,
                 "prefixlen": prefixlen
