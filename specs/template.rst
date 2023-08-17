@@ -35,7 +35,7 @@ Some notes about using this template:
 
 * If you would like to provide a diagram with your spec, text representations
   are preferred. http://asciiflow.com/ is a very nice tool to assist with
-  making ascii diagrams. blockdiag is another tool. These are described below.
+  making ascii diagrams. These are described below.
   For more complicated diagrams that need "real" graphics, yet still should
   be in the git revision control system, GraphViz .dot files are acceptable.
   If you require an image (screenshot) for your BP, attaching that to the BP
@@ -50,14 +50,6 @@ asciiflow::
   | A        |     |  B        |        |  C       |
   |          +-----+           +--------+          |
   +----------+     +-----------+        +----------+
-
-blockdiag
-
-.. blockdiag::
-
-  blockdiag sample {
-    a -> b -> c;
-  }
 
 actdiag
 

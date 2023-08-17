@@ -32,7 +32,6 @@ def fake_role(name, rawtext, text, lineno, inliner,
 
 
 directives.register_directive('seqdiag', FakeDirective)
-directives.register_directive('blockdiag', FakeDirective)
 directives.register_directive('nwdiag', FakeDirective)
 directives.register_directive('actdiag', FakeDirective)
 directives.register_directive('graphviz', FakeDirective)
