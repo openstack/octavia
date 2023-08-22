@@ -29,9 +29,4 @@ class WarningsFixture(fixtures.Fixture):
             'error',
             category=sqla_exc.SADeprecationWarning)
 
-        warnings.filterwarnings(
-            'ignore',
-            message='The create_engine.convert_unicode parameter and ',
-            category=sqla_exc.SADeprecationWarning)
-
         self.addCleanup(warnings.resetwarnings)
