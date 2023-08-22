@@ -46,8 +46,9 @@ class AvailabilityZonesController(base.BaseController):
         if name == constants.NIL_UUID:
             raise exceptions.NotFound(resource='Availability Zone',
                                       id=constants.NIL_UUID)
-        db_availability_zone = self._get_db_availability_zone(
-            context.session, name)
+        with context.session.begin():
+            db_availability_zone = self._get_db_availability_zone(
+                context.session, name)
         result = self._convert_db_to_type(
             db_availability_zone,
             availability_zone_types.AvailabilityZoneResponse)
@@ -64,10 +65,12 @@ class AvailabilityZonesController(base.BaseController):
         context = pcontext.get('octavia_context')
         self._auth_validate_action(context, context.project_id,
                                    constants.RBAC_GET_ALL)
-        db_availability_zones, links = (
-            self.repositories.availability_zone.get_all(
-                context.session,
-                pagination_helper=pcontext.get(constants.PAGINATION_HELPER)))
+        with context.session.begin():
+            db_availability_zones, links = (
+                self.repositories.availability_zone.get_all(
+                    context.session,
+                    pagination_helper=pcontext.get(
+                        constants.PAGINATION_HELPER)))
         result = self._convert_db_to_type(
             db_availability_zones,
             [availability_zone_types.AvailabilityZoneResponse])
@@ -86,20 +89,20 @@ class AvailabilityZonesController(base.BaseController):
         self._auth_validate_action(context, context.project_id,
                                    constants.RBAC_POST)
 
-        lock_session = db_api.get_session(autocommit=False)
+        context.session.begin()
         try:
             availability_zone_dict = availability_zone.to_dict(
                 render_unsets=True)
             db_availability_zone = self.repositories.availability_zone.create(
-                lock_session, **availability_zone_dict)
-            lock_session.commit()
+                context.session, **availability_zone_dict)
+            context.session.commit()
         except odb_exceptions.DBDuplicateEntry as e:
-            lock_session.rollback()
+            context.session.rollback()
             raise exceptions.RecordAlreadyExists(
                 field='availability zone', name=availability_zone.name) from e
         except Exception:
             with excutils.save_and_reraise_exception():
-                lock_session.rollback()
+                context.session.rollback()
         result = self._convert_db_to_type(
             db_availability_zone,
             availability_zone_types.AvailabilityZoneResponse)
@@ -117,23 +120,24 @@ class AvailabilityZonesController(base.BaseController):
         if name == constants.NIL_UUID:
             raise exceptions.NotFound(resource='Availability Zone',
                                       id=constants.NIL_UUID)
-        lock_session = db_api.get_session(autocommit=False)
+        context.session.begin()
         try:
             availability_zone_dict = availability_zone.to_dict(
                 render_unsets=False)
             if availability_zone_dict:
                 self.repositories.availability_zone.update(
-                    lock_session, name, **availability_zone_dict)
-            lock_session.commit()
+                    context.session, name, **availability_zone_dict)
+            context.session.commit()
         except Exception:
             with excutils.save_and_reraise_exception():
-                lock_session.rollback()
+                context.session.rollback()
 
         # Force SQL alchemy to query the DB, otherwise we get inconsistent
         # results
         context.session.expire_all()
-        db_availability_zone = self._get_db_availability_zone(
-            context.session, name)
+        with context.session.begin():
+            db_availability_zone = self._get_db_availability_zone(
+                context.session, name)
         result = self._convert_db_to_type(
             db_availability_zone,
             availability_zone_types.AvailabilityZoneResponse)
@@ -151,7 +155,7 @@ class AvailabilityZonesController(base.BaseController):
         if availability_zone_name == constants.NIL_UUID:
             raise exceptions.NotFound(resource='Availability Zone',
                                       id=constants.NIL_UUID)
-        serial_session = db_api.get_session(autocommit=False)
+        serial_session = db_api.get_session()
         serial_session.connection(
             execution_options={'isolation_level': 'SERIALIZABLE'})
         try:

@@ -99,7 +99,7 @@ class TestHealthManager(base.TestCase):
         hm = healthmanager.HealthManager(exit_event)
 
         hm.health_check()
-        session_mock.assert_called_once_with(autocommit=False)
+        session_mock.assert_called_once_with()
         self.assertFalse(failover_mock.called)
 
     @mock.patch('octavia.controller.worker.v2.controller_worker.'
@@ -115,7 +115,7 @@ class TestHealthManager(base.TestCase):
         hm = healthmanager.HealthManager(exit_event)
         hm.health_check()
 
-        session_mock.assert_called_once_with(autocommit=False)
+        session_mock.assert_called_once_with()
         self.assertFalse(failover_mock.called)
 
     @mock.patch('octavia.controller.worker.v2.controller_worker.'

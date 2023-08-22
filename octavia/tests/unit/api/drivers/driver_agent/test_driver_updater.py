@@ -39,7 +39,7 @@ class TestDriverUpdater(base.TestCase):
               mock_pool_repo, mock_l7r_repo, mock_l7p_repo, mock_list_repo,
               mock_lb_repo):
         super().setUp()
-        self.mock_session = "FAKE_DB_SESSION"
+        self.mock_session = mock.MagicMock()
         mock_get_session.return_value = self.mock_session
 
         member_mock = mock.MagicMock()
@@ -98,34 +98,32 @@ class TestDriverUpdater(base.TestCase):
     @mock.patch('octavia.db.repositories.Repositories.decrement_quota')
     @mock.patch('octavia.db.api.get_session')
     def test_decrement_quota(self, mock_get_session, mock_dec_quota):
-        mock_session = mock.MagicMock()
-        mock_get_session.return_value = mock_session
         mock_dec_quota.side_effect = [mock.DEFAULT,
                                       exceptions.OctaviaException('Boom')]
 
         self.driver_updater._decrement_quota(self.mock_lb_repo,
                                              'FakeName', self.lb_id)
         mock_dec_quota.assert_called_once_with(
-            mock_session, self.mock_lb_repo.model_class.__data_model__,
+            self.mock_session, self.mock_lb_repo.model_class.__data_model__,
             self.lb_project_id)
-        mock_session.commit.assert_called_once()
-        mock_session.rollback.assert_not_called()
+        self.mock_session.commit.assert_called_once()
+        self.mock_session.rollback.assert_not_called()
 
         # Test exception path
         mock_dec_quota.reset_mock()
-        mock_session.reset_mock()
+        self.mock_session.reset_mock()
         self.assertRaises(exceptions.OctaviaException,
                           self.driver_updater._decrement_quota,
                           self.mock_lb_repo, 'FakeName', self.lb_id)
         mock_dec_quota.assert_called_once_with(
-            mock_session, self.mock_lb_repo.model_class.__data_model__,
+            self.mock_session, self.mock_lb_repo.model_class.__data_model__,
             self.lb_project_id)
-        mock_session.commit.assert_not_called()
-        mock_session.rollback.assert_called_once()
+        self.mock_session.commit.assert_not_called()
+        self.mock_session.rollback.assert_called_once()
 
         # Test already deleted path
         mock_dec_quota.reset_mock()
-        mock_session.reset_mock()
+        self.mock_session.reset_mock()
         # Create a local mock LB and LB_repo for this test
         mock_lb = mock.MagicMock()
         mock_lb.id = self.lb_id
@@ -136,8 +134,8 @@ class TestDriverUpdater(base.TestCase):
         self.driver_updater._decrement_quota(mock_lb_repo,
                                              'FakeName', self.lb_id)
         mock_dec_quota.assert_not_called()
-        mock_session.commit.assert_not_called()
-        mock_session.rollback.assert_called_once()
+        self.mock_session.commit.assert_not_called()
+        self.mock_session.rollback.assert_called_once()
 
     @mock.patch('octavia.api.drivers.driver_agent.driver_updater.'
                 'DriverUpdater._decrement_quota')

@@ -32,7 +32,6 @@ from octavia.common import constants
 from octavia.common import data_models
 from octavia.common import exceptions
 from octavia.common import validate
-from octavia.db import api as db_api
 from octavia.db import prepare as db_prepare
 
 
@@ -51,8 +50,9 @@ class L7PolicyController(base.BaseController):
     def get(self, id, fields=None):
         """Gets a single l7policy's details."""
         context = pecan_request.context.get('octavia_context')
-        db_l7policy = self._get_db_l7policy(context.session, id,
-                                            show_deleted=False)
+        with context.session.begin():
+            db_l7policy = self._get_db_l7policy(context.session, id,
+                                                show_deleted=False)
 
         self._auth_validate_action(context, db_l7policy.project_id,
                                    constants.RBAC_GET_ONE)
@@ -72,10 +72,11 @@ class L7PolicyController(base.BaseController):
 
         query_filter = self._auth_get_all(context, project_id)
 
-        db_l7policies, links = self.repositories.l7policy.get_all_API_list(
-            context.session, show_deleted=False,
-            pagination_helper=pcontext.get(constants.PAGINATION_HELPER),
-            **query_filter)
+        with context.session.begin():
+            db_l7policies, links = self.repositories.l7policy.get_all_API_list(
+                context.session, show_deleted=False,
+                pagination_helper=pcontext.get(constants.PAGINATION_HELPER),
+                **query_filter)
         result = self._convert_db_to_type(
             db_l7policies, [l7policy_types.L7PolicyResponse])
         if fields is not None:
@@ -121,11 +122,12 @@ class L7PolicyController(base.BaseController):
 
         # Verify the parent listener exists
         listener_id = l7policy.listener_id
-        listener = self._get_db_listener(
-            context.session, listener_id)
-        load_balancer_id = listener.load_balancer_id
-        l7policy.project_id, provider = self._get_lb_project_id_provider(
-            context.session, load_balancer_id)
+        with context.session.begin():
+            listener = self._get_db_listener(
+                context.session, listener_id)
+            load_balancer_id = listener.load_balancer_id
+            l7policy.project_id, provider = self._get_lb_project_id_provider(
+                context.session, load_balancer_id)
 
         self._auth_validate_action(context, l7policy.project_id,
                                    constants.RBAC_POST)
@@ -137,14 +139,16 @@ class L7PolicyController(base.BaseController):
 
         # Make sure any pool specified by redirect_pool_id exists
         if l7policy.redirect_pool_id:
-            db_pool = self._get_db_pool(
-                context.session, l7policy.redirect_pool_id)
+            with context.session.begin():
+                db_pool = self._get_db_pool(
+                    context.session, l7policy.redirect_pool_id)
             self._validate_protocol(listener.protocol, db_pool.protocol)
 
         # Load the driver early as it also provides validation
         driver = driver_factory.get_driver(provider)
 
-        lock_session = db_api.get_session(autocommit=False)
+        lock_session = context.session
+        lock_session.begin()
         try:
             if self.repositories.check_quota_met(
                     context.session,
@@ -179,7 +183,9 @@ class L7PolicyController(base.BaseController):
             with excutils.save_and_reraise_exception():
                 lock_session.rollback()
 
-        db_l7policy = self._get_db_l7policy(context.session, db_l7policy.id)
+        with context.session.begin():
+            db_l7policy = self._get_db_l7policy(context.session,
+                                                db_l7policy.id)
         result = self._convert_db_to_type(db_l7policy,
                                           l7policy_types.L7PolicyResponse)
         return l7policy_types.L7PolicyRootResponse(l7policy=result)
@@ -209,12 +215,13 @@ class L7PolicyController(base.BaseController):
         """Updates a l7policy."""
         l7policy = l7policy_.l7policy
         context = pecan_request.context.get('octavia_context')
-        db_l7policy = self._get_db_l7policy(context.session, id,
-                                            show_deleted=False)
-        load_balancer_id, listener_id = self._get_listener_and_loadbalancer_id(
-            db_l7policy)
-        project_id, provider = self._get_lb_project_id_provider(
-            context.session, load_balancer_id)
+        with context.session.begin():
+            db_l7policy = self._get_db_l7policy(context.session, id,
+                                                show_deleted=False)
+            load_balancer_id, listener_id = (
+                self._get_listener_and_loadbalancer_id(db_l7policy))
+            project_id, provider = self._get_lb_project_id_provider(
+                context.session, load_balancer_id)
 
         self._auth_validate_action(context, project_id, constants.RBAC_PUT)
 
@@ -226,18 +233,21 @@ class L7PolicyController(base.BaseController):
                 l7policy_dict[attr] = l7policy_dict.pop(val)
         sanitized_l7policy = l7policy_types.L7PolicyPUT(**l7policy_dict)
 
-        listener = self._get_db_listener(
-            context.session, db_l7policy.listener_id)
+        with context.session.begin():
+            listener = self._get_db_listener(
+                context.session, db_l7policy.listener_id)
         # Make sure any specified redirect_pool_id exists
         if l7policy_dict.get('redirect_pool_id'):
-            db_pool = self._get_db_pool(
-                context.session, l7policy_dict['redirect_pool_id'])
+            with context.session.begin():
+                db_pool = self._get_db_pool(
+                    context.session, l7policy_dict['redirect_pool_id'])
             self._validate_protocol(listener.protocol, db_pool.protocol)
 
         # Load the driver early as it also provides validation
         driver = driver_factory.get_driver(provider)
 
-        with db_api.get_lock_session() as lock_session:
+        with context.session.begin():
+            lock_session = context.session
 
             self._test_lb_and_listener_statuses(lock_session,
                                                 lb_id=load_balancer_id,
@@ -270,7 +280,8 @@ class L7PolicyController(base.BaseController):
         # Force SQL alchemy to query the DB, otherwise we get inconsistent
         # results
         context.session.expire_all()
-        db_l7policy = self._get_db_l7policy(context.session, id)
+        with context.session.begin():
+            db_l7policy = self._get_db_l7policy(context.session, id)
         result = self._convert_db_to_type(db_l7policy,
                                           l7policy_types.L7PolicyResponse)
         return l7policy_types.L7PolicyRootResponse(l7policy=result)
@@ -279,12 +290,13 @@ class L7PolicyController(base.BaseController):
     def delete(self, id):
         """Deletes a l7policy."""
         context = pecan_request.context.get('octavia_context')
-        db_l7policy = self._get_db_l7policy(context.session, id,
-                                            show_deleted=False)
-        load_balancer_id, listener_id = self._get_listener_and_loadbalancer_id(
-            db_l7policy)
-        project_id, provider = self._get_lb_project_id_provider(
-            context.session, load_balancer_id)
+        with context.session.begin():
+            db_l7policy = self._get_db_l7policy(context.session, id,
+                                                show_deleted=False)
+            load_balancer_id, listener_id = (
+                self._get_listener_and_loadbalancer_id(db_l7policy))
+            project_id, provider = self._get_lb_project_id_provider(
+                context.session, load_balancer_id)
 
         self._auth_validate_action(context, project_id, constants.RBAC_DELETE)
 
@@ -294,13 +306,12 @@ class L7PolicyController(base.BaseController):
         # Load the driver early as it also provides validation
         driver = driver_factory.get_driver(provider)
 
-        with db_api.get_lock_session() as lock_session:
-
-            self._test_lb_and_listener_statuses(lock_session,
+        with context.session.begin():
+            self._test_lb_and_listener_statuses(context.session,
                                                 lb_id=load_balancer_id,
                                                 listener_ids=[listener_id])
             self.repositories.l7policy.update(
-                lock_session, db_l7policy.id,
+                context.session, db_l7policy.id,
                 provisioning_status=constants.PENDING_DELETE)
 
             LOG.info("Sending delete L7 Policy %s to provider %s",
@@ -320,8 +331,9 @@ class L7PolicyController(base.BaseController):
         context = pecan_request.context.get('octavia_context')
         if l7policy_id and remainder and remainder[0] == 'rules':
             remainder = remainder[1:]
-            db_l7policy = self.repositories.l7policy.get(
-                context.session, id=l7policy_id)
+            with context.session.begin():
+                db_l7policy = self.repositories.l7policy.get(
+                    context.session, id=l7policy_id)
             if not db_l7policy:
                 LOG.info("L7Policy %s not found.", l7policy_id)
                 raise exceptions.NotFound(

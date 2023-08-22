@@ -1400,7 +1400,7 @@ class TestNetworkTasks(base.TestCase):
         net_task.execute(listener)
         mock_driver.update_vip.assert_called_once_with(lb, for_delete=True)
 
-    @mock.patch('octavia.db.api.get_session', return_value='TEST')
+    @mock.patch('octavia.db.api.get_session')
     @mock.patch('octavia.db.repositories.AmphoraRepository.get')
     @mock.patch('octavia.db.repositories.LoadBalancerRepository.get')
     def test_get_amphora_network_configs_by_id(
@@ -1419,8 +1419,8 @@ class TestNetworkTasks(base.TestCase):
 
         mock_driver.get_network_configs.assert_called_once_with(
             'mock load balancer', amphora='mock amphora')
-        mock_amp_get.assert_called_once_with('TEST', id=AMP_ID)
-        mock_lb_get.assert_called_once_with('TEST', id=LB_ID)
+        mock_amp_get.assert_called_once_with(mock_get_session(), id=AMP_ID)
+        mock_lb_get.assert_called_once_with(mock_get_session(), id=LB_ID)
 
     @mock.patch('octavia.db.repositories.LoadBalancerRepository.get')
     @mock.patch('octavia.db.api.get_session', return_value=_session_mock)

@@ -31,13 +31,13 @@ class StatsUpdateDb(stats_base.StatsDriverMixin):
 
     def update_stats(self, listener_stats, deltas=False):
         """This function is to update the db with listener stats"""
-        session = db_api.get_session()
-        for stats_object in listener_stats:
-            LOG.debug("Updating listener stats in db for listener `%s` / "
-                      "amphora `%s`: %s",
-                      stats_object.listener_id, stats_object.amphora_id,
-                      stats_object.get_stats())
-            if deltas:
-                self.listener_stats_repo.increment(session, stats_object)
-            else:
-                self.listener_stats_repo.replace(session, stats_object)
+        with db_api.session().begin() as session:
+            for stats_object in listener_stats:
+                LOG.debug("Updating listener stats in db for listener `%s` / "
+                          "amphora `%s`: %s",
+                          stats_object.listener_id, stats_object.amphora_id,
+                          stats_object.get_stats())
+                if deltas:
+                    self.listener_stats_repo.increment(session, stats_object)
+                else:
+                    self.listener_stats_repo.replace(session, stats_object)

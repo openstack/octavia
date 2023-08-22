@@ -87,7 +87,8 @@ class HealthManager(object):
             amp_health = None
             lock_session = None
             try:
-                lock_session = db_api.get_session(autocommit=False)
+                lock_session = db_api.get_session()
+                lock_session.begin()
                 amp_health = self.amp_health_repo.get_stale_amphora(
                     lock_session)
                 if amp_health:

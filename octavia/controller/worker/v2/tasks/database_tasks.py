@@ -55,28 +55,28 @@ class BaseDatabaseTask(task.Task):
         self.task_utils = task_utilities.TaskUtils()
         super().__init__(**kwargs)
 
-    def _delete_from_amp_health(self, amphora_id):
+    def _delete_from_amp_health(self, session, amphora_id):
         """Delete the amphora_health record for an amphora.
 
         :param amphora_id: The amphora id to delete
         """
         LOG.debug('Disabling health monitoring on amphora: %s', amphora_id)
         try:
-            self.amp_health_repo.delete(db_apis.get_session(),
+            self.amp_health_repo.delete(session,
                                         amphora_id=amphora_id)
         except (sqlalchemy.orm.exc.NoResultFound,
                 sqlalchemy.orm.exc.UnmappedInstanceError):
             LOG.debug('No existing amphora health record to delete '
                       'for amphora: %s, skipping.', amphora_id)
 
-    def _mark_amp_health_busy(self, amphora_id):
+    def _mark_amp_health_busy(self, session, amphora_id):
         """Mark the amphora_health record busy for an amphora.
 
         :param amphora_id: The amphora id to mark busy
         """
         LOG.debug('Marking health monitoring busy on amphora: %s', amphora_id)
         try:
-            self.amp_health_repo.update(db_apis.get_session(),
+            self.amp_health_repo.update(session,
                                         amphora_id=amphora_id,
                                         busy=True)
         except (sqlalchemy.orm.exc.NoResultFound,
@@ -94,11 +94,13 @@ class CreateAmphoraInDB(BaseDatabaseTask):
         :returns: The created amphora object
         """
 
-        amphora = self.amphora_repo.create(db_apis.get_session(),
-                                           id=uuidutils.generate_uuid(),
-                                           load_balancer_id=loadbalancer_id,
-                                           status=constants.PENDING_CREATE,
-                                           cert_busy=False)
+        with db_apis.session().begin() as session:
+            amphora = self.amphora_repo.create(
+                session,
+                id=uuidutils.generate_uuid(),
+                load_balancer_id=loadbalancer_id,
+                status=constants.PENDING_CREATE,
+                cert_busy=False)
         if loadbalancer_id:
             LOG.info("Created Amphora %s in DB for load balancer %s",
                      amphora.id, loadbalancer_id)
@@ -129,7 +131,8 @@ class CreateAmphoraInDB(BaseDatabaseTask):
 
         # Delete the amphora for now. May want to just update status later
         try:
-            self.amphora_repo.delete(db_apis.get_session(), id=result)
+            with db_apis.session().begin() as session:
+                self.amphora_repo.delete(session, id=result)
         except Exception as e:
             LOG.error("Failed to delete amphora %(amp)s "
                       "in the database due to: "
@@ -146,12 +149,13 @@ class MarkLBAmphoraeDeletedInDB(BaseDatabaseTask):
                marked DELETED.
         :returns: None
         """
-        db_lb = self.repos.load_balancer.get(
-            db_apis.get_session(), id=loadbalancer[constants.LOADBALANCER_ID])
-        for amp in db_lb.amphorae:
-            LOG.debug("Marking amphora %s DELETED ", amp.id)
-            self.amphora_repo.update(db_apis.get_session(),
-                                     id=amp.id, status=constants.DELETED)
+        with db_apis.session().begin() as session:
+            db_lb = self.repos.load_balancer.get(
+                session, id=loadbalancer[constants.LOADBALANCER_ID])
+            for amp in db_lb.amphorae:
+                LOG.debug("Marking amphora %s DELETED ", amp.id)
+                self.amphora_repo.update(session,
+                                         id=amp.id, status=constants.DELETED)
 
 
 class DeleteHealthMonitorInDB(BaseDatabaseTask):
@@ -170,9 +174,10 @@ class DeleteHealthMonitorInDB(BaseDatabaseTask):
         LOG.debug("DB delete health monitor: %s ",
                   health_mon[constants.HEALTHMONITOR_ID])
         try:
-            self.health_mon_repo.delete(
-                db_apis.get_session(),
-                id=health_mon[constants.HEALTHMONITOR_ID])
+            with db_apis.session().begin() as session:
+                self.health_mon_repo.delete(
+                    session,
+                    id=health_mon[constants.HEALTHMONITOR_ID])
         except exc.NoResultFound:
             # ignore if the HealthMonitor was not found
             pass
@@ -187,9 +192,11 @@ class DeleteHealthMonitorInDB(BaseDatabaseTask):
         LOG.warning("Reverting mark health monitor delete in DB "
                     "for health monitor with id %s",
                     health_mon[constants.HEALTHMONITOR_ID])
-        self.health_mon_repo.update(db_apis.get_session(),
-                                    id=health_mon[constants.HEALTHMONITOR_ID],
-                                    provisioning_status=constants.ERROR)
+        with db_apis.session().begin() as session:
+            self.health_mon_repo.update(
+                session,
+                id=health_mon[constants.HEALTHMONITOR_ID],
+                provisioning_status=constants.ERROR)
 
 
 class DeleteHealthMonitorInDBByPool(DeleteHealthMonitorInDB):
@@ -204,10 +211,11 @@ class DeleteHealthMonitorInDBByPool(DeleteHealthMonitorInDB):
         :param pool_id: ID of pool which health monitor should be deleted.
         :returns: None
         """
-        db_pool = self.pool_repo.get(db_apis.get_session(),
-                                     id=pool_id)
-        provider_hm = provider_utils.db_HM_to_provider_HM(
-            db_pool.health_monitor).to_dict()
+        with db_apis.session().begin() as session:
+            db_pool = self.pool_repo.get(session,
+                                         id=pool_id)
+            provider_hm = provider_utils.db_HM_to_provider_HM(
+                db_pool.health_monitor).to_dict()
         super().execute(
             provider_hm)
 
@@ -217,8 +225,9 @@ class DeleteHealthMonitorInDBByPool(DeleteHealthMonitorInDB):
         :param pool_id: ID of pool which health monitor couldn't be deleted
         :returns: None
         """
-        db_pool = self.pool_repo.get(db_apis.get_session(),
-                                     id=pool_id)
+        with db_apis.session().begin() as session:
+            db_pool = self.pool_repo.get(session,
+                                         id=pool_id)
         provider_hm = provider_utils.db_HM_to_provider_HM(
             db_pool.health_monitor).to_dict()
         super().revert(
@@ -239,8 +248,9 @@ class DeleteMemberInDB(BaseDatabaseTask):
         """
 
         LOG.debug("DB delete member for id: %s ", member[constants.MEMBER_ID])
-        self.member_repo.delete(db_apis.get_session(),
-                                id=member[constants.MEMBER_ID])
+        with db_apis.session().begin() as session:
+            self.member_repo.delete(session,
+                                    id=member[constants.MEMBER_ID])
 
     def revert(self, member, *args, **kwargs):
         """Mark the member ERROR since the delete couldn't happen
@@ -252,9 +262,10 @@ class DeleteMemberInDB(BaseDatabaseTask):
         LOG.warning("Reverting delete in DB for member id %s",
                     member[constants.MEMBER_ID])
         try:
-            self.member_repo.update(db_apis.get_session(),
-                                    member[constants.MEMBER_ID],
-                                    provisioning_status=constants.ERROR)
+            with db_apis.session().begin() as session:
+                self.member_repo.update(session,
+                                        member[constants.MEMBER_ID],
+                                        provisioning_status=constants.ERROR)
         except Exception as e:
             LOG.error("Failed to update member %(mem)s "
                       "provisioning_status to ERROR due to: %(except)s",
@@ -272,8 +283,9 @@ class DeleteListenerInDB(BaseDatabaseTask):
         """
         LOG.debug("Delete in DB for listener id: %s",
                   listener[constants.LISTENER_ID])
-        self.listener_repo.delete(db_apis.get_session(),
-                                  id=listener[constants.LISTENER_ID])
+        with db_apis.session().begin() as session:
+            self.listener_repo.delete(session,
+                                      id=listener[constants.LISTENER_ID])
 
     def revert(self, listener, *args, **kwargs):
         """Mark the listener ERROR since the listener didn't delete
@@ -301,7 +313,8 @@ class DeletePoolInDB(BaseDatabaseTask):
         """
 
         LOG.debug("Delete in DB for pool id: %s ", pool_id)
-        self.pool_repo.delete(db_apis.get_session(), id=pool_id)
+        with db_apis.session().begin() as session:
+            self.pool_repo.delete(session, id=pool_id)
 
     def revert(self, pool_id, *args, **kwargs):
         """Mark the pool ERROR since the delete couldn't happen
@@ -312,8 +325,9 @@ class DeletePoolInDB(BaseDatabaseTask):
 
         LOG.warning("Reverting delete in DB for pool id %s", pool_id)
         try:
-            self.pool_repo.update(db_apis.get_session(), pool_id,
-                                  provisioning_status=constants.ERROR)
+            with db_apis.session().begin() as session:
+                self.pool_repo.update(session, pool_id,
+                                      provisioning_status=constants.ERROR)
         except Exception as e:
             LOG.error("Failed to update pool %(pool)s "
                       "provisioning_status to ERROR due to: %(except)s",
@@ -335,8 +349,9 @@ class DeleteL7PolicyInDB(BaseDatabaseTask):
 
         LOG.debug("Delete in DB for l7policy id: %s ",
                   l7policy[constants.L7POLICY_ID])
-        self.l7policy_repo.delete(db_apis.get_session(),
-                                  id=l7policy[constants.L7POLICY_ID])
+        with db_apis.session().begin() as session:
+            self.l7policy_repo.delete(session,
+                                      id=l7policy[constants.L7POLICY_ID])
 
     def revert(self, l7policy, *args, **kwargs):
         """Mark the l7policy ERROR since the delete couldn't happen
@@ -348,9 +363,10 @@ class DeleteL7PolicyInDB(BaseDatabaseTask):
         LOG.warning("Reverting delete in DB for l7policy id %s",
                     l7policy[constants.L7POLICY_ID])
         try:
-            self.l7policy_repo.update(db_apis.get_session(),
-                                      l7policy[constants.L7POLICY_ID],
-                                      provisioning_status=constants.ERROR)
+            with db_apis.session().begin() as session:
+                self.l7policy_repo.update(session,
+                                          l7policy[constants.L7POLICY_ID],
+                                          provisioning_status=constants.ERROR)
         except Exception as e:
             LOG.error("Failed to update l7policy %(l7policy)s "
                       "provisioning_status to ERROR due to: %(except)s",
@@ -373,8 +389,9 @@ class DeleteL7RuleInDB(BaseDatabaseTask):
 
         LOG.debug("Delete in DB for l7rule id: %s",
                   l7rule[constants.L7RULE_ID])
-        self.l7rule_repo.delete(db_apis.get_session(),
-                                id=l7rule[constants.L7RULE_ID])
+        with db_apis.session().begin() as session:
+            self.l7rule_repo.delete(session,
+                                    id=l7rule[constants.L7RULE_ID])
 
     def revert(self, l7rule, *args, **kwargs):
         """Mark the l7rule ERROR since the delete couldn't happen
@@ -386,9 +403,10 @@ class DeleteL7RuleInDB(BaseDatabaseTask):
         LOG.warning("Reverting delete in DB for l7rule id %s",
                     l7rule[constants.L7RULE_ID])
         try:
-            self.l7rule_repo.update(db_apis.get_session(),
-                                    l7rule[constants.L7RULE_ID],
-                                    provisioning_status=constants.ERROR)
+            with db_apis.session().begin() as session:
+                self.l7rule_repo.update(session,
+                                        l7rule[constants.L7RULE_ID],
+                                        provisioning_status=constants.ERROR)
         except Exception as e:
             LOG.error("Failed to update l7rule %(l7rule)s "
                       "provisioning_status to ERROR due to: %(except)s",
@@ -408,8 +426,9 @@ class ReloadAmphora(BaseDatabaseTask):
 
         LOG.debug("Get amphora from DB for amphora id: %s ",
                   amphora[constants.ID])
-        return self.amphora_repo.get(db_apis.get_session(),
-                                     id=amphora[constants.ID]).to_dict()
+        with db_apis.session().begin() as session:
+            return self.amphora_repo.get(
+                session, id=amphora[constants.ID]).to_dict()
 
 
 class ReloadLoadBalancer(BaseDatabaseTask):
@@ -424,8 +443,9 @@ class ReloadLoadBalancer(BaseDatabaseTask):
 
         LOG.debug("Get load balancer from DB for load balancer id: %s ",
                   loadbalancer_id)
-        db_lb = self.loadbalancer_repo.get(db_apis.get_session(),
-                                           id=loadbalancer_id)
+        with db_apis.session().begin() as session:
+            db_lb = self.loadbalancer_repo.get(session,
+                                               id=loadbalancer_id)
         lb_dict = provider_utils.db_loadbalancer_to_provider_loadbalancer(
             db_lb)
         return lb_dict.to_dict()
@@ -442,12 +462,13 @@ class UpdateVIPAfterAllocation(BaseDatabaseTask):
         :param vip: data_models.Vip object with update data.
         :returns: The load balancer object.
         """
-        self.repos.vip.update(db_apis.get_session(), loadbalancer_id,
-                              port_id=vip[constants.PORT_ID],
-                              subnet_id=vip[constants.SUBNET_ID],
-                              ip_address=vip[constants.IP_ADDRESS])
-        db_lb = self.repos.load_balancer.get(db_apis.get_session(),
-                                             id=loadbalancer_id)
+        with db_apis.session().begin() as session:
+            self.repos.vip.update(session, loadbalancer_id,
+                                  port_id=vip[constants.PORT_ID],
+                                  subnet_id=vip[constants.SUBNET_ID],
+                                  ip_address=vip[constants.IP_ADDRESS])
+            db_lb = self.repos.load_balancer.get(session,
+                                                 id=loadbalancer_id)
         prov_lb = provider_utils.db_loadbalancer_to_provider_loadbalancer(
             db_lb)
         LOG.info("Updated vip with port id %s, subnet id %s, ip address %s "
@@ -471,18 +492,19 @@ class UpdateAdditionalVIPsAfterAllocation(BaseDatabaseTask):
                data.
         :returns: The load balancer object.
         """
-        for vip in additional_vips:
-            LOG.info("Updating additional VIP with subnet_id %s, ip_address "
-                     "%s for load balancer %s",
-                     vip[constants.SUBNET_ID], vip[constants.IP_ADDRESS],
-                     loadbalancer_id)
-            self.repos.additional_vip.update(
-                db_apis.get_session(), loadbalancer_id,
-                vip[constants.SUBNET_ID],
-                ip_address=vip[constants.IP_ADDRESS],
-                port_id=vip[constants.PORT_ID])
-        db_lb = self.repos.load_balancer.get(db_apis.get_session(),
-                                             id=loadbalancer_id)
+        with db_apis.session().begin() as session:
+            for vip in additional_vips:
+                LOG.info("Updating additional VIP with subnet_id %s, "
+                         "ip_address %s for load balancer %s",
+                         vip[constants.SUBNET_ID], vip[constants.IP_ADDRESS],
+                         loadbalancer_id)
+                self.repos.additional_vip.update(
+                    session, loadbalancer_id,
+                    vip[constants.SUBNET_ID],
+                    ip_address=vip[constants.IP_ADDRESS],
+                    port_id=vip[constants.PORT_ID])
+            db_lb = self.repos.load_balancer.get(session,
+                                                 id=loadbalancer_id)
         return provider_utils.db_loadbalancer_to_provider_loadbalancer(
             db_lb).to_dict()
 
@@ -496,15 +518,16 @@ class UpdateAmphoraeVIPData(BaseDatabaseTask):
         :param amps_data: Amphorae update dicts.
         :returns: None
         """
-        for amp_data in amps_data:
-            self.repos.amphora.update(
-                db_apis.get_session(),
-                amp_data.get(constants.ID),
-                vrrp_ip=amp_data[constants.VRRP_IP],
-                ha_ip=amp_data[constants.HA_IP],
-                vrrp_port_id=amp_data[constants.VRRP_PORT_ID],
-                ha_port_id=amp_data[constants.HA_PORT_ID],
-                vrrp_id=1)
+        with db_apis.session().begin() as session:
+            for amp_data in amps_data:
+                self.repos.amphora.update(
+                    session,
+                    amp_data.get(constants.ID),
+                    vrrp_ip=amp_data[constants.VRRP_IP],
+                    ha_ip=amp_data[constants.HA_IP],
+                    vrrp_port_id=amp_data[constants.VRRP_PORT_ID],
+                    ha_port_id=amp_data[constants.HA_PORT_ID],
+                    vrrp_id=1)
 
 
 class UpdateAmphoraVIPData(BaseDatabaseTask):
@@ -516,14 +539,15 @@ class UpdateAmphoraVIPData(BaseDatabaseTask):
         :param amps_data: Amphorae update dicts.
         :returns: None
         """
-        self.repos.amphora.update(
-            db_apis.get_session(),
-            amp_data.get(constants.ID),
-            vrrp_ip=amp_data[constants.VRRP_IP],
-            ha_ip=amp_data[constants.HA_IP],
-            vrrp_port_id=amp_data[constants.VRRP_PORT_ID],
-            ha_port_id=amp_data[constants.HA_PORT_ID],
-            vrrp_id=1)
+        with db_apis.session().begin() as session:
+            self.repos.amphora.update(
+                session,
+                amp_data.get(constants.ID),
+                vrrp_ip=amp_data[constants.VRRP_IP],
+                ha_ip=amp_data[constants.HA_IP],
+                vrrp_port_id=amp_data[constants.VRRP_PORT_ID],
+                ha_port_id=amp_data[constants.HA_PORT_ID],
+                vrrp_id=1)
 
 
 class UpdateAmpFailoverDetails(BaseDatabaseTask):
@@ -538,17 +562,19 @@ class UpdateAmpFailoverDetails(BaseDatabaseTask):
         :returns: None
         """
         # role and vrrp_priority will be updated later.
-        self.repos.amphora.update(
-            db_apis.get_session(),
-            amphora.get(constants.ID),
-            # TODO(johnsom) We should do a better job getting the fixed_ip
-            #               as this could be a problem with dual stack.
-            #               Fix this during the multi-vip patch.
-            vrrp_ip=base_port[constants.FIXED_IPS][0][constants.IP_ADDRESS],
-            ha_ip=vip[constants.IP_ADDRESS],
-            vrrp_port_id=base_port[constants.ID],
-            ha_port_id=vip[constants.PORT_ID],
-            vrrp_id=1)
+        with db_apis.session().begin() as session:
+            self.repos.amphora.update(
+                session,
+                amphora.get(constants.ID),
+                # TODO(johnsom) We should do a better job getting the fixed_ip
+                #               as this could be a problem with dual stack.
+                #               Fix this during the multi-vip patch.
+                vrrp_ip=(
+                    base_port[constants.FIXED_IPS][0][constants.IP_ADDRESS]),
+                ha_ip=vip[constants.IP_ADDRESS],
+                vrrp_port_id=base_port[constants.ID],
+                ha_port_id=vip[constants.PORT_ID],
+                vrrp_id=1)
 
 
 class AssociateFailoverAmphoraWithLBID(BaseDatabaseTask):
@@ -562,9 +588,10 @@ class AssociateFailoverAmphoraWithLBID(BaseDatabaseTask):
                a given amphora.
         :returns: None
         """
-        self.repos.amphora.associate(db_apis.get_session(),
-                                     load_balancer_id=loadbalancer_id,
-                                     amphora_id=amphora_id)
+        with db_apis.session().begin() as session:
+            self.repos.amphora.associate(session,
+                                         load_balancer_id=loadbalancer_id,
+                                         amphora_id=amphora_id)
 
     def revert(self, amphora_id, *args, **kwargs):
         """Remove amphora-load balancer association.
@@ -574,8 +601,9 @@ class AssociateFailoverAmphoraWithLBID(BaseDatabaseTask):
         :returns: None
         """
         try:
-            self.repos.amphora.update(db_apis.get_session(), amphora_id,
-                                      loadbalancer_id=None)
+            with db_apis.session().begin() as session:
+                self.repos.amphora.update(session, amphora_id,
+                                          loadbalancer_id=None)
         except Exception as e:
             LOG.error("Failed to update amphora %(amp)s "
                       "load balancer id to None due to: "
@@ -595,8 +623,9 @@ class _MarkAmphoraRoleAndPriorityInDB(BaseDatabaseTask):
         """
         LOG.debug("Mark %(role)s in DB for amphora: %(amp)s",
                   {constants.ROLE: amp_role, 'amp': amphora_id})
-        self.amphora_repo.update(db_apis.get_session(), amphora_id,
-                                 role=amp_role, vrrp_priority=vrrp_priority)
+        with db_apis.session().begin() as session:
+            self.amphora_repo.update(session, amphora_id, role=amp_role,
+                                     vrrp_priority=vrrp_priority)
 
     def _revert(self, result, amphora_id, *args, **kwargs):
         """Removes role and vrrp_priority association.
@@ -613,8 +642,9 @@ class _MarkAmphoraRoleAndPriorityInDB(BaseDatabaseTask):
         LOG.warning("Reverting amphora role in DB for amp id %(amp)s",
                     {'amp': amphora_id})
         try:
-            self.amphora_repo.update(db_apis.get_session(), amphora_id,
-                                     role=None, vrrp_priority=None)
+            with db_apis.session().begin() as session:
+                self.amphora_repo.update(session, amphora_id,
+                                         role=None, vrrp_priority=None)
         except Exception as e:
             LOG.error("Failed to update amphora %(amp)s "
                       "role and vrrp_priority to None due to: "
@@ -709,13 +739,14 @@ class MarkAmphoraAllocatedInDB(BaseDatabaseTask):
                      'comp': amphora[constants.COMPUTE_ID],
                      'lb': loadbalancer_id
                  })
-        self.amphora_repo.update(
-            db_apis.get_session(),
-            amphora.get(constants.ID),
-            status=constants.AMPHORA_ALLOCATED,
-            compute_id=amphora[constants.COMPUTE_ID],
-            lb_network_ip=amphora[constants.LB_NETWORK_IP],
-            load_balancer_id=loadbalancer_id)
+        with db_apis.session().begin() as session:
+            self.amphora_repo.update(
+                session,
+                amphora.get(constants.ID),
+                status=constants.AMPHORA_ALLOCATED,
+                compute_id=amphora[constants.COMPUTE_ID],
+                lb_network_ip=amphora[constants.LB_NETWORK_IP],
+                load_balancer_id=loadbalancer_id)
 
     def revert(self, result, amphora, loadbalancer_id, *args, **kwargs):
         """Mark the amphora as broken and ready to be cleaned up.
@@ -752,9 +783,10 @@ class MarkAmphoraBootingInDB(BaseDatabaseTask):
         LOG.debug("Mark BOOTING in DB for amphora: %(amp)s with "
                   "compute id %(id)s", {'amp': amphora_id,
                                         constants.ID: compute_id})
-        self.amphora_repo.update(db_apis.get_session(), amphora_id,
-                                 status=constants.AMPHORA_BOOTING,
-                                 compute_id=compute_id)
+        with db_apis.session().begin() as session:
+            self.amphora_repo.update(session, amphora_id,
+                                     status=constants.AMPHORA_BOOTING,
+                                     compute_id=compute_id)
 
     def revert(self, result, amphora_id, compute_id, *args, **kwargs):
         """Mark the amphora as broken and ready to be cleaned up.
@@ -772,9 +804,10 @@ class MarkAmphoraBootingInDB(BaseDatabaseTask):
                     "id %(amp)s and compute id %(comp)s",
                     {'amp': amphora_id, 'comp': compute_id})
         try:
-            self.amphora_repo.update(db_apis.get_session(), amphora_id,
-                                     status=constants.ERROR,
-                                     compute_id=compute_id)
+            with db_apis.session().begin() as session:
+                self.amphora_repo.update(session, amphora_id,
+                                         status=constants.ERROR,
+                                         compute_id=compute_id)
         except Exception as e:
             LOG.error("Failed to update amphora %(amp)s "
                       "status to ERROR due to: "
@@ -798,9 +831,10 @@ class MarkAmphoraDeletedInDB(BaseDatabaseTask):
                   "compute id %(comp)s",
                   {'amp': amphora[constants.ID],
                    'comp': amphora[constants.COMPUTE_ID]})
-        self.amphora_repo.update(db_apis.get_session(),
-                                 amphora[constants.ID],
-                                 status=constants.DELETED)
+        with db_apis.session().begin() as session:
+            self.amphora_repo.update(session,
+                                     amphora[constants.ID],
+                                     status=constants.DELETED)
 
     def revert(self, amphora, *args, **kwargs):
         """Mark the amphora as broken and ready to be cleaned up.
@@ -834,9 +868,10 @@ class MarkAmphoraPendingDeleteInDB(BaseDatabaseTask):
                   "with compute id %(id)s",
                   {'amp': amphora[constants.ID],
                    'id': amphora[constants.COMPUTE_ID]})
-        self.amphora_repo.update(db_apis.get_session(),
-                                 amphora[constants.ID],
-                                 status=constants.PENDING_DELETE)
+        with db_apis.session().begin() as session:
+            self.amphora_repo.update(session,
+                                     amphora[constants.ID],
+                                     status=constants.PENDING_DELETE)
 
     def revert(self, amphora, *args, **kwargs):
         """Mark the amphora as broken and ready to be cleaned up.
@@ -869,9 +904,10 @@ class MarkAmphoraPendingUpdateInDB(BaseDatabaseTask):
                   "with compute id %(id)s",
                   {'amp': amphora.get(constants.ID),
                    'id': amphora[constants.COMPUTE_ID]})
-        self.amphora_repo.update(db_apis.get_session(),
-                                 amphora.get(constants.ID),
-                                 status=constants.PENDING_UPDATE)
+        with db_apis.session().begin() as session:
+            self.amphora_repo.update(session,
+                                     amphora.get(constants.ID),
+                                     status=constants.PENDING_UPDATE)
 
     def revert(self, amphora, *args, **kwargs):
         """Mark the amphora as broken and ready to be cleaned up.
@@ -905,12 +941,13 @@ class MarkAmphoraReadyInDB(BaseDatabaseTask):
                  "id %(comp)s",
                  {"amp": amphora.get(constants.ID),
                   "comp": amphora[constants.COMPUTE_ID]})
-        self.amphora_repo.update(
-            db_apis.get_session(),
-            amphora.get(constants.ID),
-            status=constants.AMPHORA_READY,
-            compute_id=amphora[constants.COMPUTE_ID],
-            lb_network_ip=amphora[constants.LB_NETWORK_IP])
+        with db_apis.session().begin() as session:
+            self.amphora_repo.update(
+                session,
+                amphora.get(constants.ID),
+                status=constants.AMPHORA_READY,
+                compute_id=amphora[constants.COMPUTE_ID],
+                lb_network_ip=amphora[constants.LB_NETWORK_IP])
 
     def revert(self, amphora, *args, **kwargs):
         """Mark the amphora as broken and ready to be cleaned up.
@@ -924,12 +961,13 @@ class MarkAmphoraReadyInDB(BaseDatabaseTask):
                     {'amp': amphora.get(constants.ID),
                      'comp': amphora[constants.COMPUTE_ID]})
         try:
-            self.amphora_repo.update(
-                db_apis.get_session(),
-                amphora.get(constants.ID),
-                status=constants.ERROR,
-                compute_id=amphora[constants.COMPUTE_ID],
-                lb_network_ip=amphora[constants.LB_NETWORK_IP])
+            with db_apis.session().begin() as session:
+                self.amphora_repo.update(
+                    session,
+                    amphora.get(constants.ID),
+                    status=constants.ERROR,
+                    compute_id=amphora[constants.COMPUTE_ID],
+                    lb_network_ip=amphora[constants.LB_NETWORK_IP])
         except Exception as e:
             LOG.error("Failed to update amphora %(amp)s "
                       "status to ERROR due to: "
@@ -948,8 +986,9 @@ class UpdateAmphoraComputeId(BaseDatabaseTask):
         :returns: None
         """
 
-        self.amphora_repo.update(db_apis.get_session(), amphora_id,
-                                 compute_id=compute_id)
+        with db_apis.session().begin() as session:
+            self.amphora_repo.update(session, amphora_id,
+                                     compute_id=compute_id)
 
 
 class UpdateAmphoraInfo(BaseDatabaseTask):
@@ -962,14 +1001,15 @@ class UpdateAmphoraInfo(BaseDatabaseTask):
         :param compute_obj: Compute on which an amphora resides
         :returns: Updated amphora object
         """
-        self.amphora_repo.update(
-            db_apis.get_session(), amphora_id,
-            lb_network_ip=compute_obj[constants.LB_NETWORK_IP],
-            cached_zone=compute_obj[constants.CACHED_ZONE],
-            image_id=compute_obj[constants.IMAGE_ID],
-            compute_flavor=compute_obj[constants.COMPUTE_FLAVOR])
-        return self.amphora_repo.get(db_apis.get_session(),
-                                     id=amphora_id).to_dict()
+        with db_apis.session().begin() as session:
+            self.amphora_repo.update(
+                session, amphora_id,
+                lb_network_ip=compute_obj[constants.LB_NETWORK_IP],
+                cached_zone=compute_obj[constants.CACHED_ZONE],
+                image_id=compute_obj[constants.IMAGE_ID],
+                compute_flavor=compute_obj[constants.COMPUTE_FLAVOR])
+            return self.amphora_repo.get(session,
+                                         id=amphora_id).to_dict()
 
 
 class UpdateAmphoraDBCertExpiration(BaseDatabaseTask):
@@ -990,8 +1030,9 @@ class UpdateAmphoraDBCertExpiration(BaseDatabaseTask):
         cert_expiration = cert_parser.get_cert_expiration(
             fer.decrypt(server_pem.encode("utf-8")))
         LOG.debug("Certificate expiration date is %s ", cert_expiration)
-        self.amphora_repo.update(db_apis.get_session(), amphora_id,
-                                 cert_expiration=cert_expiration)
+        with db_apis.session().begin() as session:
+            self.amphora_repo.update(session, amphora_id,
+                                     cert_expiration=cert_expiration)
 
 
 class UpdateAmphoraCertBusyToFalse(BaseDatabaseTask):
@@ -1006,8 +1047,9 @@ class UpdateAmphoraCertBusyToFalse(BaseDatabaseTask):
 
         LOG.debug("Update cert_busy flag of amphora id %s to False",
                   amphora_id)
-        self.amphora_repo.update(db_apis.get_session(), amphora_id,
-                                 cert_busy=False)
+        with db_apis.session().begin() as session:
+            self.amphora_repo.update(session, amphora_id,
+                                     cert_busy=False)
 
 
 class MarkLBActiveInDB(BaseDatabaseTask):
@@ -1033,74 +1075,76 @@ class MarkLBActiveInDB(BaseDatabaseTask):
         if self.mark_subobjects:
             LOG.debug("Marking all listeners of loadbalancer %s ACTIVE",
                       loadbalancer[constants.LOADBALANCER_ID])
-            db_lb = self.loadbalancer_repo.get(
-                db_apis.get_session(),
-                id=loadbalancer[constants.LOADBALANCER_ID])
-            for listener in db_lb.listeners:
-                self._mark_listener_status(listener, constants.ACTIVE)
-            for pool in db_lb.pools:
-                self._mark_pool_status(pool, constants.ACTIVE)
+            with db_apis.session().begin() as session:
+                db_lb = self.loadbalancer_repo.get(
+                    session, id=loadbalancer[constants.LOADBALANCER_ID])
+                for listener in db_lb.listeners:
+                    self._mark_listener_status(session, listener,
+                                               constants.ACTIVE)
+                for pool in db_lb.pools:
+                    self._mark_pool_status(session, pool, constants.ACTIVE)
 
         LOG.info("Mark ACTIVE in DB for load balancer id: %s",
                  loadbalancer[constants.LOADBALANCER_ID])
-        self.loadbalancer_repo.update(db_apis.get_session(),
-                                      loadbalancer[constants.LOADBALANCER_ID],
-                                      provisioning_status=constants.ACTIVE)
+        with db_apis.session().begin() as session:
+            self.loadbalancer_repo.update(
+                session, loadbalancer[constants.LOADBALANCER_ID],
+                provisioning_status=constants.ACTIVE)
 
-    def _mark_listener_status(self, listener, status):
-        self.listener_repo.update(db_apis.get_session(),
+    def _mark_listener_status(self, session, listener, status):
+        self.listener_repo.update(session,
                                   listener.id,
                                   provisioning_status=status)
         LOG.debug("Marking all l7policies of listener %s %s",
                   listener.id, status)
         for l7policy in listener.l7policies:
-            self._mark_l7policy_status(l7policy, status)
+            self._mark_l7policy_status(session, l7policy, status)
 
         if listener.default_pool:
             LOG.debug("Marking default pool of listener %s %s",
                       listener.id, status)
-            self._mark_pool_status(listener.default_pool, status)
+            self._mark_pool_status(session, listener.default_pool, status)
 
-    def _mark_l7policy_status(self, l7policy, status):
+    def _mark_l7policy_status(self, session, l7policy, status):
         self.l7policy_repo.update(
-            db_apis.get_session(), l7policy.id,
+            session, l7policy.id,
             provisioning_status=status)
 
         LOG.debug("Marking all l7rules of l7policy %s %s",
                   l7policy.id, status)
         for l7rule in l7policy.l7rules:
-            self._mark_l7rule_status(l7rule, status)
+            self._mark_l7rule_status(session, l7rule, status)
 
         if l7policy.redirect_pool:
             LOG.debug("Marking redirect pool of l7policy %s %s",
                       l7policy.id, status)
-            self._mark_pool_status(l7policy.redirect_pool, status)
+            self._mark_pool_status(session, l7policy.redirect_pool, status)
 
-    def _mark_l7rule_status(self, l7rule, status):
+    def _mark_l7rule_status(self, session, l7rule, status):
         self.l7rule_repo.update(
-            db_apis.get_session(), l7rule.id,
+            session, l7rule.id,
             provisioning_status=status)
 
-    def _mark_pool_status(self, pool, status):
+    def _mark_pool_status(self, session, pool, status):
         self.pool_repo.update(
-            db_apis.get_session(), pool.id,
+            session, pool.id,
             provisioning_status=status)
         if pool.health_monitor:
             LOG.debug("Marking health monitor of pool %s %s", pool.id, status)
-            self._mark_hm_status(pool.health_monitor, status)
+            self._mark_hm_status(session, pool.health_monitor, status)
 
         LOG.debug("Marking all members of pool %s %s", pool.id, status)
         for member in pool.members:
-            self._mark_member_status(member, status)
+            self._mark_member_status(session, member, status)
 
-    def _mark_hm_status(self, hm, status):
+    def _mark_hm_status(self, session, hm, status):
         self.health_mon_repo.update(
-            db_apis.get_session(), hm.id,
+            session, hm.id,
             provisioning_status=status)
 
-    def _mark_member_status(self, member, status):
+    def _mark_member_status(self, session, member, status):
         self.member_repo.update(
-            db_apis.get_session(), member.id,
+            session, member.id,
             provisioning_status=status)
 
     def revert(self, loadbalancer, *args, **kwargs):
@@ -1116,21 +1160,23 @@ class MarkLBActiveInDB(BaseDatabaseTask):
         if self.mark_subobjects:
             LOG.debug("Marking all listeners and pools of loadbalancer %s"
                       " ERROR", loadbalancer[constants.LOADBALANCER_ID])
-            db_lb = self.loadbalancer_repo.get(
-                db_apis.get_session(),
-                id=loadbalancer[constants.LOADBALANCER_ID])
-            for listener in db_lb.listeners:
-                try:
-                    self._mark_listener_status(listener, constants.ERROR)
-                except Exception:
-                    LOG.warning("Error updating listener %s provisioning "
-                                "status", listener.id)
-            for pool in db_lb.pools:
-                try:
-                    self._mark_pool_status(pool, constants.ERROR)
-                except Exception:
-                    LOG.warning("Error updating POOL %s provisioning "
-                                "status", pool.id)
+            with db_apis.session().begin() as session:
+                db_lb = self.loadbalancer_repo.get(
+                    session,
+                    id=loadbalancer[constants.LOADBALANCER_ID])
+                for listener in db_lb.listeners:
+                    try:
+                        self._mark_listener_status(session, listener,
+                                                   constants.ERROR)
+                    except Exception:
+                        LOG.warning("Error updating listener %s provisioning "
+                                    "status", listener.id)
+                for pool in db_lb.pools:
+                    try:
+                        self._mark_pool_status(session, pool, constants.ERROR)
+                    except Exception:
+                        LOG.warning("Error updating POOL %s provisioning "
+                                    "status", pool.id)
 
 
 class MarkLBActiveInDBByListener(BaseDatabaseTask):
@@ -1148,9 +1194,10 @@ class MarkLBActiveInDBByListener(BaseDatabaseTask):
 
         LOG.info("Mark ACTIVE in DB for load balancer id: %s",
                  listener[constants.LOADBALANCER_ID])
-        self.loadbalancer_repo.update(db_apis.get_session(),
-                                      listener[constants.LOADBALANCER_ID],
-                                      provisioning_status=constants.ACTIVE)
+        with db_apis.session().begin() as session:
+            self.loadbalancer_repo.update(session,
+                                          listener[constants.LOADBALANCER_ID],
+                                          provisioning_status=constants.ACTIVE)
 
 
 class UpdateLBServerGroupInDB(BaseDatabaseTask):
@@ -1167,9 +1214,10 @@ class UpdateLBServerGroupInDB(BaseDatabaseTask):
 
         LOG.debug("Server Group updated with id: %s for load balancer id: %s:",
                   server_group_id, loadbalancer_id)
-        self.loadbalancer_repo.update(db_apis.get_session(),
-                                      id=loadbalancer_id,
-                                      server_group_id=server_group_id)
+        with db_apis.session().begin() as session:
+            self.loadbalancer_repo.update(session,
+                                          id=loadbalancer_id,
+                                          server_group_id=server_group_id)
 
     def revert(self, loadbalancer_id, server_group_id, *args, **kwargs):
         """Remove server group information from a load balancer in DB.
@@ -1183,9 +1231,10 @@ class UpdateLBServerGroupInDB(BaseDatabaseTask):
                     'load balancer id: %(s2)s ',
                     {'s1': server_group_id, 's2': loadbalancer_id})
         try:
-            self.loadbalancer_repo.update(db_apis.get_session(),
-                                          id=loadbalancer_id,
-                                          server_group_id=None)
+            with db_apis.session().begin() as session:
+                self.loadbalancer_repo.update(session,
+                                              id=loadbalancer_id,
+                                              server_group_id=None)
         except Exception as e:
             LOG.error("Failed to update load balancer %(lb)s "
                       "server_group_id to None due to: "
@@ -1207,9 +1256,10 @@ class MarkLBDeletedInDB(BaseDatabaseTask):
 
         LOG.debug("Mark DELETED in DB for load balancer id: %s",
                   loadbalancer[constants.LOADBALANCER_ID])
-        self.loadbalancer_repo.update(db_apis.get_session(),
-                                      loadbalancer[constants.LOADBALANCER_ID],
-                                      provisioning_status=constants.DELETED)
+        with db_apis.session().begin() as session:
+            self.loadbalancer_repo.update(
+                session, loadbalancer[constants.LOADBALANCER_ID],
+                provisioning_status=constants.DELETED)
 
 
 class MarkLBPendingDeleteInDB(BaseDatabaseTask):
@@ -1227,10 +1277,10 @@ class MarkLBPendingDeleteInDB(BaseDatabaseTask):
 
         LOG.debug("Mark PENDING DELETE in DB for load balancer id: %s",
                   loadbalancer[constants.LOADBALANCER_ID])
-        self.loadbalancer_repo.update(db_apis.get_session(),
-                                      loadbalancer[constants.LOADBALANCER_ID],
-                                      provisioning_status=(constants.
-                                                           PENDING_DELETE))
+        with db_apis.session().begin() as session:
+            self.loadbalancer_repo.update(
+                session, loadbalancer[constants.LOADBALANCER_ID],
+                provisioning_status=constants.PENDING_DELETE)
 
 
 class MarkLBAndListenersActiveInDB(BaseDatabaseTask):
@@ -1257,11 +1307,13 @@ class MarkLBAndListenersActiveInDB(BaseDatabaseTask):
                       "and updating status for listener ids: %s", lb_id,
                       ', '.join([listener[constants.LISTENER_ID]
                                 for listener in listeners]))
-            self.loadbalancer_repo.update(db_apis.get_session(), lb_id,
-                                          provisioning_status=constants.ACTIVE)
+            with db_apis.session().begin() as session:
+                self.loadbalancer_repo.update(
+                    session, lb_id, provisioning_status=constants.ACTIVE)
         for listener in listeners:
-            self.listener_repo.prov_status_active_if_not_error(
-                db_apis.get_session(), listener[constants.LISTENER_ID])
+            with db_apis.session().begin() as session:
+                self.listener_repo.prov_status_active_if_not_error(
+                    session, listener[constants.LISTENER_ID])
 
     def revert(self, loadbalancer_id, listeners, *args, **kwargs):
         """Mark the load balancer and listeners as broken.
@@ -1295,8 +1347,9 @@ class MarkListenerDeletedInDB(BaseDatabaseTask):
         """
 
         LOG.debug("Mark DELETED in DB for listener id: %s ", listener.id)
-        self.listener_repo.update(db_apis.get_session(), listener.id,
-                                  provisioning_status=constants.DELETED)
+        with db_apis.session().begin() as session:
+            self.listener_repo.update(session, listener.id,
+                                      provisioning_status=constants.DELETED)
 
     def revert(self, listener, *args, **kwargs):
         """Mark the listener ERROR since the delete couldn't happen
@@ -1325,8 +1378,10 @@ class MarkListenerPendingDeleteInDB(BaseDatabaseTask):
 
         LOG.debug("Mark PENDING DELETE in DB for listener id: %s",
                   listener.id)
-        self.listener_repo.update(db_apis.get_session(), listener.id,
-                                  provisioning_status=constants.PENDING_DELETE)
+        with db_apis.session().begin() as session:
+            self.listener_repo.update(
+                session, listener.id,
+                provisioning_status=constants.PENDING_DELETE)
 
     def revert(self, listener, *args, **kwargs):
         """Mark the listener as broken and ready to be cleaned up.
@@ -1356,14 +1411,15 @@ class UpdateLoadbalancerInDB(BaseDatabaseTask):
 
         LOG.debug("Update DB for loadbalancer id: %s ",
                   loadbalancer[constants.LOADBALANCER_ID])
-        if update_dict.get('vip'):
-            vip_dict = update_dict.pop('vip')
-            self.vip_repo.update(db_apis.get_session(),
-                                 loadbalancer[constants.LOADBALANCER_ID],
-                                 **vip_dict)
-        self.loadbalancer_repo.update(db_apis.get_session(),
-                                      loadbalancer[constants.LOADBALANCER_ID],
-                                      **update_dict)
+        with db_apis.session().begin() as session:
+            if update_dict.get('vip'):
+                vip_dict = update_dict.pop('vip')
+                self.vip_repo.update(session,
+                                     loadbalancer[constants.LOADBALANCER_ID],
+                                     **vip_dict)
+            self.loadbalancer_repo.update(
+                session, loadbalancer[constants.LOADBALANCER_ID],
+                **update_dict)
 
 
 class UpdateHealthMonInDB(BaseDatabaseTask):
@@ -1382,9 +1438,10 @@ class UpdateHealthMonInDB(BaseDatabaseTask):
 
         LOG.debug("Update DB for health monitor id: %s ",
                   health_mon[constants.HEALTHMONITOR_ID])
-        self.health_mon_repo.update(db_apis.get_session(),
-                                    health_mon[constants.HEALTHMONITOR_ID],
-                                    **update_dict)
+        with db_apis.session().begin() as session:
+            self.health_mon_repo.update(session,
+                                        health_mon[constants.HEALTHMONITOR_ID],
+                                        **update_dict)
 
     def revert(self, health_mon, *args, **kwargs):
         """Mark the health monitor ERROR since the update couldn't happen
@@ -1397,10 +1454,11 @@ class UpdateHealthMonInDB(BaseDatabaseTask):
                     "for health monitor id %s",
                     health_mon[constants.HEALTHMONITOR_ID])
         try:
-            self.health_mon_repo.update(
-                db_apis.get_session(),
-                health_mon[constants.HEALTHMONITOR_ID],
-                provisioning_status=constants.ERROR)
+            with db_apis.session().begin() as session:
+                self.health_mon_repo.update(
+                    session,
+                    health_mon[constants.HEALTHMONITOR_ID],
+                    provisioning_status=constants.ERROR)
         except Exception as e:
             LOG.error("Failed to update health monitor %(hm)s "
                       "provisioning_status to ERROR due to: %(except)s",
@@ -1424,9 +1482,10 @@ class UpdateListenerInDB(BaseDatabaseTask):
 
         LOG.debug("Update DB for listener id: %s ",
                   listener[constants.LISTENER_ID])
-        self.listener_repo.update(db_apis.get_session(),
-                                  listener[constants.LISTENER_ID],
-                                  **update_dict)
+        with db_apis.session().begin() as session:
+            self.listener_repo.update(session,
+                                      listener[constants.LISTENER_ID],
+                                      **update_dict)
 
     def revert(self, listener, *args, **kwargs):
         """Mark the listener ERROR since the update couldn't happen
@@ -1456,9 +1515,10 @@ class UpdateMemberInDB(BaseDatabaseTask):
         """
 
         LOG.debug("Update DB for member id: %s ", member[constants.MEMBER_ID])
-        self.member_repo.update(db_apis.get_session(),
-                                member[constants.MEMBER_ID],
-                                **update_dict)
+        with db_apis.session().begin() as session:
+            self.member_repo.update(session,
+                                    member[constants.MEMBER_ID],
+                                    **update_dict)
 
     def revert(self, member, *args, **kwargs):
         """Mark the member ERROR since the update couldn't happen
@@ -1470,9 +1530,10 @@ class UpdateMemberInDB(BaseDatabaseTask):
         LOG.warning("Reverting update member in DB "
                     "for member id %s", member[constants.MEMBER_ID])
         try:
-            self.member_repo.update(db_apis.get_session(),
-                                    member[constants.MEMBER_ID],
-                                    provisioning_status=constants.ERROR)
+            with db_apis.session().begin() as session:
+                self.member_repo.update(session,
+                                        member[constants.MEMBER_ID],
+                                        provisioning_status=constants.ERROR)
         except Exception as e:
             LOG.error("Failed to update member %(member)s provisioning_status "
                       "to ERROR due to: %(except)s",
@@ -1495,8 +1556,9 @@ class UpdatePoolInDB(BaseDatabaseTask):
         """
 
         LOG.debug("Update DB for pool id: %s ", pool_id)
-        self.repos.update_pool_and_sp(db_apis.get_session(), pool_id,
-                                      update_dict)
+        with db_apis.session().begin() as session:
+            self.repos.update_pool_and_sp(session, pool_id,
+                                          update_dict)
 
     def revert(self, pool_id, *args, **kwargs):
         """Mark the pool ERROR since the update couldn't happen
@@ -1507,9 +1569,10 @@ class UpdatePoolInDB(BaseDatabaseTask):
 
         LOG.warning("Reverting update pool in DB for pool id %s", pool_id)
         try:
-            self.repos.update_pool_and_sp(
-                db_apis.get_session(), pool_id,
-                {'provisioning_status': constants.ERROR})
+            with db_apis.session().begin() as session:
+                self.repos.update_pool_and_sp(
+                    session, pool_id,
+                    {'provisioning_status': constants.ERROR})
         except Exception as e:
             LOG.error("Failed to update pool %(pool)s provisioning_status to "
                       "ERROR due to: %(except)s", {'pool': pool_id,
@@ -1532,9 +1595,10 @@ class UpdateL7PolicyInDB(BaseDatabaseTask):
 
         LOG.debug("Update DB for l7policy id: %s",
                   l7policy[constants.L7POLICY_ID])
-        self.l7policy_repo.update(db_apis.get_session(),
-                                  l7policy[constants.L7POLICY_ID],
-                                  **update_dict)
+        with db_apis.session().begin() as session:
+            self.l7policy_repo.update(session,
+                                      l7policy[constants.L7POLICY_ID],
+                                      **update_dict)
 
     def revert(self, l7policy, *args, **kwargs):
         """Mark the l7policy ERROR since the update couldn't happen
@@ -1546,9 +1610,10 @@ class UpdateL7PolicyInDB(BaseDatabaseTask):
         LOG.warning("Reverting update l7policy in DB "
                     "for l7policy id %s", l7policy[constants.L7POLICY_ID])
         try:
-            self.l7policy_repo.update(db_apis.get_session(),
-                                      l7policy[constants.L7POLICY_ID],
-                                      provisioning_status=constants.ERROR)
+            with db_apis.session().begin() as session:
+                self.l7policy_repo.update(session,
+                                          l7policy[constants.L7POLICY_ID],
+                                          provisioning_status=constants.ERROR)
         except Exception as e:
             LOG.error("Failed to update l7policy %(l7p)s provisioning_status "
                       "to ERROR due to: %(except)s",
@@ -1571,9 +1636,10 @@ class UpdateL7RuleInDB(BaseDatabaseTask):
         """
 
         LOG.debug("Update DB for l7rule id: %s", l7rule[constants.L7RULE_ID])
-        self.l7rule_repo.update(db_apis.get_session(),
-                                l7rule[constants.L7RULE_ID],
-                                **update_dict)
+        with db_apis.session().begin() as session:
+            self.l7rule_repo.update(session,
+                                    l7rule[constants.L7RULE_ID],
+                                    **update_dict)
 
     def revert(self, l7rule, *args, **kwargs):
         """Mark the L7 rule ERROR since the update couldn't happen
@@ -1585,9 +1651,10 @@ class UpdateL7RuleInDB(BaseDatabaseTask):
         LOG.warning("Reverting update l7rule in DB "
                     "for l7rule id %s", l7rule[constants.L7RULE_ID])
         try:
-            self.l7policy_repo.update(db_apis.get_session(),
-                                      l7rule[constants.L7POLICY_ID],
-                                      provisioning_status=constants.ERROR)
+            with db_apis.session().begin() as session:
+                self.l7policy_repo.update(session,
+                                          l7rule[constants.L7POLICY_ID],
+                                          provisioning_status=constants.ERROR)
         except Exception as e:
             LOG.error("Failed to update L7rule %(l7r)s provisioning_status to "
                       "ERROR due to: %(except)s",
@@ -1603,8 +1670,9 @@ class GetAmphoraDetails(BaseDatabaseTask):
         :param amphora: Amphora which network details are required
         :returns: Amphora data dict
         """
-        db_amp = self.amphora_repo.get(db_apis.get_session(),
-                                       id=amphora.get(constants.ID))
+        with db_apis.session().begin() as session:
+            db_amp = self.amphora_repo.get(session,
+                                           id=amphora.get(constants.ID))
         amphora.update({
             constants.VRRP_IP: db_amp.vrrp_ip,
             constants.HA_IP: db_amp.ha_ip,
@@ -1626,14 +1694,15 @@ class GetAmphoraeFromLoadbalancer(BaseDatabaseTask):
         :returns: A list of Listener objects
         """
         amphorae = []
-        db_lb = self.repos.load_balancer.get(db_apis.get_session(),
-                                             id=loadbalancer_id)
-        for amp in db_lb.amphorae:
-            a = self.amphora_repo.get(db_apis.get_session(), id=amp.id,
-                                      show_deleted=False)
-            if a is None:
-                continue
-            amphorae.append(a.to_dict())
+        with db_apis.session().begin() as session:
+            db_lb = self.repos.load_balancer.get(session,
+                                                 id=loadbalancer_id)
+            for amp in db_lb.amphorae:
+                a = self.amphora_repo.get(session, id=amp.id,
+                                          show_deleted=False)
+                if a is None:
+                    continue
+                amphorae.append(a.to_dict())
         return amphorae
 
 
@@ -1647,14 +1716,15 @@ class GetListenersFromLoadbalancer(BaseDatabaseTask):
         :returns: A list of Listener objects
         """
         listeners = []
-        db_lb = self.repos.load_balancer.get(
-            db_apis.get_session(), id=loadbalancer[constants.LOADBALANCER_ID])
-        for listener in db_lb.listeners:
-            db_l = self.listener_repo.get(db_apis.get_session(),
-                                          id=listener.id)
-            prov_listener = provider_utils.db_listener_to_provider_listener(
-                db_l)
-            listeners.append(prov_listener.to_dict())
+        with db_apis.session().begin() as session:
+            db_lb = self.repos.load_balancer.get(
+                session, id=loadbalancer[constants.LOADBALANCER_ID])
+            for listener in db_lb.listeners:
+                db_l = self.listener_repo.get(session, id=listener.id)
+                prov_listener = (
+                    provider_utils.db_listener_to_provider_listener(
+                        db_l))
+                listeners.append(prov_listener.to_dict())
         return listeners
 
 
@@ -1667,8 +1737,9 @@ class GetVipFromLoadbalancer(BaseDatabaseTask):
         :param loadbalancer: Load balancer which VIP is required
         :returns: VIP associated with a given load balancer
         """
-        db_lb = self.repos.load_balancer.get(
-            db_apis.get_session(), id=loadbalancer[constants.LOADBALANCER_ID])
+        with db_apis.session().begin() as session:
+            db_lb = self.repos.load_balancer.get(
+                session, id=loadbalancer[constants.LOADBALANCER_ID])
         return db_lb.vip.to_dict(recurse=True)
 
 
@@ -1684,10 +1755,12 @@ class GetLoadBalancer(BaseDatabaseTask):
 
         LOG.debug("Get load balancer from DB for load balancer id: %s",
                   loadbalancer_id)
-        db_lb = self.loadbalancer_repo.get(db_apis.get_session(),
-                                           id=loadbalancer_id)
-        provider_lb = provider_utils.db_loadbalancer_to_provider_loadbalancer(
-            db_lb)
+        with db_apis.session().begin() as session:
+            db_lb = self.loadbalancer_repo.get(session,
+                                               id=loadbalancer_id)
+            provider_lb = (
+                provider_utils.db_loadbalancer_to_provider_loadbalancer(
+                    db_lb))
         return provider_lb.to_dict()
 
 
@@ -1701,13 +1774,15 @@ class CreateVRRPGroupForLB(BaseDatabaseTask):
                should be created
         """
         try:
-            self.repos.vrrpgroup.create(
-                db_apis.get_session(),
-                load_balancer_id=loadbalancer_id,
-                vrrp_group_name=str(loadbalancer_id).replace('-', ''),
-                vrrp_auth_type=constants.VRRP_AUTH_DEFAULT,
-                vrrp_auth_pass=uuidutils.generate_uuid().replace('-', '')[0:7],
-                advert_int=CONF.keepalived_vrrp.vrrp_advert_int)
+            with db_apis.session().begin() as session:
+                self.repos.vrrpgroup.create(
+                    session,
+                    load_balancer_id=loadbalancer_id,
+                    vrrp_group_name=str(loadbalancer_id).replace('-', ''),
+                    vrrp_auth_type=constants.VRRP_AUTH_DEFAULT,
+                    vrrp_auth_pass=(
+                        uuidutils.generate_uuid().replace('-', '')[0:7]),
+                    advert_int=CONF.keepalived_vrrp.vrrp_advert_int)
         except odb_exceptions.DBDuplicateEntry:
             LOG.debug('VRRP_GROUP entry already exists for load balancer, '
                       'skipping create.')
@@ -1726,7 +1801,8 @@ class DisableAmphoraHealthMonitoring(BaseDatabaseTask):
         :param amphora: The amphora to disable health monitoring for
         :returns: None
         """
-        self._delete_from_amp_health(amphora[constants.ID])
+        with db_apis.session().begin() as session:
+            self._delete_from_amp_health(session, amphora[constants.ID])
 
 
 class DisableLBAmphoraeHealthMonitoring(BaseDatabaseTask):
@@ -1742,10 +1818,11 @@ class DisableLBAmphoraeHealthMonitoring(BaseDatabaseTask):
         :param loadbalancer: The load balancer to disable health monitoring on
         :returns: None
         """
-        db_lb = self.loadbalancer_repo.get(
-            db_apis.get_session(), id=loadbalancer[constants.LOADBALANCER_ID])
-        for amphora in db_lb.amphorae:
-            self._delete_from_amp_health(amphora.id)
+        with db_apis.session().begin() as session:
+            db_lb = self.loadbalancer_repo.get(
+                session, id=loadbalancer[constants.LOADBALANCER_ID])
+            for amphora in db_lb.amphorae:
+                self._delete_from_amp_health(session, amphora.id)
 
 
 class MarkAmphoraHealthBusy(BaseDatabaseTask):
@@ -1761,7 +1838,8 @@ class MarkAmphoraHealthBusy(BaseDatabaseTask):
         :param amphora: The amphora to mark amphora health busy
         :returns: None
         """
-        self._mark_amp_health_busy(amphora[constants.ID])
+        with db_apis.session().begin() as session:
+            self._mark_amp_health_busy(session, amphora[constants.ID])
 
 
 class MarkLBAmphoraeHealthBusy(BaseDatabaseTask):
@@ -1777,10 +1855,11 @@ class MarkLBAmphoraeHealthBusy(BaseDatabaseTask):
         :param loadbalancer: The load balancer to mark amphorae health busy
         :returns: None
         """
-        db_lb = self.loadbalancer_repo.get(
-            db_apis.get_session(), id=loadbalancer[constants.LOADBALANCER_ID])
-        for amphora in db_lb.amphorae:
-            self._mark_amp_health_busy(amphora.id)
+        with db_apis.session().begin() as session:
+            db_lb = self.loadbalancer_repo.get(
+                session, id=loadbalancer[constants.LOADBALANCER_ID])
+            for amphora in db_lb.amphorae:
+                self._mark_amp_health_busy(session, amphora.id)
 
 
 class MarkHealthMonitorActiveInDB(BaseDatabaseTask):
@@ -1798,14 +1877,15 @@ class MarkHealthMonitorActiveInDB(BaseDatabaseTask):
 
         LOG.debug("Mark ACTIVE in DB for health monitor id: %s",
                   health_mon[constants.HEALTHMONITOR_ID])
-        db_health_mon = self.health_mon_repo.get(
-            db_apis.get_session(), id=health_mon[constants.HEALTHMONITOR_ID])
-        op_status = (constants.ONLINE if db_health_mon.enabled
-                     else constants.OFFLINE)
-        self.health_mon_repo.update(db_apis.get_session(),
-                                    health_mon[constants.HEALTHMONITOR_ID],
-                                    provisioning_status=constants.ACTIVE,
-                                    operating_status=op_status)
+        with db_apis.session().begin() as session:
+            db_health_mon = self.health_mon_repo.get(
+                session, id=health_mon[constants.HEALTHMONITOR_ID])
+            op_status = (constants.ONLINE if db_health_mon.enabled
+                         else constants.OFFLINE)
+            self.health_mon_repo.update(session,
+                                        health_mon[constants.HEALTHMONITOR_ID],
+                                        provisioning_status=constants.ACTIVE,
+                                        operating_status=op_status)
 
     def revert(self, health_mon, *args, **kwargs):
         """Mark the health monitor as broken
@@ -1836,10 +1916,11 @@ class MarkHealthMonitorPendingCreateInDB(BaseDatabaseTask):
 
         LOG.debug("Mark PENDING CREATE in DB for health monitor id: %s",
                   health_mon[constants.HEALTHMONITOR_ID])
-        self.health_mon_repo.update(db_apis.get_session(),
-                                    health_mon[constants.HEALTHMONITOR_ID],
-                                    provisioning_status=(constants.
-                                                         PENDING_CREATE))
+        with db_apis.session().begin() as session:
+            self.health_mon_repo.update(session,
+                                        health_mon[constants.HEALTHMONITOR_ID],
+                                        provisioning_status=(constants.
+                                                             PENDING_CREATE))
 
     def revert(self, health_mon, *args, **kwargs):
         """Mark the health monitor as broken
@@ -1870,10 +1951,11 @@ class MarkHealthMonitorPendingDeleteInDB(BaseDatabaseTask):
 
         LOG.debug("Mark PENDING DELETE in DB for health monitor id: %s",
                   health_mon[constants.HEALTHMONITOR_ID])
-        self.health_mon_repo.update(db_apis.get_session(),
-                                    health_mon[constants.HEALTHMONITOR_ID],
-                                    provisioning_status=(constants.
-                                                         PENDING_DELETE))
+        with db_apis.session().begin() as session:
+            self.health_mon_repo.update(session,
+                                        health_mon[constants.HEALTHMONITOR_ID],
+                                        provisioning_status=(constants.
+                                                             PENDING_DELETE))
 
     def revert(self, health_mon, *args, **kwargs):
         """Mark the health monitor as broken
@@ -1904,10 +1986,11 @@ class MarkHealthMonitorPendingUpdateInDB(BaseDatabaseTask):
 
         LOG.debug("Mark PENDING UPDATE in DB for health monitor id: %s",
                   health_mon[constants.HEALTHMONITOR_ID])
-        self.health_mon_repo.update(db_apis.get_session(),
-                                    health_mon[constants.HEALTHMONITOR_ID],
-                                    provisioning_status=(constants.
-                                                         PENDING_UPDATE))
+        with db_apis.session().begin() as session:
+            self.health_mon_repo.update(session,
+                                        health_mon[constants.HEALTHMONITOR_ID],
+                                        provisioning_status=(constants.
+                                                             PENDING_UPDATE))
 
     def revert(self, health_mon, *args, **kwargs):
         """Mark the health monitor as broken
@@ -1932,28 +2015,30 @@ class MarkHealthMonitorsOnlineInDB(BaseDatabaseTask):
     """
 
     def execute(self, loadbalancer: dict):
-        db_lb = self.loadbalancer_repo.get(
-            db_apis.get_session(),
-            id=loadbalancer[constants.LOADBALANCER_ID])
+        with db_apis.session().begin() as session:
+            db_lb = self.loadbalancer_repo.get(
+                session, id=loadbalancer[constants.LOADBALANCER_ID])
 
-        # Update the healthmonitors of either attached listeners or l7policies
-        hms_to_update = []
+            # Update the healthmonitors of either attached listeners or
+            # l7policies
+            hms_to_update = []
 
-        for listener in db_lb.listeners:
-            if listener.default_pool and listener.default_pool.health_monitor:
-                hm = listener.default_pool.health_monitor
-                if hm.enabled:
-                    hms_to_update.append(hm.id)
-            for l7policy in listener.l7policies:
-                if l7policy.redirect_pool and (
-                        l7policy.redirect_pool.health_monitor):
-                    hm = l7policy.redirect_pool.health_monitor
+            for listener in db_lb.listeners:
+                if (listener.default_pool and
+                        listener.default_pool.health_monitor):
+                    hm = listener.default_pool.health_monitor
                     if hm.enabled:
                         hms_to_update.append(hm.id)
+                for l7policy in listener.l7policies:
+                    if l7policy.redirect_pool and (
+                            l7policy.redirect_pool.health_monitor):
+                        hm = l7policy.redirect_pool.health_monitor
+                        if hm.enabled:
+                            hms_to_update.append(hm.id)
 
-        for hm_id in hms_to_update:
-            self.health_mon_repo.update(db_apis.get_session(), hm_id,
-                                        operating_status=constants.ONLINE)
+            for hm_id in hms_to_update:
+                self.health_mon_repo.update(
+                    session, hm_id, operating_status=constants.ONLINE)
 
 
 class MarkL7PolicyActiveInDB(BaseDatabaseTask):
@@ -1971,14 +2056,15 @@ class MarkL7PolicyActiveInDB(BaseDatabaseTask):
 
         LOG.debug("Mark ACTIVE in DB for l7policy id: %s",
                   l7policy[constants.L7POLICY_ID])
-        db_l7policy = self.l7policy_repo.get(
-            db_apis.get_session(), id=l7policy[constants.L7POLICY_ID])
-        op_status = (constants.ONLINE if db_l7policy.enabled
-                     else constants.OFFLINE)
-        self.l7policy_repo.update(db_apis.get_session(),
-                                  l7policy[constants.L7POLICY_ID],
-                                  provisioning_status=constants.ACTIVE,
-                                  operating_status=op_status)
+        with db_apis.session().begin() as session:
+            db_l7policy = self.l7policy_repo.get(
+                session, id=l7policy[constants.L7POLICY_ID])
+            op_status = (constants.ONLINE if db_l7policy.enabled
+                         else constants.OFFLINE)
+            self.l7policy_repo.update(session,
+                                      l7policy[constants.L7POLICY_ID],
+                                      provisioning_status=constants.ACTIVE,
+                                      operating_status=op_status)
 
     def revert(self, l7policy, *args, **kwargs):
         """Mark the l7policy as broken
@@ -2008,9 +2094,10 @@ class MarkL7PolicyPendingCreateInDB(BaseDatabaseTask):
 
         LOG.debug("Mark PENDING CREATE in DB for l7policy id: %s",
                   l7policy[constants.L7POLICY_ID])
-        self.l7policy_repo.update(db_apis.get_session(),
-                                  l7policy[constants.L7POLICY_ID],
-                                  provisioning_status=constants.PENDING_CREATE)
+        with db_apis.session().begin() as session:
+            self.l7policy_repo.update(
+                session, l7policy[constants.L7POLICY_ID],
+                provisioning_status=constants.PENDING_CREATE)
 
     def revert(self, l7policy, *args, **kwargs):
         """Mark the l7policy as broken
@@ -2040,9 +2127,10 @@ class MarkL7PolicyPendingDeleteInDB(BaseDatabaseTask):
 
         LOG.debug("Mark PENDING DELETE in DB for l7policy id: %s",
                   l7policy[constants.L7POLICY_ID])
-        self.l7policy_repo.update(db_apis.get_session(),
-                                  l7policy[constants.L7POLICY_ID],
-                                  provisioning_status=constants.PENDING_DELETE)
+        with db_apis.session().begin() as session:
+            self.l7policy_repo.update(
+                session, l7policy[constants.L7POLICY_ID],
+                provisioning_status=constants.PENDING_DELETE)
 
     def revert(self, l7policy, *args, **kwargs):
         """Mark the l7policy as broken
@@ -2072,10 +2160,11 @@ class MarkL7PolicyPendingUpdateInDB(BaseDatabaseTask):
 
         LOG.debug("Mark PENDING UPDATE in DB for l7policy id: %s",
                   l7policy[constants.L7POLICY_ID])
-        self.l7policy_repo.update(db_apis.get_session(),
-                                  l7policy[constants.L7POLICY_ID],
-                                  provisioning_status=(constants.
-                                                       PENDING_UPDATE))
+        with db_apis.session().begin() as session:
+            self.l7policy_repo.update(session,
+                                      l7policy[constants.L7POLICY_ID],
+                                      provisioning_status=(constants.
+                                                           PENDING_UPDATE))
 
     def revert(self, l7policy, *args, **kwargs):
         """Mark the l7policy as broken
@@ -2105,14 +2194,15 @@ class MarkL7RuleActiveInDB(BaseDatabaseTask):
 
         LOG.debug("Mark ACTIVE in DB for l7rule id: %s",
                   l7rule[constants.L7RULE_ID])
-        db_rule = self.l7rule_repo.get(db_apis.get_session(),
-                                       id=l7rule[constants.L7RULE_ID])
-        op_status = (constants.ONLINE if db_rule.enabled
-                     else constants.OFFLINE)
-        self.l7rule_repo.update(db_apis.get_session(),
-                                l7rule[constants.L7RULE_ID],
-                                provisioning_status=constants.ACTIVE,
-                                operating_status=op_status)
+        with db_apis.session().begin() as session:
+            db_rule = self.l7rule_repo.get(session,
+                                           id=l7rule[constants.L7RULE_ID])
+            op_status = (constants.ONLINE if db_rule.enabled
+                         else constants.OFFLINE)
+            self.l7rule_repo.update(session,
+                                    l7rule[constants.L7RULE_ID],
+                                    provisioning_status=constants.ACTIVE,
+                                    operating_status=op_status)
 
     def revert(self, l7rule, *args, **kwargs):
         """Mark the l7rule as broken
@@ -2142,9 +2232,10 @@ class MarkL7RulePendingCreateInDB(BaseDatabaseTask):
 
         LOG.debug("Mark PENDING CREATE in DB for l7rule id: %s",
                   l7rule[constants.L7RULE_ID])
-        self.l7rule_repo.update(db_apis.get_session(),
-                                l7rule[constants.L7RULE_ID],
-                                provisioning_status=constants.PENDING_CREATE)
+        with db_apis.session().begin() as session:
+            self.l7rule_repo.update(
+                session, l7rule[constants.L7RULE_ID],
+                provisioning_status=constants.PENDING_CREATE)
 
     def revert(self, l7rule, *args, **kwargs):
         """Mark the l7rule as broken
@@ -2174,9 +2265,10 @@ class MarkL7RulePendingDeleteInDB(BaseDatabaseTask):
 
         LOG.debug("Mark PENDING DELETE in DB for l7rule id: %s",
                   l7rule[constants.L7RULE_ID])
-        self.l7rule_repo.update(db_apis.get_session(),
-                                l7rule[constants.L7RULE_ID],
-                                provisioning_status=constants.PENDING_DELETE)
+        with db_apis.session().begin() as session:
+            self.l7rule_repo.update(
+                session, l7rule[constants.L7RULE_ID],
+                provisioning_status=constants.PENDING_DELETE)
 
     def revert(self, l7rule, *args, **kwargs):
         """Mark the l7rule as broken
@@ -2206,9 +2298,10 @@ class MarkL7RulePendingUpdateInDB(BaseDatabaseTask):
 
         LOG.debug("Mark PENDING UPDATE in DB for l7rule id: %s",
                   l7rule[constants.L7RULE_ID])
-        self.l7rule_repo.update(db_apis.get_session(),
-                                l7rule[constants.L7RULE_ID],
-                                provisioning_status=constants.PENDING_UPDATE)
+        with db_apis.session().begin() as session:
+            self.l7rule_repo.update(
+                session, l7rule[constants.L7RULE_ID],
+                provisioning_status=constants.PENDING_UPDATE)
 
     def revert(self, l7rule, *args, **kwargs):
         """Mark the l7rule as broken
@@ -2238,9 +2331,10 @@ class MarkMemberActiveInDB(BaseDatabaseTask):
 
         LOG.debug("Mark ACTIVE in DB for member id: %s",
                   member[constants.MEMBER_ID])
-        self.member_repo.update(db_apis.get_session(),
-                                member[constants.MEMBER_ID],
-                                provisioning_status=constants.ACTIVE)
+        with db_apis.session().begin() as session:
+            self.member_repo.update(session,
+                                    member[constants.MEMBER_ID],
+                                    provisioning_status=constants.ACTIVE)
 
     def revert(self, member, *args, **kwargs):
         """Mark the member as broken
@@ -2270,9 +2364,10 @@ class MarkMemberPendingCreateInDB(BaseDatabaseTask):
 
         LOG.debug("Mark PENDING CREATE in DB for member id: %s",
                   member[constants.MEMBER_ID])
-        self.member_repo.update(db_apis.get_session(),
-                                member[constants.MEMBER_ID],
-                                provisioning_status=constants.PENDING_CREATE)
+        with db_apis.session().begin() as session:
+            self.member_repo.update(
+                session, member[constants.MEMBER_ID],
+                provisioning_status=constants.PENDING_CREATE)
 
     def revert(self, member, *args, **kwargs):
         """Mark the member as broken
@@ -2302,9 +2397,10 @@ class MarkMemberPendingDeleteInDB(BaseDatabaseTask):
 
         LOG.debug("Mark PENDING DELETE in DB for member id: %s",
                   member[constants.MEMBER_ID])
-        self.member_repo.update(db_apis.get_session(),
-                                member[constants.MEMBER_ID],
-                                provisioning_status=constants.PENDING_DELETE)
+        with db_apis.session().begin() as session:
+            self.member_repo.update(
+                session, member[constants.MEMBER_ID],
+                provisioning_status=constants.PENDING_DELETE)
 
     def revert(self, member, *args, **kwargs):
         """Mark the member as broken
@@ -2334,9 +2430,10 @@ class MarkMemberPendingUpdateInDB(BaseDatabaseTask):
 
         LOG.debug("Mark PENDING UPDATE in DB for member id: %s",
                   member[constants.MEMBER_ID])
-        self.member_repo.update(db_apis.get_session(),
-                                member[constants.MEMBER_ID],
-                                provisioning_status=constants.PENDING_UPDATE)
+        with db_apis.session().begin() as session:
+            self.member_repo.update(
+                session, member[constants.MEMBER_ID],
+                provisioning_status=constants.PENDING_UPDATE)
 
     def revert(self, member, *args, **kwargs):
         """Mark the member as broken
@@ -2366,9 +2463,10 @@ class MarkPoolActiveInDB(BaseDatabaseTask):
 
         LOG.debug("Mark ACTIVE in DB for pool id: %s",
                   pool_id)
-        self.pool_repo.update(db_apis.get_session(),
-                              pool_id,
-                              provisioning_status=constants.ACTIVE)
+        with db_apis.session().begin() as session:
+            self.pool_repo.update(session,
+                                  pool_id,
+                                  provisioning_status=constants.ACTIVE)
 
     def revert(self, pool_id, *args, **kwargs):
         """Mark the pool as broken
@@ -2397,9 +2495,10 @@ class MarkPoolPendingCreateInDB(BaseDatabaseTask):
 
         LOG.debug("Mark PENDING CREATE in DB for pool id: %s",
                   pool_id)
-        self.pool_repo.update(db_apis.get_session(),
-                              pool_id,
-                              provisioning_status=constants.PENDING_CREATE)
+        with db_apis.session().begin() as session:
+            self.pool_repo.update(session,
+                                  pool_id,
+                                  provisioning_status=constants.PENDING_CREATE)
 
     def revert(self, pool_id, *args, **kwargs):
         """Mark the pool as broken
@@ -2428,9 +2527,10 @@ class MarkPoolPendingDeleteInDB(BaseDatabaseTask):
 
         LOG.debug("Mark PENDING DELETE in DB for pool id: %s",
                   pool_id)
-        self.pool_repo.update(db_apis.get_session(),
-                              pool_id,
-                              provisioning_status=constants.PENDING_DELETE)
+        with db_apis.session().begin() as session:
+            self.pool_repo.update(session,
+                                  pool_id,
+                                  provisioning_status=constants.PENDING_DELETE)
 
     def revert(self, pool_id, *args, **kwargs):
         """Mark the pool as broken
@@ -2459,9 +2559,10 @@ class MarkPoolPendingUpdateInDB(BaseDatabaseTask):
 
         LOG.debug("Mark PENDING UPDATE in DB for pool id: %s",
                   pool_id)
-        self.pool_repo.update(db_apis.get_session(),
-                              pool_id,
-                              provisioning_status=constants.PENDING_UPDATE)
+        with db_apis.session().begin() as session:
+            self.pool_repo.update(session,
+                                  pool_id,
+                                  provisioning_status=constants.PENDING_UPDATE)
 
     def revert(self, pool_id, *args, **kwargs):
         """Mark the pool as broken
@@ -2491,7 +2592,7 @@ class DecrementHealthMonitorQuota(BaseDatabaseTask):
         LOG.debug("Decrementing health monitor quota for "
                   "project: %s ", project_id)
 
-        lock_session = db_apis.get_session(autocommit=False)
+        lock_session = db_apis.get_session()
         try:
             self.repos.decrement_quota(lock_session,
                                        data_models.HealthMonitor,
@@ -2520,7 +2621,7 @@ class DecrementHealthMonitorQuota(BaseDatabaseTask):
 
             try:
                 session = db_apis.get_session()
-                lock_session = db_apis.get_session(autocommit=False)
+                lock_session = db_apis.get_session()
                 try:
                     self.repos.check_quota_met(session,
                                                lock_session,
@@ -2550,7 +2651,7 @@ class DecrementListenerQuota(BaseDatabaseTask):
         LOG.debug("Decrementing listener quota for "
                   "project: %s ", project_id)
 
-        lock_session = db_apis.get_session(autocommit=False)
+        lock_session = db_apis.get_session()
         try:
             self.repos.decrement_quota(lock_session,
                                        data_models.Listener,
@@ -2578,7 +2679,7 @@ class DecrementListenerQuota(BaseDatabaseTask):
 
             try:
                 session = db_apis.get_session()
-                lock_session = db_apis.get_session(autocommit=False)
+                lock_session = db_apis.get_session()
                 try:
                     self.repos.check_quota_met(session,
                                                lock_session,
@@ -2608,7 +2709,7 @@ class DecrementLoadBalancerQuota(BaseDatabaseTask):
         LOG.debug("Decrementing load balancer quota for "
                   "project: %s ", project_id)
 
-        lock_session = db_apis.get_session(autocommit=False)
+        lock_session = db_apis.get_session()
         try:
             self.repos.decrement_quota(lock_session,
                                        data_models.LoadBalancer,
@@ -2638,7 +2739,7 @@ class DecrementLoadBalancerQuota(BaseDatabaseTask):
 
             try:
                 session = db_apis.get_session()
-                lock_session = db_apis.get_session(autocommit=False)
+                lock_session = db_apis.get_session()
                 try:
                     self.repos.check_quota_met(session,
                                                lock_session,
@@ -2668,7 +2769,7 @@ class DecrementMemberQuota(BaseDatabaseTask):
         LOG.debug("Decrementing member quota for "
                   "project: %s ", project_id)
 
-        lock_session = db_apis.get_session(autocommit=False)
+        lock_session = db_apis.get_session()
         try:
             self.repos.decrement_quota(lock_session,
                                        data_models.Member,
@@ -2697,7 +2798,7 @@ class DecrementMemberQuota(BaseDatabaseTask):
 
             try:
                 session = db_apis.get_session()
-                lock_session = db_apis.get_session(autocommit=False)
+                lock_session = db_apis.get_session()
                 try:
                     self.repos.check_quota_met(session,
                                                lock_session,
@@ -2727,7 +2828,7 @@ class DecrementPoolQuota(BaseDatabaseTask):
         LOG.debug("Decrementing pool quota for "
                   "project: %s ", project_id)
 
-        lock_session = db_apis.get_session(autocommit=False)
+        lock_session = db_apis.get_session()
         try:
             self.repos.decrement_quota(lock_session,
                                        data_models.Pool,
@@ -2770,7 +2871,7 @@ class DecrementPoolQuota(BaseDatabaseTask):
             # in case other quota actions have occurred
             try:
                 session = db_apis.get_session()
-                lock_session = db_apis.get_session(autocommit=False)
+                lock_session = db_apis.get_session()
                 try:
                     self.repos.check_quota_met(session,
                                                lock_session,
@@ -2782,7 +2883,7 @@ class DecrementPoolQuota(BaseDatabaseTask):
 
                 # Attempt to increment back the health monitor quota
                 if pool_child_count['HM'] > 0:
-                    lock_session = db_apis.get_session(autocommit=False)
+                    lock_session = db_apis.get_session()
                     try:
                         self.repos.check_quota_met(session,
                                                    lock_session,
@@ -2797,7 +2898,7 @@ class DecrementPoolQuota(BaseDatabaseTask):
                 # should other factors have increased the in use quota
                 # before this point in the revert flow
                 for i in range(pool_child_count['member']):
-                    lock_session = db_apis.get_session(autocommit=False)
+                    lock_session = db_apis.get_session()
                     try:
                         self.repos.check_quota_met(session,
                                                    lock_session,
@@ -2826,9 +2927,9 @@ class CountPoolChildrenForQuota(BaseDatabaseTask):
         :param pool_id: pool_id of pool object to count children on
         :returns: None
         """
-        session = db_apis.get_session()
-        hm_count, member_count = (
-            self.pool_repo.get_children_count(session, pool_id))
+        with db_apis.session().begin() as session:
+            hm_count, member_count = (
+                self.pool_repo.get_children_count(session, pool_id))
 
         return {'HM': hm_count, 'member': member_count}
 
@@ -2847,7 +2948,7 @@ class DecrementL7policyQuota(BaseDatabaseTask):
         """
         LOG.debug("Decrementing l7policy quota for "
                   "project: %s ", l7policy[constants.PROJECT_ID])
-        lock_session = db_apis.get_session(autocommit=False)
+        lock_session = db_apis.get_session()
         try:
             self.repos.decrement_quota(lock_session,
                                        data_models.L7Policy,
@@ -2881,7 +2982,7 @@ class DecrementL7policyQuota(BaseDatabaseTask):
         if not isinstance(result, failure.Failure):
             try:
                 session = db_apis.get_session()
-                lock_session = db_apis.get_session(autocommit=False)
+                lock_session = db_apis.get_session()
                 try:
                     self.repos.check_quota_met(session,
                                                lock_session,
@@ -2895,7 +2996,7 @@ class DecrementL7policyQuota(BaseDatabaseTask):
                 if db_l7policy:
                     # Attempt to increment back the L7Rule quota
                     for i in range(len(db_l7policy.l7rules)):
-                        lock_session = db_apis.get_session(autocommit=False)
+                        lock_session = db_apis.get_session()
                         try:
                             self.repos.check_quota_met(
                                 session, lock_session, data_models.L7Rule,
@@ -2924,7 +3025,7 @@ class DecrementL7ruleQuota(BaseDatabaseTask):
         LOG.debug("Decrementing l7rule quota for "
                   "project: %s ", l7rule[constants.PROJECT_ID])
 
-        lock_session = db_apis.get_session(autocommit=False)
+        lock_session = db_apis.get_session()
         try:
             self.repos.decrement_quota(lock_session,
                                        data_models.L7Rule,
@@ -2953,7 +3054,7 @@ class DecrementL7ruleQuota(BaseDatabaseTask):
 
             try:
                 session = db_apis.get_session()
-                lock_session = db_apis.get_session(autocommit=False)
+                lock_session = db_apis.get_session()
                 try:
                     self.repos.check_quota_met(session,
                                                lock_session,
@@ -2984,6 +3085,6 @@ class UpdatePoolMembersOperatingStatusInDB(BaseDatabaseTask):
         LOG.debug("Updating member operating status to %(status)s in DB for "
                   "pool id: %(pool)s", {'status': operating_status,
                                         'pool': pool_id})
-        self.member_repo.update_pool_members(db_apis.get_session(),
-                                             pool_id,
-                                             operating_status=operating_status)
+        with db_apis.session().begin() as session:
+            self.member_repo.update_pool_members(
+                session, pool_id, operating_status=operating_status)

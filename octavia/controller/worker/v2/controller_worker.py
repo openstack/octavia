@@ -94,7 +94,9 @@ class ControllerWorker(object):
             CONF.haproxy_amphora.api_db_commit_retry_attempts))
     def _get_db_obj_until_pending_update(self, repo, id):
 
-        return repo.get(db_apis.get_session(), id=id)
+        session = db_apis.get_session()
+        with session.begin():
+            return repo.get(session, id=id)
 
     @property
     def services_controller(self):
@@ -118,8 +120,10 @@ class ControllerWorker(object):
         :raises AmphoraNotFound: The referenced Amphora was not found
         """
         try:
-            amphora = self._amphora_repo.get(db_apis.get_session(),
-                                             id=amphora_id)
+            session = db_apis.get_session()
+            with session.begin():
+                amphora = self._amphora_repo.get(session,
+                                                 id=amphora_id)
             store = {constants.AMPHORA: amphora.to_dict()}
             self.run_flow(
                 flow_utils.get_delete_amphora_flow,
@@ -145,9 +149,11 @@ class ControllerWorker(object):
         :returns: None
         :raises NoResultFound: Unable to find the object
         """
-        db_health_monitor = self._health_mon_repo.get(
-            db_apis.get_session(),
-            id=health_monitor[constants.HEALTHMONITOR_ID])
+        session = db_apis.get_session()
+        with session.begin():
+            db_health_monitor = self._health_mon_repo.get(
+                session,
+                id=health_monitor[constants.HEALTHMONITOR_ID])
 
         if not db_health_monitor:
             LOG.warning('Failed to fetch %s %s from DB. Retrying for up to '
@@ -178,9 +184,11 @@ class ControllerWorker(object):
         :returns: None
         :raises HMNotFound: The referenced health monitor was not found
         """
-        db_health_monitor = self._health_mon_repo.get(
-            db_apis.get_session(),
-            id=health_monitor[constants.HEALTHMONITOR_ID])
+        session = db_apis.get_session()
+        with session.begin():
+            db_health_monitor = self._health_mon_repo.get(
+                session,
+                id=health_monitor[constants.HEALTHMONITOR_ID])
 
         pool = db_health_monitor.pool
         load_balancer = pool.load_balancer
@@ -251,8 +259,10 @@ class ControllerWorker(object):
         :returns: None
         :raises NoResultFound: Unable to find the object
         """
-        db_listener = self._listener_repo.get(
-            db_apis.get_session(), id=listener[constants.LISTENER_ID])
+        session = db_apis.get_session()
+        with session.begin():
+            db_listener = self._listener_repo.get(
+                session, id=listener[constants.LISTENER_ID])
         if not db_listener:
             LOG.warning('Failed to fetch %s %s from DB. Retrying for up to '
                         '60 seconds.', 'listener',
@@ -333,8 +343,10 @@ class ControllerWorker(object):
         :returns: None
         :raises NoResultFound: Unable to find the object
         """
-        lb = self._lb_repo.get(db_apis.get_session(),
-                               id=loadbalancer[constants.LOADBALANCER_ID])
+        session = db_apis.get_session()
+        with session.begin():
+            lb = self._lb_repo.get(session,
+                                   id=loadbalancer[constants.LOADBALANCER_ID])
         if not lb:
             LOG.warning('Failed to fetch %s %s from DB. Retrying for up to '
                         '60 seconds.', 'load_balancer',
@@ -374,7 +386,9 @@ class ControllerWorker(object):
         :raises LBNotFound: The referenced load balancer was not found
         """
         loadbalancer_id = load_balancer[constants.LOADBALANCER_ID]
-        db_lb = self._lb_repo.get(db_apis.get_session(), id=loadbalancer_id)
+        session = db_apis.get_session()
+        with session.begin():
+            db_lb = self._lb_repo.get(session, id=loadbalancer_id)
         store = {constants.LOADBALANCER: load_balancer,
                  constants.LOADBALANCER_ID: loadbalancer_id,
                  constants.SERVER_GROUP_ID: db_lb.server_group_id,
@@ -436,8 +450,10 @@ class ControllerWorker(object):
         :returns: None
         :raises NoSuitablePool: Unable to find the node pool
         """
-        db_member = self._member_repo.get(db_apis.get_session(),
-                                          id=member[constants.MEMBER_ID])
+        session = db_apis.get_session()
+        with session.begin():
+            db_member = self._member_repo.get(session,
+                                              id=member[constants.MEMBER_ID])
         if not db_member:
             LOG.warning('Failed to fetch %s %s from DB. Retrying for up to '
                         '60 seconds.', 'l7member',
@@ -457,9 +473,10 @@ class ControllerWorker(object):
             constants.LOADBALANCER: provider_lb,
             constants.POOL_ID: pool.id}
         if load_balancer.availability_zone:
-            store[constants.AVAILABILITY_ZONE] = (
-                self._az_repo.get_availability_zone_metadata_dict(
-                    db_apis.get_session(), load_balancer.availability_zone))
+            with session.begin():
+                store[constants.AVAILABILITY_ZONE] = (
+                    self._az_repo.get_availability_zone_metadata_dict(
+                        session, load_balancer.availability_zone))
         else:
             store[constants.AVAILABILITY_ZONE] = {}
 
@@ -474,8 +491,10 @@ class ControllerWorker(object):
         :returns: None
         :raises MemberNotFound: The referenced member was not found
         """
-        pool = self._pool_repo.get(db_apis.get_session(),
-                                   id=member[constants.POOL_ID])
+        session = db_apis.get_session()
+        with session.begin():
+            pool = self._pool_repo.get(session,
+                                       id=member[constants.POOL_ID])
 
         load_balancer = pool.load_balancer
         provider_lb = provider_utils.db_loadbalancer_to_provider_loadbalancer(
@@ -490,9 +509,10 @@ class ControllerWorker(object):
             constants.POOL_ID: pool.id,
             constants.PROJECT_ID: load_balancer.project_id}
         if load_balancer.availability_zone:
-            store[constants.AVAILABILITY_ZONE] = (
-                self._az_repo.get_availability_zone_metadata_dict(
-                    db_apis.get_session(), load_balancer.availability_zone))
+            with session.begin():
+                store[constants.AVAILABILITY_ZONE] = (
+                    self._az_repo.get_availability_zone_metadata_dict(
+                        session, load_balancer.availability_zone))
         else:
             store[constants.AVAILABILITY_ZONE] = {}
 
@@ -510,9 +530,12 @@ class ControllerWorker(object):
             CONF.haproxy_amphora.api_db_commit_retry_attempts))
     def batch_update_members(self, old_members, new_members,
                              updated_members):
-        db_new_members = [self._member_repo.get(db_apis.get_session(),
-                                                id=member[constants.MEMBER_ID])
-                          for member in new_members]
+        session = db_apis.get_session()
+        with session.begin():
+            db_new_members = [
+                self._member_repo.get(
+                    session, id=member[constants.MEMBER_ID])
+                for member in new_members]
         # The API may not have commited all of the new member records yet.
         # Make sure we retry looking them up.
         if None in db_new_members or len(db_new_members) != len(new_members):
@@ -520,27 +543,28 @@ class ControllerWorker(object):
                         'Retrying for up to 60 seconds.')
             raise db_exceptions.NoResultFound
 
-        updated_members = [
-            (provider_utils.db_member_to_provider_member(
-                self._member_repo.get(db_apis.get_session(),
-                                      id=m.get(constants.ID))).to_dict(),
-             m)
-            for m in updated_members]
-        provider_old_members = [
-            provider_utils.db_member_to_provider_member(
-                self._member_repo.get(db_apis.get_session(),
-                                      id=m.get(constants.ID))).to_dict()
-            for m in old_members]
-        if old_members:
-            pool = self._pool_repo.get(db_apis.get_session(),
-                                       id=old_members[0][constants.POOL_ID])
-        elif new_members:
-            pool = self._pool_repo.get(db_apis.get_session(),
-                                       id=new_members[0][constants.POOL_ID])
-        else:
-            pool = self._pool_repo.get(
-                db_apis.get_session(),
-                id=updated_members[0][0][constants.POOL_ID])
+        with session.begin():
+            updated_members = [
+                (provider_utils.db_member_to_provider_member(
+                    self._member_repo.get(session,
+                                          id=m.get(constants.ID))).to_dict(),
+                 m)
+                for m in updated_members]
+            provider_old_members = [
+                provider_utils.db_member_to_provider_member(
+                    self._member_repo.get(session,
+                                          id=m.get(constants.ID))).to_dict()
+                for m in old_members]
+            if old_members:
+                pool = self._pool_repo.get(
+                    session, id=old_members[0][constants.POOL_ID])
+            elif new_members:
+                pool = self._pool_repo.get(
+                    session, id=new_members[0][constants.POOL_ID])
+            else:
+                pool = self._pool_repo.get(
+                    session,
+                    id=updated_members[0][0][constants.POOL_ID])
         load_balancer = pool.load_balancer
 
         provider_lb = provider_utils.db_loadbalancer_to_provider_loadbalancer(
@@ -554,9 +578,10 @@ class ControllerWorker(object):
             constants.POOL_ID: pool.id,
             constants.PROJECT_ID: load_balancer.project_id}
         if load_balancer.availability_zone:
-            store[constants.AVAILABILITY_ZONE] = (
-                self._az_repo.get_availability_zone_metadata_dict(
-                    db_apis.get_session(), load_balancer.availability_zone))
+            with session.begin():
+                store[constants.AVAILABILITY_ZONE] = (
+                    self._az_repo.get_availability_zone_metadata_dict(
+                        session, load_balancer.availability_zone))
         else:
             store[constants.AVAILABILITY_ZONE] = {}
 
@@ -598,9 +623,11 @@ class ControllerWorker(object):
             constants.POOL_ID: pool.id,
             constants.UPDATE_DICT: member_updates}
         if load_balancer.availability_zone:
-            store[constants.AVAILABILITY_ZONE] = (
-                self._az_repo.get_availability_zone_metadata_dict(
-                    db_apis.get_session(), load_balancer.availability_zone))
+            session = db_apis.get_session()
+            with session.begin():
+                store[constants.AVAILABILITY_ZONE] = (
+                    self._az_repo.get_availability_zone_metadata_dict(
+                        session, load_balancer.availability_zone))
         else:
             store[constants.AVAILABILITY_ZONE] = {}
 
@@ -626,8 +653,10 @@ class ControllerWorker(object):
 
         # TODO(ataraday) It seems we need to get db pool here anyway to get
         # proper listeners
-        db_pool = self._pool_repo.get(db_apis.get_session(),
-                                      id=pool[constants.POOL_ID])
+        session = db_apis.get_session()
+        with session.begin():
+            db_pool = self._pool_repo.get(session,
+                                          id=pool[constants.POOL_ID])
         if not db_pool:
             LOG.warning('Failed to fetch %s %s from DB. Retrying for up to '
                         '60 seconds.', 'pool', pool[constants.POOL_ID])
@@ -653,8 +682,10 @@ class ControllerWorker(object):
         :returns: None
         :raises PoolNotFound: The referenced pool was not found
         """
-        db_pool = self._pool_repo.get(db_apis.get_session(),
-                                      id=pool[constants.POOL_ID])
+        session = db_apis.get_session()
+        with session.begin():
+            db_pool = self._pool_repo.get(session,
+                                          id=pool[constants.POOL_ID])
 
         load_balancer = db_pool.load_balancer
         provider_lb = provider_utils.db_loadbalancer_to_provider_loadbalancer(
@@ -718,8 +749,10 @@ class ControllerWorker(object):
         :returns: None
         :raises NoResultFound: Unable to find the object
         """
-        db_l7policy = self._l7policy_repo.get(
-            db_apis.get_session(), id=l7policy[constants.L7POLICY_ID])
+        session = db_apis.get_session()
+        with session.begin():
+            db_l7policy = self._l7policy_repo.get(
+                session, id=l7policy[constants.L7POLICY_ID])
         if not db_l7policy:
             LOG.warning('Failed to fetch %s %s from DB. Retrying for up to '
                         '60 seconds.', 'l7policy',
@@ -747,8 +780,10 @@ class ControllerWorker(object):
         :returns: None
         :raises L7PolicyNotFound: The referenced l7policy was not found
         """
-        db_listener = self._listener_repo.get(
-            db_apis.get_session(), id=l7policy[constants.LISTENER_ID])
+        session = db_apis.get_session()
+        with session.begin():
+            db_listener = self._listener_repo.get(
+                session, id=l7policy[constants.LISTENER_ID])
         listeners_dicts = (
             provider_utils.db_listeners_to_provider_dicts_list_of_dicts(
                 [db_listener]))
@@ -809,8 +844,10 @@ class ControllerWorker(object):
         :returns: None
         :raises NoResultFound: Unable to find the object
         """
-        db_l7rule = self._l7rule_repo.get(db_apis.get_session(),
-                                          id=l7rule[constants.L7RULE_ID])
+        session = db_apis.get_session()
+        with session.begin():
+            db_l7rule = self._l7rule_repo.get(session,
+                                              id=l7rule[constants.L7RULE_ID])
         if not db_l7rule:
             LOG.warning('Failed to fetch %s %s from DB. Retrying for up to '
                         '60 seconds.', 'l7rule',
@@ -844,8 +881,10 @@ class ControllerWorker(object):
         :returns: None
         :raises L7RuleNotFound: The referenced l7rule was not found
         """
-        db_l7policy = self._l7policy_repo.get(db_apis.get_session(),
-                                              id=l7rule[constants.L7POLICY_ID])
+        session = db_apis.get_session()
+        with session.begin():
+            db_l7policy = self._l7policy_repo.get(
+                session, id=l7rule[constants.L7POLICY_ID])
         l7policy = provider_utils.db_l7policy_to_provider_l7policy(db_l7policy)
         load_balancer = db_l7policy.listener.load_balancer
 
@@ -914,8 +953,10 @@ class ControllerWorker(object):
         """
         amphora = None
         try:
-            amphora = self._amphora_repo.get(db_apis.get_session(),
-                                             id=amphora_id)
+            session = db_apis.get_session()
+            with session.begin():
+                amphora = self._amphora_repo.get(session,
+                                                 id=amphora_id)
             if amphora is None:
                 LOG.error('Amphora failover for amphora %s failed because '
                           'there is no record of this amphora in the '
@@ -930,14 +971,16 @@ class ControllerWorker(object):
                             'was submitted for failover. Deleting it from the '
                             'amphora health table to exclude it from health '
                             'checks and skipping the failover.', amphora.id)
-                self._amphora_health_repo.delete(db_apis.get_session(),
-                                                 amphora_id=amphora.id)
+                with session.begin():
+                    self._amphora_health_repo.delete(session,
+                                                     amphora_id=amphora.id)
                 return
 
             loadbalancer = None
             if amphora.load_balancer_id:
-                loadbalancer = self._lb_repo.get(db_apis.get_session(),
-                                                 id=amphora.load_balancer_id)
+                with session.begin():
+                    loadbalancer = self._lb_repo.get(
+                        session, id=amphora.load_balancer_id)
             lb_amp_count = None
             if loadbalancer:
                 if loadbalancer.topology == constants.TOPOLOGY_ACTIVE_STANDBY:
@@ -956,18 +999,21 @@ class ControllerWorker(object):
                 # Even if the LB doesn't have a flavor, create one and
                 # pass through the topology.
                 if loadbalancer.flavor_id:
-                    flavor_dict = self._flavor_repo.get_flavor_metadata_dict(
-                        db_apis.get_session(), loadbalancer.flavor_id)
+                    with session.begin():
+                        flavor_dict = (
+                            self._flavor_repo.get_flavor_metadata_dict(
+                                session, loadbalancer.flavor_id))
                     flavor_dict[constants.LOADBALANCER_TOPOLOGY] = (
                         loadbalancer.topology)
                 else:
                     flavor_dict = {constants.LOADBALANCER_TOPOLOGY:
                                    loadbalancer.topology}
                 if loadbalancer.availability_zone:
-                    az_metadata = (
-                        self._az_repo.get_availability_zone_metadata_dict(
-                            db_apis.get_session(),
-                            loadbalancer.availability_zone))
+                    with session.begin():
+                        az_metadata = (
+                            self._az_repo.get_availability_zone_metadata_dict(
+                                session,
+                                loadbalancer.availability_zone))
                 vip_dict = loadbalancer.vip.to_dict()
                 additional_vip_dicts = [
                     av.to_dict()
@@ -1003,12 +1049,14 @@ class ControllerWorker(object):
             with excutils.save_and_reraise_exception(reraise=reraise):
                 LOG.exception("Amphora %s failover exception: %s",
                               amphora_id, str(e))
-                self._amphora_repo.update(db_apis.get_session(),
-                                          amphora_id, status=constants.ERROR)
-                if amphora and amphora.load_balancer_id:
-                    self._lb_repo.update(
-                        db_apis.get_session(), amphora.load_balancer_id,
-                        provisioning_status=constants.ERROR)
+                with session.begin():
+                    self._amphora_repo.update(session,
+                                              amphora_id,
+                                              status=constants.ERROR)
+                    if amphora and amphora.load_balancer_id:
+                        self._lb_repo.update(
+                            session, amphora.load_balancer_id,
+                            provisioning_status=constants.ERROR)
 
     @staticmethod
     def _get_amphorae_for_failover(load_balancer):
@@ -1084,8 +1132,10 @@ class ControllerWorker(object):
                                                     found.
         """
         try:
-            lb = self._lb_repo.get(db_apis.get_session(),
-                                   id=load_balancer_id)
+            session = db_apis.get_session()
+            with session.begin():
+                lb = self._lb_repo.get(session,
+                                       id=load_balancer_id)
             if lb is None:
                 raise exceptions.NotFound(resource=constants.LOADBALANCER,
                                           id=load_balancer_id)
@@ -1113,8 +1163,9 @@ class ControllerWorker(object):
             # here for the amphora to be created with the correct
             # configuration.
             if lb.flavor_id:
-                flavor = self._flavor_repo.get_flavor_metadata_dict(
-                    db_apis.get_session(), lb.flavor_id)
+                with session.begin():
+                    flavor = self._flavor_repo.get_flavor_metadata_dict(
+                        session, lb.flavor_id)
                 flavor[constants.LOADBALANCER_TOPOLOGY] = lb.topology
             else:
                 flavor = {constants.LOADBALANCER_TOPOLOGY: lb.topology}
@@ -1136,9 +1187,10 @@ class ControllerWorker(object):
                              constants.FLAVOR: flavor}
 
             if lb.availability_zone:
-                stored_params[constants.AVAILABILITY_ZONE] = (
-                    self._az_repo.get_availability_zone_metadata_dict(
-                        db_apis.get_session(), lb.availability_zone))
+                with session.begin():
+                    stored_params[constants.AVAILABILITY_ZONE] = (
+                        self._az_repo.get_availability_zone_metadata_dict(
+                            session, lb.availability_zone))
             else:
                 stored_params[constants.AVAILABILITY_ZONE] = {}
 
@@ -1153,9 +1205,10 @@ class ControllerWorker(object):
             with excutils.save_and_reraise_exception(reraise=False):
                 LOG.exception("LB %(lbid)s failover exception: %(exc)s",
                               {'lbid': load_balancer_id, 'exc': str(e)})
-                self._lb_repo.update(
-                    db_apis.get_session(), load_balancer_id,
-                    provisioning_status=constants.ERROR)
+                with session.begin():
+                    self._lb_repo.update(
+                        session, load_balancer_id,
+                        provisioning_status=constants.ERROR)
 
     def amphora_cert_rotation(self, amphora_id):
         """Perform cert rotation for an amphora.
@@ -1165,8 +1218,10 @@ class ControllerWorker(object):
         :raises AmphoraNotFound: The referenced amphora was not found
         """
 
-        amp = self._amphora_repo.get(db_apis.get_session(),
-                                     id=amphora_id)
+        session = db_apis.get_session()
+        with session.begin():
+            amp = self._amphora_repo.get(session,
+                                         id=amphora_id)
         LOG.info("Start amphora cert rotation, amphora's id is: %s",
                  amphora_id)
 
@@ -1191,13 +1246,15 @@ class ControllerWorker(object):
         """
         LOG.info("Start amphora agent configuration update, amphora's id "
                  "is: %s", amphora_id)
-        amp = self._amphora_repo.get(db_apis.get_session(), id=amphora_id)
-        lb = self._amphora_repo.get_lb_for_amphora(db_apis.get_session(),
-                                                   amphora_id)
-        flavor = {}
-        if lb.flavor_id:
-            flavor = self._flavor_repo.get_flavor_metadata_dict(
-                db_apis.get_session(), lb.flavor_id)
+        session = db_apis.get_session()
+        with session.begin():
+            amp = self._amphora_repo.get(session, id=amphora_id)
+            lb = self._amphora_repo.get_lb_for_amphora(session,
+                                                       amphora_id)
+            flavor = {}
+            if lb.flavor_id:
+                flavor = self._flavor_repo.get_flavor_metadata_dict(
+                    session, lb.flavor_id)
 
         store = {constants.AMPHORA: amp.to_dict(),
                  constants.FLAVOR: flavor}

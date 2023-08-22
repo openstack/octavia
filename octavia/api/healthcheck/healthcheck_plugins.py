@@ -42,8 +42,10 @@ class OctaviaDBHealthcheck(pluginbase.HealthcheckBaseExtension):
                 result = self.last_result
                 message = self.last_message
             else:
-                result, message = healthcheck.check_database_connection(
-                    db_apis.get_session())
+                session = db_apis.get_session()
+                with session.begin():
+                    result, message = healthcheck.check_database_connection(
+                        session)
                 self.last_check = datetime.datetime.now()
                 self.last_result = result
                 self.last_message = message

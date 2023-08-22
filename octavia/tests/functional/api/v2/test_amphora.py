@@ -40,6 +40,7 @@ class TestAmphora(base.BaseAPITest):
         self.project_id = self.lb.get('project_id')
         self.set_lb_status(self.lb_id)
         self.amp_args = {
+            'id': uuidutils.generate_uuid(),
             'load_balancer_id': self.lb_id,
             'compute_id': uuidutils.generate_uuid(),
             'lb_network_ip': '192.168.1.2',
@@ -91,9 +92,11 @@ class TestAmphora(base.BaseAPITest):
                                     'total_connections': 9}
         self.ref_amp_stats = [self.listener1_amp_stats,
                               self.listener2_amp_stats]
+        self.session.commit()
 
     def _create_additional_amp(self):
         amp_args = {
+            'id': uuidutils.generate_uuid(),
             'load_balancer_id': None,
             'compute_id': uuidutils.generate_uuid(),
             'lb_network_ip': '192.168.1.2',
@@ -109,7 +112,8 @@ class TestAmphora(base.BaseAPITest):
             'vrrp_id': 1,
             'vrrp_priority': 100,
         }
-        return self.amphora_repo.create(self.session, **amp_args)
+        with self.session.begin():
+            return self.amphora_repo.create(self.session, **amp_args)
 
     def _assert_amp_equal(self, source, response):
         self.assertEqual(source.pop('load_balancer_id'),
@@ -130,9 +134,11 @@ class TestAmphora(base.BaseAPITest):
     @mock.patch('oslo_messaging.RPCClient.cast')
     def test_delete(self, mock_cast):
         self.amp_args = {
+            'id': uuidutils.generate_uuid(),
             'status': constants.AMPHORA_READY,
         }
-        amp = self.amphora_repo.create(self.session, **self.amp_args)
+        with self.session.begin():
+            amp = self.amphora_repo.create(self.session, **self.amp_args)
 
         self.delete(self.AMPHORA_PATH.format(
             amphora_id=amp.id), status=204)
@@ -154,9 +160,11 @@ class TestAmphora(base.BaseAPITest):
     @mock.patch('oslo_messaging.RPCClient.cast')
     def test_delete_immutable(self, mock_cast):
         self.amp_args = {
+            'id': uuidutils.generate_uuid(),
             'status': constants.AMPHORA_ALLOCATED,
         }
-        amp = self.amphora_repo.create(self.session, **self.amp_args)
+        with self.session.begin():
+            amp = self.amphora_repo.create(self.session, **self.amp_args)
 
         self.delete(self.AMPHORA_PATH.format(
             amphora_id=amp.id), status=409)
@@ -166,9 +174,11 @@ class TestAmphora(base.BaseAPITest):
     @mock.patch('oslo_messaging.RPCClient.cast')
     def test_delete_authorized(self, mock_cast):
         self.amp_args = {
+            'id': uuidutils.generate_uuid(),
             'status': constants.AMPHORA_READY,
         }
-        amp = self.amphora_repo.create(self.session, **self.amp_args)
+        with self.session.begin():
+            amp = self.amphora_repo.create(self.session, **self.amp_args)
 
         self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
         auth_strategy = self.conf.conf.api_settings.get('auth_strategy')
@@ -208,9 +218,11 @@ class TestAmphora(base.BaseAPITest):
     @mock.patch('oslo_messaging.RPCClient.cast')
     def test_delete_not_authorized(self, mock_cast):
         self.amp_args = {
+            'id': uuidutils.generate_uuid(),
             'status': constants.AMPHORA_READY,
         }
-        amp = self.amphora_repo.create(self.session, **self.amp_args)
+        with self.session.begin():
+            amp = self.amphora_repo.create(self.session, **self.amp_args)
 
         self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
         auth_strategy = self.conf.conf.api_settings.get('auth_strategy')
@@ -567,6 +579,7 @@ class TestAmphora(base.BaseAPITest):
         self.lb2_id = self.lb2.get('id')
         self.set_lb_status(self.lb2_id)
         self.amp2_args = {
+            'id': uuidutils.generate_uuid(),
             'load_balancer_id': self.lb2_id,
             'compute_id': uuidutils.generate_uuid(),
             'lb_network_ip': '192.168.1.20',

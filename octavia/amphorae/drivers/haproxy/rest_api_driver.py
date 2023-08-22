@@ -37,7 +37,7 @@ import octavia.common.jinja.haproxy.combined_listeners.jinja_cfg as jinja_combo
 from octavia.common.jinja.lvs import jinja_cfg as jinja_udp_cfg
 from octavia.common.tls_utils import cert_parser
 from octavia.common import utils
-from octavia.db import api as db_apis
+from octavia.db import api as db_api
 from octavia.db import models as db_models
 from octavia.db import repositories as repo
 
@@ -182,9 +182,10 @@ class HaproxyAmphoraLoadBalancerDriver(
                                   '"%s". Skipping this listener.',
                                   listener.id, str(e))
                     listener_repo = repo.ListenerRepository()
-                    listener_repo.update(db_apis.get_session(), listener.id,
-                                         provisioning_status=consts.ERROR,
-                                         operating_status=consts.ERROR)
+                    with db_api.session().begin() as session:
+                        listener_repo.update(session, listener.id,
+                                             provisioning_status=consts.ERROR,
+                                             operating_status=consts.ERROR)
 
         if has_tcp:
             if listeners_to_update:

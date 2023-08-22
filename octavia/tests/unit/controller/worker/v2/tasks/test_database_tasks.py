@@ -112,7 +112,7 @@ _compute_mock_dict = {
 @mock.patch('octavia.db.repositories.AmphoraRepository.update')
 @mock.patch('octavia.db.repositories.ListenerRepository.update')
 @mock.patch('octavia.db.repositories.LoadBalancerRepository.update')
-@mock.patch('octavia.db.api.get_session', return_value='TEST')
+@mock.patch('octavia.db.api.session')
 @mock.patch('octavia.controller.worker.v2.tasks.database_tasks.LOG')
 @mock.patch('oslo_utils.uuidutils.generate_uuid', return_value=AMP_ID)
 class TestDatabaseTasks(base.TestCase):
@@ -194,8 +194,10 @@ class TestDatabaseTasks(base.TestCase):
         create_amp_in_db = database_tasks.CreateAmphoraInDB()
         amp_id = create_amp_in_db.execute()
 
+        mock_session = mock_get_session().begin().__enter__()
+
         repo.AmphoraRepository.create.assert_called_once_with(
-            'TEST',
+            mock_session,
             id=AMP_ID,
             load_balancer_id=None,
             status=constants.PENDING_CREATE,
@@ -211,7 +213,7 @@ class TestDatabaseTasks(base.TestCase):
         create_amp_in_db.revert(result='AMP')
         self.assertTrue(mock_amphora_repo_delete.called)
         mock_amphora_repo_delete.assert_called_once_with(
-            'TEST',
+            mock_session,
             id='AMP')
 
         # Test revert with exception
@@ -220,7 +222,7 @@ class TestDatabaseTasks(base.TestCase):
         create_amp_in_db.revert(result='AMP')
         self.assertTrue(mock_amphora_repo_delete.called)
         mock_amphora_repo_delete.assert_called_once_with(
-            'TEST',
+            mock_session,
             id='AMP')
 
     @mock.patch('octavia.db.repositories.ListenerRepository.delete')
@@ -237,8 +239,10 @@ class TestDatabaseTasks(base.TestCase):
         delete_listener = database_tasks.DeleteListenerInDB()
         delete_listener.execute({constants.LISTENER_ID: LISTENER_ID})
 
+        mock_session = mock_get_session().begin().__enter__()
+
         repo.ListenerRepository.delete.assert_called_once_with(
-            'TEST',
+            mock_session,
             id=LISTENER_ID)
 
         # Test the revert
@@ -262,15 +266,17 @@ class TestDatabaseTasks(base.TestCase):
         delete_health_mon = database_tasks.DeleteHealthMonitorInDB()
         delete_health_mon.execute(self.health_mon_mock)
 
+        mock_session = mock_get_session().begin().__enter__()
+
         repo.HealthMonitorRepository.delete.assert_called_once_with(
-            'TEST', id=HM_ID)
+            mock_session, id=HM_ID)
 
         # Test the revert
         mock_health_mon_repo_delete.reset_mock()
         delete_health_mon.revert(self.health_mon_mock)
 
         repo.HealthMonitorRepository.update.assert_called_once_with(
-            'TEST', id=HM_ID, provisioning_status=constants.ERROR)
+            mock_session, id=HM_ID, provisioning_status=constants.ERROR)
 
         # Test Not Found Exception
         mock_health_mon_repo_delete.reset_mock()
@@ -278,7 +284,7 @@ class TestDatabaseTasks(base.TestCase):
         delete_health_mon.execute(self.health_mon_mock)
 
         repo.HealthMonitorRepository.delete.assert_called_once_with(
-            'TEST', id=HM_ID)
+            mock_session, id=HM_ID)
 
     @mock.patch('octavia.db.repositories.HealthMonitorRepository.update')
     @mock.patch('octavia.db.repositories.HealthMonitorRepository.delete')
@@ -298,8 +304,10 @@ class TestDatabaseTasks(base.TestCase):
         delete_health_mon = database_tasks.DeleteHealthMonitorInDBByPool()
         delete_health_mon.execute(POOL_ID)
 
+        mock_session = mock_get_session().begin().__enter__()
+
         repo.HealthMonitorRepository.delete.assert_called_once_with(
-            'TEST',
+            mock_session,
             id=HM_ID)
 
         # Test the revert
@@ -307,11 +315,11 @@ class TestDatabaseTasks(base.TestCase):
         delete_health_mon.revert(POOL_ID)
 
         repo.HealthMonitorRepository.update.assert_called_once_with(
-            'TEST', id=HM_ID, provisioning_status=constants.ERROR)
+            mock_session, id=HM_ID, provisioning_status=constants.ERROR)
 
 # TODO(johnsom) fix once provisioning status added
 #        repo.HealthMonitorRepository.update.assert_called_once_with(
-#            'TEST',
+#            mock_session,
 #            POOL_ID,
 #            provisioning_status=constants.ERROR)
 
@@ -329,8 +337,10 @@ class TestDatabaseTasks(base.TestCase):
         delete_member = database_tasks.DeleteMemberInDB()
         delete_member.execute(self.member_mock)
 
+        mock_session = mock_get_session().begin().__enter__()
+
         repo.MemberRepository.delete.assert_called_once_with(
-            'TEST',
+            mock_session,
             id=MEMBER_ID)
 
         # Test the revert
@@ -340,7 +350,7 @@ class TestDatabaseTasks(base.TestCase):
 
 # TODO(johnsom) Fix
 #        repo.MemberRepository.delete.assert_called_once_with(
-#            'TEST',
+#            mock_session,
 #            MEMBER_ID)
 
     @mock.patch('octavia.db.repositories.PoolRepository.delete')
@@ -357,8 +367,10 @@ class TestDatabaseTasks(base.TestCase):
         delete_pool = database_tasks.DeletePoolInDB()
         delete_pool.execute(POOL_ID)
 
+        mock_session = mock_get_session().begin().__enter__()
+
         repo.PoolRepository.delete.assert_called_once_with(
-            'TEST',
+            mock_session,
             id=POOL_ID)
 
         # Test the revert
@@ -368,7 +380,7 @@ class TestDatabaseTasks(base.TestCase):
 
 # TODO(johnsom) Fix
 #        repo.PoolRepository.update.assert_called_once_with(
-#            'TEST',
+#            mock_session,
 #            POOL_ID,
 #            operating_status=constants.ERROR)
 
@@ -386,8 +398,10 @@ class TestDatabaseTasks(base.TestCase):
         delete_l7policy = database_tasks.DeleteL7PolicyInDB()
         delete_l7policy.execute(self.l7policy_mock)
 
+        mock_session = mock_get_session().begin().__enter__()
+
         repo.L7PolicyRepository.delete.assert_called_once_with(
-            'TEST',
+            mock_session,
             id=L7POLICY_ID)
 
         # Test the revert
@@ -397,7 +411,7 @@ class TestDatabaseTasks(base.TestCase):
 
 # TODO(sbalukoff) Fix
 #        repo.ListenerRepository.update.assert_called_once_with(
-#            'TEST',
+#            mock_session,
 #            LISTENER_ID,
 #            operating_status=constants.ERROR)
 
@@ -415,8 +429,10 @@ class TestDatabaseTasks(base.TestCase):
         delete_l7rule = database_tasks.DeleteL7RuleInDB()
         delete_l7rule.execute(self.l7rule_mock)
 
+        mock_session = mock_get_session().begin().__enter__()
+
         repo.L7RuleRepository.delete.assert_called_once_with(
-            'TEST',
+            mock_session,
             id=L7RULE_ID)
 
         # Test the revert
@@ -426,7 +442,7 @@ class TestDatabaseTasks(base.TestCase):
 
 # TODO(sbalukoff) Fix
 #        repo.ListenerRepository.update.assert_called_once_with(
-#            'TEST',
+#            mock_session,
 #            LISTENER_ID,
 #            operating_status=constants.ERROR)
 
@@ -445,8 +461,10 @@ class TestDatabaseTasks(base.TestCase):
         reload_amp = database_tasks.ReloadAmphora()
         amp = reload_amp.execute(self.amphora)
 
+        mock_session = mock_get_session().begin().__enter__()
+
         repo.AmphoraRepository.get.assert_called_once_with(
-            'TEST',
+            mock_session,
             id=AMP_ID)
 
         self.assertEqual(_db_amphora_mock.to_dict(), amp)
@@ -466,8 +484,10 @@ class TestDatabaseTasks(base.TestCase):
         reload_lb = database_tasks.ReloadLoadBalancer()
         lb = reload_lb.execute(LB_ID)
 
+        mock_session = mock_get_session().begin().__enter__()
+
         repo.LoadBalancerRepository.get.assert_called_once_with(
-            'TEST',
+            mock_session,
             id=LB_ID)
 
         self.assertEqual(self.loadbalancer_mock, lb)
@@ -489,13 +509,15 @@ class TestDatabaseTasks(base.TestCase):
         update_vip = database_tasks.UpdateVIPAfterAllocation()
         loadbalancer = update_vip.execute(LB_ID, _vip_mock.to_dict())
 
+        mock_session = mock_get_session().begin().__enter__()
+
         self.assertEqual(self.loadbalancer_mock, loadbalancer)
-        mock_vip_update.assert_called_once_with('TEST',
+        mock_vip_update.assert_called_once_with(mock_session,
                                                 LB_ID,
                                                 port_id=PORT_ID,
                                                 subnet_id=SUBNET_ID,
                                                 ip_address=VIP_IP)
-        mock_loadbalancer_get.assert_called_once_with('TEST',
+        mock_loadbalancer_get.assert_called_once_with(mock_session,
                                                       id=LB_ID)
 
     @mock.patch('octavia.db.repositories.LoadBalancerRepository.get',
@@ -524,14 +546,18 @@ class TestDatabaseTasks(base.TestCase):
             "port_id": PORT_ID3
         }
 
+        mock_session = mock_get_session().begin().__enter__()
+
         update_additional_vips = (
             database_tasks.UpdateAdditionalVIPsAfterAllocation())
         update_additional_vips.execute(
             LB_ID, [additional_vip1_dict, additional_vip2_dict])
         mock_additional_vip_update.assert_any_call(
-            'TEST', LB_ID, SUBNET_ID2, ip_address=VIP_IP2, port_id=PORT_ID2)
+            mock_session, LB_ID, SUBNET_ID2, ip_address=VIP_IP2,
+            port_id=PORT_ID2)
         mock_additional_vip_update.assert_any_call(
-            'TEST', LB_ID, SUBNET_ID3, ip_address=VIP_IP3, port_id=PORT_ID3)
+            mock_session, LB_ID, SUBNET_ID3, ip_address=VIP_IP3,
+            port_id=PORT_ID3)
 
     def test_update_amphora_vip_data(self,
                                      mock_generate_uuid,
@@ -545,8 +571,10 @@ class TestDatabaseTasks(base.TestCase):
         update_amp_vip_data = database_tasks.UpdateAmphoraeVIPData()
         update_amp_vip_data.execute([self.amphora])
 
+        mock_session = mock_get_session().begin().__enter__()
+
         mock_amphora_repo_update.assert_called_once_with(
-            'TEST',
+            mock_session,
             AMP_ID,
             vrrp_ip=VRRP_IP,
             ha_ip=HA_IP,
@@ -565,8 +593,10 @@ class TestDatabaseTasks(base.TestCase):
         update_amp_vip_data2 = database_tasks.UpdateAmphoraVIPData()
         update_amp_vip_data2.execute(self.amphora)
 
+        mock_session = mock_get_session().begin().__enter__()
+
         mock_amphora_repo_update.assert_called_once_with(
-            'TEST',
+            mock_session,
             AMP_ID,
             vrrp_ip=VRRP_IP,
             ha_ip=HA_IP,
@@ -593,8 +623,10 @@ class TestDatabaseTasks(base.TestCase):
         update_amp_fo_details = database_tasks.UpdateAmpFailoverDetails()
         update_amp_fo_details.execute(amphora_dict, vip_dict, base_port_dict)
 
+        mock_session = mock_get_session().begin().__enter__()
+
         mock_amphora_repo_update.assert_called_once_with(
-            'TEST',
+            mock_session,
             AMP_ID,
             vrrp_ip=VRRP_IP,
             ha_ip=HA_IP,
@@ -617,14 +649,16 @@ class TestDatabaseTasks(base.TestCase):
         assoc_fo_amp_lb_id = database_tasks.AssociateFailoverAmphoraWithLBID()
         assoc_fo_amp_lb_id.execute(AMP_ID, LB_ID)
 
-        mock_associate.assert_called_once_with('TEST',
+        mock_session = mock_get_session().begin().__enter__()
+
+        mock_associate.assert_called_once_with(mock_session,
                                                load_balancer_id=LB_ID,
                                                amphora_id=AMP_ID)
 
         # Test revert
         assoc_fo_amp_lb_id.revert(AMP_ID)
 
-        mock_amphora_repo_update.assert_called_once_with('TEST',
+        mock_amphora_repo_update.assert_called_once_with(mock_session,
                                                          AMP_ID,
                                                          loadbalancer_id=None)
 
@@ -634,7 +668,7 @@ class TestDatabaseTasks(base.TestCase):
 
         assoc_fo_amp_lb_id.revert(AMP_ID)
 
-        mock_amphora_repo_update.assert_called_once_with('TEST',
+        mock_amphora_repo_update.assert_called_once_with(mock_session,
                                                          AMP_ID,
                                                          loadbalancer_id=None)
 
@@ -657,8 +691,10 @@ class TestDatabaseTasks(base.TestCase):
                                   MarkLBAmphoraeDeletedInDB())
         mark_amp_deleted_in_db.execute(self.loadbalancer_mock)
 
+        mock_session = mock_get_session().begin().__enter__()
+
         repo.AmphoraRepository.update.assert_called_once_with(
-            'TEST',
+            mock_session,
             id=AMP_ID,
             status=constants.DELETED)
 
@@ -682,8 +718,10 @@ class TestDatabaseTasks(base.TestCase):
         mark_amp_allocated_in_db.execute(self.amphora,
                                          LB_ID)
 
+        mock_session = mock_get_session().begin().__enter__()
+
         repo.AmphoraRepository.update.assert_called_once_with(
-            'TEST',
+            mock_session,
             AMP_ID,
             status=constants.AMPHORA_ALLOCATED,
             compute_id=COMPUTE_ID,
@@ -697,7 +735,7 @@ class TestDatabaseTasks(base.TestCase):
                                         LB_ID)
 
         repo.AmphoraRepository.update.assert_called_once_with(
-            'TEST',
+            mock_session,
             id=AMP_ID,
             status=constants.ERROR)
 
@@ -709,7 +747,7 @@ class TestDatabaseTasks(base.TestCase):
                                         LB_ID)
 
         repo.AmphoraRepository.update.assert_called_once_with(
-            'TEST',
+            mock_session,
             id=AMP_ID,
             status=constants.ERROR)
 
@@ -726,8 +764,10 @@ class TestDatabaseTasks(base.TestCase):
         mark_amp_booting_in_db.execute(_db_amphora_mock.id,
                                        _db_amphora_mock.compute_id)
 
+        mock_session = mock_get_session().begin().__enter__()
+
         repo.AmphoraRepository.update.assert_called_once_with(
-            'TEST',
+            mock_session,
             AMP_ID,
             status=constants.AMPHORA_BOOTING,
             compute_id=COMPUTE_ID)
@@ -739,7 +779,7 @@ class TestDatabaseTasks(base.TestCase):
                                       _db_amphora_mock.compute_id)
 
         repo.AmphoraRepository.update.assert_called_once_with(
-            'TEST',
+            mock_session,
             AMP_ID,
             status=constants.ERROR,
             compute_id=COMPUTE_ID)
@@ -752,7 +792,7 @@ class TestDatabaseTasks(base.TestCase):
                                       _db_amphora_mock.compute_id)
 
         repo.AmphoraRepository.update.assert_called_once_with(
-            'TEST',
+            mock_session,
             AMP_ID,
             status=constants.ERROR,
             compute_id=COMPUTE_ID)
@@ -769,8 +809,10 @@ class TestDatabaseTasks(base.TestCase):
         mark_amp_deleted_in_db = database_tasks.MarkAmphoraDeletedInDB()
         mark_amp_deleted_in_db.execute(self.amphora)
 
+        mock_session = mock_get_session().begin().__enter__()
+
         repo.AmphoraRepository.update.assert_called_once_with(
-            'TEST',
+            mock_session,
             AMP_ID,
             status=constants.DELETED)
 
@@ -779,7 +821,7 @@ class TestDatabaseTasks(base.TestCase):
         mark_amp_deleted_in_db.revert(self.amphora)
 
         repo.AmphoraRepository.update.assert_called_once_with(
-            'TEST',
+            mock_session,
             id=AMP_ID,
             status=constants.ERROR)
 
@@ -789,7 +831,7 @@ class TestDatabaseTasks(base.TestCase):
         mark_amp_deleted_in_db.revert(self.amphora)
 
         repo.AmphoraRepository.update.assert_called_once_with(
-            'TEST',
+            mock_session,
             id=AMP_ID,
             status=constants.ERROR)
 
@@ -806,8 +848,10 @@ class TestDatabaseTasks(base.TestCase):
                                          MarkAmphoraPendingDeleteInDB())
         mark_amp_pending_delete_in_db.execute(self.amphora)
 
+        mock_session = mock_get_session().begin().__enter__()
+
         repo.AmphoraRepository.update.assert_called_once_with(
-            'TEST',
+            mock_session,
             AMP_ID,
             status=constants.PENDING_DELETE)
 
@@ -816,7 +860,7 @@ class TestDatabaseTasks(base.TestCase):
         mark_amp_pending_delete_in_db.revert(self.amphora)
 
         repo.AmphoraRepository.update.assert_called_once_with(
-            'TEST',
+            mock_session,
             id=AMP_ID,
             status=constants.ERROR)
 
@@ -827,7 +871,7 @@ class TestDatabaseTasks(base.TestCase):
         mark_amp_pending_delete_in_db.revert(self.amphora)
 
         repo.AmphoraRepository.update.assert_called_once_with(
-            'TEST',
+            mock_session,
             id=AMP_ID,
             status=constants.ERROR)
 
@@ -844,8 +888,10 @@ class TestDatabaseTasks(base.TestCase):
                                          MarkAmphoraPendingUpdateInDB())
         mark_amp_pending_update_in_db.execute(self.amphora)
 
+        mock_session = mock_get_session().begin().__enter__()
+
         repo.AmphoraRepository.update.assert_called_once_with(
-            'TEST',
+            mock_session,
             AMP_ID,
             status=constants.PENDING_UPDATE)
 
@@ -854,7 +900,7 @@ class TestDatabaseTasks(base.TestCase):
         mark_amp_pending_update_in_db.revert(self.amphora)
 
         repo.AmphoraRepository.update.assert_called_once_with(
-            'TEST',
+            mock_session,
             id=AMP_ID,
             status=constants.ERROR)
 
@@ -864,7 +910,7 @@ class TestDatabaseTasks(base.TestCase):
         mark_amp_pending_update_in_db.revert(self.amphora)
 
         repo.AmphoraRepository.update.assert_called_once_with(
-            'TEST',
+            mock_session,
             id=AMP_ID,
             status=constants.ERROR)
 
@@ -882,8 +928,10 @@ class TestDatabaseTasks(base.TestCase):
         mark_amp_ready_in_db = database_tasks.MarkAmphoraReadyInDB()
         mark_amp_ready_in_db.execute(self.amphora)
 
+        mock_session = mock_get_session().begin().__enter__()
+
         repo.AmphoraRepository.update.assert_called_once_with(
-            'TEST',
+            mock_session,
             AMP_ID,
             status=constants.AMPHORA_READY,
             compute_id=COMPUTE_ID,
@@ -895,7 +943,7 @@ class TestDatabaseTasks(base.TestCase):
         mark_amp_ready_in_db.revert(self.amphora)
 
         repo.AmphoraRepository.update.assert_called_once_with(
-            'TEST',
+            mock_session,
             AMP_ID,
             status=constants.ERROR,
             compute_id=COMPUTE_ID,
@@ -908,7 +956,7 @@ class TestDatabaseTasks(base.TestCase):
         mark_amp_ready_in_db.revert(self.amphora)
 
         repo.AmphoraRepository.update.assert_called_once_with(
-            'TEST',
+            mock_session,
             AMP_ID,
             status=constants.ERROR,
             compute_id=COMPUTE_ID,
@@ -928,8 +976,10 @@ class TestDatabaseTasks(base.TestCase):
         update_amphora_info = database_tasks.UpdateAmphoraInfo()
         update_amphora_info.execute(AMP_ID, _compute_mock_dict)
 
+        mock_session = mock_get_session().begin().__enter__()
+
         repo.AmphoraRepository.update.assert_called_once_with(
-            'TEST',
+            mock_session,
             AMP_ID,
             lb_network_ip=LB_NET_IP,
             cached_zone=CACHED_ZONE,
@@ -937,7 +987,7 @@ class TestDatabaseTasks(base.TestCase):
             compute_flavor=COMPUTE_FLAVOR)
 
         repo.AmphoraRepository.get.assert_called_once_with(
-            'TEST',
+            mock_session,
             id=AMP_ID)
 
     def test_mark_listener_deleted_in_db(self,
@@ -952,8 +1002,10 @@ class TestDatabaseTasks(base.TestCase):
         mark_listener_deleted = database_tasks.MarkListenerDeletedInDB()
         mark_listener_deleted.execute(self.listener_mock)
 
+        mock_session = mock_get_session().begin().__enter__()
+
         repo.ListenerRepository.update.assert_called_once_with(
-            'TEST',
+            mock_session,
             LISTENER_ID,
             provisioning_status=constants.DELETED)
 
@@ -962,7 +1014,7 @@ class TestDatabaseTasks(base.TestCase):
         mark_listener_deleted.revert(self.listener_mock)
 
         repo.ListenerRepository.update.assert_called_once_with(
-            'TEST',
+            mock_session,
             id=LISTENER_ID,
             provisioning_status=constants.ERROR)
 
@@ -972,7 +1024,7 @@ class TestDatabaseTasks(base.TestCase):
         mark_listener_deleted.revert(self.listener_mock)
 
         repo.ListenerRepository.update.assert_called_once_with(
-            'TEST',
+            mock_session,
             id=LISTENER_ID,
             provisioning_status=constants.ERROR)
 
@@ -989,8 +1041,10 @@ class TestDatabaseTasks(base.TestCase):
                                         MarkListenerPendingDeleteInDB())
         mark_listener_pending_delete.execute(self.listener_mock)
 
+        mock_session = mock_get_session().begin().__enter__()
+
         repo.ListenerRepository.update.assert_called_once_with(
-            'TEST',
+            mock_session,
             LISTENER_ID,
             provisioning_status=constants.PENDING_DELETE)
 
@@ -999,7 +1053,7 @@ class TestDatabaseTasks(base.TestCase):
         mark_listener_pending_delete.revert(self.listener_mock)
 
         repo.ListenerRepository.update.assert_called_once_with(
-            'TEST',
+            mock_session,
             id=LISTENER_ID,
             provisioning_status=constants.ERROR)
 
@@ -1009,7 +1063,7 @@ class TestDatabaseTasks(base.TestCase):
         mark_listener_pending_delete.revert(self.listener_mock)
 
         repo.ListenerRepository.update.assert_called_once_with(
-            'TEST',
+            mock_session,
             id=LISTENER_ID,
             provisioning_status=constants.ERROR)
 
@@ -1031,9 +1085,12 @@ class TestDatabaseTasks(base.TestCase):
                                         MarkLBAndListenersActiveInDB())
         mark_lb_and_listeners_active.execute(LB_ID, [listener_dict])
 
-        mock_list_not_error.assert_called_once_with('TEST', LISTENER_ID)
+        mock_session = mock_get_session().begin().__enter__()
+
+        mock_list_not_error.assert_called_once_with(mock_session,
+                                                    LISTENER_ID)
         repo.LoadBalancerRepository.update.assert_called_once_with(
-            'TEST',
+            mock_session,
             LB_ID,
             provisioning_status=constants.ACTIVE)
 
@@ -1047,9 +1104,10 @@ class TestDatabaseTasks(base.TestCase):
                                         MarkLBAndListenersActiveInDB())
         mark_lb_and_listeners_active.execute(None, [listener_dict])
 
-        mock_list_not_error.assert_called_once_with('TEST', LISTENER_ID)
+        mock_list_not_error.assert_called_once_with(mock_session,
+                                                    LISTENER_ID)
         repo.LoadBalancerRepository.update.assert_called_once_with(
-            'TEST',
+            mock_session,
             LB_ID,
             provisioning_status=constants.ACTIVE)
 
@@ -1065,7 +1123,7 @@ class TestDatabaseTasks(base.TestCase):
         mark_lb_and_listeners_active.revert(LB_ID, [listener_dict])
 
         repo.ListenerRepository.update.assert_called_once_with(
-            'TEST',
+            mock_session,
             id=LISTENER_ID,
             provisioning_status=constants.ERROR)
         repo.LoadBalancerRepository.update.assert_not_called()
@@ -1077,7 +1135,7 @@ class TestDatabaseTasks(base.TestCase):
         mark_lb_and_listeners_active.revert(None, [listener_dict])
 
         repo.ListenerRepository.update.assert_called_once_with(
-            'TEST',
+            mock_session,
             id=LISTENER_ID,
             provisioning_status=constants.ERROR)
         repo.LoadBalancerRepository.update.assert_not_called()
@@ -1100,7 +1158,7 @@ class TestDatabaseTasks(base.TestCase):
         mark_lb_and_listeners_active.revert(LB_ID, [listener_dict])
 
         repo.ListenerRepository.update.assert_called_once_with(
-            'TEST',
+            mock_session,
             id=LISTENER_ID,
             provisioning_status=constants.ERROR)
         repo.LoadBalancerRepository.update.assert_not_called()
@@ -1108,14 +1166,14 @@ class TestDatabaseTasks(base.TestCase):
     @mock.patch('octavia.common.tls_utils.cert_parser.get_cert_expiration',
                 return_value=_cert_mock)
     def test_update_amphora_db_cert_exp(self,
+                                        mock_get_cert_exp,
                                         mock_generate_uuid,
                                         mock_LOG,
                                         mock_get_session,
                                         mock_loadbalancer_repo_update,
                                         mock_listener_repo_update,
                                         mock_amphora_repo_update,
-                                        mock_amphora_repo_delete,
-                                        mock_get_cert_exp):
+                                        mock_amphora_repo_delete):
 
         update_amp_cert = database_tasks.UpdateAmphoraDBCertExpiration()
         key = utils.get_compatible_server_certs_key_passphrase()
@@ -1125,8 +1183,10 @@ class TestDatabaseTasks(base.TestCase):
         ).decode('utf-8')
         update_amp_cert.execute(_db_amphora_mock.id, _pem_mock)
 
+        mock_session = mock_get_session().begin().__enter__()
+
         repo.AmphoraRepository.update.assert_called_once_with(
-            'TEST',
+            mock_session,
             AMP_ID,
             cert_expiration=_cert_mock)
 
@@ -1140,8 +1200,10 @@ class TestDatabaseTasks(base.TestCase):
                                                mock_amphora_repo_delete):
         amp_cert_busy_to_F = database_tasks.UpdateAmphoraCertBusyToFalse()
         amp_cert_busy_to_F.execute(AMP_ID)
+        mock_session = mock_get_session().begin().__enter__()
+
         repo.AmphoraRepository.update.assert_called_once_with(
-            'TEST',
+            mock_session,
             AMP_ID,
             cert_busy=False)
 
@@ -1157,8 +1219,10 @@ class TestDatabaseTasks(base.TestCase):
         mark_loadbalancer_active = database_tasks.MarkLBActiveInDB()
         mark_loadbalancer_active.execute(self.loadbalancer_mock)
 
+        mock_session = mock_get_session().begin().__enter__()
+
         repo.LoadBalancerRepository.update.assert_called_once_with(
-            'TEST',
+            mock_session,
             LB_ID,
             provisioning_status=constants.ACTIVE)
         self.assertEqual(0, repo.ListenerRepository.update.call_count)
@@ -1191,8 +1255,10 @@ class TestDatabaseTasks(base.TestCase):
         mark_loadbalancer_active = database_tasks.MarkLBActiveInDBByListener()
         mark_loadbalancer_active.execute(listener_dict)
 
+        mock_session = mock_get_session().begin().__enter__()
+
         repo.LoadBalancerRepository.update.assert_called_once_with(
-            'TEST',
+            mock_session,
             LB_ID,
             provisioning_status=constants.ACTIVE)
         self.assertEqual(0, repo.ListenerRepository.update.call_count)
@@ -1229,15 +1295,17 @@ class TestDatabaseTasks(base.TestCase):
         mark_lb_active = database_tasks.MarkLBActiveInDB(mark_subobjects=True)
         mark_lb_active.execute(self.loadbalancer_mock)
 
+        mock_session = mock_get_session().begin().__enter__()
+
         repo.LoadBalancerRepository.update.assert_called_once_with(
-            'TEST',
+            mock_session,
             lb.id,
             provisioning_status=constants.ACTIVE)
         self.assertEqual(2, repo.ListenerRepository.update.call_count)
         repo.ListenerRepository.update.assert_has_calls(
-            [mock.call('TEST', listeners[0].id,
+            [mock.call(mock_session, listeners[0].id,
                        provisioning_status=constants.ACTIVE),
-             mock.call('TEST', listeners[1].id,
+             mock.call(mock_session, listeners[1].id,
                        provisioning_status=constants.ACTIVE)])
 
         mock_loadbalancer_repo_update.reset_mock()
@@ -1247,9 +1315,9 @@ class TestDatabaseTasks(base.TestCase):
         repo.LoadBalancerRepository.update.assert_not_called()
         self.assertEqual(2, repo.ListenerRepository.update.call_count)
         repo.ListenerRepository.update.assert_has_calls(
-            [mock.call('TEST', listeners[0].id,
+            [mock.call(mock_session, listeners[0].id,
                        provisioning_status=constants.ERROR),
-             mock.call('TEST', listeners[1].id,
+             mock.call(mock_session, listeners[1].id,
                        provisioning_status=constants.ERROR)])
 
     @mock.patch('octavia.db.repositories.PoolRepository.update')
@@ -1302,31 +1370,33 @@ class TestDatabaseTasks(base.TestCase):
         mock_lb_repo_get.return_value = lb
         mark_lb_active.execute(self.loadbalancer_mock)
 
+        mock_session = mock_get_session().begin().__enter__()
+
         repo.LoadBalancerRepository.update.assert_called_once_with(
-            'TEST',
+            mock_session,
             lb.id,
             provisioning_status=constants.ACTIVE)
         repo.ListenerRepository.update.assert_has_calls(
-            [mock.call('TEST', listeners[0].id,
+            [mock.call(mock_session, listeners[0].id,
                        provisioning_status=constants.ACTIVE),
-             mock.call('TEST', listeners[1].id,
+             mock.call(mock_session, listeners[1].id,
                        provisioning_status=constants.ACTIVE)])
         repo.PoolRepository.update.assert_has_calls(
-            [mock.call('TEST', default_pool.id,
+            [mock.call(mock_session, default_pool.id,
                        provisioning_status=constants.ACTIVE),
-             mock.call('TEST', redirect_pool.id,
+             mock.call(mock_session, redirect_pool.id,
                        provisioning_status=constants.ACTIVE),
-             mock.call('TEST', unused_pool.id,
+             mock.call(mock_session, unused_pool.id,
                        provisioning_status=constants.ACTIVE)])
         repo.HealthMonitorRepository.update.assert_has_calls(
-            [mock.call('TEST', health_monitor.id,
+            [mock.call(mock_session, health_monitor.id,
                        provisioning_status=constants.ACTIVE)])
         repo.L7PolicyRepository.update.assert_has_calls(
-            [mock.call('TEST', l7policies[0].id,
+            [mock.call(mock_session, l7policies[0].id,
                        provisioning_status=constants.ACTIVE)])
         self.assertEqual(1, repo.L7RuleRepository.update.call_count)
         repo.L7RuleRepository.update.assert_has_calls(
-            [mock.call('TEST', l7rules[0].id,
+            [mock.call(mock_session, l7rules[0].id,
                        provisioning_status=constants.ACTIVE)])
 
         mock_loadbalancer_repo_update.reset_mock()
@@ -1341,29 +1411,29 @@ class TestDatabaseTasks(base.TestCase):
         repo.LoadBalancerRepository.update.assert_not_called()
         self.assertEqual(2, repo.ListenerRepository.update.call_count)
         repo.ListenerRepository.update.assert_has_calls(
-            [mock.call('TEST', listeners[0].id,
+            [mock.call(mock_session, listeners[0].id,
                        provisioning_status=constants.ERROR),
-             mock.call('TEST', listeners[1].id,
+             mock.call(mock_session, listeners[1].id,
                        provisioning_status=constants.ERROR)])
         repo.PoolRepository.update.assert_has_calls(
-            [mock.call('TEST', default_pool.id,
+            [mock.call(mock_session, default_pool.id,
                        provisioning_status=constants.ERROR),
-             mock.call('TEST', redirect_pool.id,
+             mock.call(mock_session, redirect_pool.id,
                        provisioning_status=constants.ERROR),
-             mock.call('TEST', unused_pool.id,
+             mock.call(mock_session, unused_pool.id,
                        provisioning_status=constants.ERROR)
              ])
         self.assertEqual(2, repo.HealthMonitorRepository.update.call_count)
         repo.HealthMonitorRepository.update.has_calls(
-            [mock.call('TEST', health_monitor.id,
+            [mock.call(mock_session, health_monitor.id,
                        provisioning_status=constants.ERROR)])
         self.assertEqual(1, repo.L7PolicyRepository.update.call_count)
         repo.L7PolicyRepository.update.assert_has_calls(
-            [mock.call('TEST', l7policies[0].id,
+            [mock.call(mock_session, l7policies[0].id,
                        provisioning_status=constants.ERROR)])
         self.assertEqual(1, repo.L7RuleRepository.update.call_count)
         repo.L7RuleRepository.update.assert_has_calls(
-            [mock.call('TEST', l7rules[0].id,
+            [mock.call(mock_session, l7rules[0].id,
                        provisioning_status=constants.ERROR)])
 
     def test_mark_LB_deleted_in_db(self,
@@ -1378,8 +1448,10 @@ class TestDatabaseTasks(base.TestCase):
         mark_loadbalancer_deleted = database_tasks.MarkLBDeletedInDB()
         mark_loadbalancer_deleted.execute(self.loadbalancer_mock)
 
+        mock_session = mock_get_session().begin().__enter__()
+
         repo.LoadBalancerRepository.update.assert_called_once_with(
-            'TEST',
+            mock_session,
             LB_ID,
             provisioning_status=constants.DELETED)
 
@@ -1409,8 +1481,10 @@ class TestDatabaseTasks(base.TestCase):
                                             MarkLBPendingDeleteInDB())
         mark_loadbalancer_pending_delete.execute(self.loadbalancer_mock)
 
+        mock_session = mock_get_session().begin().__enter__()
+
         repo.LoadBalancerRepository.update.assert_called_once_with(
-            'TEST',
+            mock_session,
             LB_ID,
             provisioning_status=constants.PENDING_DELETE)
 
@@ -1429,8 +1503,10 @@ class TestDatabaseTasks(base.TestCase):
         update_health_mon.execute(self.health_mon_mock,
                                   {'delay': 1, 'timeout': 2})
 
+        mock_session = mock_get_session().begin().__enter__()
+
         repo.HealthMonitorRepository.update.assert_called_once_with(
-            'TEST',
+            mock_session,
             HM_ID,
             delay=1, timeout=2)
 
@@ -1439,7 +1515,7 @@ class TestDatabaseTasks(base.TestCase):
         update_health_mon.revert(self.health_mon_mock)
 
         repo.HealthMonitorRepository.update.assert_called_once_with(
-            'TEST',
+            mock_session,
             HM_ID,
             provisioning_status=constants.ERROR)
 
@@ -1449,7 +1525,7 @@ class TestDatabaseTasks(base.TestCase):
         update_health_mon.revert(self.health_mon_mock)
 
         repo.HealthMonitorRepository.update.assert_called_once_with(
-            'TEST',
+            mock_session,
             HM_ID,
             provisioning_status=constants.ERROR)
 
@@ -1466,8 +1542,10 @@ class TestDatabaseTasks(base.TestCase):
         update_load_balancer.execute(self.loadbalancer_mock,
                                      {'name': 'test', 'description': 'test2'})
 
+        mock_session = mock_get_session().begin().__enter__()
+
         repo.LoadBalancerRepository.update.assert_called_once_with(
-            'TEST',
+            mock_session,
             LB_ID,
             name='test', description='test2')
 
@@ -1489,13 +1567,15 @@ class TestDatabaseTasks(base.TestCase):
                                       'description': 'test2',
                                       'vip': {'qos_policy_id': 'fool'}})
 
+        mock_session = mock_get_session().begin().__enter__()
+
         repo.LoadBalancerRepository.update.assert_called_once_with(
-            'TEST',
+            mock_session,
             LB_ID,
             name='test', description='test2')
 
-        repo.VipRepository.update.assert_called_once_with('TEST', LB_ID,
-                                                          qos_policy_id='fool')
+        repo.VipRepository.update.assert_called_once_with(
+            mock_session, LB_ID, qos_policy_id='fool')
 
     def test_update_listener_in_db(self,
                                    mock_generate_uuid,
@@ -1511,8 +1591,10 @@ class TestDatabaseTasks(base.TestCase):
         update_listener.execute(listener_dict,
                                 {'name': 'test', 'description': 'test2'})
 
+        mock_session = mock_get_session().begin().__enter__()
+
         repo.ListenerRepository.update.assert_called_once_with(
-            'TEST',
+            mock_session,
             LISTENER_ID,
             name='test', description='test2')
 
@@ -1520,7 +1602,7 @@ class TestDatabaseTasks(base.TestCase):
         mock_listener_repo_update.reset_mock()
         update_listener.revert(listener_dict)
         repo.ListenerRepository.update.assert_called_once_with(
-            'TEST',
+            mock_session,
             id=LISTENER_ID,
             provisioning_status=constants.ERROR)
 
@@ -1529,7 +1611,7 @@ class TestDatabaseTasks(base.TestCase):
         mock_listener_repo_update.side_effect = Exception('fail')
         update_listener.revert(listener_dict)
         repo.ListenerRepository.update.assert_called_once_with(
-            'TEST',
+            mock_session,
             id=LISTENER_ID,
             provisioning_status=constants.ERROR)
 
@@ -1548,8 +1630,10 @@ class TestDatabaseTasks(base.TestCase):
         update_member.execute(self.member_mock,
                               {'weight': 1, 'ip_address': '10.1.0.0'})
 
+        mock_session = mock_get_session().begin().__enter__()
+
         repo.MemberRepository.update.assert_called_once_with(
-            'TEST',
+            mock_session,
             MEMBER_ID,
             weight=1, ip_address='10.1.0.0')
 
@@ -1558,7 +1642,7 @@ class TestDatabaseTasks(base.TestCase):
         update_member.revert(self.member_mock)
 
         repo.MemberRepository.update.assert_called_once_with(
-            'TEST',
+            mock_session,
             MEMBER_ID,
             provisioning_status=constants.ERROR)
 
@@ -1568,7 +1652,7 @@ class TestDatabaseTasks(base.TestCase):
         update_member.revert(self.member_mock)
 
         repo.MemberRepository.update.assert_called_once_with(
-            'TEST',
+            mock_session,
             MEMBER_ID,
             provisioning_status=constants.ERROR)
 
@@ -1591,8 +1675,10 @@ class TestDatabaseTasks(base.TestCase):
         update_pool.execute(POOL_ID,
                             update_dict)
 
+        mock_session = mock_get_session().begin().__enter__()
+
         repo.Repositories.update_pool_and_sp.assert_called_once_with(
-            'TEST',
+            mock_session,
             POOL_ID,
             update_dict)
 
@@ -1601,7 +1687,7 @@ class TestDatabaseTasks(base.TestCase):
         update_pool.revert(POOL_ID)
 
         repo.Repositories.update_pool_and_sp.assert_called_once_with(
-            'TEST',
+            mock_session,
             POOL_ID,
             {'provisioning_status': constants.ERROR})
 
@@ -1611,7 +1697,7 @@ class TestDatabaseTasks(base.TestCase):
         update_pool.revert(POOL_ID)
 
         repo.Repositories.update_pool_and_sp.assert_called_once_with(
-            'TEST',
+            mock_session,
             POOL_ID,
             {'provisioning_status': constants.ERROR})
 
@@ -1630,8 +1716,10 @@ class TestDatabaseTasks(base.TestCase):
         update_l7policy.execute(self.l7policy_mock,
                                 {'action': constants.L7POLICY_ACTION_REJECT})
 
+        mock_session = mock_get_session().begin().__enter__()
+
         repo.L7PolicyRepository.update.assert_called_once_with(
-            'TEST',
+            mock_session,
             L7POLICY_ID,
             action=constants.L7POLICY_ACTION_REJECT)
 
@@ -1640,7 +1728,7 @@ class TestDatabaseTasks(base.TestCase):
         update_l7policy.revert(self.l7policy_mock)
 
         repo.L7PolicyRepository.update.assert_called_once_with(
-            'TEST',
+            mock_session,
             L7POLICY_ID,
             provisioning_status=constants.ERROR)
 
@@ -1650,7 +1738,7 @@ class TestDatabaseTasks(base.TestCase):
         update_l7policy.revert(self.l7policy_mock)
 
         repo.L7PolicyRepository.update.assert_called_once_with(
-            'TEST',
+            mock_session,
             L7POLICY_ID,
             provisioning_status=constants.ERROR)
 
@@ -1674,8 +1762,10 @@ class TestDatabaseTasks(base.TestCase):
              'compare_type': constants.L7RULE_COMPARE_TYPE_STARTS_WITH,
              'value': '/api'})
 
+        mock_session = mock_get_session().begin().__enter__()
+
         repo.L7RuleRepository.update.assert_called_once_with(
-            'TEST',
+            mock_session,
             L7RULE_ID,
             type=constants.L7RULE_TYPE_PATH,
             compare_type=constants.L7RULE_COMPARE_TYPE_STARTS_WITH,
@@ -1686,7 +1776,7 @@ class TestDatabaseTasks(base.TestCase):
         update_l7rule.revert(self.l7rule_mock)
 
         repo.L7PolicyRepository.update.assert_called_once_with(
-            'TEST',
+            mock_session,
             L7POLICY_ID,
             provisioning_status=constants.ERROR)
 
@@ -1696,7 +1786,7 @@ class TestDatabaseTasks(base.TestCase):
         update_l7rule.revert(self.l7rule_mock)
 
         repo.L7PolicyRepository.update.assert_called_once_with(
-            'TEST',
+            mock_session,
             L7POLICY_ID,
             provisioning_status=constants.ERROR)
 
@@ -1734,15 +1824,18 @@ class TestDatabaseTasks(base.TestCase):
 
         mark_amp_master_indb = database_tasks.MarkAmphoraMasterInDB()
         mark_amp_master_indb.execute(self.amphora)
+
+        mock_session = mock_get_session().begin().__enter__()
+
         repo.AmphoraRepository.update.assert_called_once_with(
-            'TEST', AMP_ID, role='MASTER',
+            mock_session, AMP_ID, role='MASTER',
             vrrp_priority=constants.ROLE_MASTER_PRIORITY)
 
         mock_amphora_repo_update.reset_mock()
 
         mark_amp_master_indb.revert("BADRESULT", self.amphora)
         repo.AmphoraRepository.update.assert_called_once_with(
-            'TEST', AMP_ID, role=None, vrrp_priority=None)
+            mock_session, AMP_ID, role=None, vrrp_priority=None)
 
         mock_amphora_repo_update.reset_mock()
 
@@ -1755,35 +1848,35 @@ class TestDatabaseTasks(base.TestCase):
         mark_amp_backup_indb = database_tasks.MarkAmphoraBackupInDB()
         mark_amp_backup_indb.execute(self.amphora)
         repo.AmphoraRepository.update.assert_called_once_with(
-            'TEST', AMP_ID, role='BACKUP',
+            mock_session, AMP_ID, role='BACKUP',
             vrrp_priority=constants.ROLE_BACKUP_PRIORITY)
 
         mock_amphora_repo_update.reset_mock()
 
         mark_amp_backup_indb.revert("BADRESULT", self.amphora)
         repo.AmphoraRepository.update.assert_called_once_with(
-            'TEST', AMP_ID, role=None, vrrp_priority=None)
+            mock_session, AMP_ID, role=None, vrrp_priority=None)
 
         mock_amphora_repo_update.reset_mock()
 
         mark_amp_standalone_indb = database_tasks.MarkAmphoraStandAloneInDB()
         mark_amp_standalone_indb.execute(self.amphora)
         repo.AmphoraRepository.update.assert_called_once_with(
-            'TEST', AMP_ID, role='STANDALONE',
+            mock_session, AMP_ID, role='STANDALONE',
             vrrp_priority=None)
 
         mock_amphora_repo_update.reset_mock()
 
         mark_amp_standalone_indb.revert("BADRESULT", self.amphora)
         repo.AmphoraRepository.update.assert_called_once_with(
-            'TEST', AMP_ID, role=None, vrrp_priority=None)
+            mock_session, AMP_ID, role=None, vrrp_priority=None)
 
         # Test revert with exception
         mock_amphora_repo_update.reset_mock()
         mock_amphora_repo_update.side_effect = Exception('fail')
         mark_amp_standalone_indb.revert("BADRESULT", self.amphora)
         repo.AmphoraRepository.update.assert_called_once_with(
-            'TEST', AMP_ID, role=None, vrrp_priority=None)
+            mock_session, AMP_ID, role=None, vrrp_priority=None)
 
     @mock.patch('octavia.db.repositories.AmphoraRepository.get')
     @mock.patch('octavia.db.repositories.LoadBalancerRepository.get')
@@ -1829,7 +1922,10 @@ class TestDatabaseTasks(base.TestCase):
         mock_lb_get.return_value = _db_loadbalancer_mock
         get_list_from_lb_obj = database_tasks.GetListenersFromLoadbalancer()
         result = get_list_from_lb_obj.execute(self.loadbalancer_mock)
-        mock_listener_get.assert_called_once_with('TEST', id=_listener_mock.id)
+        mock_session = mock_get_session().begin().__enter__()
+
+        mock_listener_get.assert_called_once_with(mock_session,
+                                                  id=_listener_mock.id)
         self.assertEqual([{constants.LISTENER_ID: LISTENER_ID}], result)
 
     @mock.patch('octavia.db.repositories.LoadBalancerRepository.get')
@@ -1862,7 +1958,9 @@ class TestDatabaseTasks(base.TestCase):
         result = get_loadbalancer_obj.execute(LB_ID)
 
         self.assertEqual(self.loadbalancer_mock, result)
-        mock_lb_get.assert_called_once_with('TEST', id=LB_ID)
+        mock_session = mock_get_session().begin().__enter__()
+
+        mock_lb_get.assert_called_once_with(mock_session, id=LB_ID)
 
     @mock.patch('octavia.db.repositories.VRRPGroupRepository.create')
     def test_create_vrrp_group_for_lb(self,
@@ -1875,12 +1973,13 @@ class TestDatabaseTasks(base.TestCase):
                                       mock_amphora_repo_update,
                                       mock_amphora_repo_delete):
 
-        mock_get_session.side_effect = ['TEST',
-                                        odb_exceptions.DBDuplicateEntry]
+        mock_session = mock_get_session().begin().__enter__()
+        mock_get_session().begin().__exit__.side_effect = (
+            odb_exceptions.DBDuplicateEntry)
         create_vrrp_group = database_tasks.CreateVRRPGroupForLB()
         create_vrrp_group.execute(LB_ID)
         mock_vrrp_group_create.assert_called_once_with(
-            'TEST', load_balancer_id=LB_ID,
+            mock_session, load_balancer_id=LB_ID,
             vrrp_group_name=LB_ID.replace('-', ''),
             vrrp_auth_type=constants.VRRP_AUTH_DEFAULT,
             vrrp_auth_pass=mock_generate_uuid.return_value.replace('-',
@@ -1900,8 +1999,10 @@ class TestDatabaseTasks(base.TestCase):
                                                mock_amphora_repo_delete):
         disable_amp_health = database_tasks.DisableAmphoraHealthMonitoring()
         disable_amp_health.execute(self.amphora)
+        mock_session = mock_get_session().begin().__enter__()
+
         mock_amp_health_repo_delete.assert_called_once_with(
-            'TEST', amphora_id=AMP_ID)
+            mock_session, amphora_id=AMP_ID)
 
     @mock.patch('octavia.db.repositories.AmphoraHealthRepository.delete')
     @mock.patch('octavia.db.repositories.LoadBalancerRepository.get')
@@ -1920,8 +2021,10 @@ class TestDatabaseTasks(base.TestCase):
             database_tasks.DisableLBAmphoraeHealthMonitoring())
         mock_lb_get.return_value = _db_loadbalancer_mock
         disable_amp_health.execute(self.loadbalancer_mock)
+        mock_session = mock_get_session().begin().__enter__()
+
         mock_amp_health_repo_delete.assert_called_once_with(
-            'TEST', amphora_id=AMP_ID)
+            mock_session, amphora_id=AMP_ID)
 
     @mock.patch('octavia.db.repositories.AmphoraHealthRepository.update')
     def test_mark_amphora_health_monitoring_busy(self,
@@ -1935,8 +2038,10 @@ class TestDatabaseTasks(base.TestCase):
                                                  mock_amphora_repo_delete):
         mark_busy = database_tasks.MarkAmphoraHealthBusy()
         mark_busy.execute(self.amphora)
+        mock_session = mock_get_session().begin().__enter__()
+
         mock_amp_health_repo_update.assert_called_once_with(
-            'TEST', amphora_id=AMP_ID, busy=True)
+            mock_session, amphora_id=AMP_ID, busy=True)
 
     @mock.patch('octavia.db.repositories.AmphoraHealthRepository.update')
     @mock.patch('octavia.db.repositories.LoadBalancerRepository.get')
@@ -1955,8 +2060,10 @@ class TestDatabaseTasks(base.TestCase):
             database_tasks.MarkLBAmphoraeHealthBusy())
         mock_lb_get.return_value = _db_loadbalancer_mock
         mark_busy.execute(self.loadbalancer_mock)
+        mock_session = mock_get_session().begin().__enter__()
+
         mock_amp_health_repo_update.assert_called_once_with(
-            'TEST', amphora_id=AMP_ID, busy=True)
+            mock_session, amphora_id=AMP_ID, busy=True)
 
     def test_update_lb_server_group_in_db(self,
                                           mock_generate_uuid,
@@ -1970,8 +2077,10 @@ class TestDatabaseTasks(base.TestCase):
         update_server_group_info = database_tasks.UpdateLBServerGroupInDB()
         update_server_group_info.execute(LB_ID, SERVER_GROUP_ID)
 
+        mock_session = mock_get_session().begin().__enter__()
+
         repo.LoadBalancerRepository.update.assert_called_once_with(
-            'TEST',
+            mock_session,
             id=LB_ID,
             server_group_id=SERVER_GROUP_ID)
 
@@ -2000,8 +2109,10 @@ class TestDatabaseTasks(base.TestCase):
         mark_health_mon_active = (database_tasks.MarkHealthMonitorActiveInDB())
         mark_health_mon_active.execute(self.health_mon_mock)
 
+        mock_session = mock_get_session().begin().__enter__()
+
         mock_health_mon_repo_update.assert_called_once_with(
-            'TEST',
+            mock_session,
             HM_ID,
             operating_status=constants.ONLINE,
             provisioning_status=constants.ACTIVE)
@@ -2011,7 +2122,7 @@ class TestDatabaseTasks(base.TestCase):
         mark_health_mon_active.revert(self.health_mon_mock)
 
         mock_health_mon_repo_update.assert_called_once_with(
-            'TEST',
+            mock_session,
             id=HM_ID,
             provisioning_status=constants.ERROR)
 
@@ -2021,7 +2132,7 @@ class TestDatabaseTasks(base.TestCase):
         mark_health_mon_active.revert(self.health_mon_mock)
 
         mock_health_mon_repo_update.assert_called_once_with(
-            'TEST',
+            mock_session,
             id=HM_ID,
             provisioning_status=constants.ERROR)
 
@@ -2041,8 +2152,10 @@ class TestDatabaseTasks(base.TestCase):
                                           MarkHealthMonitorPendingCreateInDB())
         mark_health_mon_pending_create.execute(self.health_mon_mock)
 
+        mock_session = mock_get_session().begin().__enter__()
+
         mock_health_mon_repo_update.assert_called_once_with(
-            'TEST',
+            mock_session,
             HM_ID,
             provisioning_status=constants.PENDING_CREATE)
 
@@ -2051,7 +2164,7 @@ class TestDatabaseTasks(base.TestCase):
         mark_health_mon_pending_create.revert(self.health_mon_mock)
 
         mock_health_mon_repo_update.assert_called_once_with(
-            'TEST',
+            mock_session,
             id=HM_ID,
             provisioning_status=constants.ERROR)
 
@@ -2061,7 +2174,7 @@ class TestDatabaseTasks(base.TestCase):
         mark_health_mon_pending_create.revert(self.health_mon_mock)
 
         mock_health_mon_repo_update.assert_called_once_with(
-            'TEST',
+            mock_session,
             id=HM_ID,
             provisioning_status=constants.ERROR)
 
@@ -2081,8 +2194,10 @@ class TestDatabaseTasks(base.TestCase):
                                           MarkHealthMonitorPendingDeleteInDB())
         mark_health_mon_pending_delete.execute(self.health_mon_mock)
 
+        mock_session = mock_get_session().begin().__enter__()
+
         mock_health_mon_repo_update.assert_called_once_with(
-            'TEST',
+            mock_session,
             HM_ID,
             provisioning_status=constants.PENDING_DELETE)
 
@@ -2091,7 +2206,7 @@ class TestDatabaseTasks(base.TestCase):
         mark_health_mon_pending_delete.revert(self.health_mon_mock)
 
         mock_health_mon_repo_update.assert_called_once_with(
-            'TEST',
+            mock_session,
             id=HM_ID,
             provisioning_status=constants.ERROR)
 
@@ -2101,7 +2216,7 @@ class TestDatabaseTasks(base.TestCase):
         mark_health_mon_pending_delete.revert(self.health_mon_mock)
 
         mock_health_mon_repo_update.assert_called_once_with(
-            'TEST',
+            mock_session,
             id=HM_ID,
             provisioning_status=constants.ERROR)
 
@@ -2121,8 +2236,10 @@ class TestDatabaseTasks(base.TestCase):
                                           MarkHealthMonitorPendingUpdateInDB())
         mark_health_mon_pending_update.execute(self.health_mon_mock)
 
+        mock_session = mock_get_session().begin().__enter__()
+
         mock_health_mon_repo_update.assert_called_once_with(
-            'TEST',
+            mock_session,
             HM_ID,
             provisioning_status=constants.PENDING_UPDATE)
 
@@ -2131,7 +2248,7 @@ class TestDatabaseTasks(base.TestCase):
         mark_health_mon_pending_update.revert(self.health_mon_mock)
 
         mock_health_mon_repo_update.assert_called_once_with(
-            'TEST',
+            mock_session,
             id=HM_ID,
             provisioning_status=constants.ERROR)
 
@@ -2141,7 +2258,7 @@ class TestDatabaseTasks(base.TestCase):
         mark_health_mon_pending_update.revert(self.health_mon_mock)
 
         mock_health_mon_repo_update.assert_called_once_with(
-            'TEST',
+            mock_session,
             id=HM_ID,
             provisioning_status=constants.ERROR)
 
@@ -2184,7 +2301,7 @@ class TestDatabaseTasks(base.TestCase):
                                   MarkHealthMonitorsOnlineInDB())
         mark_health_mon_online.execute(mock_lb)
 
-        mock_session = 'TEST'
+        mock_session = mock_get_session().begin().__enter__()
         for mock_id in [mock_hm_def_pool.id, mock_hm_l7_policy.id]:
             mock_health_mon_repo_update.assert_called_with(
                 mock_session,
@@ -2209,8 +2326,10 @@ class TestDatabaseTasks(base.TestCase):
         mock_l7policy_repo_get.return_value = _l7policy_mock
         mark_l7policy_active.execute(self.l7policy_mock)
 
+        mock_session = mock_get_session().begin().__enter__()
+
         mock_l7policy_repo_update.assert_called_once_with(
-            'TEST',
+            mock_session,
             L7POLICY_ID,
             provisioning_status=constants.ACTIVE,
             operating_status=constants.ONLINE)
@@ -2220,7 +2339,7 @@ class TestDatabaseTasks(base.TestCase):
         mark_l7policy_active.revert(self.l7policy_mock)
 
         mock_l7policy_repo_update.assert_called_once_with(
-            'TEST',
+            mock_session,
             id=L7POLICY_ID,
             provisioning_status=constants.ERROR)
 
@@ -2230,7 +2349,7 @@ class TestDatabaseTasks(base.TestCase):
         mark_l7policy_active.revert(self.l7policy_mock)
 
         mock_l7policy_repo_update.assert_called_once_with(
-            'TEST',
+            mock_session,
             id=L7POLICY_ID,
             provisioning_status=constants.ERROR)
 
@@ -2249,8 +2368,10 @@ class TestDatabaseTasks(base.TestCase):
                                         MarkL7PolicyPendingCreateInDB())
         mark_l7policy_pending_create.execute(self.l7policy_mock)
 
+        mock_session = mock_get_session().begin().__enter__()
+
         mock_l7policy_repo_update.assert_called_once_with(
-            'TEST',
+            mock_session,
             L7POLICY_ID,
             provisioning_status=constants.PENDING_CREATE)
 
@@ -2259,7 +2380,7 @@ class TestDatabaseTasks(base.TestCase):
         mark_l7policy_pending_create.revert(self.l7policy_mock)
 
         mock_l7policy_repo_update.assert_called_once_with(
-            'TEST',
+            mock_session,
             id=L7POLICY_ID,
             provisioning_status=constants.ERROR)
 
@@ -2269,7 +2390,7 @@ class TestDatabaseTasks(base.TestCase):
         mark_l7policy_pending_create.revert(self.l7policy_mock)
 
         mock_l7policy_repo_update.assert_called_once_with(
-            'TEST',
+            mock_session,
             id=L7POLICY_ID,
             provisioning_status=constants.ERROR)
 
@@ -2288,8 +2409,10 @@ class TestDatabaseTasks(base.TestCase):
                                         MarkL7PolicyPendingDeleteInDB())
         mark_l7policy_pending_delete.execute(self.l7policy_mock)
 
+        mock_session = mock_get_session().begin().__enter__()
+
         mock_l7policy_repo_update.assert_called_once_with(
-            'TEST',
+            mock_session,
             L7POLICY_ID,
             provisioning_status=constants.PENDING_DELETE)
 
@@ -2298,7 +2421,7 @@ class TestDatabaseTasks(base.TestCase):
         mark_l7policy_pending_delete.revert(self.l7policy_mock)
 
         mock_l7policy_repo_update.assert_called_once_with(
-            'TEST',
+            mock_session,
             id=L7POLICY_ID,
             provisioning_status=constants.ERROR)
 
@@ -2308,7 +2431,7 @@ class TestDatabaseTasks(base.TestCase):
         mark_l7policy_pending_delete.revert(self.l7policy_mock)
 
         mock_l7policy_repo_update.assert_called_once_with(
-            'TEST',
+            mock_session,
             id=L7POLICY_ID,
             provisioning_status=constants.ERROR)
 
@@ -2327,8 +2450,10 @@ class TestDatabaseTasks(base.TestCase):
                                         MarkL7PolicyPendingUpdateInDB())
         mark_l7policy_pending_update.execute(self.l7policy_mock)
 
+        mock_session = mock_get_session().begin().__enter__()
+
         mock_l7policy_repo_update.assert_called_once_with(
-            'TEST',
+            mock_session,
             L7POLICY_ID,
             provisioning_status=constants.PENDING_UPDATE)
 
@@ -2337,7 +2462,7 @@ class TestDatabaseTasks(base.TestCase):
         mark_l7policy_pending_update.revert(self.l7policy_mock)
 
         mock_l7policy_repo_update.assert_called_once_with(
-            'TEST',
+            mock_session,
             id=L7POLICY_ID,
             provisioning_status=constants.ERROR)
 
@@ -2347,7 +2472,7 @@ class TestDatabaseTasks(base.TestCase):
         mark_l7policy_pending_update.revert(self.l7policy_mock)
 
         mock_l7policy_repo_update.assert_called_once_with(
-            'TEST',
+            mock_session,
             id=L7POLICY_ID,
             provisioning_status=constants.ERROR)
 
@@ -2367,8 +2492,10 @@ class TestDatabaseTasks(base.TestCase):
         mark_l7rule_active = (database_tasks.MarkL7RuleActiveInDB())
         mark_l7rule_active.execute(self.l7rule_mock)
 
+        mock_session = mock_get_session().begin().__enter__()
+
         mock_l7rule_repo_update.assert_called_once_with(
-            'TEST',
+            mock_session,
             L7RULE_ID,
             provisioning_status=constants.ACTIVE,
             operating_status=constants.ONLINE)
@@ -2378,7 +2505,7 @@ class TestDatabaseTasks(base.TestCase):
         mark_l7rule_active.revert(self.l7rule_mock)
 
         mock_l7rule_repo_update.assert_called_once_with(
-            'TEST',
+            mock_session,
             id=L7RULE_ID,
             provisioning_status=constants.ERROR)
 
@@ -2388,7 +2515,7 @@ class TestDatabaseTasks(base.TestCase):
         mark_l7rule_active.revert(self.l7rule_mock)
 
         mock_l7rule_repo_update.assert_called_once_with(
-            'TEST',
+            mock_session,
             id=L7RULE_ID,
             provisioning_status=constants.ERROR)
 
@@ -2407,8 +2534,10 @@ class TestDatabaseTasks(base.TestCase):
                                       MarkL7RulePendingCreateInDB())
         mark_l7rule_pending_create.execute(self.l7rule_mock)
 
+        mock_session = mock_get_session().begin().__enter__()
+
         mock_l7rule_repo_update.assert_called_once_with(
-            'TEST',
+            mock_session,
             L7RULE_ID,
             provisioning_status=constants.PENDING_CREATE)
 
@@ -2417,7 +2546,7 @@ class TestDatabaseTasks(base.TestCase):
         mark_l7rule_pending_create.revert(self.l7rule_mock)
 
         mock_l7rule_repo_update.assert_called_once_with(
-            'TEST',
+            mock_session,
             id=L7RULE_ID,
             provisioning_status=constants.ERROR)
 
@@ -2427,7 +2556,7 @@ class TestDatabaseTasks(base.TestCase):
         mark_l7rule_pending_create.revert(self.l7rule_mock)
 
         mock_l7rule_repo_update.assert_called_once_with(
-            'TEST',
+            mock_session,
             id=L7RULE_ID,
             provisioning_status=constants.ERROR)
 
@@ -2446,8 +2575,10 @@ class TestDatabaseTasks(base.TestCase):
                                       MarkL7RulePendingDeleteInDB())
         mark_l7rule_pending_delete.execute(self.l7rule_mock)
 
+        mock_session = mock_get_session().begin().__enter__()
+
         mock_l7rule_repo_update.assert_called_once_with(
-            'TEST',
+            mock_session,
             L7RULE_ID,
             provisioning_status=constants.PENDING_DELETE)
 
@@ -2456,7 +2587,7 @@ class TestDatabaseTasks(base.TestCase):
         mark_l7rule_pending_delete.revert(self.l7rule_mock)
 
         mock_l7rule_repo_update.assert_called_once_with(
-            'TEST',
+            mock_session,
             id=L7RULE_ID,
             provisioning_status=constants.ERROR)
 
@@ -2466,7 +2597,7 @@ class TestDatabaseTasks(base.TestCase):
         mark_l7rule_pending_delete.revert(self.l7rule_mock)
 
         mock_l7rule_repo_update.assert_called_once_with(
-            'TEST',
+            mock_session,
             id=L7RULE_ID,
             provisioning_status=constants.ERROR)
 
@@ -2485,8 +2616,10 @@ class TestDatabaseTasks(base.TestCase):
                                       MarkL7RulePendingUpdateInDB())
         mark_l7rule_pending_update.execute(self.l7rule_mock)
 
+        mock_session = mock_get_session().begin().__enter__()
+
         mock_l7rule_repo_update.assert_called_once_with(
-            'TEST',
+            mock_session,
             L7RULE_ID,
             provisioning_status=constants.PENDING_UPDATE)
 
@@ -2495,7 +2628,7 @@ class TestDatabaseTasks(base.TestCase):
         mark_l7rule_pending_update.revert(self.l7rule_mock)
 
         mock_l7rule_repo_update.assert_called_once_with(
-            'TEST',
+            mock_session,
             id=L7RULE_ID,
             provisioning_status=constants.ERROR)
 
@@ -2505,7 +2638,7 @@ class TestDatabaseTasks(base.TestCase):
         mark_l7rule_pending_update.revert(self.l7rule_mock)
 
         mock_l7rule_repo_update.assert_called_once_with(
-            'TEST',
+            mock_session,
             id=L7RULE_ID,
             provisioning_status=constants.ERROR)
 
@@ -2523,8 +2656,10 @@ class TestDatabaseTasks(base.TestCase):
         mark_member_active = (database_tasks.MarkMemberActiveInDB())
         mark_member_active.execute(self.member_mock)
 
+        mock_session = mock_get_session().begin().__enter__()
+
         mock_member_repo_update.assert_called_once_with(
-            'TEST',
+            mock_session,
             MEMBER_ID,
             provisioning_status=constants.ACTIVE)
 
@@ -2533,7 +2668,7 @@ class TestDatabaseTasks(base.TestCase):
         mark_member_active.revert(self.member_mock)
 
         mock_member_repo_update.assert_called_once_with(
-            'TEST',
+            mock_session,
             id=MEMBER_ID,
             provisioning_status=constants.ERROR)
 
@@ -2543,7 +2678,7 @@ class TestDatabaseTasks(base.TestCase):
         mark_member_active.revert(self.member_mock)
 
         mock_member_repo_update.assert_called_once_with(
-            'TEST',
+            mock_session,
             id=MEMBER_ID,
             provisioning_status=constants.ERROR)
 
@@ -2562,8 +2697,10 @@ class TestDatabaseTasks(base.TestCase):
                                       MarkMemberPendingCreateInDB())
         mark_member_pending_create.execute(self.member_mock)
 
+        mock_session = mock_get_session().begin().__enter__()
+
         mock_member_repo_update.assert_called_once_with(
-            'TEST',
+            mock_session,
             MEMBER_ID,
             provisioning_status=constants.PENDING_CREATE)
 
@@ -2572,7 +2709,7 @@ class TestDatabaseTasks(base.TestCase):
         mark_member_pending_create.revert(self.member_mock)
 
         mock_member_repo_update.assert_called_once_with(
-            'TEST',
+            mock_session,
             id=MEMBER_ID,
             provisioning_status=constants.ERROR)
 
@@ -2582,7 +2719,7 @@ class TestDatabaseTasks(base.TestCase):
         mark_member_pending_create.revert(self.member_mock)
 
         mock_member_repo_update.assert_called_once_with(
-            'TEST',
+            mock_session,
             id=MEMBER_ID,
             provisioning_status=constants.ERROR)
 
@@ -2601,8 +2738,10 @@ class TestDatabaseTasks(base.TestCase):
                                       MarkMemberPendingDeleteInDB())
         mark_member_pending_delete.execute(self.member_mock)
 
+        mock_session = mock_get_session().begin().__enter__()
+
         mock_member_repo_update.assert_called_once_with(
-            'TEST',
+            mock_session,
             MEMBER_ID,
             provisioning_status=constants.PENDING_DELETE)
 
@@ -2611,7 +2750,7 @@ class TestDatabaseTasks(base.TestCase):
         mark_member_pending_delete.revert(self.member_mock)
 
         mock_member_repo_update.assert_called_once_with(
-            'TEST',
+            mock_session,
             id=MEMBER_ID,
             provisioning_status=constants.ERROR)
 
@@ -2621,7 +2760,7 @@ class TestDatabaseTasks(base.TestCase):
         mark_member_pending_delete.revert(self.member_mock)
 
         mock_member_repo_update.assert_called_once_with(
-            'TEST',
+            mock_session,
             id=MEMBER_ID,
             provisioning_status=constants.ERROR)
 
@@ -2640,8 +2779,10 @@ class TestDatabaseTasks(base.TestCase):
                                       MarkMemberPendingUpdateInDB())
         mark_member_pending_update.execute(self.member_mock)
 
+        mock_session = mock_get_session().begin().__enter__()
+
         mock_member_repo_update.assert_called_once_with(
-            'TEST',
+            mock_session,
             MEMBER_ID,
             provisioning_status=constants.PENDING_UPDATE)
 
@@ -2650,7 +2791,7 @@ class TestDatabaseTasks(base.TestCase):
         mark_member_pending_update.revert(self.member_mock)
 
         mock_member_repo_update.assert_called_once_with(
-            'TEST',
+            mock_session,
             id=MEMBER_ID,
             provisioning_status=constants.ERROR)
 
@@ -2660,7 +2801,7 @@ class TestDatabaseTasks(base.TestCase):
         mark_member_pending_update.revert(self.member_mock)
 
         mock_member_repo_update.assert_called_once_with(
-            'TEST',
+            mock_session,
             id=MEMBER_ID,
             provisioning_status=constants.ERROR)
 
@@ -2678,8 +2819,10 @@ class TestDatabaseTasks(base.TestCase):
         mark_pool_active = (database_tasks.MarkPoolActiveInDB())
         mark_pool_active.execute(POOL_ID)
 
+        mock_session = mock_get_session().begin().__enter__()
+
         mock_pool_repo_update.assert_called_once_with(
-            'TEST',
+            mock_session,
             POOL_ID,
             provisioning_status=constants.ACTIVE)
 
@@ -2688,7 +2831,7 @@ class TestDatabaseTasks(base.TestCase):
         mark_pool_active.revert(POOL_ID)
 
         mock_pool_repo_update.assert_called_once_with(
-            'TEST',
+            mock_session,
             id=POOL_ID,
             provisioning_status=constants.ERROR)
 
@@ -2698,7 +2841,7 @@ class TestDatabaseTasks(base.TestCase):
         mark_pool_active.revert(POOL_ID)
 
         mock_pool_repo_update.assert_called_once_with(
-            'TEST',
+            mock_session,
             id=POOL_ID,
             provisioning_status=constants.ERROR)
 
@@ -2716,8 +2859,10 @@ class TestDatabaseTasks(base.TestCase):
         mark_pool_pending_create = (database_tasks.MarkPoolPendingCreateInDB())
         mark_pool_pending_create.execute(POOL_ID)
 
+        mock_session = mock_get_session().begin().__enter__()
+
         mock_pool_repo_update.assert_called_once_with(
-            'TEST',
+            mock_session,
             POOL_ID,
             provisioning_status=constants.PENDING_CREATE)
 
@@ -2726,7 +2871,7 @@ class TestDatabaseTasks(base.TestCase):
         mark_pool_pending_create.revert(POOL_ID)
 
         mock_pool_repo_update.assert_called_once_with(
-            'TEST',
+            mock_session,
             id=POOL_ID,
             provisioning_status=constants.ERROR)
 
@@ -2736,7 +2881,7 @@ class TestDatabaseTasks(base.TestCase):
         mark_pool_pending_create.revert(POOL_ID)
 
         mock_pool_repo_update.assert_called_once_with(
-            'TEST',
+            mock_session,
             id=POOL_ID,
             provisioning_status=constants.ERROR)
 
@@ -2754,8 +2899,10 @@ class TestDatabaseTasks(base.TestCase):
         mark_pool_pending_delete = (database_tasks.MarkPoolPendingDeleteInDB())
         mark_pool_pending_delete.execute(POOL_ID)
 
+        mock_session = mock_get_session().begin().__enter__()
+
         mock_pool_repo_update.assert_called_once_with(
-            'TEST',
+            mock_session,
             POOL_ID,
             provisioning_status=constants.PENDING_DELETE)
 
@@ -2764,7 +2911,7 @@ class TestDatabaseTasks(base.TestCase):
         mark_pool_pending_delete.revert(POOL_ID)
 
         mock_pool_repo_update.assert_called_once_with(
-            'TEST',
+            mock_session,
             id=POOL_ID,
             provisioning_status=constants.ERROR)
 
@@ -2774,7 +2921,7 @@ class TestDatabaseTasks(base.TestCase):
         mark_pool_pending_delete.revert(POOL_ID)
 
         mock_pool_repo_update.assert_called_once_with(
-            'TEST',
+            mock_session,
             id=POOL_ID,
             provisioning_status=constants.ERROR)
 
@@ -2793,8 +2940,10 @@ class TestDatabaseTasks(base.TestCase):
                                     MarkPoolPendingUpdateInDB())
         mark_pool_pending_update.execute(POOL_ID)
 
+        mock_session = mock_get_session().begin().__enter__()
+
         mock_pool_repo_update.assert_called_once_with(
-            'TEST',
+            mock_session,
             POOL_ID,
             provisioning_status=constants.PENDING_UPDATE)
 
@@ -2803,7 +2952,7 @@ class TestDatabaseTasks(base.TestCase):
         mark_pool_pending_update.revert(POOL_ID)
 
         mock_pool_repo_update.assert_called_once_with(
-            'TEST',
+            mock_session,
             id=POOL_ID,
             provisioning_status=constants.ERROR)
 
@@ -2813,7 +2962,7 @@ class TestDatabaseTasks(base.TestCase):
         mark_pool_pending_update.revert(POOL_ID)
 
         mock_pool_repo_update.assert_called_once_with(
-            'TEST',
+            mock_session,
             id=POOL_ID,
             provisioning_status=constants.ERROR)
 
@@ -2832,7 +2981,9 @@ class TestDatabaseTasks(base.TestCase):
         update_members = database_tasks.UpdatePoolMembersOperatingStatusInDB()
         update_members.execute(POOL_ID, constants.ONLINE)
 
+        mock_session = mock_get_session().begin().__enter__()
+
         mock_member_repo_update_pool_members.assert_called_once_with(
-            'TEST',
+            mock_session,
             POOL_ID,
             operating_status=constants.ONLINE)

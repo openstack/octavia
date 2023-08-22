@@ -148,7 +148,9 @@ class TestAmphoraDriverTasks(base.TestCase):
             _session_mock, AMP_ID, status=constants.ERROR)
 
     @mock.patch('octavia.db.repositories.LoadBalancerRepository.get')
+    @mock.patch('octavia.db.api.session')
     def test_listeners_update(self,
+                              mock_get_session_ctx,
                               mock_lb_get,
                               mock_driver,
                               mock_generate_uuid,
@@ -174,12 +176,14 @@ class TestAmphoraDriverTasks(base.TestCase):
         listeners_update_obj.execute(None)
         mock_driver.update.assert_not_called()
 
+        mock_session = mock_get_session_ctx().begin().__enter__()
+
         # Test the revert
         amp = listeners_update_obj.revert(_LB_mock)
-        expected_db_calls = [mock.call(_session_mock,
+        expected_db_calls = [mock.call(mock_session,
                                        id=listeners[0].id,
                                        provisioning_status=constants.ERROR),
-                             mock.call(_session_mock,
+                             mock.call(mock_session,
                                        id=listeners[1].id,
                                        provisioning_status=constants.ERROR)]
         repo.ListenerRepository.update.assert_has_calls(expected_db_calls)
@@ -262,7 +266,9 @@ class TestAmphoraDriverTasks(base.TestCase):
         listeners_start_obj.revert(_LB_mock)
         mock_prov_status_error.assert_called_once_with('12345')
 
+    @mock.patch('octavia.db.api.session')
     def test_listener_delete(self,
+                             mock_get_session_ctx,
                              mock_driver,
                              mock_generate_uuid,
                              mock_log,
@@ -278,10 +284,12 @@ class TestAmphoraDriverTasks(base.TestCase):
 
         mock_driver.delete.assert_called_once_with(_listener_mock)
 
+        mock_session = mock_get_session_ctx().begin().__enter__()
+
         # Test the revert
         amp = listener_delete_obj.revert(listener_dict)
         repo.ListenerRepository.update.assert_called_once_with(
-            _session_mock,
+            mock_session,
             id=LISTENER_ID,
             provisioning_status=constants.ERROR)
         self.assertIsNone(amp)
@@ -291,7 +299,7 @@ class TestAmphoraDriverTasks(base.TestCase):
         mock_listener_repo_update.side_effect = Exception('fail')
         amp = listener_delete_obj.revert(listener_dict)
         repo.ListenerRepository.update.assert_called_once_with(
-            _session_mock,
+            mock_session,
             id=LISTENER_ID,
             provisioning_status=constants.ERROR)
         self.assertIsNone(amp)
@@ -330,7 +338,9 @@ class TestAmphoraDriverTasks(base.TestCase):
         mock_driver.get_diagnostics.assert_called_once_with(
             _amphora_mock)
 
+    @mock.patch('octavia.db.api.session')
     def test_amphora_finalize(self,
+                              mock_get_session_ctx,
                               mock_driver,
                               mock_generate_uuid,
                               mock_log,
@@ -347,10 +357,12 @@ class TestAmphoraDriverTasks(base.TestCase):
         mock_driver.finalize_amphora.assert_called_once_with(
             _db_amphora_mock)
 
+        mock_session = mock_get_session_ctx().begin().__enter__()
+
         # Test revert
         amp = amphora_finalize_obj.revert(None, _amphora_mock)
         repo.AmphoraRepository.update.assert_called_once_with(
-            _session_mock,
+            mock_session,
             id=AMP_ID,
             status=constants.ERROR)
         self.assertIsNone(amp)
@@ -360,7 +372,7 @@ class TestAmphoraDriverTasks(base.TestCase):
         mock_amphora_repo_update.side_effect = Exception('fail')
         amp = amphora_finalize_obj.revert(None, _amphora_mock)
         repo.AmphoraRepository.update.assert_called_once_with(
-            _session_mock,
+            mock_session,
             id=AMP_ID,
             status=constants.ERROR)
         self.assertIsNone(amp)
@@ -371,7 +383,9 @@ class TestAmphoraDriverTasks(base.TestCase):
             failure.Failure.from_exception(Exception('boom')), _amphora_mock)
         repo.AmphoraRepository.update.assert_not_called()
 
+    @mock.patch('octavia.db.api.session')
     def test_amphora_post_network_plug(self,
+                                       mock_get_session_ctx,
                                        mock_driver,
                                        mock_generate_uuid,
                                        mock_log,
@@ -396,10 +410,12 @@ class TestAmphoraDriverTasks(base.TestCase):
                                      network_data_models.Port(**port_mock),
                                      _amphora_network_config_mock)
 
+        mock_session = mock_get_session_ctx().begin().__enter__()
+
         # Test revert
         amp = amphora_post_network_plug_obj.revert(None, _amphora_mock)
         repo.AmphoraRepository.update.assert_called_once_with(
-            _session_mock,
+            mock_session,
             id=AMP_ID,
             status=constants.ERROR)
 
@@ -410,7 +426,7 @@ class TestAmphoraDriverTasks(base.TestCase):
         mock_amphora_repo_update.side_effect = Exception('fail')
         amp = amphora_post_network_plug_obj.revert(None, _amphora_mock)
         repo.AmphoraRepository.update.assert_called_once_with(
-            _session_mock,
+            mock_session,
             id=AMP_ID,
             status=constants.ERROR)
 
@@ -456,7 +472,10 @@ class TestAmphoraDriverTasks(base.TestCase):
             self.assertEqual(hr1['nexthop'], hr2.nexthop)
 
     @mock.patch('octavia.db.repositories.LoadBalancerRepository.get')
-    def test_amphorae_post_network_plug(self, mock_lb_get,
+    @mock.patch('octavia.db.api.session')
+    def test_amphorae_post_network_plug(self,
+                                        mock_get_session_ctx,
+                                        mock_lb_get,
                                         mock_driver,
                                         mock_generate_uuid,
                                         mock_log,
@@ -496,11 +515,13 @@ class TestAmphoraDriverTasks(base.TestCase):
                                               _amphora_network_config_mock)
         mock_driver.post_network_plug.assert_not_called()
 
+        mock_session = mock_get_session_ctx().begin().__enter__()
+
         # Test revert
         amp = amphora_post_network_plug_obj.revert(None, _LB_mock,
                                                    _deltas_mock)
         repo.AmphoraRepository.update.assert_called_once_with(
-            _session_mock,
+            mock_session,
             id=AMP_ID,
             status=constants.ERROR)
 
@@ -512,7 +533,7 @@ class TestAmphoraDriverTasks(base.TestCase):
         amp = amphora_post_network_plug_obj.revert(None, _LB_mock,
                                                    _deltas_mock)
         repo.AmphoraRepository.update.assert_called_once_with(
-            _session_mock,
+            mock_session,
             id=AMP_ID,
             status=constants.ERROR)
 
@@ -527,7 +548,10 @@ class TestAmphoraDriverTasks(base.TestCase):
 
     @mock.patch('octavia.db.repositories.LoadBalancerRepository.update')
     @mock.patch('octavia.db.repositories.LoadBalancerRepository.get')
-    def test_amphora_post_vip_plug(self, mock_lb_get,
+    @mock.patch('octavia.db.api.session')
+    def test_amphora_post_vip_plug(self,
+                                   mock_get_session_ctx,
+                                   mock_lb_get,
                                    mock_loadbalancer_repo_update,
                                    mock_driver,
                                    mock_generate_uuid,
@@ -562,10 +586,12 @@ class TestAmphoraDriverTasks(base.TestCase):
             _db_amphora_mock, _db_load_balancer_mock, amphorae_net_config_mock,
             vrrp_port, vip_subnet, additional_vip_data=[])
 
+        mock_session = mock_get_session_ctx().begin().__enter__()
+
         # Test revert
         amp = amphora_post_vip_plug_obj.revert(None, _amphora_mock, _LB_mock)
         repo.AmphoraRepository.update.assert_called_once_with(
-            _session_mock,
+            mock_session,
             id=AMP_ID,
             status=constants.ERROR)
         repo.LoadBalancerRepository.update.assert_not_called()
@@ -579,7 +605,7 @@ class TestAmphoraDriverTasks(base.TestCase):
         mock_loadbalancer_repo_update.side_effect = Exception('fail')
         amp = amphora_post_vip_plug_obj.revert(None, _amphora_mock, _LB_mock)
         repo.AmphoraRepository.update.assert_called_once_with(
-            _session_mock,
+            mock_session,
             id=AMP_ID,
             status=constants.ERROR)
         repo.LoadBalancerRepository.update.assert_not_called()

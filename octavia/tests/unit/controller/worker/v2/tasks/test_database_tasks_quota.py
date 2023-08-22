@@ -123,10 +123,8 @@ class TestDatabaseTasksQuota(base.TestCase):
         with mock.patch('octavia.db.api.'
                         'get_session') as mock_get_session_local:
             mock_session = mock.MagicMock()
-            mock_lock_session = mock.MagicMock()
 
-            mock_get_session_local.side_effect = [mock_session,
-                                                  mock_lock_session]
+            mock_get_session_local.return_value = mock_session
 
             if data_model == data_models.Pool:
                 task.revert(test_object, self.zero_pool_child_count, None)
@@ -136,19 +134,17 @@ class TestDatabaseTasksQuota(base.TestCase):
                 task.revert(test_object, None)
 
             mock_check_quota_met.assert_called_once_with(
-                mock_session, mock_lock_session, data_model,
+                mock_session, mock_session, data_model,
                 project_id)
 
-            mock_lock_session.commit.assert_called_once_with()
+            mock_session.commit.assert_called_once_with()
 
         # revert with rollback
         with mock.patch('octavia.db.api.'
                         'get_session') as mock_get_session_local:
             mock_session = mock.MagicMock()
-            mock_lock_session = mock.MagicMock()
 
-            mock_get_session_local.side_effect = [mock_session,
-                                                  mock_lock_session]
+            mock_get_session_local.return_value = mock_session
 
             mock_check_quota_met.side_effect = (
                 exceptions.OctaviaException('fail'))
@@ -160,7 +156,7 @@ class TestDatabaseTasksQuota(base.TestCase):
             else:
                 task.revert(test_object, None)
 
-            mock_lock_session.rollback.assert_called_once_with()
+            mock_session.rollback.assert_called_once_with()
 
         # revert with db exception
         mock_check_quota_met.reset_mock()
@@ -238,27 +234,22 @@ class TestDatabaseTasksQuota(base.TestCase):
         mock_session.reset_mock()
         with mock.patch('octavia.db.api.'
                         'get_session') as mock_get_session_local:
-            mock_lock_session = mock.MagicMock()
-            mock_get_session_local.side_effect = [mock_session,
-                                                  mock_lock_session,
-                                                  mock_lock_session,
-                                                  mock_lock_session,
-                                                  mock_lock_session]
+            mock_get_session_local.return_value = mock_session
 
             task.revert(project_id, pool_child_count, None)
 
-            calls = [mock.call(mock_session, mock_lock_session,
+            calls = [mock.call(mock_session, mock_session,
                                data_models.Pool, project_id),
-                     mock.call(mock_session, mock_lock_session,
+                     mock.call(mock_session, mock_session,
                                data_models.HealthMonitor, project_id),
-                     mock.call(mock_session, mock_lock_session,
+                     mock.call(mock_session, mock_session,
                                data_models.Member, project_id),
-                     mock.call(mock_session, mock_lock_session,
+                     mock.call(mock_session, mock_session,
                                data_models.Member, project_id)]
 
             mock_check_quota_met.assert_has_calls(calls)
 
-            self.assertEqual(4, mock_lock_session.commit.call_count)
+            self.assertEqual(4, mock_session.commit.call_count)
 
         # revert with health monitor quota exception
         mock_session.reset_mock()
@@ -266,28 +257,23 @@ class TestDatabaseTasksQuota(base.TestCase):
                                             None]
         with mock.patch('octavia.db.api.'
                         'get_session') as mock_get_session_local:
-            mock_lock_session = mock.MagicMock()
-            mock_get_session_local.side_effect = [mock_session,
-                                                  mock_lock_session,
-                                                  mock_lock_session,
-                                                  mock_lock_session,
-                                                  mock_lock_session]
+            mock_get_session_local.return_value = mock_session
 
             task.revert(project_id, pool_child_count, None)
 
-            calls = [mock.call(mock_session, mock_lock_session,
+            calls = [mock.call(mock_session, mock_session,
                                data_models.Pool, project_id),
-                     mock.call(mock_session, mock_lock_session,
+                     mock.call(mock_session, mock_session,
                                data_models.HealthMonitor, project_id),
-                     mock.call(mock_session, mock_lock_session,
+                     mock.call(mock_session, mock_session,
                                data_models.Member, project_id),
-                     mock.call(mock_session, mock_lock_session,
+                     mock.call(mock_session, mock_session,
                                data_models.Member, project_id)]
 
             mock_check_quota_met.assert_has_calls(calls)
 
-            self.assertEqual(3, mock_lock_session.commit.call_count)
-            self.assertEqual(1, mock_lock_session.rollback.call_count)
+            self.assertEqual(3, mock_session.commit.call_count)
+            self.assertEqual(1, mock_session.rollback.call_count)
 
         # revert with member quota exception
         mock_session.reset_mock()
@@ -295,30 +281,25 @@ class TestDatabaseTasksQuota(base.TestCase):
                                             Exception('fail')]
         with mock.patch('octavia.db.api.'
                         'get_session') as mock_get_session_local:
-            mock_lock_session = mock.MagicMock()
-            mock_get_session_local.side_effect = [mock_session,
-                                                  mock_lock_session,
-                                                  mock_lock_session,
-                                                  mock_lock_session,
-                                                  mock_lock_session]
+            mock_get_session_local.return_value = mock_session
 
             task.revert(project_id, pool_child_count, None)
 
-            calls = [mock.call(mock_session, mock_lock_session,
+            calls = [mock.call(mock_session, mock_session,
                                data_models.Pool, project_id),
-                     mock.call(mock_session, mock_lock_session,
+                     mock.call(mock_session, mock_session,
                                data_models.HealthMonitor, project_id),
-                     mock.call(mock_session, mock_lock_session,
+                     mock.call(mock_session, mock_session,
                                data_models.Member, project_id),
-                     mock.call(mock_session, mock_lock_session,
+                     mock.call(mock_session, mock_session,
                                data_models.Member, project_id)]
 
             mock_check_quota_met.assert_has_calls(calls)
 
-            self.assertEqual(3, mock_lock_session.commit.call_count)
-            self.assertEqual(1, mock_lock_session.rollback.call_count)
+            self.assertEqual(3, mock_session.commit.call_count)
+            self.assertEqual(1, mock_session.rollback.call_count)
 
-    @mock.patch('octavia.db.api.get_session')
+    @mock.patch('octavia.db.api.session')
     @mock.patch('octavia.db.repositories.PoolRepository.get_children_count')
     def test_count_pool_children_for_quota(self, repo_mock, session_mock):
         project_id = uuidutils.generate_uuid()
@@ -385,24 +366,20 @@ class TestDatabaseTasksQuota(base.TestCase):
         mock_session.reset_mock()
         with mock.patch('octavia.db.api.'
                         'get_session') as mock_get_session_local:
-            mock_lock_session = mock.MagicMock()
-            mock_get_session_local.side_effect = [mock_session,
-                                                  mock_lock_session,
-                                                  mock_lock_session,
-                                                  mock_lock_session]
+            mock_get_session_local.return_value = mock_session
 
             task.revert(test_object, None)
 
-            calls = [mock.call(mock_session, mock_lock_session,
+            calls = [mock.call(mock_session, mock_session,
                                data_models.L7Policy, project_id),
-                     mock.call(mock_session, mock_lock_session,
+                     mock.call(mock_session, mock_session,
                                data_models.L7Rule, project_id),
-                     mock.call(mock_session, mock_lock_session,
+                     mock.call(mock_session, mock_session,
                                data_models.L7Rule, project_id)]
 
             mock_check_quota_met.assert_has_calls(calls)
 
-            self.assertEqual(3, mock_lock_session.commit.call_count)
+            self.assertEqual(3, mock_session.commit.call_count)
 
         # revert with l7rule quota exception
         mock_session.reset_mock()
@@ -410,25 +387,21 @@ class TestDatabaseTasksQuota(base.TestCase):
                                             Exception('fail')]
         with mock.patch('octavia.db.api.'
                         'get_session') as mock_get_session_local:
-            mock_lock_session = mock.MagicMock()
-            mock_get_session_local.side_effect = [mock_session,
-                                                  mock_lock_session,
-                                                  mock_lock_session,
-                                                  mock_lock_session]
+            mock_get_session_local.return_value = mock_session
 
             task.revert(test_object, None)
 
-            calls = [mock.call(mock_session, mock_lock_session,
+            calls = [mock.call(mock_session, mock_session,
                                data_models.L7Policy, project_id),
-                     mock.call(mock_session, mock_lock_session,
+                     mock.call(mock_session, mock_session,
                                data_models.L7Rule, project_id),
-                     mock.call(mock_session, mock_lock_session,
+                     mock.call(mock_session, mock_session,
                                data_models.L7Rule, project_id)]
 
             mock_check_quota_met.assert_has_calls(calls)
 
-            self.assertEqual(2, mock_lock_session.commit.call_count)
-            self.assertEqual(1, mock_lock_session.rollback.call_count)
+            self.assertEqual(2, mock_session.commit.call_count)
+            self.assertEqual(1, mock_session.rollback.call_count)
 
     def test_decrement_l7rule_quota(self):
         project_id = uuidutils.generate_uuid()

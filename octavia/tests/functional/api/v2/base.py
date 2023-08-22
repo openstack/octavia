@@ -269,7 +269,7 @@ class BaseAPITest(base_db_test.OctaviaDBTestBase):
 
     def create_listener_stats(self, listener_id, amphora_id):
         db_ls = self.listener_stats_repo.create(
-            db_api.get_session(), listener_id=listener_id,
+            self.session, listener_id=listener_id,
             amphora_id=amphora_id, bytes_in=0,
             bytes_out=0, active_connections=0, total_connections=0,
             request_errors=0)
@@ -280,7 +280,7 @@ class BaseAPITest(base_db_test.OctaviaDBTestBase):
                                       active_connections=0,
                                       total_connections=0, request_errors=0):
         db_ls = self.listener_stats_repo.create(
-            db_api.get_session(), listener_id=listener_id,
+            self.session, listener_id=listener_id,
             amphora_id=amphora_id, bytes_in=bytes_in,
             bytes_out=bytes_out, active_connections=active_connections,
             total_connections=total_connections, request_errors=request_errors)
@@ -478,9 +478,11 @@ class BaseAPITest(base_db_test.OctaviaDBTestBase):
     @staticmethod
     def set_object_status(repo, id_, provisioning_status=constants.ACTIVE,
                           operating_status=constants.ONLINE):
-        repo.update(db_api.get_session(), id_,
+        session = db_api.get_session()
+        repo.update(session, id_,
                     provisioning_status=provisioning_status,
                     operating_status=operating_status)
+        session.commit()
 
     def assert_final_listener_statuses(self, lb_id, listener_id, delete=False):
         expected_prov_status = constants.ACTIVE

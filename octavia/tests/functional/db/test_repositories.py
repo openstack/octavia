@@ -92,6 +92,7 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
     FAKE_UUID_1 = uuidutils.generate_uuid()
     FAKE_UUID_2 = uuidutils.generate_uuid()
     FAKE_UUID_3 = uuidutils.generate_uuid()
+    FAKE_UUID_4 = uuidutils.generate_uuid()
     FAKE_IP = '192.0.2.44'
 
     def setUp(self):
@@ -103,7 +104,8 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
             provisioning_status=constants.ACTIVE,
             operating_status=constants.ONLINE, enabled=True)
         self.listener = self.repos.listener.create(
-            self.session, protocol=constants.PROTOCOL_HTTP, protocol_port=80,
+            self.session, id=self.FAKE_UUID_4,
+            protocol=constants.PROTOCOL_HTTP, protocol_port=80,
             enabled=True, provisioning_status=constants.ACTIVE,
             operating_status=constants.ONLINE,
             load_balancer_id=self.load_balancer.id)
@@ -112,6 +114,7 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
             load_balancer_id=self.load_balancer.id,
             compute_id=self.FAKE_UUID_3, status=constants.ACTIVE,
             vrrp_ip=self.FAKE_IP, lb_network_ip=self.FAKE_IP)
+        self.session.commit()
 
     def test_all_repos_has_correct_repos(self):
         repo_attr_names = ('load_balancer', 'vip', 'health_monitor',
@@ -163,6 +166,7 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
                             'ip_address': '192.0.2.2'}]
         lb_dm = self.repos.create_load_balancer_and_vip(self.session, lb, vip,
                                                         additional_vips)
+        self.session.commit()
         lb_dm_dict = lb_dm.to_dict()
         del lb_dm_dict['vip']
         del lb_dm_dict['additional_vips']
@@ -193,6 +197,7 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
                 'alpn_protocols': None}
         pool_dm = self.repos.create_pool_on_load_balancer(
             self.session, pool, listener_id=self.listener.id)
+        self.session.commit()
         pool_dm_dict = pool_dm.to_dict()
         # These are not defined in the sample pool dict but will
         # be in the live data.
@@ -234,6 +239,7 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
         pool.update({'session_persistence': sp})
         pool_dm = self.repos.create_pool_on_load_balancer(
             self.session, pool, listener_id=self.listener.id)
+        self.session.commit()
         pool_dm_dict = pool_dm.to_dict()
         # These are not defined in the sample pool dict but will
         # be in the live data.
@@ -277,6 +283,7 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
         update_pool = {'protocol': constants.PROTOCOL_TCP, 'name': 'up_pool'}
         new_pool_dm = self.repos.update_pool_and_sp(
             self.session, pool_dm.id, update_pool)
+        self.session.commit()
         pool_dm_dict = new_pool_dm.to_dict()
         # These are not defined in the sample pool dict but will
         # be in the live data.
@@ -322,6 +329,7 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
         update_pool.update({'session_persistence': update_sp})
         new_pool_dm = self.repos.update_pool_and_sp(
             self.session, pool_dm.id, update_pool)
+        self.session.commit()
         pool_dm_dict = new_pool_dm.to_dict()
         # These are not defined in the sample pool dict but will
         # be in the live data.
@@ -354,6 +362,7 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
                 'id': uuidutils.generate_uuid()}
         pool_dm = self.repos.create_pool_on_load_balancer(
             self.session, pool, listener_id=self.listener.id)
+        self.session.commit()
         update_pool = {'protocol': constants.PROTOCOL_TCP, 'name': 'up_pool'}
         update_sp = {'type': constants.SESSION_PERSISTENCE_HTTP_COOKIE,
                      'cookie_name': 'monster_cookie',
@@ -362,6 +371,7 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
         update_pool.update({'session_persistence': update_sp})
         new_pool_dm = self.repos.update_pool_and_sp(
             self.session, pool_dm.id, update_pool)
+        self.session.commit()
         sp_dm_dict = new_pool_dm.session_persistence.to_dict()
         del sp_dm_dict['pool']
         update_sp['pool_id'] = pool_dm.id
@@ -382,6 +392,7 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
                        'session_persistence': None}
         new_pool_dm = self.repos.update_pool_and_sp(
             self.session, pool_dm.id, update_pool)
+        self.session.commit()
         self.assertIsNone(new_pool_dm.session_persistence)
 
     def test_update_pool_with_existing_sp_delete_sp(self):
@@ -398,10 +409,12 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
         pool.update({'session_persistence': sp})
         pool_dm = self.repos.create_pool_on_load_balancer(
             self.session, pool, listener_id=self.listener.id)
+        self.session.commit()
         update_pool = {'protocol': constants.PROTOCOL_TCP, 'name': 'up_pool',
                        'session_persistence': {}}
         new_pool_dm = self.repos.update_pool_and_sp(
             self.session, pool_dm.id, update_pool)
+        self.session.commit()
         self.assertIsNone(new_pool_dm.session_persistence)
 
     def test_update_pool_with_cert(self):
@@ -420,6 +433,7 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
         update_pool = {'tls_certificate_id': uuidutils.generate_uuid()}
         new_pool_dm = self.repos.update_pool_and_sp(
             self.session, pool_dm.id, update_pool)
+        self.session.commit()
         pool_dm_dict = new_pool_dm.to_dict()
         # These are not defined in the sample pool dict but will
         # be in the live data.
@@ -460,11 +474,12 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
               'id': uuidutils.generate_uuid()}
 
         session = db_api.get_session()
-        lock_session = db_api.get_session(autocommit=False)
+        lock_session = db_api.get_session()
         lbs = lock_session.query(db_models.LoadBalancer).filter_by(
             project_id=project_id).all()
         self.assertEqual(0, len(lbs))  # Initially: 0
         self.repos.create_load_balancer_and_vip(lock_session, lb, vip)
+        self.session.commit()
         lbs = lock_session.query(db_models.LoadBalancer).filter_by(
             project_id=project_id).all()
         self.assertEqual(1, len(lbs))  # After create: 1
@@ -473,6 +488,7 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
             project_id=project_id).all()
         self.assertEqual(0, len(lbs))  # After rollback: 0
         self.repos.create_load_balancer_and_vip(lock_session, lb, vip)
+        self.session.commit()
         lbs = lock_session.query(db_models.LoadBalancer).filter_by(
             project_id=project_id).all()
         self.assertEqual(1, len(lbs))  # After create: 1
@@ -484,6 +500,7 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
         session.query(db_models.LoadBalancer).filter(
             db_models.LoadBalancer.project_id == project_id).count()
         self.repos.create_load_balancer_and_vip(lock_session, lb, vip)
+        self.session.commit()
         lbs = lock_session.query(db_models.LoadBalancer).filter_by(
             project_id=project_id).all()
         self.assertEqual(1, len(lbs))  # After create: 1
@@ -510,6 +527,7 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
                           self.repos.check_quota_met,
                           self.session, self.session,
                           data_models.LoadBalancer, None)
+        self.session.commit()
 
         # Test non-quota object
         project_id = uuidutils.generate_uuid()
@@ -518,6 +536,8 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
                                        self.session,
                                        data_models.SessionPersistence,
                                        project_id))
+        self.session.commit()
+
         # Test DB deadlock case
         project_id = uuidutils.generate_uuid()
         mock_session = mock.MagicMock()
@@ -527,6 +547,7 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
                           self.repos.check_quota_met,
                           self.session, mock_session,
                           data_models.LoadBalancer, project_id)
+        self.session.commit()
 
         # ### Test load balancer quota
         # Test with no pre-existing quota record default 0
@@ -536,6 +557,7 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
                                                    self.session,
                                                    data_models.LoadBalancer,
                                                    project_id))
+        self.session.commit()
         self.assertIsNone(self.repos.quotas.get(
             self.session, project_id=project_id).in_use_load_balancer)
 
@@ -546,6 +568,7 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
                                                     self.session,
                                                     data_models.LoadBalancer,
                                                     project_id))
+        self.session.commit()
         self.assertEqual(1, self.repos.quotas.get(
             self.session, project_id=project_id).in_use_load_balancer)
         # Test above project is now at quota
@@ -553,6 +576,7 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
                                                    self.session,
                                                    data_models.LoadBalancer,
                                                    project_id))
+        self.session.commit()
         self.assertEqual(1, self.repos.quotas.get(
             self.session, project_id=project_id).in_use_load_balancer)
 
@@ -564,6 +588,7 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
                                                     self.session,
                                                     data_models.LoadBalancer,
                                                     project_id))
+        self.session.commit()
         self.assertEqual(1, self.repos.quotas.get(
             self.session, project_id=project_id).in_use_load_balancer)
         # Test above project adding another load balancer
@@ -584,10 +609,12 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
             provisioning_status=constants.ACTIVE,
             operating_status=constants.ONLINE,
             enabled=True)
+        self.session.commit()
         self.assertTrue(self.repos.check_quota_met(self.session,
                                                    self.session,
                                                    data_models.LoadBalancer,
                                                    project_id))
+        self.session.commit()
 
         # Test upgrade case with pre-quota deleted load balancers
         project_id = uuidutils.generate_uuid()
@@ -599,10 +626,12 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
             provisioning_status=constants.DELETED,
             operating_status=constants.ONLINE,
             enabled=True)
+        self.session.commit()
         self.assertFalse(self.repos.check_quota_met(self.session,
                                                     self.session,
                                                     data_models.LoadBalancer,
                                                     project_id))
+        self.session.commit()
         self.assertEqual(1, self.repos.quotas.get(
             self.session, project_id=project_id).in_use_load_balancer)
 
@@ -611,20 +640,24 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
         conf.config(group='quotas', default_load_balancer_quota=10)
         quota = {'load_balancer': 0}
         self.repos.quotas.update(self.session, project_id, quota=quota)
+        self.session.commit()
         self.assertTrue(self.repos.check_quota_met(self.session,
                                                    self.session,
                                                    data_models.LoadBalancer,
                                                    project_id))
+        self.session.commit()
 
         # Test pre-existing quota with quota of one
         project_id = uuidutils.generate_uuid()
         conf.config(group='quotas', default_load_balancer_quota=0)
         quota = {'load_balancer': 1}
         self.repos.quotas.update(self.session, project_id, quota=quota)
+        self.session.commit()
         self.assertFalse(self.repos.check_quota_met(self.session,
                                                     self.session,
                                                     data_models.LoadBalancer,
                                                     project_id))
+        self.session.commit()
         self.assertEqual(1, self.repos.quotas.get(
             self.session, project_id=project_id).in_use_load_balancer)
         # Test above project is now at quota
@@ -632,6 +665,7 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
                                                    self.session,
                                                    data_models.LoadBalancer,
                                                    project_id))
+        self.session.commit()
         self.assertEqual(1, self.repos.quotas.get(
             self.session, project_id=project_id).in_use_load_balancer)
 
@@ -640,10 +674,12 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
         conf.config(group='quotas', default_load_balancer_quota=0)
         quota = {'load_balancer': constants.QUOTA_UNLIMITED}
         self.repos.quotas.update(self.session, project_id, quota=quota)
+        self.session.commit()
         self.assertFalse(self.repos.check_quota_met(self.session,
                                                     self.session,
                                                     data_models.LoadBalancer,
                                                     project_id))
+        self.session.commit()
         self.assertEqual(1, self.repos.quotas.get(
             self.session, project_id=project_id).in_use_load_balancer)
         # Test above project adding another load balancer
@@ -651,6 +687,7 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
                                                     self.session,
                                                     data_models.LoadBalancer,
                                                     project_id))
+        self.session.commit()
         self.assertEqual(2, self.repos.quotas.get(
             self.session, project_id=project_id).in_use_load_balancer)
 
@@ -662,6 +699,7 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
                                                    self.session,
                                                    data_models.Listener,
                                                    project_id))
+        self.session.commit()
         self.assertIsNone(self.repos.quotas.get(
             self.session, project_id=project_id).in_use_listener)
 
@@ -672,6 +710,7 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
                                                     self.session,
                                                     data_models.Listener,
                                                     project_id))
+        self.session.commit()
         self.assertEqual(1, self.repos.quotas.get(
             self.session, project_id=project_id).in_use_listener)
         # Test above project is now at quota
@@ -679,6 +718,7 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
                                                    self.session,
                                                    data_models.Listener,
                                                    project_id))
+        self.session.commit()
         self.assertEqual(1, self.repos.quotas.get(
             self.session, project_id=project_id).in_use_listener)
 
@@ -690,6 +730,7 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
                                                     self.session,
                                                     data_models.Listener,
                                                     project_id))
+        self.session.commit()
         self.assertEqual(1, self.repos.quotas.get(
             self.session, project_id=project_id).in_use_listener)
         # Test above project adding another listener
@@ -697,6 +738,7 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
                                                     self.session,
                                                     data_models.Listener,
                                                     project_id))
+        self.session.commit()
         self.assertEqual(2, self.repos.quotas.get(
             self.session, project_id=project_id).in_use_listener)
 
@@ -710,15 +752,19 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
             provisioning_status=constants.ACTIVE,
             operating_status=constants.ONLINE,
             enabled=True)
+        self.session.commit()
         self.repos.listener.create(
-            self.session, protocol=constants.PROTOCOL_HTTP, protocol_port=80,
+            self.session, id=uuidutils.generate_uuid(),
+            protocol=constants.PROTOCOL_HTTP, protocol_port=80,
             enabled=True, provisioning_status=constants.ACTIVE,
             operating_status=constants.ONLINE, project_id=project_id,
             load_balancer_id=lb.id)
+        self.session.commit()
         self.assertTrue(self.repos.check_quota_met(self.session,
                                                    self.session,
                                                    data_models.Listener,
                                                    project_id))
+        self.session.commit()
 
         # Test upgrade case with pre-quota deleted listener
         project_id = uuidutils.generate_uuid()
@@ -730,15 +776,19 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
             provisioning_status=constants.ACTIVE,
             operating_status=constants.ONLINE,
             enabled=True)
+        self.session.commit()
         self.repos.listener.create(
-            self.session, protocol=constants.PROTOCOL_HTTP, protocol_port=80,
+            self.session, id=uuidutils.generate_uuid(),
+            protocol=constants.PROTOCOL_HTTP, protocol_port=80,
             enabled=True, provisioning_status=constants.DELETED,
             operating_status=constants.ONLINE, project_id=project_id,
             load_balancer_id=lb.id)
+        self.session.commit()
         self.assertFalse(self.repos.check_quota_met(self.session,
                                                     self.session,
                                                     data_models.Listener,
                                                     project_id))
+        self.session.commit()
         self.assertEqual(1, self.repos.quotas.get(
             self.session, project_id=project_id).in_use_listener)
 
@@ -747,20 +797,24 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
         conf.config(group='quotas', default_listener_quota=10)
         quota = {'listener': 0}
         self.repos.quotas.update(self.session, project_id, quota=quota)
+        self.session.commit()
         self.assertTrue(self.repos.check_quota_met(self.session,
                                                    self.session,
                                                    data_models.Listener,
                                                    project_id))
+        self.session.commit()
 
         # Test pre-existing quota with quota of one
         project_id = uuidutils.generate_uuid()
         conf.config(group='quotas', default_listener_quota=0)
         quota = {'listener': 1}
         self.repos.quotas.update(self.session, project_id, quota=quota)
+        self.session.commit()
         self.assertFalse(self.repos.check_quota_met(self.session,
                                                     self.session,
                                                     data_models.Listener,
                                                     project_id))
+        self.session.commit()
         self.assertEqual(1, self.repos.quotas.get(
             self.session, project_id=project_id).in_use_listener)
         # Test above project is now at quota
@@ -768,6 +822,7 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
                                                    self.session,
                                                    data_models.Listener,
                                                    project_id))
+        self.session.commit()
         self.assertEqual(1, self.repos.quotas.get(
             self.session, project_id=project_id).in_use_listener)
 
@@ -776,10 +831,12 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
         conf.config(group='quotas', default_listener_quota=0)
         quota = {'listener': constants.QUOTA_UNLIMITED}
         self.repos.quotas.update(self.session, project_id, quota=quota)
+        self.session.commit()
         self.assertFalse(self.repos.check_quota_met(self.session,
                                                     self.session,
                                                     data_models.Listener,
                                                     project_id))
+        self.session.commit()
         self.assertEqual(1, self.repos.quotas.get(
             self.session, project_id=project_id).in_use_listener)
         # Test above project adding another listener
@@ -787,6 +844,7 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
                                                     self.session,
                                                     data_models.Listener,
                                                     project_id))
+        self.session.commit()
         self.assertEqual(2, self.repos.quotas.get(
             self.session, project_id=project_id).in_use_listener)
 
@@ -798,6 +856,7 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
                                                    self.session,
                                                    data_models.Pool,
                                                    project_id))
+        self.session.commit()
         self.assertIsNone(self.repos.quotas.get(
             self.session, project_id=project_id).in_use_pool)
 
@@ -808,6 +867,7 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
                                                     self.session,
                                                     data_models.Pool,
                                                     project_id))
+        self.session.commit()
         self.assertEqual(1, self.repos.quotas.get(
             self.session, project_id=project_id).in_use_pool)
         # Test above project is now at quota
@@ -815,6 +875,7 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
                                                    self.session,
                                                    data_models.Pool,
                                                    project_id))
+        self.session.commit()
         self.assertEqual(1, self.repos.quotas.get(
             self.session, project_id=project_id).in_use_pool)
 
@@ -826,6 +887,7 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
                                                     self.session,
                                                     data_models.Pool,
                                                     project_id))
+        self.session.commit()
         self.assertEqual(1, self.repos.quotas.get(
             self.session, project_id=project_id).in_use_pool)
         # Test above project adding another pool
@@ -833,6 +895,7 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
                                                     self.session,
                                                     data_models.Pool,
                                                     project_id))
+        self.session.commit()
         self.assertEqual(2, self.repos.quotas.get(
             self.session, project_id=project_id).in_use_pool)
 
@@ -846,6 +909,7 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
             provisioning_status=constants.ACTIVE,
             operating_status=constants.ONLINE,
             enabled=True)
+        self.session.commit()
         self.repos.pool.create(
             self.session, id=uuidutils.generate_uuid(),
             project_id=project_id, name="pool1",
@@ -854,10 +918,12 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
             provisioning_status=constants.ACTIVE,
             operating_status=constants.ONLINE,
             enabled=True, load_balancer_id=lb.id)
+        self.session.commit()
         self.assertTrue(self.repos.check_quota_met(self.session,
                                                    self.session,
                                                    data_models.Pool,
                                                    project_id))
+        self.session.commit()
 
         # Test upgrade case with pre-quota deleted pool
         project_id = uuidutils.generate_uuid()
@@ -869,6 +935,7 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
             provisioning_status=constants.ACTIVE,
             operating_status=constants.ONLINE,
             enabled=True)
+        self.session.commit()
         self.repos.pool.create(
             self.session, id=uuidutils.generate_uuid(),
             project_id=project_id, name="pool1",
@@ -877,10 +944,12 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
             provisioning_status=constants.DELETED,
             operating_status=constants.ONLINE,
             enabled=True, load_balancer_id=lb.id)
+        self.session.commit()
         self.assertFalse(self.repos.check_quota_met(self.session,
                                                     self.session,
                                                     data_models.Pool,
                                                     project_id))
+        self.session.commit()
         self.assertEqual(1, self.repos.quotas.get(
             self.session, project_id=project_id).in_use_pool)
 
@@ -893,6 +962,7 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
                                                    self.session,
                                                    data_models.Pool,
                                                    project_id))
+        self.session.commit()
 
         # Test pre-existing quota with quota of one
         project_id = uuidutils.generate_uuid()
@@ -903,6 +973,7 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
                                                     self.session,
                                                     data_models.Pool,
                                                     project_id))
+        self.session.commit()
         self.assertEqual(1, self.repos.quotas.get(
             self.session, project_id=project_id).in_use_pool)
         # Test above project is now at quota
@@ -910,6 +981,7 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
                                                    self.session,
                                                    data_models.Pool,
                                                    project_id))
+        self.session.commit()
         self.assertEqual(1, self.repos.quotas.get(
             self.session, project_id=project_id).in_use_pool)
 
@@ -918,10 +990,12 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
         conf.config(group='quotas', default_pool_quota=0)
         quota = {'pool': constants.QUOTA_UNLIMITED}
         self.repos.quotas.update(self.session, project_id, quota=quota)
+        self.session.commit()
         self.assertFalse(self.repos.check_quota_met(self.session,
                                                     self.session,
                                                     data_models.Pool,
                                                     project_id))
+        self.session.commit()
         self.assertEqual(1, self.repos.quotas.get(
             self.session, project_id=project_id).in_use_pool)
         # Test above project adding another pool
@@ -929,6 +1003,7 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
                                                     self.session,
                                                     data_models.Pool,
                                                     project_id))
+        self.session.commit()
         self.assertEqual(2, self.repos.quotas.get(
             self.session, project_id=project_id).in_use_pool)
 
@@ -940,6 +1015,7 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
                                                    self.session,
                                                    data_models.HealthMonitor,
                                                    project_id))
+        self.session.commit()
         self.assertIsNone(self.repos.quotas.get(
             self.session, project_id=project_id).in_use_health_monitor)
 
@@ -950,6 +1026,7 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
                                                     self.session,
                                                     data_models.HealthMonitor,
                                                     project_id))
+        self.session.commit()
         self.assertEqual(1, self.repos.quotas.get(
             self.session, project_id=project_id).in_use_health_monitor)
         # Test above project is now at quota
@@ -957,6 +1034,7 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
                                                    self.session,
                                                    data_models.HealthMonitor,
                                                    project_id))
+        self.session.commit()
         self.assertEqual(1, self.repos.quotas.get(
             self.session, project_id=project_id).in_use_health_monitor)
 
@@ -968,6 +1046,7 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
                                                     self.session,
                                                     data_models.HealthMonitor,
                                                     project_id))
+        self.session.commit()
         self.assertEqual(1, self.repos.quotas.get(
             self.session, project_id=project_id).in_use_health_monitor)
         # Test above project adding another health monitor
@@ -975,6 +1054,7 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
                                                     self.session,
                                                     data_models.HealthMonitor,
                                                     project_id))
+        self.session.commit()
         self.assertEqual(2, self.repos.quotas.get(
             self.session, project_id=project_id).in_use_health_monitor)
 
@@ -988,6 +1068,7 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
             provisioning_status=constants.ACTIVE,
             operating_status=constants.ONLINE,
             enabled=True)
+        self.session.commit()
         pool = self.repos.pool.create(
             self.session, id=uuidutils.generate_uuid(),
             project_id=project_id, name="pool1",
@@ -996,6 +1077,7 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
             provisioning_status=constants.ACTIVE,
             operating_status=constants.ONLINE,
             enabled=True, load_balancer_id=lb.id)
+        self.session.commit()
         self.repos.health_monitor.create(
             self.session, project_id=project_id,
             name="health_mon1", type=constants.HEALTH_MONITOR_HTTP,
@@ -1003,10 +1085,12 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
             provisioning_status=constants.ACTIVE,
             operating_status=constants.ONLINE,
             enabled=True, pool_id=pool.id)
+        self.session.commit()
         self.assertTrue(self.repos.check_quota_met(self.session,
                                                    self.session,
                                                    data_models.HealthMonitor,
                                                    project_id))
+        self.session.commit()
 
         # Test upgrade case with pre-quota deleted health monitor
         project_id = uuidutils.generate_uuid()
@@ -1018,6 +1102,7 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
             provisioning_status=constants.ACTIVE,
             operating_status=constants.ONLINE,
             enabled=True)
+        self.session.commit()
         pool = self.repos.pool.create(
             self.session, id=uuidutils.generate_uuid(),
             project_id=project_id, name="pool1",
@@ -1026,6 +1111,7 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
             provisioning_status=constants.ACTIVE,
             operating_status=constants.ONLINE,
             enabled=True, load_balancer_id=lb.id)
+        self.session.commit()
         self.repos.health_monitor.create(
             self.session, project_id=project_id,
             name="health_mon1", type=constants.HEALTH_MONITOR_HTTP,
@@ -1033,10 +1119,12 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
             provisioning_status=constants.DELETED,
             operating_status=constants.OFFLINE,
             enabled=True, pool_id=pool.id)
+        self.session.commit()
         self.assertFalse(self.repos.check_quota_met(self.session,
                                                     self.session,
                                                     data_models.HealthMonitor,
                                                     project_id))
+        self.session.commit()
         self.assertEqual(1, self.repos.quotas.get(
             self.session, project_id=project_id).in_use_health_monitor)
 
@@ -1045,10 +1133,12 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
         conf.config(group='quotas', default_health_monitor_quota=10)
         quota = {'health_monitor': 0}
         self.repos.quotas.update(self.session, project_id, quota=quota)
+        self.session.commit()
         self.assertTrue(self.repos.check_quota_met(self.session,
                                                    self.session,
                                                    data_models.HealthMonitor,
                                                    project_id))
+        self.session.commit()
 
         # Test pre-existing quota with quota of one
         project_id = uuidutils.generate_uuid()
@@ -1059,6 +1149,7 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
                                                     self.session,
                                                     data_models.HealthMonitor,
                                                     project_id))
+        self.session.commit()
         self.assertEqual(1, self.repos.quotas.get(
             self.session, project_id=project_id).in_use_health_monitor)
         # Test above project is now at quota
@@ -1066,6 +1157,7 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
                                                    self.session,
                                                    data_models.HealthMonitor,
                                                    project_id))
+        self.session.commit()
         self.assertEqual(1, self.repos.quotas.get(
             self.session, project_id=project_id).in_use_health_monitor)
 
@@ -1074,10 +1166,12 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
         conf.config(group='quotas', default_health_monitor_quota=0)
         quota = {'health_monitor': constants.QUOTA_UNLIMITED}
         self.repos.quotas.update(self.session, project_id, quota=quota)
+        self.session.commit()
         self.assertFalse(self.repos.check_quota_met(self.session,
                                                     self.session,
                                                     data_models.HealthMonitor,
                                                     project_id))
+        self.session.commit()
         self.assertEqual(1, self.repos.quotas.get(
             self.session, project_id=project_id).in_use_health_monitor)
         # Test above project adding another health monitor
@@ -1085,6 +1179,7 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
                                                     self.session,
                                                     data_models.HealthMonitor,
                                                     project_id))
+        self.session.commit()
         self.assertEqual(2, self.repos.quotas.get(
             self.session, project_id=project_id).in_use_health_monitor)
 
@@ -1096,6 +1191,7 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
                                                    self.session,
                                                    data_models.Member,
                                                    project_id))
+        self.session.commit()
         self.assertIsNone(self.repos.quotas.get(
             self.session, project_id=project_id).in_use_member)
 
@@ -1106,6 +1202,7 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
                                                     self.session,
                                                     data_models.Member,
                                                     project_id))
+        self.session.commit()
         self.assertEqual(1, self.repos.quotas.get(
             self.session, project_id=project_id).in_use_member)
         # Test above project is now at quota
@@ -1113,6 +1210,7 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
                                                    self.session,
                                                    data_models.Member,
                                                    project_id))
+        self.session.commit()
         self.assertEqual(1, self.repos.quotas.get(
             self.session, project_id=project_id).in_use_member)
 
@@ -1124,6 +1222,7 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
                                                     self.session,
                                                     data_models.Member,
                                                     project_id))
+        self.session.commit()
         self.assertEqual(1, self.repos.quotas.get(
             self.session, project_id=project_id).in_use_member)
         # Test above project adding another member
@@ -1131,6 +1230,7 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
                                                     self.session,
                                                     data_models.Member,
                                                     project_id))
+        self.session.commit()
         self.assertEqual(2, self.repos.quotas.get(
             self.session, project_id=project_id).in_use_member)
 
@@ -1144,6 +1244,7 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
             provisioning_status=constants.ACTIVE,
             operating_status=constants.ONLINE,
             enabled=True)
+        self.session.commit()
         pool = self.repos.pool.create(
             self.session, id=uuidutils.generate_uuid(),
             project_id=project_id, name="pool1",
@@ -1152,16 +1253,20 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
             provisioning_status=constants.ACTIVE,
             operating_status=constants.ONLINE,
             enabled=True, load_balancer_id=lb.id)
+        self.session.commit()
         self.repos.member.create(
-            self.session, project_id=project_id,
+            self.session, id=uuidutils.generate_uuid(),
+            project_id=project_id,
             ip_address='192.0.2.1', protocol_port=80,
             provisioning_status=constants.ACTIVE,
             operating_status=constants.ONLINE,
             enabled=True, pool_id=pool.id, backup=False)
+        self.session.commit()
         self.assertTrue(self.repos.check_quota_met(self.session,
                                                    self.session,
                                                    data_models.Member,
                                                    project_id))
+        self.session.commit()
 
         # Test upgrade case with pre-quota deleted member
         project_id = uuidutils.generate_uuid()
@@ -1173,6 +1278,7 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
             provisioning_status=constants.ACTIVE,
             operating_status=constants.ONLINE,
             enabled=True)
+        self.session.commit()
         pool = self.repos.pool.create(
             self.session, id=uuidutils.generate_uuid(),
             project_id=project_id, name="pool1",
@@ -1181,16 +1287,20 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
             provisioning_status=constants.ACTIVE,
             operating_status=constants.ONLINE,
             enabled=True, load_balancer_id=lb.id)
+        self.session.commit()
         self.repos.member.create(
-            self.session, project_id=project_id,
+            self.session, id=uuidutils.generate_uuid(),
+            project_id=project_id,
             ip_address='192.0.2.1', protocol_port=80,
             provisioning_status=constants.DELETED,
             operating_status=constants.ONLINE,
             enabled=True, pool_id=pool.id, backup=False)
+        self.session.commit()
         self.assertFalse(self.repos.check_quota_met(self.session,
                                                     self.session,
                                                     data_models.Member,
                                                     project_id))
+        self.session.commit()
         self.assertEqual(1, self.repos.quotas.get(
             self.session, project_id=project_id).in_use_member)
 
@@ -1199,20 +1309,24 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
         conf.config(group='quotas', default_member_quota=10)
         quota = {'member': 0}
         self.repos.quotas.update(self.session, project_id, quota=quota)
+        self.session.commit()
         self.assertTrue(self.repos.check_quota_met(self.session,
                                                    self.session,
                                                    data_models.Member,
                                                    project_id))
+        self.session.commit()
 
         # Test pre-existing quota with quota of one
         project_id = uuidutils.generate_uuid()
         conf.config(group='quotas', default_member_quota=0)
         quota = {'member': 1}
         self.repos.quotas.update(self.session, project_id, quota=quota)
+        self.session.commit()
         self.assertFalse(self.repos.check_quota_met(self.session,
                                                     self.session,
                                                     data_models.Member,
                                                     project_id))
+        self.session.commit()
         self.assertEqual(1, self.repos.quotas.get(
             self.session, project_id=project_id).in_use_member)
         # Test above project is now at quota
@@ -1220,6 +1334,7 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
                                                    self.session,
                                                    data_models.Member,
                                                    project_id))
+        self.session.commit()
         self.assertEqual(1, self.repos.quotas.get(
             self.session, project_id=project_id).in_use_member)
 
@@ -1228,10 +1343,12 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
         conf.config(group='quotas', default_member_quota=0)
         quota = {'member': constants.QUOTA_UNLIMITED}
         self.repos.quotas.update(self.session, project_id, quota=quota)
+        self.session.commit()
         self.assertFalse(self.repos.check_quota_met(self.session,
                                                     self.session,
                                                     data_models.Member,
                                                     project_id))
+        self.session.commit()
         self.assertEqual(1, self.repos.quotas.get(
             self.session, project_id=project_id).in_use_member)
         # Test above project adding another member
@@ -1239,6 +1356,7 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
                                                     self.session,
                                                     data_models.Member,
                                                     project_id))
+        self.session.commit()
         self.assertEqual(2, self.repos.quotas.get(
             self.session, project_id=project_id).in_use_member)
 
@@ -1250,6 +1368,7 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
                                                    self.session,
                                                    data_models.L7Policy,
                                                    project_id))
+        self.session.commit()
         self.assertIsNone(self.repos.quotas.get(
             self.session, project_id=project_id).in_use_l7policy)
 
@@ -1260,6 +1379,7 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
                                                     self.session,
                                                     data_models.L7Policy,
                                                     project_id))
+        self.session.commit()
         self.assertEqual(1, self.repos.quotas.get(
             self.session, project_id=project_id).in_use_l7policy)
         # Test above project is now at quota
@@ -1267,6 +1387,7 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
                                                    self.session,
                                                    data_models.L7Policy,
                                                    project_id))
+        self.session.commit()
         self.assertEqual(1, self.repos.quotas.get(
             self.session, project_id=project_id).in_use_l7policy)
 
@@ -1278,6 +1399,7 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
                                                     self.session,
                                                     data_models.L7Policy,
                                                     project_id))
+        self.session.commit()
         self.assertEqual(1, self.repos.quotas.get(
             self.session, project_id=project_id).in_use_l7policy)
         # Test above project adding another l7policy
@@ -1285,6 +1407,7 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
                                                     self.session,
                                                     data_models.L7Policy,
                                                     project_id))
+        self.session.commit()
         self.assertEqual(2, self.repos.quotas.get(
             self.session, project_id=project_id).in_use_l7policy)
 
@@ -1298,21 +1421,26 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
             provisioning_status=constants.ACTIVE,
             operating_status=constants.ONLINE,
             enabled=True)
+        self.session.commit()
         listener = self.repos.listener.create(
-            self.session, protocol=constants.PROTOCOL_HTTP, protocol_port=80,
+            self.session, id=uuidutils.generate_uuid(),
+            protocol=constants.PROTOCOL_HTTP, protocol_port=80,
             enabled=True, provisioning_status=constants.ACTIVE,
             operating_status=constants.ONLINE, project_id=project_id,
             load_balancer_id=lb.id)
+        self.session.commit()
         self.repos.l7policy.create(
             self.session, name='l7policy', enabled=True, position=1,
             action=constants.L7POLICY_ACTION_REJECT,
             provisioning_status=constants.ACTIVE, listener_id=listener.id,
             operating_status=constants.ONLINE, project_id=project_id,
             id=uuidutils.generate_uuid())
+        self.session.commit()
         self.assertTrue(self.repos.check_quota_met(self.session,
                                                    self.session,
                                                    data_models.L7Policy,
                                                    project_id))
+        self.session.commit()
 
         # Test upgrade case with pre-quota deleted l7policy
         project_id = uuidutils.generate_uuid()
@@ -1324,21 +1452,26 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
             provisioning_status=constants.ACTIVE,
             operating_status=constants.ONLINE,
             enabled=True)
+        self.session.commit()
         listener = self.repos.listener.create(
-            self.session, protocol=constants.PROTOCOL_HTTP, protocol_port=80,
+            self.session, id=uuidutils.generate_uuid(),
+            protocol=constants.PROTOCOL_HTTP, protocol_port=80,
             enabled=True, provisioning_status=constants.ACTIVE,
             operating_status=constants.ONLINE, project_id=project_id,
             load_balancer_id=lb.id)
+        self.session.commit()
         self.repos.l7policy.create(
             self.session, name='l7policy', enabled=True, position=1,
             action=constants.L7POLICY_ACTION_REJECT,
             provisioning_status=constants.DELETED, listener_id=listener.id,
             operating_status=constants.ONLINE, project_id=project_id,
             id=uuidutils.generate_uuid())
+        self.session.commit()
         self.assertFalse(self.repos.check_quota_met(self.session,
                                                     self.session,
                                                     data_models.L7Policy,
                                                     project_id))
+        self.session.commit()
         self.assertEqual(1, self.repos.quotas.get(
             self.session, project_id=project_id).in_use_l7policy)
 
@@ -1347,20 +1480,24 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
         conf.config(group='quotas', default_l7policy_quota=10)
         quota = {'l7policy': 0}
         self.repos.quotas.update(self.session, project_id, quota=quota)
+        self.session.commit()
         self.assertTrue(self.repos.check_quota_met(self.session,
                                                    self.session,
                                                    data_models.L7Policy,
                                                    project_id))
+        self.session.commit()
 
         # Test pre-existing quota with quota of one
         project_id = uuidutils.generate_uuid()
         conf.config(group='quotas', default_l7policy_quota=0)
         quota = {'l7policy': 1}
         self.repos.quotas.update(self.session, project_id, quota=quota)
+        self.session.commit()
         self.assertFalse(self.repos.check_quota_met(self.session,
                                                     self.session,
                                                     data_models.L7Policy,
                                                     project_id))
+        self.session.commit()
         self.assertEqual(1, self.repos.quotas.get(
             self.session, project_id=project_id).in_use_l7policy)
         # Test above project is now at quota
@@ -1368,6 +1505,7 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
                                                    self.session,
                                                    data_models.L7Policy,
                                                    project_id))
+        self.session.commit()
         self.assertEqual(1, self.repos.quotas.get(
             self.session, project_id=project_id).in_use_l7policy)
 
@@ -1376,10 +1514,12 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
         conf.config(group='quotas', default_l7policy_quota=0)
         quota = {'l7policy': constants.QUOTA_UNLIMITED}
         self.repos.quotas.update(self.session, project_id, quota=quota)
+        self.session.commit()
         self.assertFalse(self.repos.check_quota_met(self.session,
                                                     self.session,
                                                     data_models.L7Policy,
                                                     project_id))
+        self.session.commit()
         self.assertEqual(1, self.repos.quotas.get(
             self.session, project_id=project_id).in_use_l7policy)
         # Test above project adding another l7policy
@@ -1387,6 +1527,7 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
                                                     self.session,
                                                     data_models.L7Policy,
                                                     project_id))
+        self.session.commit()
         self.assertEqual(2, self.repos.quotas.get(
             self.session, project_id=project_id).in_use_l7policy)
 
@@ -1398,6 +1539,7 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
                                                    self.session,
                                                    data_models.L7Rule,
                                                    project_id))
+        self.session.commit()
         self.assertIsNone(self.repos.quotas.get(
             self.session, project_id=project_id).in_use_l7rule)
 
@@ -1408,6 +1550,7 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
                                                     self.session,
                                                     data_models.L7Rule,
                                                     project_id))
+        self.session.commit()
         self.assertEqual(1, self.repos.quotas.get(
             self.session, project_id=project_id).in_use_l7rule)
         # Test above project is now at quota
@@ -1415,6 +1558,7 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
                                                    self.session,
                                                    data_models.L7Rule,
                                                    project_id))
+        self.session.commit()
         self.assertEqual(1, self.repos.quotas.get(
             self.session, project_id=project_id).in_use_l7rule)
 
@@ -1426,6 +1570,7 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
                                                     self.session,
                                                     data_models.L7Rule,
                                                     project_id))
+        self.session.commit()
         self.assertEqual(1, self.repos.quotas.get(
             self.session, project_id=project_id).in_use_l7rule)
         # Test above project adding another l7rule
@@ -1433,6 +1578,7 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
                                                     self.session,
                                                     data_models.L7Rule,
                                                     project_id))
+        self.session.commit()
         self.assertEqual(2, self.repos.quotas.get(
             self.session, project_id=project_id).in_use_l7rule)
 
@@ -1446,27 +1592,33 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
             provisioning_status=constants.ACTIVE,
             operating_status=constants.ONLINE,
             enabled=True)
+        self.session.commit()
         listener = self.repos.listener.create(
-            self.session, protocol=constants.PROTOCOL_HTTP, protocol_port=80,
+            self.session, id=uuidutils.generate_uuid(),
+            protocol=constants.PROTOCOL_HTTP, protocol_port=80,
             enabled=True, provisioning_status=constants.ACTIVE,
             operating_status=constants.ONLINE, project_id=project_id,
             load_balancer_id=lb.id)
+        self.session.commit()
         l7policy = self.repos.l7policy.create(
             self.session, name='l7policy', enabled=True, position=1,
             action=constants.L7POLICY_ACTION_REJECT,
             provisioning_status=constants.ACTIVE, listener_id=listener.id,
             operating_status=constants.ONLINE, project_id=project_id,
             id=uuidutils.generate_uuid())
+        self.session.commit()
         self.repos.l7rule.create(
             self.session, id=uuidutils.generate_uuid(),
             l7policy_id=l7policy.id, type=constants.L7RULE_TYPE_HOST_NAME,
             compare_type=constants.L7RULE_COMPARE_TYPE_EQUAL_TO, enabled=True,
             provisioning_status=constants.ACTIVE, value='hostname',
             operating_status=constants.ONLINE, project_id=project_id)
+        self.session.commit()
         self.assertTrue(self.repos.check_quota_met(self.session,
                                                    self.session,
                                                    data_models.L7Rule,
                                                    project_id))
+        self.session.commit()
 
         # Test upgrade case with pre-quota deleted l7rule
         project_id = uuidutils.generate_uuid()
@@ -1478,27 +1630,33 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
             provisioning_status=constants.ACTIVE,
             operating_status=constants.ONLINE,
             enabled=True)
+        self.session.commit()
         listener = self.repos.listener.create(
-            self.session, protocol=constants.PROTOCOL_HTTP, protocol_port=80,
+            self.session, id=uuidutils.generate_uuid(),
+            protocol=constants.PROTOCOL_HTTP, protocol_port=80,
             enabled=True, provisioning_status=constants.ACTIVE,
             operating_status=constants.ONLINE, project_id=project_id,
             load_balancer_id=lb.id)
+        self.session.commit()
         l7policy = self.repos.l7policy.create(
             self.session, name='l7policy', enabled=True, position=1,
             action=constants.L7POLICY_ACTION_REJECT,
             provisioning_status=constants.ACTIVE, listener_id=listener.id,
             operating_status=constants.ONLINE, project_id=project_id,
             id=uuidutils.generate_uuid())
+        self.session.commit()
         self.repos.l7rule.create(
             self.session, id=uuidutils.generate_uuid(),
             l7policy_id=l7policy.id, type=constants.L7RULE_TYPE_HOST_NAME,
             compare_type=constants.L7RULE_COMPARE_TYPE_EQUAL_TO, enabled=True,
             provisioning_status=constants.DELETED, value='hostname',
             operating_status=constants.ONLINE, project_id=project_id)
+        self.session.commit()
         self.assertFalse(self.repos.check_quota_met(self.session,
                                                     self.session,
                                                     data_models.L7Rule,
                                                     project_id))
+        self.session.commit()
         self.assertEqual(1, self.repos.quotas.get(
             self.session, project_id=project_id).in_use_l7rule)
 
@@ -1507,20 +1665,24 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
         conf.config(group='quotas', default_l7rule_quota=10)
         quota = {'l7rule': 0}
         self.repos.quotas.update(self.session, project_id, quota=quota)
+        self.session.commit()
         self.assertTrue(self.repos.check_quota_met(self.session,
                                                    self.session,
                                                    data_models.L7Rule,
                                                    project_id))
+        self.session.commit()
 
         # Test pre-existing quota with quota of one
         project_id = uuidutils.generate_uuid()
         conf.config(group='quotas', default_l7rule_quota=0)
         quota = {'l7rule': 1}
         self.repos.quotas.update(self.session, project_id, quota=quota)
+        self.session.commit()
         self.assertFalse(self.repos.check_quota_met(self.session,
                                                     self.session,
                                                     data_models.L7Rule,
                                                     project_id))
+        self.session.commit()
         self.assertEqual(1, self.repos.quotas.get(
             self.session, project_id=project_id).in_use_l7rule)
         # Test above project is now at quota
@@ -1528,6 +1690,7 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
                                                    self.session,
                                                    data_models.L7Rule,
                                                    project_id))
+        self.session.commit()
         self.assertEqual(1, self.repos.quotas.get(
             self.session, project_id=project_id).in_use_l7rule)
 
@@ -1536,10 +1699,12 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
         conf.config(group='quotas', default_l7rule_quota=0)
         quota = {'l7rule': constants.QUOTA_UNLIMITED}
         self.repos.quotas.update(self.session, project_id, quota=quota)
+        self.session.commit()
         self.assertFalse(self.repos.check_quota_met(self.session,
                                                     self.session,
                                                     data_models.L7Rule,
                                                     project_id))
+        self.session.commit()
         self.assertEqual(1, self.repos.quotas.get(
             self.session, project_id=project_id).in_use_l7rule)
         # Test above project adding another l7rule
@@ -1547,6 +1712,7 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
                                                     self.session,
                                                     data_models.L7Rule,
                                                     project_id))
+        self.session.commit()
         self.assertEqual(2, self.repos.quotas.get(
             self.session, project_id=project_id).in_use_l7rule)
 
@@ -1952,6 +2118,7 @@ class PoolRepositoryTest(BaseRepositoryTest):
             lb_algorithm=constants.LB_ALGORITHM_ROUND_ROBIN,
             provisioning_status=constants.ACTIVE,
             operating_status=constants.ONLINE, enabled=True, tags=['test_tag'])
+        self.session.commit()
         return pool
 
     def test_get(self):
@@ -1959,7 +2126,8 @@ class PoolRepositoryTest(BaseRepositoryTest):
                                 project_id=self.FAKE_UUID_2)
         new_pool = self.pool_repo.get(self.session, id=pool.id)
         self.assertIsInstance(new_pool, data_models.Pool)
-        self.assertEqual(pool, new_pool)
+        self.assertEqual(pool.id, new_pool.id)
+        self.assertEqual(pool.project_id, new_pool.project_id)
 
     def test_get_all(self):
         pool_one = self.create_pool(pool_id=self.FAKE_UUID_1,
@@ -1970,8 +2138,10 @@ class PoolRepositoryTest(BaseRepositoryTest):
                                               project_id=self.FAKE_UUID_2)
         self.assertIsInstance(pool_list, list)
         self.assertEqual(2, len(pool_list))
-        self.assertEqual(pool_one, pool_list[0])
-        self.assertEqual(pool_two, pool_list[1])
+        self.assertEqual(pool_one.id, pool_list[0].id)
+        self.assertEqual(pool_one.project_id, pool_list[0].project_id)
+        self.assertEqual(pool_two.id, pool_list[1].id)
+        self.assertEqual(pool_two.project_id, pool_list[1].project_id)
 
     def test_create(self):
         pool = self.create_pool(pool_id=self.FAKE_UUID_1,
@@ -1989,6 +2159,7 @@ class PoolRepositoryTest(BaseRepositoryTest):
                                 project_id=self.FAKE_UUID_2)
         self.pool_repo.update(self.session, pool.id,
                               description="other_pool_description")
+        self.session.commit()
         new_pool = self.pool_repo.get(self.session, id=self.FAKE_UUID_1)
         self.assertEqual("other_pool_description", new_pool.description)
 
@@ -1996,6 +2167,7 @@ class PoolRepositoryTest(BaseRepositoryTest):
         pool = self.create_pool(pool_id=self.FAKE_UUID_1,
                                 project_id=self.FAKE_UUID_2)
         self.pool_repo.delete(self.session, id=pool.id)
+        self.session.commit()
         self.assertIsNone(self.pool_repo.get(self.session, id=pool.id))
 
     def test_delete_with_member(self):
@@ -2009,26 +2181,37 @@ class PoolRepositoryTest(BaseRepositoryTest):
                                          provisioning_status=constants.ACTIVE,
                                          operating_status=constants.ONLINE,
                                          backup=False)
+        self.session.commit()
         new_pool = self.pool_repo.get(self.session, id=pool.id)
         self.assertEqual(1, len(new_pool.members))
-        self.assertEqual(member, new_pool.members[0])
+        self.assertEqual(member.id, new_pool.members[0].id)
+        self.assertEqual(member.ip_address, new_pool.members[0].ip_address)
         self.pool_repo.delete(self.session, id=pool.id)
+        self.session.commit()
         self.assertIsNone(self.pool_repo.get(self.session, id=pool.id))
         self.assertIsNone(self.member_repo.get(self.session, id=member.id))
 
     def test_delete_with_health_monitor(self):
         pool = self.create_pool(pool_id=self.FAKE_UUID_1,
                                 project_id=self.FAKE_UUID_2)
-        hm = self.hm_repo.create(self.session, pool_id=pool.id,
+        hm = self.hm_repo.create(self.session, id=uuidutils.generate_uuid(),
+                                 pool_id=pool.id,
                                  type=constants.HEALTH_MONITOR_HTTP,
                                  delay=1, timeout=1, fall_threshold=1,
                                  rise_threshold=1, enabled=True,
                                  provisioning_status=constants.ACTIVE,
                                  operating_status=constants.ONLINE)
+        self.session.commit()
         new_pool = self.pool_repo.get(self.session, id=pool.id)
-        self.assertEqual(pool, new_pool)
-        self.assertEqual(hm, new_pool.health_monitor)
+        self.assertEqual(pool.id, new_pool.id)
+        self.assertEqual(pool.name, new_pool.name)
+        self.assertEqual(pool.project_id, new_pool.project_id)
+        self.assertEqual(hm.id, new_pool.health_monitor.id)
+        self.assertEqual(hm.name, new_pool.health_monitor.name)
+        self.assertEqual(hm.type, new_pool.health_monitor.type)
+        self.assertEqual(hm.pool_id, new_pool.health_monitor.pool_id)
         self.pool_repo.delete(self.session, id=pool.id)
+        self.session.commit()
         self.assertIsNone(self.pool_repo.get(self.session, id=pool.id))
         self.assertIsNone(self.hm_repo.get(self.session, pool_id=hm.pool_id))
 
@@ -2039,17 +2222,22 @@ class PoolRepositoryTest(BaseRepositoryTest):
             self.session, pool_id=pool.id,
             type=constants.SESSION_PERSISTENCE_HTTP_COOKIE,
             cookie_name="cookie_name")
+        self.session.commit()
         new_pool = self.pool_repo.get(self.session, id=pool.id)
-        self.assertEqual(pool, new_pool)
-        self.assertEqual(sp, new_pool.session_persistence)
+        self.assertEqual(pool.id, new_pool.id)
+        self.assertEqual(pool.project_id, new_pool.project_id)
+        self.assertEqual(sp.pool_id, new_pool.session_persistence.pool_id)
         self.pool_repo.delete(self.session, id=new_pool.id)
+        self.session.commit()
         self.assertIsNone(self.pool_repo.get(self.session, id=pool.id))
         self.assertIsNone(self.sp_repo.get(self.session, pool_id=sp.pool_id))
 
     def test_delete_with_all_children(self):
         pool = self.create_pool(pool_id=self.FAKE_UUID_1,
                                 project_id=self.FAKE_UUID_2)
-        hm = self.hm_repo.create(self.session, pool_id=pool.id,
+        hm = self.hm_repo.create(self.session,
+                                 id=uuidutils.generate_uuid(),
+                                 pool_id=pool.id,
                                  type=constants.HEALTH_MONITOR_HTTP,
                                  delay=1, timeout=1, fall_threshold=1,
                                  rise_threshold=1, enabled=True,
@@ -2068,14 +2256,22 @@ class PoolRepositoryTest(BaseRepositoryTest):
             self.session, pool_id=pool.id,
             type=constants.SESSION_PERSISTENCE_HTTP_COOKIE,
             cookie_name="cookie_name")
+        self.session.commit()
         new_pool = self.pool_repo.get(self.session, id=pool.id)
-        self.assertEqual(pool, new_pool)
+        self.assertEqual(pool.id, new_pool.id)
+        self.assertEqual(pool.project_id, new_pool.project_id)
         self.assertEqual(1, len(new_pool.members))
         new_member = self.member_repo.get(self.session, id=member.id)
-        self.assertEqual(new_member, new_pool.members[0])
-        self.assertEqual(hm, new_pool.health_monitor)
-        self.assertEqual(sp, new_pool.session_persistence)
+        self.assertEqual(new_member.id, new_pool.members[0].id)
+        self.assertEqual(new_member.pool_id, new_pool.members[0].pool_id)
+        self.assertEqual(new_member.ip_address, new_pool.members[0].ip_address)
+        self.assertEqual(hm.id, new_pool.health_monitor.id)
+        self.assertEqual(hm.type, new_pool.health_monitor.type)
+        self.assertEqual(hm.pool_id, new_pool.health_monitor.pool_id)
+        self.assertEqual(sp.type, new_pool.session_persistence.type)
+        self.assertEqual(sp.pool_id, new_pool.session_persistence.pool_id)
         self.pool_repo.delete(self.session, id=pool.id)
+        self.session.commit()
         self.assertIsNone(self.pool_repo.get(self.session, id=pool.id))
         self.assertIsNone(self.member_repo.get(self.session, id=member.id))
         self.assertIsNone(self.hm_repo.get(self.session, pool_id=hm.pool_id))
@@ -2095,6 +2291,7 @@ class PoolRepositoryTest(BaseRepositoryTest):
                             rise_threshold=1, enabled=True,
                             provisioning_status=constants.ACTIVE,
                             operating_status=constants.ONLINE)
+        self.session.commit()
 
         hm_count, member_count = (
             self.pool_repo.get_children_count(self.session, pool.id))
@@ -2119,6 +2316,7 @@ class PoolRepositoryTest(BaseRepositoryTest):
                                 operating_status=constants.ONLINE,
                                 enabled=True,
                                 backup=False)
+        self.session.commit()
 
         hm_count, member_count = (
             self.pool_repo.get_children_count(self.session, pool.id))
@@ -2137,6 +2335,7 @@ class MemberRepositoryTest(BaseRepositoryTest):
             lb_algorithm=constants.LB_ALGORITHM_ROUND_ROBIN,
             provisioning_status=constants.ACTIVE,
             operating_status=constants.ONLINE, enabled=True, tags=['test_tag'])
+        self.session.commit()
 
     def create_member(self, member_id, project_id, pool_id, ip_address):
         member = self.member_repo.create(self.session, id=member_id,
@@ -2148,6 +2347,7 @@ class MemberRepositoryTest(BaseRepositoryTest):
                                          provisioning_status=constants.ACTIVE,
                                          enabled=True,
                                          backup=False)
+        self.session.commit()
         return member
 
     def test_get(self):
@@ -2155,7 +2355,9 @@ class MemberRepositoryTest(BaseRepositoryTest):
                                     self.pool.id, "192.0.2.1")
         new_member = self.member_repo.get(self.session, id=member.id)
         self.assertIsInstance(new_member, data_models.Member)
-        self.assertEqual(member, new_member)
+        self.assertEqual(member.id, new_member.id)
+        self.assertEqual(member.pool_id, new_member.pool_id)
+        self.assertEqual(member.ip_address, new_member.ip_address)
 
     def test_get_all(self):
         member_one = self.create_member(self.FAKE_UUID_1, self.FAKE_UUID_2,
@@ -2166,8 +2368,12 @@ class MemberRepositoryTest(BaseRepositoryTest):
                                                   project_id=self.FAKE_UUID_2)
         self.assertIsInstance(member_list, list)
         self.assertEqual(2, len(member_list))
-        self.assertEqual(member_one, member_list[0])
-        self.assertEqual(member_two, member_list[1])
+        self.assertEqual(member_one.id, member_list[0].id)
+        self.assertEqual(member_one.pool_id, member_list[0].pool_id)
+        self.assertEqual(member_one.ip_address, member_list[0].ip_address)
+        self.assertEqual(member_two.id, member_list[1].id)
+        self.assertEqual(member_two.pool_id, member_list[1].pool_id)
+        self.assertEqual(member_two.ip_address, member_list[1].ip_address)
 
     def test_create(self):
         member = self.create_member(self.FAKE_UUID_1, self.FAKE_UUID_2,
@@ -2187,6 +2393,7 @@ class MemberRepositoryTest(BaseRepositoryTest):
                                     self.pool.id, "192.0.2.1")
         self.member_repo.update(self.session, id=member.id,
                                 ip_address=ip_address_change)
+        self.session.commit()
         new_member = self.member_repo.get(self.session, id=member.id)
         self.assertEqual(ip_address_change, new_member.ip_address)
 
@@ -2194,6 +2401,7 @@ class MemberRepositoryTest(BaseRepositoryTest):
         member = self.create_member(self.FAKE_UUID_1, self.FAKE_UUID_2,
                                     self.pool.id, "192.0.2.1")
         self.member_repo.delete(self.session, id=member.id)
+        self.session.commit()
         self.assertIsNone(self.member_repo.get(self.session, id=member.id))
         new_pool = self.pool_repo.get(self.session, id=self.pool.id)
         self.assertIsNotNone(new_pool)
@@ -2208,6 +2416,7 @@ class MemberRepositoryTest(BaseRepositoryTest):
             self.session,
             pool_id=self.pool.id,
             operating_status=constants.OFFLINE)
+        self.session.commit()
         new_member1 = self.member_repo.get(self.session, id=member1.id)
         new_member2 = self.member_repo.get(self.session, id=member2.id)
         self.assertEqual(constants.OFFLINE, new_member1.operating_status)
@@ -2275,6 +2484,7 @@ class TestListenerRepositoryTest(BaseRepositoryTest):
             provisioning_status=constants.ACTIVE,
             operating_status=constants.ONLINE, enabled=True,
             server_group_id=self.FAKE_UUID_1)
+        self.session.commit()
 
     def create_listener(self, listener_id, port, default_pool_id=None,
                         provisioning_status=constants.ACTIVE):
@@ -2286,6 +2496,7 @@ class TestListenerRepositoryTest(BaseRepositoryTest):
             default_pool_id=default_pool_id, operating_status=constants.ONLINE,
             provisioning_status=provisioning_status, enabled=True,
             peer_port=1025, tags=['test_tag'])
+        self.session.commit()
         return listener
 
     def create_amphora(self, amphora_id, loadbalancer_id):
@@ -2295,6 +2506,7 @@ class TestListenerRepositoryTest(BaseRepositoryTest):
                                            status=constants.ACTIVE,
                                            vrrp_ip=self.FAKE_IP,
                                            lb_network_ip=self.FAKE_IP)
+        self.session.commit()
         return amphora
 
     def create_loadbalancer(self, lb_id):
@@ -2304,13 +2516,17 @@ class TestListenerRepositoryTest(BaseRepositoryTest):
                                  provisioning_status=constants.ACTIVE,
                                  operating_status=constants.ONLINE,
                                  enabled=True)
+        self.session.commit()
         return lb
 
     def test_get(self):
         listener = self.create_listener(self.FAKE_UUID_1, 80)
         new_listener = self.listener_repo.get(self.session, id=listener.id)
         self.assertIsInstance(new_listener, data_models.Listener)
-        self.assertEqual(listener, new_listener)
+        self.assertEqual(listener.id, new_listener.id)
+        self.assertEqual(listener.name, new_listener.name)
+        self.assertEqual(listener.protocol, new_listener.protocol)
+        self.assertEqual(listener.protocol_port, new_listener.protocol_port)
 
     def test_get_all(self):
         listener_one = self.create_listener(self.FAKE_UUID_1, 80)
@@ -2319,8 +2535,8 @@ class TestListenerRepositoryTest(BaseRepositoryTest):
             self.session, project_id=self.FAKE_UUID_2)
         self.assertIsInstance(listener_list, list)
         self.assertEqual(2, len(listener_list))
-        self.assertEqual(listener_one, listener_list[0])
-        self.assertEqual(listener_two, listener_list[1])
+        self.assertEqual(listener_one.id, listener_list[0].id)
+        self.assertEqual(listener_two.id, listener_list[1].id)
 
     def test_create(self):
         listener = self.create_listener(self.FAKE_UUID_1, 80)
@@ -2345,6 +2561,7 @@ class TestListenerRepositoryTest(BaseRepositoryTest):
             load_balancer_id=lb.id, protocol=constants.PROTOCOL_HTTP,
             protocol_port=80, provisioning_status=constants.ACTIVE,
             operating_status=constants.ONLINE, enabled=True)
+        self.session.commit()
         new_listener = self.listener_repo.get(self.session, id=listener.id)
         self.assertEqual(1025, new_listener.peer_port)
 
@@ -2356,12 +2573,14 @@ class TestListenerRepositoryTest(BaseRepositoryTest):
             load_balancer_id=lb.id, protocol=constants.PROTOCOL_HTTP,
             protocol_port=80, provisioning_status=constants.ACTIVE,
             operating_status=constants.ONLINE, enabled=True)
+        self.session.commit()
         listener_b = self.listener_repo.create(
             self.session, id=uuidutils.generate_uuid(),
             project_id=self.FAKE_UUID_2,
             load_balancer_id=lb.id, protocol=constants.PROTOCOL_HTTP,
             protocol_port=81, provisioning_status=constants.ACTIVE,
             operating_status=constants.ONLINE, enabled=True)
+        self.session.commit()
         new_listener_a = self.listener_repo.get(self.session, id=listener_a.id)
         new_listener_b = self.listener_repo.get(self.session, id=listener_b.id)
         self.assertEqual(1025, new_listener_a.peer_port)
@@ -2373,6 +2592,7 @@ class TestListenerRepositoryTest(BaseRepositoryTest):
             name="lb_name2", description="lb_description2",
             provisioning_status=constants.ACTIVE,
             operating_status=constants.ONLINE, enabled=True)
+        self.session.commit()
         pool = self.pool_repo.create(
             self.session, id=self.FAKE_UUID_4, project_id=self.FAKE_UUID_2,
             name="pool_test", description="pool_description",
@@ -2381,6 +2601,7 @@ class TestListenerRepositoryTest(BaseRepositoryTest):
             provisioning_status=constants.ACTIVE,
             operating_status=constants.ONLINE, enabled=True,
             load_balancer_id=load_balancer2.id)
+        self.session.commit()
         self.assertRaises(exceptions.NotFound, self.create_listener,
                           self.FAKE_UUID_1, 80, default_pool_id=pool.id)
 
@@ -2394,6 +2615,7 @@ class TestListenerRepositoryTest(BaseRepositoryTest):
         container2_dm = data_models.SNI(**container2)
         self.sni_repo.create(self.session, **container1)
         self.sni_repo.create(self.session, **container2)
+        self.session.commit()
         new_listener = self.listener_repo.get(self.session, id=listener.id)
         self.assertIn(container1_dm, new_listener.sni_containers)
         self.assertIn(container2_dm, new_listener.sni_containers)
@@ -2401,8 +2623,10 @@ class TestListenerRepositoryTest(BaseRepositoryTest):
     def test_update(self):
         name_change = "new_listener_name"
         listener = self.create_listener(self.FAKE_UUID_1, 80)
+        self.session.commit()
         self.listener_repo.update(self.session, listener.id,
                                   name=name_change)
+        self.session.commit()
         new_listener = self.listener_repo.get(self.session, id=listener.id)
         self.assertEqual(name_change, new_listener.name)
 
@@ -2413,6 +2637,7 @@ class TestListenerRepositoryTest(BaseRepositoryTest):
         container1_dm = data_models.SNI(**container1)
         self.listener_repo.update(self.session, listener.id,
                                   sni_containers=[self.FAKE_UUID_2])
+        self.session.commit()
         new_listener = self.listener_repo.get(self.session, id=listener.id)
         self.assertIn(container1_dm, new_listener.sni_containers)
 
@@ -2429,10 +2654,12 @@ class TestListenerRepositoryTest(BaseRepositoryTest):
         listener = self.create_listener(self.FAKE_UUID_1, 80)
         sni = self.sni_repo.create(self.session, listener_id=listener.id,
                                    tls_container_id=self.FAKE_UUID_3)
+        self.session.commit()
         new_listener = self.listener_repo.get(self.session, id=listener.id)
         self.assertIsNotNone(new_listener)
         self.assertEqual(sni, new_listener.sni_containers[0])
         self.listener_repo.delete(self.session, id=new_listener.id)
+        self.session.commit()
         self.assertIsNone(self.listener_repo.get(self.session, id=listener.id))
         self.assertIsNone(self.sni_repo.get(self.session,
                                             listener_id=listener.id))
@@ -2445,11 +2672,13 @@ class TestListenerRepositoryTest(BaseRepositoryTest):
             self.session, listener_id=listener.id, amphora_id=amphora.id,
             bytes_in=1, bytes_out=1,
             active_connections=1, total_connections=1, request_errors=1)
+        self.session.commit()
         new_listener = self.listener_repo.get(self.session, id=listener.id)
         self.assertIsNotNone(new_listener)
         self.assertIsNotNone(self.listener_stats_repo.get(
             self.session, listener_id=listener.id))
         self.listener_repo.delete(self.session, id=listener.id)
+        self.session.commit()
         self.assertIsNone(self.listener_repo.get(self.session, id=listener.id))
         # ListenerStatistics should stick around
         self.assertIsNotNone(self.listener_stats_repo.get(
@@ -2464,12 +2693,15 @@ class TestListenerRepositoryTest(BaseRepositoryTest):
             provisioning_status=constants.ACTIVE,
             operating_status=constants.ONLINE, enabled=True,
             load_balancer_id=self.load_balancer.id)
+        self.session.commit()
         listener = self.create_listener(self.FAKE_UUID_1, 80,
                                         default_pool_id=pool.id)
+        pool = self.pool_repo.get(self.session, id=pool.id)
         new_listener = self.listener_repo.get(self.session, id=listener.id)
         self.assertIsNotNone(new_listener)
         self.assertEqual(pool, new_listener.default_pool)
         self.listener_repo.delete(self.session, id=new_listener.id)
+        self.session.commit()
         self.assertIsNone(self.listener_repo.get(self.session, id=listener.id))
         # Pool should stick around
         self.assertIsNotNone(self.pool_repo.get(self.session, id=pool.id))
@@ -2483,6 +2715,7 @@ class TestListenerRepositoryTest(BaseRepositoryTest):
             provisioning_status=constants.ACTIVE,
             operating_status=constants.ONLINE, enabled=True,
             load_balancer_id=self.load_balancer.id)
+        self.session.commit()
         listener = self.create_listener(self.FAKE_UUID_1, 80,
                                         default_pool_id=pool.id)
         sni = self.sni_repo.create(self.session, listener_id=listener.id,
@@ -2494,11 +2727,14 @@ class TestListenerRepositoryTest(BaseRepositoryTest):
             amphora_id=amphora.id,
             bytes_in=1, bytes_out=1,
             active_connections=1, total_connections=1, request_errors=1)
+        self.session.commit()
+        pool = self.pool_repo.get(self.session, id=pool.id)
         new_listener = self.listener_repo.get(self.session, id=listener.id)
         self.assertIsNotNone(new_listener)
         self.assertEqual(pool, new_listener.default_pool)
         self.assertEqual(sni, new_listener.sni_containers[0])
         self.listener_repo.delete(self.session, id=listener.id)
+        self.session.commit()
         self.assertIsNone(self.listener_repo.get(self.session, id=listener.id))
         self.assertIsNone(self.sni_repo.get(self.session,
                                             listener_id=listener.id))
@@ -2517,12 +2753,17 @@ class TestListenerRepositoryTest(BaseRepositoryTest):
             provisioning_status=constants.ACTIVE,
             operating_status=constants.ONLINE, enabled=True,
             load_balancer_id=self.load_balancer.id)
+        self.session.commit()
         listener = self.create_listener(self.FAKE_UUID_1, 80,
                                         default_pool_id=pool.id)
         new_listener = self.listener_repo.get(self.session, id=listener.id)
         self.assertIsNotNone(new_listener)
-        self.assertEqual(pool, new_listener.default_pool)
+        self.assertEqual(pool.id, new_listener.default_pool.id)
+        self.assertEqual(pool.load_balancer_id,
+                         new_listener.default_pool.load_balancer_id)
+        self.assertEqual(pool.project_id, new_listener.default_pool.project_id)
         self.pool_repo.delete(self.session, id=pool.id)
+        self.session.commit()
         new_listener = self.listener_repo.get(self.session, id=listener.id)
         self.assertIsNone(new_listener.default_pool)
 
@@ -2531,6 +2772,7 @@ class TestListenerRepositoryTest(BaseRepositoryTest):
                                         provisioning_status=constants.ACTIVE)
         self.listener_repo.prov_status_active_if_not_error(self.session,
                                                            listener.id)
+        self.session.commit()
         new_listener = self.listener_repo.get(self.session, id=listener.id)
         self.assertEqual(constants.ACTIVE, new_listener.provisioning_status)
 
@@ -2539,6 +2781,7 @@ class TestListenerRepositoryTest(BaseRepositoryTest):
                                         provisioning_status=constants.ERROR)
         self.listener_repo.prov_status_active_if_not_error(self.session,
                                                            listener.id)
+        self.session.commit()
         new_listener = self.listener_repo.get(self.session, id=listener.id)
         self.assertEqual(constants.ERROR, new_listener.provisioning_status)
 
@@ -2547,6 +2790,7 @@ class TestListenerRepositoryTest(BaseRepositoryTest):
             self.FAKE_UUID_1, 80, provisioning_status=constants.PENDING_UPDATE)
         self.listener_repo.prov_status_active_if_not_error(self.session,
                                                            listener.id)
+        self.session.commit()
         new_listener = self.listener_repo.get(self.session, id=listener.id)
         self.assertEqual(constants.ACTIVE, new_listener.provisioning_status)
 
@@ -2556,6 +2800,7 @@ class TestListenerRepositoryTest(BaseRepositoryTest):
         # Should not raise an exception nor change any status
         self.listener_repo.prov_status_active_if_not_error(self.session,
                                                            'bogus_id')
+        self.session.commit()
         new_listener = self.listener_repo.get(self.session, id=listener.id)
         self.assertEqual(constants.PENDING_UPDATE,
                          new_listener.provisioning_status)
@@ -2586,12 +2831,14 @@ class ListenerStatisticsRepositoryTest(BaseRepositoryTest):
                                                 status=constants.ACTIVE,
                                                 vrrp_ip=self.FAKE_IP,
                                                 lb_network_ip=self.FAKE_IP)
+        self.session.commit()
 
     def create_listener_stats(self, listener_id, amphora_id):
         stats = self.listener_stats_repo.create(
             self.session, listener_id=listener_id, amphora_id=amphora_id,
             bytes_in=1, bytes_out=1,
             active_connections=1, total_connections=1, request_errors=1)
+        self.session.commit()
         return stats
 
     def test_get(self):
@@ -2617,6 +2864,7 @@ class ListenerStatisticsRepositoryTest(BaseRepositoryTest):
         stats = self.create_listener_stats(self.listener.id, self.amphora.id)
         self.listener_stats_repo.update(self.session, stats.listener_id,
                                         bytes_in=bytes_in_change)
+        self.session.commit()
         new_stats = self.listener_stats_repo.get(self.session,
                                                  listener_id=stats.listener_id)
         self.assertIsInstance(new_stats, data_models.ListenerStatistics)
@@ -2626,6 +2874,7 @@ class ListenerStatisticsRepositoryTest(BaseRepositoryTest):
         stats = self.create_listener_stats(self.listener.id, self.amphora.id)
         self.listener_stats_repo.delete(self.session,
                                         listener_id=stats.listener_id)
+        self.session.commit()
         self.assertIsNone(self.listener_stats_repo.get(
             self.session, listener_id=stats.listener_id))
         new_listener = self.listener_repo.get(self.session,
@@ -2652,6 +2901,7 @@ class ListenerStatisticsRepositoryTest(BaseRepositoryTest):
             request_errors=request_errors
         )
         self.listener_stats_repo.replace(self.session, stats_obj)
+        self.session.commit()
         obj = self.listener_stats_repo.get(self.session,
                                            listener_id=self.listener.id)
         self.assertIsNotNone(obj)
@@ -2679,6 +2929,7 @@ class ListenerStatisticsRepositoryTest(BaseRepositoryTest):
             request_errors=request_errors_2
         )
         self.listener_stats_repo.replace(self.session, stats_obj_2)
+        self.session.commit()
         obj = self.listener_stats_repo.get(self.session,
                                            listener_id=self.listener.id)
         self.assertIsNotNone(obj)
@@ -2700,6 +2951,7 @@ class ListenerStatisticsRepositoryTest(BaseRepositoryTest):
             request_errors=request_errors
         )
         self.listener_stats_repo.replace(self.session, stats_obj)
+        self.session.commit()
         obj = self.listener_stats_repo.get(self.session,
                                            listener_id=self.listener.id,
                                            amphora_id=self.listener.id)
@@ -2731,6 +2983,7 @@ class ListenerStatisticsRepositoryTest(BaseRepositoryTest):
             request_errors=request_errors
         )
         self.listener_stats_repo.increment(self.session, delta_stats)
+        self.session.commit()
         obj = self.listener_stats_repo.get(self.session,
                                            listener_id=self.listener.id)
         self.assertIsNotNone(obj)
@@ -2758,6 +3011,7 @@ class ListenerStatisticsRepositoryTest(BaseRepositoryTest):
             request_errors=request_errors_2
         )
         self.listener_stats_repo.increment(self.session, delta_stats_2)
+        self.session.commit()
         obj = self.listener_stats_repo.get(self.session,
                                            listener_id=self.listener.id)
         self.assertIsNotNone(obj)
@@ -2779,6 +3033,7 @@ class ListenerStatisticsRepositoryTest(BaseRepositoryTest):
             request_errors=request_errors
         )
         self.listener_stats_repo.increment(self.session, stats_obj)
+        self.session.commit()
         obj = self.listener_stats_repo.get(self.session,
                                            listener_id=self.listener.id,
                                            amphora_id=self.listener.id)
@@ -2810,6 +3065,7 @@ class HealthMonitorRepositoryTest(BaseRepositoryTest):
             lb_algorithm=constants.LB_ALGORITHM_ROUND_ROBIN,
             provisioning_status=constants.ACTIVE,
             operating_status=constants.ONLINE, enabled=True)
+        self.session.commit()
 
     def create_health_monitor(self, hm_id, pool_id):
         health_monitor = self.hm_repo.create(
@@ -2820,6 +3076,7 @@ class HealthMonitorRepositoryTest(BaseRepositoryTest):
             provisioning_status=constants.ACTIVE,
             operating_status=constants.ONLINE,
             expected_codes="200", enabled=True, tags=['test_tag'])
+        self.session.commit()
         self.assertEqual(hm_id, health_monitor.id)
         return health_monitor
 
@@ -2827,7 +3084,9 @@ class HealthMonitorRepositoryTest(BaseRepositoryTest):
         hm = self.create_health_monitor(self.FAKE_UUID_3, self.pool.id)
         new_hm = self.hm_repo.get(self.session, id=hm.id)
         self.assertIsInstance(new_hm, data_models.HealthMonitor)
-        self.assertEqual(hm, new_hm)
+        self.assertEqual(hm.id, new_hm.id)
+        self.assertEqual(hm.pool_id, new_hm.pool_id)
+        self.assertEqual(hm.type, new_hm.type)
 
     def test_create(self):
         hm = self.create_health_monitor(self.FAKE_UUID_3, self.pool.id)
@@ -2848,12 +3107,14 @@ class HealthMonitorRepositoryTest(BaseRepositoryTest):
         hm = self.create_health_monitor(self.FAKE_UUID_3, self.pool.id)
         self.hm_repo.update(
             self.session, hm.id, delay=delay_change)
+        self.session.commit()
         new_hm = self.hm_repo.get(self.session, id=hm.id)
         self.assertEqual(delay_change, new_hm.delay)
 
     def test_delete(self):
         hm = self.create_health_monitor(self.FAKE_UUID_3, self.pool.id)
         self.hm_repo.delete(self.session, id=hm.id)
+        self.session.commit()
         self.assertIsNone(self.hm_repo.get(self.session, id=hm.id))
         new_pool = self.pool_repo.get(self.session, id=self.pool.id)
         self.assertIsNotNone(new_pool)
@@ -2873,13 +3134,15 @@ class LoadBalancerRepositoryTest(BaseRepositoryTest):
         )
         settings.update(**overrides)
         lb = self.lb_repo.create(self.session, **settings)
+        self.session.commit()
         return lb
 
     def test_get(self):
         lb = self.create_loadbalancer(self.FAKE_UUID_1)
         new_lb = self.lb_repo.get(self.session, id=lb.id)
         self.assertIsInstance(new_lb, data_models.LoadBalancer)
-        self.assertEqual(lb, new_lb)
+        self.assertEqual(lb.id, new_lb.id)
+        self.assertEqual(lb.project_id, new_lb.project_id)
 
     def test_get_all(self):
         lb_one = self.create_loadbalancer(self.FAKE_UUID_1)
@@ -2887,8 +3150,10 @@ class LoadBalancerRepositoryTest(BaseRepositoryTest):
         lb_list, _ = self.lb_repo.get_all(self.session,
                                           project_id=self.FAKE_UUID_2)
         self.assertEqual(2, len(lb_list))
-        self.assertEqual(lb_one, lb_list[0])
-        self.assertEqual(lb_two, lb_list[1])
+        self.assertEqual(lb_one.id, lb_list[0].id)
+        self.assertEqual(lb_one.project_id, lb_list[0].project_id)
+        self.assertEqual(lb_two.id, lb_list[1].id)
+        self.assertEqual(lb_two.project_id, lb_list[1].project_id)
 
     def test_create(self):
         lb = self.create_loadbalancer(self.FAKE_UUID_1)
@@ -2904,12 +3169,14 @@ class LoadBalancerRepositoryTest(BaseRepositoryTest):
         name_change = "load_balancer_name"
         lb = self.create_loadbalancer(self.FAKE_UUID_1)
         self.lb_repo.update(self.session, lb.id, name=name_change)
+        self.session.commit()
         new_lb = self.lb_repo.get(self.session, id=lb.id)
         self.assertEqual(name_change, new_lb.name)
 
     def test_delete(self):
         lb = self.create_loadbalancer(self.FAKE_UUID_1)
         self.lb_repo.delete(self.session, id=lb.id)
+        self.session.commit()
         self.assertIsNone(self.lb_repo.get(self.session, id=lb.id))
 
     def test_delete_with_amphora(self):
@@ -2923,8 +3190,12 @@ class LoadBalancerRepositoryTest(BaseRepositoryTest):
         new_lb = self.lb_repo.get(self.session, id=lb.id)
         self.assertIsNotNone(new_lb)
         self.assertEqual(1, len(new_lb.amphorae))
-        self.assertEqual(amphora, new_lb.amphorae[0])
+        self.assertEqual(amphora.id, new_lb.amphorae[0].id)
+        self.assertEqual(amphora.load_balancer_id,
+                         new_lb.amphorae[0].load_balancer_id)
+        self.assertEqual(amphora.compute_id, new_lb.amphorae[0].compute_id)
         self.lb_repo.delete(self.session, id=new_lb.id)
+        self.session.commit()
         self.assertIsNone(self.lb_repo.get(self.session, id=lb.id))
         new_amphora = self.amphora_repo.get(self.session, id=amphora.id)
         self.assertIsNotNone(new_amphora)
@@ -2936,18 +3207,22 @@ class LoadBalancerRepositoryTest(BaseRepositoryTest):
                                              load_balancer_id=lb.id,
                                              compute_id=self.FAKE_UUID_3,
                                              status=constants.ACTIVE)
+        self.session.commit()
         amphora_2 = self.amphora_repo.create(self.session, id=self.FAKE_UUID_3,
                                              load_balancer_id=lb.id,
                                              compute_id=self.FAKE_UUID_3,
                                              lb_network_ip=self.FAKE_IP,
                                              vrrp_ip=self.FAKE_IP,
                                              status=constants.ACTIVE)
+        self.session.commit()
         new_lb = self.lb_repo.get(self.session, id=lb.id)
         self.assertIsNotNone(new_lb)
         self.assertEqual(2, len(new_lb.amphorae))
-        self.assertIn(amphora_1, new_lb.amphorae)
-        self.assertIn(amphora_2, new_lb.amphorae)
+        amphora_ids = [amp.id for amp in new_lb.amphorae]
+        self.assertIn(amphora_1.id, amphora_ids)
+        self.assertIn(amphora_2.id, amphora_ids)
         self.lb_repo.delete(self.session, id=new_lb.id)
+        self.session.commit()
         self.assertIsNone(self.lb_repo.get(self.session, id=lb.id))
         new_amphora_1 = self.amphora_repo.get(self.session, id=amphora_1.id)
         new_amphora_2 = self.amphora_repo.get(self.session, id=amphora_2.id)
@@ -2960,11 +3235,13 @@ class LoadBalancerRepositoryTest(BaseRepositoryTest):
         lb = self.create_loadbalancer(self.FAKE_UUID_1)
         vip = self.vip_repo.create(self.session, load_balancer_id=lb.id,
                                    ip_address="192.0.2.1")
+        self.session.commit()
         new_lb = self.lb_repo.get(self.session, id=lb.id)
         self.assertIsNotNone(new_lb)
         self.assertIsNotNone(new_lb.vip)
         self.assertEqual(vip, new_lb.vip)
         self.lb_repo.delete(self.session, id=new_lb.id)
+        self.session.commit()
         self.assertIsNone(self.lb_repo.get(self.session, id=lb.id))
         self.assertIsNone(self.vip_repo.get(self.session,
                                             load_balancer_id=lb.id))
@@ -2978,11 +3255,16 @@ class LoadBalancerRepositoryTest(BaseRepositoryTest):
             protocol_port=80, connection_limit=1,
             provisioning_status=constants.ACTIVE,
             operating_status=constants.ONLINE, enabled=True)
+        self.session.commit()
         new_lb = self.lb_repo.get(self.session, id=lb.id)
         self.assertIsNotNone(new_lb)
         self.assertEqual(1, len(new_lb.listeners))
-        self.assertEqual(listener, new_lb.listeners[0])
+        self.assertEqual(listener.id, new_lb.listeners[0].id)
+        self.assertEqual(listener.load_balancer_id,
+                         new_lb.listeners[0].load_balancer_id)
+        self.assertEqual(listener.project_id, new_lb.listeners[0].project_id)
         self.lb_repo.delete(self.session, id=new_lb.id)
+        self.session.commit()
         self.assertIsNone(self.lb_repo.get(self.session, id=lb.id))
         self.assertIsNone(self.listener_repo.get(self.session, id=listener.id))
 
@@ -2995,6 +3277,7 @@ class LoadBalancerRepositoryTest(BaseRepositoryTest):
             protocol_port=80, connection_limit=1,
             provisioning_status=constants.ACTIVE,
             operating_status=constants.ONLINE, enabled=True)
+        self.session.commit()
         listener_2 = self.listener_repo.create(
             self.session, id=self.FAKE_UUID_3, project_id=self.FAKE_UUID_2,
             name="listener_name", description="listener_description",
@@ -3002,12 +3285,15 @@ class LoadBalancerRepositoryTest(BaseRepositoryTest):
             protocol_port=443, connection_limit=1,
             provisioning_status=constants.ACTIVE,
             operating_status=constants.ONLINE, enabled=True)
+        self.session.commit()
         new_lb = self.lb_repo.get(self.session, id=lb.id)
         self.assertIsNotNone(new_lb)
         self.assertEqual(2, len(new_lb.listeners))
-        self.assertIn(listener_1, new_lb.listeners)
-        self.assertIn(listener_2, new_lb.listeners)
+        listener_ids = [lstnr.id for lstnr in new_lb.listeners]
+        self.assertIn(listener_1.id, listener_ids)
+        self.assertIn(listener_2.id, listener_ids)
         self.lb_repo.delete(self.session, id=new_lb.id)
+        self.session.commit()
         self.assertIsNone(self.lb_repo.get(self.session, id=lb.id))
         self.assertIsNone(self.listener_repo.get(self.session,
                                                  id=listener_1.id))
@@ -3016,13 +3302,16 @@ class LoadBalancerRepositoryTest(BaseRepositoryTest):
 
     def test_delete_with_all_children(self):
         lb = self.create_loadbalancer(self.FAKE_UUID_1)
+        self.session.commit()
         amphora = self.amphora_repo.create(self.session, id=self.FAKE_UUID_1,
                                            load_balancer_id=lb.id,
                                            compute_id=self.FAKE_UUID_3,
                                            lb_network_ip=self.FAKE_IP,
                                            status=constants.ACTIVE)
+        self.session.commit()
         vip = self.vip_repo.create(self.session, load_balancer_id=lb.id,
                                    ip_address="192.0.2.1")
+        self.session.commit()
         listener = self.listener_repo.create(
             self.session, id=self.FAKE_UUID_1, project_id=self.FAKE_UUID_2,
             name="listener_name", description="listener_description",
@@ -3030,15 +3319,24 @@ class LoadBalancerRepositoryTest(BaseRepositoryTest):
             protocol_port=80, connection_limit=1,
             provisioning_status=constants.ACTIVE,
             operating_status=constants.ONLINE, enabled=True)
+        self.session.commit()
         new_lb = self.lb_repo.get(self.session, id=lb.id)
         self.assertIsNotNone(new_lb)
         self.assertIsNotNone(new_lb.vip)
         self.assertEqual(vip, new_lb.vip)
         self.assertEqual(1, len(new_lb.amphorae))
         self.assertEqual(1, len(new_lb.listeners))
-        self.assertEqual(amphora, new_lb.amphorae[0])
-        self.assertEqual(listener, new_lb.listeners[0])
+        self.assertEqual(amphora.id, new_lb.amphorae[0].id)
+        self.assertEqual(amphora.load_balancer_id,
+                         new_lb.amphorae[0].load_balancer_id)
+        self.assertEqual(amphora.compute_id, new_lb.amphorae[0].compute_id)
+        self.assertEqual(listener.id, new_lb.listeners[0].id)
+        self.assertEqual(listener.name, new_lb.listeners[0].name)
+        self.assertEqual(listener.protocol, new_lb.listeners[0].protocol)
+        self.assertEqual(listener.protocol_port,
+                         new_lb.listeners[0].protocol_port)
         self.lb_repo.delete(self.session, id=new_lb.id)
+        self.session.commit()
         self.assertIsNone(self.lb_repo.get(self.session, id=lb.id))
         new_amphora = self.amphora_repo.get(self.session, id=amphora.id)
         self.assertIsNotNone(new_amphora)
@@ -3053,6 +3351,7 @@ class LoadBalancerRepositoryTest(BaseRepositoryTest):
                             provisioning_status=constants.PENDING_CREATE,
                             operating_status=constants.OFFLINE,
                             enabled=True)
+        self.session.commit()
         self.assertFalse(self.lb_repo.test_and_set_provisioning_status(
             self.session, lb_id, constants.PENDING_UPDATE))
         lb = self.lb_repo.get(self.session, id=lb_id)
@@ -3064,6 +3363,7 @@ class LoadBalancerRepositoryTest(BaseRepositoryTest):
                             provisioning_status=constants.PENDING_CREATE,
                             operating_status=constants.OFFLINE,
                             enabled=True)
+        self.session.commit()
         self.assertRaises(exceptions.ImmutableObject,
                           self.lb_repo.test_and_set_provisioning_status,
                           self.session, lb_id,
@@ -3078,8 +3378,10 @@ class LoadBalancerRepositoryTest(BaseRepositoryTest):
                             provisioning_status=constants.ACTIVE,
                             operating_status=constants.OFFLINE,
                             enabled=True)
+        self.session.commit()
         self.lb_repo.test_and_set_provisioning_status(
             self.session, lb_id, constants.PENDING_UPDATE)
+        self.session.commit()
         lb = self.lb_repo.get(self.session, id=lb_id)
         self.assertEqual(constants.PENDING_UPDATE, lb.provisioning_status)
 
@@ -3089,34 +3391,36 @@ class LoadBalancerRepositoryTest(BaseRepositoryTest):
                             provisioning_status=constants.ERROR,
                             operating_status=constants.OFFLINE,
                             enabled=True)
+        self.session.commit()
         self.lb_repo.test_and_set_provisioning_status(
             self.session, lb_id, constants.PENDING_DELETE)
+        self.session.commit()
         lb = self.lb_repo.get(self.session, id=lb_id)
         self.assertEqual(constants.PENDING_DELETE, lb.provisioning_status)
 
     def test_test_and_set_provisioning_status_concurrent(self):
         lb_id = uuidutils.generate_uuid()
-        lock_session1 = db_api.get_session(autocommit=False)
-        self.lb_repo.create(lock_session1, id=lb_id,
+        self.lb_repo.create(self.session, id=lb_id,
                             provisioning_status=constants.ACTIVE,
                             operating_status=constants.ONLINE,
                             enabled=True)
+        self.session.commit()
 
         # Create a concurrent session
-        lock_session2 = db_api.get_session(autocommit=False)
+        session2 = self._get_db_engine_session()[1]
 
-        # Load LB into lock_session2's identity map
-        lock_session2.query(db_models.LoadBalancer).filter_by(
+        # Load LB into session2's identity map
+        session2.query(db_models.LoadBalancer).filter_by(
             id=lb_id).one()
 
         # Update provisioning status in lock_session1
         self.lb_repo.test_and_set_provisioning_status(
             self.session, lb_id, constants.PENDING_UPDATE)
-        lock_session1.commit()
+        self.session.commit()
 
         # Assert concurrent updates are rejected
         self.assertFalse(self.lb_repo.test_and_set_provisioning_status(
-            lock_session2, lb_id, constants.PENDING_UPDATE))
+            self.session, lb_id, constants.PENDING_UPDATE))
 
     def test_set_status_for_failover_immutable(self):
         lb_id = uuidutils.generate_uuid()
@@ -3124,6 +3428,7 @@ class LoadBalancerRepositoryTest(BaseRepositoryTest):
                             provisioning_status=constants.PENDING_CREATE,
                             operating_status=constants.OFFLINE,
                             enabled=True)
+        self.session.commit()
         self.assertFalse(self.lb_repo.set_status_for_failover(
             self.session, lb_id, constants.PENDING_UPDATE))
         lb = self.lb_repo.get(self.session, id=lb_id)
@@ -3135,6 +3440,7 @@ class LoadBalancerRepositoryTest(BaseRepositoryTest):
                             provisioning_status=constants.PENDING_CREATE,
                             operating_status=constants.OFFLINE,
                             enabled=True)
+        self.session.commit()
         self.assertRaises(exceptions.ImmutableObject,
                           self.lb_repo.set_status_for_failover,
                           self.session, lb_id,
@@ -3149,8 +3455,10 @@ class LoadBalancerRepositoryTest(BaseRepositoryTest):
                             provisioning_status=constants.ACTIVE,
                             operating_status=constants.OFFLINE,
                             enabled=True)
+        self.session.commit()
         self.lb_repo.set_status_for_failover(
             self.session, lb_id, constants.PENDING_UPDATE)
+        self.session.commit()
         lb = self.lb_repo.get(self.session, id=lb_id)
         self.assertEqual(constants.PENDING_UPDATE, lb.provisioning_status)
 
@@ -3160,8 +3468,10 @@ class LoadBalancerRepositoryTest(BaseRepositoryTest):
                             provisioning_status=constants.ERROR,
                             operating_status=constants.OFFLINE,
                             enabled=True)
+        self.session.commit()
         self.lb_repo.set_status_for_failover(
             self.session, lb_id, constants.PENDING_UPDATE)
+        self.session.commit()
         lb = self.lb_repo.get(self.session, id=lb_id)
         self.assertEqual(constants.PENDING_UPDATE, lb.provisioning_status)
 
@@ -3303,6 +3613,7 @@ class AmphoraRepositoryTest(BaseRepositoryTest):
             name="lb_name", description="lb_description",
             provisioning_status=constants.ACTIVE,
             operating_status=constants.ONLINE, enabled=True)
+        self.session.commit()
 
     def create_amphora(self, amphora_id, **overrides):
         settings = {
@@ -3318,13 +3629,17 @@ class AmphoraRepositoryTest(BaseRepositoryTest):
         }
         settings.update(overrides)
         amphora = self.amphora_repo.create(self.session, **settings)
+        self.session.commit()
         return amphora
 
     def test_get(self):
         amphora = self.create_amphora(self.FAKE_UUID_1)
         new_amphora = self.amphora_repo.get(self.session, id=amphora.id)
         self.assertIsInstance(new_amphora, data_models.Amphora)
-        self.assertEqual(amphora, new_amphora)
+        self.assertEqual(amphora.id, new_amphora.id)
+        self.assertEqual(amphora.load_balancer_id,
+                         new_amphora.load_balancer_id)
+        self.assertEqual(amphora.compute_id, new_amphora.compute_id)
 
     def test_count(self):
         comp_id = uuidutils.generate_uuid()
@@ -3385,7 +3700,9 @@ class AmphoraRepositoryTest(BaseRepositoryTest):
     def test_delete_amphora_with_load_balancer(self):
         amphora = self.create_amphora(self.FAKE_UUID_1)
         self.amphora_repo.associate(self.session, self.lb.id, amphora.id)
+        self.session.commit()
         self.amphora_repo.delete(self.session, id=amphora.id)
+        self.session.commit()
         self.assertIsNone(self.amphora_repo.get(self.session, id=amphora.id))
         new_lb = self.lb_repo.get(self.session, id=self.lb.id)
         self.assertEqual(0, len(new_lb.amphorae))
@@ -3415,6 +3732,7 @@ class AmphoraRepositoryTest(BaseRepositoryTest):
         self.skipTest("No idea how this should work yet")
         amphora = self.create_amphora(self.FAKE_UUID_1)
         self.amphora_repo.associate(self.session, self.lb.id, amphora.id)
+        self.session.commit()
         lb = self.amphora_repo.get_lb_for_amphora(self.session, amphora.id)
         self.assertIsNotNone(lb)
         self.assertEqual(self.lb, lb)
@@ -3480,6 +3798,7 @@ class AmphoraRepositoryTest(BaseRepositoryTest):
         amphora2 = self.create_amphora(self.FAKE_UUID_3)
         self.amphora_repo.associate(self.session, self.lb.id, amphora1.id)
         self.amphora_repo.associate(self.session, self.lb.id, amphora2.id)
+        self.session.commit()
 
         lb_ref = {'enabled': True, 'id': self.lb.id,
                   'operating_status': constants.ONLINE,
@@ -3497,6 +3816,7 @@ class AmphoraRepositoryTest(BaseRepositoryTest):
             lb_algorithm=constants.LB_ALGORITHM_ROUND_ROBIN,
             provisioning_status=constants.ACTIVE,
             operating_status=constants.ONLINE, enabled=True)
+        self.session.commit()
 
         pool_ref = {pool.id: {'members': {},
                     'operating_status': constants.ONLINE}}
@@ -3533,6 +3853,7 @@ class AmphoraRepositoryTest(BaseRepositoryTest):
                                           provisioning_status=constants.ACTIVE,
                                           operating_status=constants.ONLINE,
                                           backup=False)
+        self.session.commit()
 
         member2 = self.member_repo.create(self.session, id=self.FAKE_UUID_7,
                                           project_id=self.FAKE_UUID_2,
@@ -3542,6 +3863,7 @@ class AmphoraRepositoryTest(BaseRepositoryTest):
                                           provisioning_status=constants.ACTIVE,
                                           operating_status=constants.OFFLINE,
                                           backup=False)
+        self.session.commit()
 
         member_ref = {member1.id: {'operating_status': constants.ONLINE},
                       member2.id: {'operating_status': constants.OFFLINE}}
@@ -4105,11 +4427,13 @@ class L7PolicyRepositoryTest(BaseRepositoryTest):
             uuidutils.generate_uuid(), listener.id, 1,
             action=constants.L7POLICY_ACTION_REDIRECT_TO_URL,
             redirect_url="http://www.example.com/")
+        self.session.commit()
         new_l7policy = self.l7policy_repo.get(self.session, id=l7policy.id)
         self.assertIsNone(new_l7policy.redirect_pool_id)
         self.l7policy_repo.update(
             self.session, id=l7policy.id,
             redirect_pool_id=pool.id)
+        self.session.commit()
         new_l7policy = self.l7policy_repo.get(self.session, id=l7policy.id)
         self.assertEqual(pool.id, new_l7policy.redirect_pool.id)
         self.assertEqual(constants.L7POLICY_ACTION_REDIRECT_TO_POOL,
@@ -4122,6 +4446,7 @@ class L7PolicyRepositoryTest(BaseRepositoryTest):
             uuidutils.generate_uuid(), listener.id, 1,
             action=constants.L7POLICY_ACTION_REDIRECT_TO_URL,
             redirect_url="http://www.example.com/")
+        self.session.commit()
         new_l7policy = self.l7policy_repo.get(self.session, id=l7policy.id)
         self.assertIsNone(new_l7policy.redirect_pool_id)
         self.assertEqual(constants.L7POLICY_ACTION_REDIRECT_TO_URL,
@@ -4142,6 +4467,7 @@ class L7PolicyRepositoryTest(BaseRepositoryTest):
             uuidutils.generate_uuid(), listener.id, 1,
             action=constants.L7POLICY_ACTION_REDIRECT_TO_POOL,
             redirect_pool_id=pool.id)
+        self.session.commit()
         new_l7policy = self.l7policy_repo.get(self.session, id=l7policy.id)
         self.assertIsNone(new_l7policy.redirect_url)
         self.l7policy_repo.update(
@@ -4736,6 +5062,7 @@ class FlavorRepositoryTest(BaseRepositoryTest):
             self.session, id=uuidutils.generate_uuid(),
             name="fp1", provider_name=self.PROVIDER_NAME,
             flavor_data='{"image": "ubuntu"}')
+        self.session.commit()
         return fp
 
     def create_flavor(self, flavor_id, name):
@@ -4744,13 +5071,15 @@ class FlavorRepositoryTest(BaseRepositoryTest):
             self.session, id=flavor_id, name=name,
             flavor_profile_id=fp.id, description='test',
             enabled=True)
+        self.session.commit()
         return flavor
 
     def test_get(self):
         flavor = self.create_flavor(flavor_id=self.FAKE_UUID_2, name='flavor')
         new_flavor = self.flavor_repo.get(self.session, id=flavor.id)
         self.assertIsInstance(new_flavor, data_models.Flavor)
-        self.assertEqual(flavor, new_flavor)
+        self.assertEqual(flavor.id, new_flavor.id)
+        self.assertEqual(flavor.name, new_flavor.name)
 
     def test_get_all(self):
         fl1 = self.create_flavor(flavor_id=self.FAKE_UUID_2, name='flavor1')
@@ -4760,8 +5089,10 @@ class FlavorRepositoryTest(BaseRepositoryTest):
             query_options=defer(db_models.Flavor.enabled))
         self.assertIsInstance(fl_list, list)
         self.assertEqual(2, len(fl_list))
-        self.assertEqual(fl1, fl_list[0])
-        self.assertEqual(fl2, fl_list[1])
+        self.assertEqual(fl1.id, fl_list[0].id)
+        self.assertEqual(fl1.name, fl_list[0].name)
+        self.assertEqual(fl2.id, fl_list[1].id)
+        self.assertEqual(fl2.name, fl_list[1].name)
 
     def test_create(self):
         fl = self.create_flavor(flavor_id=self.FAKE_UUID_2, name='fl1')

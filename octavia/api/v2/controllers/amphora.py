@@ -28,7 +28,6 @@ from octavia.api.v2.types import amphora as amp_types
 from octavia.common import constants
 from octavia.common import exceptions
 from octavia.common import rpc
-from octavia.db import api as db_api
 
 CONF = cfg.CONF
 LOG = logging.getLogger(__name__)
@@ -50,7 +49,8 @@ class AmphoraController(base.BaseController):
     def get_one(self, id, fields=None):
         """Gets a single amphora's details."""
         context = pecan_request.context.get('octavia_context')
-        db_amp = self._get_db_amp(context.session, id, show_deleted=False)
+        with context.session.begin():
+            db_amp = self._get_db_amp(context.session, id, show_deleted=False)
 
         self._auth_validate_action(context, context.project_id,
                                    constants.RBAC_GET_ONE)
@@ -71,9 +71,10 @@ class AmphoraController(base.BaseController):
         self._auth_validate_action(context, context.project_id,
                                    constants.RBAC_GET_ALL)
 
-        db_amp, links = self.repositories.amphora.get_all_API_list(
-            context.session, show_deleted=False,
-            pagination_helper=pcontext.get(constants.PAGINATION_HELPER))
+        with context.session.begin():
+            db_amp, links = self.repositories.amphora.get_all_API_list(
+                context.session, show_deleted=False,
+                pagination_helper=pcontext.get(constants.PAGINATION_HELPER))
         result = self._convert_db_to_type(
             db_amp, [amp_types.AmphoraResponse])
         if fields is not None:
@@ -89,10 +90,10 @@ class AmphoraController(base.BaseController):
         self._auth_validate_action(context, context.project_id,
                                    constants.RBAC_DELETE)
 
-        with db_api.get_lock_session() as lock_session:
+        with context.session.begin():
             try:
                 self.repositories.amphora.test_and_set_status_for_delete(
-                    lock_session, id)
+                    context.session, id)
             except sa_exception.NoResultFound as e:
                 raise exceptions.NotFound(resource='Amphora', id=id) from e
 
@@ -137,27 +138,29 @@ class FailoverController(base.BaseController):
         """Fails over an amphora"""
         pcontext = pecan_request.context
         context = pcontext.get('octavia_context')
-        db_amp = self._get_db_amp(context.session, self.amp_id,
-                                  show_deleted=False)
+        with context.session.begin():
+            db_amp = self._get_db_amp(context.session, self.amp_id,
+                                      show_deleted=False)
 
         self._auth_validate_action(
             context, db_amp.load_balancer.project_id,
             constants.RBAC_PUT_FAILOVER)
 
-        self.repositories.load_balancer.test_and_set_provisioning_status(
-            context.session, db_amp.load_balancer_id,
-            status=constants.PENDING_UPDATE, raise_exception=True)
+        with context.session.begin():
+            self.repositories.load_balancer.test_and_set_provisioning_status(
+                context.session, db_amp.load_balancer_id,
+                status=constants.PENDING_UPDATE, raise_exception=True)
 
-        try:
-            LOG.info("Sending failover request for amphora %s to the queue",
-                     self.amp_id)
-            payload = {constants.AMPHORA_ID: db_amp.id}
-            self.client.cast({}, 'failover_amphora', **payload)
-        except Exception:
-            with excutils.save_and_reraise_exception(reraise=False):
-                self.repositories.load_balancer.update(
-                    context.session, db_amp.load_balancer.id,
-                    provisioning_status=constants.ERROR)
+            try:
+                LOG.info("Sending failover request for amphora %s to the "
+                         "queue", self.amp_id)
+                payload = {constants.AMPHORA_ID: db_amp.id}
+                self.client.cast({}, 'failover_amphora', **payload)
+            except Exception:
+                with excutils.save_and_reraise_exception(reraise=False):
+                    self.repositories.load_balancer.update(
+                        context.session, db_amp.load_balancer.id,
+                        provisioning_status=constants.ERROR)
 
 
 class AmphoraUpdateController(base.BaseController):
@@ -179,8 +182,9 @@ class AmphoraUpdateController(base.BaseController):
         """Update amphora agent configuration"""
         pcontext = pecan_request.context
         context = pcontext.get('octavia_context')
-        db_amp = self._get_db_amp(context.session, self.amp_id,
-                                  show_deleted=False)
+        with context.session.begin():
+            db_amp = self._get_db_amp(context.session, self.amp_id,
+                                      show_deleted=False)
 
         self._auth_validate_action(
             context, db_amp.load_balancer.project_id,
@@ -212,8 +216,9 @@ class AmphoraStatsController(base.BaseController):
         self._auth_validate_action(context, context.project_id,
                                    constants.RBAC_GET_STATS)
 
-        stats = self.repositories.get_amphora_stats(context.session,
-                                                    self.amp_id)
+        with context.session.begin():
+            stats = self.repositories.get_amphora_stats(context.session,
+                                                        self.amp_id)
         if not stats:
             raise exceptions.NotFound(resource='Amphora stats for',
                                       id=self.amp_id)

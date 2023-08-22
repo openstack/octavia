@@ -30,7 +30,6 @@ from octavia.common import constants
 from octavia.common import data_models
 from octavia.common import exceptions
 from octavia.common import validate
-from octavia.db import api as db_api
 from octavia.db import prepare as db_prepare
 
 
@@ -49,8 +48,9 @@ class MemberController(base.BaseController):
     def get(self, id, fields=None):
         """Gets a single pool member's details."""
         context = pecan_request.context.get('octavia_context')
-        db_member = self._get_db_member(context.session, id,
-                                        show_deleted=False)
+        with context.session.begin():
+            db_member = self._get_db_member(context.session, id,
+                                            show_deleted=False)
 
         self._auth_validate_action(context, db_member.project_id,
                                    constants.RBAC_GET_ONE)
@@ -70,16 +70,17 @@ class MemberController(base.BaseController):
         pcontext = pecan_request.context
         context = pcontext.get('octavia_context')
 
-        pool = self._get_db_pool(context.session, self.pool_id,
-                                 show_deleted=False)
+        with context.session.begin():
+            pool = self._get_db_pool(context.session, self.pool_id,
+                                     show_deleted=False)
 
-        self._auth_validate_action(context, pool.project_id,
-                                   constants.RBAC_GET_ALL)
+            self._auth_validate_action(context, pool.project_id,
+                                       constants.RBAC_GET_ALL)
 
-        db_members, links = self.repositories.member.get_all_API_list(
-            context.session, show_deleted=False,
-            pool_id=self.pool_id,
-            pagination_helper=pcontext.get(constants.PAGINATION_HELPER))
+            db_members, links = self.repositories.member.get_all_API_list(
+                context.session, show_deleted=False,
+                pool_id=self.pool_id,
+                pagination_helper=pcontext.get(constants.PAGINATION_HELPER))
         result = self._convert_db_to_type(
             db_members, [member_types.MemberResponse])
         if fields is not None:
@@ -118,7 +119,9 @@ class MemberController(base.BaseController):
     def _validate_create_member(self, lock_session, member_dict):
         """Validate creating member on pool."""
         try:
-            return self.repositories.member.create(lock_session, **member_dict)
+            ret = self.repositories.member.create(lock_session, **member_dict)
+            lock_session.flush()
+            return ret
         except odb_exceptions.DBDuplicateEntry as e:
             raise exceptions.DuplicateMemberEntry(
                 ip_address=member_dict.get('ip_address'),
@@ -141,9 +144,10 @@ class MemberController(base.BaseController):
         member = member_.member
         context = pecan_request.context.get('octavia_context')
 
-        pool = self.repositories.pool.get(context.session, id=self.pool_id)
-        member.project_id, provider = self._get_lb_project_id_provider(
-            context.session, pool.load_balancer_id)
+        with context.session.begin():
+            pool = self.repositories.pool.get(context.session, id=self.pool_id)
+            member.project_id, provider = self._get_lb_project_id_provider(
+                context.session, pool.load_balancer_id)
 
         self._auth_validate_action(context, member.project_id,
                                    constants.RBAC_POST)
@@ -158,11 +162,11 @@ class MemberController(base.BaseController):
         # Load the driver early as it also provides validation
         driver = driver_factory.get_driver(provider)
 
-        lock_session = db_api.get_session(autocommit=False)
+        context.session.begin()
         try:
             if self.repositories.check_quota_met(
                     context.session,
-                    lock_session,
+                    context.session,
                     data_models.Member,
                     member.project_id):
                 raise exceptions.QuotaException(
@@ -171,9 +175,10 @@ class MemberController(base.BaseController):
             member_dict = db_prepare.create_member(member.to_dict(
                 render_unsets=True), self.pool_id, bool(pool.health_monitor))
 
-            self._test_lb_and_listener_and_pool_statuses(lock_session)
+            self._test_lb_and_listener_and_pool_statuses(context.session)
 
-            db_member = self._validate_create_member(lock_session, member_dict)
+            db_member = self._validate_create_member(context.session,
+                                                     member_dict)
 
             # Prepare the data for the driver data model
             provider_member = (
@@ -185,12 +190,13 @@ class MemberController(base.BaseController):
             driver_utils.call_provider(
                 driver.name, driver.member_create, provider_member)
 
-            lock_session.commit()
+            context.session.commit()
         except Exception:
             with excutils.save_and_reraise_exception():
-                lock_session.rollback()
+                context.session.rollback()
 
-        db_member = self._get_db_member(context.session, db_member.id)
+        with context.session.begin():
+            db_member = self._get_db_member(context.session, db_member.id)
         result = self._convert_db_to_type(db_member,
                                           member_types.MemberResponse)
         return member_types.MemberRootResponse(member=result)
@@ -226,12 +232,13 @@ class MemberController(base.BaseController):
         """Updates a pool member."""
         member = member_.member
         context = pecan_request.context.get('octavia_context')
-        db_member = self._get_db_member(context.session, id,
-                                        show_deleted=False)
-        pool = self.repositories.pool.get(context.session,
-                                          id=db_member.pool_id)
-        project_id, provider = self._get_lb_project_id_provider(
-            context.session, pool.load_balancer_id)
+        with context.session.begin():
+            db_member = self._get_db_member(context.session, id,
+                                            show_deleted=False)
+            pool = self.repositories.pool.get(context.session,
+                                              id=db_member.pool_id)
+            project_id, provider = self._get_lb_project_id_provider(
+                context.session, pool.load_balancer_id)
 
         self._auth_validate_action(context, project_id, constants.RBAC_PUT)
 
@@ -242,8 +249,8 @@ class MemberController(base.BaseController):
         # Load the driver early as it also provides validation
         driver = driver_factory.get_driver(provider)
 
-        with db_api.get_lock_session() as lock_session:
-            self._test_lb_and_listener_and_pool_statuses(lock_session,
+        with context.session.begin():
+            self._test_lb_and_listener_and_pool_statuses(context.session,
                                                          member=db_member)
 
             # Prepare the data for the driver data model
@@ -267,12 +274,14 @@ class MemberController(base.BaseController):
             # Update the database to reflect what the driver just accepted
             member.provisioning_status = constants.PENDING_UPDATE
             db_member_dict = member.to_dict(render_unsets=False)
-            self.repositories.member.update(lock_session, id, **db_member_dict)
+            self.repositories.member.update(context.session, id,
+                                            **db_member_dict)
 
         # Force SQL alchemy to query the DB, otherwise we get inconsistent
         # results
         context.session.expire_all()
-        db_member = self._get_db_member(context.session, id)
+        with context.session.begin():
+            db_member = self._get_db_member(context.session, id)
         result = self._convert_db_to_type(db_member,
                                           member_types.MemberResponse)
         return member_types.MemberRootResponse(member=result)
@@ -281,13 +290,14 @@ class MemberController(base.BaseController):
     def delete(self, id):
         """Deletes a pool member."""
         context = pecan_request.context.get('octavia_context')
-        db_member = self._get_db_member(context.session, id,
-                                        show_deleted=False)
+        with context.session.begin():
+            db_member = self._get_db_member(context.session, id,
+                                            show_deleted=False)
 
-        pool = self.repositories.pool.get(context.session,
-                                          id=db_member.pool_id)
-        project_id, provider = self._get_lb_project_id_provider(
-            context.session, pool.load_balancer_id)
+            pool = self.repositories.pool.get(context.session,
+                                              id=db_member.pool_id)
+            project_id, provider = self._get_lb_project_id_provider(
+                context.session, pool.load_balancer_id)
 
         self._auth_validate_action(context, project_id, constants.RBAC_DELETE)
 
@@ -296,11 +306,11 @@ class MemberController(base.BaseController):
         # Load the driver early as it also provides validation
         driver = driver_factory.get_driver(provider)
 
-        with db_api.get_lock_session() as lock_session:
-            self._test_lb_and_listener_and_pool_statuses(lock_session,
+        with context.session.begin():
+            self._test_lb_and_listener_and_pool_statuses(context.session,
                                                          member=db_member)
             self.repositories.member.update(
-                lock_session, db_member.id,
+                context.session, db_member.id,
                 provisioning_status=constants.PENDING_DELETE)
 
             LOG.info("Sending delete Member %s to provider %s", id,
@@ -324,11 +334,12 @@ class MembersController(MemberController):
         additive_only = strutils.bool_from_string(additive_only)
         context = pecan_request.context.get('octavia_context')
 
-        db_pool = self._get_db_pool(context.session, self.pool_id)
-        old_members = db_pool.members
+        with context.session.begin():
+            db_pool = self._get_db_pool(context.session, self.pool_id)
+            old_members = db_pool.members
 
-        project_id, provider = self._get_lb_project_id_provider(
-            context.session, db_pool.load_balancer_id)
+            project_id, provider = self._get_lb_project_id_provider(
+                context.session, db_pool.load_balancer_id)
 
         # Check POST+PUT+DELETE since this operation is all of 'CUD'
         self._auth_validate_action(context, project_id, constants.RBAC_POST)
@@ -340,8 +351,8 @@ class MembersController(MemberController):
         # Load the driver early as it also provides validation
         driver = driver_factory.get_driver(provider)
 
-        with db_api.get_lock_session() as lock_session:
-            self._test_lb_and_listener_and_pool_statuses(lock_session)
+        with context.session.begin():
+            self._test_lb_and_listener_and_pool_statuses(context.session)
 
             old_member_uniques = {
                 (m.ip_address, m.protocol_port): m.id for m in old_members}
@@ -368,7 +379,7 @@ class MembersController(MemberController):
             if not (deleted_members or new_members or updated_members):
                 LOG.info("Member batch update is a noop, rolling back and "
                          "returning early.")
-                lock_session.rollback()
+                context.session.rollback()
                 return
 
             if additive_only:
@@ -376,7 +387,7 @@ class MembersController(MemberController):
             else:
                 member_count_diff = len(new_members) - len(deleted_members)
             if member_count_diff > 0 and self.repositories.check_quota_met(
-                    context.session, lock_session, data_models.Member,
+                    context.session, context.session, data_models.Member,
                     db_pool.project_id, count=member_count_diff):
                 raise exceptions.QuotaException(
                     resource=data_models.Member._name())
@@ -405,7 +416,7 @@ class MembersController(MemberController):
 
                 m = m.to_dict(render_unsets=False)
                 m['project_id'] = db_pool.project_id
-                created_member = self._graph_create(lock_session, m)
+                created_member = self._graph_create(context.session, m)
                 provider_member = driver_utils.db_member_to_provider_member(
                     created_member)
                 provider_members.append(provider_member)
@@ -416,7 +427,7 @@ class MembersController(MemberController):
                 db_member_dict = m.to_dict(render_unsets=False)
                 db_member_dict.pop('id')
                 self.repositories.member.update(
-                    lock_session, m.id, **db_member_dict)
+                    context.session, m.id, **db_member_dict)
 
                 m.pool_id = self.pool_id
                 provider_members.append(
@@ -434,7 +445,7 @@ class MembersController(MemberController):
                 else:
                     # Members are changed to PENDING_DELETE and not passed.
                     self.repositories.member.update(
-                        lock_session, m.id,
+                        context.session, m.id,
                         provisioning_status=constants.PENDING_DELETE)
 
             # Dispatch to the driver

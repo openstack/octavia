@@ -72,8 +72,9 @@ class QuotasController(base.BaseController):
         self._auth_validate_action(context, project_id, constants.RBAC_PUT)
 
         quotas_dict = quotas.to_dict()
-        self.repositories.quotas.update(context.session, project_id,
-                                        **quotas_dict)
+        with context.session.begin():
+            self.repositories.quotas.update(context.session, project_id,
+                                            **quotas_dict)
         db_quotas = self._get_db_quotas(context.session, project_id)
         return self._convert_db_to_type(db_quotas, quota_types.QuotaResponse)
 
@@ -87,7 +88,8 @@ class QuotasController(base.BaseController):
 
         self._auth_validate_action(context, project_id, constants.RBAC_DELETE)
 
-        self.repositories.quotas.delete(context.session, project_id)
+        with context.session.begin():
+            self.repositories.quotas.delete(context.session, project_id)
         db_quotas = self._get_db_quotas(context.session, project_id)
         return self._convert_db_to_type(db_quotas, quota_types.QuotaResponse)
 

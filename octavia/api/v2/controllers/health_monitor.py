@@ -30,7 +30,6 @@ from octavia.api.v2.types import health_monitor as hm_types
 from octavia.common import constants as consts
 from octavia.common import data_models
 from octavia.common import exceptions
-from octavia.db import api as db_api
 from octavia.db import prepare as db_prepare
 from octavia.i18n import _
 
@@ -50,7 +49,8 @@ class HealthMonitorController(base.BaseController):
     def get_one(self, id, fields=None):
         """Gets a single healthmonitor's details."""
         context = pecan_request.context.get('octavia_context')
-        db_hm = self._get_db_hm(context.session, id, show_deleted=False)
+        with context.session.begin():
+            db_hm = self._get_db_hm(context.session, id, show_deleted=False)
 
         self._auth_validate_action(context, db_hm.project_id,
                                    consts.RBAC_GET_ONE)
@@ -70,10 +70,11 @@ class HealthMonitorController(base.BaseController):
 
         query_filter = self._auth_get_all(context, project_id)
 
-        db_hm, links = self.repositories.health_monitor.get_all_API_list(
-            context.session, show_deleted=False,
-            pagination_helper=pcontext.get(consts.PAGINATION_HELPER),
-            **query_filter)
+        with context.session.begin():
+            db_hm, links = self.repositories.health_monitor.get_all_API_list(
+                context.session, show_deleted=False,
+                pagination_helper=pcontext.get(consts.PAGINATION_HELPER),
+                **query_filter)
         result = self._convert_db_to_type(
             db_hm, [hm_types.HealthMonitorResponse])
         if fields is not None:
@@ -155,8 +156,10 @@ class HealthMonitorController(base.BaseController):
                     option='health monitors HTTP 1.1 domain name health check')
 
         try:
-            return self.repositories.health_monitor.create(
+            ret = self.repositories.health_monitor.create(
                 lock_session, **hm_dict)
+            lock_session.flush()
+            return ret
         except odb_exceptions.DBDuplicateEntry as e:
             raise exceptions.DuplicateHealthMonitor() from e
         except odb_exceptions.DBReferenceError as e:
@@ -200,10 +203,12 @@ class HealthMonitorController(base.BaseController):
         context = pecan_request.context.get('octavia_context')
         health_monitor = health_monitor_.healthmonitor
 
-        pool = self._get_db_pool(context.session, health_monitor.pool_id)
+        with context.session.begin():
+            pool = self._get_db_pool(context.session, health_monitor.pool_id)
 
-        health_monitor.project_id, provider = self._get_lb_project_id_provider(
-            context.session, pool.load_balancer_id)
+            health_monitor.project_id, provider = (
+                self._get_lb_project_id_provider(context.session,
+                                                 pool.load_balancer_id))
 
         self._auth_validate_action(context, health_monitor.project_id,
                                    consts.RBAC_POST)
@@ -230,11 +235,11 @@ class HealthMonitorController(base.BaseController):
         # Load the driver early as it also provides validation
         driver = driver_factory.get_driver(provider)
 
-        lock_session = db_api.get_session(autocommit=False)
+        context.session.begin()
         try:
             if self.repositories.check_quota_met(
                     context.session,
-                    lock_session,
+                    context.session,
                     data_models.HealthMonitor,
                     health_monitor.project_id):
                 raise exceptions.QuotaException(
@@ -244,8 +249,8 @@ class HealthMonitorController(base.BaseController):
                 health_monitor.to_dict(render_unsets=True))
 
             self._test_lb_and_listener_and_pool_statuses(
-                lock_session, health_monitor)
-            db_hm = self._validate_create_hm(lock_session, hm_dict)
+                context.session, health_monitor)
+            db_hm = self._validate_create_hm(context.session, hm_dict)
 
             # Prepare the data for the driver data model
             provider_healthmon = driver_utils.db_HM_to_provider_HM(db_hm)
@@ -256,16 +261,17 @@ class HealthMonitorController(base.BaseController):
             driver_utils.call_provider(
                 driver.name, driver.health_monitor_create, provider_healthmon)
 
-            lock_session.commit()
+            context.session.commit()
         except odb_exceptions.DBError as e:
-            lock_session.rollback()
+            context.session.rollback()
             raise exceptions.InvalidOption(
                 value=hm_dict.get('type'), option='type') from e
         except Exception:
             with excutils.save_and_reraise_exception():
-                lock_session.rollback()
+                context.session.rollback()
 
-        db_hm = self._get_db_hm(context.session, db_hm.id)
+        with context.session.begin():
+            db_hm = self._get_db_hm(context.session, db_hm.id)
         result = self._convert_db_to_type(
             db_hm, hm_types.HealthMonitorResponse)
         return hm_types.HealthMonitorRootResponse(healthmonitor=result)
@@ -342,11 +348,12 @@ class HealthMonitorController(base.BaseController):
         """Updates a health monitor."""
         context = pecan_request.context.get('octavia_context')
         health_monitor = health_monitor_.healthmonitor
-        db_hm = self._get_db_hm(context.session, id, show_deleted=False)
+        with context.session.begin():
+            db_hm = self._get_db_hm(context.session, id, show_deleted=False)
 
-        pool = self._get_db_pool(context.session, db_hm.pool_id)
-        project_id, provider = self._get_lb_project_id_provider(
-            context.session, pool.load_balancer_id)
+            pool = self._get_db_pool(context.session, db_hm.pool_id)
+            project_id, provider = self._get_lb_project_id_provider(
+                context.session, pool.load_balancer_id)
 
         self._auth_validate_action(context, project_id, consts.RBAC_PUT)
 
@@ -363,9 +370,10 @@ class HealthMonitorController(base.BaseController):
         # Load the driver early as it also provides validation
         driver = driver_factory.get_driver(provider)
 
-        with db_api.get_lock_session() as lock_session:
+        with context.session.begin():
 
-            self._test_lb_and_listener_and_pool_statuses(lock_session, db_hm)
+            self._test_lb_and_listener_and_pool_statuses(context.session,
+                                                         db_hm)
 
             # Prepare the data for the driver data model
             healthmon_dict = health_monitor.to_dict(render_unsets=False)
@@ -387,13 +395,14 @@ class HealthMonitorController(base.BaseController):
             # Update the database to reflect what the driver just accepted
             health_monitor.provisioning_status = consts.PENDING_UPDATE
             db_hm_dict = health_monitor.to_dict(render_unsets=False)
-            self.repositories.health_monitor.update(lock_session, id,
+            self.repositories.health_monitor.update(context.session, id,
                                                     **db_hm_dict)
 
         # Force SQL alchemy to query the DB, otherwise we get inconsistent
         # results
         context.session.expire_all()
-        db_hm = self._get_db_hm(context.session, id)
+        with context.session.begin():
+            db_hm = self._get_db_hm(context.session, id)
         result = self._convert_db_to_type(
             db_hm, hm_types.HealthMonitorResponse)
         return hm_types.HealthMonitorRootResponse(healthmonitor=result)
@@ -402,11 +411,12 @@ class HealthMonitorController(base.BaseController):
     def delete(self, id):
         """Deletes a health monitor."""
         context = pecan_request.context.get('octavia_context')
-        db_hm = self._get_db_hm(context.session, id, show_deleted=False)
+        with context.session.begin():
+            db_hm = self._get_db_hm(context.session, id, show_deleted=False)
 
-        pool = self._get_db_pool(context.session, db_hm.pool_id)
-        project_id, provider = self._get_lb_project_id_provider(
-            context.session, pool.load_balancer_id)
+            pool = self._get_db_pool(context.session, db_hm.pool_id)
+            project_id, provider = self._get_lb_project_id_provider(
+                context.session, pool.load_balancer_id)
 
         self._auth_validate_action(context, project_id, consts.RBAC_DELETE)
 
@@ -416,12 +426,13 @@ class HealthMonitorController(base.BaseController):
         # Load the driver early as it also provides validation
         driver = driver_factory.get_driver(provider)
 
-        with db_api.get_lock_session() as lock_session:
+        with context.session.begin():
 
-            self._test_lb_and_listener_and_pool_statuses(lock_session, db_hm)
+            self._test_lb_and_listener_and_pool_statuses(context.session,
+                                                         db_hm)
 
             self.repositories.health_monitor.update(
-                lock_session, db_hm.id,
+                context.session, db_hm.id,
                 provisioning_status=consts.PENDING_DELETE)
 
             LOG.info("Sending delete Health Monitor %s to provider %s",

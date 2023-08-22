@@ -77,9 +77,8 @@ class BaseRepository(object):
         :param model_kwargs: Attributes of the model to insert.
         :returns: octavia.common.data_model
         """
-        with session.begin(subtransactions=True):
-            model = self.model_class(**model_kwargs)
-            session.add(model)
+        model = self.model_class(**model_kwargs)
+        session.add(model)
         return model.to_data_model()
 
     def delete(self, session, **filters):
@@ -91,9 +90,8 @@ class BaseRepository(object):
         :raises: sqlalchemy.orm.exc.NoResultFound
         """
         model = session.query(self.model_class).filter_by(**filters).one()
-        with session.begin(subtransactions=True):
-            session.delete(model)
-            session.flush()
+        session.delete(model)
+        session.flush()
 
     def delete_batch(self, session, ids=None):
         """Batch deletes by entity ids."""
@@ -108,13 +106,12 @@ class BaseRepository(object):
         :param model_kwargs: Entity attributes that should be updates.
         :returns: octavia.common.data_model
         """
-        with session.begin(subtransactions=True):
-            tags = model_kwargs.pop('tags', None)
-            if tags is not None:
-                resource = session.get(self.model_class, id)
-                resource.tags = tags
-            session.query(self.model_class).filter_by(
-                id=id).update(model_kwargs)
+        tags = model_kwargs.pop('tags', None)
+        if tags is not None:
+            resource = session.get(self.model_class, id)
+            resource.tags = tags
+        session.query(self.model_class).filter_by(
+            id=id).update(model_kwargs)
 
     def get(self, session, **filters):
         """Retrieves an entity from the database.
@@ -250,20 +247,19 @@ class Repositories(object):
         :returns: octavia.common.data_models.LoadBalancer
         """
         additional_vip_dicts = additional_vip_dicts or []
-        with session.begin(subtransactions=True):
-            if not lb_dict.get('id'):
-                lb_dict['id'] = uuidutils.generate_uuid()
-            lb = models.LoadBalancer(**lb_dict)
-            session.add(lb)
-            vip_dict['load_balancer_id'] = lb_dict['id']
-            vip = models.Vip(**vip_dict)
-            session.add(vip)
-            for add_vip_dict in additional_vip_dicts:
-                add_vip_dict['load_balancer_id'] = lb_dict['id']
-                add_vip_dict['network_id'] = vip_dict.get('network_id')
-                add_vip_dict['port_id'] = vip_dict.get('port_id')
-                add_vip = models.AdditionalVip(**add_vip_dict)
-                session.add(add_vip)
+        if not lb_dict.get('id'):
+            lb_dict['id'] = uuidutils.generate_uuid()
+        lb = models.LoadBalancer(**lb_dict)
+        session.add(lb)
+        vip_dict['load_balancer_id'] = lb_dict['id']
+        vip = models.Vip(**vip_dict)
+        session.add(vip)
+        for add_vip_dict in additional_vip_dicts:
+            add_vip_dict['load_balancer_id'] = lb_dict['id']
+            add_vip_dict['network_id'] = vip_dict.get('network_id')
+            add_vip_dict['port_id'] = vip_dict.get('port_id')
+            add_vip = models.AdditionalVip(**add_vip_dict)
+            session.add(add_vip)
 
         return self.load_balancer.get(session, id=lb.id)
 
@@ -277,17 +273,16 @@ class Repositories(object):
                              reference this pool as its default_pool_id
         :returns: octavia.common.data_models.Pool
         """
-        with session.begin(subtransactions=True):
-            if not pool_dict.get('id'):
-                pool_dict['id'] = uuidutils.generate_uuid()
-            sp_dict = pool_dict.pop('session_persistence', None)
-            db_pool = self.pool.create(session, **pool_dict)
-            if sp_dict is not None and sp_dict != {}:
-                sp_dict['pool_id'] = pool_dict['id']
-                self.session_persistence.create(session, **sp_dict)
-            if listener_id:
-                self.listener.update(session, listener_id,
-                                     default_pool_id=pool_dict['id'])
+        if not pool_dict.get('id'):
+            pool_dict['id'] = uuidutils.generate_uuid()
+        sp_dict = pool_dict.pop('session_persistence', None)
+        db_pool = self.pool.create(session, **pool_dict)
+        if sp_dict is not None and sp_dict != {}:
+            sp_dict['pool_id'] = pool_dict['id']
+            self.session_persistence.create(session, **sp_dict)
+        if listener_id:
+            self.listener.update(session, listener_id,
+                                 default_pool_id=pool_dict['id'])
 
         # Immediate refresh, as we have found that sqlalchemy will sometimes
         # cache the above query and the pool object may miss the listener_id
@@ -304,23 +299,23 @@ class Repositories(object):
         :param pool_dict: Dictionary representation of a pool
         :returns: octavia.common.data_models.Pool
         """
-        with session.begin(subtransactions=True):
-            if 'session_persistence' in pool_dict.keys():
-                sp_dict = pool_dict.pop('session_persistence')
-                if sp_dict is None or sp_dict == {}:
-                    if self.session_persistence.exists(session, pool_id):
-                        self.session_persistence.delete(session,
-                                                        pool_id=pool_id)
-                elif self.session_persistence.exists(session, pool_id):
-                    self.session_persistence.update(session, pool_id,
-                                                    **sp_dict)
-                else:
-                    sp_dict['pool_id'] = pool_id
-                    self.session_persistence.create(session, **sp_dict)
-            # If only the session_persistence is being updated, this will be
-            # empty
-            if pool_dict:
-                self.pool.update(session, pool_id, **pool_dict)
+        if 'session_persistence' in pool_dict.keys():
+            sp_dict = pool_dict.pop('session_persistence')
+            if sp_dict is None or sp_dict == {}:
+                if self.session_persistence.exists(session, pool_id):
+                    self.session_persistence.delete(session,
+                                                    pool_id=pool_id)
+            elif self.session_persistence.exists(session, pool_id):
+                self.session_persistence.update(session, pool_id,
+                                                **sp_dict)
+            else:
+                sp_dict['pool_id'] = pool_id
+                self.session_persistence.create(session, **sp_dict)
+        # If only the session_persistence is being updated, this will be
+        # empty
+        if pool_dict:
+            self.pool.update(session, pool_id, **pool_dict)
+        session.flush()
         return self.pool.get(session, id=pool_id)
 
     def test_and_set_lb_and_listeners_prov_status(self, session, lb_id,
@@ -680,26 +675,25 @@ class Repositories(object):
         :param amp_id: The amphora ID to query.
         :returns: An amphora stats dictionary
         """
-        with session.begin(subtransactions=True):
-            columns = (list(models.ListenerStatistics.__table__.columns) +
-                       [models.Amphora.load_balancer_id])
-            amp_records = (
-                session.query(*columns)
-                .filter(models.ListenerStatistics.amphora_id == amp_id)
-                .filter(models.ListenerStatistics.amphora_id ==
-                        models.Amphora.id).all())
-            amp_stats = []
-            for amp in amp_records:
-                amp_stat = {consts.LOADBALANCER_ID: amp.load_balancer_id,
-                            consts.LISTENER_ID: amp.listener_id,
-                            'id': amp.amphora_id,
-                            consts.ACTIVE_CONNECTIONS: amp.active_connections,
-                            consts.BYTES_IN: amp.bytes_in,
-                            consts.BYTES_OUT: amp.bytes_out,
-                            consts.REQUEST_ERRORS: amp.request_errors,
-                            consts.TOTAL_CONNECTIONS: amp.total_connections}
-                amp_stats.append(amp_stat)
-            return amp_stats
+        columns = (list(models.ListenerStatistics.__table__.columns) +
+                   [models.Amphora.load_balancer_id])
+        amp_records = (
+            session.query(*columns)
+            .filter(models.ListenerStatistics.amphora_id == amp_id)
+            .filter(models.ListenerStatistics.amphora_id ==
+                    models.Amphora.id).all())
+        amp_stats = []
+        for amp in amp_records:
+            amp_stat = {consts.LOADBALANCER_ID: amp.load_balancer_id,
+                        consts.LISTENER_ID: amp.listener_id,
+                        'id': amp.amphora_id,
+                        consts.ACTIVE_CONNECTIONS: amp.active_connections,
+                        consts.BYTES_IN: amp.bytes_in,
+                        consts.BYTES_OUT: amp.bytes_out,
+                        consts.REQUEST_ERRORS: amp.request_errors,
+                        consts.TOTAL_CONNECTIONS: amp.total_connections}
+            amp_stats.append(amp_stat)
+        return amp_stats
 
 
 class LoadBalancerRepository(BaseRepository):
@@ -748,24 +742,23 @@ class LoadBalancerRepository(BaseRepository):
         :param raise_exception: If True, raise ImmutableObject on failure
         :returns: bool
         """
-        with session.begin(subtransactions=True):
-            lb = (session.query(self.model_class)
-                  .populate_existing()
-                  .with_for_update()
-                  .filter_by(id=id).one())
-            is_delete = status == consts.PENDING_DELETE
-            acceptable_statuses = (
-                consts.DELETABLE_STATUSES
-                if is_delete else consts.MUTABLE_STATUSES
-            )
-            if lb.provisioning_status not in acceptable_statuses:
-                if raise_exception:
-                    raise exceptions.ImmutableObject(
-                        resource='Load Balancer', id=id)
-                return False
-            lb.provisioning_status = status
-            session.add(lb)
-            return True
+        lb = (session.query(self.model_class)
+              .populate_existing()
+              .with_for_update()
+              .filter_by(id=id).one())
+        is_delete = status == consts.PENDING_DELETE
+        acceptable_statuses = (
+            consts.DELETABLE_STATUSES
+            if is_delete else consts.MUTABLE_STATUSES
+        )
+        if lb.provisioning_status not in acceptable_statuses:
+            if raise_exception:
+                raise exceptions.ImmutableObject(
+                    resource='Load Balancer', id=id)
+            return False
+        lb.provisioning_status = status
+        session.add(lb)
+        return True
 
     def set_status_for_failover(self, session, id, status,
                                 raise_exception=False):
@@ -782,19 +775,18 @@ class LoadBalancerRepository(BaseRepository):
         :param raise_exception: If True, raise ImmutableObject on failure
         :returns: bool
         """
-        with session.begin(subtransactions=True):
-            lb = (session.query(self.model_class)
-                  .populate_existing()
-                  .with_for_update()
-                  .filter_by(id=id).one())
-            if lb.provisioning_status not in consts.FAILOVERABLE_STATUSES:
-                if raise_exception:
-                    raise exceptions.ImmutableObject(
-                        resource='Load Balancer', id=id)
-                return False
-            lb.provisioning_status = status
-            session.add(lb)
-            return True
+        lb = (session.query(self.model_class)
+              .populate_existing()
+              .with_for_update()
+              .filter_by(id=id).one())
+        if lb.provisioning_status not in consts.FAILOVERABLE_STATUSES:
+            if raise_exception:
+                raise exceptions.ImmutableObject(
+                    resource='Load Balancer', id=id)
+            return False
+        lb.provisioning_status = status
+        session.add(lb)
+        return True
 
 
 class VipRepository(BaseRepository):
@@ -802,9 +794,8 @@ class VipRepository(BaseRepository):
 
     def update(self, session, load_balancer_id, **model_kwargs):
         """Updates a vip entity in the database by load_balancer_id."""
-        with session.begin(subtransactions=True):
-            session.query(self.model_class).filter_by(
-                load_balancer_id=load_balancer_id).update(model_kwargs)
+        session.query(self.model_class).filter_by(
+            load_balancer_id=load_balancer_id).update(model_kwargs)
 
 
 class AdditionalVipRepository(BaseRepository):
@@ -816,10 +807,9 @@ class AdditionalVipRepository(BaseRepository):
 
         Uses load_balancer_id + subnet_id.
         """
-        with session.begin(subtransactions=True):
-            session.query(self.model_class).filter_by(
-                load_balancer_id=load_balancer_id,
-                subnet_id=subnet_id).update(model_kwargs)
+        session.query(self.model_class).filter_by(
+            load_balancer_id=load_balancer_id,
+            subnet_id=subnet_id).update(model_kwargs)
 
 
 class HealthMonitorRepository(BaseRepository):
@@ -855,9 +845,8 @@ class SessionPersistenceRepository(BaseRepository):
 
     def update(self, session, pool_id, **model_kwargs):
         """Updates a session persistence entity in the database by pool_id."""
-        with session.begin(subtransactions=True):
-            session.query(self.model_class).filter_by(
-                pool_id=pool_id).update(model_kwargs)
+        session.query(self.model_class).filter_by(
+            pool_id=pool_id).update(model_kwargs)
 
     def exists(self, session, pool_id):
         """Checks if session persistence exists on a pool."""
@@ -870,18 +859,16 @@ class ListenerCidrRepository(BaseRepository):
 
     def create(self, session, listener_id, allowed_cidrs):
         if allowed_cidrs:
-            with session.begin(subtransactions=True):
-                for cidr in set(allowed_cidrs):
-                    cidr_dict = {'listener_id': listener_id, 'cidr': cidr}
-                    model = self.model_class(**cidr_dict)
-                    session.add(model)
+            for cidr in set(allowed_cidrs):
+                cidr_dict = {'listener_id': listener_id, 'cidr': cidr}
+                model = self.model_class(**cidr_dict)
+                session.add(model)
 
     def update(self, session, listener_id, allowed_cidrs):
         """Updates allowed CIDRs in the database by listener_id."""
-        with session.begin(subtransactions=True):
-            session.query(self.model_class).filter_by(
-                listener_id=listener_id).delete()
-            self.create(session, listener_id, allowed_cidrs)
+        session.query(self.model_class).filter_by(
+            listener_id=listener_id).delete()
+        self.create(session, listener_id, allowed_cidrs)
 
 
 class PoolRepository(BaseRepository):
@@ -970,9 +957,8 @@ class MemberRepository(BaseRepository):
         :param model_kwargs: Entity attributes that should be updates.
         :returns: octavia.common.data_model
         """
-        with session.begin(subtransactions=True):
-            session.query(self.model_class).filter_by(
-                pool_id=pool_id).update(model_kwargs)
+        session.query(self.model_class).filter_by(
+            pool_id=pool_id).update(model_kwargs)
 
 
 class ListenerRepository(BaseRepository):
@@ -1044,69 +1030,66 @@ class ListenerRepository(BaseRepository):
         return bool(listener.default_pool)
 
     def update(self, session, id, **model_kwargs):
-        with session.begin(subtransactions=True):
-            listener_db = session.query(self.model_class).filter_by(
-                id=id).first()
-            if not listener_db:
-                raise exceptions.NotFound(
-                    resource=data_models.Listener._name(), id=id)
-            tags = model_kwargs.pop('tags', None)
-            if tags is not None:
-                resource = session.get(self.model_class, id)
-                resource.tags = tags
-            # Verify any newly specified default_pool_id exists
-            default_pool_id = model_kwargs.get('default_pool_id')
-            if default_pool_id:
-                self._pool_check(session, default_pool_id, listener_id=id)
-            if 'sni_containers' in model_kwargs:
-                # sni_container_refs is being updated. It is either being set
-                # or unset/cleared. We need to update in DB side.
-                containers = model_kwargs.pop('sni_containers', []) or []
-                listener_db.sni_containers = []
-                if containers:
-                    listener_db.sni_containers = [
-                        models.SNI(listener_id=id,
-                                   tls_container_id=container_ref)
-                        for container_ref in containers]
-            if 'allowed_cidrs' in model_kwargs:
-                # allowed_cidrs is being updated. It is either being set or
-                # unset/cleared. We need to update in DB side.
-                allowed_cidrs = model_kwargs.pop('allowed_cidrs', []) or []
-                listener_db.allowed_cidrs = []
-                if allowed_cidrs:
-                    listener_db.allowed_cidrs = [
-                        models.ListenerCidr(listener_id=id, cidr=cidr)
-                        for cidr in allowed_cidrs]
-            listener_db.update(model_kwargs)
+        listener_db = session.query(self.model_class).filter_by(
+            id=id).first()
+        if not listener_db:
+            raise exceptions.NotFound(
+                resource=data_models.Listener._name(), id=id)
+        tags = model_kwargs.pop('tags', None)
+        if tags is not None:
+            resource = session.get(self.model_class, id)
+            resource.tags = tags
+        # Verify any newly specified default_pool_id exists
+        default_pool_id = model_kwargs.get('default_pool_id')
+        if default_pool_id:
+            self._pool_check(session, default_pool_id, listener_id=id)
+        if 'sni_containers' in model_kwargs:
+            # sni_container_refs is being updated. It is either being set
+            # or unset/cleared. We need to update in DB side.
+            containers = model_kwargs.pop('sni_containers', []) or []
+            listener_db.sni_containers = []
+            if containers:
+                listener_db.sni_containers = [
+                    models.SNI(listener_id=id,
+                               tls_container_id=container_ref)
+                    for container_ref in containers]
+        if 'allowed_cidrs' in model_kwargs:
+            # allowed_cidrs is being updated. It is either being set or
+            # unset/cleared. We need to update in DB side.
+            allowed_cidrs = model_kwargs.pop('allowed_cidrs', []) or []
+            listener_db.allowed_cidrs = []
+            if allowed_cidrs:
+                listener_db.allowed_cidrs = [
+                    models.ListenerCidr(listener_id=id, cidr=cidr)
+                    for cidr in allowed_cidrs]
+        listener_db.update(model_kwargs)
 
     def create(self, session, **model_kwargs):
         """Creates a new Listener with some validation."""
-        with session.begin(subtransactions=True):
-            listener_id = model_kwargs.get('id')
-            allowed_cidrs = set(model_kwargs.pop('allowed_cidrs', []) or [])
-            model_kwargs['allowed_cidrs'] = [
-                models.ListenerCidr(listener_id=listener_id, cidr=cidr)
-                for cidr in allowed_cidrs]
-            model = self.model_class(**model_kwargs)
-            if model.default_pool_id:
-                model.default_pool = self._pool_check(
-                    session, model.default_pool_id,
-                    lb_id=model.load_balancer_id)
-            if model.peer_port is None:
-                model.peer_port = self._find_next_peer_port(
-                    session, lb_id=model.load_balancer_id)
-            session.add(model)
+        listener_id = model_kwargs.get('id')
+        allowed_cidrs = set(model_kwargs.pop('allowed_cidrs', []) or [])
+        model_kwargs['allowed_cidrs'] = [
+            models.ListenerCidr(listener_id=listener_id, cidr=cidr)
+            for cidr in allowed_cidrs]
+        model = self.model_class(**model_kwargs)
+        if model.default_pool_id:
+            model.default_pool = self._pool_check(
+                session, model.default_pool_id,
+                lb_id=model.load_balancer_id)
+        if model.peer_port is None:
+            model.peer_port = self._find_next_peer_port(
+                session, lb_id=model.load_balancer_id)
+        session.add(model)
         return model.to_data_model()
 
     def prov_status_active_if_not_error(self, session, listener_id):
         """Update provisioning_status to ACTIVE if not already in ERROR."""
-        with session.begin(subtransactions=True):
-            (session.query(self.model_class).filter_by(id=listener_id).
-             # Don't mark ERROR or already ACTIVE as ACTIVE
-             filter(~self.model_class.provisioning_status.in_(
-                 [consts.ERROR, consts.ACTIVE])).
-             update({self.model_class.provisioning_status: consts.ACTIVE},
-                    synchronize_session='fetch'))
+        (session.query(self.model_class).filter_by(id=listener_id).
+         # Don't mark ERROR or already ACTIVE as ACTIVE
+         filter(~self.model_class.provisioning_status.in_(
+             [consts.ERROR, consts.ACTIVE])).
+         update({self.model_class.provisioning_status: consts.ACTIVE},
+                synchronize_session='fetch'))
 
 
 class ListenerStatisticsRepository(BaseRepository):
@@ -1123,19 +1106,18 @@ class ListenerStatisticsRepository(BaseRepository):
             # amphora_id can't be null, so clone the listener_id
             stats_obj.amphora_id = stats_obj.listener_id
 
-        with session.begin(subtransactions=True):
-            # TODO(johnsom): This can be simplified/optimized using an "upsert"
-            count = session.query(self.model_class).filter_by(
+        # TODO(johnsom): This can be simplified/optimized using an "upsert"
+        count = session.query(self.model_class).filter_by(
+            listener_id=stats_obj.listener_id,
+            amphora_id=stats_obj.amphora_id).count()
+        if count:
+            session.query(self.model_class).filter_by(
                 listener_id=stats_obj.listener_id,
-                amphora_id=stats_obj.amphora_id).count()
-            if count:
-                session.query(self.model_class).filter_by(
-                    listener_id=stats_obj.listener_id,
-                    amphora_id=stats_obj.amphora_id).update(
-                    stats_obj.get_stats(),
-                    synchronize_session=False)
-            else:
-                self.create(session, **stats_obj.db_fields())
+                amphora_id=stats_obj.amphora_id).update(
+                stats_obj.get_stats(),
+                synchronize_session=False)
+        else:
+            self.create(session, **stats_obj.db_fields())
 
     def increment(self, session, delta_stats):
         """Updates a listener's statistics, incrementing by the passed deltas.
@@ -1148,24 +1130,23 @@ class ListenerStatisticsRepository(BaseRepository):
             # amphora_id can't be null, so clone the listener_id
             delta_stats.amphora_id = delta_stats.listener_id
 
-        with session.begin(subtransactions=True):
-            # TODO(johnsom): This can be simplified/optimized using an "upsert"
-            count = session.query(self.model_class).filter_by(
-                listener_id=delta_stats.listener_id,
-                amphora_id=delta_stats.amphora_id).count()
-            if count:
-                existing_stats = (
-                    session.query(self.model_class)
-                    .populate_existing()
-                    .with_for_update()
-                    .filter_by(
-                        listener_id=delta_stats.listener_id,
-                        amphora_id=delta_stats.amphora_id).one())
-                existing_stats += delta_stats
-                existing_stats.active_connections = (
-                    delta_stats.active_connections)
-            else:
-                self.create(session, **delta_stats.db_fields())
+        # TODO(johnsom): This can be simplified/optimized using an "upsert"
+        count = session.query(self.model_class).filter_by(
+            listener_id=delta_stats.listener_id,
+            amphora_id=delta_stats.amphora_id).count()
+        if count:
+            existing_stats = (
+                session.query(self.model_class)
+                .populate_existing()
+                .with_for_update()
+                .filter_by(
+                    listener_id=delta_stats.listener_id,
+                    amphora_id=delta_stats.amphora_id).one())
+            existing_stats += delta_stats
+            existing_stats.active_connections = (
+                delta_stats.active_connections)
+        else:
+            self.create(session, **delta_stats.db_fields())
 
     def update(self, session, listener_id, **model_kwargs):
         """Updates a listener's statistics, overriding with the passed values.
@@ -1176,9 +1157,8 @@ class ListenerStatisticsRepository(BaseRepository):
         :param model_kwargs: Entity attributes that should be updated
 
         """
-        with session.begin(subtransactions=True):
-            session.query(self.model_class).filter_by(
-                listener_id=listener_id).update(model_kwargs)
+        session.query(self.model_class).filter_by(
+            listener_id=listener_id).update(model_kwargs)
 
 
 class AmphoraRepository(BaseRepository):
@@ -1214,12 +1194,11 @@ class AmphoraRepository(BaseRepository):
         :param load_balancer_id: The load balancer id to associate
         :param amphora_id: The amphora id to associate
         """
-        with session.begin(subtransactions=True):
-            load_balancer = session.query(models.LoadBalancer).filter_by(
-                id=load_balancer_id).first()
-            amphora = session.query(self.model_class).filter_by(
-                id=amphora_id).first()
-            load_balancer.amphorae.append(amphora)
+        load_balancer = session.query(models.LoadBalancer).filter_by(
+            id=load_balancer_id).first()
+        amphora = session.query(self.model_class).filter_by(
+            id=amphora_id).first()
+        load_balancer.amphorae.append(amphora)
 
     @oslo_db_api.wrap_db_retry(max_retries=5, retry_on_deadlock=True)
     def allocate_and_associate(self, session, load_balancer_id,
@@ -1242,19 +1221,18 @@ class AmphoraRepository(BaseRepository):
             LOG.debug("Filtering amps by zone: %s", availability_zone)
             filters['cached_zone'] = availability_zone
 
-        with session.begin(subtransactions=True):
-            amp = (session.query(self.model_class)
-                   .populate_existing()
-                   .with_for_update()
-                   .filter_by(**filters).first())
+        amp = (session.query(self.model_class)
+               .populate_existing()
+               .with_for_update()
+               .filter_by(**filters).first())
 
-            if amp is None:
-                return None
+        if amp is None:
+            return None
 
-            if availability_zone:
-                LOG.debug("Found amp: %s in %s", amp.id, amp.cached_zone)
-            amp.status = 'ALLOCATED'
-            amp.load_balancer_id = load_balancer_id
+        if availability_zone:
+            LOG.debug("Found amp: %s in %s", amp.id, amp.cached_zone)
+        amp.status = 'ALLOCATED'
+        amp.load_balancer_id = load_balancer_id
 
         return amp.to_data_model()
 
@@ -1296,21 +1274,20 @@ class AmphoraRepository(BaseRepository):
         expired_date = datetime.datetime.utcnow() + datetime.timedelta(
             seconds=expired_seconds)
 
-        with session.begin(subtransactions=True):
-            amp = (session.query(self.model_class)
-                   .populate_existing()
-                   .with_for_update()
-                   .filter(
-                       self.model_class.status.notin_(
-                           [consts.DELETED, consts.PENDING_DELETE]),
-                       self.model_class.cert_busy == false(),
-                       self.model_class.cert_expiration < expired_date)
-                   .first())
+        amp = (session.query(self.model_class)
+               .populate_existing()
+               .with_for_update()
+               .filter(
+                   self.model_class.status.notin_(
+                       [consts.DELETED, consts.PENDING_DELETE]),
+                   self.model_class.cert_busy == false(),
+                   self.model_class.cert_expiration < expired_date)
+               .first())
 
-            if amp is None:
-                return None
+        if amp is None:
+            return None
 
-            amp.cert_busy = True
+        amp.cert_busy = True
 
         return amp.to_data_model()
 
@@ -1420,16 +1397,14 @@ class AmphoraBuildReqRepository(BaseRepository):
 
     def add_to_build_queue(self, session, amphora_id=None, priority=None):
         """Adds the build request to the table."""
-        with session.begin(subtransactions=True):
-            model = self.model_class(amphora_id=amphora_id, priority=priority)
-            session.add(model)
+        model = self.model_class(amphora_id=amphora_id, priority=priority)
+        session.add(model)
 
     def update_req_status(self, session, amphora_id=None):
         """Updates the request status."""
-        with session.begin(subtransactions=True):
-            (session.query(self.model_class)
-             .filter_by(amphora_id=amphora_id)
-             .update({self.model_class.status: 'BUILDING'}))
+        (session.query(self.model_class)
+         .filter_by(amphora_id=amphora_id)
+         .update({self.model_class.status: 'BUILDING'}))
 
     def get_highest_priority_build_req(self, session):
         """Fetches build request with highest priority and least created_time.
@@ -1440,17 +1415,15 @@ class AmphoraBuildReqRepository(BaseRepository):
         :returns amphora_id corresponding to highest priority and least created
         time in 'WAITING' status.
         """
-        with session.begin(subtransactions=True):
-            return (session.query(self.model_class.amphora_id)
-                    .order_by(self.model_class.status.desc())
-                    .order_by(self.model_class.priority.asc())
-                    .order_by(self.model_class.created_time.asc())
-                    .first())[0]
+        return (session.query(self.model_class.amphora_id)
+                .order_by(self.model_class.status.desc())
+                .order_by(self.model_class.priority.asc())
+                .order_by(self.model_class.created_time.asc())
+                .first())[0]
 
     def delete_all(self, session):
         "Deletes all the build requests."
-        with session.begin(subtransactions=True):
-            session.query(self.model_class).delete()
+        session.query(self.model_class).delete()
 
 
 class AmphoraBuildSlotsRepository(BaseRepository):
@@ -1461,24 +1434,22 @@ class AmphoraBuildSlotsRepository(BaseRepository):
 
              :returns: Number of current build slots.
         """
-        with session.begin(subtransactions=True):
-            count = session.query(self.model_class.slots_used).one()
+        count = session.query(self.model_class.slots_used).one()
         return count[0]
 
     def update_count(self, session, action='increment'):
         """Increments/Decrements/Resets the number of build_slots used."""
-        with session.begin(subtransactions=True):
-            if action == 'increment':
-                session.query(self.model_class).filter_by(id=1).update(
-                    {self.model_class.slots_used:
-                     self.get_used_build_slots_count(session) + 1})
-            elif action == 'decrement':
-                session.query(self.model_class).filter_by(id=1).update(
-                    {self.model_class.slots_used:
-                     self.get_used_build_slots_count(session) - 1})
-            elif action == 'reset':
-                session.query(self.model_class).filter_by(id=1).update(
-                    {self.model_class.slots_used: 0})
+        if action == 'increment':
+            session.query(self.model_class).filter_by(id=1).update(
+                {self.model_class.slots_used:
+                 self.get_used_build_slots_count(session) + 1})
+        elif action == 'decrement':
+            session.query(self.model_class).filter_by(id=1).update(
+                {self.model_class.slots_used:
+                 self.get_used_build_slots_count(session) - 1})
+        elif action == 'reset':
+            session.query(self.model_class).filter_by(id=1).update(
+                {self.model_class.slots_used: 0})
 
 
 class SNIRepository(BaseRepository):
@@ -1489,13 +1460,12 @@ class SNIRepository(BaseRepository):
         """Updates an SNI entity in the database."""
         if not listener_id and tls_container_id:
             raise exceptions.MissingArguments
-        with session.begin(subtransactions=True):
-            if listener_id:
-                session.query(self.model_class).filter_by(
-                    listener_id=listener_id).update(model_kwargs)
-            elif tls_container_id:
-                session.query(self.model_class).filter_by(
-                    tls_container_id=tls_container_id).update(model_kwargs)
+        if listener_id:
+            session.query(self.model_class).filter_by(
+                listener_id=listener_id).update(model_kwargs)
+        elif tls_container_id:
+            session.query(self.model_class).filter_by(
+                tls_container_id=tls_container_id).update(model_kwargs)
 
 
 class AmphoraHealthRepository(BaseRepository):
@@ -1503,22 +1473,20 @@ class AmphoraHealthRepository(BaseRepository):
 
     def update(self, session, amphora_id, **model_kwargs):
         """Updates a healthmanager entity in the database by amphora_id."""
-        with session.begin(subtransactions=True):
-            session.query(self.model_class).filter_by(
-                amphora_id=amphora_id).update(model_kwargs)
+        session.query(self.model_class).filter_by(
+            amphora_id=amphora_id).update(model_kwargs)
 
     def replace(self, session, amphora_id, **model_kwargs):
         """replace or insert amphora into database."""
-        with session.begin(subtransactions=True):
-            count = session.query(self.model_class).filter_by(
-                amphora_id=amphora_id).count()
-            if count:
-                session.query(self.model_class).filter_by(
-                    amphora_id=amphora_id).update(model_kwargs,
-                                                  synchronize_session=False)
-            else:
-                model_kwargs['amphora_id'] = amphora_id
-                self.create(session, **model_kwargs)
+        count = session.query(self.model_class).filter_by(
+            amphora_id=amphora_id).count()
+        if count:
+            session.query(self.model_class).filter_by(
+                amphora_id=amphora_id).update(model_kwargs,
+                                              synchronize_session=False)
+        else:
+            model_kwargs['amphora_id'] = amphora_id
+            self.create(session, **model_kwargs)
 
     def check_amphora_health_expired(self, session, amphora_id, exp_age=None):
         """check if a specific amphora is expired in the amphora_health table
@@ -1656,9 +1624,8 @@ class VRRPGroupRepository(BaseRepository):
 
     def update(self, session, load_balancer_id, **model_kwargs):
         """Updates a VRRPGroup entry for by load_balancer_id."""
-        with session.begin(subtransactions=True):
-            session.query(self.model_class).filter_by(
-                load_balancer_id=load_balancer_id).update(model_kwargs)
+        session.query(self.model_class).filter_by(
+            load_balancer_id=load_balancer_id).update(model_kwargs)
 
 
 class L7RuleRepository(BaseRepository):
@@ -1689,42 +1656,40 @@ class L7RuleRepository(BaseRepository):
             query_options=query_options, **filters)
 
     def update(self, session, id, **model_kwargs):
-        with session.begin(subtransactions=True):
-            l7rule_db = session.query(self.model_class).filter_by(
-                id=id).first()
-            if not l7rule_db:
-                raise exceptions.NotFound(
-                    resource=data_models.L7Rule._name(), id=id)
+        l7rule_db = session.query(self.model_class).filter_by(
+            id=id).first()
+        if not l7rule_db:
+            raise exceptions.NotFound(
+                resource=data_models.L7Rule._name(), id=id)
 
-            l7rule_dict = l7rule_db.to_data_model().to_dict()
-            # Ignore values that are None
-            for k, v in model_kwargs.items():
-                if v is not None:
-                    l7rule_dict.update({k: v})
-            # Clear out the 'key' attribute for rule types that don't use it.
-            if ('type' in l7rule_dict.keys() and
-                l7rule_dict['type'] in (consts.L7RULE_TYPE_HOST_NAME,
-                                        consts.L7RULE_TYPE_PATH,
-                                        consts.L7RULE_TYPE_FILE_TYPE)):
-                l7rule_dict['key'] = None
-                model_kwargs.update({'key': None})
-            validate.l7rule_data(self.model_class(**l7rule_dict))
-            l7rule_db.update(model_kwargs)
+        l7rule_dict = l7rule_db.to_data_model().to_dict()
+        # Ignore values that are None
+        for k, v in model_kwargs.items():
+            if v is not None:
+                l7rule_dict.update({k: v})
+        # Clear out the 'key' attribute for rule types that don't use it.
+        if ('type' in l7rule_dict.keys() and
+            l7rule_dict['type'] in (consts.L7RULE_TYPE_HOST_NAME,
+                                    consts.L7RULE_TYPE_PATH,
+                                    consts.L7RULE_TYPE_FILE_TYPE)):
+            l7rule_dict['key'] = None
+            model_kwargs.update({'key': None})
+        validate.l7rule_data(self.model_class(**l7rule_dict))
+        l7rule_db.update(model_kwargs)
 
         l7rule_db = self.get(session, id=id)
         return l7rule_db
 
     def create(self, session, **model_kwargs):
-        with session.begin(subtransactions=True):
-            if not model_kwargs.get('id'):
-                model_kwargs.update(id=uuidutils.generate_uuid())
-            if model_kwargs.get('l7policy_id'):
-                l7policy_db = session.query(models.L7Policy).filter_by(
-                    id=model_kwargs.get('l7policy_id')).first()
-                model_kwargs.update(l7policy=l7policy_db)
-            l7rule = self.model_class(**model_kwargs)
-            validate.l7rule_data(l7rule)
-            session.add(l7rule)
+        if not model_kwargs.get('id'):
+            model_kwargs.update(id=uuidutils.generate_uuid())
+        if model_kwargs.get('l7policy_id'):
+            l7policy_db = session.query(models.L7Policy).filter_by(
+                id=model_kwargs.get('l7policy_id')).first()
+            model_kwargs.update(l7policy=l7policy_db)
+        l7rule = self.model_class(**model_kwargs)
+        validate.l7rule_data(l7rule)
+        session.add(l7rule)
 
         l7rule_db = self.get(session, id=l7rule.id)
         return l7rule_db
@@ -1799,46 +1764,45 @@ class L7PolicyRepository(BaseRepository):
         return data_model_list, links
 
     def update(self, session, id, **model_kwargs):
-        with session.begin(subtransactions=True):
-            l7policy_db = session.query(self.model_class).filter_by(
-                id=id).first()
-            if not l7policy_db:
-                raise exceptions.NotFound(
-                    resource=data_models.L7Policy._name(), id=id)
+        l7policy_db = session.query(self.model_class).filter_by(
+            id=id).first()
+        if not l7policy_db:
+            raise exceptions.NotFound(
+                resource=data_models.L7Policy._name(), id=id)
 
-            # Necessary to work around unexpected / idiotic behavior of
-            # the SQLAlchemy Orderinglist extension if the position changes.
-            position = model_kwargs.pop('position', None)
-            if position == l7policy_db.position:
-                position = None
+        # Necessary to work around unexpected / idiotic behavior of
+        # the SQLAlchemy Orderinglist extension if the position changes.
+        position = model_kwargs.pop('position', None)
+        if position == l7policy_db.position:
+            position = None
 
-            model_kwargs.update(listener_id=l7policy_db.listener_id)
-            l7policy = self.model_class(
-                **validate.sanitize_l7policy_api_args(model_kwargs))
-            self._validate_l7policy_pool_data(session, l7policy)
+        model_kwargs.update(listener_id=l7policy_db.listener_id)
+        l7policy = self.model_class(
+            **validate.sanitize_l7policy_api_args(model_kwargs))
+        self._validate_l7policy_pool_data(session, l7policy)
 
-            if l7policy.action:
-                model_kwargs.update(action=l7policy.action)
-                if l7policy.action == consts.L7POLICY_ACTION_REJECT:
-                    model_kwargs.update(redirect_url=None)
-                    model_kwargs.update(redirect_pool_id=None)
-                    model_kwargs.update(redirect_prefix=None)
-                    model_kwargs.update(redirect_http_code=None)
-                elif (l7policy.action ==
-                        consts.L7POLICY_ACTION_REDIRECT_TO_URL):
-                    model_kwargs.update(redirect_pool_id=None)
-                    model_kwargs.update(redirect_prefix=None)
-                elif (l7policy.action ==
-                        consts.L7POLICY_ACTION_REDIRECT_TO_POOL):
-                    model_kwargs.update(redirect_url=None)
-                    model_kwargs.update(redirect_prefix=None)
-                    model_kwargs.update(redirect_http_code=None)
-                elif (l7policy.action ==
-                        consts.L7POLICY_ACTION_REDIRECT_PREFIX):
-                    model_kwargs.update(redirect_url=None)
-                    model_kwargs.update(redirect_pool_id=None)
+        if l7policy.action:
+            model_kwargs.update(action=l7policy.action)
+            if l7policy.action == consts.L7POLICY_ACTION_REJECT:
+                model_kwargs.update(redirect_url=None)
+                model_kwargs.update(redirect_pool_id=None)
+                model_kwargs.update(redirect_prefix=None)
+                model_kwargs.update(redirect_http_code=None)
+            elif (l7policy.action ==
+                    consts.L7POLICY_ACTION_REDIRECT_TO_URL):
+                model_kwargs.update(redirect_pool_id=None)
+                model_kwargs.update(redirect_prefix=None)
+            elif (l7policy.action ==
+                    consts.L7POLICY_ACTION_REDIRECT_TO_POOL):
+                model_kwargs.update(redirect_url=None)
+                model_kwargs.update(redirect_prefix=None)
+                model_kwargs.update(redirect_http_code=None)
+            elif (l7policy.action ==
+                    consts.L7POLICY_ACTION_REDIRECT_PREFIX):
+                model_kwargs.update(redirect_url=None)
+                model_kwargs.update(redirect_pool_id=None)
 
-            l7policy_db.update(model_kwargs)
+        l7policy_db.update(model_kwargs)
 
         # Position manipulation must happen outside the other alterations
         # in the previous transaction
@@ -1848,38 +1812,36 @@ class L7PolicyRepository(BaseRepository):
             # Immediate refresh, as we have found that sqlalchemy will
             # sometimes cache the above query
             session.refresh(listener)
-            with session.begin(subtransactions=True):
-                l7policy_db = listener.l7policies.pop(l7policy_db.position - 1)
-                listener.l7policies.insert(position - 1, l7policy_db)
+            l7policy_db = listener.l7policies.pop(l7policy_db.position - 1)
+            listener.l7policies.insert(position - 1, l7policy_db)
             listener.l7policies.reorder()
             session.flush()
 
         return self.get(session, id=id)
 
     def create(self, session, **model_kwargs):
-        with session.begin(subtransactions=True):
-            # We must append the new policy to the end of the collection. We
-            # later re-insert it wherever it was requested to appear in order.
-            # This is to work around unexpected / idiotic behavior of the
-            # SQLAlchemy orderinglist extension.
-            position = model_kwargs.pop('position', None)
-            model_kwargs.update(position=consts.MAX_POLICY_POSITION)
-            if not model_kwargs.get('id'):
-                model_kwargs.update(id=uuidutils.generate_uuid())
-            if model_kwargs.get('redirect_pool_id'):
-                pool_db = session.query(models.Pool).filter_by(
-                    id=model_kwargs.get('redirect_pool_id')).first()
-                model_kwargs.update(redirect_pool=pool_db)
-            if model_kwargs.get('listener_id'):
-                listener_db = session.query(models.Listener).filter_by(
-                    id=model_kwargs.get('listener_id')).first()
-                model_kwargs.update(listener=listener_db)
-            l7policy = self.model_class(
-                **validate.sanitize_l7policy_api_args(model_kwargs,
-                                                      create=True))
-            self._validate_l7policy_pool_data(session, l7policy)
-            session.add(l7policy)
-            session.flush()
+        # We must append the new policy to the end of the collection. We
+        # later re-insert it wherever it was requested to appear in order.
+        # This is to work around unexpected / idiotic behavior of the
+        # SQLAlchemy orderinglist extension.
+        position = model_kwargs.pop('position', None)
+        model_kwargs.update(position=consts.MAX_POLICY_POSITION)
+        if not model_kwargs.get('id'):
+            model_kwargs.update(id=uuidutils.generate_uuid())
+        if model_kwargs.get('redirect_pool_id'):
+            pool_db = session.query(models.Pool).filter_by(
+                id=model_kwargs.get('redirect_pool_id')).first()
+            model_kwargs.update(redirect_pool=pool_db)
+        if model_kwargs.get('listener_id'):
+            listener_db = session.query(models.Listener).filter_by(
+                id=model_kwargs.get('listener_id')).first()
+            model_kwargs.update(listener=listener_db)
+        l7policy = self.model_class(
+            **validate.sanitize_l7policy_api_args(model_kwargs,
+                                                  create=True))
+        self._validate_l7policy_pool_data(session, l7policy)
+        session.add(l7policy)
+        session.flush()
 
         # Must be done outside the transaction which creates the L7Policy
         listener = (session.query(models.Listener).
@@ -1890,33 +1852,30 @@ class L7PolicyRepository(BaseRepository):
         session.refresh(l7policy)
 
         if position is not None and position < len(listener.l7policies) + 1:
-            with session.begin(subtransactions=True):
-                # New L7Policy will always be at the end of the list
-                l7policy_db = listener.l7policies.pop()
-                listener.l7policies.insert(position - 1, l7policy_db)
+            # New L7Policy will always be at the end of the list
+            l7policy_db = listener.l7policies.pop()
+            listener.l7policies.insert(position - 1, l7policy_db)
 
         listener.l7policies.reorder()
         session.flush()
-        with session.begin(subtransactions=True):
-            l7policy.updated_at = None
+        l7policy.updated_at = None
         return self.get(session, id=l7policy.id)
 
     def delete(self, session, id, **filters):
-        with session.begin(subtransactions=True):
-            l7policy_db = session.query(self.model_class).filter_by(
-                id=id).first()
-            if not l7policy_db:
-                raise exceptions.NotFound(
-                    resource=data_models.L7Policy._name(), id=id)
-            listener_id = l7policy_db.listener_id
-            session.delete(l7policy_db)
-            session.flush()
+        l7policy_db = session.query(self.model_class).filter_by(
+            id=id).first()
+        if not l7policy_db:
+            raise exceptions.NotFound(
+                resource=data_models.L7Policy._name(), id=id)
+        listener_id = l7policy_db.listener_id
+        session.delete(l7policy_db)
+        session.flush()
 
         # Must do reorder outside of the delete transaction.
         listener = (session.query(models.Listener).
                     filter_by(id=listener_id).first())
-        # Immediate refresh, as we have found that sqlalchemy will sometimes
-        # cache the above query
+        # Immediate refresh, as we have found that sqlalchemy will
+        # sometimes cache the above query
         session.refresh(listener)
         listener.l7policies.reorder()
         session.flush()
@@ -1925,47 +1884,44 @@ class L7PolicyRepository(BaseRepository):
 class QuotasRepository(BaseRepository):
     model_class = models.Quotas
 
-    # This is used with an autocommit session (non-lock_session)
     # Since this is for the initial quota record creation it locks the table
     # which can lead to recoverable deadlocks. Thus we use the deadlock
     # retry wrapper here. This may not be appropriate for other sessions
     # and or queries. Use with caution.
     @oslo_db_api.wrap_db_retry(max_retries=5, retry_on_deadlock=True)
     def update(self, session, project_id, **model_kwargs):
-        with session.begin(subtransactions=True):
-            kwargs_quota = model_kwargs['quota']
-            quotas = (
-                session.query(self.model_class)
-                .filter_by(project_id=project_id)
-                .populate_existing()
-                .with_for_update().first())
-            if not quotas:
-                quotas = models.Quotas(project_id=project_id)
+        kwargs_quota = model_kwargs['quota']
+        quotas = (
+            session.query(self.model_class)
+            .filter_by(project_id=project_id)
+            .populate_existing()
+            .with_for_update().first())
+        if not quotas:
+            quotas = models.Quotas(project_id=project_id)
 
-            for key, val in kwargs_quota.items():
-                setattr(quotas, key, val)
-            session.add(quotas)
-            session.flush()
+        for key, val in kwargs_quota.items():
+            setattr(quotas, key, val)
+        session.add(quotas)
+        session.flush()
         return self.get(session, project_id=project_id)
 
     def delete(self, session, project_id):
-        with session.begin(subtransactions=True):
-            quotas = (
-                session.query(self.model_class)
-                .filter_by(project_id=project_id)
-                .populate_existing()
-                .with_for_update().first())
-            if not quotas:
-                raise exceptions.NotFound(
-                    resource=data_models.Quotas._name(), id=project_id)
-            quotas.health_monitor = None
-            quotas.load_balancer = None
-            quotas.listener = None
-            quotas.member = None
-            quotas.pool = None
-            quotas.l7policy = None
-            quotas.l7rule = None
-            session.flush()
+        quotas = (
+            session.query(self.model_class)
+            .filter_by(project_id=project_id)
+            .populate_existing()
+            .with_for_update().first())
+        if not quotas:
+            raise exceptions.NotFound(
+                resource=data_models.Quotas._name(), id=project_id)
+        quotas.health_monitor = None
+        quotas.load_balancer = None
+        quotas.listener = None
+        quotas.member = None
+        quotas.pool = None
+        quotas.l7policy = None
+        quotas.l7rule = None
+        session.flush()
 
 
 class _GetALLExceptDELETEDIdMixin(object):
@@ -2007,23 +1963,21 @@ class FlavorRepository(_GetALLExceptDELETEDIdMixin, BaseRepository):
     model_class = models.Flavor
 
     def get_flavor_metadata_dict(self, session, flavor_id):
-        with session.begin(subtransactions=True):
-            flavor_metadata_json = (
-                session.query(models.FlavorProfile.flavor_data)
-                .filter(models.Flavor.id == flavor_id)
-                .filter(
-                    models.Flavor.flavor_profile_id == models.FlavorProfile.id)
-                .one()[0])
-            result_dict = ({} if flavor_metadata_json is None
-                           else jsonutils.loads(flavor_metadata_json))
-            return result_dict
+        flavor_metadata_json = (
+            session.query(models.FlavorProfile.flavor_data)
+            .filter(models.Flavor.id == flavor_id)
+            .filter(
+                models.Flavor.flavor_profile_id == models.FlavorProfile.id)
+            .one()[0])
+        result_dict = ({} if flavor_metadata_json is None
+                       else jsonutils.loads(flavor_metadata_json))
+        return result_dict
 
     def get_flavor_provider(self, session, flavor_id):
-        with session.begin(subtransactions=True):
-            return (session.query(models.FlavorProfile.provider_name)
-                    .filter(models.Flavor.id == flavor_id)
-                    .filter(models.Flavor.flavor_profile_id ==
-                            models.FlavorProfile.id).one()[0])
+        return (session.query(models.FlavorProfile.provider_name)
+                .filter(models.Flavor.id == flavor_id)
+                .filter(models.Flavor.flavor_profile_id ==
+                        models.FlavorProfile.id).one()[0])
 
     def delete(self, serial_session, **filters):
         """Sets DELETED LBs flavor_id to NIL_UUID, then removes the flavor
@@ -2053,27 +2007,25 @@ class AvailabilityZoneRepository(_GetALLExceptDELETEDIdMixin, BaseRepository):
 
     def get_availability_zone_metadata_dict(self, session,
                                             availability_zone_name):
-        with session.begin(subtransactions=True):
-            availability_zone_metadata_json = (
-                session.query(
-                    models.AvailabilityZoneProfile.availability_zone_data)
-                .filter(models.AvailabilityZone.name == availability_zone_name)
-                .filter(models.AvailabilityZone.availability_zone_profile_id ==
-                        models.AvailabilityZoneProfile.id)
-                .one()[0])
-            result_dict = (
-                {} if availability_zone_metadata_json is None
-                else jsonutils.loads(availability_zone_metadata_json))
-            return result_dict
+        availability_zone_metadata_json = (
+            session.query(
+                models.AvailabilityZoneProfile.availability_zone_data)
+            .filter(models.AvailabilityZone.name == availability_zone_name)
+            .filter(models.AvailabilityZone.availability_zone_profile_id ==
+                    models.AvailabilityZoneProfile.id)
+            .one()[0])
+        result_dict = (
+            {} if availability_zone_metadata_json is None
+            else jsonutils.loads(availability_zone_metadata_json))
+        return result_dict
 
     def get_availability_zone_provider(self, session, availability_zone_name):
-        with session.begin(subtransactions=True):
-            return (session.query(models.AvailabilityZoneProfile.provider_name)
-                    .filter(
-                    models.AvailabilityZone.name == availability_zone_name)
-                    .filter(
-                    models.AvailabilityZone.availability_zone_profile_id ==
-                    models.AvailabilityZoneProfile.id).one()[0])
+        return (session.query(models.AvailabilityZoneProfile.provider_name)
+                .filter(
+                models.AvailabilityZone.name == availability_zone_name)
+                .filter(
+                models.AvailabilityZone.availability_zone_profile_id ==
+                models.AvailabilityZoneProfile.id).one()[0])
 
     def update(self, session, name, **model_kwargs):
         """Updates an entity in the database.
@@ -2082,9 +2034,8 @@ class AvailabilityZoneRepository(_GetALLExceptDELETEDIdMixin, BaseRepository):
         :param model_kwargs: Entity attributes that should be updates.
         :returns: octavia.common.data_model
         """
-        with session.begin(subtransactions=True):
-            session.query(self.model_class).filter_by(
-                name=name).update(model_kwargs)
+        session.query(self.model_class).filter_by(
+            name=name).update(model_kwargs)
 
     def delete(self, serial_session, **filters):
         """Special delete method for availability_zone.

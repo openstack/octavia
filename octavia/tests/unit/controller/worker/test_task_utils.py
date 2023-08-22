@@ -19,8 +19,6 @@ from octavia.common import constants
 from octavia.controller.worker import task_utils as task_utilities
 import octavia.tests.unit.base as base
 
-TEST_SESSION = 'TEST_SESSION'
-
 
 class TestTaskUtils(base.TestCase):
 
@@ -39,7 +37,7 @@ class TestTaskUtils(base.TestCase):
 
         super().setUp()
 
-    @mock.patch('octavia.db.api.get_session', return_value=TEST_SESSION)
+    @mock.patch('octavia.db.api.session')
     @mock.patch('octavia.db.repositories.AmphoraRepository.update')
     def test_mark_amphora_status_error(self,
                                        mock_amphora_repo_update,
@@ -48,8 +46,10 @@ class TestTaskUtils(base.TestCase):
         # Happy path
         self.task_utils.mark_amphora_status_error(self.AMPHORA_ID)
 
+        mock_session = mock_get_session().begin().__enter__()
+
         mock_amphora_repo_update.assert_called_once_with(
-            TEST_SESSION,
+            mock_session,
             id=self.AMPHORA_ID,
             status=constants.ERROR)
 
@@ -61,7 +61,7 @@ class TestTaskUtils(base.TestCase):
 
         self.assertFalse(mock_amphora_repo_update.called)
 
-    @mock.patch('octavia.db.api.get_session', return_value=TEST_SESSION)
+    @mock.patch('octavia.db.api.session')
     @mock.patch('octavia.db.repositories.HealthMonitorRepository.update')
     def test_mark_health_mon_prov_status_error(self,
                                                mock_health_mon_repo_update,
@@ -70,8 +70,10 @@ class TestTaskUtils(base.TestCase):
         # Happy path
         self.task_utils.mark_health_mon_prov_status_error(self.HEALTH_MON_ID)
 
+        mock_session = mock_get_session().begin().__enter__()
+
         mock_health_mon_repo_update.assert_called_once_with(
-            TEST_SESSION,
+            mock_session,
             id=self.HEALTH_MON_ID,
             provisioning_status=constants.ERROR)
 
@@ -83,7 +85,7 @@ class TestTaskUtils(base.TestCase):
 
         self.assertFalse(mock_health_mon_repo_update.called)
 
-    @mock.patch('octavia.db.api.get_session', return_value=TEST_SESSION)
+    @mock.patch('octavia.db.api.session')
     @mock.patch('octavia.db.repositories.L7PolicyRepository.update')
     def test_mark_l7policy_prov_status_error(self,
                                              mock_l7policy_repo_update,
@@ -92,8 +94,10 @@ class TestTaskUtils(base.TestCase):
         # Happy path
         self.task_utils.mark_l7policy_prov_status_error(self.L7POLICY_ID)
 
+        mock_session = mock_get_session().begin().__enter__()
+
         mock_l7policy_repo_update.assert_called_once_with(
-            TEST_SESSION,
+            mock_session,
             id=self.L7POLICY_ID,
             provisioning_status=constants.ERROR)
 
@@ -105,7 +109,7 @@ class TestTaskUtils(base.TestCase):
 
         self.assertFalse(mock_l7policy_repo_update.called)
 
-    @mock.patch('octavia.db.api.get_session', return_value=TEST_SESSION)
+    @mock.patch('octavia.db.api.session')
     @mock.patch('octavia.db.repositories.L7RuleRepository.update')
     def test_mark_l7rule_prov_status_error(self,
                                            mock_l7rule_repo_update,
@@ -114,8 +118,10 @@ class TestTaskUtils(base.TestCase):
         # Happy path
         self.task_utils.mark_l7rule_prov_status_error(self.L7RULE_ID)
 
+        mock_session = mock_get_session().begin().__enter__()
+
         mock_l7rule_repo_update.assert_called_once_with(
-            TEST_SESSION,
+            mock_session,
             id=self.L7RULE_ID,
             provisioning_status=constants.ERROR)
 
@@ -127,7 +133,7 @@ class TestTaskUtils(base.TestCase):
 
         self.assertFalse(mock_l7rule_repo_update.called)
 
-    @mock.patch('octavia.db.api.get_session', return_value=TEST_SESSION)
+    @mock.patch('octavia.db.api.session')
     @mock.patch('octavia.db.repositories.ListenerRepository.update')
     def test_mark_listener_prov_status_active(self,
                                               mock_listener_repo_update,
@@ -136,8 +142,10 @@ class TestTaskUtils(base.TestCase):
         # Happy path
         self.task_utils.mark_listener_prov_status_active(self.LISTENER_ID)
 
+        mock_session = mock_get_session().begin().__enter__()
+
         mock_listener_repo_update.assert_called_once_with(
-            TEST_SESSION,
+            mock_session,
             id=self.LISTENER_ID,
             provisioning_status=constants.ACTIVE)
 
@@ -149,7 +157,7 @@ class TestTaskUtils(base.TestCase):
 
         self.assertFalse(mock_listener_repo_update.called)
 
-    @mock.patch('octavia.db.api.get_session', return_value=TEST_SESSION)
+    @mock.patch('octavia.db.api.session')
     @mock.patch('octavia.db.repositories.ListenerRepository.update')
     def test_mark_listener_prov_status_error(self,
                                              mock_listener_repo_update,
@@ -158,8 +166,10 @@ class TestTaskUtils(base.TestCase):
         # Happy path
         self.task_utils.mark_listener_prov_status_error(self.LISTENER_ID)
 
+        mock_session = mock_get_session().begin().__enter__()
+
         mock_listener_repo_update.assert_called_once_with(
-            TEST_SESSION,
+            mock_session,
             id=self.LISTENER_ID,
             provisioning_status=constants.ERROR)
 
@@ -171,7 +181,7 @@ class TestTaskUtils(base.TestCase):
 
         self.assertFalse(mock_listener_repo_update.called)
 
-    @mock.patch('octavia.db.api.get_session', return_value=TEST_SESSION)
+    @mock.patch('octavia.db.api.session')
     @mock.patch('octavia.db.repositories.LoadBalancerRepository.update')
     def test_mark_loadbalancer_prov_status_active(self,
                                                   mock_lb_repo_update,
@@ -181,8 +191,10 @@ class TestTaskUtils(base.TestCase):
         self.task_utils.mark_loadbalancer_prov_status_active(
             self.LOADBALANCER_ID)
 
+        mock_session = mock_get_session().begin().__enter__()
+
         mock_lb_repo_update.assert_called_once_with(
-            TEST_SESSION,
+            mock_session,
             id=self.LOADBALANCER_ID,
             provisioning_status=constants.ACTIVE)
 
@@ -195,7 +207,7 @@ class TestTaskUtils(base.TestCase):
 
         self.assertFalse(mock_lb_repo_update.called)
 
-    @mock.patch('octavia.db.api.get_session', return_value=TEST_SESSION)
+    @mock.patch('octavia.db.api.session')
     @mock.patch('octavia.db.repositories.LoadBalancerRepository.update')
     def test_mark_loadbalancer_prov_status_error(self,
                                                  mock_lb_repo_update,
@@ -205,8 +217,10 @@ class TestTaskUtils(base.TestCase):
         self.task_utils.mark_loadbalancer_prov_status_error(
             self.LOADBALANCER_ID)
 
+        mock_session = mock_get_session().begin().__enter__()
+
         mock_lb_repo_update.assert_called_once_with(
-            TEST_SESSION,
+            mock_session,
             id=self.LOADBALANCER_ID,
             provisioning_status=constants.ERROR)
 
@@ -219,7 +233,7 @@ class TestTaskUtils(base.TestCase):
 
         self.assertFalse(mock_lb_repo_update.called)
 
-    @mock.patch('octavia.db.api.get_session', return_value=TEST_SESSION)
+    @mock.patch('octavia.db.api.session')
     @mock.patch('octavia.db.repositories.MemberRepository.update')
     def test_mark_member_prov_status_error(self,
                                            mock_member_repo_update,
@@ -228,8 +242,10 @@ class TestTaskUtils(base.TestCase):
         # Happy path
         self.task_utils.mark_member_prov_status_error(self.MEMBER_ID)
 
+        mock_session = mock_get_session().begin().__enter__()
+
         mock_member_repo_update.assert_called_once_with(
-            TEST_SESSION,
+            mock_session,
             id=self.MEMBER_ID,
             provisioning_status=constants.ERROR)
 
@@ -241,7 +257,7 @@ class TestTaskUtils(base.TestCase):
 
         self.assertFalse(mock_member_repo_update.called)
 
-    @mock.patch('octavia.db.api.get_session', return_value=TEST_SESSION)
+    @mock.patch('octavia.db.api.session')
     @mock.patch('octavia.db.repositories.PoolRepository.update')
     def test_mark_pool_prov_status_error(self,
                                          mock_pool_repo_update,
@@ -250,8 +266,10 @@ class TestTaskUtils(base.TestCase):
         # Happy path
         self.task_utils.mark_pool_prov_status_error(self.POOL_ID)
 
+        mock_session = mock_get_session().begin().__enter__()
+
         mock_pool_repo_update.assert_called_once_with(
-            TEST_SESSION,
+            mock_session,
             id=self.POOL_ID,
             provisioning_status=constants.ERROR)
 
@@ -263,15 +281,17 @@ class TestTaskUtils(base.TestCase):
 
         self.assertFalse(mock_pool_repo_update.called)
 
-    @mock.patch('octavia.db.api.get_session', return_value=TEST_SESSION)
+    @mock.patch('octavia.db.api.session')
     @mock.patch('octavia.db.repositories.LoadBalancerRepository.get')
     def test_get_current_loadbalancer_from_db(self, mock_lb_repo_get,
                                               mock_get_session):
         # Happy path
         self.task_utils.get_current_loadbalancer_from_db(self.LOADBALANCER_ID)
 
+        mock_session = mock_get_session().begin().__enter__()
+
         mock_lb_repo_get.assert_called_once_with(
-            TEST_SESSION,
+            mock_session,
             id=self.LOADBALANCER_ID)
 
         # Exception path

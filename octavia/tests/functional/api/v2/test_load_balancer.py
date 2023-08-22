@@ -2657,6 +2657,10 @@ class TestLoadBalancer(base.BaseAPITest):
             prov='bad_driver', user_msg='broken')
         self.delete(self.LB_PATH.format(lb_id=api_lb.get('id')), status=501)
 
+        response = self.get(self.LB_PATH.format(
+            lb_id=api_lb.get('id'))).json.get(self.root_tag)
+        self.assertEqual(constants.ACTIVE, response['provisioning_status'])
+
     @mock.patch('octavia.api.drivers.utils.call_provider')
     def test_create_with_provider_unsupport_option(self, mock_provider):
         mock_provider.side_effect = exceptions.ProviderUnsupportedOptionError(
@@ -4045,6 +4049,7 @@ class TestLoadBalancerGraph(base.BaseAPITest):
             bytes_out=random.randint(1, 9),
             total_connections=random.randint(1, 9),
             request_errors=random.randint(1, 9))
+        self.session.commit()
 
         response = self._getStats(lb['id'])
         self.assertEqual(ls['bytes_in'], response['bytes_in'])
@@ -4072,6 +4077,7 @@ class TestLoadBalancerGraph(base.BaseAPITest):
             bytes_out=random.randint(1, 9),
             total_connections=random.randint(1, 9),
             request_errors=random.randint(1, 9))
+        self.session.commit()
 
         auth_strategy = self.conf.conf.api_settings.get('auth_strategy')
         self.conf.config(group='api_settings', auth_strategy=constants.TESTING)

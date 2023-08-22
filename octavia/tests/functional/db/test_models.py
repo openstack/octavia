@@ -32,9 +32,9 @@ class ModelTestMixin(object):
     FAKE_AZ = 'zone1'
 
     def _insert(self, session, model_cls, model_kwargs):
-        with session.begin():
-            model = model_cls(**model_kwargs)
-            session.add(model)
+        model = model_cls(**model_kwargs)
+        session.add(model)
+        session.commit()
         return model
 
     def create_flavor_profile(self, session, **overrides):
@@ -230,9 +230,8 @@ class PoolModelTest(base.OctaviaDBTestBase, ModelTestMixin):
     def test_delete(self):
         pool = self.create_pool(self.session)
         id = pool.id
-        with self.session.begin():
-            self.session.delete(pool)
-            self.session.flush()
+        self.session.delete(pool)
+        self.session.commit()
         new_pool = self.session.query(
             models.Pool).filter_by(id=id).first()
         self.assertIsNone(new_pool)
@@ -302,6 +301,7 @@ class MemberModelTest(base.OctaviaDBTestBase, ModelTestMixin):
 
         member_id = member.id
         member.enabled = False
+        self.session.commit()
 
         new_member = self.session.query(
             models.Member).filter_by(id=member_id).first()
@@ -311,9 +311,11 @@ class MemberModelTest(base.OctaviaDBTestBase, ModelTestMixin):
     def test_delete(self):
         member = self.create_member(self.session, self.pool.id)
         member_id = member.id
-        with self.session.begin():
-            self.session.delete(member)
-            self.session.flush()
+        self.session.commit()
+
+        self.session.delete(member)
+        self.session.commit()
+
         new_member = self.session.query(
             models.Member).filter_by(id=member_id).first()
         self.assertIsNone(new_member)
@@ -424,9 +426,8 @@ class ListenerModelTest(base.OctaviaDBTestBase, ModelTestMixin):
     def test_delete(self):
         listener = self.create_listener(self.session)
         listener_id = listener.id
-        with self.session.begin():
-            self.session.delete(listener)
-            self.session.flush()
+        self.session.delete(listener)
+        self.session.commit()
         new_listener = self.session.query(
             models.Listener).filter_by(id=listener_id).first()
         self.assertIsNone(new_listener)
@@ -578,9 +579,8 @@ class LoadBalancerModelTest(base.OctaviaDBTestBase, ModelTestMixin):
     def test_delete(self):
         load_balancer = self.create_load_balancer(self.session)
         lb_id = load_balancer.id
-        with self.session.begin():
-            self.session.delete(load_balancer)
-            self.session.flush()
+        self.session.delete(load_balancer)
+        self.session.commit()
         new_load_balancer = self.session.query(
             models.LoadBalancer).filter_by(id=lb_id).first()
         self.assertIsNone(new_load_balancer)
@@ -745,7 +745,7 @@ class AmphoraHealthModelTest(base.OctaviaDBTestBase, ModelTestMixin):
         new_amphora_health = self.session.query(
             models.AmphoraHealth).filter_by(
             amphora_id=amphora_health.amphora_id).first()
-        self.assertEqual(newdate, new_amphora_health.last_update.date())
+        self.assertEqual(newdate, new_amphora_health.last_update)
 
     def test_delete(self):
         amphora_health = self.create_amphora_health(
@@ -787,9 +787,8 @@ class L7PolicyModelTest(base.OctaviaDBTestBase, ModelTestMixin):
     def test_delete(self):
         l7policy = self.create_l7policy(self.session, self.listener.id)
         l7policy_id = l7policy.id
-        with self.session.begin():
-            self.session.delete(l7policy)
-            self.session.flush()
+        self.session.delete(l7policy)
+        self.session.commit()
         new_l7policy = self.session.query(
             models.L7Policy).filter_by(id=l7policy_id).first()
         self.assertIsNone(new_l7policy)
@@ -908,9 +907,8 @@ class L7RuleModelTest(base.OctaviaDBTestBase, ModelTestMixin):
     def test_delete(self):
         l7rule = self.create_l7rule(self.session, self.l7policy.id)
         l7rule_id = l7rule.id
-        with self.session.begin():
-            self.session.delete(l7rule)
-            self.session.flush()
+        self.session.delete(l7rule)
+        self.session.commit()
         new_l7rule = self.session.query(
             models.L7Rule).filter_by(id=l7rule_id).first()
         self.assertIsNone(new_l7rule)
@@ -1825,10 +1823,11 @@ class FlavorModelTest(base.OctaviaDBTestBase, ModelTestMixin):
         flavor = self.create_flavor(self.session, self.profile.id)
         self.assertIsNotNone(flavor.id)
         id = flavor.id
+        self.session.commit()
 
-        with self.session.begin():
-            self.session.delete(flavor)
-            self.session.flush()
+        self.session.delete(flavor)
+        self.session.commit()
+
         new_flavor = self.session.query(
             models.Flavor).filter_by(id=id).first()
         self.assertIsNone(new_flavor)
@@ -1847,10 +1846,10 @@ class FlavorProfileModelTest(base.OctaviaDBTestBase, ModelTestMixin):
         fp = self.create_flavor_profile(self.session)
         self.assertIsNotNone(fp.id)
         id = fp.id
+        self.session.commit()
 
-        with self.session.begin():
-            self.session.delete(fp)
-            self.session.flush()
+        self.session.delete(fp)
+        self.session.commit()
         new_fp = self.session.query(
             models.FlavorProfile).filter_by(id=id).first()
         self.assertIsNone(new_fp)
