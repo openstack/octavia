@@ -43,6 +43,11 @@ class OctaviaDBTestBase(test_base.BaseTestCase):
         conf = self.useFixture(oslo_fixture.Config(config.cfg.CONF))
         conf.config(group="database", connection=connection_string)
 
+        # Disable pool_timeout when using sqlite with a file
+        # pool_timeout is not support by sqlalchemy 2 with SQLite/NullPool
+        if connection_string.startswith('sqlite:///'):
+            conf.config(group="database", pool_timeout=None)
+
         engine, self.session = self._get_db_engine_session()
 
         base_models.BASE.metadata.create_all(engine)
