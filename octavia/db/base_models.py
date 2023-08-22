@@ -16,8 +16,8 @@ from oslo_db.sqlalchemy import models
 from oslo_utils import strutils
 from oslo_utils import uuidutils
 import sqlalchemy as sa
-from sqlalchemy.ext import declarative
 from sqlalchemy.orm import collections
+from sqlalchemy.orm import declarative_base
 
 
 class OctaviaBase(models.ModelBase):
@@ -189,7 +189,7 @@ class TagMixin(object):
         self._tags = new_tags
 
 
-BASE = declarative.declarative_base(cls=OctaviaBase)
+BASE = declarative_base(cls=OctaviaBase)
 
 
 class Tags(BASE):
