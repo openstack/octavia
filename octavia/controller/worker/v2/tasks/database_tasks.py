@@ -2007,14 +2007,14 @@ class MarkHealthMonitorPendingUpdateInDB(BaseDatabaseTask):
 
 
 class MarkHealthMonitorsOnlineInDB(BaseDatabaseTask):
-    """Mark all enabled health monitors Online
-
-    :param loadbalancer: Dictionary of a Load Balancer that has associated
-           health monitors
-    :returns: None
-    """
-
     def execute(self, loadbalancer: dict):
+        """Mark all enabled health monitors Online
+
+        :param loadbalancer: Dictionary of a Load Balancer that has associated
+               health monitors
+        :returns: None
+        """
+
         with db_apis.session().begin() as session:
             db_lb = self.loadbalancer_repo.get(
                 session, id=loadbalancer[constants.LOADBALANCER_ID])
