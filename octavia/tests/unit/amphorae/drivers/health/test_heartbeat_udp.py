@@ -73,16 +73,6 @@ class TestHeartbeatUDP(base.TestCase):
             total_connections=random.randrange(1000000000),
             request_errors=random.randrange(1000000000),
             received_time=float(random.randrange(1000000000)))
-        self.listener_stats_dict = {
-            self.listener_id: {
-                "request_errors": self.listener_stats.request_errors,
-                "active_connections":
-                    self.listener_stats.active_connections,
-                "total_connections": self.listener_stats.total_connections,
-                "bytes_in": self.listener_stats.bytes_in,
-                "bytes_out": self.listener_stats.bytes_out,
-            }
-        }
 
     @mock.patch('octavia.statistics.stats_base.update_stats_via_driver')
     def test_update_stats_v1(self, mock_stats_base):
@@ -130,11 +120,15 @@ class TestHeartbeatUDP(base.TestCase):
                         "totconns": self.listener_stats.total_connections,
                         "rx": self.listener_stats.bytes_in,
                         "tx": self.listener_stats.bytes_out,
-                    },
-                    "pools": {
-                        "pool-id-1:{}".format(self.listener_id): {
-                            "status": constants.UP,
-                            "members": {"member-id-1": constants.ONLINE}
+                    }
+                }
+            },
+            "pools": {
+                "pool-id-1:{}".format(self.listener_id): {
+                    "status": constants.UP,
+                    "members": {
+                        "member-id-1": {
+                            "status": constants.ONLINE
                         }
                     }
                 }
@@ -162,11 +156,15 @@ class TestHeartbeatUDP(base.TestCase):
                         "totconns": self.listener_stats.total_connections,
                         "rx": self.listener_stats.bytes_in,
                         "tx": self.listener_stats.bytes_out,
-                    },
-                    "pools": {
-                        "pool-id-1:{}".format(self.listener_id): {
-                            "status": constants.UP,
-                            "members": {"member-id-1": constants.ONLINE}
+                    }
+                }
+            },
+            "pools": {
+                "pool-id-1:{}".format(self.listener_id): {
+                    "status": constants.UP,
+                    "members": {
+                        "member-id-1": {
+                            "status": constants.ONLINE
                         }
                     }
                 }
