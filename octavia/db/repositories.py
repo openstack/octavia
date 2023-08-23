@@ -584,7 +584,7 @@ class Repositories(object):
                     LOG.error('Quota decrement on %(clss)s called on '
                               'project: %(proj)s with no quota record in '
                               'the database.',
-                              {'clss': type(_class), 'proj': project_id})
+                              {'clss': _class, 'proj': project_id})
                 return
             if _class == data_models.LoadBalancer:
                 if (quotas.in_use_load_balancer is not None and
@@ -596,7 +596,7 @@ class Repositories(object):
                         LOG.warning('Quota decrement on %(clss)s called on '
                                     'project: %(proj)s that would cause a '
                                     'negative quota.',
-                                    {'clss': type(_class), 'proj': project_id})
+                                    {'clss': _class, 'proj': project_id})
             if _class == data_models.Listener:
                 if (quotas.in_use_listener is not None and
                         quotas.in_use_listener > 0):
@@ -607,7 +607,7 @@ class Repositories(object):
                         LOG.warning('Quota decrement on %(clss)s called on '
                                     'project: %(proj)s that would cause a '
                                     'negative quota.',
-                                    {'clss': type(_class), 'proj': project_id})
+                                    {'clss': _class, 'proj': project_id})
             if _class == data_models.Pool:
                 if (quotas.in_use_pool is not None and
                         quotas.in_use_pool > 0):
@@ -618,7 +618,7 @@ class Repositories(object):
                         LOG.warning('Quota decrement on %(clss)s called on '
                                     'project: %(proj)s that would cause a '
                                     'negative quota.',
-                                    {'clss': type(_class), 'proj': project_id})
+                                    {'clss': _class, 'proj': project_id})
             if _class == data_models.HealthMonitor:
                 if (quotas.in_use_health_monitor is not None and
                         quotas.in_use_health_monitor > 0):
@@ -629,7 +629,7 @@ class Repositories(object):
                         LOG.warning('Quota decrement on %(clss)s called on '
                                     'project: %(proj)s that would cause a '
                                     'negative quota.',
-                                    {'clss': type(_class), 'proj': project_id})
+                                    {'clss': _class, 'proj': project_id})
             if _class == data_models.Member:
                 if (quotas.in_use_member is not None and
                         quotas.in_use_member > 0):
@@ -640,7 +640,7 @@ class Repositories(object):
                         LOG.warning('Quota decrement on %(clss)s called on '
                                     'project: %(proj)s that would cause a '
                                     'negative quota.',
-                                    {'clss': type(_class), 'proj': project_id})
+                                    {'clss': _class, 'proj': project_id})
             if _class == data_models.L7Policy:
                 if (quotas.in_use_l7policy is not None and
                         quotas.in_use_l7policy > 0):
@@ -651,7 +651,7 @@ class Repositories(object):
                         LOG.warning('Quota decrement on %(clss)s called on '
                                     'project: %(proj)s that would cause a '
                                     'negative quota.',
-                                    {'clss': type(_class), 'proj': project_id})
+                                    {'clss': _class, 'proj': project_id})
             if _class == data_models.L7Rule:
                 if (quotas.in_use_l7rule is not None and
                         quotas.in_use_l7rule > 0):
@@ -662,7 +662,7 @@ class Repositories(object):
                         LOG.warning('Quota decrement on %(clss)s called on '
                                     'project: %(proj)s that would cause a '
                                     'negative quota.',
-                                    {'clss': type(_class), 'proj': project_id})
+                                    {'clss': _class, 'proj': project_id})
         except db_exception.DBDeadlock as e:
             LOG.warning('Quota project lock timed out for project: %(proj)s',
                         {'proj': project_id})
