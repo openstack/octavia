@@ -37,7 +37,8 @@ html_theme_options = {
     "sidebar_mode": "toc"
 }
 openstackdocs_repo_name = 'openstack/octavia'
-openstackdocs_use_storyboard = True
+openstackdocs_bug_project = 'octavia'
+openstackdocs_bug_tag = ''
 
 
 # If extensions (or modules to document with autodoc) are in another directory,

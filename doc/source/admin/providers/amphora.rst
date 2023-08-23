@@ -31,4 +31,4 @@ The driver source: https://opendev.org/openstack/octavia/
 
 The documentation: https://docs.openstack.org/octavia/latest/
 
-Where to report issues with the driver: https://storyboard.openstack.org/#!/project/openstack/octavia
+Where to report issues with the driver: https://launchpad.net/octavia
