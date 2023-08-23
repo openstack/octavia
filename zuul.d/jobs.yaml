@@ -120,6 +120,11 @@
       jobs:
         - octavia-tox-py39-tips
         - octavia-tox-functional-py39-tips
+
+- project-template:
+    name: octavia-tox-sqlalchemy-tips
+    check:
+      jobs:
         - octavia-tox-functional-py39-sqlalchemy-tips
 
 - job:
