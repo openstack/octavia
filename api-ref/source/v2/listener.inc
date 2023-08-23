@@ -56,6 +56,9 @@ Response Parameters
    - default_pool_id: default_pool_id
    - default_tls_container_ref: default_tls_container_ref
    - description: description
+   - hsts_include_subdomains: hsts_include_subdomains
+   - hsts_max_age: hsts_max_age
+   - hsts_preload: hsts_preload
    - id: listener-id
    - insert_headers: insert_headers
    - l7policies: l7policy-ids
@@ -153,6 +156,9 @@ Request
    - default_pool_id: default_pool_id-optional
    - default_tls_container_ref: default_tls_container_ref-optional
    - description: description-optional
+   - hsts_include_subdomains: hsts_include_subdomains-optional
+   - hsts_max_age: hsts_max_age-optional
+   - hsts_preload: hsts_preload-optional
    - insert_headers: insert_headers-optional
    - l7policies: l7policies-optional
    - listeners: listener
@@ -277,6 +283,9 @@ Response Parameters
    - default_pool_id: default_pool_id
    - default_tls_container_ref: default_tls_container_ref
    - description: description
+   - hsts_include_subdomains: hsts_include_subdomains
+   - hsts_max_age: hsts_max_age
+   - hsts_preload: hsts_preload
    - id: listener-id
    - insert_headers: insert_headers
    - l7policies: l7policy-ids
@@ -358,6 +367,9 @@ Response Parameters
    - default_pool_id: default_pool_id
    - default_tls_container_ref: default_tls_container_ref
    - description: description
+   - hsts_include_subdomains: hsts_include_subdomains
+   - hsts_max_age: hsts_max_age
+   - hsts_preload: hsts_preload
    - id: listener-id
    - insert_headers: insert_headers
    - l7policies: l7policy-ids
@@ -428,6 +440,9 @@ Request
    - default_pool_id: default_pool_id-optional
    - default_tls_container_ref: default_tls_container_ref-optional
    - description: description-optional
+   - hsts_include_subdomains: hsts_include_subdomains-optional
+   - hsts_max_age: hsts_max_age-optional
+   - hsts_preload: hsts_preload-optional
    - insert_headers: insert_headers-optional
    - listener_id: path-listener-id
    - name: name-optional
@@ -468,6 +483,9 @@ Response Parameters
    - default_pool_id: default_pool_id
    - default_tls_container_ref: default_tls_container_ref
    - description: description
+   - hsts_include_subdomains: hsts_include_subdomains
+   - hsts_max_age: hsts_max_age
+   - hsts_preload: hsts_preload
    - id: listener-id
    - insert_headers: insert_headers
    - l7policies: l7policy-ids

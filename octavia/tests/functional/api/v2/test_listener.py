@@ -1894,7 +1894,10 @@ class TestListener(base.BaseAPITest):
             client_ca_tls_container_ref=ca_tls_uuid,
             tls_versions=[lib_consts.TLS_VERSION_1_3],
             tls_ciphers='TLS_AES_256_GCM_SHA384',
-            alpn_protocols=['http/1.0']).get(self.root_tag)
+            alpn_protocols=['http/1.0'],
+            hsts_max_age=20, hsts_include_subdomains=True,
+            hsts_preload=True,
+        ).get(self.root_tag)
         self.set_lb_status(self.lb_id)
         unset_params = {
             'name': None, 'description': None, 'connection_limit': None,
@@ -1904,7 +1907,10 @@ class TestListener(base.BaseAPITest):
             'timeout_tcp_inspect': None, 'client_ca_tls_container_ref': None,
             'client_authentication': None, 'default_pool_id': None,
             'client_crl_container_ref': None, 'tls_versions': None,
-            'tls_ciphers': None, 'alpn_protocols': None}
+            'tls_ciphers': None, 'alpn_protocols': None,
+            'hsts_max_age': None, 'hsts_include_subdomains': None,
+            'hsts_preload': None,
+        }
         body = self._build_body(unset_params)
         listener_path = self.LISTENER_PATH.format(
             listener_id=listener['id'])
@@ -1931,6 +1937,9 @@ class TestListener(base.BaseAPITest):
         self.assertEqual(constants.CIPHERS_OWASP_SUITE_B,
                          api_listener['tls_ciphers'])
         self.assertEqual(['http/1.1'], api_listener['alpn_protocols'])
+        self.assertIsNone(api_listener['hsts_max_age'])
+        self.assertFalse(api_listener['hsts_include_subdomains'])
+        self.assertFalse(api_listener['hsts_preload'])
 
     @mock.patch('octavia.common.tls_utils.cert_parser.load_certificates_data')
     def test_update_with_bad_ca_cert(self, mock_cert_data):

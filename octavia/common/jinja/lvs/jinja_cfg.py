@@ -20,6 +20,7 @@ from octavia_lib.common import constants as lib_consts
 from octavia.common.config import cfg
 from octavia.common import constants
 from octavia.common import utils as octavia_utils
+from octavia.db import models
 
 
 CONF = cfg.CONF
@@ -59,7 +60,7 @@ class LvsJinjaTemplater(object):
         self.keepalivedlvs_template = (keepalivedlvs_template or
                                        KEEPALIVED_LVS_TEMPLATE)
 
-    def build_config(self, listener, **kwargs):
+    def build_config(self, listener: models.Listener, **kwargs):
         """Convert a logical configuration to the Keepalived LVS version
 
         :param listener: The listener configuration
@@ -97,7 +98,8 @@ class LvsJinjaTemplater(object):
             constants=constants,
             lib_consts=lib_consts)
 
-    def _transform_loadbalancer(self, loadbalancer, listener):
+    def _transform_loadbalancer(self, loadbalancer: models.LoadBalancer,
+                                listener: models.Listener):
         """Transforms a load balancer into an object that will
 
            be processed by the templating system

@@ -476,7 +476,10 @@ class SampleDriverDataModels(object):
             lib_consts.TLS_CIPHERS: constants.CIPHERS_OWASP_SUITE_B,
             lib_consts.TLS_VERSIONS: constants.TLS_VERSIONS_OWASP_SUITE_B,
             lib_consts.ALPN_PROTOCOLS:
-                constants.AMPHORA_SUPPORTED_ALPN_PROTOCOLS
+                constants.AMPHORA_SUPPORTED_ALPN_PROTOCOLS,
+            lib_consts.HSTS_INCLUDE_SUBDOMAINS: False,
+            lib_consts.HSTS_MAX_AGE: None,
+            lib_consts.HSTS_PRELOAD: False,
         }
 
         self.test_listener1_dict.update(self._common_test_dict)
@@ -488,6 +491,9 @@ class SampleDriverDataModels(object):
         self.test_listener2_dict[lib_consts.DEFAULT_POOL_ID] = self.pool2_id
         self.test_listener2_dict[
             lib_consts.DEFAULT_POOL] = self.test_pool2_dict
+        self.test_listener2_dict[lib_consts.HSTS_INCLUDE_SUBDOMAINS] = True
+        self.test_listener2_dict[lib_consts.HSTS_MAX_AGE] = 10
+        self.test_listener2_dict[lib_consts.HSTS_PRELOAD] = False
         del self.test_listener2_dict[lib_consts.L7POLICIES]
         del self.test_listener2_dict[constants.SNI_CONTAINERS]
         del self.test_listener2_dict[constants.CLIENT_CA_TLS_CERTIFICATE_ID]
@@ -524,6 +530,9 @@ class SampleDriverDataModels(object):
             lib_consts.DEFAULT_TLS_CONTAINER_REF:
                 self.default_tls_container_ref,
             lib_consts.DESCRIPTION: 'Listener 1',
+            lib_consts.HSTS_INCLUDE_SUBDOMAINS: False,
+            lib_consts.HSTS_MAX_AGE: None,
+            lib_consts.HSTS_PRELOAD: False,
             lib_consts.INSERT_HEADERS: {},
             lib_consts.L7POLICIES: self.provider_l7policies_dict,
             lib_consts.LISTENER_ID: self.listener1_id,
@@ -571,6 +580,9 @@ class SampleDriverDataModels(object):
         self.provider_listener2_dict[
             lib_consts.CLIENT_CRL_CONTAINER_REF] = None
         del self.provider_listener2_dict[lib_consts.CLIENT_CRL_CONTAINER_DATA]
+        self.provider_listener2_dict[lib_consts.HSTS_INCLUDE_SUBDOMAINS] = True
+        self.provider_listener2_dict[lib_consts.HSTS_MAX_AGE] = 10
+        self.provider_listener2_dict[lib_consts.HSTS_PRELOAD] = False
 
         self.provider_listener1 = driver_dm.Listener(
             **self.provider_listener1_dict)

@@ -603,6 +603,9 @@ class Listener(base_models.BASE, base_models.IdMixin,
     tls_ciphers = sa.Column(sa.String(2048), nullable=True)
     tls_versions = sa.Column(ScalarListType(), nullable=True)
     alpn_protocols = sa.Column(ScalarListType(), nullable=True)
+    hsts_max_age = sa.Column(sa.Integer, nullable=True)
+    hsts_include_subdomains = sa.Column(sa.Boolean, nullable=True)
+    hsts_preload = sa.Column(sa.Boolean, nullable=True)
 
     _tags = orm.relationship(
         'Tags',

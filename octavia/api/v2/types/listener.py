@@ -63,6 +63,9 @@ class ListenerResponse(BaseListenerType):
     tls_ciphers = wtypes.StringType()
     tls_versions = wtypes.wsattr(wtypes.ArrayType(wtypes.StringType()))
     alpn_protocols = wtypes.wsattr(wtypes.ArrayType(types.AlpnProtocolType()))
+    hsts_max_age = wtypes.wsattr(wtypes.IntegerType())
+    hsts_include_subdomains = wtypes.wsattr(bool)
+    hsts_preload = wtypes.wsattr(bool)
 
     @classmethod
     def from_data_model(cls, data_model, children=False):
@@ -86,6 +89,9 @@ class ListenerResponse(BaseListenerType):
 
         listener.tls_versions = data_model.tls_versions
         listener.alpn_protocols = data_model.alpn_protocols
+        listener.hsts_max_age = data_model.hsts_max_age
+        listener.hsts_include_subdomains = data_model.hsts_include_subdomains
+        listener.hsts_preload = data_model.hsts_preload
 
         return listener
 
@@ -155,6 +161,9 @@ class ListenerPOST(BaseListenerType):
     tls_versions = wtypes.wsattr(wtypes.ArrayType(wtypes.StringType(
         max_length=32)))
     alpn_protocols = wtypes.wsattr(wtypes.ArrayType(types.AlpnProtocolType()))
+    hsts_max_age = wtypes.wsattr(wtypes.IntegerType(minimum=0))
+    hsts_include_subdomains = wtypes.wsattr(bool, default=False)
+    hsts_preload = wtypes.wsattr(bool, default=False)
 
 
 class ListenerRootPOST(types.BaseType):
@@ -196,6 +205,9 @@ class ListenerPUT(BaseListenerType):
     tls_versions = wtypes.wsattr(wtypes.ArrayType(wtypes.StringType(
         max_length=32)))
     alpn_protocols = wtypes.wsattr(wtypes.ArrayType(types.AlpnProtocolType()))
+    hsts_max_age = wtypes.wsattr(wtypes.IntegerType(minimum=0))
+    hsts_include_subdomains = wtypes.wsattr(bool)
+    hsts_preload = wtypes.wsattr(bool)
 
 
 class ListenerRootPUT(types.BaseType):
@@ -247,6 +259,9 @@ class ListenerSingleCreate(BaseListenerType):
     tls_versions = wtypes.wsattr(wtypes.ArrayType(wtypes.StringType(
         max_length=32)))
     alpn_protocols = wtypes.wsattr(wtypes.ArrayType(types.AlpnProtocolType()))
+    hsts_max_age = wtypes.wsattr(wtypes.IntegerType())
+    hsts_include_subdomains = wtypes.wsattr(bool, default=False)
+    hsts_preload = wtypes.wsattr(bool, default=False)
 
 
 class ListenerStatusResponse(BaseListenerType):

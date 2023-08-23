@@ -1,0 +1,9 @@
+---
+features:
+  - |
+    Added support for HTTP Strict Transport Security (HSTS) for TLS-terminated
+    listeners. The API for creating and updating listeners has been extended
+    by the optional fields `hsts_max_age`, `hsts_include_subdomains` and
+    `hsts_preload`. By default this feature is disabled.
+    In order to activate this feature the `hsts_max_age`
+    option needs to be set.
