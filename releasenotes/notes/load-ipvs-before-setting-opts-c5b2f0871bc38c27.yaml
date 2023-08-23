@@ -1,0 +1,5 @@
+---
+fixes:
+  - |
+    Fix the issue where nf_conntrack* opts values are lost after rebooting the Amphora VM.
+    more details `Story 2010795 <https://storyboard.openstack.org/#!/story/2010795>`__
