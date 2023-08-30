@@ -1,0 +1,6 @@
+---
+fixes:
+  - |
+    Fixed a bug in the amphora-agent, an exception was triggered when a LB with
+    both IPv4 and IPv6 VIPs and with a UDP pool had only IPv4 members or
+    only IPv6 members.
