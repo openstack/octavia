@@ -94,13 +94,10 @@ def get_listener_realserver_mapping(ns_name, listener_ip_ports,
         if 'RemoteAddress:Port' in line:
             result_keys = re.split(r'\s+',
                                    LVS_KEY_REGEX.findall(line)[0].strip())
-        elif ((line.startswith(constants.PROTOCOL_UDP) or
-               line.startswith(lib_consts.PROTOCOL_SCTP)) and
-              find_target_block):
-            break
-        elif re.match(r'^(UDP|SCTP)\s+%s\s+\w+' % idex,
-                      line):
-            find_target_block = True
+        elif (line.startswith(constants.PROTOCOL_UDP) or
+              line.startswith(lib_consts.PROTOCOL_SCTP)):
+            find_target_block = re.match(r'^(UDP|SCTP)\s+%s\s+\w+' % idex,
+                                         line) is not None
         elif find_target_block and line:
             rs_is_ipv4 = True
             all_values = V4_RS_VALUE_REGEX.findall(line)
@@ -136,7 +133,7 @@ def get_listener_realserver_mapping(ns_name, listener_ip_ports,
                         result_keys[index]] = result_values[index]
             continue
 
-    return find_target_block, actual_member_result
+    return actual_member_result
 
 
 def get_lvs_listener_resource_ipports_nsname(listener_id):
@@ -267,7 +264,7 @@ def get_lvs_listener_pool_status(listener_id):
         cfg = f.read()
         hm_enabled = len(CHECKER_REGEX.findall(cfg)) > 0
 
-    _, realserver_result = get_listener_realserver_mapping(
+    realserver_result = get_listener_realserver_mapping(
         ns_name, resource_ipport_mapping['Listener']['ipports'],
         hm_enabled)
     pool_status = constants.UP
