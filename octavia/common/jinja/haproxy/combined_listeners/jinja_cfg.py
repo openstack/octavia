@@ -266,6 +266,8 @@ class JinjaTemplater(object):
         # listeners' connection limits.
         connection_limit_sum = 0
         for listener in listeners:
+            if not listener.enabled:
+                continue
             if listener.protocol in constants.LVS_PROTOCOLS:
                 continue
             if listener.connection_limit and listener.connection_limit > -1:

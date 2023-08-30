@@ -1686,6 +1686,28 @@ class TestHaproxyCfg(base.TestCase):
         self.assertLess(ret['global_connection_limit'],
                         connection_limit_sum)
 
+    def test_transform_with_disabled_listeners(self):
+        in_amphora = sample_configs_combined.sample_amphora_tuple()
+
+        in_listeners = []
+
+        connection_limit_sum = 0
+
+        in_listener = (
+            sample_configs_combined.sample_listener_tuple())
+        connection_limit_sum += constants.HAPROXY_DEFAULT_MAXCONN
+        in_listeners.append(in_listener)
+
+        disabled_listener = (
+            sample_configs_combined.sample_listener_tuple(enabled=False))
+        in_listeners.append(disabled_listener)
+
+        ret = self.jinja_cfg._transform_loadbalancer(
+            in_amphora, in_listeners[0].load_balancer,
+            in_listeners, None, {})
+        self.assertEqual(ret['global_connection_limit'],
+                         connection_limit_sum)
+
     def test_transform_amphora(self):
         in_amphora = sample_configs_combined.sample_amphora_tuple()
         ret = self.jinja_cfg._transform_amphora(in_amphora, {})
