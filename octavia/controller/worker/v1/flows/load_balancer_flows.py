@@ -621,6 +621,14 @@ class LoadBalancerFlows(object):
                 requires=constants.LOADBALANCER_ID,
                 provides=constants.AMPHORAE))
 
+            failover_LB_flow.add(
+                amphora_driver_tasks.AmphoraeGetConnectivityStatus(
+                    name=(new_amp_role + '-' +
+                          constants.AMPHORAE_GET_CONNECTIVITY_STATUS),
+                    requires=constants.AMPHORAE,
+                    rebind={constants.NEW_AMPHORA_ID: constants.AMPHORA_ID},
+                    provides=constants.AMPHORAE_STATUS))
+
             # Listeners update needs to be run on all amphora to update
             # their peer configurations. So parallelize this with an
             # unordered subflow.
@@ -635,14 +643,16 @@ class LoadBalancerFlows(object):
                 amphora_driver_tasks.AmphoraIndexListenerUpdate(
                     name=(constants.AMPHORA + '-0-' +
                           constants.AMP_LISTENER_UPDATE),
-                    requires=(constants.LOADBALANCER, constants.AMPHORAE),
+                    requires=(constants.LOADBALANCER, constants.AMPHORAE,
+                              constants.AMPHORAE_STATUS),
                     inject={constants.AMPHORA_INDEX: 0,
                             constants.TIMEOUT_DICT: timeout_dict}))
             update_amps_subflow.add(
                 amphora_driver_tasks.AmphoraIndexListenerUpdate(
                     name=(constants.AMPHORA + '-1-' +
                           constants.AMP_LISTENER_UPDATE),
-                    requires=(constants.LOADBALANCER, constants.AMPHORAE),
+                    requires=(constants.LOADBALANCER, constants.AMPHORAE,
+                              constants.AMPHORAE_STATUS),
                     inject={constants.AMPHORA_INDEX: 1,
                             constants.TIMEOUT_DICT: timeout_dict}))
 
@@ -651,7 +661,8 @@ class LoadBalancerFlows(object):
             # Configure and enable keepalived in the amphora
             failover_LB_flow.add(self.amp_flows.get_vrrp_subflow(
                 new_amp_role + '-' + constants.GET_VRRP_SUBFLOW,
-                timeout_dict, create_vrrp_group=False))
+                timeout_dict, create_vrrp_group=False,
+                get_amphorae_status=False))
 
             # #### End of standby ####
 

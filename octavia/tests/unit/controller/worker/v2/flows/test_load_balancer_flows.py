@@ -174,14 +174,16 @@ class TestLoadBalancerFlows(base.TestCase):
 
         self.assertIn(constants.LOADBALANCER_ID, amp_flow.requires)
         self.assertIn(constants.UPDATE_DICT, amp_flow.requires)
+        self.assertIn(constants.AMPHORA_ID, amp_flow.requires)
 
         self.assertIn(constants.AMPHORAE, amp_flow.provides)
+        self.assertIn(constants.AMPHORAE_STATUS, amp_flow.provides)
         self.assertIn(constants.AMP_VRRP_INT, amp_flow.provides)
         self.assertIn(constants.AMPHORAE_NETWORK_CONFIG, amp_flow.provides)
         self.assertIn(constants.LOADBALANCER, amp_flow.provides)
 
-        self.assertEqual(2, len(amp_flow.requires), amp_flow.requires)
-        self.assertEqual(4, len(amp_flow.provides), amp_flow.provides)
+        self.assertEqual(3, len(amp_flow.requires), amp_flow.requires)
+        self.assertEqual(5, len(amp_flow.provides), amp_flow.provides)
 
         amp_flow = self.LBFlow.get_post_lb_amp_association_flow(
             '123', constants.TOPOLOGY_ACTIVE_STANDBY)
@@ -190,14 +192,16 @@ class TestLoadBalancerFlows(base.TestCase):
 
         self.assertIn(constants.LOADBALANCER_ID, amp_flow.requires)
         self.assertIn(constants.UPDATE_DICT, amp_flow.requires)
+        self.assertIn(constants.AMPHORA_ID, amp_flow.requires)
 
         self.assertIn(constants.AMPHORAE, amp_flow.provides)
+        self.assertIn(constants.AMPHORAE_STATUS, amp_flow.provides)
         self.assertIn(constants.AMPHORAE_NETWORK_CONFIG, amp_flow.provides)
         self.assertIn(constants.AMP_VRRP_INT, amp_flow.provides)
         self.assertIn(constants.LOADBALANCER, amp_flow.provides)
 
-        self.assertEqual(2, len(amp_flow.requires), amp_flow.requires)
-        self.assertEqual(4, len(amp_flow.provides), amp_flow.provides)
+        self.assertEqual(3, len(amp_flow.requires), amp_flow.requires)
+        self.assertEqual(5, len(amp_flow.provides), amp_flow.provides)
 
     def test_get_create_load_balancer_flows_single_listeners(
             self, mock_get_net_driver):
@@ -255,6 +259,7 @@ class TestLoadBalancerFlows(base.TestCase):
         self.assertIn(constants.AMPHORA_ID, create_flow.provides)
         self.assertIn(constants.AMPHORA_NETWORK_CONFIG, create_flow.provides)
         self.assertIn(constants.AMPHORAE_NETWORK_CONFIG, create_flow.provides)
+        self.assertIn(constants.AMPHORAE_STATUS, create_flow.provides)
         self.assertIn(constants.COMPUTE_ID, create_flow.provides)
         self.assertIn(constants.COMPUTE_OBJ, create_flow.provides)
         self.assertIn(constants.DELTAS, create_flow.provides)
@@ -265,7 +270,7 @@ class TestLoadBalancerFlows(base.TestCase):
         self.assertIn(constants.VIP, create_flow.provides)
 
         self.assertEqual(6, len(create_flow.requires), create_flow.requires)
-        self.assertEqual(16, len(create_flow.provides),
+        self.assertEqual(17, len(create_flow.provides),
                          create_flow.provides)
 
     def _test_get_failover_LB_flow_single(self, amphorae):
