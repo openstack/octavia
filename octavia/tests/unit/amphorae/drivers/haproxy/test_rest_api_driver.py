@@ -76,9 +76,9 @@ class TestHAProxyAmphoraDriver(base.TestCase):
         mock_api_version.reset_mock()
         client_mock.reset_mock()
 
-        result = self.driver.get_interface_from_ip(amphora_mock, IP_ADDRESS)
-
-        self.assertIsNone(result)
+        self.assertRaises(
+            exc.NotFound,
+            self.driver.get_interface_from_ip, amphora_mock, IP_ADDRESS)
         mock_api_version.assert_called_once_with(amphora_mock, None)
         client_mock.get_interface.assert_called_once_with(
             amphora_mock, IP_ADDRESS, None, log_error=False)
