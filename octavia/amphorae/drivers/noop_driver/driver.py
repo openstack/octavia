@@ -196,3 +196,6 @@ class NoopAmphoraLoadBalancerDriver(
 
     def reload_vrrp_service(self, loadbalancer):
         pass
+
+    def check(self, amphora, timeout_dict=None):
+        pass
