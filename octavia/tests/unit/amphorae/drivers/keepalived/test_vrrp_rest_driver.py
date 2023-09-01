@@ -107,6 +107,9 @@ class TestVRRPRestDriver(base.TestCase):
 
         self.keepalived_mixin.start_vrrp_service(self.amphora_mock)
 
+        populate_mock = self.keepalived_mixin._populate_amphora_api_version
+        populate_mock.assert_called_once_with(self.amphora_mock,
+                                              timeout_dict=None)
         self.clients[API_VERSION].start_vrrp.assert_called_once_with(
             self.amphora_mock, timeout_dict=None)
 
@@ -120,6 +123,20 @@ class TestVRRPRestDriver(base.TestCase):
         self.keepalived_mixin.start_vrrp_service(ready_amphora_mock)
 
         self.clients[API_VERSION].start_vrrp.assert_not_called()
+
+        # With timeout_dict
+        self.clients[API_VERSION].start_vrrp.reset_mock()
+        populate_mock.reset_mock()
+
+        timeout_dict = mock.Mock()
+        self.keepalived_mixin.start_vrrp_service(self.amphora_mock,
+                                                 timeout_dict=timeout_dict)
+
+        populate_mock = self.keepalived_mixin._populate_amphora_api_version
+        populate_mock.assert_called_once_with(self.amphora_mock,
+                                              timeout_dict=timeout_dict)
+        self.clients[API_VERSION].start_vrrp.assert_called_once_with(
+            self.amphora_mock, timeout_dict=timeout_dict)
 
     def test_reload_vrrp_service(self):
 
