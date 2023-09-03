@@ -73,7 +73,7 @@ class MemberController(base.BaseController):
 
         with context.session.begin():
             pool = self._get_db_pool(context.session, self.pool_id,
-                                     show_deleted=False)
+                                     show_deleted=False, limited_graph=True)
 
             self._auth_validate_action(context, pool.project_id,
                                        constants.RBAC_GET_ALL)
@@ -81,7 +81,8 @@ class MemberController(base.BaseController):
             db_members, links = self.repositories.member.get_all_API_list(
                 context.session, show_deleted=False,
                 pool_id=self.pool_id,
-                pagination_helper=pcontext.get(constants.PAGINATION_HELPER))
+                pagination_helper=pcontext.get(constants.PAGINATION_HELPER),
+                limited_graph=True)
         result = self._convert_db_to_type(
             db_members, [member_types.MemberResponse])
         if fields is not None:

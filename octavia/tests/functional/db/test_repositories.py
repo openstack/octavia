@@ -67,6 +67,16 @@ class BaseRepositoryTest(base.OctaviaDBTestBase):
         self.flavor_repo = repo.FlavorRepository()
         self.flavor_profile_repo = repo.FlavorProfileRepository()
 
+    def create_loadbalancer(self, lb_id):
+        lb = self.lb_repo.create(self.session, id=lb_id,
+                                 project_id=self.FAKE_UUID_2, name="lb_name",
+                                 description="lb_description",
+                                 provisioning_status=constants.ACTIVE,
+                                 operating_status=constants.ONLINE,
+                                 enabled=True)
+        self.session.commit()
+        return lb
+
     def test_get_all_return_value(self):
         pool_list, _ = self.pool_repo.get_all(self.session,
                                               project_id=self.FAKE_UUID_2)
@@ -2086,6 +2096,31 @@ class PoolRepositoryTest(BaseRepositoryTest):
         self.assertEqual(pool.id, new_pool.id)
         self.assertEqual(pool.project_id, new_pool.project_id)
 
+    def test_get_limited_graph(self):
+        def check_pool_attrs(pool, new_pool, lb, limited_graph):
+            self.assertIsInstance(new_pool, data_models.Pool)
+            self.assertEqual(pool.id, new_pool.id)
+            self.assertEqual(pool.project_id, new_pool.project_id)
+            if limited_graph:
+                self.assertIsNone(new_pool.load_balancer)
+            else:
+                self.assertEqual(lb.id, new_pool.load_balancer.id)
+
+        pool = self.create_pool(pool_id=self.FAKE_UUID_1,
+                                project_id=self.FAKE_UUID_2)
+        # Create LB and attach pool to it.
+        # It means, that in graph pool node get new relationship to LB
+        lb = self.create_loadbalancer(self.FAKE_UUID_5)
+        self.pool_repo.update(self.session, id=pool.id, load_balancer_id=lb.id)
+        self.pool_repo.update(self.session, id=pool.id, load_balancer_id=lb.id)
+
+        new_pool = self.pool_repo.get(self.session, id=pool.id)
+        check_pool_attrs(pool, new_pool, lb, limited_graph=False)
+
+        new_pool2 = self.pool_repo.get(self.session, id=pool.id,
+                                       limited_graph=True)
+        check_pool_attrs(pool, new_pool2, lb, limited_graph=True)
+
     def test_get_all(self):
         pool_one = self.create_pool(pool_id=self.FAKE_UUID_1,
                                     project_id=self.FAKE_UUID_2)
@@ -2316,13 +2351,33 @@ class MemberRepositoryTest(BaseRepositoryTest):
         self.assertEqual(member.pool_id, new_member.pool_id)
         self.assertEqual(member.ip_address, new_member.ip_address)
 
-    def test_get_all(self):
-        member_one = self.create_member(self.FAKE_UUID_1, self.FAKE_UUID_2,
-                                        self.pool.id, "192.0.2.1")
-        member_two = self.create_member(self.FAKE_UUID_3, self.FAKE_UUID_2,
-                                        self.pool.id, "192.0.2.2")
-        member_list, _ = self.member_repo.get_all(self.session,
-                                                  project_id=self.FAKE_UUID_2)
+    def test_get_limited_graph(self):
+        def check_member_attrs(member, new_member, lb, limited_graph):
+            self.assertIsInstance(new_member, data_models.Member)
+            self.assertEqual(member.id, new_member.id)
+            self.assertEqual(member.pool_id, new_member.pool_id)
+            self.assertEqual(member.ip_address, new_member.ip_address)
+            if limited_graph:
+                self.assertIsNone(new_member.pool)
+            else:
+                self.assertEqual(lb.id, new_member.pool.load_balancer.id)
+
+        member = self.create_member(self.FAKE_UUID_1, self.FAKE_UUID_2,
+                                    self.pool.id, "192.0.2.1")
+        # Create LB and attach pool to it.
+        # It means, that in graph pool node get new relationship to LB
+        lb = self.create_loadbalancer(self.FAKE_UUID_5)
+        self.pool_repo.update(self.session, id=self.pool.id,
+                              load_balancer_id=lb.id)
+
+        new_member = self.member_repo.get(self.session, id=member.id)
+        check_member_attrs(member, new_member, lb, limited_graph=False)
+
+        new_member2 = self.member_repo.get(self.session, id=member.id,
+                                           limited_graph=True)
+        check_member_attrs(member, new_member2, lb, limited_graph=True)
+
+    def _validate_members_response(self, member_one, member_two, member_list):
         self.assertIsInstance(member_list, list)
         self.assertEqual(2, len(member_list))
         self.assertEqual(member_one.id, member_list[0].id)
@@ -2331,6 +2386,54 @@ class MemberRepositoryTest(BaseRepositoryTest):
         self.assertEqual(member_two.id, member_list[1].id)
         self.assertEqual(member_two.pool_id, member_list[1].pool_id)
         self.assertEqual(member_two.ip_address, member_list[1].ip_address)
+
+    def test_get_all(self):
+        member_one = self.create_member(self.FAKE_UUID_1, self.FAKE_UUID_2,
+                                        self.pool.id, "192.0.2.1")
+        member_two = self.create_member(self.FAKE_UUID_3, self.FAKE_UUID_2,
+                                        self.pool.id, "192.0.2.2")
+        member_list, _ = self.member_repo.get_all(self.session,
+                                                  project_id=self.FAKE_UUID_2)
+        self._validate_members_response(member_one, member_two, member_list)
+
+    def test_get_all_with_loadbalancer(self):
+        member_one = self.create_member(self.FAKE_UUID_1, self.FAKE_UUID_2,
+                                        self.pool.id, "192.0.2.1")
+        member_two = self.create_member(self.FAKE_UUID_3, self.FAKE_UUID_2,
+                                        self.pool.id, "192.0.2.2")
+        # Create LB and attach pool to it.
+        # It means, that in graph pool node get new relationship to LB
+        lb = self.create_loadbalancer(self.FAKE_UUID_5)
+        self.pool_repo.update(self.session, id=self.pool.id,
+                              load_balancer_id=lb.id)
+
+        member_list, _ = self.member_repo.get_all(self.session,
+                                                  project_id=self.FAKE_UUID_2)
+        self._validate_members_response(member_one, member_two, member_list)
+        # Without limit on recursion all nodes will be processed.
+        # As result load_balancer node will be available in response
+        self.assertEqual(self.pool.id, member_list[0].pool.id)
+        self.assertEqual(self.pool.id, member_list[1].pool.id)
+        self.assertEqual(lb.id, member_list[0].pool.load_balancer.id)
+        self.assertEqual(lb.id, member_list[1].pool.load_balancer.id)
+
+        # get the same list of members with enabled limit graph recursion
+        member_list_limit, _ = self.member_repo.get_all(
+            self.session,
+            project_id=self.FAKE_UUID_2,
+            limited_graph=True
+        )
+        self._validate_members_response(
+            member_one,
+            member_two,
+            member_list_limit
+        )
+        # With limit on recursion load_balancer node will not be processed.
+        # As result load_balancer node will not be available in response
+        self.assertEqual(self.pool.id, member_list_limit[0].pool.id)
+        self.assertEqual(self.pool.id, member_list_limit[1].pool.id)
+        self.assertIsNone(member_list_limit[0].pool.load_balancer)
+        self.assertIsNone(member_list_limit[1].pool.load_balancer)
 
     def test_create(self):
         member = self.create_member(self.FAKE_UUID_1, self.FAKE_UUID_2,
@@ -2465,16 +2568,6 @@ class TestListenerRepositoryTest(BaseRepositoryTest):
                                            lb_network_ip=self.FAKE_IP)
         self.session.commit()
         return amphora
-
-    def create_loadbalancer(self, lb_id):
-        lb = self.lb_repo.create(self.session, id=lb_id,
-                                 project_id=self.FAKE_UUID_2, name="lb_name",
-                                 description="lb_description",
-                                 provisioning_status=constants.ACTIVE,
-                                 operating_status=constants.ONLINE,
-                                 enabled=True)
-        self.session.commit()
-        return lb
 
     def test_get(self):
         listener = self.create_listener(self.FAKE_UUID_1, 80)
