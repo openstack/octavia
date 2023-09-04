@@ -661,6 +661,7 @@ class LoadBalancerFlows(object):
                           constants.AMP_LISTENER_UPDATE),
                     requires=(constants.LOADBALANCER, constants.AMPHORAE,
                               constants.AMPHORAE_STATUS),
+                    rebind={constants.NEW_AMPHORA_ID: constants.AMPHORA_ID},
                     inject={constants.AMPHORA_INDEX: 0,
                             constants.TIMEOUT_DICT: timeout_dict}))
             update_amps_subflow.add(
@@ -669,6 +670,7 @@ class LoadBalancerFlows(object):
                           constants.AMP_LISTENER_UPDATE),
                     requires=(constants.LOADBALANCER, constants.AMPHORAE,
                               constants.AMPHORAE_STATUS),
+                    rebind={constants.NEW_AMPHORA_ID: constants.AMPHORA_ID},
                     inject={constants.AMPHORA_INDEX: 1,
                             constants.TIMEOUT_DICT: timeout_dict}))
 
@@ -693,6 +695,7 @@ class LoadBalancerFlows(object):
                     name=(new_amp_role + '-' +
                           constants.AMPHORA_RELOAD_LISTENER),
                     requires=(constants.LOADBALANCER, constants.AMPHORAE),
+                    rebind={constants.NEW_AMPHORA_ID: constants.AMPHORA_ID},
                     inject={constants.AMPHORA_INDEX: 1,
                             constants.TIMEOUT_DICT: timeout_dict}))
 
