@@ -1,0 +1,4 @@
+---
+other:
+  - |
+    Noop certificate manager was added. Now any Octavia certificate operations using noop drivers will be faster (as they won't be validated).
