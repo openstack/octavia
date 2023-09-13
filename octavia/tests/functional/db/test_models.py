@@ -622,7 +622,8 @@ class VipModelTest(base.OctaviaDBTestBase, ModelTestMixin):
         self.assertEqual(f"Vip(ip_address=None, "
                          f"load_balancer_id={obj.load_balancer_id!r}, "
                          f"network_id=None, octavia_owned=None, port_id=None, "
-                         f"qos_policy_id=None, subnet_id=None)", str(obj))
+                         f"qos_policy_id=None, subnet_id=None, "
+                         f"vnic_type=None)", str(obj))
 
     def test_update(self):
         vip = self.create_vip(self.session, self.load_balancer.id)

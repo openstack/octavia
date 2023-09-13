@@ -15,6 +15,7 @@
 from oslo_log import log as logging
 from oslo_utils import uuidutils
 
+from octavia.common import constants
 from octavia.common import data_models
 from octavia.network import base as driver_base
 from octavia.network import data_models as network_models
@@ -381,7 +382,8 @@ class NoopManager(object):
 
     def create_port(self, network_id, name=None, fixed_ips=(),
                     secondary_ips=(), security_group_ids=(),
-                    admin_state_up=True, qos_policy_id=None):
+                    admin_state_up=True, qos_policy_id=None,
+                    vnic_type=constants.VNIC_TYPE_NORMAL):
         LOG.debug("Network %s no-op, create_port network_id %s",
                   self.__class__.__name__, network_id)
         if not name:
@@ -407,13 +409,14 @@ class NoopManager(object):
 
         self.networkconfigconfig[(network_id, 'create_port')] = (
             network_id, name, fixed_ip_obj_list, secondary_ips,
-            security_group_ids, admin_state_up, qos_policy_id)
+            security_group_ids, admin_state_up, qos_policy_id, vnic_type)
         return network_models.Port(
             id=port_id, name=name, device_id='no-op-device-id',
             device_owner='Octavia', mac_address='00:00:5E:00:53:05',
             network_id=network_id, status='UP', project_id=project_id,
             admin_state_up=admin_state_up, fixed_ips=fixed_ip_obj_list,
-            qos_policy_id=qos_policy_id, security_group_ids=security_group_ids)
+            qos_policy_id=qos_policy_id, security_group_ids=security_group_ids,
+            vnic_type=vnic_type)
 
     def plug_fixed_ip(self, port_id, subnet_id, ip_address=None):
         LOG.debug("Network %s no-op, plug_fixed_ip port_id %s, subnet_id "
@@ -525,10 +528,11 @@ class NoopNetworkDriver(driver_base.AbstractNetworkDriver):
 
     def create_port(self, network_id, name=None, fixed_ips=(),
                     secondary_ips=(), security_group_ids=(),
-                    admin_state_up=True, qos_policy_id=None):
+                    admin_state_up=True, qos_policy_id=None,
+                    vnic_type=constants.VNIC_TYPE_NORMAL):
         return self.driver.create_port(
             network_id, name, fixed_ips, secondary_ips, security_group_ids,
-            admin_state_up, qos_policy_id)
+            admin_state_up, qos_policy_id, vnic_type)
 
     def plug_fixed_ip(self, port_id, subnet_id, ip_address=None):
         return self.driver.plug_fixed_ip(port_id, subnet_id, ip_address)

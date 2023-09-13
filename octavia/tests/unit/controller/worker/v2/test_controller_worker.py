@@ -522,7 +522,8 @@ class TestControllerWorker(base.TestCase):
 
         cw.services_controller.run_poster.assert_called_with(
             flow_utils.get_create_load_balancer_flow,
-            constants.TOPOLOGY_SINGLE, listeners=[], store=store)
+            constants.TOPOLOGY_SINGLE, listeners=[],
+            flavor_dict=None, store=store)
         self.assertEqual(4, mock_lb_repo_get.call_count)
 
     def test_create_load_balancer_active_standby(
@@ -561,7 +562,8 @@ class TestControllerWorker(base.TestCase):
 
         cw.services_controller.run_poster.assert_called_with(
             flow_utils.get_create_load_balancer_flow,
-            constants.TOPOLOGY_ACTIVE_STANDBY, listeners=[], store=store)
+            constants.TOPOLOGY_ACTIVE_STANDBY, listeners=[],
+            flavor_dict=None, store=store)
 
     def test_create_load_balancer_full_graph_single(
             self,
@@ -603,7 +605,8 @@ class TestControllerWorker(base.TestCase):
 
         cw.services_controller.run_poster.assert_called_with(
             flow_utils.get_create_load_balancer_flow,
-            constants.TOPOLOGY_SINGLE, listeners=dict_listeners, store=store)
+            constants.TOPOLOGY_SINGLE, listeners=dict_listeners,
+            flavor_dict=None, store=store)
 
     def test_create_load_balancer_full_graph_active_standby(
             self,
@@ -650,7 +653,7 @@ class TestControllerWorker(base.TestCase):
         cw.services_controller.run_poster.assert_called_with(
             flow_utils.get_create_load_balancer_flow,
             constants.TOPOLOGY_ACTIVE_STANDBY, listeners=dict_listeners,
-            store=store)
+            store=store, flavor_dict=None)
 
     @mock.patch('octavia.controller.worker.v2.flows.load_balancer_flows.'
                 'LoadBalancerFlows.get_create_load_balancer_flow')
@@ -695,7 +698,8 @@ class TestControllerWorker(base.TestCase):
         cw.create_load_balancer(_load_balancer_mock)
 
         mock_get_create_load_balancer_flow.assert_called_with(
-            constants.TOPOLOGY_SINGLE, listeners=dict_listeners)
+            constants.TOPOLOGY_SINGLE, listeners=dict_listeners,
+            flavor_dict=None)
         mock_base_taskflow_load.assert_called_with(
             mock_get_create_load_balancer_flow.return_value, store=store)
 
@@ -1461,12 +1465,13 @@ class TestControllerWorker(base.TestCase):
         mock_amphora.load_balancer_id = LB_ID
         mock_amphora.status = constants.AMPHORA_READY
         mock_amp_repo_get.return_value = mock_amphora
+        flavor_dict = {constants.LOADBALANCER_TOPOLOGY:
+                       constants.TOPOLOGY_SINGLE}
         expected_stored_params = {
             constants.AVAILABILITY_ZONE: {},
             constants.BUILD_TYPE_PRIORITY:
                 constants.LB_CREATE_FAILOVER_PRIORITY,
-            constants.FLAVOR: {constants.LOADBALANCER_TOPOLOGY:
-                               constants.TOPOLOGY_SINGLE},
+            constants.FLAVOR: flavor_dict,
             constants.LOADBALANCER: mock_provider_lb.to_dict(),
             constants.LOADBALANCER_ID: LB_ID,
             constants.SERVER_GROUP_ID: None,
@@ -1479,7 +1484,8 @@ class TestControllerWorker(base.TestCase):
 
         cw.services_controller.run_poster.assert_called_once_with(
             flow_utils.get_failover_amphora_flow,
-            mock_amphora.to_dict(), 1, store=expected_stored_params)
+            mock_amphora.to_dict(), 1, flavor_dict=flavor_dict,
+            store=expected_stored_params)
 
     @mock.patch('octavia.db.repositories.AvailabilityZoneRepository.'
                 'get_availability_zone_metadata_dict', return_value={})
@@ -1516,12 +1522,13 @@ class TestControllerWorker(base.TestCase):
         mock_amphora.load_balancer_id = LB_ID
         mock_amphora.status = constants.AMPHORA_READY
         mock_amp_repo_get.return_value = mock_amphora
+        flavor_dict = {constants.LOADBALANCER_TOPOLOGY:
+                       constants.TOPOLOGY_ACTIVE_STANDBY}
         expected_stored_params = {
             constants.AVAILABILITY_ZONE: {},
             constants.BUILD_TYPE_PRIORITY:
                 constants.LB_CREATE_FAILOVER_PRIORITY,
-            constants.FLAVOR: {constants.LOADBALANCER_TOPOLOGY:
-                               constants.TOPOLOGY_ACTIVE_STANDBY},
+            constants.FLAVOR: flavor_dict,
             constants.LOADBALANCER: mock_provider_lb.to_dict(),
             constants.LOADBALANCER_ID: LB_ID,
             constants.SERVER_GROUP_ID: None,
@@ -1534,7 +1541,8 @@ class TestControllerWorker(base.TestCase):
 
         cw.services_controller.run_poster.assert_called_once_with(
             flow_utils.get_failover_amphora_flow,
-            mock_amphora.to_dict(), 2, store=expected_stored_params)
+            mock_amphora.to_dict(), 2, flavor_dict=flavor_dict,
+            store=expected_stored_params)
 
     @mock.patch('octavia.db.repositories.AvailabilityZoneRepository.'
                 'get_availability_zone_metadata_dict', return_value={})
@@ -1571,12 +1579,13 @@ class TestControllerWorker(base.TestCase):
         mock_amphora.load_balancer_id = LB_ID
         mock_amphora.status = constants.AMPHORA_READY
         mock_amp_repo_get.return_value = mock_amphora
+        flavor_dict = {constants.LOADBALANCER_TOPOLOGY:
+                       constants.TOPOLOGY_ACTIVE_STANDBY}
         expected_stored_params = {
             constants.AVAILABILITY_ZONE: {},
             constants.BUILD_TYPE_PRIORITY:
                 constants.LB_CREATE_FAILOVER_PRIORITY,
-            constants.FLAVOR: {constants.LOADBALANCER_TOPOLOGY:
-                               constants.TOPOLOGY_ACTIVE_STANDBY},
+            constants.FLAVOR: flavor_dict,
             constants.LOADBALANCER: mock_provider_lb.to_dict(),
             constants.LOADBALANCER_ID: LB_ID,
             constants.SERVER_GROUP_ID: SERVER_GROUP_ID,
@@ -1589,7 +1598,8 @@ class TestControllerWorker(base.TestCase):
 
         cw.services_controller.run_poster.assert_called_once_with(
             flow_utils.get_failover_amphora_flow,
-            mock_amphora.to_dict(), 2, store=expected_stored_params)
+            mock_amphora.to_dict(), 2, flavor_dict=flavor_dict,
+            store=expected_stored_params)
 
     @mock.patch('octavia.api.drivers.utils.'
                 'db_loadbalancer_to_provider_loadbalancer')
@@ -1623,12 +1633,12 @@ class TestControllerWorker(base.TestCase):
         mock_amphora.load_balancer_id = LB_ID
         mock_amphora.status = constants.AMPHORA_READY
         mock_amp_repo_get.return_value = mock_amphora
+        flavor_dict = {constants.LOADBALANCER_TOPOLOGY: mock_lb.topology}
         expected_stored_params = {
             constants.AVAILABILITY_ZONE: {},
             constants.BUILD_TYPE_PRIORITY:
                 constants.LB_CREATE_FAILOVER_PRIORITY,
-            constants.FLAVOR: {constants.LOADBALANCER_TOPOLOGY:
-                               mock_lb.topology},
+            constants.FLAVOR: flavor_dict,
             constants.LOADBALANCER: mock_provider_lb.to_dict(),
             constants.LOADBALANCER_ID: LB_ID,
             constants.SERVER_GROUP_ID: SERVER_GROUP_ID,
@@ -1641,7 +1651,8 @@ class TestControllerWorker(base.TestCase):
 
         cw.services_controller.run_poster.assert_called_once_with(
             flow_utils.get_failover_amphora_flow,
-            mock_amphora.to_dict(), None, store=expected_stored_params)
+            mock_amphora.to_dict(), None, flavor_dict=flavor_dict,
+            store=expected_stored_params)
 
     @mock.patch('octavia.db.repositories.FlavorRepository.'
                 'get_flavor_metadata_dict', return_value={})
@@ -1678,13 +1689,13 @@ class TestControllerWorker(base.TestCase):
         mock_amphora.load_balancer_id = LB_ID
         mock_amphora.status = constants.AMPHORA_READY
         mock_amp_repo_get.return_value = mock_amphora
+        flavor_dict = {constants.LOADBALANCER_TOPOLOGY:
+                       constants.TOPOLOGY_SINGLE, 'taste': 'spicy'}
         expected_stored_params = {
             constants.AVAILABILITY_ZONE: {},
             constants.BUILD_TYPE_PRIORITY:
                 constants.LB_CREATE_FAILOVER_PRIORITY,
-            constants.FLAVOR: {constants.LOADBALANCER_TOPOLOGY:
-                               constants.TOPOLOGY_SINGLE,
-                               'taste': 'spicy'},
+            constants.FLAVOR: flavor_dict,
             constants.LOADBALANCER: mock_provider_lb.to_dict(),
             constants.LOADBALANCER_ID: LB_ID,
             constants.SERVER_GROUP_ID: None,
@@ -1698,7 +1709,8 @@ class TestControllerWorker(base.TestCase):
 
         cw.services_controller.run_poster.assert_called_once_with(
             flow_utils.get_failover_amphora_flow,
-            mock_amphora.to_dict(), 1, store=expected_stored_params)
+            mock_amphora.to_dict(), 1, flavor_dict=flavor_dict,
+            store=expected_stored_params)
 
     @mock.patch('octavia.db.repositories.AvailabilityZoneRepository.'
                 'get_availability_zone_metadata_dict', return_value={})
@@ -1735,12 +1747,13 @@ class TestControllerWorker(base.TestCase):
         mock_amphora.load_balancer_id = LB_ID
         mock_amphora.status = constants.AMPHORA_READY
         mock_amp_repo_get.return_value = mock_amphora
+        flavor_dict = {constants.LOADBALANCER_TOPOLOGY:
+                       constants.TOPOLOGY_SINGLE}
         expected_stored_params = {
             constants.AVAILABILITY_ZONE: {'planet': 'jupiter'},
             constants.BUILD_TYPE_PRIORITY:
                 constants.LB_CREATE_FAILOVER_PRIORITY,
-            constants.FLAVOR: {constants.LOADBALANCER_TOPOLOGY:
-                               constants.TOPOLOGY_SINGLE},
+            constants.FLAVOR: flavor_dict,
             constants.LOADBALANCER: mock_provider_lb.to_dict(),
             constants.LOADBALANCER_ID: LB_ID,
             constants.SERVER_GROUP_ID: None,
@@ -1752,12 +1765,10 @@ class TestControllerWorker(base.TestCase):
         cw.services_controller.reset_mock()
         cw.failover_amphora(AMP_ID)
 
-        print(cw, flush=True)
-        print(cw.services_controller, flush=True)
-        print(cw.services_controller.run_poster, flush=True)
         cw.services_controller.run_poster.assert_called_once_with(
             flow_utils.get_failover_amphora_flow,
-            mock_amphora.to_dict(), 1, store=expected_stored_params)
+            mock_amphora.to_dict(), 1, flavor_dict=flavor_dict,
+            store=expected_stored_params)
 
     @mock.patch('octavia.api.drivers.utils.'
                 'db_loadbalancer_to_provider_loadbalancer')
@@ -1794,12 +1805,13 @@ class TestControllerWorker(base.TestCase):
         mock_amphora.load_balancer_id = LB_ID
         mock_amphora.status = constants.AMPHORA_READY
         mock_amp_repo_get.return_value = mock_amphora
+        flavor_dict = {constants.LOADBALANCER_TOPOLOGY:
+                       constants.TOPOLOGY_SINGLE}
         expected_stored_params = {
             constants.AVAILABILITY_ZONE: {},
             constants.BUILD_TYPE_PRIORITY:
                 constants.LB_CREATE_FAILOVER_PRIORITY,
-            constants.FLAVOR: {constants.LOADBALANCER_TOPOLOGY:
-                               constants.TOPOLOGY_SINGLE},
+            constants.FLAVOR: flavor_dict,
             constants.LOADBALANCER: mock_provider_lb.to_dict(),
             constants.LOADBALANCER_ID: LB_ID,
             constants.SERVER_GROUP_ID: None,
@@ -1813,12 +1825,10 @@ class TestControllerWorker(base.TestCase):
         cw.services_controller.reset_mock()
         cw.failover_amphora(AMP_ID)
 
-        print(cw, flush=True)
-        print(cw.services_controller, flush=True)
-        print(cw.services_controller.run_poster, flush=True)
         cw.services_controller.run_poster.assert_called_once_with(
             flow_utils.get_failover_amphora_flow,
-            mock_amphora.to_dict(), 1, store=expected_stored_params)
+            mock_amphora.to_dict(), 1, flavor_dict=flavor_dict,
+            store=expected_stored_params)
 
     @mock.patch('octavia.controller.worker.v2.flows.amphora_flows.'
                 'AmphoraFlows.get_failover_amphora_flow')
@@ -1931,7 +1941,7 @@ class TestControllerWorker(base.TestCase):
         cw.services_controller.run_poster.assert_called_once_with(
             flow_utils.get_failover_amphora_flow,
             mock_amphora.to_dict(),
-            None, store=expected_stored_params)
+            None, flavor_dict={}, store=expected_stored_params)
 
     @mock.patch('octavia.db.repositories.AmphoraHealthRepository.delete')
     def test_failover_deleted_amphora(self,

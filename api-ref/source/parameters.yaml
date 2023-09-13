@@ -1793,6 +1793,14 @@ vip_subnet_id-optional:
   in: body
   required: false
   type: uuid
+vip_vnic_type:
+  description: |
+    The VIP vNIC type used for the load balancer. One of ``normal`` or
+    ``direct``.
+  in: body
+  required: true
+  type: string
+  min_version: 2.28
 vrrp-id:
   description: |
     The vrrp group's ID for the amphora.

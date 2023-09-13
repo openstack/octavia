@@ -67,6 +67,7 @@ Response Parameters
    - vip_port_id: vip_port_id
    - vip_qos_policy_id: vip_qos_policy_id
    - vip_subnet_id: vip_subnet_id
+   - vip_vnic_type: vip_vnic_type
 
 Response Example
 ----------------
@@ -225,6 +226,7 @@ Response Parameters
    - vip_port_id: vip_port_id
    - vip_qos_policy_id: vip_qos_policy_id
    - vip_subnet_id: vip_subnet_id
+   - vip_vnic_type: vip_vnic_type
 
 Response Example
 ----------------
@@ -320,6 +322,7 @@ Response Parameters
    - vip_port_id: vip_port_id
    - vip_qos_policy_id: vip_qos_policy_id
    - vip_subnet_id: vip_subnet_id
+   - vip_vnic_type: vip_vnic_type
 
 Response Example
 ----------------
@@ -407,6 +410,7 @@ Response Parameters
    - vip_port_id: vip_port_id
    - vip_qos_policy_id: vip_qos_policy_id
    - vip_subnet_id: vip_subnet_id
+   - vip_vnic_type: vip_vnic_type
 
 Response Example
 ----------------

@@ -13,7 +13,6 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 #
-
 from oslo_config import cfg
 from oslo_log import log as logging
 from taskflow.patterns import linear_flow
@@ -47,7 +46,8 @@ class LoadBalancerFlows(object):
         self.member_flows = member_flows.MemberFlows()
         self.lb_repo = repo.LoadBalancerRepository()
 
-    def get_create_load_balancer_flow(self, topology, listeners=None):
+    def get_create_load_balancer_flow(self, topology, listeners=None,
+                                      flavor_dict=None):
         """Creates a conditional graph flow that allocates a loadbalancer.
 
         :raises InvalidTopology: Invalid topology specified
@@ -59,7 +59,7 @@ class LoadBalancerFlows(object):
         lb_create_flow.add(lifecycle_tasks.LoadBalancerIDToErrorOnRevertTask(
             requires=constants.LOADBALANCER_ID))
 
-        # allocate VIP
+        # allocate VIP - Saves the VIP IP(s) in neutron
         lb_create_flow.add(database_tasks.ReloadLoadBalancer(
             name=constants.RELOAD_LB_BEFOR_ALLOCATE_VIP,
             requires=constants.LOADBALANCER_ID,
@@ -81,9 +81,11 @@ class LoadBalancerFlows(object):
             provides=constants.SUBNET))
 
         if topology == constants.TOPOLOGY_ACTIVE_STANDBY:
-            lb_create_flow.add(*self._create_active_standby_topology())
+            lb_create_flow.add(*self._create_active_standby_topology(
+                flavor_dict=flavor_dict))
         elif topology == constants.TOPOLOGY_SINGLE:
-            lb_create_flow.add(*self._create_single_topology())
+            lb_create_flow.add(*self._create_single_topology(
+                flavor_dict=flavor_dict))
         else:
             LOG.error("Unknown topology: %s.  Unable to build load balancer.",
                       topology)
@@ -112,7 +114,7 @@ class LoadBalancerFlows(object):
 
         return lb_create_flow
 
-    def _create_single_topology(self):
+    def _create_single_topology(self, flavor_dict=None):
         sf_name = (constants.ROLE_STANDALONE + '-' +
                    constants.AMP_PLUG_NET_SUBFLOW)
         amp_for_lb_net_flow = linear_flow.Flow(sf_name)
@@ -120,11 +122,13 @@ class LoadBalancerFlows(object):
             prefix=constants.ROLE_STANDALONE,
             role=constants.ROLE_STANDALONE)
         amp_for_lb_net_flow.add(amp_for_lb_flow)
-        amp_for_lb_net_flow.add(*self._get_amp_net_subflow(sf_name))
+        amp_for_lb_net_flow.add(*self._get_amp_net_subflow(
+            sf_name, flavor_dict=flavor_dict))
         return amp_for_lb_net_flow
 
     def _create_active_standby_topology(
-            self, lf_name=constants.CREATE_LOADBALANCER_FLOW):
+            self, lf_name=constants.CREATE_LOADBALANCER_FLOW,
+            flavor_dict=None):
         # When we boot up amphora for an active/standby topology,
         # we should leverage the Nova anti-affinity capabilities
         # to place the amphora on different hosts, also we need to check
@@ -156,26 +160,45 @@ class LoadBalancerFlows(object):
         master_amp_sf = linear_flow.Flow(master_sf_name)
         master_amp_sf.add(self.amp_flows.get_amphora_for_lb_subflow(
             prefix=constants.ROLE_MASTER, role=constants.ROLE_MASTER))
-        master_amp_sf.add(*self._get_amp_net_subflow(master_sf_name))
+        master_amp_sf.add(*self._get_amp_net_subflow(master_sf_name,
+                                                     flavor_dict=flavor_dict))
 
         backup_sf_name = (constants.ROLE_BACKUP + '-' +
                           constants.AMP_PLUG_NET_SUBFLOW)
         backup_amp_sf = linear_flow.Flow(backup_sf_name)
         backup_amp_sf.add(self.amp_flows.get_amphora_for_lb_subflow(
             prefix=constants.ROLE_BACKUP, role=constants.ROLE_BACKUP))
-        backup_amp_sf.add(*self._get_amp_net_subflow(backup_sf_name))
+        backup_amp_sf.add(*self._get_amp_net_subflow(backup_sf_name,
+                                                     flavor_dict=flavor_dict))
 
         amps_flow.add(master_amp_sf, backup_amp_sf)
 
         return flows + [amps_flow]
 
-    def _get_amp_net_subflow(self, sf_name):
+    def _get_amp_net_subflow(self, sf_name, flavor_dict=None):
         flows = []
-        flows.append(network_tasks.PlugVIPAmphora(
-            name=sf_name + '-' + constants.PLUG_VIP_AMPHORA,
-            requires=(constants.LOADBALANCER, constants.AMPHORA,
-                      constants.SUBNET),
-            provides=constants.AMP_DATA))
+        if flavor_dict and flavor_dict.get(constants.SRIOV_VIP, False):
+            flows.append(network_tasks.CreateSRIOVBasePort(
+                name=sf_name + '-' + constants.PLUG_VIP_AMPHORA,
+                requires=(constants.LOADBALANCER, constants.AMPHORA,
+                          constants.SUBNET),
+                provides=constants.PORT_DATA))
+            flows.append(compute_tasks.AttachPort(
+                name=sf_name + '-' + constants.ATTACH_PORT,
+                requires=(constants.AMPHORA),
+                rebind={constants.PORT: constants.PORT_DATA}))
+            flows.append(network_tasks.BuildAMPData(
+                name=sf_name + '-' + constants.BUILD_AMP_DATA,
+                requires=(constants.LOADBALANCER, constants.AMPHORA,
+                          constants.PORT_DATA),
+                provides=constants.AMP_DATA))
+            # TODO(johnsom) nftables need to be handled here in the SG patch
+        else:
+            flows.append(network_tasks.PlugVIPAmphora(
+                name=sf_name + '-' + constants.PLUG_VIP_AMPHORA,
+                requires=(constants.LOADBALANCER, constants.AMPHORA,
+                          constants.SUBNET),
+                provides=constants.AMP_DATA))
 
         flows.append(network_tasks.ApplyQosAmphora(
             name=sf_name + '-' + constants.APPLY_QOS_AMP,
@@ -466,12 +489,13 @@ class LoadBalancerFlows(object):
                     role=new_amp_role,
                     failed_amp_vrrp_port_id=failed_amp.get(
                         constants.VRRP_PORT_ID),
-                    is_vrrp_ipv6=failed_vrrp_is_ipv6))
+                    is_vrrp_ipv6=failed_vrrp_is_ipv6,
+                    flavor_dict=lb[constants.FLAVOR]))
         else:
             failover_LB_flow.add(
                 self.amp_flows.get_amphora_for_lb_failover_subflow(
                     prefix=constants.FAILOVER_LOADBALANCER_FLOW,
-                    role=new_amp_role))
+                    role=new_amp_role, flavor_dict=lb[constants.FLAVOR]))
 
         if lb_topology == constants.TOPOLOGY_ACTIVE_STANDBY:
             failover_LB_flow.add(database_tasks.MarkAmphoraBackupInDB(
@@ -593,7 +617,8 @@ class LoadBalancerFlows(object):
                 self.amp_flows.get_amphora_for_lb_failover_subflow(
                     prefix=(new_amp_role + '-' +
                             constants.FAILOVER_LOADBALANCER_FLOW),
-                    role=new_amp_role))
+                    role=new_amp_role,
+                    flavor_dict=lb[constants.FLAVOR]))
 
             failover_LB_flow.add(database_tasks.MarkAmphoraMasterInDB(
                 name=constants.MARK_AMP_MASTER_INDB,

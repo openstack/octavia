@@ -14,6 +14,7 @@
 
 import abc
 
+from octavia.common import constants
 from octavia.common import exceptions
 
 
@@ -108,7 +109,8 @@ class AbstractNetworkDriver(object, metaclass=abc.ABCMeta):
     @abc.abstractmethod
     def create_port(self, network_id, name=None, fixed_ips=(),
                     secondary_ips=(), security_group_ids=(),
-                    admin_state_up=True, qos_policy_id=None):
+                    admin_state_up=True, qos_policy_id=None,
+                    vnic_type=constants.VNIC_TYPE_NORMAL):
         """Creates a network port.
 
         fixed_ips = [{'subnet_id': <id>, ('ip_address': <IP>')},]

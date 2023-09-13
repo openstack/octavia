@@ -11,6 +11,7 @@
 #    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 #    License for the specific language governing permissions and limitations
 #    under the License.
+from octavia.common import constants
 from octavia.network.drivers.neutron import utils
 from octavia.tests.common import constants as t_constants
 from octavia.tests.unit import base
@@ -67,6 +68,7 @@ class TestNeutronUtils(base.TestCase):
             admin_state_up=t_constants.MOCK_ADMIN_STATE_UP,
             fixed_ips=[],
             security_group_ids=[],
+            vnic_type=constants.VNIC_TYPE_NORMAL,
         )
         self._compare_ignore_value_none(model_obj.to_dict(), assert_dict)
         fixed_ips = t_constants.MOCK_NEUTRON_PORT['fixed_ips']

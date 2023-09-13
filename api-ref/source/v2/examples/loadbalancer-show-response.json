@@ -18,6 +18,7 @@
         "name": "best_load_balancer",
         "vip_qos_policy_id": "ec4f78ca-8da8-4e99-8a1a-e3b94595a7a3",
         "availability_zone": "my_az",
-        "tags": []
+        "tags": [],
+        "vip_vnic_type": "normal"
     }
 }

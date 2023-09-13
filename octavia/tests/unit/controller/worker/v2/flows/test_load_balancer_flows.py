@@ -98,6 +98,32 @@ class TestLoadBalancerFlows(base.TestCase):
 
     @mock.patch('octavia.common.rpc.NOTIFIER',
                 new_callable=MockNOTIFIER)
+    def test_get_create_load_balancer_flow_SRIOV(self, mock_get_net_driver,
+                                                 mock_notifier):
+        amp_flow = self.LBFlow.get_create_load_balancer_flow(
+            constants.TOPOLOGY_SINGLE, flavor_dict={constants.SRIOV_VIP: True})
+        self.assertIsInstance(amp_flow, flow.Flow)
+        self.assertIn(constants.AVAILABILITY_ZONE, amp_flow.requires)
+        self.assertIn(constants.BUILD_TYPE_PRIORITY, amp_flow.requires)
+        self.assertIn(constants.FLAVOR, amp_flow.requires)
+        self.assertIn(constants.LOADBALANCER_ID, amp_flow.requires)
+        self.assertIn(constants.SERVER_GROUP_ID, amp_flow.requires)
+        self.assertIn(constants.UPDATE_DICT, amp_flow.requires)
+        self.assertIn(constants.ADDITIONAL_VIPS, amp_flow.provides)
+        self.assertIn(constants.AMP_DATA, amp_flow.provides)
+        self.assertIn(constants.AMPHORA, amp_flow.provides)
+        self.assertIn(constants.AMPHORA_ID, amp_flow.provides)
+        self.assertIn(constants.AMPHORA_NETWORK_CONFIG, amp_flow.provides)
+        self.assertIn(constants.COMPUTE_ID, amp_flow.provides)
+        self.assertIn(constants.COMPUTE_OBJ, amp_flow.provides)
+        self.assertIn(constants.LOADBALANCER, amp_flow.provides)
+        self.assertIn(constants.PORT_DATA, amp_flow.provides)
+        self.assertIn(constants.SERVER_PEM, amp_flow.provides)
+        self.assertIn(constants.SUBNET, amp_flow.provides)
+        self.assertIn(constants.VIP, amp_flow.provides)
+
+    @mock.patch('octavia.common.rpc.NOTIFIER',
+                new_callable=MockNOTIFIER)
     def test_get_delete_load_balancer_flow(self, mock_get_net_driver,
                                            mock_notifier):
         lb_mock = mock.Mock()
@@ -336,7 +362,7 @@ class TestLoadBalancerFlows(base.TestCase):
 
         self.assertEqual(6, len(failover_flow.requires),
                          failover_flow.requires)
-        self.assertEqual(13, len(failover_flow.provides),
+        self.assertEqual(14, len(failover_flow.provides),
                          failover_flow.provides)
 
     @mock.patch('octavia.common.rpc.NOTIFIER',
@@ -412,7 +438,7 @@ class TestLoadBalancerFlows(base.TestCase):
 
         self.assertEqual(6, len(failover_flow.requires),
                          failover_flow.requires)
-        self.assertEqual(13, len(failover_flow.provides),
+        self.assertEqual(14, len(failover_flow.provides),
                          failover_flow.provides)
 
     @mock.patch('octavia.common.rpc.NOTIFIER',

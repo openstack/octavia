@@ -506,6 +506,7 @@ class Vip(base_models.BASE):
     network_id = sa.Column(sa.String(36), nullable=True)
     qos_policy_id = sa.Column(sa.String(36), nullable=True)
     octavia_owned = sa.Column(sa.Boolean(), nullable=True)
+    vnic_type = sa.Column(sa.String(64), nullable=True)
 
 
 class AdditionalVip(base_models.BASE):

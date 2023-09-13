@@ -348,15 +348,33 @@ class VirtualMachineManager(compute_base.ComputeBase):
             if 'Port' in str(e):
                 raise exceptions.NotFound(resource='Port', id=port_id)
             raise exceptions.NotFound(resource=str(e), id=compute_id)
+        except nova_exceptions.BadRequest as e:
+            if 'Failed to claim PCI device' in str(e):
+                message = ('Nova failed to claim PCI devices during '
+                           f'interface attach for port {port_id} on '
+                           f'instance {compute_id}')
+                LOG.error(message)
+                raise exceptions.ComputeNoResourcesException(message,
+                                                             exc=str(e))
+            raise
+        except nova_exceptions.ClientException as e:
+            if 'PortBindingFailed' in str(e):
+                message = ('Nova failed to bind the port during '
+                           f'interface attach for port {port_id} on '
+                           f'instance {compute_id}')
+                LOG.error(message)
+                raise exceptions.ComputeNoResourcesException(message,
+                                                             exc=str(e))
+            raise
         except Exception as e:
             LOG.error('Error attaching network %(network_id)s with ip '
-                      '%(ip_address)s and port %(port)s to amphora '
+                      '%(ip_address)s and port %(port_id)s to amphora '
                       '(compute_id: %(compute_id)s) ',
                       {
-                          'compute_id': compute_id,
-                          'network_id': network_id,
-                          'ip_address': ip_address,
-                          'port': port_id
+                          constants.COMPUTE_ID: compute_id,
+                          constants.NETWORK_ID: network_id,
+                          constants.IP_ADDRESS: ip_address,
+                          constants.PORT_ID: port_id
                       })
             raise exceptions.ComputeUnknownException(exc=str(e))
         return interface
