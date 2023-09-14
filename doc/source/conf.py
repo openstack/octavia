@@ -339,7 +339,7 @@ sample_policy_basename = 'configuration/_static/octavia'
 
 openstackdocs_repo_name = 'openstack/octavia'
 openstackdocs_pdf_link = True
-openstackdocs_bug_project = '908'
+openstackdocs_bug_project = 'octavia'
 openstackdocs_bug_tag = 'docs'
 
 apidoc_output_dir = 'contributor/modules'
