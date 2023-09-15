@@ -325,7 +325,6 @@ class MembersController(MemberController):
         context = pecan_request.context.get('octavia_context')
 
         db_pool = self._get_db_pool(context.session, self.pool_id)
-        old_members = db_pool.members
 
         project_id, provider = self._get_lb_project_id_provider(
             context.session, db_pool.load_balancer_id)
@@ -342,6 +341,11 @@ class MembersController(MemberController):
 
         with db_api.get_lock_session() as lock_session:
             self._test_lb_and_listener_and_pool_statuses(lock_session)
+
+            # Reload the pool, the members may have been updated between the
+            # first query in this function and the lock of the loadbalancer
+            db_pool = self._get_db_pool(context.session, self.pool_id)
+            old_members = db_pool.members
 
             old_member_uniques = {
                 (m.ip_address, m.protocol_port): m.id for m in old_members}
