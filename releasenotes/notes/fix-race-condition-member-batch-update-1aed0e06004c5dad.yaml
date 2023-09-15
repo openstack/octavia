@@ -1,0 +1,7 @@
+---
+fixes:
+  - |
+    Fixed a race condition in the members batch update API call, the data
+    passed to the Octavia worker service may have been incorrect when quickly
+    sending successive API calls. Then the load balancer was stuck in
+    PENDING_UPDATE provisioning_status.
