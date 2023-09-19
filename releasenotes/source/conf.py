@@ -44,7 +44,7 @@ extensions = [
 
 # openstackdocstheme options
 openstackdocs_repo_name = 'openstack/octavia'
-openstackdocs_bug_project = '908'
+openstackdocs_bug_project = 'octavia'
 openstackdocs_bug_tag = 'doc'
 
 # Add any paths that contain templates here, relative to this directory.
