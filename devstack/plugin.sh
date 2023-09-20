@@ -18,6 +18,10 @@ function octavia_install {
         if ! [ "$DISABLE_AMP_IMAGE_BUILD" == 'True' ]; then
             if [[ ${DISTRO} =~ (rhel|centos) ]]; then
                 install_package qemu-kvm
+                if [[ "$OCTAVIA_AMP_BASE_OS" == "rocky" ]]; then
+                    # DIB requires podman for building rockylinux images.
+                    install_package podman
+                fi
             else
                 install_package qemu
             fi
@@ -134,6 +138,8 @@ function build_octavia_worker_image {
         fi
         sudo mkdir -m755 ${dib_logs}
         sudo chown $STACK_USER ${dib_logs}
+        # Workaround for rockylinux images
+        export DIB_CONTAINERFILE_RUNTIME_ROOT=1
         $OCTAVIA_DIR/diskimage-create/diskimage-create.sh -l ${dib_logs}/$(basename $OCTAVIA_AMP_IMAGE_FILE).log $octavia_dib_tracing_arg -o $OCTAVIA_AMP_IMAGE_FILE ${PARAM_OCTAVIA_AMP_BASE_OS:-} ${PARAM_OCTAVIA_AMP_DISTRIBUTION_RELEASE_ID:-} ${PARAM_OCTAVIA_AMP_IMAGE_SIZE:-} ${PARAM_OCTAVIA_AMP_IMAGE_ARCH:-} ${PARAM_OCTAVIA_AMP_DISABLE_TMP_FS:-} ${PARAM_OCTAVIA_AMP_ENABLE_FIPS:-}
     fi
 
@@ -490,8 +496,20 @@ function create_mgmt_network_interface {
     fi
     sudo ip link set dev o-hm0 address $MGMT_PORT_MAC
 
+    function _get_firewall () {
+        # The devstack CI forces the use of iptables, the openstack-INPUT table
+        # can be used to indicate it.
+        if sudo iptables -L -n -v | grep openstack-INPUT; then
+            echo "iptables"
+        elif [[ -x $(which nft 2> /dev/null) ]]; then
+            echo "nft"
+        else
+            echo "iptables"
+        fi
+    }
+
     # Check if the host is using nftables, an alternative to iptables
-    if [ -x "$(sudo bash -c 'command -v nft')" ]; then
+    if [[ $(_get_firewall) == "nft" ]]; then
         sudo nft add table inet octavia
         sudo nft add chain inet octavia o-hm0-incoming { type filter hook input priority 0\;}
         sudo nft flush chain inet octavia o-hm0-incoming

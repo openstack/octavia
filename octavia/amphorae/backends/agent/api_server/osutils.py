@@ -116,7 +116,7 @@ class RH(BaseOS):
 
     @classmethod
     def is_os_name(cls, os_name):
-        return os_name in ['fedora', 'rhel']
+        return os_name in ['fedora', 'rhel', 'rocky']
 
     def cmd_get_version_of_installed_package(self, package_name):
         name = self._map_package_name(package_name)

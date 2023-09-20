@@ -107,7 +107,7 @@ Command syntax:
             [-f]
             [-g **repository branch** | stable/train | stable/stein | ... ]
             [-h]
-            [-i **ubuntu-minimal** | fedora | centos-minimal | rhel ]
+            [-i **ubuntu-minimal** | fedora | centos-minimal | rhel | rocky ]
             [-k <kernel package name> ]
             [-l <log file> ]
             [-m]

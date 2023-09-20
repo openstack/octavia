@@ -28,7 +28,7 @@ usage() {
     echo "            [-f]"
     echo "            [-g **repository branch** | stable/train | stable/stein | ... ]"
     echo "            [-h]"
-    echo "            [-i **ubuntu-minimal** | fedora | centos-minimal | rhel ]"
+    echo "            [-i **ubuntu-minimal** | fedora | centos-minimal | rhel | rocky ]"
     echo "            [-k <kernel package name> ]"
     echo "            [-l <log file> ]"
     echo "            [-m]"
@@ -150,6 +150,7 @@ while getopts "a:b:c:d:efg:hi:k:l:mno:pt:r:s:vw:xy" opt; do
                 [ "$AMP_BASEOS" != "fedora" ] && \
                 [ "$AMP_BASEOS" != "centos" ] && \
                 [ "$AMP_BASEOS" != "centos-minimal" ] && \
+                [ "$AMP_BASEOS" != "rocky" ] && \
                 [ "$AMP_BASEOS" != "rhel" ]; then
                 echo "Error: Unsupported base OS $AMP_BASEOS specified"
                 exit 3
@@ -159,6 +160,9 @@ while getopts "a:b:c:d:efg:hi:k:l:mno:pt:r:s:vw:xy" opt; do
             fi
             if [ "$AMP_BASEOS" == "centos" ]; then
                 AMP_BASEOS="centos-minimal"
+            fi
+            if [ "$AMP_BASEOS" == "rocky" ]; then
+                AMP_BASEOS="rocky-container"
             fi
         ;;
         k)
@@ -245,6 +249,8 @@ elif [ "${AMP_BASEOS}" = "centos-minimal" ]; then
     export DIB_RELEASE=${AMP_DIB_RELEASE:-"9-stream"}
 elif [ "${AMP_BASEOS}" = "fedora" ]; then
     export DIB_RELEASE=${AMP_DIB_RELEASE:-"28"}
+elif [ "${AMP_BASEOS}" = "rocky-container" ]; then
+    export DIB_RELEASE=${AMP_DIB_RELEASE:-"9"}
 fi
 
 AMP_OUTPUTFILENAME=${AMP_OUTPUTFILENAME:-"$PWD/amphora-x64-haproxy.qcow2"}
@@ -454,7 +460,7 @@ AMP_element_sequence="$AMP_element_sequence cloud-init-datasources"
 AMP_element_sequence="$AMP_element_sequence remove-default-ints"
 
 # SELinux systems
-if [ "${AMP_BASEOS}" = "centos-minimal" ] || [ "${AMP_BASEOS}" = "fedora" ] || [ "${AMP_BASEOS}" = "rhel" ]; then
+if [ "${AMP_BASEOS}" = "centos-minimal" ] || [ "${AMP_BASEOS}" = "fedora" ] || [ "${AMP_BASEOS}" = "rhel" ] || [ "${AMP_BASEOS}" = "rocky-container" ]; then
     if [ "$AMP_ENABLE_FULL_MAC_SECURITY" -ne 1 ]; then
         AMP_element_sequence="$AMP_element_sequence selinux-permissive"
     else
@@ -464,7 +470,7 @@ if [ "${AMP_BASEOS}" = "centos-minimal" ] || [ "${AMP_BASEOS}" = "fedora" ] || [
 fi
 
 # Disable the dnf makecache timer
-if [ "${AMP_BASEOS}" = "centos-minimal" ] || [ "${AMP_BASEOS}" = "fedora" ] || [ "${AMP_BASEOS}" = "rhel" ]; then
+if [ "${AMP_BASEOS}" = "centos-minimal" ] || [ "${AMP_BASEOS}" = "fedora" ] || [ "${AMP_BASEOS}" = "rhel" ] || [ "${AMP_BASEOS}" = "rocky-container" ]; then
     AMP_element_sequence="$AMP_element_sequence disable-makecache"
 fi
 
