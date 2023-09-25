@@ -14,17 +14,31 @@
 
 """ Methods common to the controller work tasks."""
 
+from oslo_config import cfg
 from oslo_log import log as logging
+from oslo_utils import excutils
+import tenacity
 
 from octavia.common import constants
 from octavia.db import api as db_apis
 from octavia.db import repositories as repo
 
+CONF = cfg.CONF
 LOG = logging.getLogger(__name__)
 
 
 class TaskUtils(object):
     """Class of helper/utility methods used by tasks."""
+
+    status_update_retry = tenacity.retry(
+        retry=tenacity.retry_if_exception_type(Exception),
+        wait=tenacity.wait_incrementing(
+            CONF.controller_worker.db_commit_retry_initial_delay,
+            CONF.controller_worker.db_commit_retry_backoff,
+            CONF.controller_worker.db_commit_retry_max),
+        stop=tenacity.stop_after_attempt(
+            CONF.controller_worker.db_commit_retry_attempts),
+        after=tenacity.after_log(LOG, logging.DEBUG))
 
     def __init__(self, **kwargs):
         self.amphora_repo = repo.AmphoraRepository()
@@ -160,6 +174,7 @@ class TaskUtils(object):
                       "provisioning status to ERROR due to: "
                       "%(except)s", {'list': listener_id, 'except': str(e)})
 
+    @status_update_retry
     def mark_loadbalancer_prov_status_error(self, loadbalancer_id):
         """Sets a load balancer provisioning status to ERROR.
 
@@ -175,9 +190,12 @@ class TaskUtils(object):
                     id=loadbalancer_id,
                     provisioning_status=constants.ERROR)
         except Exception as e:
-            LOG.error("Failed to update load balancer %(lb)s "
-                      "provisioning status to ERROR due to: "
-                      "%(except)s", {'lb': loadbalancer_id, 'except': str(e)})
+            # Reraise for tenacity
+            with excutils.save_and_reraise_exception():
+                LOG.error("Failed to update load balancer %(lb)s "
+                          "provisioning status to ERROR due to: "
+                          "%(except)s", {'lb': loadbalancer_id,
+                                         'except': str(e)})
 
     def mark_listener_prov_status_active(self, listener_id):
         """Sets a listener provisioning status to ACTIVE.
@@ -214,6 +232,7 @@ class TaskUtils(object):
                       "to ACTIVE due to: %(except)s", {'pool': pool_id,
                                                        'except': str(e)})
 
+    @status_update_retry
     def mark_loadbalancer_prov_status_active(self, loadbalancer_id):
         """Sets a load balancer provisioning status to ACTIVE.
 
@@ -229,9 +248,12 @@ class TaskUtils(object):
                     id=loadbalancer_id,
                     provisioning_status=constants.ACTIVE)
         except Exception as e:
-            LOG.error("Failed to update load balancer %(lb)s "
-                      "provisioning status to ACTIVE due to: "
-                      "%(except)s", {'lb': loadbalancer_id, 'except': str(e)})
+            # Reraise for tenacity
+            with excutils.save_and_reraise_exception():
+                LOG.error("Failed to update load balancer %(lb)s "
+                          "provisioning status to ACTIVE due to: "
+                          "%(except)s", {'lb': loadbalancer_id,
+                                         'except': str(e)})
 
     def mark_member_prov_status_error(self, member_id):
         """Sets a member provisioning status to ERROR.

@@ -54,15 +54,22 @@ class HealthMonitorToErrorOnRevertTask(BaseLifecycleTask):
         pass
 
     def revert(self, health_mon, listeners, loadbalancer, *args, **kwargs):
-        self.task_utils.mark_health_mon_prov_status_error(
-            health_mon[constants.HEALTHMONITOR_ID])
-        self.task_utils.mark_pool_prov_status_active(
-            health_mon[constants.POOL_ID])
+        try:
+            self.task_utils.mark_health_mon_prov_status_error(
+                health_mon[constants.HEALTHMONITOR_ID])
+            self.task_utils.mark_pool_prov_status_active(
+                health_mon[constants.POOL_ID])
+            for listener in listeners:
+                self.task_utils.mark_listener_prov_status_active(
+                    listener[constants.LISTENER_ID])
+        except Exception:
+            # Catching and skipping, errors are already reported by task_utils
+            # and we want to ensure that mark_loadbalancer_prov_status_active
+            # is called to unlock the LB (it will pass or it will fail after a
+            # very long timeout)
+            pass
         self.task_utils.mark_loadbalancer_prov_status_active(
             loadbalancer[constants.LOADBALANCER_ID])
-        for listener in listeners:
-            self.task_utils.mark_listener_prov_status_active(
-                listener[constants.LISTENER_ID])
 
 
 class L7PolicyToErrorOnRevertTask(BaseLifecycleTask):
@@ -72,12 +79,19 @@ class L7PolicyToErrorOnRevertTask(BaseLifecycleTask):
         pass
 
     def revert(self, l7policy, listeners, loadbalancer_id, *args, **kwargs):
-        self.task_utils.mark_l7policy_prov_status_error(
-            l7policy[constants.L7POLICY_ID])
+        try:
+            self.task_utils.mark_l7policy_prov_status_error(
+                l7policy[constants.L7POLICY_ID])
+            for listener in listeners:
+                self.task_utils.mark_listener_prov_status_active(
+                    listener[constants.LISTENER_ID])
+        except Exception:
+            # Catching and skipping, errors are already reported by task_utils
+            # and we want to ensure that mark_loadbalancer_prov_status_active
+            # is called to unlock the LB (it will pass or it will fail after a
+            # very long timeout)
+            pass
         self.task_utils.mark_loadbalancer_prov_status_active(loadbalancer_id)
-        for listener in listeners:
-            self.task_utils.mark_listener_prov_status_active(
-                listener[constants.LISTENER_ID])
 
 
 class L7RuleToErrorOnRevertTask(BaseLifecycleTask):
@@ -88,14 +102,21 @@ class L7RuleToErrorOnRevertTask(BaseLifecycleTask):
 
     def revert(self, l7rule, l7policy_id, listeners, loadbalancer_id, *args,
                **kwargs):
-        self.task_utils.mark_l7rule_prov_status_error(
-            l7rule[constants.L7RULE_ID])
-        self.task_utils.mark_l7policy_prov_status_active(l7policy_id)
+        try:
+            self.task_utils.mark_l7rule_prov_status_error(
+                l7rule[constants.L7RULE_ID])
+            self.task_utils.mark_l7policy_prov_status_active(l7policy_id)
+            for listener in listeners:
+                self.task_utils.mark_listener_prov_status_active(
+                    listener[constants.LISTENER_ID])
+        except Exception:
+            # Catching and skipping, errors are already reported by task_utils
+            # and we want to ensure that mark_loadbalancer_prov_status_active
+            # is called to unlock the LB (it will pass or it will fail after a
+            # very long timeout)
+            pass
         self.task_utils.mark_loadbalancer_prov_status_active(
             loadbalancer_id)
-        for listener in listeners:
-            self.task_utils.mark_listener_prov_status_active(
-                listener[constants.LISTENER_ID])
 
 
 class ListenerToErrorOnRevertTask(BaseLifecycleTask):
@@ -105,8 +126,15 @@ class ListenerToErrorOnRevertTask(BaseLifecycleTask):
         pass
 
     def revert(self, listener, *args, **kwargs):
-        self.task_utils.mark_listener_prov_status_error(
-            listener[constants.LISTENER_ID])
+        try:
+            self.task_utils.mark_listener_prov_status_error(
+                listener[constants.LISTENER_ID])
+        except Exception:
+            # Catching and skipping, errors are already reported by task_utils
+            # and we want to ensure that mark_loadbalancer_prov_status_active
+            # is called to unlock the LB (it will pass or it will fail after a
+            # very long timeout)
+            pass
         self.task_utils.mark_loadbalancer_prov_status_active(
             listener[constants.LOADBALANCER_ID])
 
@@ -118,9 +146,16 @@ class ListenersToErrorOnRevertTask(BaseLifecycleTask):
         pass
 
     def revert(self, listeners, *args, **kwargs):
-        for listener in listeners:
-            self.task_utils.mark_listener_prov_status_error(
-                listener[constants.LISTENER_ID])
+        try:
+            for listener in listeners:
+                self.task_utils.mark_listener_prov_status_error(
+                    listener[constants.LISTENER_ID])
+        except Exception:
+            # Catching and skipping, errors are already reported by task_utils
+            # and we want to ensure that mark_loadbalancer_prov_status_active
+            # is called to unlock the LB (it will pass or it will fail after a
+            # very long timeout)
+            pass
         self.task_utils.mark_loadbalancer_prov_status_active(
             listeners[0][constants.LOADBALANCER_ID])
 
@@ -154,12 +189,19 @@ class MemberToErrorOnRevertTask(BaseLifecycleTask):
 
     def revert(self, member, listeners, loadbalancer, pool_id, *args,
                **kwargs):
-        self.task_utils.mark_member_prov_status_error(
-            member[constants.MEMBER_ID])
-        for listener in listeners:
-            self.task_utils.mark_listener_prov_status_active(
-                listener[constants.LISTENER_ID])
-        self.task_utils.mark_pool_prov_status_active(pool_id)
+        try:
+            self.task_utils.mark_member_prov_status_error(
+                member[constants.MEMBER_ID])
+            for listener in listeners:
+                self.task_utils.mark_listener_prov_status_active(
+                    listener[constants.LISTENER_ID])
+            self.task_utils.mark_pool_prov_status_active(pool_id)
+        except Exception:
+            # Catching and skipping, errors are already reported by task_utils
+            # and we want to ensure that mark_loadbalancer_prov_status_active
+            # is called to unlock the LB (it will pass or it will fail after a
+            # very long timeout)
+            pass
         self.task_utils.mark_loadbalancer_prov_status_active(
             loadbalancer[constants.LOADBALANCER_ID])
 
@@ -172,13 +214,20 @@ class MembersToErrorOnRevertTask(BaseLifecycleTask):
 
     def revert(self, members, listeners, loadbalancer, pool_id, *args,
                **kwargs):
-        for m in members:
-            self.task_utils.mark_member_prov_status_error(
-                m[constants.MEMBER_ID])
-        for listener in listeners:
-            self.task_utils.mark_listener_prov_status_active(
-                listener[constants.LISTENER_ID])
-        self.task_utils.mark_pool_prov_status_active(pool_id)
+        try:
+            for m in members:
+                self.task_utils.mark_member_prov_status_error(
+                    m[constants.MEMBER_ID])
+            for listener in listeners:
+                self.task_utils.mark_listener_prov_status_active(
+                    listener[constants.LISTENER_ID])
+            self.task_utils.mark_pool_prov_status_active(pool_id)
+        except Exception:
+            # Catching and skipping, errors are already reported by task_utils
+            # and we want to ensure that mark_loadbalancer_prov_status_active
+            # is called to unlock the LB (it will pass or it will fail after a
+            # very long timeout)
+            pass
         self.task_utils.mark_loadbalancer_prov_status_active(
             loadbalancer[constants.LOADBALANCER_ID])
 
@@ -190,9 +239,16 @@ class PoolToErrorOnRevertTask(BaseLifecycleTask):
         pass
 
     def revert(self, pool_id, listeners, loadbalancer, *args, **kwargs):
-        self.task_utils.mark_pool_prov_status_error(pool_id)
+        try:
+            self.task_utils.mark_pool_prov_status_error(pool_id)
+            for listener in listeners:
+                self.task_utils.mark_listener_prov_status_active(
+                    listener[constants.LISTENER_ID])
+        except Exception:
+            # Catching and skipping, errors are already reported by task_utils
+            # and we want to ensure that mark_loadbalancer_prov_status_active
+            # is called to unlock the LB (it will pass or it will fail after a
+            # very long timeout)
+            pass
         self.task_utils.mark_loadbalancer_prov_status_active(
             loadbalancer[constants.LOADBALANCER_ID])
-        for listener in listeners:
-            self.task_utils.mark_listener_prov_status_active(
-                listener[constants.LISTENER_ID])
