@@ -14,6 +14,7 @@
 from unittest import mock
 
 from oslo_utils import uuidutils
+import tenacity
 
 from octavia.common import constants
 from octavia.controller.worker import task_utils as task_utilities
@@ -183,7 +184,13 @@ class TestTaskUtils(base.TestCase):
 
     @mock.patch('octavia.db.api.session')
     @mock.patch('octavia.db.repositories.LoadBalancerRepository.update')
+    @mock.patch('tenacity.nap.time')
+    # mock LOG so we don't fill the console with log messages from
+    # tenacity.retry
+    @mock.patch('octavia.controller.worker.task_utils.LOG')
     def test_mark_loadbalancer_prov_status_active(self,
+                                                  mock_LOG,
+                                                  mock_time,
                                                   mock_lb_repo_update,
                                                   mock_get_session):
 
@@ -202,14 +209,42 @@ class TestTaskUtils(base.TestCase):
         mock_lb_repo_update.reset_mock()
         mock_get_session.side_effect = Exception('fail')
 
-        self.task_utils.mark_loadbalancer_prov_status_active(
+        self.assertRaises(
+            tenacity.RetryError,
+            self.task_utils.mark_loadbalancer_prov_status_active,
             self.LOADBALANCER_ID)
 
         self.assertFalse(mock_lb_repo_update.called)
 
+        # Exceptions then happy path
+        mock_get_session.reset_mock(side_effect=True)
+        mock_lb_repo_update.reset_mock()
+
+        mock_session = mock_get_session()
+        mock_session_context = mock_session.begin().__enter__()
+        mock_get_session.side_effect = [
+            Exception('fail'),
+            Exception('fail'),
+            Exception('fail'),
+            mock_session]
+
+        self.task_utils.mark_loadbalancer_prov_status_active(
+            self.LOADBALANCER_ID)
+
+        mock_lb_repo_update.assert_called_once_with(
+            mock_session_context,
+            id=self.LOADBALANCER_ID,
+            provisioning_status=constants.ACTIVE)
+
     @mock.patch('octavia.db.api.session')
     @mock.patch('octavia.db.repositories.LoadBalancerRepository.update')
+    @mock.patch('tenacity.nap.time')
+    # mock LOG so we don't fill the console with log messages from
+    # tenacity.retry
+    @mock.patch('octavia.controller.worker.task_utils.LOG')
     def test_mark_loadbalancer_prov_status_error(self,
+                                                 mock_LOG,
+                                                 mock_time,
                                                  mock_lb_repo_update,
                                                  mock_get_session):
 
@@ -228,10 +263,31 @@ class TestTaskUtils(base.TestCase):
         mock_lb_repo_update.reset_mock()
         mock_get_session.side_effect = Exception('fail')
 
+        self.assertRaises(tenacity.RetryError,
+                          self.task_utils.mark_loadbalancer_prov_status_error,
+                          self.LOADBALANCER_ID)
+
+        self.assertFalse(mock_lb_repo_update.called)
+
+        # Exceptions then happy path
+        mock_get_session.reset_mock(side_effect=True)
+        mock_lb_repo_update.reset_mock()
+
+        mock_session = mock_get_session()
+        mock_session_context = mock_session.begin().__enter__()
+        mock_get_session.side_effect = [
+            Exception('fail'),
+            Exception('fail'),
+            Exception('fail'),
+            mock_session]
+
         self.task_utils.mark_loadbalancer_prov_status_error(
             self.LOADBALANCER_ID)
 
-        self.assertFalse(mock_lb_repo_update.called)
+        mock_lb_repo_update.assert_called_once_with(
+            mock_session_context,
+            id=self.LOADBALANCER_ID,
+            provisioning_status=constants.ERROR)
 
     @mock.patch('octavia.db.api.session')
     @mock.patch('octavia.db.repositories.MemberRepository.update')
