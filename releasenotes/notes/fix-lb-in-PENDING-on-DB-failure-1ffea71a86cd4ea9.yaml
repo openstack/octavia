@@ -1,0 +1,7 @@
+---
+fixes:
+  - |
+    Fixed an issue with load balancers stuck in a ``PENDING_*`` state during
+    database outages. Now when a task fails in Octavia, it retries to update
+    the ``provisioning_status`` of the load balancer until the database is back
+    (or it gives up after a really long timeout - around 2h45)
