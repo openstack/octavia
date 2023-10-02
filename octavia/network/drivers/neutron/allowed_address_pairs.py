@@ -364,12 +364,13 @@ class AllowedAddressPairsDriver(neutron_base.BaseNeutronDriver):
         """
         try:
             for amphora in vip.load_balancer.amphorae:
-                try:
-                    self.network_proxy.delete_port(amphora.vrrp_port_id)
-                except os_exceptions.ResourceNotFound:
-                    LOG.debug(
-                        'VIP instance port %s already deleted. Skipping.',
-                        amphora.vrrp_port_id)
+                if amphora.vrrp_port_id:
+                    try:
+                        self.network_proxy.delete_port(amphora.vrrp_port_id)
+                    except os_exceptions.ResourceNotFound:
+                        LOG.debug(
+                            'VIP instance port %s already deleted. Skipping.',
+                            amphora.vrrp_port_id)
         except AttributeError as ex:
             LOG.warning(f"Cannot delete port from amphorae. Object does not "
                         f"exist ({ex!r})")
