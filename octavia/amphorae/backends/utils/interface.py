@@ -354,11 +354,10 @@ class InterfaceController(object):
                               **rule)
 
     def _scripts_up(self, interface, current_state):
-        if current_state == consts.IFACE_DOWN:
-            for script in interface.scripts[consts.IFACE_UP]:
-                LOG.debug("%s: Running command '%s'",
-                          interface.name, script[consts.COMMAND])
-                subprocess.check_output(script[consts.COMMAND].split())
+        for script in interface.scripts[consts.IFACE_UP]:
+            LOG.debug("%s: Running command '%s'",
+                      interface.name, script[consts.COMMAND])
+            subprocess.check_output(script[consts.COMMAND].split())
 
     def down(self, interface):
         LOG.info("Setting interface %s down", interface.name)
