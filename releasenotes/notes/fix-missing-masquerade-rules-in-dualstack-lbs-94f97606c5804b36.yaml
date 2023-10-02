@@ -1,0 +1,6 @@
+---
+fixes:
+  - |
+    Fixed an issue when using UDP listeners in dual-stack (IPv4 and IPv6) load
+    balancers, some masquerade rules needed by UDP were not correctly set on the
+    member interfaces.
