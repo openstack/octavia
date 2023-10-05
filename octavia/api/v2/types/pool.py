@@ -106,7 +106,7 @@ class PoolResponse(BasePoolType):
         if cls._full_response():
             del pool.loadbalancers
             member_model = member.MemberFullResponse
-            if pool.healthmonitor:
+            if data_model.health_monitor:
                 pool.healthmonitor = (
                     health_monitor.HealthMonitorFullResponse
                     .from_data_model(data_model.health_monitor))
