@@ -58,7 +58,6 @@ extensions = [
     'sphinx.ext.todo',
     'sphinx.ext.viewcode',
     'sphinxcontrib.actdiag',
-    'sphinxcontrib.seqdiag',
     'sphinxcontrib.nwdiag',
     'sphinx.ext.graphviz',
     'sphinx_feature_classification.support_matrix',

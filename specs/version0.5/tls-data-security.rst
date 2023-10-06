@@ -31,7 +31,11 @@ The initial supported implementation for TLS related functions will be
 Barbican, but the interface will be generic such that other implementations
 could be created later.
 
-.. seqdiag:: tls-data-security-1.diag
+.. Note:: a sequence diagram describing the communication between the User,
+          Octavia, Barbican and the Amphora API was removed, the diagram is
+          still available in the `documentation of older stable branches
+          <https://docs.openstack.org/octavia/latest/contributor/specs/version0.5/tls-data-security.html>`_.
+
 
 1. Create a CertificateManager interface for storing and retrieving certificate
 and private key pairs (and intermediate certs / private key passphrase).
@@ -50,7 +54,11 @@ case of invalid TLS data, we will reject the request with a 400 (if it is an
 initial create) or else put the LB into ERROR status (if it is on a failover
 event or during some other non-interactive scenario).
 
-.. seqdiag:: tls-data-security-2.diag
+.. Note:: a sequence diagram describing the communication between the Octavia
+          components was removed, the diagram is still available in the
+          `documentation of older stable branches
+          <https://docs.openstack.org/octavia/latest/contributor/specs/version0.5/tls-data-security.html>`_.
+
 
 2. Create a CertificateGenerator interface to generate certificates from CSRs.
 When the controller creates an Amphora, it will generate a private key and a

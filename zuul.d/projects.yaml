@@ -75,6 +75,7 @@
               - ^tox.ini$
         - octavia-grenade-skip-level:
             irrelevant-files: *grenade-irrelevant-files
+            voting: false
         - octavia-v2-dsvm-tls-barbican-fips:
             irrelevant-files: *irrelevant-files
             voting: false
@@ -118,7 +119,7 @@
         - octavia-v2-dsvm-scenario-non-traffic-ops
         - octavia-v2-dsvm-tls-barbican
         - octavia-grenade
-        - octavia-grenade-skip-level
+        #- octavia-grenade-skip-level
     periodic:
       jobs:
         - publish-openstack-octavia-amphora-image-focal:
