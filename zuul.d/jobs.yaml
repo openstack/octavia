@@ -93,7 +93,7 @@
       Grenade job that skips a release, validating that deployers can skip
       specific releases as prescribed by our process.
     parent: grenade-skip-level
-    nodeset: octavia-single-node-ubuntu-focal
+    nodeset: octavia-single-node-ubuntu-jammy
     required-projects: *o-grenade-required-projects
     vars: *o-grenade-vars
 
