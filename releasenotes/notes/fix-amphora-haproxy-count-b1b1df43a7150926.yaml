@@ -1,0 +1,5 @@
+---
+fixes:
+  - |
+    Fix amphora haproxy_count to return the number of
+    haproxy processes that are running.
