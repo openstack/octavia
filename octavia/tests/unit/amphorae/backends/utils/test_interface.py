@@ -714,7 +714,9 @@ class TestInterface(base.TestCase):
                       table=254,
                       family=socket.AF_INET)])
 
-        mock_check_output.assert_not_called()
+        mock_check_output.assert_has_calls([
+            mock.call(["post-up", "eth1"])
+        ])
 
     @mock.patch('pyroute2.IPRoute.rule')
     @mock.patch('pyroute2.IPRoute.route')
