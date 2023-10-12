@@ -532,6 +532,17 @@ controller_worker_opts = [
     cfg.IntOpt('amphora_delete_retry_interval', default=5,
                help=_('Time, in seconds, between amphora delete retries.')),
     cfg.BoolOpt('event_notifications', default=True),
+    # 2000 attempts is around 2h45 with the default settings
+    cfg.IntOpt('db_commit_retry_attempts', default=2000,
+               help=_('The number of times the database action will be '
+                      'attempted.')),
+    cfg.IntOpt('db_commit_retry_initial_delay', default=1,
+               help=_('The initial delay before a retry attempt.')),
+    cfg.IntOpt('db_commit_retry_backoff', default=1,
+               help=_('The time to backoff retry attempts.')),
+    cfg.IntOpt('db_commit_retry_max', default=5,
+               help=_('The maximum amount of time to wait between retry '
+                      'attempts.')),
 ]
 
 task_flow_opts = [

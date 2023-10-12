@@ -73,6 +73,14 @@ configuration from successfully completing. In this case the load balancer is
 continuing to process traffic through the load balancer, but might not have
 applied the latest configuration updates yet.
 
+A load balancer in a PENDING provisioning status is immutable, it cannot be
+updated or deleted by another process, this PENDING status acts as a lock on
+the resource.
+If a database outage occurs while a load balancer is deleted, created or
+updated, the Octavia control plane will try to remove the PENDING status and
+set it to ERROR during a long period of time (around 2h45min with the default
+settings), to prevent the resource from remaining immutable.
+
 Monitoring load balancer functionality
 --------------------------------------
 
