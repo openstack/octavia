@@ -319,6 +319,14 @@ class TestHealthDaemon(base.TestCase):
         stats_query_mock.show_stat.assert_called_once_with()
         stats_query_mock.get_pool_status.assert_called_once_with()
 
+    @mock.patch('octavia.amphorae.backends.utils.haproxy_query.HAProxyQuery')
+    def test_get_stats_exception(self, mock_query):
+        mock_query.side_effect = Exception('Boom')
+
+        stats, pool_status = health_daemon.get_stats('TEST')
+        self.assertEqual([], stats)
+        self.assertEqual({}, pool_status)
+
     @mock.patch('octavia.amphorae.backends.agent.api_server.'
                 'util.is_lb_running')
     @mock.patch('octavia.amphorae.backends.health_daemon.'
