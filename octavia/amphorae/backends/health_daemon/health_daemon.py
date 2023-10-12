@@ -157,9 +157,15 @@ def run_sender(cmd_queue):
 
 
 def get_stats(stat_sock_file):
-    stats_query = haproxy_query.HAProxyQuery(stat_sock_file)
-    stats = stats_query.show_stat()
-    pool_status = stats_query.get_pool_status()
+    try:
+        stats_query = haproxy_query.HAProxyQuery(stat_sock_file)
+        stats = stats_query.show_stat()
+        pool_status = stats_query.get_pool_status()
+    except Exception as e:
+        LOG.warning('Unable to query the HAProxy stats (%s) due to: %s',
+                    stat_sock_file, str(e))
+        # Return empty lists so that the heartbeat will still be sent
+        return [], {}
     return stats, pool_status
 
 
