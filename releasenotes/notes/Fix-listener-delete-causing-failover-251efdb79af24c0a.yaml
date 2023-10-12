@@ -1,0 +1,5 @@
+---
+fixes:
+  - |
+    Fixed an issue when deleting the last listener from a load balancer may
+    trigger a failover.
