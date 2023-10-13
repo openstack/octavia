@@ -1,0 +1,6 @@
+---
+fixes:
+  - |
+    Fixed a bug that prevented the amphora from being updated by the Amphora
+    Configure API call, the API call was succesfull but the internal flow for
+    updating it failed.
