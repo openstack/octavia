@@ -1244,23 +1244,22 @@ class AmphoraRepository(BaseRepository):
         :param amphora_id: The amphora id to list the load balancers from
         :returns: [octavia.common.data_model]
         """
-        with session.begin():
-            db_lb = (
-                # Get LB records
-                session.query(models.LoadBalancer)
-                # Joined to amphora records
-                .filter(models.LoadBalancer.id ==
-                        models.Amphora.load_balancer_id)
-                # For just this amphora
-                .filter(models.Amphora.id == amphora_id)
-                # Where the amphora is not DELETED
-                .filter(models.Amphora.status != consts.DELETED)
-                # And the LB is also not DELETED
-                .filter(models.LoadBalancer.provisioning_status !=
-                        consts.DELETED)).first()
-            if db_lb:
-                return db_lb.to_data_model()
-            return None
+        db_lb = (
+            # Get LB records
+            session.query(models.LoadBalancer)
+            # Joined to amphora records
+            .filter(models.LoadBalancer.id ==
+                    models.Amphora.load_balancer_id)
+            # For just this amphora
+            .filter(models.Amphora.id == amphora_id)
+            # Where the amphora is not DELETED
+            .filter(models.Amphora.status != consts.DELETED)
+            # And the LB is also not DELETED
+            .filter(models.LoadBalancer.provisioning_status !=
+                    consts.DELETED)).first()
+        if db_lb:
+            return db_lb.to_data_model()
+        return None
 
     def get_cert_expiring_amphora(self, session):
         """Retrieves an amphora whose cert is close to expiring..
