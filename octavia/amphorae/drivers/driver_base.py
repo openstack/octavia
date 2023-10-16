@@ -14,6 +14,9 @@
 # under the License.
 
 import abc
+from typing import Optional
+
+from octavia.db import models as db_models
 
 
 class AmphoraLoadBalancerDriver(object, metaclass=abc.ABCMeta):
@@ -229,6 +232,19 @@ class AmphoraLoadBalancerDriver(object, metaclass=abc.ABCMeta):
                              req_read_timeout, conn_max_retries,
                              conn_retry_interval
         :type timeout_dict: dict
+        """
+
+    @abc.abstractmethod
+    def check(self, amphora: db_models.Amphora,
+              timeout_dict: Optional[dict] = None):
+        """Check connectivity to the amphora.
+
+        :param amphora: The amphora to query.
+        :param timeout_dict: Dictionary of timeout values for calls to the
+                             amphora. May contain: req_conn_timeout,
+                             req_read_timeout, conn_max_retries,
+                             conn_retry_interval
+        :raises TimeOutException: The amphora didn't reply
         """
 
 
