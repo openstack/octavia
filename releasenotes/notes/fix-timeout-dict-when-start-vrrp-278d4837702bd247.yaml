@@ -1,0 +1,6 @@
+---
+fixes:
+  - |
+    Fixed a too long timeout when attempting to start the VRRP service in an
+    unreachable amphora during a failover. A specific shorter timeout should be
+    used during the failovers.
