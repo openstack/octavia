@@ -306,7 +306,8 @@ class AmphoraFlows(object):
         return delete_amphora_flow
 
     def get_vrrp_subflow(self, prefix, timeout_dict=None,
-                         create_vrrp_group=True):
+                         create_vrrp_group=True,
+                         get_amphorae_status=True):
         sf_name = prefix + '-' + constants.GET_VRRP_SUBFLOW
         vrrp_subflow = linear_flow.Flow(sf_name)
 
@@ -322,6 +323,17 @@ class AmphoraFlows(object):
             requires=constants.LOADBALANCER_ID,
             provides=constants.AMPHORAE_NETWORK_CONFIG))
 
+        if get_amphorae_status:
+            # Get the amphorae_status dict in case the caller hasn't fetched
+            # it yet.
+            vrrp_subflow.add(
+                amphora_driver_tasks.AmphoraeGetConnectivityStatus(
+                    name=constants.AMPHORAE_GET_CONNECTIVITY_STATUS,
+                    requires=constants.AMPHORAE,
+                    rebind={constants.NEW_AMPHORA_ID: constants.AMPHORA_ID},
+                    inject={constants.TIMEOUT_DICT: timeout_dict},
+                    provides=constants.AMPHORAE_STATUS))
+
         # VRRP update needs to be run on all amphora to update
         # their peer configurations. So parallelize this with an
         # unordered subflow.
@@ -332,7 +344,7 @@ class AmphoraFlows(object):
 
         amp_0_subflow.add(amphora_driver_tasks.AmphoraIndexUpdateVRRPInterface(
             name=sf_name + '-0-' + constants.AMP_UPDATE_VRRP_INTF,
-            requires=constants.AMPHORAE,
+            requires=(constants.AMPHORAE, constants.AMPHORAE_STATUS),
             inject={constants.AMPHORA_INDEX: 0,
                     constants.TIMEOUT_DICT: timeout_dict},
             provides=constants.AMP_VRRP_INT))
@@ -341,13 +353,13 @@ class AmphoraFlows(object):
             name=sf_name + '-0-' + constants.AMP_VRRP_UPDATE,
             requires=(constants.LOADBALANCER_ID,
                       constants.AMPHORAE_NETWORK_CONFIG, constants.AMPHORAE,
-                      constants.AMP_VRRP_INT),
+                      constants.AMPHORAE_STATUS, constants.AMP_VRRP_INT),
             inject={constants.AMPHORA_INDEX: 0,
                     constants.TIMEOUT_DICT: timeout_dict}))
 
         amp_0_subflow.add(amphora_driver_tasks.AmphoraIndexVRRPStart(
             name=sf_name + '-0-' + constants.AMP_VRRP_START,
-            requires=constants.AMPHORAE,
+            requires=(constants.AMPHORAE, constants.AMPHORAE_STATUS),
             inject={constants.AMPHORA_INDEX: 0,
                     constants.TIMEOUT_DICT: timeout_dict}))
 
@@ -355,7 +367,7 @@ class AmphoraFlows(object):
 
         amp_1_subflow.add(amphora_driver_tasks.AmphoraIndexUpdateVRRPInterface(
             name=sf_name + '-1-' + constants.AMP_UPDATE_VRRP_INTF,
-            requires=constants.AMPHORAE,
+            requires=(constants.AMPHORAE, constants.AMPHORAE_STATUS),
             inject={constants.AMPHORA_INDEX: 1,
                     constants.TIMEOUT_DICT: timeout_dict},
             provides=constants.AMP_VRRP_INT))
@@ -364,12 +376,12 @@ class AmphoraFlows(object):
             name=sf_name + '-1-' + constants.AMP_VRRP_UPDATE,
             requires=(constants.LOADBALANCER_ID,
                       constants.AMPHORAE_NETWORK_CONFIG, constants.AMPHORAE,
-                      constants.AMP_VRRP_INT),
+                      constants.AMPHORAE_STATUS, constants.AMP_VRRP_INT),
             inject={constants.AMPHORA_INDEX: 1,
                     constants.TIMEOUT_DICT: timeout_dict}))
         amp_1_subflow.add(amphora_driver_tasks.AmphoraIndexVRRPStart(
             name=sf_name + '-1-' + constants.AMP_VRRP_START,
-            requires=constants.AMPHORAE,
+            requires=(constants.AMPHORAE, constants.AMPHORAE_STATUS),
             inject={constants.AMPHORA_INDEX: 1,
                     constants.TIMEOUT_DICT: timeout_dict}))
 
@@ -627,6 +639,14 @@ class AmphoraFlows(object):
             constants.CONN_RETRY_INTERVAL:
                 CONF.haproxy_amphora.active_connection_rety_interval}
 
+        failover_amp_flow.add(
+            amphora_driver_tasks.AmphoraeGetConnectivityStatus(
+                name=constants.AMPHORAE_GET_CONNECTIVITY_STATUS,
+                requires=constants.AMPHORAE,
+                rebind={constants.NEW_AMPHORA_ID: constants.AMPHORA_ID},
+                inject={constants.TIMEOUT_DICT: timeout_dict},
+                provides=constants.AMPHORAE_STATUS))
+
         # Listeners update needs to be run on all amphora to update
         # their peer configurations. So parallelize this with an
         # unordered subflow.
@@ -637,7 +657,8 @@ class AmphoraFlows(object):
             update_amps_subflow.add(
                 amphora_driver_tasks.AmphoraIndexListenerUpdate(
                     name=str(amp_index) + '-' + constants.AMP_LISTENER_UPDATE,
-                    requires=(constants.LOADBALANCER, constants.AMPHORAE),
+                    requires=(constants.LOADBALANCER, constants.AMPHORAE,
+                              constants.AMPHORAE_STATUS),
                     inject={constants.AMPHORA_INDEX: amp_index,
                             constants.TIMEOUT_DICT: timeout_dict}))
 
@@ -647,7 +668,8 @@ class AmphoraFlows(object):
         if lb_amp_count == 2:
             failover_amp_flow.add(
                 self.get_vrrp_subflow(constants.GET_VRRP_SUBFLOW,
-                                      timeout_dict, create_vrrp_group=False))
+                                      timeout_dict, create_vrrp_group=False,
+                                      get_amphorae_status=False))
 
         # Reload the listener. This needs to be done here because
         # it will create the required haproxy check scripts for
@@ -663,7 +685,8 @@ class AmphoraFlows(object):
                 amphora_driver_tasks.AmphoraIndexListenersReload(
                     name=(str(amp_index) + '-' +
                           constants.AMPHORA_RELOAD_LISTENER),
-                    requires=(constants.LOADBALANCER, constants.AMPHORAE),
+                    requires=(constants.LOADBALANCER, constants.AMPHORAE,
+                              constants.AMPHORAE_STATUS),
                     inject={constants.AMPHORA_INDEX: amp_index,
                             constants.TIMEOUT_DICT: timeout_dict}))
 

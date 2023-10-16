@@ -1,0 +1,7 @@
+---
+fixes:
+  - |
+    Reduce the duration of the failovers of ACTIVE_STANDBY load balancers. Many
+    updates of an unreachable amphora may have been attempted during a
+    failover, now if an amphora is not reachable at the first update, the other
+    updates are skipped.
