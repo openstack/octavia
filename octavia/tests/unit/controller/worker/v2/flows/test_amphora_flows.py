@@ -390,10 +390,11 @@ class TestAmphoraFlows(base.TestCase):
 
         self.assertIn(constants.LOADBALANCER_ID, vrrp_subflow.requires)
         self.assertIn(constants.AMPHORAE, vrrp_subflow.requires)
+        self.assertIn(constants.AMPHORA_ID, vrrp_subflow.requires)
         self.assertIn(constants.AMPHORAE_STATUS, vrrp_subflow.requires)
 
         self.assertEqual(2, len(vrrp_subflow.provides))
-        self.assertEqual(3, len(vrrp_subflow.requires))
+        self.assertEqual(4, len(vrrp_subflow.requires))
 
     def test_get_vrrp_subflow_dont_create_vrrp_group(
             self, mock_get_net_driver):

@@ -103,7 +103,7 @@ class AmphoraIndexListenerUpdate(BaseAmphoraTask):
     """Task to update the listeners on one amphora."""
 
     def execute(self, loadbalancer, amphora_index, amphorae,
-                amphorae_status: dict, timeout_dict=()):
+                amphorae_status: dict, new_amphora_id: str, timeout_dict=()):
         # Note, we don't want this to cause a revert as it may be used
         # in a failover flow with both amps failing. Skip it and let
         # health manager fix it.
@@ -130,8 +130,11 @@ class AmphoraIndexListenerUpdate(BaseAmphoraTask):
             LOG.error('Failed to update listeners on amphora %s. Skipping '
                       'this amphora as it is failing to update due to: %s',
                       amphora_id, str(e))
-            self.amphora_repo.update(db_apis.get_session(), amphora_id,
-                                     status=constants.ERROR)
+            # Update only the status of the newly created amphora during the
+            # failover
+            if amphora_id == new_amphora_id:
+                self.amphora_repo.update(db_apis.get_session(), amphora_id,
+                                         status=constants.ERROR)
 
 
 class ListenersUpdate(BaseAmphoraTask):
@@ -188,7 +191,7 @@ class AmphoraIndexListenersReload(BaseAmphoraTask):
     """Task to reload all listeners on an amphora."""
 
     def execute(self, loadbalancer, amphora_index, amphorae,
-                amphorae_status: dict, timeout_dict=None):
+                amphorae_status: dict, new_amphora_id: str, timeout_dict=None):
         """Execute listener reload routines for listeners on an amphora."""
         if amphorae is None:
             return
@@ -214,8 +217,11 @@ class AmphoraIndexListenersReload(BaseAmphoraTask):
                 LOG.warning('Failed to reload listeners on amphora %s. '
                             'Skipping this amphora as it is failing to '
                             'reload due to: %s', amphora_id, str(e))
-                self.amphora_repo.update(db_apis.get_session(), amphora_id,
-                                         status=constants.ERROR)
+                # Update only the status of the newly created amphora during
+                # the failover
+                if amphora_id == new_amphora_id:
+                    self.amphora_repo.update(db_apis.get_session(), amphora_id,
+                                             status=constants.ERROR)
 
 
 class ListenerDelete(BaseAmphoraTask):
@@ -456,7 +462,7 @@ class AmphoraIndexUpdateVRRPInterface(BaseAmphoraTask):
     """Task to get and update the VRRP interface device name from amphora."""
 
     def execute(self, amphora_index, amphorae, amphorae_status: dict,
-                timeout_dict=None):
+                new_amphora_id: str, timeout_dict=None):
         amphora_id = amphorae[amphora_index][constants.ID]
         amphora_status = amphorae_status.get(amphora_id, {})
         if amphora_status.get(constants.UNREACHABLE):
@@ -476,8 +482,11 @@ class AmphoraIndexUpdateVRRPInterface(BaseAmphoraTask):
             LOG.error('Failed to get amphora VRRP interface on amphora '
                       '%s. Skipping this amphora as it is failing due to: '
                       '%s', amphora_id, str(e))
-            self.amphora_repo.update(db_apis.get_session(), amphora_id,
-                                     status=constants.ERROR)
+            # Update only the status of the newly created amphora during the
+            # failover
+            if amphora_id == new_amphora_id:
+                self.amphora_repo.update(db_apis.get_session(), amphora_id,
+                                         status=constants.ERROR)
             return None
 
         self.amphora_repo.update(db_apis.get_session(), amphora_id,
@@ -520,7 +529,7 @@ class AmphoraIndexVRRPUpdate(BaseAmphoraTask):
 
     def execute(self, loadbalancer_id, amphorae_network_config, amphora_index,
                 amphorae, amphorae_status: dict, amp_vrrp_int: Optional[str],
-                timeout_dict=None):
+                new_amphora_id: str, timeout_dict=None):
         """Execute update_vrrp_conf."""
         # Note, we don't want this to cause a revert as it may be used
         # in a failover flow with both amps failing. Skip it and let
@@ -546,8 +555,11 @@ class AmphoraIndexVRRPUpdate(BaseAmphoraTask):
             LOG.error('Failed to update VRRP configuration amphora %s. '
                       'Skipping this amphora as it is failing to update due '
                       'to: %s', amphora_id, str(e))
-            self.amphora_repo.update(db_apis.get_session(), amphora_id,
-                                     status=constants.ERROR)
+            # Update only the status of the newly created amphora during the
+            # failover
+            if amphora_id == new_amphora_id:
+                self.amphora_repo.update(db_apis.get_session(), amphora_id,
+                                         status=constants.ERROR)
             return
         LOG.debug("Uploaded VRRP configuration of amphora %s.", amphora_id)
 
@@ -574,7 +586,7 @@ class AmphoraIndexVRRPStart(BaseAmphoraTask):
     """
 
     def execute(self, amphora_index, amphorae, amphorae_status: dict,
-                timeout_dict=None):
+                new_amphora_id: str, timeout_dict=None):
         # TODO(johnsom) Optimize this to use the dicts and not need the
         #               DB lookups
         amphora_id = amphorae[amphora_index][constants.ID]
@@ -591,8 +603,11 @@ class AmphoraIndexVRRPStart(BaseAmphoraTask):
             LOG.error('Failed to start VRRP on amphora %s. '
                       'Skipping this amphora as it is failing to start due '
                       'to: %s', amphora_id, str(e))
-            self.amphora_repo.update(db_apis.get_session(), amphora_id,
-                                     status=constants.ERROR)
+            # Update only the status of the newly created amphora during the
+            # failover
+            if amphora_id == new_amphora_id:
+                self.amphora_repo.update(db_apis.get_session(), amphora_id,
+                                         status=constants.ERROR)
             return
         LOG.debug("Started VRRP on amphora %s.",
                   amphorae[amphora_index][constants.ID])
