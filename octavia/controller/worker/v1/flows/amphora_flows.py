@@ -279,6 +279,7 @@ class AmphoraFlows(object):
         amp_0_subflow.add(amphora_driver_tasks.AmphoraIndexUpdateVRRPInterface(
             name=sf_name + '-0-' + constants.AMP_UPDATE_VRRP_INTF,
             requires=(constants.AMPHORAE, constants.AMPHORAE_STATUS),
+            rebind={constants.NEW_AMPHORA_ID: constants.AMPHORA_ID},
             inject={constants.AMPHORA_INDEX: 0,
                     constants.TIMEOUT_DICT: timeout_dict},
             provides=constants.AMP_VRRP_INT))
@@ -288,12 +289,14 @@ class AmphoraFlows(object):
             requires=(constants.LOADBALANCER_ID,
                       constants.AMPHORAE_NETWORK_CONFIG, constants.AMPHORAE,
                       constants.AMPHORAE_STATUS, constants.AMP_VRRP_INT),
+            rebind={constants.NEW_AMPHORA_ID: constants.AMPHORA_ID},
             inject={constants.AMPHORA_INDEX: 0,
                     constants.TIMEOUT_DICT: timeout_dict}))
 
         amp_0_subflow.add(amphora_driver_tasks.AmphoraIndexVRRPStart(
             name=sf_name + '-0-' + constants.AMP_VRRP_START,
             requires=(constants.AMPHORAE, constants.AMPHORAE_STATUS),
+            rebind={constants.NEW_AMPHORA_ID: constants.AMPHORA_ID},
             inject={constants.AMPHORA_INDEX: 0,
                     constants.TIMEOUT_DICT: timeout_dict}))
 
@@ -302,6 +305,7 @@ class AmphoraFlows(object):
         amp_1_subflow.add(amphora_driver_tasks.AmphoraIndexUpdateVRRPInterface(
             name=sf_name + '-1-' + constants.AMP_UPDATE_VRRP_INTF,
             requires=(constants.AMPHORAE, constants.AMPHORAE_STATUS),
+            rebind={constants.NEW_AMPHORA_ID: constants.AMPHORA_ID},
             inject={constants.AMPHORA_INDEX: 1,
                     constants.TIMEOUT_DICT: timeout_dict},
             provides=constants.AMP_VRRP_INT))
@@ -311,11 +315,13 @@ class AmphoraFlows(object):
             requires=(constants.LOADBALANCER_ID,
                       constants.AMPHORAE_NETWORK_CONFIG, constants.AMPHORAE,
                       constants.AMPHORAE_STATUS, constants.AMP_VRRP_INT),
+            rebind={constants.NEW_AMPHORA_ID: constants.AMPHORA_ID},
             inject={constants.AMPHORA_INDEX: 1,
                     constants.TIMEOUT_DICT: timeout_dict}))
         amp_1_subflow.add(amphora_driver_tasks.AmphoraIndexVRRPStart(
             name=sf_name + '-1-' + constants.AMP_VRRP_START,
             requires=(constants.AMPHORAE, constants.AMPHORAE_STATUS),
+            rebind={constants.NEW_AMPHORA_ID: constants.AMPHORA_ID},
             inject={constants.AMPHORA_INDEX: 1,
                     constants.TIMEOUT_DICT: timeout_dict}))
 
@@ -583,6 +589,7 @@ class AmphoraFlows(object):
                     name=str(amp_index) + '-' + constants.AMP_LISTENER_UPDATE,
                     requires=(constants.LOADBALANCER, constants.AMPHORAE,
                               constants.AMPHORAE_STATUS),
+                    rebind={constants.NEW_AMPHORA_ID: constants.AMPHORA_ID},
                     inject={constants.AMPHORA_INDEX: amp_index,
                             constants.TIMEOUT_DICT: timeout_dict}))
 
@@ -611,6 +618,7 @@ class AmphoraFlows(object):
                           constants.AMPHORA_RELOAD_LISTENER),
                     requires=(constants.LOADBALANCER, constants.AMPHORAE,
                               constants.AMPHORAE_STATUS),
+                    rebind={constants.NEW_AMPHORA_ID: constants.AMPHORA_ID},
                     inject={constants.AMPHORA_INDEX: amp_index,
                             constants.TIMEOUT_DICT: timeout_dict}))
 
