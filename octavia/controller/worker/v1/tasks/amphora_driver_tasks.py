@@ -12,6 +12,8 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 #
+from typing import List
+from typing import Optional
 
 from cryptography import fernet
 from oslo_config import cfg
@@ -73,10 +75,18 @@ class AmphoraIndexListenerUpdate(BaseAmphoraTask):
     """Task to update the listeners on one amphora."""
 
     def execute(self, loadbalancer, amphora_index, amphorae,
-                timeout_dict=None):
+                amphorae_status: dict, timeout_dict=None):
         # Note, we don't want this to cause a revert as it may be used
         # in a failover flow with both amps failing. Skip it and let
         # health manager fix it.
+
+        amphora_id = amphorae[amphora_index].id
+        amphora_status = amphorae_status.get(amphora_id, {})
+        if amphora_status.get(constants.UNREACHABLE):
+            LOG.warning("Skipping listener update because amphora %s "
+                        "is not reachable.", amphora_id)
+            return
+
         try:
             # Make sure we have a fresh load balancer object
             loadbalancer = self.loadbalancer_repo.get(db_apis.get_session(),
@@ -84,7 +94,6 @@ class AmphoraIndexListenerUpdate(BaseAmphoraTask):
             self.amphora_driver.update_amphora_listeners(
                 loadbalancer, amphorae[amphora_index], timeout_dict)
         except Exception as e:
-            amphora_id = amphorae[amphora_index].id
             LOG.error('Failed to update listeners on amphora %s. Skipping '
                       'this amphora as it is failing to update due to: %s',
                       amphora_id, str(e))
@@ -129,14 +138,23 @@ class AmphoraIndexListenersReload(BaseAmphoraTask):
     """Task to reload all listeners on an amphora."""
 
     def execute(self, loadbalancer, amphora_index, amphorae,
-                timeout_dict=None):
+                amphorae_status: dict, timeout_dict=None):
         """Execute listener reload routines for listeners on an amphora."""
+        if amphorae is None:
+            return
+
+        amphora_id = amphorae[amphora_index].id
+        amphora_status = amphorae_status.get(amphora_id, {})
+        if amphora_status.get(constants.UNREACHABLE):
+            LOG.warning("Skipping listener reload because amphora %s "
+                        "is not reachable.", amphora_id)
+            return
+
         if loadbalancer.listeners:
             try:
                 self.amphora_driver.reload(
                     loadbalancer, amphorae[amphora_index], timeout_dict)
             except Exception as e:
-                amphora_id = amphorae[amphora_index].id
                 LOG.warning('Failed to reload listeners on amphora %s. '
                             'Skipping this amphora as it is failing to '
                             'reload due to: %s', amphora_id, str(e))
@@ -305,8 +323,15 @@ class AmphoraUpdateVRRPInterface(BaseAmphoraTask):
 class AmphoraIndexUpdateVRRPInterface(BaseAmphoraTask):
     """Task to get and update the VRRP interface device name from amphora."""
 
-    def execute(self, amphora_index, amphorae, timeout_dict=None):
+    def execute(self, amphora_index, amphorae, amphorae_status: dict,
+                timeout_dict=None):
         amphora_id = amphorae[amphora_index].id
+        amphora_status = amphorae_status.get(amphora_id, {})
+        if amphora_status.get(constants.UNREACHABLE):
+            LOG.warning("Skipping VRRP interface update because amphora %s "
+                        "is not reachable.", amphora_id)
+            return None
+
         try:
             interface = self.amphora_driver.get_interface_from_ip(
                 amphorae[amphora_index], amphorae[amphora_index].vrrp_ip,
@@ -354,14 +379,21 @@ class AmphoraIndexVRRPUpdate(BaseAmphoraTask):
     """Task to update the VRRP configuration of an amphora."""
 
     def execute(self, loadbalancer_id, amphorae_network_config, amphora_index,
-                amphorae, amp_vrrp_int, timeout_dict=None):
+                amphorae, amphorae_status: dict, amp_vrrp_int: Optional[str],
+                timeout_dict=None):
         """Execute update_vrrp_conf."""
-        loadbalancer = self.loadbalancer_repo.get(db_apis.get_session(),
-                                                  id=loadbalancer_id)
         # Note, we don't want this to cause a revert as it may be used
         # in a failover flow with both amps failing. Skip it and let
         # health manager fix it.
         amphora_id = amphorae[amphora_index].id
+        amphora_status = amphorae_status.get(amphora_id, {})
+        if amphora_status.get(constants.UNREACHABLE):
+            LOG.warning("Skipping VRRP configuration because amphora %s "
+                        "is not reachable.", amphora_id)
+            return
+
+        loadbalancer = self.loadbalancer_repo.get(db_apis.get_session(),
+                                                  id=loadbalancer_id)
         amphorae[amphora_index].vrrp_interface = amp_vrrp_int
         try:
             self.amphora_driver.update_vrrp_conf(
@@ -394,8 +426,15 @@ class AmphoraIndexVRRPStart(BaseAmphoraTask):
     This will reload keepalived if it is already running.
     """
 
-    def execute(self, amphora_index, amphorae, timeout_dict=None):
+    def execute(self, amphora_index, amphorae, amphorae_status: dict,
+                timeout_dict=None):
         amphora_id = amphorae[amphora_index].id
+        amphora_status = amphorae_status.get(amphora_id, {})
+        if amphora_status.get(constants.UNREACHABLE):
+            LOG.warning("Skipping VRRP start because amphora %s "
+                        "is not reachable.", amphora_id)
+            return
+
         try:
             self.amphora_driver.start_vrrp_service(amphorae[amphora_index],
                                                    timeout_dict)
@@ -451,3 +490,40 @@ class AmphoraConfigUpdate(BaseAmphoraTask):
             LOG.error('Amphora %s does not support agent configuration '
                       'update. Please update the amphora image for this '
                       'amphora. Skipping.', amphora.id)
+
+
+class AmphoraeGetConnectivityStatus(BaseAmphoraTask):
+    """Task that checks amphorae connectivity status.
+
+    Check and return the connectivity status of both amphorae in ACTIVE STANDBY
+    load balancers
+    """
+
+    def execute(self, amphorae: List[dict], new_amphora_id: str,
+                timeout_dict=None):
+        amphorae_status = {}
+
+        for amphora in amphorae:
+            amphora_id = amphora.id
+            amphorae_status[amphora_id] = {}
+
+            session = db_apis.get_session()
+            with session.begin():
+                db_amp = self.amphora_repo.get(session, id=amphora_id)
+
+            try:
+                # Verify if the amphora is reachable
+                self.amphora_driver.check(db_amp, timeout_dict=timeout_dict)
+            except Exception as e:
+                LOG.exception("Cannot get status for amphora %s",
+                              amphora_id)
+                # In case it fails and the tested amphora is the newly created
+                # amphora, it's not a normal error handling, re-raise the
+                # exception
+                if amphora_id == new_amphora_id:
+                    raise e
+                amphorae_status[amphora_id][constants.UNREACHABLE] = True
+            else:
+                amphorae_status[amphora_id][constants.UNREACHABLE] = False
+
+        return amphorae_status
