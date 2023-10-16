@@ -125,17 +125,37 @@ class TestAmphoraDriverTasks(base.TestCase):
                                        mock_amphora_repo_update):
 
         mock_lb_repo_get.return_value = _LB_mock
+        amphorae_status = {
+            _amphora_mock.id: {
+                constants.UNREACHABLE: False
+            }
+        }
+
         amp_list_update_obj = amphora_driver_tasks.AmphoraIndexListenerUpdate()
         amp_list_update_obj.execute(_load_balancer_mock, 0,
-                                    [_amphora_mock], self.timeout_dict)
+                                    [_amphora_mock], amphorae_status,
+                                    self.timeout_dict)
 
         mock_driver.update_amphora_listeners.assert_called_once_with(
             _LB_mock, _amphora_mock, self.timeout_dict)
 
+        # Unreachable amp
+        mock_driver.reset_mock()
+        amphorae_status = {
+            _amphora_mock.id: {
+                constants.UNREACHABLE: True
+            }
+        }
+        amp_list_update_obj.execute(_LB_mock, 0, [_amphora_mock],
+                                    amphorae_status, self.timeout_dict)
+        mock_driver.update_amphora_listeners.assert_not_called()
+
+        # Test exception
         mock_driver.update_amphora_listeners.side_effect = Exception('boom')
 
         amp_list_update_obj.execute(_load_balancer_mock, 0,
-                                    [_amphora_mock], self.timeout_dict)
+                                    [_amphora_mock], {},
+                                    self.timeout_dict)
 
         mock_amphora_repo_update.assert_called_once_with(
             _session_mock, AMP_ID, status=constants.ERROR)
@@ -217,20 +237,38 @@ class TestAmphoraDriverTasks(base.TestCase):
 
         # Test no listeners
         mock_lb.listeners = None
-        listeners_reload_obj.execute(mock_lb, 0, None)
+        listeners_reload_obj.execute(mock_lb, 0, None, {})
         mock_driver.reload.assert_not_called()
 
         # Test with listeners
+        amphorae_status = {
+            _amphora_mock.id: {
+                constants.UNREACHABLE: False
+            }
+        }
         mock_driver.start.reset_mock()
         mock_lb.listeners = [mock_listener]
         listeners_reload_obj.execute(mock_lb, 0, [amphora_mock],
+                                     amphorae_status,
                                      timeout_dict=self.timeout_dict)
         mock_driver.reload.assert_called_once_with(mock_lb, amphora_mock,
                                                    self.timeout_dict)
 
+        # Unreachable amp
+        amphorae_status = {
+            _amphora_mock.id: {
+                constants.UNREACHABLE: True
+            }
+        }
+        mock_driver.reload.reset_mock()
+        listeners_reload_obj.execute(mock_lb, 0, [_amphora_mock],
+                                     amphorae_status,
+                                     timeout_dict=self.timeout_dict)
+        mock_driver.reload.assert_not_called()
+
         # Test with reload exception
         mock_driver.reload.reset_mock()
-        listeners_reload_obj.execute(mock_lb, 0, [amphora_mock],
+        listeners_reload_obj.execute(mock_lb, 0, [amphora_mock], {},
                                      timeout_dict=self.timeout_dict)
         mock_driver.reload.assert_called_once_with(mock_lb, amphora_mock,
                                                    self.timeout_dict)
@@ -604,6 +642,11 @@ class TestAmphoraDriverTasks(base.TestCase):
         _LB_mock.amphorae = _amphorae_mock
         mock_driver.get_interface_from_ip.side_effect = [FAKE_INTERFACE,
                                                          Exception('boom')]
+        amphorae_status = {
+            _amphora_mock.id: {
+                constants.UNREACHABLE: False
+            }
+        }
 
         timeout_dict = {constants.CONN_MAX_RETRIES: CONN_MAX_RETRIES,
                         constants.CONN_RETRY_INTERVAL: CONN_RETRY_INTERVAL}
@@ -611,16 +654,27 @@ class TestAmphoraDriverTasks(base.TestCase):
         amphora_update_vrrp_interface_obj = (
             amphora_driver_tasks.AmphoraIndexUpdateVRRPInterface())
         amphora_update_vrrp_interface_obj.execute(
-            0, [_amphora_mock], timeout_dict)
+            0, [_amphora_mock], amphorae_status, timeout_dict)
         mock_driver.get_interface_from_ip.assert_called_once_with(
             _amphora_mock, _amphora_mock.vrrp_ip, timeout_dict=timeout_dict)
         mock_amphora_repo_update.assert_called_once_with(
             _session_mock, _amphora_mock.id, vrrp_interface=FAKE_INTERFACE)
 
+        # Unreachable amp
+        mock_driver.reset_mock()
+        amphorae_status = {
+            _amphora_mock.id: {
+                constants.UNREACHABLE: True
+            }
+        }
+        amphora_update_vrrp_interface_obj.execute(
+            0, [_amphora_mock], amphorae_status, timeout_dict)
+        mock_driver.get_interface_from_ip.assert_not_called()
+
         # Test with an exception
         mock_amphora_repo_update.reset_mock()
         amphora_update_vrrp_interface_obj.execute(
-            0, [_amphora_mock], timeout_dict)
+            0, [_amphora_mock], {}, timeout_dict)
         mock_amphora_repo_update.assert_called_once_with(
             _session_mock, _amphora_mock.id, status=constants.ERROR)
 
@@ -666,20 +720,41 @@ class TestAmphoraDriverTasks(base.TestCase):
         mock_driver.update_vrrp_conf.side_effect = [mock.DEFAULT,
                                                     Exception('boom')]
         mock_lb_get.return_value = _LB_mock
+        amphorae_status = {
+            _amphora_mock.id: {
+                constants.UNREACHABLE: False
+            }
+        }
+
         amphora_vrrp_update_obj = (
             amphora_driver_tasks.AmphoraIndexVRRPUpdate())
 
         amphora_vrrp_update_obj.execute(_LB_mock.id, amphorae_network_config,
-                                        0, [_amphora_mock], 'fakeint0',
+                                        0, [_amphora_mock], amphorae_status,
+                                        'fakeint0',
                                         timeout_dict=self.timeout_dict)
         mock_driver.update_vrrp_conf.assert_called_once_with(
             _LB_mock, amphorae_network_config, _amphora_mock,
             self.timeout_dict)
 
+        # Unreachable amp
+        amphorae_status = {
+            _amphora_mock.id: {
+                constants.UNREACHABLE: True
+            }
+        }
+        mock_amphora_repo_update.reset_mock()
+        mock_driver.update_vrrp_conf.reset_mock()
+        amphora_vrrp_update_obj.execute(LB_ID, amphorae_network_config,
+                                        0, [_amphora_mock], amphorae_status,
+                                        None)
+        mock_driver.update_vrrp_conf.assert_not_called()
+
         # Test with an exception
         mock_amphora_repo_update.reset_mock()
         amphora_vrrp_update_obj.execute(_LB_mock.id, amphorae_network_config,
-                                        0, [_amphora_mock], 'fakeint0')
+                                        0, [_amphora_mock], {},
+                                        'fakeint0')
         mock_amphora_repo_update.assert_called_once_with(
             _session_mock, _amphora_mock.id, status=constants.ERROR)
 
@@ -706,19 +781,36 @@ class TestAmphoraDriverTasks(base.TestCase):
                                       mock_listener_repo_get,
                                       mock_listener_repo_update,
                                       mock_amphora_repo_update):
+        amphorae_status = {
+            _amphora_mock.id: {
+                constants.UNREACHABLE: False
+            }
+        }
+
         amphora_vrrp_start_obj = (
             amphora_driver_tasks.AmphoraIndexVRRPStart())
         mock_driver.start_vrrp_service.side_effect = [mock.DEFAULT,
                                                       Exception('boom')]
 
-        amphora_vrrp_start_obj.execute(0, [_amphora_mock],
+        amphora_vrrp_start_obj.execute(0, [_amphora_mock], amphorae_status,
                                        timeout_dict=self.timeout_dict)
         mock_driver.start_vrrp_service.assert_called_once_with(
             _amphora_mock, self.timeout_dict)
 
+        # Unreachable amp
+        mock_driver.start_vrrp_service.reset_mock()
+        amphorae_status = {
+            _amphora_mock.id: {
+                constants.UNREACHABLE: True
+            }
+        }
+        amphora_vrrp_start_obj.execute(0, [_amphora_mock], amphorae_status,
+                                       timeout_dict=self.timeout_dict)
+        mock_driver.start_vrrp_service.assert_not_called()
+
         # Test with a start exception
         mock_driver.start_vrrp_service.reset_mock()
-        amphora_vrrp_start_obj.execute(0, [_amphora_mock],
+        amphora_vrrp_start_obj.execute(0, [_amphora_mock], {},
                                        timeout_dict=self.timeout_dict)
         mock_driver.start_vrrp_service.assert_called_once_with(
             _amphora_mock, self.timeout_dict)
@@ -790,3 +882,75 @@ class TestAmphoraDriverTasks(base.TestCase):
         self.assertRaises(driver_except.TimeOutException,
                           amp_config_update_obj.execute,
                           _amphora_mock, flavor)
+
+    @mock.patch('octavia.db.repositories.AmphoraRepository.get')
+    def test_amphorae_get_connectivity_status(self,
+                                              mock_amphora_repo_get,
+                                              mock_driver,
+                                              mock_generate_uuid,
+                                              mock_log,
+                                              mock_get_session,
+                                              mock_listener_repo_get,
+                                              mock_listener_repo_update,
+                                              mock_amphora_repo_update):
+        amphora1_mock = mock.MagicMock()
+        amphora1_mock.id = 'id1'
+        amphora2_mock = mock.MagicMock()
+        amphora2_mock.id = 'id2'
+        db_amphora1_mock = mock.Mock()
+        db_amphora2_mock = mock.Mock()
+
+        amp_get_connectivity_status = (
+            amphora_driver_tasks.AmphoraeGetConnectivityStatus())
+
+        # All amphorae reachable
+        mock_amphora_repo_get.side_effect = [
+            db_amphora1_mock,
+            db_amphora2_mock]
+        mock_driver.check.return_value = None
+
+        ret = amp_get_connectivity_status.execute(
+            [amphora1_mock, amphora2_mock],
+            amphora1_mock.id,
+            timeout_dict=self.timeout_dict)
+        mock_driver.check.assert_has_calls(
+            [mock.call(db_amphora1_mock, timeout_dict=self.timeout_dict),
+             mock.call(db_amphora2_mock, timeout_dict=self.timeout_dict)])
+        self.assertFalse(
+            ret[amphora1_mock.id][constants.UNREACHABLE])
+        self.assertFalse(
+            ret[amphora2_mock.id][constants.UNREACHABLE])
+
+        # amphora1 unreachable
+        mock_driver.check.reset_mock()
+        mock_amphora_repo_get.side_effect = [
+            db_amphora1_mock,
+            db_amphora2_mock]
+        mock_driver.check.side_effect = [
+            driver_except.TimeOutException, None]
+        self.assertRaises(driver_except.TimeOutException,
+                          amp_get_connectivity_status.execute,
+                          [amphora1_mock, amphora2_mock],
+                          amphora1_mock.id,
+                          timeout_dict=self.timeout_dict)
+        mock_driver.check.assert_called_with(
+            db_amphora1_mock, timeout_dict=self.timeout_dict)
+
+        # amphora2 unreachable
+        mock_driver.check.reset_mock()
+        mock_amphora_repo_get.side_effect = [
+            db_amphora1_mock,
+            db_amphora2_mock]
+        mock_driver.check.side_effect = [
+            None, driver_except.TimeOutException]
+        ret = amp_get_connectivity_status.execute(
+            [amphora1_mock, amphora2_mock],
+            amphora1_mock.id,
+            timeout_dict=self.timeout_dict)
+        mock_driver.check.assert_has_calls(
+            [mock.call(db_amphora1_mock, timeout_dict=self.timeout_dict),
+             mock.call(db_amphora2_mock, timeout_dict=self.timeout_dict)])
+        self.assertFalse(
+            ret[amphora1_mock.id][constants.UNREACHABLE])
+        self.assertTrue(
+            ret[amphora2_mock.id][constants.UNREACHABLE])
