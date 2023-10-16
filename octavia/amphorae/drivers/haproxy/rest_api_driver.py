@@ -111,6 +111,11 @@ class HaproxyAmphoraLoadBalancerDriver(
 
         return api_version
 
+    def check(self, amphora: db_models.Amphora,
+              timeout_dict: Optional[dict] = None):
+        """Check connectivity to the amphora."""
+        self._populate_amphora_api_version(amphora, timeout_dict)
+
     def update_amphora_listeners(self, loadbalancer, amphora,
                                  timeout_dict=None):
         """Update the amphora with a new configuration.
@@ -579,15 +584,15 @@ class HaproxyAmphoraLoadBalancerDriver(
                              req_read_timeout, conn_max_retries,
                              conn_retry_interval
         :type timeout_dict: dict
-        :returns: None if not found, the interface name string if found.
+        :returns: the interface name string if found.
+        :raises octavia.amphorae.drivers.haproxy.exceptions.NotFound:
+                No interface found on the amphora
+        :raises TimeOutException: The amphora didn't reply
         """
-        try:
-            self._populate_amphora_api_version(amphora, timeout_dict)
-            response_json = self.clients[amphora.api_version].get_interface(
-                amphora, ip_address, timeout_dict, log_error=False)
-            return response_json.get('interface', None)
-        except (exc.NotFound, driver_except.TimeOutException):
-            return None
+        self._populate_amphora_api_version(amphora, timeout_dict)
+        response_json = self.clients[amphora.api_version].get_interface(
+            amphora, ip_address, timeout_dict, log_error=False)
+        return response_json.get('interface', None)
 
 
 # Check a custom hostname
