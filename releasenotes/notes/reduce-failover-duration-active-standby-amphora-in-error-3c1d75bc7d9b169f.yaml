@@ -1,0 +1,5 @@
+---
+fixes:
+  - |
+    Reduce the duration of the failovers of ACTIVE_STANDBY load balancers when
+    both amphorae are unreachable.
