@@ -1,0 +1,6 @@
+---
+fixes:
+  - |
+    Fixed a bug in amphorav1, the subnet of a member that was being deleted was
+    not immediately unplugged from the amphora, but only during the next update
+    of the members.
