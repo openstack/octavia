@@ -12,6 +12,8 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
+from collections import namedtuple
+
 from oslo_log import log as logging
 from oslo_utils import uuidutils
 
@@ -21,6 +23,9 @@ from octavia.compute import compute_base as driver_base
 from octavia.network import data_models as network_models
 
 LOG = logging.getLogger(__name__)
+
+
+NoopServerGroup = namedtuple('ServerGroup', ['id'])
 
 
 class NoopManager(object):
@@ -76,6 +81,7 @@ class NoopManager(object):
         LOG.debug("Create Server Group %s no-op, name %s, policy %s ",
                   self.__class__.__name__, name, policy)
         self.computeconfig[(name, policy)] = (name, policy, 'create')
+        return NoopServerGroup(id=uuidutils.generate_uuid())
 
     def delete_server_group(self, server_group_id):
         LOG.debug("Delete Server Group %s no-op, id %s ",
