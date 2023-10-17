@@ -103,7 +103,8 @@ class NeutronAuth(object):
         neutron_endpoint = CONF.neutron.endpoint_override
         if neutron_endpoint is None:
             endpoint_data = sess.get_endpoint_data(
-                service_type='network', interface=CONF.neutron.endpoint_type,
+                service_type='network',
+                interface=CONF.neutron.valid_interfaces,
                 region_name=CONF.neutron.region_name)
             neutron_endpoint = endpoint_data.catalog_url
 
