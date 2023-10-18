@@ -586,7 +586,8 @@ RET_SCTP_LISTENER = {
 
 
 def sample_listener_loadbalancer_tuple(
-        topology=None, enabled=True, pools=None, additional_vips=False):
+        topology=None, enabled=True, vip=None, pools=None,
+        additional_vips=False):
     if topology and topology in ['ACTIVE_STANDBY', 'ACTIVE_ACTIVE']:
         more_amp = True
     else:
@@ -598,7 +599,7 @@ def sample_listener_loadbalancer_tuple(
     return in_lb(
         id='sample_loadbalancer_id_1',
         name='test-lb',
-        vip=sample_vip_tuple(),
+        vip=vip or sample_vip_tuple(),
         amphorae=[sample_amphora_tuple(role=constants.ROLE_MASTER),
                   sample_amphora_tuple(
                       id='sample_amphora_id_2',
@@ -618,13 +619,13 @@ def sample_listener_loadbalancer_tuple(
 
 
 def sample_lb_with_udp_listener_tuple(
-        topology=None, enabled=True, pools=None):
+        topology=None, enabled=True, listeners=None, pools=None):
     if topology and topology in ['ACTIVE_STANDBY', 'ACTIVE_ACTIVE']:
         more_amp = True
     else:
         more_amp = False
         topology = constants.TOPOLOGY_SINGLE
-    listeners = [sample_listener_tuple(
+    listeners = listeners or [sample_listener_tuple(
         proto=constants.PROTOCOL_UDP,
         persistence_type=constants.SESSION_PERSISTENCE_SOURCE_IP,
         persistence_timeout=33,

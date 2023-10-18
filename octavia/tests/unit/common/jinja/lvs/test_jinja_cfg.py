@@ -86,6 +86,40 @@ class TestLvsCfg(base.TestCase):
                 connection_limit=98))
         self.assertEqual(exp, rendered_obj)
 
+    def test_render_template_udp_ipv6_session_persistence_default_values(self):
+        # The session persistence default values refer to
+        # persistence_timeout and persistence_granularity
+        exp = ("# Configuration for Loadbalancer sample_loadbalancer_id_1\n"
+               "# Configuration for Listener sample_listener_id_1\n\n"
+               "net_namespace amphora-haproxy\n\n"
+               "virtual_server_group ipv6-group {\n"
+               "    2001:db8::2 80\n"
+               "}\n\n"
+               "virtual_server group ipv6-group {\n"
+               "    lb_algo wrr\n"
+               "    lb_kind NAT\n"
+               "    protocol UDP\n"
+               "    persistence_timeout 360\n"
+               "    persistence_granularity 128\n"
+               "    delay_loop 30\n"
+               "    delay_before_retry 30\n"
+               "    retry 3\n\n\n"
+               "    # Configuration for Pool sample_pool_id_1\n"
+               "    # Configuration for HealthMonitor sample_monitor_id_1\n"
+               "}\n\n")
+        udp_sample = sample_configs_combined.sample_lb_with_udp_listener_tuple(
+            listeners=[sample_configs_combined.sample_listener_tuple(
+                proto=constants.PROTOCOL_UDP,
+                persistence_type=constants.SESSION_PERSISTENCE_SOURCE_IP,
+                monitor_proto=constants.HEALTH_MONITOR_UDP_CONNECT)]
+        )
+        udp_listener = udp_sample.listeners[0]
+        ipv6_lb = sample_configs_combined.sample_listener_loadbalancer_tuple(
+            vip=sample_configs_combined.sample_vip_tuple('2001:db8::2'))
+        udp_listener = udp_listener._replace(load_balancer=ipv6_lb)
+        rendered_obj = self.lvs_jinja_cfg.render_loadbalancer_obj(udp_listener)
+        self.assertEqual(exp, rendered_obj)
+
     def test_render_template_udp_one_packet(self):
         exp = ("# Configuration for Loadbalancer sample_loadbalancer_id_1\n"
                "# Configuration for Listener sample_listener_id_1\n\n"
