@@ -117,8 +117,10 @@ virtual_server {{ lb_vip_address }} {{ listener.protocol_port }} {
       {% endif %}
       {% if default_pool.session_persistence.persistence_granularity %}
     persistence_granularity {{ default_pool.session_persistence.persistence_granularity }}
-      {% else %}
+      {% elif ip_version == 4 %}
     persistence_granularity 255.255.255.255
+      {% else %}
+    persistence_granularity 128
       {% endif %}
    {% endif %}
 {{ health_monitor_vs_macro(default_pool) }}
