@@ -118,6 +118,20 @@ class TestHealthCheck(base_db_test.OctaviaDBTestBase):
         self.assertEqual(200, response.status_code)
         self.assertEqual('OK', response.text)
 
+    def test_healthcheck_get_text_plain(self):
+        self.conf.config(group='healthcheck', detailed=False)
+        response = self._get(self._get_enabled_app(), '/healthcheck',
+                             headers={'Accept': 'text/plain'})
+        self.assertEqual(200, response.status_code)
+        self.assertEqual('OK', response.text)
+
+    def test_healthcheck_get_text_plain_detailed(self):
+        self.conf.config(group='healthcheck', detailed=True)
+        response = self._get(self._get_enabled_app(), '/healthcheck',
+                             headers={'Accept': 'text/plain'})
+        self.assertEqual(200, response.status_code)
+        self.assertEqual('OK', response.text)
+
     def test_healthcheck_get_json(self):
         self.conf.config(group='healthcheck', detailed=False)
         response = self._get(self._get_enabled_app(), '/healthcheck',
