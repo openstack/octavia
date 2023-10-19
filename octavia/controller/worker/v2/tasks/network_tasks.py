@@ -478,53 +478,6 @@ class HandleNetworkDeltas(BaseNetworkTask):
                     LOG.exception("Unable to delete port %s", port_id)
 
 
-class PlugVIP(BaseNetworkTask):
-    """Task to plumb a VIP."""
-
-    def execute(self, loadbalancer):
-        """Plumb a vip to an amphora."""
-
-        LOG.debug("Plumbing VIP for loadbalancer id: %s",
-                  loadbalancer[constants.LOADBALANCER_ID])
-        session = db_apis.get_session()
-        with session.begin():
-            db_lb = self.loadbalancer_repo.get(
-                session,
-                id=loadbalancer[constants.LOADBALANCER_ID])
-        amps_data = self.network_driver.plug_vip(db_lb,
-                                                 db_lb.vip)
-        return [amp.to_dict() for amp in amps_data]
-
-    def revert(self, result, loadbalancer, *args, **kwargs):
-        """Handle a failure to plumb a vip."""
-
-        if isinstance(result, failure.Failure):
-            return
-        LOG.warning("Unable to plug VIP for loadbalancer id %s",
-                    loadbalancer[constants.LOADBALANCER_ID])
-
-        session = db_apis.get_session()
-        with session.begin():
-            db_lb = self.loadbalancer_repo.get(
-                session,
-                id=loadbalancer[constants.LOADBALANCER_ID])
-        try:
-            # Make sure we have the current port IDs for cleanup
-            for amp_data in result:
-                for amphora in filter(
-                        # pylint: disable=cell-var-from-loop
-                        lambda amp: amp.id == amp_data['id'],
-                        db_lb.amphorae):
-                    amphora.vrrp_port_id = amp_data['vrrp_port_id']
-                    amphora.ha_port_id = amp_data['ha_port_id']
-
-            self.network_driver.unplug_vip(db_lb, db_lb.vip)
-        except Exception as e:
-            LOG.error("Failed to unplug VIP.  Resources may still "
-                      "be in use from vip: %(vip)s due to error: %(except)s",
-                      {'vip': loadbalancer['vip_address'], 'except': str(e)})
-
-
 class UpdateVIPSecurityGroup(BaseNetworkTask):
     """Task to setup SG for LB."""
 
@@ -789,19 +742,6 @@ class GetAmphoraeNetworkConfigs(BaseNetworkTask):
         for amp_id, amp_conf in db_configs.items():
             provider_dict[amp_id] = amp_conf.to_dict(recurse=True)
         return provider_dict
-
-
-class FailoverPreparationForAmphora(BaseNetworkTask):
-    """Task to prepare an amphora for failover."""
-
-    def execute(self, amphora):
-        session = db_apis.get_session()
-        with session.begin():
-            db_amp = self.amphora_repo.get(session,
-                                           id=amphora[constants.ID])
-        LOG.debug("Prepare amphora %s for failover.", amphora[constants.ID])
-
-        self.network_driver.failover_preparation(db_amp)
 
 
 class RetrievePortIDsOnAmphoraExceptLBNetwork(BaseNetworkTask):

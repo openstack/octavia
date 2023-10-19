@@ -73,19 +73,6 @@ class NoopManager(object):
         self.networkconfigconfig[vip.ip_address] = (vip,
                                                     'deallocate_vip')
 
-    def plug_vip(self, loadbalancer, vip):
-        LOG.debug("Network %s no-op, plug_vip loadbalancer %s, vip %s",
-                  self.__class__.__name__,
-                  loadbalancer.id, vip.ip_address)
-        self.update_vip_sg(loadbalancer, vip)
-        amps = []
-        for amphora in loadbalancer.amphorae:
-            amps.append(self.plug_aap_port(loadbalancer, vip, amphora, None))
-        self.networkconfigconfig[(loadbalancer.id,
-                                  vip.ip_address)] = (loadbalancer, vip,
-                                                      'plug_vip')
-        return amps
-
     def update_vip_sg(self, load_balancer, vip):
         LOG.debug("Network %s no-op, update_vip_sg loadbalancer %s, vip %s",
                   self.__class__.__name__,
@@ -460,9 +447,6 @@ class NoopNetworkDriver(driver_base.AbstractNetworkDriver):
 
     def deallocate_vip(self, vip):
         self.driver.deallocate_vip(vip)
-
-    def plug_vip(self, loadbalancer, vip):
-        return self.driver.plug_vip(loadbalancer, vip)
 
     def unplug_vip(self, loadbalancer, vip):
         self.driver.unplug_vip(loadbalancer, vip)

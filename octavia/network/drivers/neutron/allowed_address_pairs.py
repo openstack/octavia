@@ -443,18 +443,6 @@ class AllowedAddressPairsDriver(neutron_base.BaseNeutronDriver):
             vrrp_port_id=interface.port_id,
             ha_port_id=vip.port_id)
 
-    # todo (xgerman): Delete later
-    def plug_vip(self, load_balancer, vip):
-        self.update_vip_sg(load_balancer, vip)
-        plugged_amphorae = []
-        subnet = self.get_subnet(vip.subnet_id)
-        for amphora in filter(
-            lambda amp: amp.status == constants.AMPHORA_ALLOCATED,
-                load_balancer.amphorae):
-            plugged_amphorae.append(self.plug_aap_port(load_balancer, vip,
-                                                       amphora, subnet))
-        return plugged_amphorae
-
     def _validate_fixed_ip(self, fixed_ips, subnet_id, ip_address):
         """Validate an IP address exists in a fixed_ips dict
 

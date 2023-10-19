@@ -317,25 +317,6 @@ class TestAllowedAddressPairsDriver(base.TestCase):
                           self.driver.plug_aap_port, lb, lb.vip,
                           lb.amphorae[0], subnet)
 
-    @mock.patch('octavia.network.drivers.neutron.allowed_address_pairs.'
-                'AllowedAddressPairsDriver.update_vip_sg')
-    @mock.patch('octavia.network.drivers.neutron.allowed_address_pairs.'
-                'AllowedAddressPairsDriver.get_subnet')
-    @mock.patch('octavia.network.drivers.neutron.allowed_address_pairs.'
-                'AllowedAddressPairsDriver.plug_aap_port')
-    def test_plug_vip(self, mock_plug_aap, mock_get_subnet,
-                      mock_update_vip_sg):
-        lb = dmh.generate_load_balancer_tree()
-        subnet = mock.MagicMock()
-        mock_get_subnet.return_value = subnet
-        mock_plug_aap.side_effect = lb.amphorae
-        amps = self.driver.plug_vip(lb, lb.vip)
-
-        mock_update_vip_sg.assert_called_with(lb, lb.vip)
-        mock_get_subnet.assert_called_with(lb.vip.subnet_id)
-        for amp in amps:
-            mock_plug_aap.assert_any_call(lb, lb.vip, amp, subnet)
-
     @mock.patch('octavia.common.utils.get_vip_security_group_name')
     def test_update_vip_sg(self, mock_get_sg_name):
         LB_ID = uuidutils.generate_uuid()

@@ -142,21 +142,6 @@ class AbstractNetworkDriver(object, metaclass=abc.ABCMeta):
         """
 
     @abc.abstractmethod
-    def plug_vip(self, load_balancer, vip):
-        """Plugs a virtual ip as the frontend connection of a load balancer.
-
-        Sets up the routing of traffic from the vip to the load balancer
-        and its amphorae.
-
-        :param load_balancer: octavia.common.data_models.LoadBalancer instance
-        :param vip: octavia.common.data_models.VIP instance
-        :return: dict consisting of amphora_id as key and bind_ip as value.
-                 bind_ip is the ip that the amphora should listen on to
-                 receive traffic to load balance.
-        :raises: PlugVIPException, PortNotFound
-        """
-
-    @abc.abstractmethod
     def unplug_vip(self, load_balancer, vip):
         """Unplugs a virtual ip as the frontend connection of a load balancer.
 

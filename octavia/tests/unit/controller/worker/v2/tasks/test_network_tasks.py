@@ -1115,36 +1115,6 @@ class TestNetworkTasks(base.TestCase):
         net.revert(None, None, None)
         mock_driver.unplug_network.assert_not_called()
 
-    @mock.patch('octavia.db.repositories.LoadBalancerRepository.get')
-    @mock.patch('octavia.db.api.get_session', return_value=_session_mock)
-    def test_plug_vip(self, mock_get_session, mock_get_lb,
-                      mock_get_net_driver):
-        mock_driver = mock.MagicMock()
-        mock_get_net_driver.return_value = mock_driver
-        LB.amphorae = AMPS_DATA
-        mock_get_lb.return_value = LB
-        LB.amphorae = AMPS_DATA
-        net = network_tasks.PlugVIP()
-        amp = mock.MagicMock()
-        amp.to_dict.return_value = 'vip'
-        mock_driver.plug_vip.return_value = [amp]
-
-        data = net.execute(self.load_balancer_mock)
-        mock_driver.plug_vip.assert_called_once_with(LB, LB.vip)
-        self.assertEqual(["vip"], data)
-
-        # revert
-        net.revert([o_data_models.Amphora().to_dict()],
-                   self.load_balancer_mock)
-        mock_driver.unplug_vip.assert_called_once_with(LB, LB.vip)
-
-        # revert with exception
-        mock_driver.reset_mock()
-        mock_driver.unplug_vip.side_effect = Exception('UnplugVipException')
-        net.revert([o_data_models.Amphora().to_dict()],
-                   self.load_balancer_mock)
-        mock_driver.unplug_vip.assert_called_once_with(LB, LB.vip)
-
     @mock.patch('octavia.controller.worker.task_utils.TaskUtils.'
                 'get_current_loadbalancer_from_db')
     @mock.patch('octavia.db.repositories.LoadBalancerRepository.get')
@@ -1433,18 +1403,6 @@ class TestNetworkTasks(base.TestCase):
         net_task = network_tasks.GetAmphoraeNetworkConfigs()
         net_task.execute(self.load_balancer_mock)
         mock_driver.get_network_configs.assert_called_once_with(lb)
-
-    @mock.patch('octavia.db.repositories.AmphoraRepository.get')
-    @mock.patch('octavia.db.api.get_session', return_value=mock.MagicMock())
-    def test_failover_preparation_for_amphora(self, mock_session, mock_get,
-                                              mock_get_net_driver):
-        mock_driver = mock.MagicMock()
-        mock_get.return_value = self.db_amphora_mock
-        mock_get_net_driver.return_value = mock_driver
-        failover = network_tasks.FailoverPreparationForAmphora()
-        failover.execute(self.amphora_mock)
-        mock_driver.failover_preparation.assert_called_once_with(
-            self.db_amphora_mock)
 
     def test_retrieve_portids_on_amphora_except_lb_network(
             self, mock_get_net_driver):

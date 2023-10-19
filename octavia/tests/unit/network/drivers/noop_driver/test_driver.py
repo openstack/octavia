@@ -88,13 +88,6 @@ class TestNoopNetworkDriver(base.TestCase):
                          self.driver.driver.networkconfigconfig[
                              self.vip.ip_address])
 
-    def test_plug_vip(self):
-        self.driver.plug_vip(self.load_balancer, self.vip)
-        self.assertEqual((self.load_balancer, self.vip,
-                          'plug_vip'),
-                         self.driver.driver.networkconfigconfig[(
-                             self.load_balancer.id, self.vip.ip_address)])
-
     def test_update_vip_sg(self):
         self.driver.update_vip_sg(self.load_balancer, self.vip)
         self.assertEqual((self.load_balancer, self.vip,
