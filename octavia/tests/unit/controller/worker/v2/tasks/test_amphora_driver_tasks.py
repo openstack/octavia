@@ -42,6 +42,8 @@ _db_amphora_mock = mock.MagicMock()
 _db_amphora_mock.id = AMP_ID
 _db_amphora_mock.status = constants.AMPHORA_ALLOCATED
 _db_amphora_mock.vrrp_ip = '198.51.100.65'
+_db_amphora_mock.cached_zone = 'zone1'
+_conf_zones = 'zone1,zone2'
 _amphora_mock = {
     constants.ID: AMP_ID,
     constants.STATUS: constants.AMPHORA_ALLOCATED,

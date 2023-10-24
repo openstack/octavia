@@ -13,6 +13,7 @@
 # under the License.
 #
 
+import random
 import time
 
 from cryptography import fernet
@@ -49,6 +50,8 @@ class BaseComputeTask(task.Task):
             invoke_on_load=True
         ).driver
         self.loadbalancer_repo = repo.LoadBalancerRepository()
+        self.amphora_repo = repo.AmphoraRepository()
+        self.az_repo = repo.AvailabilityZoneRepository()
         self.rate_limit = amphora_rate_limit.AmphoraBuildRateLimit()
 
 
@@ -77,10 +80,12 @@ class ComputeCreate(BaseComputeTask):
 
     def execute(self, amphora_id, server_group_id, config_drive_files=None,
                 build_type_priority=constants.LB_CREATE_NORMAL_PRIORITY,
-                ports=None, flavor=None, availability_zone=None):
+                ports=None, flavor=None, availability_zone=None,
+                loadbalancer_id=None):
         """Create an amphora
 
         :param availability_zone: availability zone metadata dictionary
+        :param loadbalancer_id: ID of creating loadbalancer
 
         :returns: an amphora
         """
@@ -97,23 +102,95 @@ class ComputeCreate(BaseComputeTask):
         if flavor:
             topology = flavor.get(constants.LOADBALANCER_TOPOLOGY,
                                   CONF.controller_worker.loadbalancer_topology)
+            lb_flavor_zones = flavor.get(constants.AVAILABILITY_ZONES)
+            lb_flvaor_comp_zones = flavor.get(constants.COMPUTE_ZONES)
             amp_compute_flavor = flavor.get(
                 constants.COMPUTE_FLAVOR, CONF.controller_worker.amp_flavor_id)
             amp_image_tag = flavor.get(
                 constants.AMP_IMAGE_TAG, CONF.controller_worker.amp_image_tag)
         else:
+            lb_flavor_zones = None
+            lb_flvaor_comp_zones = None
             topology = CONF.controller_worker.loadbalancer_topology
             amp_compute_flavor = CONF.controller_worker.amp_flavor_id
             amp_image_tag = CONF.controller_worker.amp_image_tag
 
+        # Availability zone source order: arg, flavor, conf worker, conf nova
         if availability_zone:
-            amp_availability_zone = availability_zone.get(
-                constants.COMPUTE_ZONE)
-            amp_network = availability_zone.get(constants.MANAGEMENT_NETWORK)
+            # az info from arg...
+            # Here we get AZ context and not actual availability zone data, so
+            # in order to standartize the logic, we need to form AZ dict.
+            az_conf_name = availability_zone.get(constants.COMPUTE_ZONE)
+            az_conf_net = availability_zone.get(constants.MANAGEMENT_NETWORK)
+            conf_zones = [az_conf_name]
+            az_config = {
+                az_conf_name: {
+                    constants.COMPUTE_ZONE: az_conf_name,
+                    constants.MANAGEMENT_NETWORK: az_conf_net}}
+        elif lb_flavor_zones:
+            # az info from flavor
+            conf_zones = lb_flavor_zones
+            az_config = self._get_zones_metadata(lb_flavor_zones)
+        elif lb_flvaor_comp_zones:
+            conf_zones = lb_flvaor_comp_zones
+            az_config = self._form_az_config_dict(conf_zones)
+        elif CONF.controller_worker.availability_zones:
+            conf_zones = CONF.controller_worker.availability_zones
+            az_config = self._get_zones_metadata(conf_zones)
+        else:
+            # az info from config
+            # if we have multiple nova availability zones defined use multiple
+            # otherwise fallback to a single defailt. And form fake metadata
+            if CONF.nova.availability_zones:
+                conf_zones = CONF.nova.availability_zones
+            else:
+                conf_zones = [CONF.nova.availability_zone]
+            az_config = self._form_az_config_dict(conf_zones)
+
+        if len(conf_zones) > 1:
+            # Multiple availability zones should result in anti-affinity
+            LOG.debug("Using zone anti-affinity. Found configured zones: %s",
+                      conf_zones)
+            # We have multiple availability zones. For master and standalone
+            # we can just pick random, while for the backup we should not
+            # choose the same with the master. loadbalancer_id is already
+            # random enough as it is uuid. So its hash could be used to chose
+            master_zone = conf_zones[hash(loadbalancer_id) % len(conf_zones)]
+            available_zones = list(set(conf_zones) - set([master_zone]))
+            # Failover should preserve current AZ
+            if ((constants.FAILOVER_LOADBALANCER_FLOW in self.name) or
+                    (constants.FAILOVER_AMPHORA_FLOW in self.name)):
+                all_comp_zones = self._get_list_of_comp_az(az_config)
+                amp_old_zone = self._get_az_for_failover(all_comp_zones,
+                                                         loadbalancer_id)
+                # find a name in az_config based on availability_zone name
+                for azname, config in az_config.items():
+                    if config[constants.COMPUTE_ZONE] == amp_old_zone:
+                        choosed_zone = azname
+                        break
+                else:
+                    choosed_zone = amp_old_zone
+                    az_config[amp_old_zone] = {constants.COMPUTE_ZONE:
+                                               amp_old_zone}
+            elif constants.ROLE_BACKUP in self.name:
+                choosed_zone = random.choice(available_zones)
+            else:
+                # Just create master for any other option
+                choosed_zone = master_zone
+        else:
+            choosed_zone = conf_zones[0] if conf_zones else None
+
+        if choosed_zone:
+            amp_az_meta = az_config[choosed_zone]
+            amp_availability_zone = amp_az_meta[constants.COMPUTE_ZONE]
+            amp_network = az_config[choosed_zone].get(
+                constants.MANAGEMENT_NETWORK)
             if amp_network:
                 network_ids = [amp_network]
+            LOG.debug("Placing amphora in AZ: %s", amp_availability_zone)
         else:
             amp_availability_zone = None
+
         try:
             if CONF.haproxy_amphora.build_rate_limit != -1:
                 self.rate_limit.add_to_build_request_queue(
@@ -157,6 +234,57 @@ class ComputeCreate(BaseComputeTask):
                           amphora_id)
             raise
 
+    def _get_zones_metadata(self, zones):
+        """Get AZ details from availability zone profile. Form dict
+
+        :param zones: list of strings. Octavia availability zone names
+        """
+        config = {
+            zone: self.az_repo.get_availability_zone_metadata_dict(
+                db_apis.get_session(), zone)
+            for zone in zones}
+        return config
+
+    def _get_az_for_failover(self, compute_zones, loadbalancer_id):
+        """Calculate AZ where to create a new amphora.
+
+        When the failover happens we need to find amphora we are replacing to
+        place a new one exactly on the same AZ
+
+        :param compute_zones: A list of allowed compute availability zones
+        :param loadbalancer_id: uuid of the loadbalancer
+        """
+        current_amps = self.amphora_repo.get_all(
+            db_apis.get_session(), load_balancer_id=loadbalancer_id)[0]
+        pending_amp = [
+            amp for amp in current_amps
+            if amp.status == constants.PENDING_DELETE]
+        allocated_amp_computes = [
+            amp.compute_id for amp in current_amps
+            if amp.status == constants.AMPHORA_ALLOCATED]
+        if len(pending_amp) == 1:
+            pending_compute_id = pending_amp[0].compute_id
+            return self.compute.manager.find(
+                id=pending_compute_id).to_dict().get(
+                    'OS-EXT-AZ:availability_zone')
+        used_zones = [
+            self.compute.manager.find(amp.compute_id).to_dict().get(
+                'OS-EXT-AZ:availability_zone')
+            for amp in allocated_amp_computes
+        ]
+        available_zones = compute_zones - used_zones
+        if len(available_zones) < 1:
+            return compute_zones[0]
+        return random.choice(available_zones)
+
+    @staticmethod
+    def _form_az_config_dict(zones):
+        return {zone: {constants.COMPUTE_ZONE: zone} for zone in zones}
+
+    @staticmethod
+    def _get_list_of_comp_az(zones):
+        return [zone[constants.COMPUTE_ZONE] for zone in zones.values()]
+
     def revert(self, result, amphora_id, *args, **kwargs):
         """This method will revert the creation of the
 
@@ -177,7 +305,8 @@ class ComputeCreate(BaseComputeTask):
 class CertComputeCreate(ComputeCreate):
     def execute(self, amphora_id, server_pem, server_group_id,
                 build_type_priority=constants.LB_CREATE_NORMAL_PRIORITY,
-                ports=None, flavor=None, availability_zone=None):
+                ports=None, flavor=None, availability_zone=None,
+                loadbalancer_id=None):
         """Create an amphora
 
         :param availability_zone: availability zone metadata dictionary
@@ -200,7 +329,8 @@ class CertComputeCreate(ComputeCreate):
             amphora_id, config_drive_files=config_drive_files,
             build_type_priority=build_type_priority,
             server_group_id=server_group_id, ports=ports, flavor=flavor,
-            availability_zone=availability_zone)
+            availability_zone=availability_zone,
+            loadbalancer_id=loadbalancer_id)
 
 
 class DeleteAmphoraeOnLoadBalancer(BaseComputeTask):

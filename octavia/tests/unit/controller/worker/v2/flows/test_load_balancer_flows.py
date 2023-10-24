@@ -318,6 +318,7 @@ class TestLoadBalancerFlows(base.TestCase):
         self.assertIn(constants.FLAVOR, failover_flow.requires)
         self.assertIn(constants.LOADBALANCER, failover_flow.requires)
         self.assertIn(constants.LOADBALANCER_ID, failover_flow.requires)
+        self.assertIn(constants.SERVER_GROUP_ID, failover_flow.requires)
 
         self.assertIn(constants.UPDATED_PORTS, failover_flow.provides)
         self.assertIn(constants.AMPHORA, failover_flow.provides)
@@ -394,6 +395,7 @@ class TestLoadBalancerFlows(base.TestCase):
         self.assertIn(constants.FLAVOR, failover_flow.requires)
         self.assertIn(constants.LOADBALANCER, failover_flow.requires)
         self.assertIn(constants.LOADBALANCER_ID, failover_flow.requires)
+        self.assertIn(constants.SERVER_GROUP_ID, failover_flow.requires)
 
         self.assertIn(constants.UPDATED_PORTS, failover_flow.provides)
         self.assertIn(constants.AMPHORA, failover_flow.provides)

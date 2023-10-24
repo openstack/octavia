@@ -44,9 +44,18 @@ SUPPORTED_FLAVOR_SCHEMA = {
             "type": "string",
             "description": "The compute driver flavor ID."
         },
+        consts.COMPUTE_ZONES: {
+            "type": "array",
+            "description": "Nova compute zones list"
+        },
         consts.AMP_IMAGE_TAG: {
             "type": "string",
             "description": "The amphora image tag."
+        },
+        consts.AVAILABILITY_ZONES: {
+            "type": "array",
+            "description": "Availability zones list to use for creating"
+                           "distributed Amphorae instances on"
         }
     }
 }

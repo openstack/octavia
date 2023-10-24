@@ -47,11 +47,11 @@ class NoopManager(object):
                   user_data, port_ids, server_group_id, availability_zone)
         self.computeconfig[(name, amphora_flavor, image_tag,
                             image_owner, key_name, user_data,
-                            server_group_id)] = (
+                            server_group_id, availability_zone)] = (
             name, amphora_flavor,
             image_tag, image_owner, key_name, sec_groups,
             network_ids, config_drive_files, user_data, port_ids,
-            server_group_id, 'build')
+            server_group_id, availability_zone, 'build')
         compute_id = uuidutils.generate_uuid()
         return compute_id
 

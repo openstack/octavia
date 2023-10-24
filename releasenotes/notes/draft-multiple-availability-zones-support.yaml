@@ -1,0 +1,43 @@
+---
+features:
+  - |
+    Experimental support for provisioning to multiple availability zones!
+
+    There are multiple ways to define multiple AZs for the amphoras placement:
+    * flavor AVAILABILITY_ZONES - list of octavia availability zones.
+    * flavor COMPUTE_ZONES - list of nova availability zones.
+    * config controller_worker.availability_zones - list of octavia AZs
+    * config nova.availability_zones - list of nova AZs
+
+    Availability Zone(s) lookup priority:
+    1. argument supplied during lb creation
+    2. flavor availability_zones
+    3. flavor compute_zones
+    4. availability_zones in controller_worker section of the config
+    5. availability_zones in nova section of the config
+    6. availability_zone in nova section of the config
+
+    The first and the last variant supply a single availability_zone. All other
+    variants can define multiple availability zones to create amphoras.
+
+    flavor availability_zones - defines list of octavia availability zones.
+    Compute availability zones are then formed from the compute_zone attribute of
+    octavia availability_zone. In addition, a management network will be defined.
+
+    flavor compute_zones - defines list of compute availability zones.
+
+    availability_zones in controller_worker - defines list of octavia
+    availability zones. Pretty the same as in flavor.
+
+    availability_zones in nova section - defines list of compute zones. The
+    same as flavor compute_zones.
+
+    When enabled and using ACTIVE_STANDBY topology, Octavia will maintain zone
+    level anti-affinity.
+
+    When amphora or loadbalancer performs a failover, a replaced amphora is
+    examined and a new one is placed into the same availability_zone.
+
+    Note: this feature is experimental! Also, if your availability zones do not
+    share the same L2 network, you should not enable this feature.
+  

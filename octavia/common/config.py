@@ -483,6 +483,9 @@ controller_worker_opts = [
     cfg.ListOpt('amp_secgroup_list',
                 default='',
                 help=_('List of security groups to attach to the Amphora.')),
+    cfg.ListOpt('availability_zones',
+                default='',
+                help=_('List of octavia availability zones.')),
     cfg.StrOpt('client_ca',
                default='/etc/octavia/certs/ca_01.pem',
                help=_('Client CA for the amphora agent to use')),
@@ -720,6 +723,9 @@ nova_opts = [
                       '"amphora-{UUID}".')),
     cfg.StrOpt('availability_zone', default=None,
                help=_('Availability zone to use for creating Amphorae')),
+    cfg.ListOpt('availability_zones', default=None,
+                help=_('Availability zones list to use for creating'
+                       'distributed Amphorae instances on')),
 ]
 
 cinder_opts = [

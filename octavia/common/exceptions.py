@@ -354,6 +354,11 @@ class InvalidLimit(APIException):
     code = 400
 
 
+class InvalidZone(APIException):
+    msg = _("Invalid zone '%(zone)s'.")
+    code = 400
+
+
 class MissingVIPSecurityGroup(OctaviaException):
     message = _('VIP security group is missing for load balancer: %(lb_id)s')
 

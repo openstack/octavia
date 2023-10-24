@@ -55,7 +55,7 @@ class TestAmphora(base.BaseAPITest):
             'vrrp_interface': 'eth1',
             'vrrp_id': 1,
             'vrrp_priority': 100,
-            'cached_zone': None,
+            'cached_zone': 'zone1',
             'created_at': datetime.datetime.now(),
             'updated_at': datetime.datetime.now(),
             'image_id': uuidutils.generate_uuid(),

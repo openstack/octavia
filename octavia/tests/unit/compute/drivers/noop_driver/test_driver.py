@@ -56,13 +56,14 @@ class TestNoopComputeDriver(base.TestCase):
                           self.image_tag, self.image_owner,
                           self.key_name, self.sec_groups, self.network_ids,
                           self.confdrivefiles, self.user_data, self.port_ids,
-                          self.server_group_id)
+                          self.server_group_id, self.availability_zone)
 
         self.assertEqual((self.name, self.amphora_flavor,
                           self.image_tag, self.image_owner,
                           self.key_name, self.sec_groups, self.network_ids,
                           self.confdrivefiles, self.user_data, self.port_ids,
-                          self.server_group_id, 'build'),
+                          self.server_group_id, self.availability_zone,
+                          'build'),
                          self.driver.driver.computeconfig[(
                              self.name,
                              self.amphora_flavor,
@@ -70,7 +71,8 @@ class TestNoopComputeDriver(base.TestCase):
                              self.image_owner,
                              self.key_name,
                              self.user_data,
-                             self.server_group_id
+                             self.server_group_id,
+                             self.availability_zone
                          )])
 
     def test_delete(self):

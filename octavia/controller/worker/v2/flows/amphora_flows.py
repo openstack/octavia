@@ -53,7 +53,8 @@ class AmphoraFlows(object):
         create_amphora_flow.add(compute_tasks.CertComputeCreate(
             requires=(constants.AMPHORA_ID, constants.SERVER_PEM,
                       constants.SERVER_GROUP_ID,
-                      constants.BUILD_TYPE_PRIORITY, constants.FLAVOR),
+                      constants.BUILD_TYPE_PRIORITY, constants.FLAVOR,
+                      constants.LOADBALANCER_ID),
             provides=constants.COMPUTE_ID))
         create_amphora_flow.add(database_tasks.MarkAmphoraBootingInDB(
             requires=(constants.AMPHORA_ID, constants.COMPUTE_ID)))
@@ -110,7 +111,8 @@ class AmphoraFlows(object):
             requires=(constants.AMPHORA_ID, constants.SERVER_PEM,
                       constants.BUILD_TYPE_PRIORITY,
                       constants.SERVER_GROUP_ID,
-                      constants.FLAVOR, constants.AVAILABILITY_ZONE),
+                      constants.FLAVOR, constants.AVAILABILITY_ZONE,
+                      constants.LOADBALANCER_ID),
             provides=constants.COMPUTE_ID))
         create_amp_for_lb_subflow.add(database_tasks.UpdateAmphoraComputeId(
             name=sf_name + '-' + constants.UPDATE_AMPHORA_COMPUTEID,
