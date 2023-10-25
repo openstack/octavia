@@ -1371,7 +1371,7 @@ class AmphoraRepository(BaseRepository):
 
         Puts a lock on the amphora table to check the status of the
         amphora. The status must be either AMPHORA_READY or ERROR to
-        successfuly update the amphora status.
+        successfully update the amphora status.
 
         :param lock_session: A Sql Alchemy database session.
         :param id: id of Load Balancer

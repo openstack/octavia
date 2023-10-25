@@ -132,7 +132,7 @@ def _prepare_x509_cert(cert=None):
 def _split_x509s(xstr):
     """Split the input string into individual x509 text blocks
 
-    :param xstr: A large multi x509 certificate blcok
+    :param xstr: A large multi x509 certificate block
     :returns: A list of strings where each string represents an
     X509 pem block surrounded by BEGIN CERTIFICATE,
     END CERTIFICATE block tags

@@ -11,7 +11,7 @@
 #    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 #    License for the specific language governing permissions and limitations
 #    under the License.
-"""add cert expiration infor in amphora table
+"""add cert expiration info in amphora table
 
 Revision ID: 5a3ee5472c31
 Revises: 3b199c848b96

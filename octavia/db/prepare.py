@@ -31,7 +31,7 @@ def create_load_balancer(lb_dict):
     lb_dict[constants.PROVISIONING_STATUS] = constants.PENDING_CREATE
     lb_dict[constants.OPERATING_STATUS] = constants.OFFLINE
 
-    # Set defaults later possibly overriden by flavors later
+    # Set defaults later possibly overridden by flavors later
     lb_dict['topology'] = CONF.controller_worker.loadbalancer_topology
 
     return lb_dict

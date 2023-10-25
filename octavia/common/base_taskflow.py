@@ -71,7 +71,7 @@ def _details_filter(obj):
 
 class FilteredJob(Job):
     def __str__(self):
-        # Override the detault __str__ method from taskflow.job.base.Job,
+        # Override the default __str__ method from taskflow.job.base.Job,
         # filter out private information from details
         cls_name = type(self).__name__
         details = _details_filter(self.details)

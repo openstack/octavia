@@ -85,6 +85,6 @@ class LvsListenerApiServerBase(object, metaclass=abc.ABCMeta):
         :param listener_id: The id of the listener
 
         :returns: HTTP response with status code.
-        :raises Exception: If unsupport initial system of amphora.
+        :raises Exception: If unsupported initial system of amphora.
 
         """

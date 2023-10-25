@@ -620,7 +620,7 @@ class LvsQueryTestCase(base.TestCase):
     def test_get_lvs_listener_pool_status_when_not_get_realserver_result(
             self, mock_get_mapping, mock_os_stat):
         # This will hit if the kernel lvs file (/proc/net/ip_vs)
-        # lose its content. So at this moment, eventhough we configure the
+        # lose its content. So at this moment, even though we configure the
         # pool and member into udp keepalived config file, we have to set
         # ths status of pool and its members to DOWN.
         mock_os_stat.side_effect = (

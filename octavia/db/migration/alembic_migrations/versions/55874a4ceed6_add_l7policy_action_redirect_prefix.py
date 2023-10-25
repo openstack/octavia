@@ -30,7 +30,7 @@ down_revision = '76aacf2e176c'
 
 
 def upgrade():
-    # Add collumn redirect_prefix
+    # Add column redirect_prefix
     op.add_column(
         u'l7policy',
         sa.Column(u'redirect_prefix', sa.String(255), nullable=True)

@@ -59,7 +59,7 @@ class ComputeRetry(retry.Times):
         max_retry_attempt = CONF.controller_worker.amp_active_retries
         for task_name, ex_info in last_errors.items():
             if len(history) <= max_retry_attempt:
-                # When taskflow persistance is enabled and flow/task state is
+                # When taskflow persistence is enabled and flow/task state is
                 # saved in the backend. If flow(task) is restored(restart of
                 # worker,etc) we are getting ex_info as None - we need to RETRY
                 # task to check its real state.

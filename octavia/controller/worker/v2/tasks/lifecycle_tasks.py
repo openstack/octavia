@@ -19,7 +19,7 @@ from octavia.controller.worker import task_utils as task_utilities
 
 
 class BaseLifecycleTask(task.Task):
-    """Base task to instansiate common classes."""
+    """Base task to instantiate common classes."""
 
     def __init__(self, **kwargs):
         self.task_utils = task_utilities.TaskUtils()

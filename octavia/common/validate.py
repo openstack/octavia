@@ -229,7 +229,7 @@ def validate_l7rule_ssl_types(l7rule):
             # log or raise key and value must be specified.
             msg = 'L7rule type {0} needs to specify a key and a value.'.format(
                 rule_type)
-        # log or raise the key must be splited by '-'
+        # log or raise the key must be split by '-'
         elif not dn_regex.match(req_key):
             msg = 'Invalid L7rule distinguished name field.'
 
@@ -246,7 +246,7 @@ def sanitize_l7policy_api_args(l7policy, create=False):
     redirect_pool_id exists in the database, but will raise an
     error if a redirect_url doesn't look like a URL.
 
-    :param l7policy: The L7 Policy dictionary we are santizing / validating
+    :param l7policy: The L7 Policy dictionary we are sanitizing / validating
     """
     if 'action' in l7policy.keys():
         if l7policy['action'] == constants.L7POLICY_ACTION_REJECT:

@@ -935,7 +935,7 @@ def register_cli_opts():
 def handle_neutron_deprecations():
     # Apply neutron deprecated options to their new setting if needed
 
-    # Basicaly: if the value of the deprecated option is not the default:
+    # Basically: if the value of the deprecated option is not the default:
     # * convert it to a valid "new" value if needed
     # * set it as the default for the new option
     # Thus [neutron].<new_option> has an higher precedence than
