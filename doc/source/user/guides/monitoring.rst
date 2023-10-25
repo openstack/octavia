@@ -77,7 +77,7 @@ Monitoring with Prometheus
 ==========================
 
 Some provider drivers, such as the Octavia amphora driver, provide a prometheus
-endpoint. This allows you to configure your Prometheus infrastruture to collect
+endpoint. This allows you to configure your Prometheus infrastructure to collect
 metrics from Octavia load balancers.
 
 To add a Prometheus endpoint on an Octavia load balancer, create a listener

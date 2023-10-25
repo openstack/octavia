@@ -731,7 +731,7 @@ terminated listener, see the above section
 
 Deploy a load balancer with backend re-encryption and client authentication
 ---------------------------------------------------------------------------
-This example will demostrate how to enable TLS encryption from the load
+This example will demonstrate how to enable TLS encryption from the load
 balancer to the backend member servers with the load balancer being
 authenticated using TLS client authentication. Typically this is used with TLS
 termination enabled on the listener, but, to simplify the example, we are going
@@ -945,7 +945,7 @@ In this case, using ``TLS-HELLO`` type monitoring is an alternative.
 If an application is listening on this port, the Operating System should reply
 with an INIT ACK packet, but if the port is closed, it replies with an ABORT
 packet.
-If the health monitor receives an INIT ACK packet, it immediatly closes the
+If the health monitor receives an INIT ACK packet, it immediately closes the
 connection with an ABORT packet, and considers that the server is ONLINE.
 
 ``TLS-HELLO`` health monitors simply ensure the back-end server responds to

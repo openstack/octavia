@@ -104,7 +104,7 @@ RFE
     understands the goal of the change.
 
 specs
-    If the new feature is a major change or additon to Octavia that will need
+    If the new feature is a major change or addition to Octavia that will need
     a detailed design to be successful, the Octavia team requires a
     specification (spec) proposal be submitted as a patch.
 

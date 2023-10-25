@@ -508,7 +508,7 @@ are:
 |                       |        | backend ``member`` that contains 0 if the  |
 |                       |        | client authentication was successful, or an|
 |                       |        | result error number greater than 0 that    |
-|                       |        | align to the openssl veryify error codes.  |
+|                       |        | align to the openssl verify error codes.   |
 +-----------------------+--------+--------------------------------------------+
 | X-SSL-Client-Has-Cert | string | When "``true``" a ``X-SSL-Client-Has-Cert``|
 |                       |        | header is inserted into the request to the |
