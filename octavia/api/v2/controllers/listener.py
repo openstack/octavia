@@ -373,7 +373,6 @@ class ListenersController(base.BaseController):
         try:
             if self.repositories.check_quota_met(
                     context.session,
-                    context.session,
                     data_models.Listener,
                     listener.project_id):
                 raise exceptions.QuotaException(

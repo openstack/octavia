@@ -2621,15 +2621,13 @@ class DecrementHealthMonitorQuota(BaseDatabaseTask):
 
             try:
                 session = db_apis.get_session()
-                lock_session = db_apis.get_session()
                 try:
                     self.repos.check_quota_met(session,
-                                               lock_session,
                                                data_models.HealthMonitor,
                                                project_id)
-                    lock_session.commit()
+                    session.commit()
                 except Exception:
-                    lock_session.rollback()
+                    session.rollback()
             except Exception:
                 # Don't fail the revert flow
                 pass
@@ -2679,15 +2677,13 @@ class DecrementListenerQuota(BaseDatabaseTask):
 
             try:
                 session = db_apis.get_session()
-                lock_session = db_apis.get_session()
                 try:
                     self.repos.check_quota_met(session,
-                                               lock_session,
                                                data_models.Listener,
                                                project_id)
-                    lock_session.commit()
+                    session.commit()
                 except Exception:
-                    lock_session.rollback()
+                    session.rollback()
             except Exception:
                 # Don't fail the revert flow
                 pass
@@ -2739,15 +2735,13 @@ class DecrementLoadBalancerQuota(BaseDatabaseTask):
 
             try:
                 session = db_apis.get_session()
-                lock_session = db_apis.get_session()
                 try:
                     self.repos.check_quota_met(session,
-                                               lock_session,
                                                data_models.LoadBalancer,
                                                project_id)
-                    lock_session.commit()
+                    session.commit()
                 except Exception:
-                    lock_session.rollback()
+                    session.rollback()
             except Exception:
                 # Don't fail the revert flow
                 pass
@@ -2798,15 +2792,13 @@ class DecrementMemberQuota(BaseDatabaseTask):
 
             try:
                 session = db_apis.get_session()
-                lock_session = db_apis.get_session()
                 try:
                     self.repos.check_quota_met(session,
-                                               lock_session,
                                                data_models.Member,
                                                project_id)
-                    lock_session.commit()
+                    session.commit()
                 except Exception:
-                    lock_session.rollback()
+                    session.rollback()
             except Exception:
                 # Don't fail the revert flow
                 pass
@@ -2871,42 +2863,38 @@ class DecrementPoolQuota(BaseDatabaseTask):
             # in case other quota actions have occurred
             try:
                 session = db_apis.get_session()
-                lock_session = db_apis.get_session()
                 try:
                     self.repos.check_quota_met(session,
-                                               lock_session,
                                                data_models.Pool,
                                                project_id)
-                    lock_session.commit()
+                    session.commit()
                 except Exception:
-                    lock_session.rollback()
+                    session.rollback()
 
                 # Attempt to increment back the health monitor quota
                 if pool_child_count['HM'] > 0:
-                    lock_session = db_apis.get_session()
+                    session = db_apis.get_session()
                     try:
                         self.repos.check_quota_met(session,
-                                                   lock_session,
                                                    data_models.HealthMonitor,
                                                    project_id)
-                        lock_session.commit()
+                        session.commit()
                     except Exception:
-                        lock_session.rollback()
+                        session.rollback()
 
                 # Attempt to increment back the member quota
                 # This is separate calls to maximize the correction
                 # should other factors have increased the in use quota
                 # before this point in the revert flow
                 for i in range(pool_child_count['member']):
-                    lock_session = db_apis.get_session()
+                    session = db_apis.get_session()
                     try:
                         self.repos.check_quota_met(session,
-                                                   lock_session,
                                                    data_models.Member,
                                                    project_id)
-                        lock_session.commit()
+                        session.commit()
                     except Exception:
-                        lock_session.rollback()
+                        session.rollback()
             except Exception:
                 # Don't fail the revert flow
                 pass
@@ -2954,7 +2942,8 @@ class DecrementL7policyQuota(BaseDatabaseTask):
                                        data_models.L7Policy,
                                        l7policy[constants.PROJECT_ID])
             db_l7policy = self.l7policy_repo.get(
-                db_apis.get_session(), id=l7policy[constants.L7POLICY_ID])
+                lock_session,
+                id=l7policy[constants.L7POLICY_ID])
 
             if db_l7policy and db_l7policy.l7rules:
                 self.repos.decrement_quota(lock_session,
@@ -2982,28 +2971,26 @@ class DecrementL7policyQuota(BaseDatabaseTask):
         if not isinstance(result, failure.Failure):
             try:
                 session = db_apis.get_session()
-                lock_session = db_apis.get_session()
                 try:
                     self.repos.check_quota_met(session,
-                                               lock_session,
                                                data_models.L7Policy,
                                                l7policy[constants.PROJECT_ID])
-                    lock_session.commit()
+                    session.commit()
                 except Exception:
-                    lock_session.rollback()
+                    session.rollback()
                 db_l7policy = self.l7policy_repo.get(
                     session, id=l7policy[constants.L7POLICY_ID])
                 if db_l7policy:
                     # Attempt to increment back the L7Rule quota
                     for i in range(len(db_l7policy.l7rules)):
-                        lock_session = db_apis.get_session()
+                        session = db_apis.get_session()
                         try:
                             self.repos.check_quota_met(
-                                session, lock_session, data_models.L7Rule,
+                                session, data_models.L7Rule,
                                 db_l7policy.project_id)
-                            lock_session.commit()
+                            session.commit()
                         except Exception:
-                            lock_session.rollback()
+                            session.rollback()
             except Exception:
                 # Don't fail the revert flow
                 pass
@@ -3054,15 +3041,13 @@ class DecrementL7ruleQuota(BaseDatabaseTask):
 
             try:
                 session = db_apis.get_session()
-                lock_session = db_apis.get_session()
                 try:
                     self.repos.check_quota_met(session,
-                                               lock_session,
                                                data_models.L7Rule,
                                                l7rule[constants.PROJECT_ID])
-                    lock_session.commit()
+                    session.commit()
                 except Exception:
-                    lock_session.rollback()
+                    session.rollback()
             except Exception:
                 # Don't fail the revert flow
                 pass

@@ -140,7 +140,7 @@ class BaseAPITest(base_db_test.OctaviaDBTestBase):
         self.addCleanup(reset_pecan)
 
     def start_quota_mock(self, object_type):
-        def mock_quota(session, lock_session, _class, project_id, count=1):
+        def mock_quota(session, _class, project_id, count=1):
             return _class == object_type
         check_quota_met_true_mock = mock.patch(
             'octavia.db.repositories.Repositories.check_quota_met',

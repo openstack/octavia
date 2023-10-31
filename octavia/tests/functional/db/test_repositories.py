@@ -517,7 +517,6 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
         conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
         conf.config(group='api_settings', auth_strategy=constants.NOAUTH)
         self.assertFalse(self.repos.check_quota_met(self.session,
-                                                    self.session,
                                                     data_models.LoadBalancer,
                                                     project_id))
         conf.config(group='api_settings', auth_strategy=constants.TESTING)
@@ -525,7 +524,7 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
         # Test check for missing project_id
         self.assertRaises(exceptions.MissingProjectID,
                           self.repos.check_quota_met,
-                          self.session, self.session,
+                          self.session,
                           data_models.LoadBalancer, None)
         self.session.commit()
 
@@ -533,19 +532,19 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
         project_id = uuidutils.generate_uuid()
         self.assertFalse(
             self.repos.check_quota_met(self.session,
-                                       self.session,
                                        data_models.SessionPersistence,
                                        project_id))
         self.session.commit()
 
         # Test DB deadlock case
         project_id = uuidutils.generate_uuid()
+        mock_quotas = mock.MagicMock()
         mock_session = mock.MagicMock()
         mock_session.query = mock.MagicMock(
-            side_effect=db_exception.DBDeadlock)
+            side_effect=[mock_quotas, db_exception.DBDeadlock])
         self.assertRaises(exceptions.ProjectBusyException,
                           self.repos.check_quota_met,
-                          self.session, mock_session,
+                          mock_session,
                           data_models.LoadBalancer, project_id)
         self.session.commit()
 
@@ -554,7 +553,6 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
         project_id = uuidutils.generate_uuid()
         conf.config(group='quotas', default_load_balancer_quota=0)
         self.assertTrue(self.repos.check_quota_met(self.session,
-                                                   self.session,
                                                    data_models.LoadBalancer,
                                                    project_id))
         self.session.commit()
@@ -565,7 +563,6 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
         project_id = uuidutils.generate_uuid()
         conf.config(group='quotas', default_load_balancer_quota=1)
         self.assertFalse(self.repos.check_quota_met(self.session,
-                                                    self.session,
                                                     data_models.LoadBalancer,
                                                     project_id))
         self.session.commit()
@@ -573,7 +570,6 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
             self.session, project_id=project_id).in_use_load_balancer)
         # Test above project is now at quota
         self.assertTrue(self.repos.check_quota_met(self.session,
-                                                   self.session,
                                                    data_models.LoadBalancer,
                                                    project_id))
         self.session.commit()
@@ -585,7 +581,6 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
         conf.config(group='quotas',
                     default_load_balancer_quota=constants.QUOTA_UNLIMITED)
         self.assertFalse(self.repos.check_quota_met(self.session,
-                                                    self.session,
                                                     data_models.LoadBalancer,
                                                     project_id))
         self.session.commit()
@@ -593,7 +588,6 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
             self.session, project_id=project_id).in_use_load_balancer)
         # Test above project adding another load balancer
         self.assertFalse(self.repos.check_quota_met(self.session,
-                                                    self.session,
                                                     data_models.LoadBalancer,
                                                     project_id))
         self.assertEqual(2, self.repos.quotas.get(
@@ -611,7 +605,6 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
             enabled=True)
         self.session.commit()
         self.assertTrue(self.repos.check_quota_met(self.session,
-                                                   self.session,
                                                    data_models.LoadBalancer,
                                                    project_id))
         self.session.commit()
@@ -628,7 +621,6 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
             enabled=True)
         self.session.commit()
         self.assertFalse(self.repos.check_quota_met(self.session,
-                                                    self.session,
                                                     data_models.LoadBalancer,
                                                     project_id))
         self.session.commit()
@@ -642,7 +634,6 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
         self.repos.quotas.update(self.session, project_id, quota=quota)
         self.session.commit()
         self.assertTrue(self.repos.check_quota_met(self.session,
-                                                   self.session,
                                                    data_models.LoadBalancer,
                                                    project_id))
         self.session.commit()
@@ -654,7 +645,6 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
         self.repos.quotas.update(self.session, project_id, quota=quota)
         self.session.commit()
         self.assertFalse(self.repos.check_quota_met(self.session,
-                                                    self.session,
                                                     data_models.LoadBalancer,
                                                     project_id))
         self.session.commit()
@@ -662,7 +652,6 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
             self.session, project_id=project_id).in_use_load_balancer)
         # Test above project is now at quota
         self.assertTrue(self.repos.check_quota_met(self.session,
-                                                   self.session,
                                                    data_models.LoadBalancer,
                                                    project_id))
         self.session.commit()
@@ -676,7 +665,6 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
         self.repos.quotas.update(self.session, project_id, quota=quota)
         self.session.commit()
         self.assertFalse(self.repos.check_quota_met(self.session,
-                                                    self.session,
                                                     data_models.LoadBalancer,
                                                     project_id))
         self.session.commit()
@@ -684,7 +672,6 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
             self.session, project_id=project_id).in_use_load_balancer)
         # Test above project adding another load balancer
         self.assertFalse(self.repos.check_quota_met(self.session,
-                                                    self.session,
                                                     data_models.LoadBalancer,
                                                     project_id))
         self.session.commit()
@@ -696,7 +683,6 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
         project_id = uuidutils.generate_uuid()
         conf.config(group='quotas', default_listener_quota=0)
         self.assertTrue(self.repos.check_quota_met(self.session,
-                                                   self.session,
                                                    data_models.Listener,
                                                    project_id))
         self.session.commit()
@@ -707,7 +693,6 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
         project_id = uuidutils.generate_uuid()
         conf.config(group='quotas', default_listener_quota=1)
         self.assertFalse(self.repos.check_quota_met(self.session,
-                                                    self.session,
                                                     data_models.Listener,
                                                     project_id))
         self.session.commit()
@@ -715,7 +700,6 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
             self.session, project_id=project_id).in_use_listener)
         # Test above project is now at quota
         self.assertTrue(self.repos.check_quota_met(self.session,
-                                                   self.session,
                                                    data_models.Listener,
                                                    project_id))
         self.session.commit()
@@ -727,7 +711,6 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
         conf.config(group='quotas',
                     default_listener_quota=constants.QUOTA_UNLIMITED)
         self.assertFalse(self.repos.check_quota_met(self.session,
-                                                    self.session,
                                                     data_models.Listener,
                                                     project_id))
         self.session.commit()
@@ -735,7 +718,6 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
             self.session, project_id=project_id).in_use_listener)
         # Test above project adding another listener
         self.assertFalse(self.repos.check_quota_met(self.session,
-                                                    self.session,
                                                     data_models.Listener,
                                                     project_id))
         self.session.commit()
@@ -761,7 +743,6 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
             load_balancer_id=lb.id)
         self.session.commit()
         self.assertTrue(self.repos.check_quota_met(self.session,
-                                                   self.session,
                                                    data_models.Listener,
                                                    project_id))
         self.session.commit()
@@ -785,7 +766,6 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
             load_balancer_id=lb.id)
         self.session.commit()
         self.assertFalse(self.repos.check_quota_met(self.session,
-                                                    self.session,
                                                     data_models.Listener,
                                                     project_id))
         self.session.commit()
@@ -799,7 +779,6 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
         self.repos.quotas.update(self.session, project_id, quota=quota)
         self.session.commit()
         self.assertTrue(self.repos.check_quota_met(self.session,
-                                                   self.session,
                                                    data_models.Listener,
                                                    project_id))
         self.session.commit()
@@ -811,7 +790,6 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
         self.repos.quotas.update(self.session, project_id, quota=quota)
         self.session.commit()
         self.assertFalse(self.repos.check_quota_met(self.session,
-                                                    self.session,
                                                     data_models.Listener,
                                                     project_id))
         self.session.commit()
@@ -819,7 +797,6 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
             self.session, project_id=project_id).in_use_listener)
         # Test above project is now at quota
         self.assertTrue(self.repos.check_quota_met(self.session,
-                                                   self.session,
                                                    data_models.Listener,
                                                    project_id))
         self.session.commit()
@@ -833,7 +810,6 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
         self.repos.quotas.update(self.session, project_id, quota=quota)
         self.session.commit()
         self.assertFalse(self.repos.check_quota_met(self.session,
-                                                    self.session,
                                                     data_models.Listener,
                                                     project_id))
         self.session.commit()
@@ -841,7 +817,6 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
             self.session, project_id=project_id).in_use_listener)
         # Test above project adding another listener
         self.assertFalse(self.repos.check_quota_met(self.session,
-                                                    self.session,
                                                     data_models.Listener,
                                                     project_id))
         self.session.commit()
@@ -853,7 +828,6 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
         project_id = uuidutils.generate_uuid()
         conf.config(group='quotas', default_pool_quota=0)
         self.assertTrue(self.repos.check_quota_met(self.session,
-                                                   self.session,
                                                    data_models.Pool,
                                                    project_id))
         self.session.commit()
@@ -864,7 +838,6 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
         project_id = uuidutils.generate_uuid()
         conf.config(group='quotas', default_pool_quota=1)
         self.assertFalse(self.repos.check_quota_met(self.session,
-                                                    self.session,
                                                     data_models.Pool,
                                                     project_id))
         self.session.commit()
@@ -872,7 +845,6 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
             self.session, project_id=project_id).in_use_pool)
         # Test above project is now at quota
         self.assertTrue(self.repos.check_quota_met(self.session,
-                                                   self.session,
                                                    data_models.Pool,
                                                    project_id))
         self.session.commit()
@@ -884,7 +856,6 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
         conf.config(group='quotas',
                     default_pool_quota=constants.QUOTA_UNLIMITED)
         self.assertFalse(self.repos.check_quota_met(self.session,
-                                                    self.session,
                                                     data_models.Pool,
                                                     project_id))
         self.session.commit()
@@ -892,7 +863,6 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
             self.session, project_id=project_id).in_use_pool)
         # Test above project adding another pool
         self.assertFalse(self.repos.check_quota_met(self.session,
-                                                    self.session,
                                                     data_models.Pool,
                                                     project_id))
         self.session.commit()
@@ -920,7 +890,6 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
             enabled=True, load_balancer_id=lb.id)
         self.session.commit()
         self.assertTrue(self.repos.check_quota_met(self.session,
-                                                   self.session,
                                                    data_models.Pool,
                                                    project_id))
         self.session.commit()
@@ -946,7 +915,6 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
             enabled=True, load_balancer_id=lb.id)
         self.session.commit()
         self.assertFalse(self.repos.check_quota_met(self.session,
-                                                    self.session,
                                                     data_models.Pool,
                                                     project_id))
         self.session.commit()
@@ -959,7 +927,6 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
         quota = {'pool': 0}
         self.repos.quotas.update(self.session, project_id, quota=quota)
         self.assertTrue(self.repos.check_quota_met(self.session,
-                                                   self.session,
                                                    data_models.Pool,
                                                    project_id))
         self.session.commit()
@@ -970,7 +937,6 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
         quota = {'pool': 1}
         self.repos.quotas.update(self.session, project_id, quota=quota)
         self.assertFalse(self.repos.check_quota_met(self.session,
-                                                    self.session,
                                                     data_models.Pool,
                                                     project_id))
         self.session.commit()
@@ -978,7 +944,6 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
             self.session, project_id=project_id).in_use_pool)
         # Test above project is now at quota
         self.assertTrue(self.repos.check_quota_met(self.session,
-                                                   self.session,
                                                    data_models.Pool,
                                                    project_id))
         self.session.commit()
@@ -992,7 +957,6 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
         self.repos.quotas.update(self.session, project_id, quota=quota)
         self.session.commit()
         self.assertFalse(self.repos.check_quota_met(self.session,
-                                                    self.session,
                                                     data_models.Pool,
                                                     project_id))
         self.session.commit()
@@ -1000,7 +964,6 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
             self.session, project_id=project_id).in_use_pool)
         # Test above project adding another pool
         self.assertFalse(self.repos.check_quota_met(self.session,
-                                                    self.session,
                                                     data_models.Pool,
                                                     project_id))
         self.session.commit()
@@ -1012,7 +975,6 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
         project_id = uuidutils.generate_uuid()
         conf.config(group='quotas', default_health_monitor_quota=0)
         self.assertTrue(self.repos.check_quota_met(self.session,
-                                                   self.session,
                                                    data_models.HealthMonitor,
                                                    project_id))
         self.session.commit()
@@ -1023,7 +985,6 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
         project_id = uuidutils.generate_uuid()
         conf.config(group='quotas', default_health_monitor_quota=1)
         self.assertFalse(self.repos.check_quota_met(self.session,
-                                                    self.session,
                                                     data_models.HealthMonitor,
                                                     project_id))
         self.session.commit()
@@ -1031,7 +992,6 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
             self.session, project_id=project_id).in_use_health_monitor)
         # Test above project is now at quota
         self.assertTrue(self.repos.check_quota_met(self.session,
-                                                   self.session,
                                                    data_models.HealthMonitor,
                                                    project_id))
         self.session.commit()
@@ -1043,7 +1003,6 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
         conf.config(group='quotas',
                     default_health_monitor_quota=constants.QUOTA_UNLIMITED)
         self.assertFalse(self.repos.check_quota_met(self.session,
-                                                    self.session,
                                                     data_models.HealthMonitor,
                                                     project_id))
         self.session.commit()
@@ -1051,7 +1010,6 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
             self.session, project_id=project_id).in_use_health_monitor)
         # Test above project adding another health monitor
         self.assertFalse(self.repos.check_quota_met(self.session,
-                                                    self.session,
                                                     data_models.HealthMonitor,
                                                     project_id))
         self.session.commit()
@@ -1087,7 +1045,6 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
             enabled=True, pool_id=pool.id)
         self.session.commit()
         self.assertTrue(self.repos.check_quota_met(self.session,
-                                                   self.session,
                                                    data_models.HealthMonitor,
                                                    project_id))
         self.session.commit()
@@ -1121,7 +1078,6 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
             enabled=True, pool_id=pool.id)
         self.session.commit()
         self.assertFalse(self.repos.check_quota_met(self.session,
-                                                    self.session,
                                                     data_models.HealthMonitor,
                                                     project_id))
         self.session.commit()
@@ -1135,7 +1091,6 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
         self.repos.quotas.update(self.session, project_id, quota=quota)
         self.session.commit()
         self.assertTrue(self.repos.check_quota_met(self.session,
-                                                   self.session,
                                                    data_models.HealthMonitor,
                                                    project_id))
         self.session.commit()
@@ -1146,7 +1101,6 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
         quota = {'health_monitor': 1}
         self.repos.quotas.update(self.session, project_id, quota=quota)
         self.assertFalse(self.repos.check_quota_met(self.session,
-                                                    self.session,
                                                     data_models.HealthMonitor,
                                                     project_id))
         self.session.commit()
@@ -1154,7 +1108,6 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
             self.session, project_id=project_id).in_use_health_monitor)
         # Test above project is now at quota
         self.assertTrue(self.repos.check_quota_met(self.session,
-                                                   self.session,
                                                    data_models.HealthMonitor,
                                                    project_id))
         self.session.commit()
@@ -1168,7 +1121,6 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
         self.repos.quotas.update(self.session, project_id, quota=quota)
         self.session.commit()
         self.assertFalse(self.repos.check_quota_met(self.session,
-                                                    self.session,
                                                     data_models.HealthMonitor,
                                                     project_id))
         self.session.commit()
@@ -1176,7 +1128,6 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
             self.session, project_id=project_id).in_use_health_monitor)
         # Test above project adding another health monitor
         self.assertFalse(self.repos.check_quota_met(self.session,
-                                                    self.session,
                                                     data_models.HealthMonitor,
                                                     project_id))
         self.session.commit()
@@ -1188,7 +1139,6 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
         project_id = uuidutils.generate_uuid()
         conf.config(group='quotas', default_member_quota=0)
         self.assertTrue(self.repos.check_quota_met(self.session,
-                                                   self.session,
                                                    data_models.Member,
                                                    project_id))
         self.session.commit()
@@ -1199,7 +1149,6 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
         project_id = uuidutils.generate_uuid()
         conf.config(group='quotas', default_member_quota=1)
         self.assertFalse(self.repos.check_quota_met(self.session,
-                                                    self.session,
                                                     data_models.Member,
                                                     project_id))
         self.session.commit()
@@ -1207,7 +1156,6 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
             self.session, project_id=project_id).in_use_member)
         # Test above project is now at quota
         self.assertTrue(self.repos.check_quota_met(self.session,
-                                                   self.session,
                                                    data_models.Member,
                                                    project_id))
         self.session.commit()
@@ -1219,7 +1167,6 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
         conf.config(group='quotas',
                     default_member_quota=constants.QUOTA_UNLIMITED)
         self.assertFalse(self.repos.check_quota_met(self.session,
-                                                    self.session,
                                                     data_models.Member,
                                                     project_id))
         self.session.commit()
@@ -1227,7 +1174,6 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
             self.session, project_id=project_id).in_use_member)
         # Test above project adding another member
         self.assertFalse(self.repos.check_quota_met(self.session,
-                                                    self.session,
                                                     data_models.Member,
                                                     project_id))
         self.session.commit()
@@ -1263,7 +1209,6 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
             enabled=True, pool_id=pool.id, backup=False)
         self.session.commit()
         self.assertTrue(self.repos.check_quota_met(self.session,
-                                                   self.session,
                                                    data_models.Member,
                                                    project_id))
         self.session.commit()
@@ -1297,7 +1242,6 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
             enabled=True, pool_id=pool.id, backup=False)
         self.session.commit()
         self.assertFalse(self.repos.check_quota_met(self.session,
-                                                    self.session,
                                                     data_models.Member,
                                                     project_id))
         self.session.commit()
@@ -1311,7 +1255,6 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
         self.repos.quotas.update(self.session, project_id, quota=quota)
         self.session.commit()
         self.assertTrue(self.repos.check_quota_met(self.session,
-                                                   self.session,
                                                    data_models.Member,
                                                    project_id))
         self.session.commit()
@@ -1323,7 +1266,6 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
         self.repos.quotas.update(self.session, project_id, quota=quota)
         self.session.commit()
         self.assertFalse(self.repos.check_quota_met(self.session,
-                                                    self.session,
                                                     data_models.Member,
                                                     project_id))
         self.session.commit()
@@ -1331,7 +1273,6 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
             self.session, project_id=project_id).in_use_member)
         # Test above project is now at quota
         self.assertTrue(self.repos.check_quota_met(self.session,
-                                                   self.session,
                                                    data_models.Member,
                                                    project_id))
         self.session.commit()
@@ -1345,7 +1286,6 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
         self.repos.quotas.update(self.session, project_id, quota=quota)
         self.session.commit()
         self.assertFalse(self.repos.check_quota_met(self.session,
-                                                    self.session,
                                                     data_models.Member,
                                                     project_id))
         self.session.commit()
@@ -1353,7 +1293,6 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
             self.session, project_id=project_id).in_use_member)
         # Test above project adding another member
         self.assertFalse(self.repos.check_quota_met(self.session,
-                                                    self.session,
                                                     data_models.Member,
                                                     project_id))
         self.session.commit()
@@ -1365,7 +1304,6 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
         project_id = uuidutils.generate_uuid()
         conf.config(group='quotas', default_l7policy_quota=0)
         self.assertTrue(self.repos.check_quota_met(self.session,
-                                                   self.session,
                                                    data_models.L7Policy,
                                                    project_id))
         self.session.commit()
@@ -1376,7 +1314,6 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
         project_id = uuidutils.generate_uuid()
         conf.config(group='quotas', default_l7policy_quota=1)
         self.assertFalse(self.repos.check_quota_met(self.session,
-                                                    self.session,
                                                     data_models.L7Policy,
                                                     project_id))
         self.session.commit()
@@ -1384,7 +1321,6 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
             self.session, project_id=project_id).in_use_l7policy)
         # Test above project is now at quota
         self.assertTrue(self.repos.check_quota_met(self.session,
-                                                   self.session,
                                                    data_models.L7Policy,
                                                    project_id))
         self.session.commit()
@@ -1396,7 +1332,6 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
         conf.config(group='quotas',
                     default_l7policy_quota=constants.QUOTA_UNLIMITED)
         self.assertFalse(self.repos.check_quota_met(self.session,
-                                                    self.session,
                                                     data_models.L7Policy,
                                                     project_id))
         self.session.commit()
@@ -1404,7 +1339,6 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
             self.session, project_id=project_id).in_use_l7policy)
         # Test above project adding another l7policy
         self.assertFalse(self.repos.check_quota_met(self.session,
-                                                    self.session,
                                                     data_models.L7Policy,
                                                     project_id))
         self.session.commit()
@@ -1437,7 +1371,6 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
             id=uuidutils.generate_uuid())
         self.session.commit()
         self.assertTrue(self.repos.check_quota_met(self.session,
-                                                   self.session,
                                                    data_models.L7Policy,
                                                    project_id))
         self.session.commit()
@@ -1468,7 +1401,6 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
             id=uuidutils.generate_uuid())
         self.session.commit()
         self.assertFalse(self.repos.check_quota_met(self.session,
-                                                    self.session,
                                                     data_models.L7Policy,
                                                     project_id))
         self.session.commit()
@@ -1482,7 +1414,6 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
         self.repos.quotas.update(self.session, project_id, quota=quota)
         self.session.commit()
         self.assertTrue(self.repos.check_quota_met(self.session,
-                                                   self.session,
                                                    data_models.L7Policy,
                                                    project_id))
         self.session.commit()
@@ -1494,7 +1425,6 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
         self.repos.quotas.update(self.session, project_id, quota=quota)
         self.session.commit()
         self.assertFalse(self.repos.check_quota_met(self.session,
-                                                    self.session,
                                                     data_models.L7Policy,
                                                     project_id))
         self.session.commit()
@@ -1502,7 +1432,6 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
             self.session, project_id=project_id).in_use_l7policy)
         # Test above project is now at quota
         self.assertTrue(self.repos.check_quota_met(self.session,
-                                                   self.session,
                                                    data_models.L7Policy,
                                                    project_id))
         self.session.commit()
@@ -1516,7 +1445,6 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
         self.repos.quotas.update(self.session, project_id, quota=quota)
         self.session.commit()
         self.assertFalse(self.repos.check_quota_met(self.session,
-                                                    self.session,
                                                     data_models.L7Policy,
                                                     project_id))
         self.session.commit()
@@ -1524,7 +1452,6 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
             self.session, project_id=project_id).in_use_l7policy)
         # Test above project adding another l7policy
         self.assertFalse(self.repos.check_quota_met(self.session,
-                                                    self.session,
                                                     data_models.L7Policy,
                                                     project_id))
         self.session.commit()
@@ -1536,7 +1463,6 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
         project_id = uuidutils.generate_uuid()
         conf.config(group='quotas', default_l7rule_quota=0)
         self.assertTrue(self.repos.check_quota_met(self.session,
-                                                   self.session,
                                                    data_models.L7Rule,
                                                    project_id))
         self.session.commit()
@@ -1547,7 +1473,6 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
         project_id = uuidutils.generate_uuid()
         conf.config(group='quotas', default_l7rule_quota=1)
         self.assertFalse(self.repos.check_quota_met(self.session,
-                                                    self.session,
                                                     data_models.L7Rule,
                                                     project_id))
         self.session.commit()
@@ -1555,7 +1480,6 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
             self.session, project_id=project_id).in_use_l7rule)
         # Test above project is now at quota
         self.assertTrue(self.repos.check_quota_met(self.session,
-                                                   self.session,
                                                    data_models.L7Rule,
                                                    project_id))
         self.session.commit()
@@ -1567,7 +1491,6 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
         conf.config(group='quotas',
                     default_l7rule_quota=constants.QUOTA_UNLIMITED)
         self.assertFalse(self.repos.check_quota_met(self.session,
-                                                    self.session,
                                                     data_models.L7Rule,
                                                     project_id))
         self.session.commit()
@@ -1575,7 +1498,6 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
             self.session, project_id=project_id).in_use_l7rule)
         # Test above project adding another l7rule
         self.assertFalse(self.repos.check_quota_met(self.session,
-                                                    self.session,
                                                     data_models.L7Rule,
                                                     project_id))
         self.session.commit()
@@ -1615,7 +1537,6 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
             operating_status=constants.ONLINE, project_id=project_id)
         self.session.commit()
         self.assertTrue(self.repos.check_quota_met(self.session,
-                                                   self.session,
                                                    data_models.L7Rule,
                                                    project_id))
         self.session.commit()
@@ -1653,7 +1574,6 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
             operating_status=constants.ONLINE, project_id=project_id)
         self.session.commit()
         self.assertFalse(self.repos.check_quota_met(self.session,
-                                                    self.session,
                                                     data_models.L7Rule,
                                                     project_id))
         self.session.commit()
@@ -1667,7 +1587,6 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
         self.repos.quotas.update(self.session, project_id, quota=quota)
         self.session.commit()
         self.assertTrue(self.repos.check_quota_met(self.session,
-                                                   self.session,
                                                    data_models.L7Rule,
                                                    project_id))
         self.session.commit()
@@ -1679,7 +1598,6 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
         self.repos.quotas.update(self.session, project_id, quota=quota)
         self.session.commit()
         self.assertFalse(self.repos.check_quota_met(self.session,
-                                                    self.session,
                                                     data_models.L7Rule,
                                                     project_id))
         self.session.commit()
@@ -1687,7 +1605,6 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
             self.session, project_id=project_id).in_use_l7rule)
         # Test above project is now at quota
         self.assertTrue(self.repos.check_quota_met(self.session,
-                                                   self.session,
                                                    data_models.L7Rule,
                                                    project_id))
         self.session.commit()
@@ -1701,7 +1618,6 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
         self.repos.quotas.update(self.session, project_id, quota=quota)
         self.session.commit()
         self.assertFalse(self.repos.check_quota_met(self.session,
-                                                    self.session,
                                                     data_models.L7Rule,
                                                     project_id))
         self.session.commit()
@@ -1709,7 +1625,6 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
             self.session, project_id=project_id).in_use_l7rule)
         # Test above project adding another l7rule
         self.assertFalse(self.repos.check_quota_met(self.session,
-                                                    self.session,
                                                     data_models.L7Rule,
                                                     project_id))
         self.session.commit()
