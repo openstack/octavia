@@ -40,6 +40,7 @@ from octavia.common import constants as consts
 from octavia.common import data_models
 from octavia.common import exceptions
 from octavia.common import validate
+from octavia.db import api as db_api
 from octavia.db import models
 
 CONF = cfg.CONF
@@ -390,13 +391,8 @@ class Repositories(object):
         if not project_id:
             raise exceptions.MissingProjectID()
 
-        quotas = self.quotas.get(session, project_id=project_id)
-        if not quotas:
-            # Make sure we have a record to lock
-            self.quotas.update(
-                session,
-                project_id,
-                quota={})
+        self.quotas.ensure_project_exists(project_id)
+
         # Lock the project record in the database to block other quota checks
         #
         # Note: You cannot just use the current count as the in-use
@@ -1883,11 +1879,6 @@ class L7PolicyRepository(BaseRepository):
 class QuotasRepository(BaseRepository):
     model_class = models.Quotas
 
-    # Since this is for the initial quota record creation it locks the table
-    # which can lead to recoverable deadlocks. Thus we use the deadlock
-    # retry wrapper here. This may not be appropriate for other sessions
-    # and or queries. Use with caution.
-    @oslo_db_api.wrap_db_retry(max_retries=5, retry_on_deadlock=True)
     def update(self, session, project_id, **model_kwargs):
         kwargs_quota = model_kwargs['quota']
         quotas = (
@@ -1903,6 +1894,19 @@ class QuotasRepository(BaseRepository):
         session.add(quotas)
         session.flush()
         return self.get(session, project_id=project_id)
+
+    # Since this is for the initial quota record creation it locks the table
+    # which can lead to recoverable deadlocks. Thus we use the deadlock
+    # retry wrapper here. This may not be appropriate for other sessions
+    # and or queries. Use with caution.
+    @oslo_db_api.wrap_db_retry(max_retries=5, retry_on_deadlock=True)
+    def ensure_project_exists(self, project_id):
+        with db_api.session().begin() as session:
+            quotas = self.get(session, project_id=project_id)
+            if not quotas:
+                # Make sure we have a record to lock
+                self.update(session, project_id, quota={})
+            session.commit()
 
     def delete(self, session, project_id):
         quotas = (
