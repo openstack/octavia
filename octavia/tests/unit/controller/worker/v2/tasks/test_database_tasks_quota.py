@@ -134,7 +134,7 @@ class TestDatabaseTasksQuota(base.TestCase):
                 task.revert(test_object, None)
 
             mock_check_quota_met.assert_called_once_with(
-                mock_session, mock_session, data_model,
+                mock_session, data_model,
                 project_id)
 
             mock_session.commit.assert_called_once_with()
@@ -238,13 +238,13 @@ class TestDatabaseTasksQuota(base.TestCase):
 
             task.revert(project_id, pool_child_count, None)
 
-            calls = [mock.call(mock_session, mock_session,
+            calls = [mock.call(mock_session,
                                data_models.Pool, project_id),
-                     mock.call(mock_session, mock_session,
+                     mock.call(mock_session,
                                data_models.HealthMonitor, project_id),
-                     mock.call(mock_session, mock_session,
+                     mock.call(mock_session,
                                data_models.Member, project_id),
-                     mock.call(mock_session, mock_session,
+                     mock.call(mock_session,
                                data_models.Member, project_id)]
 
             mock_check_quota_met.assert_has_calls(calls)
@@ -261,13 +261,13 @@ class TestDatabaseTasksQuota(base.TestCase):
 
             task.revert(project_id, pool_child_count, None)
 
-            calls = [mock.call(mock_session, mock_session,
+            calls = [mock.call(mock_session,
                                data_models.Pool, project_id),
-                     mock.call(mock_session, mock_session,
+                     mock.call(mock_session,
                                data_models.HealthMonitor, project_id),
-                     mock.call(mock_session, mock_session,
+                     mock.call(mock_session,
                                data_models.Member, project_id),
-                     mock.call(mock_session, mock_session,
+                     mock.call(mock_session,
                                data_models.Member, project_id)]
 
             mock_check_quota_met.assert_has_calls(calls)
@@ -285,13 +285,13 @@ class TestDatabaseTasksQuota(base.TestCase):
 
             task.revert(project_id, pool_child_count, None)
 
-            calls = [mock.call(mock_session, mock_session,
+            calls = [mock.call(mock_session,
                                data_models.Pool, project_id),
-                     mock.call(mock_session, mock_session,
+                     mock.call(mock_session,
                                data_models.HealthMonitor, project_id),
-                     mock.call(mock_session, mock_session,
+                     mock.call(mock_session,
                                data_models.Member, project_id),
-                     mock.call(mock_session, mock_session,
+                     mock.call(mock_session,
                                data_models.Member, project_id)]
 
             mock_check_quota_met.assert_has_calls(calls)
@@ -370,11 +370,11 @@ class TestDatabaseTasksQuota(base.TestCase):
 
             task.revert(test_object, None)
 
-            calls = [mock.call(mock_session, mock_session,
+            calls = [mock.call(mock_session,
                                data_models.L7Policy, project_id),
-                     mock.call(mock_session, mock_session,
+                     mock.call(mock_session,
                                data_models.L7Rule, project_id),
-                     mock.call(mock_session, mock_session,
+                     mock.call(mock_session,
                                data_models.L7Rule, project_id)]
 
             mock_check_quota_met.assert_has_calls(calls)
@@ -391,11 +391,11 @@ class TestDatabaseTasksQuota(base.TestCase):
 
             task.revert(test_object, None)
 
-            calls = [mock.call(mock_session, mock_session,
+            calls = [mock.call(mock_session,
                                data_models.L7Policy, project_id),
-                     mock.call(mock_session, mock_session,
+                     mock.call(mock_session,
                                data_models.L7Rule, project_id),
-                     mock.call(mock_session, mock_session,
+                     mock.call(mock_session,
                                data_models.L7Rule, project_id)]
 
             mock_check_quota_met.assert_has_calls(calls)

@@ -167,7 +167,6 @@ class MemberController(base.BaseController):
         try:
             if self.repositories.check_quota_met(
                     context.session,
-                    context.session,
                     data_models.Member,
                     member.project_id):
                 raise exceptions.QuotaException(
@@ -401,7 +400,7 @@ class MembersController(MemberController):
             else:
                 member_count_diff = len(new_members) - len(deleted_members)
             if member_count_diff > 0 and self.repositories.check_quota_met(
-                    context.session, context.session, data_models.Member,
+                    context.session, data_models.Member,
                     db_pool.project_id, count=member_count_diff):
                 raise exceptions.QuotaException(
                     resource=data_models.Member._name())
