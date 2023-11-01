@@ -64,7 +64,7 @@ class DistributorDriver(object, metaclass=abc.ABCMeta):
         :returns: A TaskFlow Flow that will add a VIP to the distributor
 
         This method will return a TaskFlow Flow that adds a VIP to the
-        distributor by perfoming the necessary steps to plug the VIP and
+        distributor by performing the necessary steps to plug the VIP and
         configure the distributor to start receiving requests on this VIP.
         """
 

@@ -536,7 +536,7 @@ class ControllerWorker(object):
                 self._member_repo.get(
                     session, id=member[constants.MEMBER_ID])
                 for member in new_members]
-        # The API may not have commited all of the new member records yet.
+        # The API may not have committed all of the new member records yet.
         # Make sure we retry looking them up.
         if None in db_new_members or len(db_new_members) != len(new_members):
             LOG.warning('Failed to fetch one of the new members from DB. '
@@ -1128,7 +1128,7 @@ class ControllerWorker(object):
 
         :param load_balancer_id: ID for load balancer to failover
         :returns: None
-        :raises octavia.commom.exceptions.NotFound: The load balancer was not
+        :raises octavia.common.exceptions.NotFound: The load balancer was not
                                                     found.
         """
         try:

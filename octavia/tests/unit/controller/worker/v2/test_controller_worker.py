@@ -2036,7 +2036,7 @@ class TestControllerWorker(base.TestCase):
             mock_member_repo_get, mock_l7rule_repo_get, mock_l7policy_repo_get,
             mock_listener_repo_get, mock_lb_repo_get, mock_health_mon_repo_get,
             mock_amp_repo_get):
-        # Case where the amps can't see eachother and somehow end up with
+        # Case where the amps can't see each other and somehow end up with
         # two amphora with an interface. This is highly unlikely as the
         # higher priority amphora should get the IP in a net split, but
         # let's test the code for this odd case.

@@ -318,7 +318,7 @@ class HaproxyAmphoraLoadBalancerDriver(
             # We have other listeners, so just update is fine.
             # TODO(rm_work): This is a little inefficient since this duplicates
             # a lot of the detection logic that has already been done, but it
-            # is probably safer to re-use the existing code-path.
+            # is probably safer to reuse the existing code-path.
             self.update_amphora_listeners(listener.load_balancer, amphora)
         else:
             # Deleting the last listener, so really do the delete

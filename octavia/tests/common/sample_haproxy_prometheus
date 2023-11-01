@@ -25,7 +25,7 @@ haproxy_process_pool_failures_total 0
 # HELP haproxy_process_max_fds Maximum number of open file descriptors; 0=unset.
 # TYPE haproxy_process_max_fds gauge
 haproxy_process_max_fds 375033
-# HELP haproxy_process_max_sockets Maximum numer of open sockets.
+# HELP haproxy_process_max_sockets Maximum number of open sockets.
 # TYPE haproxy_process_max_sockets gauge
 haproxy_process_max_sockets 375033
 # HELP haproxy_process_max_connections Maximum number of concurrent connections.

@@ -78,7 +78,7 @@ def hm_health_check(exit_event):
 
 
 def _handle_mutate_config(listener_proc_pid, check_proc_pid, *args, **kwargs):
-    LOG.info("Health Manager recieved HUP signal, mutating config.")
+    LOG.info("Health Manager received HUP signal, mutating config.")
     _mutate_config()
     os.kill(listener_proc_pid, signal.SIGHUP)
     os.kill(check_proc_pid, signal.SIGHUP)

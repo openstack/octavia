@@ -111,7 +111,7 @@ class TestHealthCheck(base_db_test.OctaviaDBTestBase):
         self.assertEqual(200, response.status_code)
         self.assertEqual('OK', response.text)
 
-    # Note: For whatever reason, detailed=True text has no additonal info
+    # Note: For whatever reason, detailed=True text has no additional info
     def test_healthcheck_get_text_detailed(self):
         self.conf.config(group='healthcheck', detailed=True)
         response = self._get(self._get_enabled_app(), '/healthcheck')
@@ -275,7 +275,7 @@ class TestHealthCheck(base_db_test.OctaviaDBTestBase):
         self.assertIn('boom', response.text)
         self.assertIn('Garbage collector', response.text)
 
-    # Note: For whatever reason, detailed=True text has no additonal info
+    # Note: For whatever reason, detailed=True text has no additional info
     @mock.patch('octavia.db.api.get_session')
     def test_healthcheck_get_text_detailed_failed(self, mock_get_session):
         self.conf.config(group='healthcheck', detailed=True)

@@ -490,7 +490,7 @@ class UpdateHealthDb:
                 raw_pools = listener['pools']
 
                 # normalize the pool IDs. Single process listener pools
-                # have the listener id appended with an ':' seperator.
+                # have the listener id appended with an ':' separator.
                 # Old multi-process listener pools only have a pool ID.
                 # This makes sure the keys are only pool IDs.
                 pools = {(k + ' ')[:k.rfind(':')]: v for k, v in
@@ -511,7 +511,7 @@ class UpdateHealthDb:
             raw_pools = health['pools']
 
             # normalize the pool IDs. Single process listener pools
-            # have the listener id appended with an ':' seperator.
+            # have the listener id appended with an ':' separator.
             # Old multi-process listener pools only have a pool ID.
             # This makes sure the keys are only pool IDs.
             pools = {(k + ' ')[:k.rfind(':')]: v for k, v in raw_pools.items()}

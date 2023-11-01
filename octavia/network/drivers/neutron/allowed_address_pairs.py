@@ -491,7 +491,7 @@ class AllowedAddressPairsDriver(neutron_base.BaseNeutronDriver):
                     LOG.info('Port %s already exists. Nothing to be done.',
                              load_balancer.vip.port_id)
                     return self._port_to_vip(port, load_balancer)
-                LOG.error('Neutron VIP mis-match. Expected ip %s on '
+                LOG.error('Neutron VIP mismatch. Expected ip %s on '
                           'subnet %s in network %s. Neutron has fixed_ips %s '
                           'in network %s. Deleting and recreating the VIP '
                           'port.', load_balancer.vip.ip_address,

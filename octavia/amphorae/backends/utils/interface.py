@@ -227,7 +227,7 @@ class InterfaceController(object):
             if key in current_addresses:
                 current_addresses.remove(key)
             elif address.get(consts.OCTAVIA_OWNED, True):
-                # By default all adresses are managed/owned by Octavia
+                # By default all addresses are managed/owned by Octavia
                 address[consts.FAMILY] = self._family(
                     address[consts.ADDRESS])
                 LOG.debug("%s: Adding address %s", interface.name,

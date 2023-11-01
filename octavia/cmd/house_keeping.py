@@ -72,7 +72,7 @@ def cert_rotation():
 
 
 def _mutate_config(*args, **kwargs):
-    LOG.info("Housekeeping recieved HUP signal, mutating config.")
+    LOG.info("Housekeeping received HUP signal, mutating config.")
     CONF.mutate_config_files()
 
 

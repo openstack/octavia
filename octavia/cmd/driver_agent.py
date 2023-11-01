@@ -155,7 +155,7 @@ def main():
                             'ignoring and continuing shutdown process.',
                             str(e), proc.name)
             else:
-                LOG.info('Provider agent "%s" has succesfully shutdown.',
+                LOG.info('Provider agent "%s" has successfully shutdown.',
                          proc.name)
 
     signal.signal(signal.SIGTERM, process_cleanup)

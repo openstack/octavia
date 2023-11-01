@@ -29,7 +29,7 @@ down_revision = 'a7f187cd221f'
 
 
 def upgrade():
-    # Add collumn redirect_prefix
+    # Add column redirect_prefix
     op.add_column(
         u'l7policy',
         sa.Column(u'redirect_http_code', sa.Integer(), nullable=True)

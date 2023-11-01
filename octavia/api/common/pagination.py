@@ -244,7 +244,7 @@ class PaginationHelper(object):
         :param query: the query object to which we should add
         paging/sorting/filtering
         :param model: the ORM model class
-        :param enforce_valid_params: check for invalid enteries in self.params
+        :param enforce_valid_params: check for invalid entries in self.params
 
         :rtype: sqlalchemy.orm.query.Query
         :returns: The query with sorting/pagination/filtering added.
@@ -259,7 +259,7 @@ class PaginationHelper(object):
             secondary_query_filter = filter_params.pop(
                 "project_id", None) if (model == models.Amphora) else None
 
-            # Tranlate arguments from API standard to data model's field name
+            # Translate arguments from API standard to data model's field name
             filter_params = (
                 model.__v2_wsme__.translate_dict_keys_to_data_model(
                     filter_params)
