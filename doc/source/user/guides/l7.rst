@@ -93,7 +93,7 @@ L7 rules have the following types:
   certificate validation result. A value of '0' means the certificate was
   successfully validated. A value greater than '0' means the certificate
   failed validation. This value follows the `openssl-verify result codes <https://github.com/openssl/openssl/blob/master/include/openssl/x509_vfy.h#L99>`_.
-* ``SSL_DN_FIELD``: The rule looks for a Distinguished Name feild defined in
+* ``SSL_DN_FIELD``: The rule looks for a Distinguished Name field defined in
   the key parameter and compares it against the value parameter in the rule.
 
 Comparison types
