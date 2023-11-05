@@ -15,7 +15,6 @@ from unittest import mock
 import uuid
 
 from barbicanclient.v1 import secrets
-from OpenSSL import crypto
 
 import octavia.certificates.common.barbican as barbican_common
 import octavia.certificates.common.cert as cert
@@ -138,10 +137,11 @@ class TestBarbicanManager(base.TestCase):
                          sorted(data.get_intermediates()))
         self.assertIsNone(data.get_private_key_passphrase())
 
-    @mock.patch('OpenSSL.crypto.load_pkcs12')
+    @mock.patch('cryptography.hazmat.primitives.serialization.pkcs12.'
+                'load_pkcs12')
     def test_get_cert_bad_pkcs12(self, mock_load_pkcs12):
 
-        mock_load_pkcs12.side_effect = [crypto.Error]
+        mock_load_pkcs12.side_effect = [ValueError]
 
         # Mock out the client
         self.bc.secrets.get.return_value = self.secret_pkcs12
