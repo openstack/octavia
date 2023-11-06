@@ -198,11 +198,9 @@ def validate_l7rule_ssl_types(l7rule):
         # key and value are not allowed
         if req_key:
             # log error or raise
-            msg = 'L7rule type {} does not use the "key" field.'.format(
-                rule_type)
+            msg = f'L7rule type {rule_type} does not use the "key" field.'
         elif req_value.lower() != 'true':
-            msg = 'L7rule value {} is not a boolean True string.'.format(
-                req_value)
+            msg = f'L7rule value {req_value} is not a boolean True string.'
         elif compare_type != constants.L7RULE_COMPARE_TYPE_EQUAL_TO:
             msg = 'L7rule type {} only supports the {} compare type.'.format(
                 rule_type, constants.L7RULE_COMPARE_TYPE_EQUAL_TO)
@@ -210,12 +208,10 @@ def validate_l7rule_ssl_types(l7rule):
     if rule_type == constants.L7RULE_TYPE_SSL_VERIFY_RESULT:
         if req_key:
             # log or raise req_key not used
-            msg = 'L7rule type {} does not use the "key" field.'.format(
-                rule_type)
+            msg = f'L7rule type {rule_type} does not use the "key" field.'
         elif not req_value.isdigit() or int(req_value) < 0:
             # log or raise req_value must be int
-            msg = 'L7rule type {} needs a int value, which is >= 0'.format(
-                rule_type)
+            msg = f'L7rule type {rule_type} needs a int value, which is >= 0'
         elif compare_type != constants.L7RULE_COMPARE_TYPE_EQUAL_TO:
             msg = 'L7rule type {} only supports the {} compare type.'.format(
                 rule_type, constants.L7RULE_COMPARE_TYPE_EQUAL_TO)
@@ -227,9 +223,9 @@ def validate_l7rule_ssl_types(l7rule):
 
         if not req_key or not req_value:
             # log or raise key and value must be specified.
-            msg = 'L7rule type {} needs to specify a key and a value.'.format(
-                rule_type)
-        # log or raise the key must be split by '-'
+            msg = (f'L7rule type {rule_type} needs to specify a '
+                   f'key and a value.')
+        # log or raise the key must be splited by '-'
         elif not dn_regex.match(req_key):
             msg = 'Invalid L7rule distinguished name field.'
 

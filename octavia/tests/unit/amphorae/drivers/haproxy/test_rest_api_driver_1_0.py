@@ -420,9 +420,8 @@ class TestHaproxyAmphoraLoadBalancerDriverTest(base.TestCase):
         mock_build_pem.return_value = fake_pem
         ref_md5 = md5(fake_pem, usedforsecurity=False).hexdigest()  # nosec
         ref_name = f'{pool_cert.id}.pem'
-        ref_path = '{cert_dir}/{lb_id}/{name}'.format(
-            cert_dir=fake_cert_dir, lb_id=sample_listener.load_balancer.id,
-            name=ref_name)
+        ref_path = (f'{fake_cert_dir}/{sample_listener.load_balancer.id}/'
+                    f'{ref_name}')
         ref_ca_name = 'fake_ca.pem'
         ref_ca_path = '{cert_dir}/{lb_id}/{name}'.format(
             cert_dir=fake_cert_dir, lb_id=sample_listener.load_balancer.id,
@@ -1083,81 +1082,71 @@ class TestAmphoraAPIClientTest(base.TestCase):
 
     @requests_mock.mock()
     def test_start_loadbalancer(self, m):
-        m.put("{base}/loadbalancer/{loadbalancer_id}/start".format(
-            base=self.base_url_ver, loadbalancer_id=FAKE_UUID_1))
+        m.put(f"{self.base_url_ver}/loadbalancer/{FAKE_UUID_1}/start")
         self.driver.start_listener(self.amp, FAKE_UUID_1)
         self.assertTrue(m.called)
 
     @requests_mock.mock()
     def test_start_loadbalancer_missing(self, m):
-        m.put("{base}/loadbalancer/{loadbalancer_id}/start".format(
-            base=self.base_url_ver, loadbalancer_id=FAKE_UUID_1),
-            status_code=404,
-            headers={'content-type': 'application/json'})
+        m.put(f"{self.base_url_ver}/loadbalancer/{FAKE_UUID_1}/start",
+              status_code=404,
+              headers={'content-type': 'application/json'})
         self.assertRaises(exc.NotFound, self.driver.start_listener,
                           self.amp, FAKE_UUID_1)
 
     @requests_mock.mock()
     def test_start_loadbalancer_unauthorized(self, m):
-        m.put("{base}/loadbalancer/{loadbalancer_id}/start".format(
-            base=self.base_url_ver, loadbalancer_id=FAKE_UUID_1),
-            status_code=401)
+        m.put(f"{self.base_url_ver}/loadbalancer/{FAKE_UUID_1}/start",
+              status_code=401)
         self.assertRaises(exc.Unauthorized, self.driver.start_listener,
                           self.amp, FAKE_UUID_1)
 
     @requests_mock.mock()
     def test_start_loadbalancer_server_error(self, m):
-        m.put("{base}/loadbalancer/{loadbalancer_id}/start".format(
-            base=self.base_url_ver, loadbalancer_id=FAKE_UUID_1),
-            status_code=500)
+        m.put(f"{self.base_url_ver}/loadbalancer/{FAKE_UUID_1}/start",
+              status_code=500)
         self.assertRaises(exc.InternalServerError, self.driver.start_listener,
                           self.amp, FAKE_UUID_1)
 
     @requests_mock.mock()
     def test_start_loadbalancer_service_unavailable(self, m):
-        m.put("{base}/loadbalancer/{loadbalancer_id}/start".format(
-            base=self.base_url_ver, loadbalancer_id=FAKE_UUID_1),
-            status_code=503)
+        m.put(f"{self.base_url_ver}/loadbalancer/{FAKE_UUID_1}/start",
+              status_code=503)
         self.assertRaises(exc.ServiceUnavailable, self.driver.start_listener,
                           self.amp, FAKE_UUID_1)
 
     @requests_mock.mock()
     def test_delete_listener(self, m):
-        m.delete("{base}/listeners/{listener_id}".format(
-            base=self.base_url_ver, listener_id=FAKE_UUID_1), json={})
+        m.delete(f"{self.base_url_ver}/listeners/{FAKE_UUID_1}", json={})
         self.driver.delete_listener(self.amp, FAKE_UUID_1)
         self.assertTrue(m.called)
 
     @requests_mock.mock()
     def test_delete_listener_missing(self, m):
-        m.delete("{base}/listeners/{listener_id}".format(
-            base=self.base_url_ver, listener_id=FAKE_UUID_1),
-            status_code=404,
-            headers={'content-type': 'application/json'})
+        m.delete(f"{self.base_url_ver}/listeners/{FAKE_UUID_1}",
+                 status_code=404,
+                 headers={'content-type': 'application/json'})
         self.driver.delete_listener(self.amp, FAKE_UUID_1)
         self.assertTrue(m.called)
 
     @requests_mock.mock()
     def test_delete_listener_unauthorized(self, m):
-        m.delete("{base}/listeners/{listener_id}".format(
-            base=self.base_url_ver, listener_id=FAKE_UUID_1),
-            status_code=401)
+        m.delete(f"{self.base_url_ver}/listeners/{FAKE_UUID_1}",
+                 status_code=401)
         self.assertRaises(exc.Unauthorized, self.driver.delete_listener,
                           self.amp, FAKE_UUID_1)
 
     @requests_mock.mock()
     def test_delete_listener_server_error(self, m):
-        m.delete("{base}/listeners/{listener_id}".format(
-            base=self.base_url_ver, listener_id=FAKE_UUID_1),
-            status_code=500)
+        m.delete(f"{self.base_url_ver}/listeners/{FAKE_UUID_1}",
+                 status_code=500)
         self.assertRaises(exc.InternalServerError, self.driver.delete_listener,
                           self.amp, FAKE_UUID_1)
 
     @requests_mock.mock()
     def test_delete_listener_service_unavailable(self, m):
-        m.delete("{base}/listeners/{listener_id}".format(
-            base=self.base_url_ver, listener_id=FAKE_UUID_1),
-            status_code=503)
+        m.delete(f"{self.base_url_ver}/listeners/{FAKE_UUID_1}",
+                 status_code=503)
         self.assertRaises(exc.ServiceUnavailable, self.driver.delete_listener,
                           self.amp, FAKE_UUID_1)
 
@@ -1356,10 +1345,8 @@ class TestAmphoraAPIClientTest(base.TestCase):
     def test_upload_config(self, m):
         config = {"name": "fake_config"}
         m.put(
-            "{base}/loadbalancer/{"
-            "amphora_id}/{loadbalancer_id}/haproxy".format(
-                amphora_id=self.amp.id, base=self.base_url_ver,
-                loadbalancer_id=FAKE_UUID_1),
+            f"{self.base_url_ver}/loadbalancer/{self.amp.id}/"
+            f"{FAKE_UUID_1}/haproxy",
             json=config)
         self.driver.upload_config(self.amp, FAKE_UUID_1,
                                   config)
@@ -1369,10 +1356,8 @@ class TestAmphoraAPIClientTest(base.TestCase):
     def test_upload_invalid_config(self, m):
         config = '{"name": "bad_config"}'
         m.put(
-            "{base}/loadbalancer/{"
-            "amphora_id}/{loadbalancer_id}/haproxy".format(
-                amphora_id=self.amp.id, base=self.base_url_ver,
-                loadbalancer_id=FAKE_UUID_1),
+            f"{self.base_url_ver}/loadbalancer/{self.amp.id}/"
+            f"{FAKE_UUID_1}/haproxy",
             status_code=400)
         self.assertRaises(exc.InvalidRequest, self.driver.upload_config,
                           self.amp, FAKE_UUID_1, config)
@@ -1381,10 +1366,8 @@ class TestAmphoraAPIClientTest(base.TestCase):
     def test_upload_config_unauthorized(self, m):
         config = '{"name": "bad_config"}'
         m.put(
-            "{base}/loadbalancer/{"
-            "amphora_id}/{loadbalancer_id}/haproxy".format(
-                amphora_id=self.amp.id, base=self.base_url_ver,
-                loadbalancer_id=FAKE_UUID_1),
+            f"{self.base_url_ver}/loadbalancer/{self.amp.id}/"
+            f"{FAKE_UUID_1}/haproxy",
             status_code=401)
         self.assertRaises(exc.Unauthorized, self.driver.upload_config,
                           self.amp, FAKE_UUID_1, config)
@@ -1393,10 +1376,8 @@ class TestAmphoraAPIClientTest(base.TestCase):
     def test_upload_config_server_error(self, m):
         config = '{"name": "bad_config"}'
         m.put(
-            "{base}/loadbalancer/{"
-            "amphora_id}/{loadbalancer_id}/haproxy".format(
-                amphora_id=self.amp.id, base=self.base_url_ver,
-                loadbalancer_id=FAKE_UUID_1),
+            f"{self.base_url_ver}/loadbalancer/{self.amp.id}/"
+            f"{FAKE_UUID_1}/haproxy",
             status_code=500)
         self.assertRaises(exc.InternalServerError, self.driver.upload_config,
                           self.amp, FAKE_UUID_1, config)
@@ -1405,10 +1386,8 @@ class TestAmphoraAPIClientTest(base.TestCase):
     def test_upload_config_service_unavailable(self, m):
         config = '{"name": "bad_config"}'
         m.put(
-            "{base}/loadbalancer/{"
-            "amphora_id}/{loadbalancer_id}/haproxy".format(
-                amphora_id=self.amp.id, base=self.base_url_ver,
-                loadbalancer_id=FAKE_UUID_1),
+            f"{self.base_url_ver}/loadbalancer/{self.amp.id}/"
+            f"{FAKE_UUID_1}/haproxy",
             status_code=503)
         self.assertRaises(exc.ServiceUnavailable, self.driver.upload_config,
                           self.amp, FAKE_UUID_1, config)
@@ -1417,10 +1396,8 @@ class TestAmphoraAPIClientTest(base.TestCase):
     def test_upload_udp_config(self, m):
         config = {"name": "fake_config"}
         m.put(
-            "{base}/listeners/"
-            "{amphora_id}/{listener_id}/udp_listener".format(
-                amphora_id=self.amp.id, base=self.base_url_ver,
-                listener_id=FAKE_UUID_1),
+            f"{self.base_url_ver}/listeners/{self.amp.id}/"
+            f"{FAKE_UUID_1}/udp_listener",
             json=config)
         self.driver.upload_udp_config(self.amp, FAKE_UUID_1, config)
         self.assertTrue(m.called)
@@ -1429,10 +1406,8 @@ class TestAmphoraAPIClientTest(base.TestCase):
     def test_upload_udp_invalid_config(self, m):
         config = '{"name": "bad_config"}'
         m.put(
-            "{base}/listeners/"
-            "{amphora_id}/{listener_id}/udp_listener".format(
-                amphora_id=self.amp.id, base=self.base_url_ver,
-                listener_id=FAKE_UUID_1),
+            f"{self.base_url_ver}/listeners/{self.amp.id}/"
+            f"{FAKE_UUID_1}/udp_listener",
             status_code=400)
         self.assertRaises(exc.InvalidRequest, self.driver.upload_udp_config,
                           self.amp, FAKE_UUID_1, config)
@@ -1441,10 +1416,8 @@ class TestAmphoraAPIClientTest(base.TestCase):
     def test_upload_udp_config_unauthorized(self, m):
         config = '{"name": "bad_config"}'
         m.put(
-            "{base}/listeners/"
-            "{amphora_id}/{listener_id}/udp_listener".format(
-                amphora_id=self.amp.id, base=self.base_url_ver,
-                listener_id=FAKE_UUID_1),
+            f"{self.base_url_ver}/listeners/{self.amp.id}/"
+            f"{FAKE_UUID_1}/udp_listener",
             status_code=401)
         self.assertRaises(exc.Unauthorized, self.driver.upload_udp_config,
                           self.amp, FAKE_UUID_1, config)
@@ -1453,10 +1426,8 @@ class TestAmphoraAPIClientTest(base.TestCase):
     def test_upload_udp_config_server_error(self, m):
         config = '{"name": "bad_config"}'
         m.put(
-            "{base}/listeners/"
-            "{amphora_id}/{listener_id}/udp_listener".format(
-                amphora_id=self.amp.id, base=self.base_url_ver,
-                listener_id=FAKE_UUID_1),
+            f"{self.base_url_ver}/listeners/{self.amp.id}/"
+            f"{FAKE_UUID_1}/udp_listener",
             status_code=500)
         self.assertRaises(exc.InternalServerError,
                           self.driver.upload_udp_config,
@@ -1466,10 +1437,8 @@ class TestAmphoraAPIClientTest(base.TestCase):
     def test_upload_udp_config_service_unavailable(self, m):
         config = '{"name": "bad_config"}'
         m.put(
-            "{base}/listeners/"
-            "{amphora_id}/{listener_id}/udp_listener".format(
-                amphora_id=self.amp.id, base=self.base_url_ver,
-                listener_id=FAKE_UUID_1),
+            f"{self.base_url_ver}/listeners/{self.amp.id}/"
+            f"{FAKE_UUID_1}/udp_listener",
             status_code=503)
         self.assertRaises(exc.ServiceUnavailable,
                           self.driver.upload_udp_config,
@@ -1477,18 +1446,14 @@ class TestAmphoraAPIClientTest(base.TestCase):
 
     @requests_mock.mock()
     def test_plug_vip(self, m):
-        m.post("{base}/plug/vip/{vip}".format(
-            base=self.base_url_ver, vip=FAKE_IP)
-        )
+        m.post(f"{self.base_url_ver}/plug/vip/{FAKE_IP}")
         self.driver.plug_vip(self.amp, FAKE_IP, self.subnet_info)
         self.assertTrue(m.called)
 
     @requests_mock.mock()
     def test_plug_vip_api_not_ready(self, m):
-        m.post("{base}/plug/vip/{vip}".format(
-            base=self.base_url_ver, vip=FAKE_IP),
-            status_code=404, headers={'content-type': 'text/html'}
-        )
+        m.post(f"{self.base_url_ver}/plug/vip/{FAKE_IP}",
+               status_code=404, headers={'content-type': 'text/html'})
         self.assertRaises(driver_except.TimeOutException,
                           self.driver.plug_vip,
                           self.amp, FAKE_IP, self.subnet_info)
@@ -1496,26 +1461,21 @@ class TestAmphoraAPIClientTest(base.TestCase):
 
     @requests_mock.mock()
     def test_plug_network(self, m):
-        m.post("{base}/plug/network".format(
-            base=self.base_url_ver)
-        )
+        m.post(f"{self.base_url_ver}/plug/network")
         self.driver.plug_network(self.amp, self.port_info)
         self.assertTrue(m.called)
 
     @requests_mock.mock()
     def test_upload_vrrp_config(self, m):
         config = '{"name": "bad_config"}'
-        m.put("{base}/vrrp/upload".format(
-            base=self.base_url_ver)
-        )
+        m.put(f"{self.base_url_ver}/vrrp/upload")
         self.driver.upload_vrrp_config(self.amp, config)
         self.assertTrue(m.called)
 
     @requests_mock.mock()
     def test_vrrp_action(self, m):
         action = 'start'
-        m.put("{base}/vrrp/{action}".format(base=self.base_url_ver,
-              action=action))
+        m.put(f"{self.base_url_ver}/vrrp/{action}")
         self.driver._vrrp_action(action, self.amp)
         self.assertTrue(m.called)
 
@@ -1523,8 +1483,7 @@ class TestAmphoraAPIClientTest(base.TestCase):
     def test_get_interface(self, m):
         interface = [{"interface": "eth1"}]
         ip_addr = '192.51.100.1'
-        m.get("{base}/interface/{ip_addr}".format(base=self.base_url_ver,
-                                                  ip_addr=ip_addr),
+        m.get(f"{self.base_url_ver}/interface/{ip_addr}",
               json=interface)
         self.driver.get_interface(self.amp, ip_addr)
         self.assertTrue(m.called)

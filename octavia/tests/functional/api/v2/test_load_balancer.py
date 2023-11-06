@@ -850,7 +850,7 @@ class TestLoadBalancer(base.BaseAPITest):
                 mock_get_subnet.return_value = subnet
                 mock_get_qos.side_effect = Exception()
                 response = self.post(self.LBS_PATH, body, status=400)
-        err_msg = "qos_policy %s not found." % qos_policy_id
+        err_msg = f"qos_policy {qos_policy_id} not found."
         self.assertEqual(err_msg, response.json.get('faultstring'))
 
     def test_create_with_long_name(self):

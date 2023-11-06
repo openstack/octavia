@@ -492,7 +492,7 @@ class TestAvailabilityZones(base.BaseAPITest):
         self.delete(self.AZ_PATH.format(az_name=az.get('name')))
         response = self.get(self.AZ_PATH.format(az_name=az.get('name')),
                             status=404)
-        err_msg = "Availability Zone %s not found." % az.get('name')
+        err_msg = f"Availability Zone {az.get('name')} not found."
         self.assertEqual(err_msg, response.json.get('faultstring'))
 
     def test_delete_nonexistent_name(self):
@@ -539,7 +539,7 @@ class TestAvailabilityZones(base.BaseAPITest):
         self.conf.config(group='api_settings', auth_strategy=auth_strategy)
         response = self.get(self.AZ_PATH.format(az_name=az.get('name')),
                             status=404)
-        err_msg = "Availability Zone %s not found." % az.get('name')
+        err_msg = f"Availability Zone {az.get('name')} not found."
         self.assertEqual(err_msg, response.json.get('faultstring'))
 
     def test_delete_not_authorized(self):

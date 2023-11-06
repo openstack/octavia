@@ -117,8 +117,7 @@ class ListenerTestCase(base.TestCase):
                                                  consts.AMP_ACTION_RELOAD)
         self.assertEqual(202, result.status_code)
         self.assertEqual('OK', result.json['message'])
-        ref_details = ('Listener {} {}ed'.format(listener_id,
-                                                 consts.AMP_ACTION_RELOAD))
+        ref_details = f'Listener {listener_id} {consts.AMP_ACTION_RELOAD}ed'
         self.assertEqual(ref_details, result.json['details'])
 
         # Happy path - VRRP - RELOAD - OFFLINE

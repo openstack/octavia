@@ -95,10 +95,7 @@ class HAProxyQuery:
         """
 
         results = self._query(
-            'show stat {proxy_iid} {object_type} {server_id}'.format(
-                proxy_iid=proxy_iid,
-                object_type=object_type,
-                server_id=server_id))
+            f'show stat {proxy_iid} {object_type} {server_id}')
         list_results = results[2:].split('\n')
         csv_reader = csv.DictReader(list_results)
         stats_list = list(csv_reader)

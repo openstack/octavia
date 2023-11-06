@@ -751,7 +751,7 @@ class PrometheusProxy(SimpleHTTPRequestHandler):
                             metrics_buffer += line.replace(match,
                                                            map_tuple[0])
                     elif PRINT_REJECTED:
-                        print("REJECTED: %s" % line)
+                        print(f"REJECTED: {line}")
         except Exception as e:
             print(str(e), flush=True)
             traceback.print_tb(e.__traceback__)

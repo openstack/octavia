@@ -92,15 +92,14 @@ def keepalived_lvs_pids_path(listener_id):
     for file_ext in ['pid', 'vrrp.pid', 'check.pid']:
         pids_path[file_ext] = (
             os.path.join(CONF.haproxy_amphora.base_path,
-                         ('lvs/octavia-keepalivedlvs-%s.%s') %
-                         (str(listener_id), file_ext)))
+                         f"lvs/octavia-keepalivedlvs-{str(listener_id)}."
+                         f"{file_ext}"))
     return pids_path['pid'], pids_path['vrrp.pid'], pids_path['check.pid']
 
 
 def keepalived_lvs_cfg_path(listener_id):
     return os.path.join(CONF.haproxy_amphora.base_path,
-                        ('lvs/octavia-keepalivedlvs-%s.conf') %
-                        str(listener_id))
+                        f"lvs/octavia-keepalivedlvs-{str(listener_id)}.conf")
 
 
 def haproxy_dir(lb_id):
@@ -363,7 +362,7 @@ def vrrp_check_script_update(lb_id, action):
     for lbid in lb_ids:
         args.append(haproxy_sock_path(lbid))
 
-    cmd = 'haproxy-vrrp-check {args}; exit $?'.format(args=' '.join(args))
+    cmd = f"haproxy-vrrp-check {' '.join(args)}; exit $?"
     with open(haproxy_check_script_path(), 'w', encoding='utf-8') as text_file:
         text_file.write(cmd)
 

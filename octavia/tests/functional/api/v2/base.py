@@ -172,8 +172,7 @@ class BaseAPITest(base_db_test.OctaviaDBTestBase):
         for k, v in params.items():
             param_string += f"{k}={v}&"
         if param_string:
-            full_path = "{path}?{params}".format(
-                path=full_path, params=param_string.rstrip("&"))
+            full_path = f"{full_path}?{param_string.rstrip('&')}"
         response = self.app.delete(full_path,
                                    headers=headers,
                                    status=status,

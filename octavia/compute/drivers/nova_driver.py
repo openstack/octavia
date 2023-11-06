@@ -135,7 +135,7 @@ class VirtualMachineManager(compute_base.ComputeBase):
                 # device id = volume_id, device type and size unspecified,
                 # delete-on-terminate = true (volume will be deleted by Nova
                 # on instance termination)
-                block_device_mapping = {'vda': '%s:::true' % volume_id}
+                block_device_mapping = {'vda': f'{volume_id}:::true'}
             amphora = self.manager.create(
                 name=name, image=image_id, flavor=amphora_flavor,
                 block_device_mapping=block_device_mapping,

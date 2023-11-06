@@ -18,25 +18,19 @@ from octavia.common import constants
 
 rules = [
     policy.DocumentedRuleDefault(
-        '{rbac_obj}{action}'.format(
-            rbac_obj=constants.RBAC_AVAILABILITY_ZONE_PROFILE,
-            action=constants.RBAC_GET_ALL),
+        f'{constants.RBAC_AVAILABILITY_ZONE_PROFILE}{constants.RBAC_GET_ALL}',
         constants.RULE_API_ADMIN,
         "List Availability Zones",
         [{'method': 'GET', 'path': '/v2.0/lbaas/availabilityzoneprofiles'}]
     ),
     policy.DocumentedRuleDefault(
-        '{rbac_obj}{action}'.format(
-            rbac_obj=constants.RBAC_AVAILABILITY_ZONE_PROFILE,
-            action=constants.RBAC_POST),
+        f'{constants.RBAC_AVAILABILITY_ZONE_PROFILE}{constants.RBAC_POST}',
         constants.RULE_API_ADMIN,
         "Create an Availability Zone",
         [{'method': 'POST', 'path': '/v2.0/lbaas/availabilityzoneprofiles'}]
     ),
     policy.DocumentedRuleDefault(
-        '{rbac_obj}{action}'.format(
-            rbac_obj=constants.RBAC_AVAILABILITY_ZONE_PROFILE,
-            action=constants.RBAC_PUT),
+        f'{constants.RBAC_AVAILABILITY_ZONE_PROFILE}{constants.RBAC_PUT}',
         constants.RULE_API_ADMIN,
         "Update an Availability Zone",
         [{'method': 'PUT',
@@ -44,9 +38,7 @@ rules = [
                   '{availability_zone_profile_id}'}]
     ),
     policy.DocumentedRuleDefault(
-        '{rbac_obj}{action}'.format(
-            rbac_obj=constants.RBAC_AVAILABILITY_ZONE_PROFILE,
-            action=constants.RBAC_GET_ONE),
+        f'{constants.RBAC_AVAILABILITY_ZONE_PROFILE}{constants.RBAC_GET_ONE}',
         constants.RULE_API_ADMIN,
         "Show Availability Zone details",
         [{'method': 'GET',
@@ -54,9 +46,7 @@ rules = [
                   '{availability_zone_profile_id}'}]
     ),
     policy.DocumentedRuleDefault(
-        '{rbac_obj}{action}'.format(
-            rbac_obj=constants.RBAC_AVAILABILITY_ZONE_PROFILE,
-            action=constants.RBAC_DELETE),
+        f'{constants.RBAC_AVAILABILITY_ZONE_PROFILE}{constants.RBAC_DELETE}',
         constants.RULE_API_ADMIN,
         "Remove an Availability Zone",
         [{'method': 'DELETE',

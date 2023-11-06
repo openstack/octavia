@@ -373,8 +373,7 @@ class TestFlavorProfiles(base.BaseAPITest):
     def _test_update_param_none(self, param_name):
         fp = self.create_flavor_profile('test_profile', 'noop_driver',
                                         '{"x": "y"}')
-        expect_error_msg = ("None is not a valid option for %s" %
-                            param_name)
+        expect_error_msg = f"None is not a valid option for {param_name}"
         body = self._build_body({param_name: None})
         response = self.put(self.FP_PATH.format(fp_id=fp.get('id')), body,
                             status=400)
@@ -465,8 +464,8 @@ class TestFlavorProfiles(base.BaseAPITest):
         body = self._build_body(update_data)
         response = self.put(self.FP_PATH.format(fp_id=fp.get('id')), body,
                             status=409)
-        err_msg = ("Flavor profile {} is in use and cannot be "
-                   "modified.".format(fp.get('id')))
+        err_msg = (f"Flavor profile {fp.get('id')} is in use and cannot be "
+                   f"modified.")
         self.assertEqual(err_msg, response.json.get('faultstring'))
         response = self.get(
             self.FP_PATH.format(fp_id=fp.get('id'))).json.get(self.root_tag)
@@ -480,8 +479,8 @@ class TestFlavorProfiles(base.BaseAPITest):
         body = self._build_body(update_data)
         response = self.put(self.FP_PATH.format(fp_id=fp.get('id')), body,
                             status=409)
-        err_msg = ("Flavor profile {} is in use and cannot be "
-                   "modified.".format(fp.get('id')))
+        err_msg = (f"Flavor profile {fp.get('id')} is in use and cannot "
+                   f"be modified.")
         self.assertEqual(err_msg, response.json.get('faultstring'))
         response = self.get(
             self.FP_PATH.format(fp_id=fp.get('id'))).json.get(self.root_tag)
@@ -506,7 +505,7 @@ class TestFlavorProfiles(base.BaseAPITest):
         self.delete(self.FP_PATH.format(fp_id=fp.get('id')))
         response = self.get(self.FP_PATH.format(
             fp_id=fp.get('id')), status=404)
-        err_msg = "Flavor Profile %s not found." % fp.get('id')
+        err_msg = f"Flavor Profile {fp.get('id')} not found."
         self.assertEqual(err_msg, response.json.get('faultstring'))
 
     def test_delete_deleted_id(self):
@@ -552,7 +551,7 @@ class TestFlavorProfiles(base.BaseAPITest):
         self.conf.config(group='api_settings', auth_strategy=auth_strategy)
         response = self.get(self.FP_PATH.format(
             fp_id=fp.get('id')), status=404)
-        err_msg = "Flavor Profile %s not found." % fp.get('id')
+        err_msg = f"Flavor Profile {fp.get('id')} not found."
         self.assertEqual(err_msg, response.json.get('faultstring'))
 
     def test_delete_not_authorized(self):
@@ -578,8 +577,8 @@ class TestFlavorProfiles(base.BaseAPITest):
         self.create_flavor('name1', 'description', fp.get('id'), True)
         response = self.delete(self.FP_PATH.format(fp_id=fp.get('id')),
                                status=409)
-        err_msg = ("Flavor profile {} is in use and cannot be "
-                   "modified.".format(fp.get('id')))
+        err_msg = (f"Flavor profile {fp.get('id')} is in use and cannot be "
+                   f"modified.")
         self.assertEqual(err_msg, response.json.get('faultstring'))
         response = self.get(
             self.FP_PATH.format(fp_id=fp.get('id'))).json.get(self.root_tag)

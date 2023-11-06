@@ -188,8 +188,8 @@ class BaseNeutronDriver(base.AbstractNetworkDriver):
         try:
             resource = getattr(
                 network, f"get_{resource_type}")(resource_id)
-            return getattr(utils, 'convert_%s_to_model' %
-                           resource_type)(resource)
+            return getattr(
+                utils, f'convert_{resource_type}_to_model')(resource)
         except os_exceptions.ResourceNotFound as e:
             message = _('{resource_type} not found '
                         '({resource_type} id: {resource_id}).').format(
@@ -215,7 +215,7 @@ class BaseNeutronDriver(base.AbstractNetworkDriver):
                 self.network_proxy, f"{resource_type}s")(**filters)
             conversion_function = getattr(
                 utils,
-                'convert_%s_to_model' % resource_type)
+                f'convert_{resource_type}_to_model')
             try:
                 # get first item to see if there is at least one resource
                 res_list = [conversion_function(next(resources))]

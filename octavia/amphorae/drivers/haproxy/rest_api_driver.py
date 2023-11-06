@@ -625,7 +625,7 @@ class CustomHostNameCheckingAdapter(requests.adapters.HTTPAdapter):
 
     def init_poolmanager(self, *pool_args, **pool_kwargs):
         proto = CONF.amphora_agent.agent_tls_protocol.replace('.', '_')
-        pool_kwargs['ssl_version'] = getattr(ssl, "PROTOCOL_%s" % proto)
+        pool_kwargs['ssl_version'] = getattr(ssl, f"PROTOCOL_{proto}")
         return super().init_poolmanager(*pool_args, **pool_kwargs)
 
 
@@ -646,19 +646,13 @@ class AmphoraAPIClientBase:
 
     def _base_url(self, ip, api_version=None):
         if utils.is_ipv6_lla(ip):
-            ip = '[{ip}%{interface}]'.format(
-                ip=ip,
-                interface=CONF.haproxy_amphora.lb_network_interface)
+            ip = f'[{ip}%{CONF.haproxy_amphora.lb_network_interface}]'
         elif utils.is_ipv6(ip):
             ip = f'[{ip}]'
         if api_version:
-            return "https://{ip}:{port}/{version}/".format(
-                ip=ip,
-                port=CONF.haproxy_amphora.bind_port,
-                version=api_version)
-        return "https://{ip}:{port}/".format(
-            ip=ip,
-            port=CONF.haproxy_amphora.bind_port)
+            return (f"https://{ip}:{CONF.haproxy_amphora.bind_port}"
+                    f"/{api_version}/")
+        return f"https://{ip}:{CONF.haproxy_amphora.bind_port}/"
 
     def request(self, method: str, amp: db_models.Amphora, path: str = '/',
                 timeout_dict: Optional[dict] = None,
@@ -774,8 +768,7 @@ class AmphoraAPIClient1_0(AmphoraAPIClientBase):
     def upload_config(self, amp, loadbalancer_id, config, timeout_dict=None):
         r = self.put(
             amp,
-            'loadbalancer/{amphora_id}/{loadbalancer_id}/haproxy'.format(
-                amphora_id=amp.id, loadbalancer_id=loadbalancer_id),
+            f'loadbalancer/{amp.id}/{loadbalancer_id}/haproxy',
             timeout_dict, data=config)
         return exc.check_exception(r)
 
@@ -789,16 +782,14 @@ class AmphoraAPIClient1_0(AmphoraAPIClientBase):
 
     def _action(self, action, amp, object_id, timeout_dict=None):
         r = self.put(
-            amp, 'loadbalancer/{object_id}/{action}'.format(
-                object_id=object_id, action=action),
+            amp, f'loadbalancer/{object_id}/{action}',
             timeout_dict=timeout_dict)
         return exc.check_exception(r)
 
     def upload_cert_pem(self, amp, loadbalancer_id, pem_filename, pem_file):
         r = self.put(
             amp,
-            'loadbalancer/{loadbalancer_id}/certificates/{filename}'.format(
-                loadbalancer_id=loadbalancer_id, filename=pem_filename),
+            f'loadbalancer/{loadbalancer_id}/certificates/{pem_filename}',
             data=pem_file)
         return exc.check_exception(r)
 
@@ -806,8 +797,7 @@ class AmphoraAPIClient1_0(AmphoraAPIClientBase):
                         ignore=tuple()):
         r = self.get(
             amp,
-            'loadbalancer/{loadbalancer_id}/certificates/{filename}'.format(
-                loadbalancer_id=loadbalancer_id, filename=pem_filename))
+            f'loadbalancer/{loadbalancer_id}/certificates/{pem_filename}')
         if exc.check_exception(r, ignore):
             return r.json().get("md5sum")
         return None
@@ -815,8 +805,7 @@ class AmphoraAPIClient1_0(AmphoraAPIClientBase):
     def delete_cert_pem(self, amp, loadbalancer_id, pem_filename):
         r = self.delete(
             amp,
-            'loadbalancer/{loadbalancer_id}/certificates/{filename}'.format(
-                loadbalancer_id=loadbalancer_id, filename=pem_filename))
+            f'loadbalancer/{loadbalancer_id}/certificates/{pem_filename}')
         return exc.check_exception(r, (404,))
 
     def update_cert_for_rotation(self, amp, pem_file):
@@ -877,8 +866,7 @@ class AmphoraAPIClient1_0(AmphoraAPIClientBase):
     def upload_udp_config(self, amp, listener_id, config, timeout_dict=None):
         r = self.put(
             amp,
-            'listeners/{amphora_id}/{listener_id}/udp_listener'.format(
-                amphora_id=amp.id, listener_id=listener_id), timeout_dict,
+            f'listeners/{amp.id}/{listener_id}/udp_listener', timeout_dict,
             data=config)
         return exc.check_exception(r)
 

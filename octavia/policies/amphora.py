@@ -17,45 +17,39 @@ from octavia.common import constants
 
 rules = [
     policy.DocumentedRuleDefault(
-        '{rbac_obj}{action}'.format(rbac_obj=constants.RBAC_AMPHORA,
-                                    action=constants.RBAC_GET_ALL),
+        f'{constants.RBAC_AMPHORA}{constants.RBAC_GET_ALL}',
         constants.RULE_API_ADMIN,
         "List Amphorae",
         [{'method': 'GET', 'path': '/v2/octavia/amphorae'}]
     ),
     policy.DocumentedRuleDefault(
-        '{rbac_obj}{action}'.format(rbac_obj=constants.RBAC_AMPHORA,
-                                    action=constants.RBAC_GET_ONE),
+        f'{constants.RBAC_AMPHORA}{constants.RBAC_GET_ONE}',
         constants.RULE_API_ADMIN,
         "Show Amphora details",
         [{'method': 'GET', 'path': '/v2/octavia/amphorae/{amphora_id}'}]
     ),
     policy.DocumentedRuleDefault(
-        '{rbac_obj}{action}'.format(rbac_obj=constants.RBAC_AMPHORA,
-                                    action=constants.RBAC_DELETE),
+        f'{constants.RBAC_AMPHORA}{constants.RBAC_DELETE}',
         constants.RULE_API_ADMIN,
         "Delete an Amphora",
         [{'method': 'DELETE', 'path': '/v2/octavia/amphorae/{amphora_id}'}]
     ),
     policy.DocumentedRuleDefault(
-        '{rbac_obj}{action}'.format(rbac_obj=constants.RBAC_AMPHORA,
-                                    action=constants.RBAC_PUT_CONFIG),
+        f'{constants.RBAC_AMPHORA}{constants.RBAC_PUT_CONFIG}',
         constants.RULE_API_ADMIN,
         "Update Amphora Agent Configuration",
         [{'method': 'PUT',
           'path': '/v2/octavia/amphorae/{amphora_id}/config'}]
     ),
     policy.DocumentedRuleDefault(
-        '{rbac_obj}{action}'.format(rbac_obj=constants.RBAC_AMPHORA,
-                                    action=constants.RBAC_PUT_FAILOVER),
+        f'{constants.RBAC_AMPHORA}{constants.RBAC_PUT_FAILOVER}',
         constants.RULE_API_ADMIN,
         "Failover Amphora",
         [{'method': 'PUT',
           'path': '/v2/octavia/amphorae/{amphora_id}/failover'}]
     ),
     policy.DocumentedRuleDefault(
-        '{rbac_obj}{action}'.format(rbac_obj=constants.RBAC_AMPHORA,
-                                    action=constants.RBAC_GET_STATS),
+        f'{constants.RBAC_AMPHORA}{constants.RBAC_GET_STATS}',
         constants.RULE_API_ADMIN,
         "Show Amphora statistics",
         [{'method': 'GET', 'path': '/v2/octavia/amphorae/{amphora_id}/stats'}]

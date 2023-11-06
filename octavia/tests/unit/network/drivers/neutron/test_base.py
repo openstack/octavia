@@ -40,7 +40,7 @@ class TestBaseNeutronNetworkDriver(base.TestCase):
         new_dict = abclass.__dict__.copy()
         for abstractmethod in abclass.__abstractmethods__:
             new_dict[abstractmethod] = lambda x, *args, **kw: (x, args, kw)
-        impl_class = type("partially_implemented_abc_%s" % abclass.__name__,
+        impl_class = type(f"partially_implemented_abc_{abclass.__name__}",
                           (abclass,), new_dict)
         return impl_class()
 

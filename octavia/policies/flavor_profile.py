@@ -18,38 +18,33 @@ from octavia.common import constants
 
 rules = [
     policy.DocumentedRuleDefault(
-        '{rbac_obj}{action}'.format(rbac_obj=constants.RBAC_FLAVOR_PROFILE,
-                                    action=constants.RBAC_GET_ALL),
+        f'{constants.RBAC_FLAVOR_PROFILE}{constants.RBAC_GET_ALL}',
         constants.RULE_API_ADMIN,
         "List Flavor Profiles",
         [{'method': 'GET', 'path': '/v2.0/lbaas/flavorprofiles'}]
     ),
     policy.DocumentedRuleDefault(
-        '{rbac_obj}{action}'.format(rbac_obj=constants.RBAC_FLAVOR_PROFILE,
-                                    action=constants.RBAC_POST),
+        f'{constants.RBAC_FLAVOR_PROFILE}{constants.RBAC_POST}',
         constants.RULE_API_ADMIN,
         "Create a Flavor Profile",
         [{'method': 'POST', 'path': '/v2.0/lbaas/flavorprofiles'}]
     ),
     policy.DocumentedRuleDefault(
-        '{rbac_obj}{action}'.format(rbac_obj=constants.RBAC_FLAVOR_PROFILE,
-                                    action=constants.RBAC_PUT),
+        f'{constants.RBAC_FLAVOR_PROFILE}{constants.RBAC_PUT}',
         constants.RULE_API_ADMIN,
         "Update a Flavor Profile",
         [{'method': 'PUT',
           'path': '/v2.0/lbaas/flavorprofiles/{flavor_profile_id}'}]
     ),
     policy.DocumentedRuleDefault(
-        '{rbac_obj}{action}'.format(rbac_obj=constants.RBAC_FLAVOR_PROFILE,
-                                    action=constants.RBAC_GET_ONE),
+        f'{constants.RBAC_FLAVOR_PROFILE}{constants.RBAC_GET_ONE}',
         constants.RULE_API_ADMIN,
         "Show Flavor Profile details",
         [{'method': 'GET',
           'path': '/v2.0/lbaas/flavorprofiles/{flavor_profile_id}'}]
     ),
     policy.DocumentedRuleDefault(
-        '{rbac_obj}{action}'.format(rbac_obj=constants.RBAC_FLAVOR_PROFILE,
-                                    action=constants.RBAC_DELETE),
+        f'{constants.RBAC_FLAVOR_PROFILE}{constants.RBAC_DELETE}',
         constants.RULE_API_ADMIN,
         "Remove a Flavor Profile",
         [{'method': 'DELETE',

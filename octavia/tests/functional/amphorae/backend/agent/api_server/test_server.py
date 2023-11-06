@@ -1073,8 +1073,7 @@ class TestServerTestCase(base.TestCase):
             flags = os.O_WRONLY | os.O_CREAT | os.O_APPEND
 
         else:
-            file_name = ('/etc/octavia/interfaces/'
-                         'eth{}.json'.format(test_int_num))
+            file_name = f'/etc/octavia/interfaces/eth{test_int_num}.json'
             flags = os.O_WRONLY | os.O_CREAT | os.O_TRUNC
 
         m = self.useFixture(test_utils.OpenFixture(file_name)).mock_open
@@ -1157,8 +1156,7 @@ class TestServerTestCase(base.TestCase):
             file_name = self.conf.conf.amphora_agent.agent_server_network_file
             flags = os.O_WRONLY | os.O_CREAT | os.O_APPEND
         else:
-            file_name = ('/etc/octavia/interfaces/'
-                         'eth{}.json'.format(test_int_num))
+            file_name = f'/etc/octavia/interfaces/eth{test_int_num}.json'
             flags = os.O_WRONLY | os.O_CREAT | os.O_TRUNC
 
         m = self.useFixture(test_utils.OpenFixture(file_name)).mock_open
@@ -1227,8 +1225,7 @@ class TestServerTestCase(base.TestCase):
             file_name = self.conf.conf.amphora_agent.agent_server_network_file
             flags = os.O_WRONLY | os.O_CREAT | os.O_APPEND
         else:
-            file_name = ('/etc/octavia/interfaces/'
-                         'eth{}.json'.format(test_int_num))
+            file_name = f'/etc/octavia/interfaces/eth{test_int_num}.json'
             flags = os.O_WRONLY | os.O_CREAT | os.O_TRUNC
 
         m = self.useFixture(test_utils.OpenFixture(file_name)).mock_open
@@ -1293,8 +1290,7 @@ class TestServerTestCase(base.TestCase):
 
         flags = os.O_WRONLY | os.O_CREAT | os.O_TRUNC
         mode = stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IROTH
-        file_name = ('/etc/octavia/interfaces/'
-                     'eth{}.json'.format(test_int_num))
+        file_name = f'/etc/octavia/interfaces/eth{test_int_num}.json'
         m = self.useFixture(test_utils.OpenFixture(file_name)).mock_open
         with mock.patch('os.open') as mock_open, mock.patch.object(
                 os, 'fdopen', m) as mock_fdopen:
@@ -1983,8 +1979,8 @@ class TestServerTestCase(base.TestCase):
         flags = os.O_WRONLY | os.O_CREAT | os.O_TRUNC
         mode = stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IROTH
 
-        file_name = ('/etc/octavia/interfaces/{netns_int}.json'.format(
-                     netns_int=consts.NETNS_PRIMARY_INTERFACE))
+        file_name = (f'/etc/octavia/interfaces/'
+                     f'{consts.NETNS_PRIMARY_INTERFACE}.json')
         m = self.useFixture(test_utils.OpenFixture(file_name)).mock_open
 
         with mock.patch('os.open') as mock_open, mock.patch.object(
@@ -2094,8 +2090,8 @@ class TestServerTestCase(base.TestCase):
         flags = os.O_WRONLY | os.O_CREAT | os.O_TRUNC
         mode = stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IROTH
 
-        file_name = ('/etc/octavia/interfaces/{netns_int}.json'.format(
-                     netns_int=consts.NETNS_PRIMARY_INTERFACE))
+        file_name = (f'/etc/octavia/interfaces/'
+                     f'{consts.NETNS_PRIMARY_INTERFACE}.json')
         m = self.useFixture(test_utils.OpenFixture(file_name)).mock_open
 
         with mock.patch('os.open') as mock_open, mock.patch.object(
@@ -2271,8 +2267,8 @@ class TestServerTestCase(base.TestCase):
         flags = os.O_WRONLY | os.O_CREAT | os.O_TRUNC
         mode = stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IROTH
 
-        file_name = ('/etc/octavia/interfaces/{netns_int}.json'.format(
-                     netns_int=consts.NETNS_PRIMARY_INTERFACE))
+        file_name = (f'/etc/octavia/interfaces/'
+                     f'{consts.NETNS_PRIMARY_INTERFACE}.json')
         m = self.useFixture(test_utils.OpenFixture(file_name)).mock_open
 
         with mock.patch('os.open') as mock_open, mock.patch.object(
@@ -2489,8 +2485,8 @@ class TestServerTestCase(base.TestCase):
         flags = os.O_WRONLY | os.O_CREAT | os.O_TRUNC
         mode = stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IROTH
 
-        file_name = ('/etc/octavia/interfaces/{netns_int}.json'.format(
-                     netns_int=consts.NETNS_PRIMARY_INTERFACE))
+        file_name = (f'/etc/octavia/interfaces/'
+                     f'{consts.NETNS_PRIMARY_INTERFACE}.json')
         m = self.useFixture(test_utils.OpenFixture(file_name)).mock_open
 
         with mock.patch('os.open') as mock_open, mock.patch.object(

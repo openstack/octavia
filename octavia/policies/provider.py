@@ -17,8 +17,7 @@ from octavia.common import constants
 
 rules = [
     policy.DocumentedRuleDefault(
-        '{rbac_obj}{action}'.format(rbac_obj=constants.RBAC_PROVIDER,
-                                    action=constants.RBAC_GET_ALL),
+        f'{constants.RBAC_PROVIDER}{constants.RBAC_GET_ALL}',
         constants.RULE_API_READ,
         "List enabled providers",
         [{'method': 'GET', 'path': '/v2/lbaas/providers'}]

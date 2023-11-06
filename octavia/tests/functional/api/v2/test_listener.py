@@ -699,11 +699,10 @@ class TestListener(base.BaseAPITest):
             optionals.update({field[0]: 1})
             fault = resp.get('faultstring')
             self.assertIn(
-                'Invalid input for field/attribute {}'.format(
-                    field[0]), fault)
+                f'Invalid input for field/attribute {field[0]}', fault)
             self.assertIn(
-                'Value should be lower or equal to {}'.format(
-                    constants.MAX_TIMEOUT), fault)
+                f'Value should be lower or equal to {constants.MAX_TIMEOUT}',
+                fault)
 
     def test_create_with_timeouts_too_low(self):
         optionals = {
@@ -717,8 +716,8 @@ class TestListener(base.BaseAPITest):
         self.assertIn(
             'Invalid input for field/attribute timeout_tcp_inspect', fault)
         self.assertIn(
-            'Value should be greater or equal to {}'.format(
-                constants.MIN_TIMEOUT), fault)
+            f'Value should be greater or equal to {constants.MIN_TIMEOUT}',
+            fault)
 
     def test_create_udp_case(self):
         api_listener = self.create_listener(constants.PROTOCOL_UDP, 6666,
@@ -1715,8 +1714,7 @@ class TestListener(base.BaseAPITest):
         fault = response.get('faultstring')
         self.assertIn(
             'Certificate container references are not allowed on ', fault)
-        self.assertIn('{} protocol listeners.'.format(
-            constants.PROTOCOL_TCP), fault)
+        self.assertIn(f'{constants.PROTOCOL_TCP} protocol listeners.', fault)
 
     def test_update_with_ca_cert(self):
         self.cert_manager_mock().get_secret.return_value = (
@@ -2778,7 +2776,7 @@ class TestListener(base.BaseAPITest):
             listener = self.post(self.LISTENERS_PATH, body, status=400).json
             self.assertIn('{} is not a valid option for {}'.format(
                 [name],
-                '%s protocol listener.' % constants.PROTOCOL_HTTP),
+                f'{constants.PROTOCOL_HTTP} protocol listener.'),
                 listener.get('faultstring'))
 
     @mock.patch('octavia.common.tls_utils.cert_parser.load_certificates_data')
@@ -2829,9 +2827,9 @@ class TestListener(base.BaseAPITest):
             listener_id=listener['listener'].get('id'))
         update_listener = self.put(
             listener_path, new_listener, status=400).json
-        self.assertIn('{} is not a valid option for {}'.format(
-            '[\'X-Bad-Header\']', 'insert_headers'),
-            update_listener.get('faultstring'))
+        self.assertIn('[\'X-Bad-Header\'] is not a valid option for '
+                      'insert_headers',
+                      update_listener.get('faultstring'))
 
         # test client certificate http headers
         header = {}

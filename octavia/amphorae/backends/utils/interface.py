@@ -106,8 +106,7 @@ class InterfaceController:
     def _dhclient_up(self, interface_name):
         cmd = ["/sbin/dhclient",
                "-lf",
-               "/var/lib/dhclient/dhclient-{}.leases".format(
-                   interface_name),
+               f"/var/lib/dhclient/dhclient-{interface_name}.leases",
                "-pf",
                f"/run/dhclient-{interface_name}.pid",
                interface_name]
@@ -118,8 +117,7 @@ class InterfaceController:
         cmd = ["/sbin/dhclient",
                "-r",
                "-lf",
-               "/var/lib/dhclient/dhclient-{}.leases".format(
-                   interface_name),
+               f"/var/lib/dhclient/dhclient-{interface_name}.leases",
                "-pf",
                f"/run/dhclient-{interface_name}.pid",
                interface_name]
@@ -134,8 +132,7 @@ class InterfaceController:
                            ('autoconf', 1)):
             cmd = ["/sbin/sysctl",
                    "-w",
-                   "net.ipv6.conf.{}.{}={}".format(interface_name,
-                                                   key, value)]
+                   f"net.ipv6.conf.{interface_name}.{key}={value}"]
             LOG.debug("Running '%s'", cmd)
             subprocess.check_output(cmd, stderr=subprocess.STDOUT)
 
@@ -144,8 +141,7 @@ class InterfaceController:
                            ('autoconf', 0)):
             cmd = ["/sbin/sysctl",
                    "-w",
-                   "net.ipv6.conf.{}.{}={}".format(interface_name,
-                                                   key, value)]
+                   f"net.ipv6.conf.{interface_name}.{key}={value}"]
             LOG.debug("Running '%s'", cmd)
             subprocess.check_output(cmd, stderr=subprocess.STDOUT)
 
@@ -305,8 +301,8 @@ class InterfaceController:
                 'RTA_DST',
                 '0.0.0.0' if family == socket.AF_INET else '::')  # nosec
 
-            key = ("{}/{}".format(self._normalize_ip_address(dst),
-                                  route.get('dst_len', 0)),
+            key = (f"{self._normalize_ip_address(dst)}/"
+                   f"{route.get('dst_len', 0)}",
                    self._normalize_ip_address(attrs.get('RTA_GATEWAY')),
                    self._normalize_ip_address(attrs.get('RTA_PREFSRC')),
                    attrs.get('RTA_TABLE'))

@@ -80,7 +80,7 @@ def calculate_icmpv6_checksum(packet):
 
     # Add up 16-bit words
     num_words = len(packet) // 2
-    for chunk in struct.unpack("!%sH" % num_words, packet[0:num_words * 2]):
+    for chunk in struct.unpack(f"!{num_words}H", packet[0:num_words * 2]):
         total += chunk
 
     # Add any left over byte

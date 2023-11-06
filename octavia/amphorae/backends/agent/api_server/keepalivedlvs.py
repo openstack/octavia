@@ -138,7 +138,7 @@ class KeepalivedLvs(lvs_listener_base.LvsListenerApiServerBase):
         # Make sure the keepalivedlvs service is enabled on boot
         if init_system == consts.INIT_SYSTEMD:
             util.run_systemctl_command(
-                consts.ENABLE, "octavia-keepalivedlvs-%s" % str(listener_id))
+                consts.ENABLE, f"octavia-keepalivedlvs-{str(listener_id)}")
         elif init_system == consts.INIT_SYSVINIT:
             init_enable_cmd = f"insserv {file_path}"
             try:
@@ -316,8 +316,8 @@ class KeepalivedLvs(lvs_listener_base.LvsListenerApiServerBase):
                           "%(err)s", {'list': listener_id, 'err': str(e)})
                 return webob.Response(json={
                     'message': (
-                        "Error disabling octavia-keepalivedlvs-"
-                        "{} service".format(listener_id)),
+                        f"Error disabling octavia-keepalivedlvs-{listener_id} "
+                        f"service"),
                     'details': e.output}, status=500)
 
         elif init_system != consts.INIT_UPSTART:

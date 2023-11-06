@@ -353,7 +353,7 @@ class TestUpdateHealthDb(base.TestCase):
                 mock_listener1.default_pool = mock_pool1
             for i in range(members):
                 mock_member_x = mock.Mock()
-                mock_member_x.id = 'member-id-%s' % (i + 1)
+                mock_member_x.id = f'member-id-{i + 1}'
                 if health_monitor:
                     mock_member_x.operating_status = 'NOTHING_MATCHABLE'
                 else:
@@ -381,7 +381,7 @@ class TestUpdateHealthDb(base.TestCase):
                 member_operating_status = constants.NO_MONITOR
 
             for i in range(members):
-                member_id = 'member-id-%s' % (i + 1)
+                member_id = f'member-id-{i + 1}'
                 members_dict[member_id] = {
                     constants.OPERATING_STATUS: member_operating_status}
 
@@ -1245,7 +1245,7 @@ class TestUpdateHealthDb(base.TestCase):
         # Build our own custom listeners/pools/members
         for i in [1, 2, 3, 4, 5]:
 
-            lb_ref['listeners']['listener-id-%s' % i] = {
+            lb_ref['listeners'][f'listener-id-{i}'] = {
                 constants.OPERATING_STATUS: 'bogus',
                 'protocol': constants.PROTOCOL_TCP,
                 'enabled': True}
@@ -1255,9 +1255,9 @@ class TestUpdateHealthDb(base.TestCase):
                     constants.OPERATING_STATUS: 'bogus'}, 'member-id-31': {
                         constants.OPERATING_STATUS: 'bogus'}}
             else:
-                members_dict = {'member-id-%s' % i: {
+                members_dict = {f'member-id-{i}': {
                                 constants.OPERATING_STATUS: 'bogus'}}
-            lb_ref['pools']['pool-id-%s' % i] = {
+            lb_ref['pools'][f'pool-id-{i}'] = {
                 'members': members_dict, constants.OPERATING_STATUS: 'bogus'}
 
         self.amphora_repo.get_lb_for_health_update.return_value = lb_ref

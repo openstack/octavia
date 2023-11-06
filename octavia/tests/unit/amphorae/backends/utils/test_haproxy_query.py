@@ -170,4 +170,4 @@ class QueryTestCase(base.TestCase):
         try:
             self.q.save_state(filename)
         except Exception as ex:
-            self.fail("save_state() raised %r unexpectedly!" % ex)
+            self.fail(f"save_state() raised {ex!r} unexpectedly!")

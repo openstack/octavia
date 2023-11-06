@@ -148,49 +148,42 @@ class MemberFlows:
         unordered_members_flow.add(
             lifecycle_tasks.MembersToErrorOnRevertTask(
                 inject={constants.MEMBERS: old_members},
-                name='{flow}-deleted'.format(
-                    flow=constants.MEMBER_TO_ERROR_ON_REVERT_FLOW)))
+                name=f'{constants.MEMBER_TO_ERROR_ON_REVERT_FLOW}-deleted'))
         for m in old_members:
             unordered_members_flow.add(database_tasks.DeleteMemberInDB(
                 inject={constants.MEMBER: m},
-                name='{flow}-{id}'.format(
-                    id=m[constants.MEMBER_ID],
-                    flow=constants.DELETE_MEMBER_INDB)))
+                name=f'{constants.DELETE_MEMBER_INDB}-'
+                     f'{m[constants.MEMBER_ID]}'))
             unordered_members_flow.add(database_tasks.DecrementMemberQuota(
                 requires=constants.PROJECT_ID,
-                name='{flow}-{id}'.format(
-                    id=m[constants.MEMBER_ID],
-                    flow=constants.DECREMENT_MEMBER_QUOTA_FLOW)))
+                name=f'{constants.DECREMENT_MEMBER_QUOTA_FLOW}-'
+                     f'{m[constants.MEMBER_ID]}'))
 
         # Create new members
         unordered_members_flow.add(
             lifecycle_tasks.MembersToErrorOnRevertTask(
                 inject={constants.MEMBERS: new_members},
-                name='{flow}-created'.format(
-                    flow=constants.MEMBER_TO_ERROR_ON_REVERT_FLOW)))
+                name=f'{constants.MEMBER_TO_ERROR_ON_REVERT_FLOW}-created'))
         for m in new_members:
             unordered_members_active_flow.add(
                 database_tasks.MarkMemberActiveInDB(
                     inject={constants.MEMBER: m},
-                    name='{flow}-{id}'.format(
-                        id=m[constants.MEMBER_ID],
-                        flow=constants.MARK_MEMBER_ACTIVE_INDB)))
+                    name=f'{constants.MARK_MEMBER_ACTIVE_INDB}-'
+                         f'{m[constants.MEMBER_ID]}'))
 
         # Update existing members
         unordered_members_flow.add(
             lifecycle_tasks.MembersToErrorOnRevertTask(
                 # updated_members is a list of (obj, dict), only pass `obj`
                 inject={constants.MEMBERS: [m[0] for m in updated_members]},
-                name='{flow}-updated'.format(
-                    flow=constants.MEMBER_TO_ERROR_ON_REVERT_FLOW)))
+                name=f'{constants.MEMBER_TO_ERROR_ON_REVERT_FLOW}-updated'))
         for m, um in updated_members:
             um.pop(constants.ID, None)
             unordered_members_active_flow.add(
                 database_tasks.MarkMemberActiveInDB(
                     inject={constants.MEMBER: m},
-                    name='{flow}-{id}'.format(
-                        id=m[constants.MEMBER_ID],
-                        flow=constants.MARK_MEMBER_ACTIVE_INDB)))
+                    name=f'{constants.MARK_MEMBER_ACTIVE_INDB}-'
+                         f'{m[constants.MEMBER_ID]}'))
 
         batch_update_members_flow.add(unordered_members_flow)
 

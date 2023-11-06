@@ -164,7 +164,7 @@ class HackingTestCase(base.BaseTestCase):
                 self.assertEqual(
                     1, len(list(checks.no_translate_logs(bad, 'f'))))
                 # Do not do validations in tests
-                ok = 'LOG.%s(_("OK - unit tests"))' % log
+                ok = f'LOG.{log}(_("OK - unit tests"))'
                 self.assertEqual(
                     0, len(list(checks.no_translate_logs(ok, 'f/tests/f'))))
 

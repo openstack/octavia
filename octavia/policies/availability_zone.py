@@ -18,38 +18,33 @@ from octavia.common import constants
 
 rules = [
     policy.DocumentedRuleDefault(
-        '{rbac_obj}{action}'.format(rbac_obj=constants.RBAC_AVAILABILITY_ZONE,
-                                    action=constants.RBAC_GET_ALL),
+        f'{constants.RBAC_AVAILABILITY_ZONE}{constants.RBAC_GET_ALL}',
         constants.RULE_API_READ,
         "List Availability Zones",
         [{'method': 'GET', 'path': '/v2.0/lbaas/availabilityzones'}]
     ),
     policy.DocumentedRuleDefault(
-        '{rbac_obj}{action}'.format(rbac_obj=constants.RBAC_AVAILABILITY_ZONE,
-                                    action=constants.RBAC_POST),
+        f'{constants.RBAC_AVAILABILITY_ZONE}{constants.RBAC_POST}',
         constants.RULE_API_ADMIN,
         "Create an Availability Zone",
         [{'method': 'POST', 'path': '/v2.0/lbaas/availabilityzones'}]
     ),
     policy.DocumentedRuleDefault(
-        '{rbac_obj}{action}'.format(rbac_obj=constants.RBAC_AVAILABILITY_ZONE,
-                                    action=constants.RBAC_PUT),
+        f'{constants.RBAC_AVAILABILITY_ZONE}{constants.RBAC_PUT}',
         constants.RULE_API_ADMIN,
         "Update an Availability Zone",
         [{'method': 'PUT',
           'path': '/v2.0/lbaas/availabilityzones/{availability_zone_id}'}]
     ),
     policy.DocumentedRuleDefault(
-        '{rbac_obj}{action}'.format(rbac_obj=constants.RBAC_AVAILABILITY_ZONE,
-                                    action=constants.RBAC_GET_ONE),
+        f'{constants.RBAC_AVAILABILITY_ZONE}{constants.RBAC_GET_ONE}',
         constants.RULE_API_READ,
         "Show Availability Zone details",
         [{'method': 'GET',
           'path': '/v2.0/lbaas/availabilityzones/{availability_zone_id}'}]
     ),
     policy.DocumentedRuleDefault(
-        '{rbac_obj}{action}'.format(rbac_obj=constants.RBAC_AVAILABILITY_ZONE,
-                                    action=constants.RBAC_DELETE),
+        f'{constants.RBAC_AVAILABILITY_ZONE}{constants.RBAC_DELETE}',
         constants.RULE_API_ADMIN,
         "Remove an Availability Zone",
         [{'method': 'DELETE',

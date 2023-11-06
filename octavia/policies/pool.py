@@ -17,45 +17,39 @@ from octavia.common import constants
 
 rules = [
     policy.DocumentedRuleDefault(
-        '{rbac_obj}{action}'.format(rbac_obj=constants.RBAC_POOL,
-                                    action=constants.RBAC_GET_ALL),
+        f'{constants.RBAC_POOL}{constants.RBAC_GET_ALL}',
         constants.RULE_API_READ,
         "List Pools",
         [{'method': 'GET', 'path': '/v2/lbaas/pools'}]
     ),
     policy.DocumentedRuleDefault(
-        '{rbac_obj}{action}'.format(rbac_obj=constants.RBAC_POOL,
-                                    action=constants.RBAC_GET_ALL_GLOBAL),
+        f'{constants.RBAC_POOL}{constants.RBAC_GET_ALL_GLOBAL}',
         constants.RULE_API_READ_GLOBAL,
         "List Pools including resources owned by others",
         [{'method': 'GET', 'path': '/v2/lbaas/pools'}]
     ),
     policy.DocumentedRuleDefault(
-        '{rbac_obj}{action}'.format(rbac_obj=constants.RBAC_POOL,
-                                    action=constants.RBAC_POST),
+        f'{constants.RBAC_POOL}{constants.RBAC_POST}',
         constants.RULE_API_WRITE,
         "Create a Pool",
         [{'method': 'POST', 'path': '/v2/lbaas/pools'}]
     ),
     policy.DocumentedRuleDefault(
-        '{rbac_obj}{action}'.format(rbac_obj=constants.RBAC_POOL,
-                                    action=constants.RBAC_GET_ONE),
+        f'{constants.RBAC_POOL}{constants.RBAC_GET_ONE}',
         constants.RULE_API_READ,
         "Show Pool details",
         [{'method': 'GET',
           'path': '/v2/lbaas/pools/{pool_id}'}]
     ),
     policy.DocumentedRuleDefault(
-        '{rbac_obj}{action}'.format(rbac_obj=constants.RBAC_POOL,
-                                    action=constants.RBAC_PUT),
+        f'{constants.RBAC_POOL}{constants.RBAC_PUT}',
         constants.RULE_API_WRITE,
         "Update a Pool",
         [{'method': 'PUT',
           'path': '/v2/lbaas/pools/{pool_id}'}]
     ),
     policy.DocumentedRuleDefault(
-        '{rbac_obj}{action}'.format(rbac_obj=constants.RBAC_POOL,
-                                    action=constants.RBAC_DELETE),
+        f'{constants.RBAC_POOL}{constants.RBAC_DELETE}',
         constants.RULE_API_WRITE,
         "Remove a Pool",
         [{'method': 'DELETE',

@@ -17,45 +17,39 @@ from octavia.common import constants
 
 rules = [
     policy.DocumentedRuleDefault(
-        '{rbac_obj}{action}'.format(rbac_obj=constants.RBAC_L7POLICY,
-                                    action=constants.RBAC_GET_ALL),
+        f'{constants.RBAC_L7POLICY}{constants.RBAC_GET_ALL}',
         constants.RULE_API_READ,
         "List L7 Policys",
         [{'method': 'GET', 'path': '/v2/lbaas/l7policies'}]
     ),
     policy.DocumentedRuleDefault(
-        '{rbac_obj}{action}'.format(rbac_obj=constants.RBAC_L7POLICY,
-                                    action=constants.RBAC_GET_ALL_GLOBAL),
+        f'{constants.RBAC_L7POLICY}{constants.RBAC_GET_ALL_GLOBAL}',
         constants.RULE_API_READ_GLOBAL,
         "List L7 Policys including resources owned by others",
         [{'method': 'GET', 'path': '/v2/lbaas/l7policies'}]
     ),
     policy.DocumentedRuleDefault(
-        '{rbac_obj}{action}'.format(rbac_obj=constants.RBAC_L7POLICY,
-                                    action=constants.RBAC_POST),
+        f'{constants.RBAC_L7POLICY}{constants.RBAC_POST}',
         constants.RULE_API_WRITE,
         "Create a L7 Policy",
         [{'method': 'POST', 'path': '/v2/lbaas/l7policies'}]
     ),
     policy.DocumentedRuleDefault(
-        '{rbac_obj}{action}'.format(rbac_obj=constants.RBAC_L7POLICY,
-                                    action=constants.RBAC_GET_ONE),
+        f'{constants.RBAC_L7POLICY}{constants.RBAC_GET_ONE}',
         constants.RULE_API_READ,
         "Show L7 Policy details",
         [{'method': 'GET',
           'path': '/v2/lbaas/l7policies/{l7policy_id}'}]
     ),
     policy.DocumentedRuleDefault(
-        '{rbac_obj}{action}'.format(rbac_obj=constants.RBAC_L7POLICY,
-                                    action=constants.RBAC_PUT),
+        f'{constants.RBAC_L7POLICY}{constants.RBAC_PUT}',
         constants.RULE_API_WRITE,
         "Update a L7 Policy",
         [{'method': 'PUT',
           'path': '/v2/lbaas/l7policies/{l7policy_id}'}]
     ),
     policy.DocumentedRuleDefault(
-        '{rbac_obj}{action}'.format(rbac_obj=constants.RBAC_L7POLICY,
-                                    action=constants.RBAC_DELETE),
+        f'{constants.RBAC_L7POLICY}{constants.RBAC_DELETE}',
         constants.RULE_API_WRITE,
         "Remove a L7 Policy",
         [{'method': 'DELETE',

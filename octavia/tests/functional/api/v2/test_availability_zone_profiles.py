@@ -375,8 +375,7 @@ class TestAvailabilityZoneProfiles(base.BaseAPITest):
     def _test_update_param_none(self, param_name):
         azp = self.create_availability_zone_profile(
             'test_profile', 'noop_driver', '{"x": "y"}')
-        expect_error_msg = ("None is not a valid option for %s" %
-                            param_name)
+        expect_error_msg = f"None is not a valid option for {param_name}"
         body = self._build_body({param_name: None})
         response = self.put(self.AZP_PATH.format(azp_id=azp.get('id')), body,
                             status=400)
@@ -513,7 +512,7 @@ class TestAvailabilityZoneProfiles(base.BaseAPITest):
         self.delete(self.AZP_PATH.format(azp_id=azp.get('id')))
         response = self.get(self.AZP_PATH.format(
             azp_id=azp.get('id')), status=404)
-        err_msg = "Availability Zone Profile %s not found." % azp.get('id')
+        err_msg = f"Availability Zone Profile {azp.get('id')} not found."
         self.assertEqual(err_msg, response.json.get('faultstring'))
 
     def test_delete_deleted_id(self):
@@ -560,7 +559,7 @@ class TestAvailabilityZoneProfiles(base.BaseAPITest):
         self.conf.config(group='api_settings', auth_strategy=auth_strategy)
         response = self.get(self.AZP_PATH.format(
             azp_id=azp.get('id')), status=404)
-        err_msg = "Availability Zone Profile %s not found." % azp.get('id')
+        err_msg = f"Availability Zone Profile {azp.get('id')} not found."
         self.assertEqual(err_msg, response.json.get('faultstring'))
 
     def test_delete_not_authorized(self):

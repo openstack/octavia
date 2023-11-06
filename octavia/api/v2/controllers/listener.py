@@ -136,7 +136,7 @@ class ListenersController(base.BaseController):
                 constants.LISTENER_PROTOCOLS_SUPPORTING_HEADER_INSERTION):
             raise exceptions.InvalidOption(
                 value='insert-headers',
-                option='a %s protocol listener.' % listener_protocol)
+                option=f'a {listener_protocol} protocol listener.')
         if list(set(insert_header_list) - (
                 set(constants.SUPPORTED_HTTP_HEADERS +
                     constants.SUPPORTED_SSL_HEADERS))):
@@ -155,7 +155,7 @@ class ListenersController(base.BaseController):
                         headers.append(header_name)
                 raise exceptions.InvalidOption(
                     value=headers,
-                    option='%s protocol listener.' % listener_protocol)
+                    option=f'{listener_protocol} protocol listener.')
 
     def _validate_cidr_compatible_with_vip(self, vips, allowed_cidrs):
         for cidr in allowed_cidrs:

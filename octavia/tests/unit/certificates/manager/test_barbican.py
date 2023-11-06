@@ -34,9 +34,8 @@ class TestBarbicanManager(base.TestCase):
         self.barbican_endpoint = 'http://localhost:9311/v1'
         self.secret_uuid = uuid.uuid4()
 
-        self.secret_ref = '{}/secrets/{}'.format(
-            self.barbican_endpoint, self.secret_uuid
-        )
+        self.secret_ref = (f'{self.barbican_endpoint}/secrets/'
+                           f'{self.secret_uuid}')
 
         self.name = 'My Fancy Cert'
         self.secret_pkcs12 = secrets.Secret(

@@ -18,37 +18,32 @@ from octavia.common import constants
 
 rules = [
     policy.DocumentedRuleDefault(
-        '{rbac_obj}{action}'.format(rbac_obj=constants.RBAC_FLAVOR,
-                                    action=constants.RBAC_GET_ALL),
+        f'{constants.RBAC_FLAVOR}{constants.RBAC_GET_ALL}',
         constants.RULE_API_READ,
         "List Flavors",
         [{'method': 'GET', 'path': '/v2.0/lbaas/flavors'}]
     ),
     policy.DocumentedRuleDefault(
-        '{rbac_obj}{action}'.format(rbac_obj=constants.RBAC_FLAVOR,
-                                    action=constants.RBAC_POST),
+        f'{constants.RBAC_FLAVOR}{constants.RBAC_POST}',
         constants.RULE_API_ADMIN,
         "Create a Flavor",
         [{'method': 'POST', 'path': '/v2.0/lbaas/flavors'}]
     ),
     policy.DocumentedRuleDefault(
-        '{rbac_obj}{action}'.format(rbac_obj=constants.RBAC_FLAVOR,
-                                    action=constants.RBAC_PUT),
+        f'{constants.RBAC_FLAVOR}{constants.RBAC_PUT}',
         constants.RULE_API_ADMIN,
         "Update a Flavor",
         [{'method': 'PUT', 'path': '/v2.0/lbaas/flavors/{flavor_id}'}]
     ),
     policy.DocumentedRuleDefault(
-        '{rbac_obj}{action}'.format(rbac_obj=constants.RBAC_FLAVOR,
-                                    action=constants.RBAC_GET_ONE),
+        f'{constants.RBAC_FLAVOR}{constants.RBAC_GET_ONE}',
         constants.RULE_API_READ,
         "Show Flavor details",
         [{'method': 'GET',
           'path': '/v2.0/lbaas/flavors/{flavor_id}'}]
     ),
     policy.DocumentedRuleDefault(
-        '{rbac_obj}{action}'.format(rbac_obj=constants.RBAC_FLAVOR,
-                                    action=constants.RBAC_DELETE),
+        f'{constants.RBAC_FLAVOR}{constants.RBAC_DELETE}',
         constants.RULE_API_ADMIN,
         "Remove a Flavor",
         [{'method': 'DELETE',

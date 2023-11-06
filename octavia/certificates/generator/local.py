@@ -96,7 +96,7 @@ class LocalCertGenerator(cert_gen.CertGenerator):
             algorithm = getattr(hashes, ca_digest.upper())()
         except AttributeError as e:
             raise crypto_exceptions.UnsupportedAlgorithm(
-                "Supplied digest method not found: %s" % ca_digest
+                f"Supplied digest method not found: {ca_digest}"
             ) from e
 
         if not ca_cert:

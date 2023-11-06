@@ -784,13 +784,13 @@ RBAC_QUOTA = f'{LOADBALANCER_API}:quota:'
 RBAC_AMPHORA = f'{LOADBALANCER_API}:amphora:'
 RBAC_PROVIDER = f'{LOADBALANCER_API}:provider:'
 RBAC_PROVIDER_FLAVOR = f'{LOADBALANCER_API}:provider-flavor:'
-RBAC_PROVIDER_AVAILABILITY_ZONE = '{}:provider-availability-zone:'.format(
-    LOADBALANCER_API)
+RBAC_PROVIDER_AVAILABILITY_ZONE = (f'{LOADBALANCER_API}:'
+                                   f'provider-availability-zone:')
 RBAC_FLAVOR = f'{LOADBALANCER_API}:flavor:'
 RBAC_FLAVOR_PROFILE = f'{LOADBALANCER_API}:flavor-profile:'
 RBAC_AVAILABILITY_ZONE = f'{LOADBALANCER_API}:availability-zone:'
-RBAC_AVAILABILITY_ZONE_PROFILE = '{}:availability-zone-profile:'.format(
-    LOADBALANCER_API)
+RBAC_AVAILABILITY_ZONE_PROFILE = (f'{LOADBALANCER_API}:'
+                                  f'availability-zone-profile:')
 
 RBAC_POST = 'post'
 RBAC_PUT = 'put'

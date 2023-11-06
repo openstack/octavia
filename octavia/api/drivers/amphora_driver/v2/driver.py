@@ -76,8 +76,8 @@ class AmphoraProviderDriver(driver_base.ProviderDriver):
 
     def _validate_pool_algorithm(self, pool):
         if pool.lb_algorithm not in AMPHORA_SUPPORTED_LB_ALGORITHMS:
-            msg = ('Amphora provider does not support %s algorithm.'
-                   % pool.lb_algorithm)
+            msg = (f'Amphora provider does not support {pool.lb_algorithm} '
+                   f'algorithm.')
             raise exceptions.UnsupportedOptionError(
                 user_fault_string=msg,
                 operator_fault_string=msg)

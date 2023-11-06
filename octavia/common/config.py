@@ -967,7 +967,7 @@ def handle_neutron_deprecations():
 def init(args, **kwargs):
     register_cli_opts()
     cfg.CONF(args=args, project='octavia',
-             version='%%prog %s' % version.version_info.release_string(),
+             version=f'%prog {version.version_info.release_string()}',
              **kwargs)
     validate.check_default_tls_versions_min_conflict()
     setup_remote_debugger()

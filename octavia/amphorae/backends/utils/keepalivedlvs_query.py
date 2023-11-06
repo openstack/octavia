@@ -42,8 +42,7 @@ CHECKER_REGEX = re.compile(r"(MISC_CHECK|HTTP_GET|TCP_CHECK)")
 
 
 def read_kernel_file(ns_name, file_path):
-    cmd = ("ip netns exec {ns} cat {lvs_stat_path}".format(
-        ns=ns_name, lvs_stat_path=file_path))
+    cmd = f"ip netns exec {ns_name} cat {file_path}"
     try:
         output = subprocess.check_output(cmd.split(),
                                          stderr=subprocess.STDOUT)
@@ -75,12 +74,12 @@ def get_listener_realserver_mapping(ns_name, listener_ip_ports,
         ip_obj = ipaddress.ip_address(listener_ip.strip('[]'))
         output = read_kernel_file(ns_name, KERNEL_LVS_PATH).split('\n')
         if ip_obj.version == 4:
-            ip_to_hex_format = "%.8X" % ip_obj._ip
+            ip_to_hex_format = f"{ip_obj._ip:08X}"
         else:
             ip_to_hex_format = r'\[' + ip_obj.exploded + r'\]'
-        port_hex_format = "%.4X" % int(listener_port)
+        port_hex_format = f"{int(listener_port):04X}"
         idex_list.append(ip_to_hex_format + ':' + port_hex_format)
-    idex = "({})".format("|".join(idex_list))
+    idex = f"({'|'.join(idex_list)})"
 
     if health_monitor_enabled:
         member_status = constants.UP
@@ -192,7 +191,7 @@ def get_lvs_listener_resource_ipports_nsname(listener_id):
         for resource_type, resource_id in resource_type_ids:
             value = {'id': resource_id}
             if resource_type == 'Member':
-                resource_type = '%ss' % resource_type
+                resource_type = f'{resource_type}s'
                 if resource_type not in resource_ipport_mapping:
                     value = [value]
             if resource_type not in resource_ipport_mapping:

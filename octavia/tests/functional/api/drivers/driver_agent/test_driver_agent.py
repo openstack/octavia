@@ -46,14 +46,12 @@ class DriverAgentTest(base.OctaviaDBTestBase):
         self.get_listener_proc.join(5)
 
     def setUp(self):
-        status_socket_file = '/tmp/octavia-{}.status.sock'.format(
-            uuidutils.generate_uuid())
-        stats_socket_file = '/tmp/octavia-{}.stats.sock'.format(
-            uuidutils.generate_uuid())
-        get_socket_file = '/tmp/octavia-{}.get.sock'.format(
-            uuidutils.generate_uuid())
-        sqlite_db_file = '/tmp/octavia-{}.sqlite.db'.format(
-            uuidutils.generate_uuid())
+        status_socket_file = (f'/tmp/octavia-{uuidutils.generate_uuid()}'
+                              f'.status.sock')
+        stats_socket_file = (f'/tmp/octavia-{uuidutils.generate_uuid()}'
+                             f'.stats.sock')
+        get_socket_file = f'/tmp/octavia-{uuidutils.generate_uuid()}.get.sock'
+        sqlite_db_file = f'/tmp/octavia-{uuidutils.generate_uuid()}.sqlite.db'
         sqlite_db_connection = f'sqlite:///{sqlite_db_file}'
 
         # Note that because the driver agent is a multi-process

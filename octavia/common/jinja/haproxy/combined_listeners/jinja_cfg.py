@@ -175,8 +175,8 @@ class JinjaTemplater:
             tls_certs,
             feature_compatibility)
         if not socket_path:
-            socket_path = '{}/{}.sock'.format(self.base_amp_path,
-                                              listeners[0].load_balancer.id)
+            socket_path = (f'{self.base_amp_path}/'
+                           f'{listeners[0].load_balancer.id}.sock')
         state_file_path = '{}/{}/servers-state'.format(
             self.base_amp_path,
             listeners[0].load_balancer.id) if feature_compatibility.get(

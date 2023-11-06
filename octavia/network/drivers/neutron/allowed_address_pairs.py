@@ -617,8 +617,8 @@ class AllowedAddressPairsDriver(neutron_base.BaseNeutronDriver):
         try:
             subnet = self.get_subnet(vip.subnet_id)
         except base.SubnetNotFound as e:
-            msg = ("Can't unplug vip because vip subnet {} was not "
-                   "found").format(vip.subnet_id)
+            msg = (f"Can't unplug vip because vip subnet {vip.subnet_id} "
+                   f"was not found")
             LOG.exception(msg)
             raise base.PluggedVIPNotFound(msg) from e
         for amphora in filter(
@@ -639,8 +639,8 @@ class AllowedAddressPairsDriver(neutron_base.BaseNeutronDriver):
         except Exception as e:
             message = _('Error plugging amphora (compute_id: {compute_id}) '
                         'into network {network_id}.').format(
-                            compute_id=compute_id,
-                            network_id=network_id)
+                compute_id=compute_id,
+                network_id=network_id)
             LOG.exception(message)
             raise base.PlugNetworkException(message) from e
 
@@ -649,8 +649,8 @@ class AllowedAddressPairsDriver(neutron_base.BaseNeutronDriver):
     def unplug_network(self, compute_id, network_id):
         interfaces = self.get_plugged_networks(compute_id)
         if not interfaces:
-            msg = ('Amphora with compute id {compute_id} does not have any '
-                   'plugged networks').format(compute_id=compute_id)
+            msg = (f'Amphora with compute id {compute_id} does not have any '
+                   f'plugged networks')
             raise base.NetworkNotFound(msg)
 
         unpluggers = self._get_interfaces_to_unplug(interfaces, network_id)

@@ -274,8 +274,7 @@ class TestInterface(base.TestCase):
         mock_check_output.assert_called_once_with(
             ["/sbin/dhclient",
              "-lf",
-             "/var/lib/dhclient/dhclient-{}.leases".format(
-                 iface),
+             f"/var/lib/dhclient/dhclient-{iface}.leases",
              "-pf",
              f"/run/dhclient-{iface}.pid",
              iface], stderr=-2)
@@ -291,8 +290,7 @@ class TestInterface(base.TestCase):
             ["/sbin/dhclient",
              "-r",
              "-lf",
-             "/var/lib/dhclient/dhclient-{}.leases".format(
-                 iface),
+             f"/var/lib/dhclient/dhclient-{iface}.leases",
              "-pf",
              f"/run/dhclient-{iface}.pid",
              iface], stderr=-2)
@@ -921,8 +919,7 @@ class TestInterface(base.TestCase):
         mock_check_output.assert_has_calls([
             mock.call(["/sbin/dhclient",
                        "-lf",
-                       "/var/lib/dhclient/dhclient-{}.leases".format(
-                           iface.name),
+                       f"/var/lib/dhclient/dhclient-{iface.name}.leases",
                        "-pf",
                        f"/run/dhclient-{iface.name}.pid",
                        iface.name], stderr=-2),
@@ -1338,8 +1335,7 @@ class TestInterface(base.TestCase):
             mock.call(["/sbin/dhclient",
                        "-r",
                        "-lf",
-                       "/var/lib/dhclient/dhclient-{}.leases".format(
-                           iface.name),
+                       f"/var/lib/dhclient/dhclient-{iface.name}.leases",
                        "-pf",
                        f"/run/dhclient-{iface.name}.pid",
                        iface.name], stderr=-2),

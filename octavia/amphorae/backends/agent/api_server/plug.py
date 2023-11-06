@@ -239,8 +239,7 @@ class Plug:
 
         return webob.Response(json={
             'message': "OK",
-            'details': "Plugged on interface {interface}".format(
-                interface=netns_interface)}, status=202)
+            'details': f"Plugged on interface {netns_interface}"}, status=202)
 
     def _interface_by_mac(self, mac):
         try:
@@ -277,8 +276,7 @@ class Plug:
         with os.fdopen(os.open(plug_inf_file, flags, mode), 'r+') as text_file:
             inf_list = [inf.split()[0].rstrip() for inf in text_file]
             if mac_address not in inf_list:
-                text_file.write("{mac_address} {interface}\n".format(
-                    mac_address=mac_address, interface=interface))
+                text_file.write(f"{mac_address} {interface}\n")
 
     def _netns_interface_by_mac(self, mac_address):
         with pyroute2.NetNS(consts.AMPHORA_NAMESPACE,
