@@ -74,6 +74,7 @@ class TestInterface(base.TestCase):
                    '],\n'
                    '"mtu": 1450,\n'
                    '"name": "eth1",\n'
+                   '"if_type": "mytype",\n'
                    '"routes": [\n'
                    '{"dst": "0.0.0.0/0",\n'
                    '"gateway": "10.0.0.1"},\n'
@@ -107,6 +108,7 @@ class TestInterface(base.TestCase):
 
         expected_dict = {
             consts.NAME: "eth1",
+            consts.IF_TYPE: "mytype",
             consts.MTU: 1450,
             consts.ADDRESSES: [{
                 consts.ADDRESS: "10.0.0.2",
@@ -331,6 +333,7 @@ class TestInterface(base.TestCase):
                 mock_link, mock_addr, mock_route, mock_rule):
         iface = interface_file.InterfaceFile(
             name="eth1",
+            if_type="vip",
             mtu=1450,
             addresses=[{
                 consts.ADDRESS: '1.2.3.4',
@@ -450,6 +453,78 @@ class TestInterface(base.TestCase):
     @mock.patch('pyroute2.IPRoute.addr')
     @mock.patch('pyroute2.IPRoute.link')
     @mock.patch('pyroute2.IPRoute.get_links')
+    @mock.patch('pyroute2.IPRoute.link_lookup')
+    @mock.patch('pyroute2.IPRoute.get_rules')
+    @mock.patch('subprocess.check_output')
+    def test_up_backend(self, mock_check_output, mock_get_rules,
+                        mock_link_lookup, mock_get_links, mock_link, mock_addr,
+                        mock_route, mock_rule):
+        iface = interface_file.InterfaceFile(
+            name="eth1",
+            if_type="backend",
+            mtu=1450,
+            addresses=[{
+                consts.ADDRESS: '1.2.3.4',
+                consts.PREFIXLEN: 24
+            }],
+            routes=[],
+            rules=[],
+            scripts={
+                consts.IFACE_UP: [{
+                    consts.COMMAND: "post-up eth1"
+                }],
+                consts.IFACE_DOWN: [{
+                    consts.COMMAND: "post-down eth1"
+                }],
+            })
+
+        idx = mock.MagicMock()
+        mock_link_lookup.return_value = [idx]
+
+        mock_get_links.return_value = [{
+            consts.STATE: consts.IFACE_DOWN
+        }]
+        mock_get_rules.return_value = [{
+            'src_len': 32,
+            'attrs': {
+                'FRA_SRC': '1.1.1.1',
+                'FRA_TABLE': 20,
+                'FRA_PROTOCOL': 0
+            }
+        }]
+
+        controller = interface.InterfaceController()
+        controller.up(iface)
+
+        mock_link.assert_called_once_with(
+            controller.SET,
+            index=idx,
+            state=consts.IFACE_UP,
+            mtu=1450)
+
+        mock_addr.assert_has_calls([
+            mock.call(controller.ADD,
+                      index=idx,
+                      address='1.2.3.4',
+                      prefixlen=24,
+                      family=socket.AF_INET),
+        ])
+
+        mock_route.assert_called_once_with(
+            'dump', family=mock.ANY, match=mock.ANY)
+
+        # for 'backend' iface, we don't update the rules
+        mock_rule.assert_not_called()
+
+        mock_check_output.assert_has_calls([
+            mock.call(["post-up", "eth1"])
+        ])
+
+    @mock.patch('pyroute2.IPRoute.rule')
+    @mock.patch('pyroute2.IPRoute.route')
+    @mock.patch('pyroute2.IPRoute.addr')
+    @mock.patch('pyroute2.IPRoute.link')
+    @mock.patch('pyroute2.IPRoute.get_links')
     @mock.patch('pyroute2.IPRoute.get_rules')
     @mock.patch('pyroute2.IPRoute.get_routes')
     @mock.patch('pyroute2.IPRoute.get_addr')
@@ -463,6 +538,7 @@ class TestInterface(base.TestCase):
                        mock_route, mock_rule):
         iface = interface_file.InterfaceFile(
             name="eth1",
+            if_type="vip",
             mtu=1450,
             addresses=[{
                 consts.ADDRESS: '1.2.3.4',
@@ -658,6 +734,7 @@ class TestInterface(base.TestCase):
                      mock_route, mock_rule):
         iface = interface_file.InterfaceFile(
             name="eth1",
+            if_type="vip",
             mtu=1450,
             addresses=[{
                 consts.DHCP: True,
@@ -722,6 +799,7 @@ class TestInterface(base.TestCase):
                   mock_link, mock_addr, mock_route, mock_rule):
         iface = interface_file.InterfaceFile(
             name="eth1",
+            if_type="vip",
             mtu=1450,
             addresses=[{
                 consts.ADDRESS: '1.2.3.4',
@@ -848,6 +926,7 @@ class TestInterface(base.TestCase):
                               mock_addr, mock_route, mock_rule):
         iface = interface_file.InterfaceFile(
             name="eth1",
+            if_type="vip",
             mtu=1450,
             addresses=[{
                 consts.ADDRESS: '1.2.3.4',
@@ -997,6 +1076,7 @@ class TestInterface(base.TestCase):
                                mock_route, mock_rule):
         iface = interface_file.InterfaceFile(
             name="eth1",
+            if_type="vip",
             mtu=1450,
             addresses=[{
                 consts.ADDRESS: '1.2.3.4',
@@ -1069,6 +1149,7 @@ class TestInterface(base.TestCase):
                        mock_addr, mock_route, mock_rule):
         iface = interface_file.InterfaceFile(
             name="eth1",
+            if_type="vip",
             mtu=1450,
             addresses=[{
                 consts.DHCP: True,

@@ -195,7 +195,9 @@ class InterfaceController(object):
 
             self._addresses_up(interface, ipr, idx)
             self._routes_up(interface, ipr, idx)
-            self._rules_up(interface, ipr, idx)
+            # only the vip port updates the rules
+            if interface.if_type == consts.VIP:
+                self._rules_up(interface, ipr, idx)
 
             self._scripts_up(interface, current_state)
 
@@ -374,11 +376,13 @@ class InterfaceController(object):
             current_state = link.get(consts.STATE)
 
             if current_state == consts.IFACE_UP:
-                for rule in interface.rules:
-                    rule[consts.FAMILY] = self._family(rule[consts.SRC])
-                    LOG.debug("%s: Deleting rule %s", interface.name, rule)
-                    self._ipr_command(ipr.rule, self.DELETE,
-                                      raise_on_error=False, **rule)
+                # only the vip port updates the rules
+                if interface.if_type == consts.VIP:
+                    for rule in interface.rules:
+                        rule[consts.FAMILY] = self._family(rule[consts.SRC])
+                        LOG.debug("%s: Deleting rule %s", interface.name, rule)
+                        self._ipr_command(ipr.rule, self.DELETE,
+                                          raise_on_error=False, **rule)
 
                 for route in interface.routes:
                     route[consts.FAMILY] = self._family(route[consts.DST])
