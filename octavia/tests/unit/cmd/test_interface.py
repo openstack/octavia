@@ -23,8 +23,8 @@ class TestInterfaceCMD(base.TestCase):
     def setUp(self):
         super().setUp()
 
-        self.interface1 = interface_file.InterfaceFile("eth1")
-        self.interface2 = interface_file.InterfaceFile("eth2")
+        self.interface1 = interface_file.InterfaceFile("eth1", if_type="type1")
+        self.interface2 = interface_file.InterfaceFile("eth2", if_type="type2")
 
     def test_interfaces_find(self):
         controller = mock.Mock()
