@@ -1,0 +1,11 @@
+---
+fixes:
+  - |
+    Fixed a bug that could have made the VIP port unreachable because of the
+    removal of some IP rules in the Amphora. It could have been triggered only
+    when sending a request from a subnet that is not the VIP subnet but that is
+    plugged as a member subnet.
+upgrade:
+  - |
+    A patch that fixes an issue making the VIP port unreachable because of
+    missing IP rules requires an update of the Amphora image.
