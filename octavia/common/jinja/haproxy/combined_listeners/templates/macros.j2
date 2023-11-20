@@ -202,13 +202,18 @@ frontend {{ listener.id }}
         {% else %}
             {% set monitor_port_opt = "" %}
         {% endif %}
+        {% if pool.alpn_protocols is defined %}
+            {% set alpn_opt = " check-alpn %s"|format(pool.alpn_protocols) %}
+        {% else %}
+            {% set alpn_opt = "" %}
+        {% endif %}
         {% if pool.health_monitor.type == constants.HEALTH_MONITOR_HTTPS %}
             {% set monitor_ssl_opt = " check-ssl verify none" %}
         {% else %}
             {% set monitor_ssl_opt = "" %}
         {% endif %}
-        {% set hm_opt = " check%s inter %ds fall %d rise %d%s%s"|format(
-            monitor_ssl_opt, pool.health_monitor.delay,
+        {% set hm_opt = " check%s%s inter %ds fall %d rise %d%s%s"|format(
+            monitor_ssl_opt, alpn_opt, pool.health_monitor.delay,
             pool.health_monitor.fall_threshold,
             pool.health_monitor.rise_threshold, monitor_addr_opt,
             monitor_port_opt) %}
