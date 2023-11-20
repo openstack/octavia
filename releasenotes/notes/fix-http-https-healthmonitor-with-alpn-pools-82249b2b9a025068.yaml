@@ -1,0 +1,7 @@
+---
+fixes:
+  - |
+    Fixed a bug with HTTP/HTTPS health-monitors on pools with ALPN protocols in
+    the amphora-driver. The healthchecks sent by haproxy were flagged as bad
+    requests by the backend servers. Updated haproxy configuration to use ALPN
+    for the heathchecks too.
