@@ -376,9 +376,6 @@ backend {{ pool.id }}:{{ listener.id }}
             {% endif %}
     http-check expect rstatus {{ pool.health_monitor.expected_codes }}
         {% endif %}
-        {% if pool.health_monitor.type == constants.HEALTH_MONITOR_TLS_HELLO %}
-    option ssl-hello-chk
-        {% endif %}
         {% if pool.health_monitor.type == constants.HEALTH_MONITOR_PING %}
     option external-check
     external-check command /var/lib/octavia/ping-wrapper.sh
