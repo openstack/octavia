@@ -256,14 +256,16 @@ def get_host_names(certificate):
     """
     if isinstance(certificate, str):
         certificate = certificate.encode('utf-8')
+    host_names = {'cn': None, 'dns_names': []}
     try:
         cert = x509.load_pem_x509_certificate(certificate,
                                               backends.default_backend())
-        cn = cert.subject.get_attributes_for_oid(x509.OID_COMMON_NAME)[0]
-        host_names = {
-            'cn': cn.value.lower(),
-            'dns_names': []
-        }
+        try:
+            cn = cert.subject.get_attributes_for_oid(x509.OID_COMMON_NAME)[0]
+            host_names['cn'] = cn.value.lower()
+        except Exception as e:
+            LOG.debug(f'Unable to get CN from certificate due to: {e}. '
+                      f'Assuming subject alternative names are present.')
         try:
             ext = cert.extensions.get_extension_for_oid(
                 x509.OID_SUBJECT_ALTERNATIVE_NAME
@@ -274,7 +276,17 @@ def get_host_names(certificate):
             LOG.debug("%s extension not found",
                       x509.OID_SUBJECT_ALTERNATIVE_NAME)
 
+        # Certs with no subject are valid as long as a subject alternative
+        # name is present. If both are missing, it is an invalid cert per
+        # the x.509 standard.
+        if not host_names['cn'] and not host_names['dns_names']:
+            LOG.warning('No CN or DNSName(s) found in certificate. The '
+                        'certificate is invalid.')
+            raise exceptions.MissingCertSubject()
+
         return host_names
+    except exceptions.MissingCertSubject:
+        raise
     except Exception as e:
         LOG.exception('Unreadable Certificate.')
         raise exceptions.UnreadableCert from e
@@ -359,6 +371,10 @@ def load_certificates_data(cert_mngr, obj, context=None):
                 cert_mngr.get_cert(context,
                                    obj.tls_certificate_id,
                                    check_only=True))
+        except exceptions.MissingCertSubject:
+            # This was logged below, so raise as is to provide a clear
+            # user error
+            raise
         except Exception as e:
             LOG.warning('Unable to retrieve certificate: %s due to %s.',
                         obj.tls_certificate_id, str(e))

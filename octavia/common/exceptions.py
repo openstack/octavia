@@ -133,6 +133,12 @@ class UnreadablePKCS12(APIException):
     code = 400
 
 
+class MissingCertSubject(APIException):
+    msg = _('No CN or DNSName(s) found in certificate. The certificate is '
+            'invalid.')
+    code = 400
+
+
 class MisMatchedKey(OctaviaException):
     message = _("Key and x509 certificate do not match")
 
