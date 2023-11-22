@@ -1044,6 +1044,51 @@ class TestListener(base.BaseAPITest):
         self.assertEqual(constants.CLIENT_AUTH_NONE,
                          listener_api.get('client_authentication'))
 
+    def test_create_tls_with_no_subject_no_alt_names(self):
+        tls_cert_mock = mock.MagicMock()
+        tls_cert_mock.get_certificate.return_value = (
+            sample_certs.NOCN_NOSUBALT_CRT)
+        self.cert_manager_mock().get_cert.return_value = tls_cert_mock
+
+        lb_listener = {'name': 'listener1-no-subject-no-alt-names',
+                       'default_pool_id': None,
+                       'description': 'desc1',
+                       'admin_state_up': False,
+                       'protocol': constants.PROTOCOL_TERMINATED_HTTPS,
+                       'protocol_port': 80, 'connection_limit': 10,
+                       'default_tls_container_ref': uuidutils.generate_uuid(),
+                       'insert_headers': {},
+                       'project_id': self.project_id,
+                       'loadbalancer_id': self.lb_id,
+                       'tags': ['test_tag']}
+        body = self._build_body(lb_listener)
+        response = self.post(self.LISTENERS_PATH, body, status=400)
+        self.assertIn("No CN or DNSName", response)
+
+    def test_create_tls_with_no_subject_with_alt_names(self):
+        tls_cert_mock = mock.MagicMock()
+        tls_cert_mock.get_certificate.return_value = (
+            sample_certs.NOCN_SUBALT_CRT)
+        tls_cert_mock.get_private_key.return_value = (
+            sample_certs.NOCN_SUBALT_KEY)
+        tls_cert_mock.get_private_key_passphrase.return_value = None
+        self.cert_manager_mock().get_cert.return_value = tls_cert_mock
+
+        lb_listener = {'name': 'listener1-no-subject',
+                       'default_pool_id': None,
+                       'description': 'desc1',
+                       'admin_state_up': False,
+                       'protocol': constants.PROTOCOL_TERMINATED_HTTPS,
+                       'protocol_port': 80, 'connection_limit': 10,
+                       'default_tls_container_ref': uuidutils.generate_uuid(),
+                       'insert_headers': {},
+                       'project_id': self.project_id,
+                       'loadbalancer_id': self.lb_id,
+                       'tags': ['test_tag']}
+        body = self._build_body(lb_listener)
+        response = self.post(self.LISTENERS_PATH, body, status=201)
+        self.assertIn("PENDING_CREATE", response)
+
     def test_create_with_ca_cert_and_option(self):
         self.cert_manager_mock().get_secret.return_value = (
             sample_certs.X509_CA_CERT)
