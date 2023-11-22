@@ -1,0 +1,4 @@
+---
+fixes:
+  - |
+    Fixed an issue when using certificates with a blank subject or missing CN.
