@@ -126,6 +126,10 @@
             branches:
               regex: ^stable/.*$
               negate: true
+        - publish-openstack-octavia-amphora-image-jammy:
+            branches:
+              regex: ^stable/.*$
+              negate: true
         - publish-openstack-octavia-amphora-image-centos-9-stream:
             branches:
               regex: ^stable/.*$
