@@ -116,10 +116,6 @@
         - octavia-grenade
     periodic:
       jobs:
-        - publish-openstack-octavia-amphora-image-focal:
-            branches: ^(?!stable/.*).*$
-        - publish-openstack-octavia-amphora-image-centos-9-stream:
-            branches: ^(?!stable/.*).*$
         - octavia-amphora-image-build
         - octavia-grenade-ffu
 # Putting octavia-v2-dsvm-scenario-fips in periodic as centos 8 is too slow
