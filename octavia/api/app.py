@@ -20,6 +20,7 @@ from oslo_log import log as logging
 from oslo_middleware import cors
 from oslo_middleware import http_proxy_to_wsgi
 from oslo_middleware import request_id
+from oslo_middleware import sizelimit
 from pecan import configuration as pecan_configuration
 from pecan import make_app as pecan_make_app
 
@@ -102,5 +103,7 @@ def _wrap_app(app):
         allow_methods=['GET', 'PUT', 'POST', 'DELETE'],
         expose_headers=['X-Auth-Token', 'X-Openstack-Request-Id']
     )
+
+    app = sizelimit.RequestBodySizeLimiter(app, cfg.CONF)
 
     return app
