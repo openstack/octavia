@@ -1,0 +1,7 @@
+---
+upgrade:
+  - |
+    Octavia now uses the oslo middleware sizelimit module. It allows to limit
+    the size of the incoming requests in the API. Admins may need to ajust the
+    ``[oslo_middleware].max_request_body_size`` setting to their needs. The
+    default value for ``max_request_body_size`` is 114688 bytes.

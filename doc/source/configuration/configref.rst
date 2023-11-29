@@ -26,4 +26,5 @@ Octavia Configuration Options
     oslo.db
     oslo.log
     oslo.messaging
+    oslo.middleware.sizelimit
     cotyledon
