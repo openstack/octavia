@@ -261,7 +261,6 @@ class PoolsController(base.BaseController):
         try:
             if self.repositories.check_quota_met(
                     context.session,
-                    context.session,
                     data_models.Pool,
                     pool.project_id):
                 raise exceptions.QuotaException(
@@ -304,18 +303,18 @@ class PoolsController(base.BaseController):
         result = self._convert_db_to_type(db_pool, pool_types.PoolResponse)
         return pool_types.PoolRootResponse(pool=result)
 
-    def _graph_create(self, session, lock_session, pool_dict):
+    def _graph_create(self, session, pool_dict):
         load_balancer_id = pool_dict['load_balancer_id']
         pool_dict = db_prepare.create_pool(
             pool_dict, load_balancer_id)
         members = pool_dict.pop('members', []) or []
         hm = pool_dict.pop('health_monitor', None)
         db_pool = self._validate_create_pool(
-            lock_session, pool_dict)
+            session, pool_dict)
 
         # Check quotas for healthmonitors
         if hm and self.repositories.check_quota_met(
-                session, lock_session, data_models.HealthMonitor,
+                session, data_models.HealthMonitor,
                 db_pool.project_id):
             raise exceptions.QuotaException(
                 resource=data_models.HealthMonitor._name())
@@ -325,7 +324,7 @@ class PoolsController(base.BaseController):
             hm[constants.POOL_ID] = db_pool.id
             hm[constants.PROJECT_ID] = db_pool.project_id
             new_hm = health_monitor.HealthMonitorController()._graph_create(
-                lock_session, hm)
+                session, hm)
             if db_pool.protocol in (constants.PROTOCOL_UDP,
                                     lib_consts.PROTOCOL_SCTP):
                 health_monitor.HealthMonitorController(
@@ -344,7 +343,7 @@ class PoolsController(base.BaseController):
 
         # Now check quotas for members
         if members and self.repositories.check_quota_met(
-                session, lock_session, data_models.Member,
+                session, data_models.Member,
                 db_pool.project_id, count=len(members)):
             raise exceptions.QuotaException(
                 resource=data_models.Member._name())
@@ -357,7 +356,7 @@ class PoolsController(base.BaseController):
             m['project_id'] = db_pool.project_id
             new_members.append(
                 member.MembersController(db_pool.id)._graph_create(
-                    lock_session, m))
+                    session, m))
         db_pool.members = new_members
         return db_pool
 

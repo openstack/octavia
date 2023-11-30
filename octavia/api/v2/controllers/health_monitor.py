@@ -239,7 +239,6 @@ class HealthMonitorController(base.BaseController):
         try:
             if self.repositories.check_quota_met(
                     context.session,
-                    context.session,
                     data_models.HealthMonitor,
                     health_monitor.project_id):
                 raise exceptions.QuotaException(
