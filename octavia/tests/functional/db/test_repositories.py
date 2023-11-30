@@ -12,6 +12,7 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+from concurrent.futures import ThreadPoolExecutor
 import datetime
 import random
 from unittest import mock
@@ -509,6 +510,47 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
             project_id=project_id).all()
         self.assertEqual(1, len(lbs))  # After rollback: 1 (broken!)
 
+    def test_check_quota_met_check_deadlock(self):
+        # This test doesn't work with sqlite, using another backend is not
+        # straighforward, we need to update the connection_string passed to the
+        # __init__ func and also change some calls in the constructor (don't
+        # create the DB objects if we use a DB that was deployed for Octavia)
+        if 'sqlite://' in self.connection_string:
+            self.skipTest("The test for checking potential deadlocks "
+                          "doesn't work with the sqlite backend")
+
+        conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
+        conf.config(group='api_settings', auth_strategy=constants.TESTING)
+        conf.config(group='quotas', default_load_balancer_quota=-1)
+
+        # Calling check_quota_met concurrently from many threads may
+        # have triggered a deadlock in the DB
+        # (Note: we run the test 8 times because it's not 100% reproducible)
+        # https://bugs.launchpad.net/octavia/+bug/2038798
+        for _ in range(8):
+            number_of_projects = 8
+            project_ids = (
+                uuidutils.generate_uuid()
+                for _ in range(number_of_projects))
+
+            with ThreadPoolExecutor(
+                    max_workers=number_of_projects) as executor:
+                def _test_check_quota_met(project_id):
+                    session = self.get_session()
+                    session.begin()
+                    self.assertFalse(self.repos.check_quota_met(
+                        session, data_models.LoadBalancer,
+                        project_id))
+                    session.commit()
+
+                futs = []
+                for project_id in project_ids:
+                    future = executor.submit(_test_check_quota_met, project_id)
+                    futs.append(future)
+
+                for fut in futs:
+                    fut.result()
+
     def test_check_quota_met(self):
 
         project_id = uuidutils.generate_uuid()
@@ -538,10 +580,9 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
 
         # Test DB deadlock case
         project_id = uuidutils.generate_uuid()
-        mock_quotas = mock.MagicMock()
         mock_session = mock.MagicMock()
         mock_session.query = mock.MagicMock(
-            side_effect=[mock_quotas, db_exception.DBDeadlock])
+            side_effect=db_exception.DBDeadlock)
         self.assertRaises(exceptions.ProjectBusyException,
                           self.repos.check_quota_met,
                           mock_session,
