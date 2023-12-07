@@ -12,12 +12,16 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+from wsme import types as wtypes
+
 from oslo_db.sqlalchemy import models
 from oslo_utils import strutils
 from oslo_utils import uuidutils
 import sqlalchemy as sa
 from sqlalchemy.orm import collections
 from sqlalchemy.orm import declarative_base
+
+from octavia.common import constants
 
 
 class OctaviaBase(models.ModelBase):
@@ -112,12 +116,20 @@ class OctaviaBase(models.ModelBase):
 
     @staticmethod
     def apply_filter(query, model, filters):
+        # Convert boolean filters to proper type
+        for key in filters:
+            attr = getattr(model.__v2_wsme__, key, None)
+            if isinstance(attr, wtypes.wsattr) and attr.datatype == bool:
+                filters[key] = strutils.bool_from_string(filters[key])
+        # Special case for 'enabled', it's 'admin_state_up' in the WSME class
+        # definition and the attribute has already been renamed to 'enabled' by
+        # a previous pagination filter
+        if constants.ENABLED in filters:
+            filters[constants.ENABLED] = strutils.bool_from_string(
+                filters[constants.ENABLED])
+
         translated_filters = {}
         child_map = {}
-        # Convert enabled to proper type
-        if 'enabled' in filters:
-            filters['enabled'] = strutils.bool_from_string(
-                filters['enabled'])
         for attr, name_map in model.__v2_wsme__._child_map.items():
             for k, v in name_map.items():
                 if attr in filters and k in filters[attr]:
