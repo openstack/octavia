@@ -11,10 +11,14 @@
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations
 # under the License.
+import random
 
 from oslo_log import log as logging
 
 from octavia.amphorae.drivers import driver_base
+from octavia.common import data_models
+from octavia.db import api as db_apis
+from octavia.db import repositories
 
 LOG = logging.getLogger(__name__)
 
@@ -33,6 +37,21 @@ class NoopManager(object):
                       amphora_id, timeout_dict)
             self.amphoraconfig[(listener.id, amphora_id)] = (
                 listener, amphora_id, timeout_dict, "update_amp")
+
+            # Add some dummy stats to the DB when using noop driver
+            listener_stats_repo = repositories.ListenerStatisticsRepository()
+            stats_obj = data_models.ListenerStatistics(
+                listener_id=listener.id,
+                amphora_id=amphora.id,
+                bytes_in=random.randrange(1000000000),
+                bytes_out=random.randrange(1000000000),
+                active_connections=random.randrange(1000000000),
+                total_connections=random.randrange(1000000000),
+                request_errors=random.randrange(1000000000),
+                received_time=float(random.randrange(1000000000)),
+            )
+            listener_stats_repo.replace(session=db_apis.get_session(),
+                                        stats_obj=stats_obj)
 
     def update(self, loadbalancer):
         LOG.debug("Amphora %s no-op, update listener %s, vip %s",

@@ -57,7 +57,8 @@ class TestNoopAmphoraLoadBalancerDriver(base.TestCase):
                              constants.CONN_MAX_RETRIES: 3,
                              constants.CONN_RETRY_INTERVAL: 4}
 
-    def test_update_amphora_listeners(self):
+    @mock.patch('octavia.db.api.get_session')
+    def test_update_amphora_listeners(self, mock_session):
         self.driver.update_amphora_listeners(self.load_balancer, self.amphora,
                                              self.timeout_dict)
         self.assertEqual((self.listener, self.amphora.id, self.timeout_dict,
