@@ -21,7 +21,7 @@ from octavia.controller.worker.v2.tasks import database_tasks
 from octavia.controller.worker.v2.tasks import lifecycle_tasks
 
 
-class PoolFlows(object):
+class PoolFlows:
 
     def get_create_pool_flow(self):
         """Create a flow to create a pool

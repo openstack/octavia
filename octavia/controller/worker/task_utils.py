@@ -27,7 +27,7 @@ CONF = cfg.CONF
 LOG = logging.getLogger(__name__)
 
 
-class TaskUtils(object):
+class TaskUtils:
     """Class of helper/utility methods used by tasks."""
 
     status_update_retry = tenacity.retry(

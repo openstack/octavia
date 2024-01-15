@@ -34,7 +34,7 @@ CONF = cfg.CONF
 LOG = logging.getLogger(__name__)
 
 
-class AmphoraFlows(object):
+class AmphoraFlows:
 
     def get_create_amphora_flow(self):
         """Creates a flow to create an amphora.

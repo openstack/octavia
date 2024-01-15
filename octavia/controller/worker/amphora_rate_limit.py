@@ -28,7 +28,7 @@ CONF = cfg.CONF
 CONF.import_group('haproxy_amphora', 'octavia.common.config')
 
 
-class AmphoraBuildRateLimit(object):
+class AmphoraBuildRateLimit:
 
     def __init__(self):
         self.amp_build_slots_repo = repo.AmphoraBuildSlotsRepository()

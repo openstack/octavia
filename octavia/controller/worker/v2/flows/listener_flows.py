@@ -23,7 +23,7 @@ from octavia.controller.worker.v2.tasks import lifecycle_tasks
 from octavia.controller.worker.v2.tasks import network_tasks
 
 
-class ListenerFlows(object):
+class ListenerFlows:
 
     def get_create_listener_flow(self, flavor_dict=None):
         """Create a flow to create a listener

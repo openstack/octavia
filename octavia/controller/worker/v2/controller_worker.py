@@ -55,7 +55,7 @@ def _is_provisioning_status_pending_update(lb_obj):
     return not lb_obj.provisioning_status == constants.PENDING_UPDATE
 
 
-class ControllerWorker(object):
+class ControllerWorker:
 
     def __init__(self):
 

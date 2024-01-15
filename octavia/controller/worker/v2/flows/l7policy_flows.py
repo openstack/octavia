@@ -21,7 +21,7 @@ from octavia.controller.worker.v2.tasks import database_tasks
 from octavia.controller.worker.v2.tasks import lifecycle_tasks
 
 
-class L7PolicyFlows(object):
+class L7PolicyFlows:
 
     def get_create_l7policy_flow(self):
         """Create a flow to create an L7 policy

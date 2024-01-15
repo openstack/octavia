@@ -21,7 +21,7 @@ from octavia.controller.worker.v2.tasks import database_tasks
 from octavia.controller.worker.v2.tasks import lifecycle_tasks
 
 
-class HealthMonitorFlows(object):
+class HealthMonitorFlows:
 
     def get_create_health_monitor_flow(self):
         """Create a flow to create a health monitor

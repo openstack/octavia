@@ -28,7 +28,7 @@ LOG = logging.getLogger(__name__)
 NoopServerGroup = namedtuple('ServerGroup', ['id'])
 
 
-class NoopManager(object):
+class NoopManager:
     def __init__(self):
         super().__init__()
         self.computeconfig = {}

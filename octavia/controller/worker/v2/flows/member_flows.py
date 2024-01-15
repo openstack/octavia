@@ -23,7 +23,7 @@ from octavia.controller.worker.v2.tasks import lifecycle_tasks
 from octavia.controller.worker.v2.tasks import network_tasks
 
 
-class MemberFlows(object):
+class MemberFlows:
 
     def get_create_member_flow(self):
         """Create a flow to create a member

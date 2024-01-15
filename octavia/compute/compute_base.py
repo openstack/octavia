@@ -15,7 +15,7 @@
 import abc
 
 
-class ComputeBase(object, metaclass=abc.ABCMeta):
+class ComputeBase(metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     def build(self, name="amphora_name", amphora_flavor=None,
