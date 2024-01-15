@@ -32,7 +32,7 @@ CONF = cfg.CONF
 LOG = logging.getLogger(__name__)
 
 
-class PaginationHelper(object):
+class PaginationHelper:
     """Class helping to interact with pagination functionality
 
     Pass this class to `db.repositories` to apply it on query
@@ -149,7 +149,7 @@ class PaginationHelper(object):
             path_url = request.path_url
         links = []
         if model_list:
-            prev_attr = ["limit={}".format(self.limit)]
+            prev_attr = [f"limit={self.limit}"]
             if self.params.get('sort'):
                 prev_attr.append("sort={}".format(self.params.get('sort')))
             if self.params.get('sort_key'):
@@ -361,7 +361,7 @@ class PaginationHelper(object):
                         attr = sa_sql.expression.case(
                             (model_attr.isnot(None), model_attr),
                             else_=default)
-                        crit_attrs.append((attr == marker_values[j]))
+                        crit_attrs.append(attr == marker_values[j])
 
                     model_attr = getattr(model, self.sort_keys[i][0])
                     default = PaginationHelper._get_default_column_value(
@@ -372,14 +372,14 @@ class PaginationHelper(object):
                     this_sort_dir = self.sort_keys[i][1]
                     if this_sort_dir == constants.DESC:
                         if self.page_reverse == "True":
-                            crit_attrs.append((attr > marker_values[i]))
+                            crit_attrs.append(attr > marker_values[i])
                         else:
-                            crit_attrs.append((attr < marker_values[i]))
+                            crit_attrs.append(attr < marker_values[i])
                     elif this_sort_dir == constants.ASC:
                         if self.page_reverse == "True":
-                            crit_attrs.append((attr < marker_values[i]))
+                            crit_attrs.append(attr < marker_values[i])
                         else:
-                            crit_attrs.append((attr > marker_values[i]))
+                            crit_attrs.append(attr > marker_values[i])
                     else:
                         raise exceptions.InvalidSortDirection(
                             key=this_sort_dir)

@@ -96,7 +96,7 @@ class PoolResponse(BasePoolType):
 
     @classmethod
     def from_data_model(cls, data_model, children=False):
-        pool = super(PoolResponse, cls).from_data_model(
+        pool = super().from_data_model(
             data_model, children=children)
         if data_model.session_persistence:
             pool.session_persistence = (
@@ -240,7 +240,7 @@ class PoolStatusResponse(BasePoolType):
 
     @classmethod
     def from_data_model(cls, data_model, children=False):
-        pool = super(PoolStatusResponse, cls).from_data_model(
+        pool = super().from_data_model(
             data_model, children=children)
 
         member_model = member.MemberStatusResponse

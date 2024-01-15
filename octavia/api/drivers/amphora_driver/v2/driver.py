@@ -473,9 +473,9 @@ class AmphoraProviderDriver(driver_base.ProviderDriver):
         except js_exceptions.ValidationError as e:
             error_object = ''
             if e.relative_path:
-                error_object = '{} '.format(e.relative_path[0])
+                error_object = f'{e.relative_path[0]} '
             raise exceptions.UnsupportedOptionError(
-                user_fault_string='{0}{1}'.format(error_object, e.message),
+                user_fault_string=f'{error_object}{e.message}',
                 operator_fault_string=str(e))
         except Exception as e:
             raise exceptions.DriverError(
@@ -559,9 +559,9 @@ class AmphoraProviderDriver(driver_base.ProviderDriver):
         except js_exceptions.ValidationError as e:
             error_object = ''
             if e.relative_path:
-                error_object = '{} '.format(e.relative_path[0])
+                error_object = f'{e.relative_path[0]} '
             raise exceptions.UnsupportedOptionError(
-                user_fault_string='{0}{1}'.format(error_object, e.message),
+                user_fault_string=f'{error_object}{e.message}',
                 operator_fault_string=str(e))
         except Exception as e:
             raise exceptions.DriverError(

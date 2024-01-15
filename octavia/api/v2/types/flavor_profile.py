@@ -31,7 +31,7 @@ class FlavorProfileResponse(BaseFlavorProfileType):
 
     @classmethod
     def from_data_model(cls, data_model, children=False):
-        flavorprofile = super(FlavorProfileResponse, cls).from_data_model(
+        flavorprofile = super().from_data_model(
             data_model, children=children)
         return flavorprofile
 

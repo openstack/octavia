@@ -69,7 +69,7 @@ class LoadBalancerResponse(BaseLoadBalancerType):
 
     @classmethod
     def from_data_model(cls, data_model, children=False):
-        result = super(LoadBalancerResponse, cls).from_data_model(
+        result = super().from_data_model(
             data_model, children=children)
         if data_model.vip:
             result.vip_subnet_id = data_model.vip.subnet_id
@@ -169,7 +169,7 @@ class LoadBalancerStatusResponse(BaseLoadBalancerType):
 
     @classmethod
     def from_data_model(cls, data_model, children=False):
-        result = super(LoadBalancerStatusResponse, cls).from_data_model(
+        result = super().from_data_model(
             data_model, children=children)
         listener_model = listener.ListenerStatusResponse
         result.listeners = [
@@ -198,7 +198,7 @@ class LoadBalancerStatisticsResponse(BaseLoadBalancerType):
 
     @classmethod
     def from_data_model(cls, data_model, children=False):
-        result = super(LoadBalancerStatisticsResponse, cls).from_data_model(
+        result = super().from_data_model(
             data_model, children=children)
         return result
 

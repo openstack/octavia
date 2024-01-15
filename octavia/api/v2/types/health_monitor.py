@@ -50,7 +50,7 @@ class HealthMonitorResponse(BaseHealthMonitorType):
 
     @classmethod
     def from_data_model(cls, data_model, children=False):
-        healthmonitor = super(HealthMonitorResponse, cls).from_data_model(
+        healthmonitor = super().from_data_model(
             data_model, children=children)
 
         if cls._full_response():

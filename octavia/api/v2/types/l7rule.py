@@ -41,7 +41,7 @@ class L7RuleResponse(BaseL7Type):
 
     @classmethod
     def from_data_model(cls, data_model, children=False):
-        rule = super(L7RuleResponse, cls).from_data_model(
+        rule = super().from_data_model(
             data_model, children=children)
         return rule
 

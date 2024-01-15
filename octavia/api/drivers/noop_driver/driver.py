@@ -23,7 +23,7 @@ from octavia.api.drivers import utils as driver_utils
 LOG = logging.getLogger(__name__)
 
 
-class NoopManager(object):
+class NoopManager:
     def __init__(self):
         super().__init__()
         self.driverconfig = {}

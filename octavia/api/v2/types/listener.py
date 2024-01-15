@@ -69,7 +69,7 @@ class ListenerResponse(BaseListenerType):
 
     @classmethod
     def from_data_model(cls, data_model, children=False):
-        listener = super(ListenerResponse, cls).from_data_model(
+        listener = super().from_data_model(
             data_model, children=children)
 
         listener.sni_container_refs = [
@@ -274,7 +274,7 @@ class ListenerStatusResponse(BaseListenerType):
 
     @classmethod
     def from_data_model(cls, data_model, children=False):
-        listener = super(ListenerStatusResponse, cls).from_data_model(
+        listener = super().from_data_model(
             data_model, children=children)
 
         pool_model = pool.PoolStatusResponse
@@ -297,7 +297,7 @@ class ListenerStatisticsResponse(BaseListenerType):
 
     @classmethod
     def from_data_model(cls, data_model, children=False):
-        result = super(ListenerStatisticsResponse, cls).from_data_model(
+        result = super().from_data_model(
             data_model, children=children)
         return result
 
