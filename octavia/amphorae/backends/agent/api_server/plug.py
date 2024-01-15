@@ -34,7 +34,7 @@ CONF = cfg.CONF
 LOG = logging.getLogger(__name__)
 
 
-class Plug(object):
+class Plug:
     def __init__(self, osutils):
         self._osutils = osutils
 
@@ -89,7 +89,7 @@ class Plug(object):
         try:
             rendered_vips = self.render_vips(vips)
         except ValueError as e:
-            vip_error_message = "Invalid VIP: {}".format(e)
+            vip_error_message = f"Invalid VIP: {e}"
             return webob.Response(json={'message': vip_error_message},
                                   status=400)
 
@@ -98,7 +98,7 @@ class Plug(object):
                                              gateway, host_routes)
         except ValueError as e:
             return webob.Response(
-                json={'message': "Invalid VRRP Address: {}".format(e)},
+                json={'message': f"Invalid VRRP Address: {e}"},
                 status=400)
 
         # Check if the interface is already in the network namespace
@@ -148,14 +148,14 @@ class Plug(object):
             for ip in fixed_ips:
                 try:
                     socket.inet_pton(socket.AF_INET, ip.get('ip_address'))
-                except socket.error:
+                except OSError:
                     socket.inet_pton(socket.AF_INET6, ip.get('ip_address'))
 
     def plug_network(self, mac_address, fixed_ips, mtu=None,
                      vip_net_info=None):
         try:
             self._check_ip_addresses(fixed_ips=fixed_ips)
-        except socket.error:
+        except OSError:
             return webob.Response(json={
                 'message': "Invalid network port"}, status=400)
 

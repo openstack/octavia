@@ -53,7 +53,7 @@ SYSTEMD_TEMPLATE = JINJA_ENV.get_template(SYSTEMD_CONF)
 
 
 # Wrap a stream so we can compute the md5 while reading
-class Wrapped(object):
+class Wrapped:
     def __init__(self, stream_):
         self.stream = stream_
         self.hash = md5(usedforsecurity=False)  # nosec
@@ -71,7 +71,7 @@ class Wrapped(object):
         return getattr(self.stream, attr)
 
 
-class Loadbalancer(object):
+class Loadbalancer:
 
     def get_haproxy_config(self, lb_id):
         """Gets the haproxy config
@@ -79,7 +79,7 @@ class Loadbalancer(object):
         :param listener_id: the id of the listener
         """
         self._check_lb_exists(lb_id)
-        with open(util.config_path(lb_id), 'r', encoding='utf-8') as file:
+        with open(util.config_path(lb_id), encoding='utf-8') as file:
             cfg = file.read()
             resp = webob.Response(cfg, content_type='text/plain')
             resp.headers['ETag'] = (
@@ -161,7 +161,7 @@ class Loadbalancer(object):
                 template = UPSTART_TEMPLATE
             elif init_system == consts.INIT_SYSVINIT:
                 template = SYSVINIT_TEMPLATE
-                init_enable_cmd = "insserv {file}".format(file=init_path)
+                init_enable_cmd = f"insserv {init_path}"
             else:
                 raise util.UnknownInitError()
 
@@ -206,7 +206,7 @@ class Loadbalancer(object):
         # Make sure the new service is enabled on boot
         if init_system == consts.INIT_SYSTEMD:
             util.run_systemctl_command(
-                consts.ENABLE, "haproxy-{lb_id}".format(lb_id=lb_id))
+                consts.ENABLE, f"haproxy-{lb_id}")
         elif init_system == consts.INIT_SYSVINIT:
             try:
                 subprocess.check_output(init_enable_cmd.split(),
@@ -216,7 +216,7 @@ class Loadbalancer(object):
                           "%(err)s %(out)s", {'lb_id': lb_id, 'err': e,
                                               'out': e.output})
                 return webob.Response(json={
-                    'message': "Error enabling haproxy-{0} service".format(
+                    'message': "Error enabling haproxy-{} service".format(
                         lb_id), 'details': e.output}, status=500)
 
         res = webob.Response(json={'message': 'OK'}, status=202)
@@ -231,7 +231,7 @@ class Loadbalancer(object):
                           consts.AMP_ACTION_RELOAD]:
             return webob.Response(json={
                 'message': 'Invalid Request',
-                'details': "Unknown action: {0}".format(action)}, status=400)
+                'details': f"Unknown action: {action}"}, status=400)
 
         self._check_lb_exists(lb_id)
         is_vrrp = (CONF.controller_worker.loadbalancer_topology ==
@@ -269,7 +269,7 @@ class Loadbalancer(object):
                     "%(out)s", {'action': action, 'lb_id': lb_id,
                                 'err': e, 'out': e.output})
                 return webob.Response(json={
-                    'message': "Error {0}ing haproxy".format(action),
+                    'message': f"Error {action}ing haproxy",
                     'details': e.output}, status=500)
 
         # If we are not in active/standby we need to send an IP
@@ -288,7 +288,7 @@ class Loadbalancer(object):
 
         details = (
             'Configuration file is valid\n'
-            'haproxy daemon for {0} started'.format(lb_id)
+            'haproxy daemon for {} started'.format(lb_id)
         )
 
         return webob.Response(json={'message': 'OK', 'details': details},
@@ -303,7 +303,7 @@ class Loadbalancer(object):
         # check if that haproxy is still running and if stop it
         if os.path.exists(util.pid_path(lb_id)) and os.path.exists(
                 os.path.join('/proc', util.get_haproxy_pid(lb_id))):
-            cmd = "/usr/sbin/service haproxy-{0} stop".format(lb_id)
+            cmd = f"/usr/sbin/service haproxy-{lb_id} stop"
             try:
                 subprocess.check_output(cmd.split(), stderr=subprocess.STDOUT)
             except subprocess.CalledProcessError as e:
@@ -342,7 +342,7 @@ class Loadbalancer(object):
                 consts.DISABLE, "haproxy-{lb_id}".format(
                     lb_id=lb_id))
         elif init_system == consts.INIT_SYSVINIT:
-            init_disable_cmd = "insserv -r {file}".format(file=init_path)
+            init_disable_cmd = f"insserv -r {init_path}"
         elif init_system != consts.INIT_UPSTART:
             raise util.UnknownInitError()
 
@@ -355,7 +355,7 @@ class Loadbalancer(object):
                           "%(err)s %(out)s", {'lb_id': lb_id, 'err': e,
                                               'out': e.output})
                 return webob.Response(json={
-                    'message': "Error disabling haproxy-{0} service".format(
+                    'message': "Error disabling haproxy-{} service".format(
                         lb_id), 'details': e.output}, status=500)
 
         # delete the directory + init script for that listener
@@ -423,7 +423,7 @@ class Loadbalancer(object):
                 'details': "No certificate with filename: {f}".format(
                     f=filename)}, status=404)
 
-        with open(cert_path, 'r', encoding='utf-8') as crt_file:
+        with open(cert_path, encoding='utf-8') as crt_file:
             cert = crt_file.read()
             md5sum = md5(octavia_utils.b(cert),
                          usedforsecurity=False).hexdigest()  # nosec
@@ -442,8 +442,7 @@ class Loadbalancer(object):
             if os.path.exists(
                     os.path.join('/proc', util.get_haproxy_pid(lb_id))):
                 # Check if the listener is disabled
-                with open(util.config_path(lb_id),
-                          'r', encoding='utf-8') as file:
+                with open(util.config_path(lb_id), encoding='utf-8') as file:
                     cfg = file.read()
                     m = re.findall('^frontend (.*)$', cfg, re.MULTILINE)
                     return m or []
@@ -458,7 +457,7 @@ class Loadbalancer(object):
             raise exceptions.HTTPException(
                 response=webob.Response(json={
                     'message': 'Loadbalancer Not Found',
-                    'details': "No loadbalancer with UUID: {0}".format(
+                    'details': "No loadbalancer with UUID: {}".format(
                         lb_id)}, status=404))
 
     def _check_ssl_filename_format(self, filename):

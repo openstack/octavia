@@ -31,7 +31,7 @@ def round_robin_addr(addrinfo_list):
     return addrinfo
 
 
-class UDPStatusSender(object):
+class UDPStatusSender:
     def __init__(self):
         self._update_dests()
         self.v4sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -56,7 +56,7 @@ class UDPStatusSender(object):
                 self.v4sock.sendto(envelope_str, dest[4])
             elif dest[0] == socket.AF_INET6:
                 self.v6sock.sendto(envelope_str, dest[4])
-        except socket.error:
+        except OSError:
             # Pass here as on amp boot it will get one or more
             # error: [Errno 101] Network is unreachable
             # while the networks are coming up

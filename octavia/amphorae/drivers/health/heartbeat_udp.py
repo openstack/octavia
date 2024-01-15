@@ -37,7 +37,7 @@ CONF = cfg.CONF
 LOG = logging.getLogger(__name__)
 
 
-class UDPStatusGetter(object):
+class UDPStatusGetter:
     """This class defines methods that will gather heartbeats
 
     The heartbeats are transmitted via UDP and this class will bind to a port

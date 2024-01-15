@@ -308,7 +308,7 @@ class HaproxyAmphoraLoadBalancerDriver(
         for cert_id in certs_to_delete:
             self.clients[amphora.api_version].delete_cert_pem(
                 amphora, listener.load_balancer.id,
-                '{id}.pem'.format(id=cert_id))
+                f'{cert_id}.pem')
 
         # See how many non-UDP/SCTP listeners we have left
         non_lvs_listener_count = len([
@@ -451,7 +451,7 @@ class HaproxyAmphoraLoadBalancerDriver(
             for cert in certs:
                 pem = cert_parser.build_pem(cert)
                 md5sum = md5(pem, usedforsecurity=False).hexdigest()  # nosec
-                name = '{id}.pem'.format(id=cert.id)
+                name = f'{cert.id}.pem'
                 cert_filename_list.append(
                     os.path.join(
                         CONF.haproxy_amphora.base_cert_dir, obj_id, name))
@@ -460,10 +460,10 @@ class HaproxyAmphoraLoadBalancerDriver(
             if certs:
                 # Build and upload the crt-list file for haproxy
                 crt_list = "\n".join(cert_filename_list)
-                crt_list = f'{crt_list}\n'.encode('utf-8')
+                crt_list = f'{crt_list}\n'.encode()
                 md5sum = md5(crt_list,
                              usedforsecurity=False).hexdigest()  # nosec
-                name = '{id}.pem'.format(id=listener.id)
+                name = f'{listener.id}.pem'
                 self._upload_cert(amphora, obj_id, crt_list, md5sum, name)
         return {'tls_cert': tls_cert, 'sni_certs': sni_certs}
 
@@ -482,7 +482,7 @@ class HaproxyAmphoraLoadBalancerDriver(
             pass
         md5sum = md5(secret, usedforsecurity=False).hexdigest()  # nosec
         id = hashlib.sha1(secret).hexdigest()  # nosec
-        name = '{id}.pem'.format(id=id)
+        name = f'{id}.pem'
 
         if amphora and obj_id:
             self._upload_cert(
@@ -520,7 +520,7 @@ class HaproxyAmphoraLoadBalancerDriver(
             except AttributeError:
                 pass
             md5sum = md5(pem, usedforsecurity=False).hexdigest()  # nosec
-            name = '{id}.pem'.format(id=tls_cert.id)
+            name = f'{tls_cert.id}.pem'
             if amphora and obj_id:
                 self._upload_cert(amphora, obj_id, pem=pem,
                                   md5sum=md5sum, name=name)
@@ -629,7 +629,7 @@ class CustomHostNameCheckingAdapter(requests.adapters.HTTPAdapter):
         return super().init_poolmanager(*pool_args, **pool_kwargs)
 
 
-class AmphoraAPIClientBase(object):
+class AmphoraAPIClientBase:
     def __init__(self):
         super().__init__()
 
@@ -650,7 +650,7 @@ class AmphoraAPIClientBase(object):
                 ip=ip,
                 interface=CONF.haproxy_amphora.lb_network_interface)
         elif utils.is_ipv6(ip):
-            ip = '[{ip}]'.format(ip=ip)
+            ip = f'[{ip}]'
         if api_version:
             return "https://{ip}:{port}/{version}/".format(
                 ip=ip,
@@ -782,7 +782,7 @@ class AmphoraAPIClient1_0(AmphoraAPIClientBase):
     def get_listener_status(self, amp, listener_id):
         r = self.get(
             amp,
-            'listeners/{listener_id}'.format(listener_id=listener_id))
+            f'listeners/{listener_id}')
         if exc.check_exception(r):
             return r.json()
         return None
@@ -825,7 +825,7 @@ class AmphoraAPIClient1_0(AmphoraAPIClientBase):
 
     def delete_listener(self, amp, object_id):
         r = self.delete(
-            amp, 'listeners/{object_id}'.format(object_id=object_id))
+            amp, f'listeners/{object_id}')
         return exc.check_exception(r, (404,))
 
     def get_info(self, amp, raise_retry_exception=False,
@@ -855,7 +855,7 @@ class AmphoraAPIClient1_0(AmphoraAPIClientBase):
 
     def plug_vip(self, amp, vip, net_info):
         r = self.post(amp,
-                      'plug/vip/{vip}'.format(vip=vip),
+                      f'plug/vip/{vip}',
                       json=net_info)
         return exc.check_exception(r)
 
@@ -864,12 +864,12 @@ class AmphoraAPIClient1_0(AmphoraAPIClientBase):
         return exc.check_exception(r)
 
     def _vrrp_action(self, action, amp, timeout_dict=None):
-        r = self.put(amp, 'vrrp/{action}'.format(action=action),
+        r = self.put(amp, f'vrrp/{action}',
                      timeout_dict=timeout_dict)
         return exc.check_exception(r)
 
     def get_interface(self, amp, ip_addr, timeout_dict=None, log_error=True):
-        r = self.get(amp, 'interface/{ip_addr}'.format(ip_addr=ip_addr),
+        r = self.get(amp, f'interface/{ip_addr}',
                      timeout_dict=timeout_dict)
         return exc.check_exception(r, log_error=log_error).json()
 

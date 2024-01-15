@@ -15,7 +15,7 @@ import ctypes
 import os
 
 
-class NetworkNamespace(object):
+class NetworkNamespace:
     """A network namespace context manager.
 
     Runs wrapped code inside the specified network namespace.
@@ -32,8 +32,8 @@ class NetworkNamespace(object):
             raise OSError(errno, os.strerror(errno))
 
     def __init__(self, netns):
-        self.current_netns = '/proc/{pid}/ns/net'.format(pid=os.getpid())
-        self.target_netns = '/var/run/netns/{netns}'.format(netns=netns)
+        self.current_netns = f'/proc/{os.getpid()}/ns/net'
+        self.target_netns = f'/var/run/netns/{netns}'
         # reference: man setns(2)
         self.set_netns = ctypes.CDLL('libc.so.6', use_errno=True).setns
         self.set_netns.errcheck = self._error_handler

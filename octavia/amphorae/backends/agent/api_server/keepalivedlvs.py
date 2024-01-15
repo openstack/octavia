@@ -140,7 +140,7 @@ class KeepalivedLvs(lvs_listener_base.LvsListenerApiServerBase):
             util.run_systemctl_command(
                 consts.ENABLE, "octavia-keepalivedlvs-%s" % str(listener_id))
         elif init_system == consts.INIT_SYSVINIT:
-            init_enable_cmd = "insserv {file}".format(file=file_path)
+            init_enable_cmd = f"insserv {file_path}"
             try:
                 subprocess.check_output(init_enable_cmd.split(),
                                         stderr=subprocess.STDOUT)
@@ -180,8 +180,8 @@ class KeepalivedLvs(lvs_listener_base.LvsListenerApiServerBase):
             raise exceptions.HTTPException(
                 response=webob.Response(json={
                     'message': 'UDP Listener Not Found',
-                    'details': "No UDP listener with UUID: {0}".format(
-                        listener_id)}, status=404))
+                    'details': f"No UDP listener with UUID: {listener_id}"},
+                    status=404))
 
     def get_lvs_listener_config(self, listener_id):
         """Gets the keepalivedlvs config
@@ -190,7 +190,7 @@ class KeepalivedLvs(lvs_listener_base.LvsListenerApiServerBase):
         """
         self._check_lvs_listener_exists(listener_id)
         with open(util.keepalived_lvs_cfg_path(listener_id),
-                  'r', encoding='utf-8') as file:
+                  encoding='utf-8') as file:
             cfg = file.read()
             resp = webob.Response(cfg, content_type='text/plain')
             return resp
@@ -202,7 +202,7 @@ class KeepalivedLvs(lvs_listener_base.LvsListenerApiServerBase):
                           consts.AMP_ACTION_RELOAD]:
             return webob.Response(json={
                 'message': 'Invalid Request',
-                'details': "Unknown action: {0}".format(action)}, status=400)
+                'details': f"Unknown action: {action}"}, status=400)
 
         # When octavia requests a reload of keepalived, force a restart since
         # a keepalived reload doesn't restore members in their initial state.
@@ -217,24 +217,22 @@ class KeepalivedLvs(lvs_listener_base.LvsListenerApiServerBase):
                 action = consts.AMP_ACTION_START
 
         cmd = ("/usr/sbin/service "
-               "octavia-keepalivedlvs-{listener_id} "
-               "{action}".format(listener_id=listener_id, action=action))
+               f"octavia-keepalivedlvs-{listener_id} {action}")
 
         try:
             subprocess.check_output(cmd.split(), stderr=subprocess.STDOUT)
         except subprocess.CalledProcessError as e:
             LOG.debug('Failed to %s keepalivedlvs listener %s',
-                      listener_id + ' : ' + action, str(e))
+                      listener_id + ' : ' + action, e)
             return webob.Response(json={
-                'message': ("Failed to {0} keepalivedlvs listener {1}"
-                            .format(action, listener_id)),
+                'message': (f"Failed to {action} keepalivedlvs listener "
+                            f"{listener_id}"),
                 'details': e.output}, status=500)
 
         return webob.Response(
             json={'message': 'OK',
-                  'details': 'keepalivedlvs listener {listener_id} '
-                             '{action}ed'.format(listener_id=listener_id,
-                                                 action=action)},
+                  'details': (f'keepalivedlvs listener {listener_id} '
+                              f'{action}ed')},
             status=202)
 
     def _check_lvs_listener_status(self, listener_id):
@@ -243,7 +241,7 @@ class KeepalivedLvs(lvs_listener_base.LvsListenerApiServerBase):
                     '/proc', util.get_keepalivedlvs_pid(listener_id))):
                 # Check if the listener is disabled
                 with open(util.keepalived_lvs_cfg_path(listener_id),
-                          'r', encoding='utf-8') as file:
+                          encoding='utf-8') as file:
                     cfg = file.read()
                     m = re.search('virtual_server', cfg)
                     if m:
@@ -280,12 +278,12 @@ class KeepalivedLvs(lvs_listener_base.LvsListenerApiServerBase):
         if os.path.exists(keepalived_pid) and os.path.exists(
                 os.path.join('/proc',
                              util.get_keepalivedlvs_pid(listener_id))):
-            cmd = ("/usr/sbin/service "
-                   "octavia-keepalivedlvs-{0} stop".format(listener_id))
+            cmd = (f"/usr/sbin/service "
+                   f"octavia-keepalivedlvs-{listener_id} stop")
             try:
                 subprocess.check_output(cmd.split(), stderr=subprocess.STDOUT)
             except subprocess.CalledProcessError as e:
-                LOG.error("Failed to stop keepalivedlvs service: %s", str(e))
+                LOG.error("Failed to stop keepalivedlvs service: %s", e)
                 return webob.Response(json={
                     'message': "Error stopping keepalivedlvs",
                     'details': e.output}, status=500)
@@ -305,9 +303,9 @@ class KeepalivedLvs(lvs_listener_base.LvsListenerApiServerBase):
 
         if init_system == consts.INIT_SYSTEMD:
             util.run_systemctl_command(
-                consts.DISABLE, "octavia-keepalivedlvs-%s" % str(listener_id))
+                consts.DISABLE, f"octavia-keepalivedlvs-{listener_id}")
         elif init_system == consts.INIT_SYSVINIT:
-            init_disable_cmd = "insserv -r {file}".format(file=init_path)
+            init_disable_cmd = f"insserv -r {init_path}"
         elif init_system != consts.INIT_UPSTART:
             raise util.UnknownInitError()
 
@@ -322,7 +320,7 @@ class KeepalivedLvs(lvs_listener_base.LvsListenerApiServerBase):
                 return webob.Response(json={
                     'message': (
                         "Error disabling octavia-keepalivedlvs-"
-                        "{0} service".format(listener_id)),
+                        "{} service".format(listener_id)),
                     'details': e.output}, status=500)
 
         # delete init script ,config file and log file for that listener

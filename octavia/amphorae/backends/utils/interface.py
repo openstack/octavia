@@ -37,7 +37,7 @@ CONF = cfg.CONF
 LOG = logging.getLogger(__name__)
 
 
-class InterfaceController(object):
+class InterfaceController:
     ADD = 'add'
     DELETE = 'delete'
     SET = 'set'
@@ -109,7 +109,7 @@ class InterfaceController(object):
                "/var/lib/dhclient/dhclient-{}.leases".format(
                    interface_name),
                "-pf",
-               "/run/dhclient-{}.pid".format(interface_name),
+               f"/run/dhclient-{interface_name}.pid",
                interface_name]
         LOG.debug("Running '%s'", cmd)
         subprocess.check_output(cmd, stderr=subprocess.STDOUT)
@@ -121,7 +121,7 @@ class InterfaceController(object):
                "/var/lib/dhclient/dhclient-{}.leases".format(
                    interface_name),
                "-pf",
-               "/run/dhclient-{}.pid".format(interface_name),
+               f"/run/dhclient-{interface_name}.pid",
                interface_name]
         LOG.debug("Running '%s'", cmd)
         subprocess.check_output(cmd, stderr=subprocess.STDOUT)

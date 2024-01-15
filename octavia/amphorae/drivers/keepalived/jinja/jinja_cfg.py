@@ -30,7 +30,7 @@ CONF = cfg.CONF
 LOG = logging.getLogger(__name__)
 
 
-class KeepalivedJinjaTemplater(object):
+class KeepalivedJinjaTemplater:
 
     def __init__(self, keepalived_template=None):
         """Keepalived configuration generation

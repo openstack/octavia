@@ -25,7 +25,7 @@ TEMPLATES_DIR = (os.path.dirname(os.path.realpath(__file__)) +
                  constants.AGENT_API_TEMPLATES + '/')
 
 
-class AgentJinjaTemplater(object):
+class AgentJinjaTemplater:
 
     def __init__(self):
         template_loader = jinja2.FileSystemLoader(searchpath=os.path.dirname(

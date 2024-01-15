@@ -40,7 +40,7 @@ SYSTEMD_TEMPLATE = j2_env.get_template(consts.KEEPALIVED_JINJA2_SYSTEMD)
 check_script_template = j2_env.get_template(consts.CHECK_SCRIPT_CONF)
 
 
-class Keepalived(object):
+class Keepalived:
 
     def upload_keepalived_config(self):
         stream = loadbalancer.Wrapped(flask.request.stream)
@@ -76,7 +76,7 @@ class Keepalived(object):
             template = UPSTART_TEMPLATE
         elif init_system == consts.INIT_SYSVINIT:
             template = SYSVINIT_TEMPLATE
-            init_enable_cmd = "insserv {file}".format(file=file_path)
+            init_enable_cmd = f"insserv {file_path}"
         else:
             raise util.UnknownInitError()
 
@@ -140,25 +140,23 @@ class Keepalived(object):
                           consts.AMP_ACTION_RELOAD]:
             return webob.Response(json={
                 'message': 'Invalid Request',
-                'details': "Unknown action: {0}".format(action)}, status=400)
+                'details': f"Unknown action: {action}"}, status=400)
 
         if action == consts.AMP_ACTION_START:
             keepalived_pid_path = util.keepalived_pid_path()
             try:
                 # Is there a pid file for keepalived?
-                with open(keepalived_pid_path,
-                          'r', encoding='utf-8') as pid_file:
+                with open(keepalived_pid_path, encoding='utf-8') as pid_file:
                     pid = int(pid_file.readline())
                 os.kill(pid, 0)
 
                 # If we got here, it means the keepalived process is running.
                 # We should reload it instead of trying to start it again.
                 action = consts.AMP_ACTION_RELOAD
-            except (IOError, OSError):
+            except OSError:
                 pass
 
-        cmd = ("/usr/sbin/service octavia-keepalived {action}".format(
-            action=action))
+        cmd = f"/usr/sbin/service octavia-keepalived {action}"
 
         try:
             subprocess.check_output(cmd.split(), stderr=subprocess.STDOUT)
@@ -166,11 +164,10 @@ class Keepalived(object):
             LOG.debug('Failed to %s octavia-keepalived service: %s %s',
                       action, e, e.output)
             return webob.Response(json={
-                'message': "Failed to {0} octavia-keepalived service".format(
-                    action),
+                'message': f"Failed to {action} octavia-keepalived service",
                 'details': e.output}, status=500)
 
         return webob.Response(
             json={'message': 'OK',
-                  'details': 'keepalived {action}ed'.format(action=action)},
+                  'details': f'keepalived {action}ed'},
             status=202)
