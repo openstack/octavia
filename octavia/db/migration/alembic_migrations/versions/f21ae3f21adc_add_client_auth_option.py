@@ -34,14 +34,14 @@ down_revision = '2ad093f6353f'
 
 def upgrade():
     op.create_table(
-        u'client_authentication_mode',
-        sa.Column(u'name', sa.String(10), primary_key=True),
+        'client_authentication_mode',
+        sa.Column('name', sa.String(10), primary_key=True),
     )
 
     # Create temporary table for table data seeding
     insert_table = sa.table(
-        u'client_authentication_mode',
-        sa.column(u'name', sa.String),
+        'client_authentication_mode',
+        sa.column('name', sa.String),
     )
 
     op.bulk_insert(
@@ -54,8 +54,8 @@ def upgrade():
     )
 
     op.add_column(
-        u'listener',
-        sa.Column(u'client_authentication', sa.String(10),
+        'listener',
+        sa.Column('client_authentication', sa.String(10),
                   sa.ForeignKey('client_authentication_mode.name'),
                   server_default=constants.CLIENT_AUTH_NONE, nullable=False)
     )

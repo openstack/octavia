@@ -29,5 +29,5 @@ down_revision = '4faaa983e7a9'
 
 
 def upgrade():
-    op.alter_column(u'amphora', u'host_id', new_column_name='compute_id',
+    op.alter_column('amphora', 'host_id', new_column_name='compute_id',
                     existing_type=sa.String(36), nullable=True)

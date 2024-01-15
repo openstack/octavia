@@ -35,5 +35,5 @@ def upgrade():
     for table in tables:
         op.add_column(
             table,
-            sa.Column(u'name', sa.String(255), nullable=True)
+            sa.Column('name', sa.String(255), nullable=True)
         )

@@ -29,6 +29,6 @@ down_revision = '0f242cf02c74'
 
 def upgrade():
     op.add_column(
-        u'vip',
-        sa.Column(u'octavia_owned', sa.Boolean(), nullable=True)
+        'vip',
+        sa.Column('octavia_owned', sa.Boolean(), nullable=True)
     )

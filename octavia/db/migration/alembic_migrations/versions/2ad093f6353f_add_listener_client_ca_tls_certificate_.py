@@ -31,7 +31,7 @@ down_revision = '11e4bb2bb8ef'
 
 def upgrade():
     op.add_column(
-        u'listener',
-        sa.Column(u'client_ca_tls_certificate_id', sa.String(255),
+        'listener',
+        sa.Column('client_ca_tls_certificate_id', sa.String(255),
                   nullable=True)
     )

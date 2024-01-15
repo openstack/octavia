@@ -29,10 +29,10 @@ down_revision = '3a1e1cdb7b27'
 
 
 def upgrade():
-    with op.batch_alter_table(u'vip') as batch_op:
-        batch_op.alter_column(u'subnet_id', new_column_name=u'network_id',
+    with op.batch_alter_table('vip') as batch_op:
+        batch_op.alter_column('subnet_id', new_column_name='network_id',
                               existing_type=sa.String(36))
-        batch_op.alter_column(u'net_port_id', new_column_name=u'port_id',
+        batch_op.alter_column('net_port_id', new_column_name='port_id',
                               existing_type=sa.String(36))
-        batch_op.drop_column(u'floating_ip_id')
-        batch_op.drop_column(u'floating_ip_network_id')
+        batch_op.drop_column('floating_ip_id')
+        batch_op.drop_column('floating_ip_network_id')

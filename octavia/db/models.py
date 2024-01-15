@@ -185,7 +185,7 @@ class ListenerStatistics(base_models.BASE):
             self.total_connections += other.total_connections
         else:
             raise TypeError(  # noqa: O342
-                "unsupported operand type(s) for +=: '{0}' and '{1}'".format(
+                "unsupported operand type(s) for +=: '{}' and '{}'".format(
                     type(self), type(other)))
 
         return self

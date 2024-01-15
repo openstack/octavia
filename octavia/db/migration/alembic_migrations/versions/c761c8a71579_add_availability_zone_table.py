@@ -32,12 +32,12 @@ down_revision = 'e37941b010db'
 
 def upgrade():
     azp_table = op.create_table(
-        u'availability_zone_profile',
-        sa.Column(u'id', sa.String(36), nullable=False),
-        sa.Column(u'name', sa.String(255), nullable=False),
-        sa.Column(u'provider_name', sa.String(255), nullable=False),
-        sa.Column(u'availability_zone_data', sa.String(4096), nullable=False),
-        sa.PrimaryKeyConstraint(u'id'))
+        'availability_zone_profile',
+        sa.Column('id', sa.String(36), nullable=False),
+        sa.Column('name', sa.String(255), nullable=False),
+        sa.Column('provider_name', sa.String(255), nullable=False),
+        sa.Column('availability_zone_data', sa.String(4096), nullable=False),
+        sa.PrimaryKeyConstraint('id'))
 
     op.bulk_insert(
         azp_table,
@@ -48,16 +48,16 @@ def upgrade():
     )
 
     az_table = op.create_table(
-        u'availability_zone',
-        sa.Column(u'name', sa.String(255), nullable=False),
-        sa.Column(u'description', sa.String(255), nullable=True),
-        sa.Column(u'enabled', sa.Boolean(), nullable=False),
-        sa.Column(u'availability_zone_profile_id', sa.String(36),
+        'availability_zone',
+        sa.Column('name', sa.String(255), nullable=False),
+        sa.Column('description', sa.String(255), nullable=True),
+        sa.Column('enabled', sa.Boolean(), nullable=False),
+        sa.Column('availability_zone_profile_id', sa.String(36),
                   nullable=False),
-        sa.ForeignKeyConstraint([u'availability_zone_profile_id'],
-                                [u'availability_zone_profile.id'],
-                                name=u'fk_az_az_profile_id'),
-        sa.PrimaryKeyConstraint(u'name'),)
+        sa.ForeignKeyConstraint(['availability_zone_profile_id'],
+                                ['availability_zone_profile.id'],
+                                name='fk_az_az_profile_id'),
+        sa.PrimaryKeyConstraint('name'),)
 
     op.bulk_insert(
         az_table,

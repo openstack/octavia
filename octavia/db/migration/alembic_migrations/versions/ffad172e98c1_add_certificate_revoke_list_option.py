@@ -31,6 +31,6 @@ down_revision = 'f21ae3f21adc'
 
 
 def upgrade():
-    op.add_column(u'listener',
-                  sa.Column(u'client_crl_container_id', sa.String(255),
+    op.add_column('listener',
+                  sa.Column('client_crl_container_id', sa.String(255),
                             nullable=True))

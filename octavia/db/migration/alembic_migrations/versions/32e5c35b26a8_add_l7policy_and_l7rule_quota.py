@@ -30,11 +30,11 @@ down_revision = 'd3c8a090f3de'
 
 
 def upgrade():
-    op.add_column(u'quotas',
+    op.add_column('quotas',
                   sa.Column('l7policy', sa.Integer(), nullable=True))
-    op.add_column(u'quotas',
+    op.add_column('quotas',
                   sa.Column('l7rule', sa.Integer(), nullable=True))
-    op.add_column(u'quotas',
+    op.add_column('quotas',
                   sa.Column('in_use_l7policy', sa.Integer(), nullable=True))
-    op.add_column(u'quotas',
+    op.add_column('quotas',
                   sa.Column('in_use_l7rule', sa.Integer(), nullable=True))

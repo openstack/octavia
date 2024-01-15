@@ -39,7 +39,7 @@ def upgrade():
     pk = inspector.get_pk_constraint('spares_pool')
     if not pk['constrained_columns']:
         op.create_primary_key(
-            u'pk_spares_pool', u'spares_pool', [u'updated_at'])
+            'pk_spares_pool', 'spares_pool', ['updated_at'])
     else:
         # Revision '46d914b2a5e5' has been updated to create the
         # missing PK. Depending whether the env is already deployed or

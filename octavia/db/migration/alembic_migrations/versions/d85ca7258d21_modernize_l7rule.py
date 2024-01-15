@@ -33,39 +33,39 @@ down_revision = '034b2dc2f3e0'
 def upgrade():
     # Add timing data
     op.add_column(
-        u'l7rule',
-        sa.Column(u'created_at', sa.DateTime(), nullable=True)
+        'l7rule',
+        sa.Column('created_at', sa.DateTime(), nullable=True)
     )
     op.add_column(
-        u'l7rule',
-        sa.Column(u'updated_at', sa.DateTime(), nullable=True)
+        'l7rule',
+        sa.Column('updated_at', sa.DateTime(), nullable=True)
     )
 
     # Add project_id
     op.add_column(
-        u'l7rule',
-        sa.Column(u'project_id', sa.String(36), nullable=True)
+        'l7rule',
+        sa.Column('project_id', sa.String(36), nullable=True)
     )
 
     # Add enabled
     op.add_column(
-        u'l7rule',
-        sa.Column(u'enabled', sa.Boolean(),
+        'l7rule',
+        sa.Column('enabled', sa.Boolean(),
                   server_default=sa.sql.expression.true(),
                   nullable=False)
     )
 
     # Add new operating_status column, setting existing rows to ONLINE
     op.add_column(
-        u'l7rule',
-        sa.Column(u'operating_status', sa.String(16),
+        'l7rule',
+        sa.Column('operating_status', sa.String(16),
                   nullable=False, server_default=constants.ONLINE)
     )
     # Remove the default, as we don't actually want one
-    op.alter_column(u'l7rule', u'operating_status',
+    op.alter_column('l7rule', 'operating_status',
                     existing_type=sa.String(16), server_default=None)
     # Add the foreign key for operating_status_name
     op.create_foreign_key(
-        u'fk_l7rule_operating_status_name', u'l7rule',
-        u'operating_status', [u'operating_status'], [u'name']
+        'fk_l7rule_operating_status_name', 'l7rule',
+        'operating_status', ['operating_status'], ['name']
     )

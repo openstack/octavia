@@ -31,6 +31,6 @@ down_revision = '80dba23a159f'
 
 def upgrade():
     op.add_column(
-        u'amphora',
-        sa.Column(u'compute_flavor', sa.String(255), nullable=True)
+        'amphora',
+        sa.Column('compute_flavor', sa.String(255), nullable=True)
     )

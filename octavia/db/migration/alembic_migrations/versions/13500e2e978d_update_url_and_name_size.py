@@ -29,15 +29,15 @@ down_revision = '4c094013699a'
 
 
 def upgrade():
-    op.alter_column(u'provisioning_status', u'name',
+    op.alter_column('provisioning_status', 'name',
                     existing_type=sa.String(255))
-    op.alter_column(u'operating_status', u'name',
+    op.alter_column('operating_status', 'name',
                     existing_type=sa.String(255))
-    op.alter_column(u'health_monitor_type', u'name',
+    op.alter_column('health_monitor_type', 'name',
                     existing_type=sa.String(255))
-    op.alter_column(u'protocol', u'name',
+    op.alter_column('protocol', 'name',
                     existing_type=sa.String(255))
-    op.alter_column(u'algorithm', u'name',
+    op.alter_column('algorithm', 'name',
                     existing_type=sa.String(255))
-    op.alter_column(u'session_persistence_type', u'name',
+    op.alter_column('session_persistence_type', 'name',
                     existing_type=sa.String(255))

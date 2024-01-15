@@ -28,5 +28,5 @@ down_revision = '2351ea316465'
 
 
 def upgrade():
-    op.add_column(u'amphora_health',
-                  sa.Column(u'busy', sa.Boolean(), nullable=False))
+    op.add_column('amphora_health',
+                  sa.Column('busy', sa.Boolean(), nullable=False))

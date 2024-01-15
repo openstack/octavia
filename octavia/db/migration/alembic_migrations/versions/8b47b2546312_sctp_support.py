@@ -34,8 +34,8 @@ def upgrade():
     for table in ['protocol', 'health_monitor_type']:
         insert_table = sql.table(
             table,
-            sql.column(u'name', sa.String),
-            sql.column(u'description', sa.String)
+            sql.column('name', sa.String),
+            sql.column('description', sa.String)
         )
 
         op.bulk_insert(

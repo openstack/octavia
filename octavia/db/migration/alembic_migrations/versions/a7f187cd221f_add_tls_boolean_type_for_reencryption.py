@@ -31,7 +31,7 @@ down_revision = '74aae261694c'
 
 
 def upgrade():
-    op.add_column(u'pool',
-                  sa.Column(u'tls_enabled', sa.Boolean(),
+    op.add_column('pool',
+                  sa.Column('tls_enabled', sa.Boolean(),
                             server_default=sa.sql.expression.false(),
                             nullable=False))

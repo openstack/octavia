@@ -30,8 +30,8 @@ down_revision = '0fd2c131923f'
 
 def upgrade():
     op.add_column(
-        u'load_balancer',
-        sa.Column(u'provider', sa.String(64), nullable=True)
+        'load_balancer',
+        sa.Column('provider', sa.String(64), nullable=True)
     )
     op.execute("UPDATE load_balancer set provider='amphora' where provider "
                "is null")

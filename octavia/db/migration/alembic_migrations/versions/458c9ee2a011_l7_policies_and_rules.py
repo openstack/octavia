@@ -32,16 +32,16 @@ down_revision = '29ff921a6eb'
 def upgrade():
     # L7 Rule Types
     op.create_table(
-        u'l7rule_type',
-        sa.Column(u'name', sa.String(36), primary_key=True),
-        sa.Column(u'description', sa.String(255), nullable=True)
+        'l7rule_type',
+        sa.Column('name', sa.String(36), primary_key=True),
+        sa.Column('description', sa.String(255), nullable=True)
     )
 
     # Create temporary table for table data seeding
     insert_table = sql.table(
-        u'l7rule_type',
-        sql.column(u'name', sa.String),
-        sql.column(u'description', sa.String)
+        'l7rule_type',
+        sql.column('name', sa.String),
+        sql.column('description', sa.String)
     )
 
     op.bulk_insert(
@@ -57,15 +57,15 @@ def upgrade():
 
     # L7 Rule Compare Types
     op.create_table(
-        u'l7rule_compare_type',
-        sa.Column(u'name', sa.String(36), primary_key=True),
-        sa.Column(u'description', sa.String(255), nullable=True)
+        'l7rule_compare_type',
+        sa.Column('name', sa.String(36), primary_key=True),
+        sa.Column('description', sa.String(255), nullable=True)
     )
 
     insert_table = sql.table(
-        u'l7rule_compare_type',
-        sql.column(u'name', sa.String),
-        sql.column(u'description', sa.String)
+        'l7rule_compare_type',
+        sql.column('name', sa.String),
+        sql.column('description', sa.String)
     )
 
     op.bulk_insert(
@@ -81,15 +81,15 @@ def upgrade():
 
     # L7 Policy Actions
     op.create_table(
-        u'l7policy_action',
-        sa.Column(u'name', sa.String(36), primary_key=True),
-        sa.Column(u'description', sa.String(255), nullable=True)
+        'l7policy_action',
+        sa.Column('name', sa.String(36), primary_key=True),
+        sa.Column('description', sa.String(255), nullable=True)
     )
 
     insert_table = sql.table(
-        u'l7policy_action',
-        sql.column(u'name', sa.String),
-        sql.column(u'description', sa.String)
+        'l7policy_action',
+        sql.column('name', sa.String),
+        sql.column('description', sa.String)
     )
 
     op.bulk_insert(
@@ -103,47 +103,47 @@ def upgrade():
 
     # L7 Policies
     op.create_table(
-        u'l7policy',
-        sa.Column(u'id', sa.String(36), nullable=False),
-        sa.Column(u'name', sa.String(255), nullable=True),
-        sa.Column(u'description', sa.String(255), nullable=True),
-        sa.Column(u'listener_id', sa.String(36), nullable=False),
-        sa.Column(u'action', sa.String(36), nullable=False),
-        sa.Column(u'redirect_pool_id', sa.String(36), nullable=True),
-        sa.Column(u'redirect_url', sa.String(255), nullable=True),
-        sa.Column(u'position', sa.Integer, nullable=False),
-        sa.Column(u'enabled', sa.Boolean(), default=True, nullable=False),
+        'l7policy',
+        sa.Column('id', sa.String(36), nullable=False),
+        sa.Column('name', sa.String(255), nullable=True),
+        sa.Column('description', sa.String(255), nullable=True),
+        sa.Column('listener_id', sa.String(36), nullable=False),
+        sa.Column('action', sa.String(36), nullable=False),
+        sa.Column('redirect_pool_id', sa.String(36), nullable=True),
+        sa.Column('redirect_url', sa.String(255), nullable=True),
+        sa.Column('position', sa.Integer, nullable=False),
+        sa.Column('enabled', sa.Boolean(), default=True, nullable=False),
 
-        sa.PrimaryKeyConstraint(u'id'),
-        sa.ForeignKeyConstraint([u'listener_id'],
-                                [u'listener.id'],
-                                name=u'fk_l7policy_listener_id'),
-        sa.ForeignKeyConstraint([u'redirect_pool_id'],
-                                [u'pool.id'],
-                                name=u'fk_l7policy_pool_id'),
-        sa.ForeignKeyConstraint([u'action'],
-                                [u'l7policy_action.name'],
-                                name=u'fk_l7policy_l7policy_action_name')
+        sa.PrimaryKeyConstraint('id'),
+        sa.ForeignKeyConstraint(['listener_id'],
+                                ['listener.id'],
+                                name='fk_l7policy_listener_id'),
+        sa.ForeignKeyConstraint(['redirect_pool_id'],
+                                ['pool.id'],
+                                name='fk_l7policy_pool_id'),
+        sa.ForeignKeyConstraint(['action'],
+                                ['l7policy_action.name'],
+                                name='fk_l7policy_l7policy_action_name')
     )
 
     # L7 Rules
     op.create_table(
-        u'l7rule',
-        sa.Column(u'id', sa.String(36), nullable=False),
-        sa.Column(u'l7policy_id', sa.String(36), nullable=False),
-        sa.Column(u'type', sa.String(36), nullable=False),
-        sa.Column(u'compare_type', sa.String(36), nullable=False),
-        sa.Column(u'key', sa.String(255), nullable=True),
-        sa.Column(u'value', sa.String(255), nullable=False),
-        sa.Column(u'invert', sa.Boolean(), default=False, nullable=False),
-        sa.PrimaryKeyConstraint(u'id'),
-        sa.ForeignKeyConstraint([u'l7policy_id'],
-                                [u'l7policy.id'],
-                                name=u'fk_l7rule_l7policy_id'),
-        sa.ForeignKeyConstraint([u'type'],
-                                [u'l7rule_type.name'],
-                                name=u'fk_l7rule_l7rule_type_name'),
-        sa.ForeignKeyConstraint([u'compare_type'],
-                                [u'l7rule_compare_type.name'],
-                                name=u'fk_l7rule_l7rule_compare_type_name')
+        'l7rule',
+        sa.Column('id', sa.String(36), nullable=False),
+        sa.Column('l7policy_id', sa.String(36), nullable=False),
+        sa.Column('type', sa.String(36), nullable=False),
+        sa.Column('compare_type', sa.String(36), nullable=False),
+        sa.Column('key', sa.String(255), nullable=True),
+        sa.Column('value', sa.String(255), nullable=False),
+        sa.Column('invert', sa.Boolean(), default=False, nullable=False),
+        sa.PrimaryKeyConstraint('id'),
+        sa.ForeignKeyConstraint(['l7policy_id'],
+                                ['l7policy.id'],
+                                name='fk_l7rule_l7policy_id'),
+        sa.ForeignKeyConstraint(['type'],
+                                ['l7rule_type.name'],
+                                name='fk_l7rule_l7rule_type_name'),
+        sa.ForeignKeyConstraint(['compare_type'],
+                                ['l7rule_compare_type.name'],
+                                name='fk_l7rule_l7rule_compare_type_name')
     )

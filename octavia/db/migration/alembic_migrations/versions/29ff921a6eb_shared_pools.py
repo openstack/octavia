@@ -49,7 +49,7 @@ def upgrade():
     op.create_foreign_key('fk_listener_pool_id', 'listener',
                           'pool', ['default_pool_id'], ['id'])
 
-    op.add_column(u'pool',
+    op.add_column('pool',
                   sa.Column('load_balancer_id', sa.String(36),
                             sa.ForeignKey('load_balancer.id'), nullable=True))
 

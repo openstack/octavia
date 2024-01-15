@@ -32,9 +32,9 @@ down_revision = '3e5b37a0bdb9'
 
 def upgrade():
     insert_table = sql.table(
-        u'provisioning_status',
-        sql.column(u'name', sa.String),
-        sql.column(u'description', sa.String)
+        'provisioning_status',
+        sql.column('name', sa.String),
+        sql.column('description', sa.String)
     )
 
     op.bulk_insert(

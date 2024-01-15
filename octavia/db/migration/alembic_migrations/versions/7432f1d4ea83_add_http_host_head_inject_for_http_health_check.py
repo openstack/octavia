@@ -30,10 +30,10 @@ down_revision = '6742ca1b27c2'
 
 def upgrade():
     op.add_column(
-        u'health_monitor',
-        sa.Column(u'http_version', sa.Float(), nullable=True)
+        'health_monitor',
+        sa.Column('http_version', sa.Float(), nullable=True)
     )
     op.add_column(
-        u'health_monitor',
-        sa.Column(u'domain_name', sa.String(255), nullable=True)
+        'health_monitor',
+        sa.Column('domain_name', sa.String(255), nullable=True)
     )

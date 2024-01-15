@@ -29,7 +29,7 @@ down_revision = '92fe9857279'
 
 
 def upgrade():
-    op.add_column(u'amphora',
-                  sa.Column(u'vrrp_ip', sa.String(64), nullable=True))
-    op.add_column(u'amphora',
-                  sa.Column(u'ha_ip', sa.String(64), nullable=True))
+    op.add_column('amphora',
+                  sa.Column('vrrp_ip', sa.String(64), nullable=True))
+    op.add_column('amphora',
+                  sa.Column('ha_ip', sa.String(64), nullable=True))

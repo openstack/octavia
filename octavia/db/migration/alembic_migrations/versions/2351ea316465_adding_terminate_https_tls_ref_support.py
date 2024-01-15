@@ -33,9 +33,9 @@ new_protocol = 'TERMINATED_HTTPS'
 
 def upgrade():
     insert_table = sql.table(
-        u'protocol',
-        sql.column(u'name', sa.String),
-        sql.column(u'description', sa.String)
+        'protocol',
+        sql.column('name', sa.String),
+        sql.column('description', sa.String)
     )
 
     op.bulk_insert(
@@ -44,5 +44,5 @@ def upgrade():
             {'name': new_protocol}
         ]
     )
-    op.alter_column(u'listener', u'tls_certificate_id',
+    op.alter_column('listener', 'tls_certificate_id',
                     existing_type=sa.String(255), nullable=True)

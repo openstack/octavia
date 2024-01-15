@@ -28,10 +28,10 @@ down_revision = '3b199c848b96'
 
 
 def upgrade():
-    op.add_column(u'amphora',
-                  sa.Column(u'cert_expiration', sa.DateTime(timezone=True),
+    op.add_column('amphora',
+                  sa.Column('cert_expiration', sa.DateTime(timezone=True),
                             nullable=True)
                   )
 
-    op.add_column(u'amphora', sa.Column(u'cert_busy', sa.Boolean(),
-                                        nullable=False, default=False))
+    op.add_column('amphora', sa.Column('cert_busy', sa.Boolean(),
+                                       nullable=False, default=False))
