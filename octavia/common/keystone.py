@@ -26,7 +26,7 @@ _NOAUTH_PATHS = ['/', '/load-balancer/', '/healthcheck',
                  '/load-balancer/healthcheck']
 
 
-class KeystoneSession(object):
+class KeystoneSession:
 
     def __init__(self, section=constants.SERVICE_AUTH):
         self._session = None

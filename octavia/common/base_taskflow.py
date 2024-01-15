@@ -75,7 +75,7 @@ class FilteredJob(Job):
         # filter out private information from details
         cls_name = type(self).__name__
         details = _details_filter(self.details)
-        return "%s: %s (priority=%s, uuid=%s, details=%s)" % (
+        return "{}: {} (priority={}, uuid={}, details={})".format(
             cls_name, self.name, self.priority,
             self.uuid, details)
 
@@ -90,7 +90,7 @@ class JobDetailsFilter(log.logging.Filter):
         return True
 
 
-class BaseTaskFlowEngine(object):
+class BaseTaskFlowEngine:
     """This is the task flow engine
 
     Use this engine to start/load flows in the
@@ -164,7 +164,7 @@ class RedisDynamicLoggingConductor(DynamicLoggingConductor):
         return listeners
 
 
-class TaskFlowServiceController(object):
+class TaskFlowServiceController:
 
     def __init__(self, driver):
         self.driver = driver

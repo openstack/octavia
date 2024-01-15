@@ -60,7 +60,7 @@ CONF = cfg.CONF
 JINJA_ENV = None
 
 
-class JinjaTemplater(object):
+class JinjaTemplater:
 
     def __init__(self,
                  base_amp_path=None,
@@ -175,9 +175,9 @@ class JinjaTemplater(object):
             tls_certs,
             feature_compatibility)
         if not socket_path:
-            socket_path = '%s/%s.sock' % (self.base_amp_path,
-                                          listeners[0].load_balancer.id)
-        state_file_path = '%s/%s/servers-state' % (
+            socket_path = '{}/{}.sock'.format(self.base_amp_path,
+                                              listeners[0].load_balancer.id)
+        state_file_path = '{}/{}/servers-state'.format(
             self.base_amp_path,
             listeners[0].load_balancer.id) if feature_compatibility.get(
             constants.SERVER_STATE_FILE) else ''
@@ -341,7 +341,7 @@ class JinjaTemplater(object):
         if listener.tls_certificate_id:
             ret_value['crt_list_filename'] = os.path.join(
                 CONF.haproxy_amphora.base_cert_dir,
-                loadbalancer.id, '{}.pem'.format(listener.id))
+                loadbalancer.id, f'{listener.id}.pem')
 
         if tls_certs is not None:
             if listener.client_ca_tls_certificate_id:

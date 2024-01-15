@@ -26,7 +26,7 @@ from octavia.common import constants
 LOG = logging.getLogger(__name__)
 
 
-class BaseDataModel(object):
+class BaseDataModel:
     def _to_dict(self, value, calling_classes=None, recurse=False):
         calling_classes = calling_classes or []
         # We need to have json convertible data for storing it in
@@ -228,7 +228,7 @@ class ListenerStatistics(BaseDataModel):
             self.total_connections += other.total_connections
         else:
             raise TypeError(  # noqa: O342
-                "unsupported operand type(s) for +=: '{0}' and '{1}'".format(
+                "unsupported operand type(s) for +=: '{}' and '{}'".format(
                     type(self), type(other)))
 
         return self

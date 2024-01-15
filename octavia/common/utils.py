@@ -104,8 +104,8 @@ def ip_port_str(ip_address, port):
     """Return IP port as string representation depending on address family."""
     ip = ipaddress.ip_address(ip_address)
     if ip.version == 4:
-        return "{ip}:{port}".format(ip=ip, port=port)
-    return "[{ip}]:{port}".format(ip=ip, port=port)
+        return f"{ip}:{port}"
+    return f"[{ip}]:{port}"
 
 
 def netmask_to_prefix(netmask):
@@ -166,7 +166,7 @@ def expand_expected_codes(codes):
     return retval
 
 
-class exception_logger(object):
+class exception_logger:
     """Wrap a function and log raised exception
 
     :param logger: the logger to log the exception default is LOG.exception

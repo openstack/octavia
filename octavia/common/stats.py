@@ -21,7 +21,7 @@ from octavia.db import repositories as repo
 LOG = logging.getLogger(__name__)
 
 
-class StatsMixin(object):
+class StatsMixin:
 
     def __init__(self):
         super().__init__()

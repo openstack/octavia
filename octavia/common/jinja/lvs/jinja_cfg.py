@@ -47,7 +47,7 @@ KEEPALIVED_LVS_TEMPLATE = os.path.abspath(
 JINJA_ENV = None
 
 
-class LvsJinjaTemplater(object):
+class LvsJinjaTemplater:
 
     def __init__(self, base_amp_path=None, keepalivedlvs_template=None):
         """Keepalived LVS configuration generation

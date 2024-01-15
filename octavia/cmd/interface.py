@@ -34,7 +34,7 @@ def interfaces_find(interface_controller, name):
     if name in all_interfaces:
         return [all_interfaces[name]]
 
-    msg = "Could not find interface '{}'.".format(name)
+    msg = f"Could not find interface '{name}'."
     raise InterfaceException(msg=msg)
 
 
@@ -61,7 +61,7 @@ def interface_cmd(interface_name, action):
         action_fn = interface_controller.down
     else:
         raise InterfaceException(
-            msg="Unknown action '{}'".format(action))
+            msg=f"Unknown action '{action}'")
 
     interfaces = interfaces_find(interface_controller,
                                  interface_name)
@@ -76,11 +76,11 @@ def main():
         action = sys.argv[-2]
         interface_name = sys.argv[-1]
     except IndexError:
-        print("usage: {} [up|down] <interface>".format(sys.argv[0]))
+        print(f"usage: {sys.argv[0]} [up|down] <interface>")
         sys.exit(1)
 
     try:
         interface_cmd(interface_name, action)
     except Exception as e:
-        print("Error: {}".format(e))
+        print(f"Error: {e}")
         sys.exit(2)

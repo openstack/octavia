@@ -31,7 +31,7 @@ NOVA_VERSION = '2.15'
 CINDER_VERSION = '3'
 
 
-class NovaAuth(object):
+class NovaAuth:
     nova_client = None
 
     @classmethod
@@ -70,7 +70,7 @@ class NovaAuth(object):
         return cls.nova_client
 
 
-class NeutronAuth(object):
+class NeutronAuth:
     neutron_client = None
 
     @classmethod
@@ -127,7 +127,7 @@ class NeutronAuth(object):
         return conn.network
 
 
-class GlanceAuth(object):
+class GlanceAuth:
     glance_client = None
 
     @classmethod
@@ -166,7 +166,7 @@ class GlanceAuth(object):
         return cls.glance_client
 
 
-class CinderAuth(object):
+class CinderAuth:
     cinder_client = None
 
     @classmethod

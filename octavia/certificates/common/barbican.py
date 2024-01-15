@@ -61,7 +61,7 @@ class BarbicanCert(cert.Cert):
         return None
 
 
-class BarbicanAuth(object, metaclass=abc.ABCMeta):
+class BarbicanAuth(metaclass=abc.ABCMeta):
     @abc.abstractmethod
     def get_barbican_client(self, project_id):
         """Creates a Barbican client object.

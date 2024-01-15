@@ -57,20 +57,20 @@ class LocalCertManager(cert_mgr.CertManager):
 
         LOG.info("Storing certificate data on the local filesystem.")
         try:
-            filename_certificate = "{0}.crt".format(filename_base)
+            filename_certificate = f"{filename_base}.crt"
             flags = os.O_WRONLY | os.O_CREAT
             mode = stat.S_IRUSR | stat.S_IWUSR  # mode 0600
             with os.fdopen(os.open(
                     filename_certificate, flags, mode), 'w') as cert_file:
                 cert_file.write(certificate)
 
-            filename_private_key = "{0}.key".format(filename_base)
+            filename_private_key = f"{filename_base}.key"
             with os.fdopen(os.open(
                     filename_private_key, flags, mode), 'w') as key_file:
                 key_file.write(private_key)
 
             if intermediates:
-                filename_intermediates = "{0}.int".format(filename_base)
+                filename_intermediates = f"{filename_base}.int"
                 if isinstance(intermediates, bytes):
                     intermediates = intermediates.decode('utf-8')
                 with os.fdopen(os.open(
@@ -78,14 +78,14 @@ class LocalCertManager(cert_mgr.CertManager):
                     int_file.write(intermediates)
 
             if private_key_passphrase:
-                filename_pkp = "{0}.pass".format(filename_base)
+                filename_pkp = f"{filename_base}.pass"
                 if isinstance(private_key_passphrase, bytes):
                     private_key_passphrase = private_key_passphrase.decode(
                         'utf-8')
                 with os.fdopen(os.open(
                         filename_pkp, flags, mode), 'w') as pass_file:
                     pass_file.write(private_key_passphrase)
-        except IOError as ioe:
+        except OSError as ioe:
             LOG.error("Failed to store certificate.")
             raise exceptions.CertificateStorageException(message=ioe.message)
 
@@ -106,10 +106,10 @@ class LocalCertManager(cert_mgr.CertManager):
 
         filename_base = os.path.join(CONF.certificates.storage_path, cert_ref)
 
-        filename_certificate = "{0}.crt".format(filename_base)
-        filename_private_key = "{0}.key".format(filename_base)
-        filename_intermediates = "{0}.int".format(filename_base)
-        filename_pkp = "{0}.pass".format(filename_base)
+        filename_certificate = f"{filename_base}.crt"
+        filename_private_key = f"{filename_base}.key"
+        filename_intermediates = f"{filename_base}.int"
+        filename_pkp = f"{filename_base}.pass"
 
         cert_data = {}
 
@@ -117,14 +117,14 @@ class LocalCertManager(cert_mgr.CertManager):
         try:
             with os.fdopen(os.open(filename_certificate, flags)) as cert_file:
                 cert_data['certificate'] = cert_file.read()
-        except IOError as e:
+        except OSError as e:
             LOG.error("Failed to read certificate for %s.", cert_ref)
             raise exceptions.CertificateStorageException(
                 msg="Certificate could not be read.") from e
         try:
             with os.fdopen(os.open(filename_private_key, flags)) as key_file:
                 cert_data['private_key'] = key_file.read()
-        except IOError as e:
+        except OSError as e:
             LOG.error("Failed to read private key for %s", cert_ref)
             raise exceptions.CertificateStorageException(
                 msg="Private Key could not be read.") from e
@@ -134,13 +134,13 @@ class LocalCertManager(cert_mgr.CertManager):
                 cert_data['intermediates'] = int_file.read()
             cert_data['intermediates'] = list(
                 cert_parser.get_intermediates_pems(cert_data['intermediates']))
-        except IOError:
+        except OSError:
             pass
 
         try:
             with os.fdopen(os.open(filename_pkp, flags)) as pass_file:
                 cert_data['private_key_passphrase'] = pass_file.read()
-        except IOError:
+        except OSError:
             pass
 
         return local_common.LocalCert(**cert_data)
@@ -159,17 +159,17 @@ class LocalCertManager(cert_mgr.CertManager):
 
         filename_base = os.path.join(CONF.certificates.storage_path, cert_ref)
 
-        filename_certificate = "{0}.crt".format(filename_base)
-        filename_private_key = "{0}.key".format(filename_base)
-        filename_intermediates = "{0}.int".format(filename_base)
-        filename_pkp = "{0}.pass".format(filename_base)
+        filename_certificate = f"{filename_base}.crt"
+        filename_private_key = f"{filename_base}.key"
+        filename_intermediates = f"{filename_base}.int"
+        filename_pkp = f"{filename_base}.pass"
 
         try:
             os.remove(filename_certificate)
             os.remove(filename_private_key)
             os.remove(filename_intermediates)
             os.remove(filename_pkp)
-        except IOError as ioe:
+        except OSError as ioe:
             LOG.error("Failed to delete certificate %s", cert_ref)
             raise exceptions.CertificateStorageException(message=ioe.message)
 
@@ -196,7 +196,7 @@ class LocalCertManager(cert_mgr.CertManager):
         filename_base = os.path.join(CONF.certificates.storage_path,
                                      secret_ref)
 
-        filename_secret = "{0}.crt".format(filename_base)
+        filename_secret = f"{filename_base}.crt"
 
         secret_data = None
 
@@ -204,7 +204,7 @@ class LocalCertManager(cert_mgr.CertManager):
         try:
             with os.fdopen(os.open(filename_secret, flags)) as secret_file:
                 secret_data = secret_file.read()
-        except IOError as e:
+        except OSError as e:
             LOG.error("Failed to read secret for %s.", secret_ref)
             raise exceptions.CertificateRetrievalException(
                 ref=secret_ref) from e
