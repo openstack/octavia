@@ -48,7 +48,7 @@ def update_stats_via_driver(listener_stats, deltas=False):
     handlers.map_method('update_stats', listener_stats, deltas=deltas)
 
 
-class StatsDriverMixin(object, metaclass=abc.ABCMeta):
+class StatsDriverMixin(metaclass=abc.ABCMeta):
     @abc.abstractmethod
     def update_stats(self, listener_stats, deltas=False):
         """Return a stats object formatted for a generic backend

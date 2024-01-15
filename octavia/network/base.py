@@ -86,7 +86,7 @@ class CreatePortException(NetworkException):
     pass
 
 
-class AbstractNetworkDriver(object, metaclass=abc.ABCMeta):
+class AbstractNetworkDriver(metaclass=abc.ABCMeta):
     """This class defines the methods for a fully functional network driver.
 
     Implementations of this interface can expect a rollback to occur if any of

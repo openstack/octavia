@@ -37,10 +37,10 @@ _all_log_levels = {'critical', 'error', 'exception', 'info', 'warning'}
 _all_hints = {'_LC', '_LE', '_LI', '_', '_LW'}
 
 _log_translation_hint = re.compile(
-    r".*LOG\.(%(levels)s)\(\s*(%(hints)s)\(" % {
-        'levels': '|'.join(_all_log_levels),
-        'hints': '|'.join(_all_hints),
-    })
+    r".*LOG\.({levels})\(\s*({hints})\(".format(
+        levels='|'.join(_all_log_levels),
+        hints='|'.join(_all_hints),
+    ))
 
 assert_trueinst_re = re.compile(
     r"(.)*assertTrue\(isinstance\((\w|\.|\'|\"|\[|\])+, "

@@ -60,7 +60,7 @@ def _read_pem_blocks(data, *markers):
             else:
                 certLines.append(certLine)
         if state == stDump:
-            yield ''.encode().join([
+            yield b''.join([
                 base64.b64decode(x) for x in certLines])
             state = stSpam
 

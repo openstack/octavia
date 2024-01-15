@@ -44,7 +44,7 @@ def generate(flow_list, output_directory):
     base_path = os.path.join(os.path.dirname(os.path.realpath(__file__)),
                              os.path.pardir)
     diagram_list = []
-    with open(os.path.join(base_path, flow_list), 'r') as flowlist:
+    with open(os.path.join(base_path, flow_list)) as flowlist:
         for row in flowlist:
             if row.startswith('#'):
                 continue

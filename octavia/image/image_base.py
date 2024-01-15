@@ -15,7 +15,7 @@
 import abc
 
 
-class ImageBase(object, metaclass=abc.ABCMeta):
+class ImageBase(metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     def get_image_id_by_tag(self, image_tag, image_owner=None):
