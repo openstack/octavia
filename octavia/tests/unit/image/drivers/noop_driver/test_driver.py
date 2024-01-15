@@ -25,7 +25,7 @@ CONF = cfg.CONF
 class TestNoopImageDriver(base.TestCase):
 
     def setUp(self):
-        super(TestNoopImageDriver, self).setUp()
+        super().setUp()
         self.driver = driver.NoopImageDriver()
 
     def test_get_image_id_by_tag(self):

@@ -39,13 +39,13 @@ class TestLocalGenerator(local_csr.BaseLocalCSRTestCase):
         ca_cert = ca_cert.not_valid_after(valid_until_datetime)
         ca_cert = ca_cert.serial_number(1)
         subject_name = x509.Name([
-            x509.NameAttribute(x509.oid.NameOID.COUNTRY_NAME, u"US"),
+            x509.NameAttribute(x509.oid.NameOID.COUNTRY_NAME, "US"),
             x509.NameAttribute(x509.oid.NameOID.STATE_OR_PROVINCE_NAME,
-                               u"Oregon"),
-            x509.NameAttribute(x509.oid.NameOID.LOCALITY_NAME, u"Springfield"),
+                               "Oregon"),
+            x509.NameAttribute(x509.oid.NameOID.LOCALITY_NAME, "Springfield"),
             x509.NameAttribute(x509.oid.NameOID.ORGANIZATION_NAME,
-                               u"Springfield Nuclear Power Plant"),
-            x509.NameAttribute(x509.oid.NameOID.COMMON_NAME, u"maggie1"),
+                               "Springfield Nuclear Power Plant"),
+            x509.NameAttribute(x509.oid.NameOID.COMMON_NAME, "maggie1"),
         ])
         ca_cert = ca_cert.subject_name(subject_name)
         ca_cert = ca_cert.issuer_name(subject_name)

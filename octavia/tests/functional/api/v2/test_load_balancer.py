@@ -156,7 +156,7 @@ class TestLoadBalancer(base.BaseAPITest):
                         ".NoopManager.get_subnet") as mock_get_subnet:
             mock_get_subnet.side_effect = network_base.SubnetNotFound
             response = self.post(self.LBS_PATH, body, status=400)
-            err_msg = 'Subnet {} not found.'.format(subnet_id)
+            err_msg = f'Subnet {subnet_id} not found.'
             self.assertEqual(err_msg, response.json.get('faultstring'))
 
     def test_create_with_invalid_vip_network_subnet(self):
@@ -172,7 +172,7 @@ class TestLoadBalancer(base.BaseAPITest):
                         ".NoopManager.get_network") as mock_get_network:
             mock_get_network.return_value = network
             response = self.post(self.LBS_PATH, body, status=400)
-            err_msg = 'Subnet {} not found.'.format(subnet_id)
+            err_msg = f'Subnet {subnet_id} not found.'
             self.assertEqual(err_msg, response.json.get('faultstring'))
 
     def test_create_with_vip_subnet_fills_network(self):
@@ -1414,7 +1414,7 @@ class TestLoadBalancer(base.BaseAPITest):
                                   name='lb3', project_id=project_id)
         auth_strategy = self.conf.conf.api_settings.get('auth_strategy')
         self.conf.config(group='api_settings', auth_strategy=constants.TESTING)
-        LB_PROJECT_PATH = '{}?project_id={}'.format(self.LBS_PATH, project_id)
+        LB_PROJECT_PATH = f'{self.LBS_PATH}?project_id={project_id}'
         with mock.patch.object(octavia.common.context.RequestContext,
                                'project_id',
                                self.project_id):
@@ -1567,9 +1567,9 @@ class TestLoadBalancer(base.BaseAPITest):
         lbs = self.get(self.LBS_PATH, params={
             'fields': ['id', 'project_id']}).json
         for lb in lbs['loadbalancers']:
-            self.assertIn(u'id', lb)
-            self.assertIn(u'project_id', lb)
-            self.assertNotIn(u'description', lb)
+            self.assertIn('id', lb)
+            self.assertIn('project_id', lb)
+            self.assertNotIn('description', lb)
 
     def test_get_one_fields_filter(self):
         lb1 = self.create_load_balancer(
@@ -1579,9 +1579,9 @@ class TestLoadBalancer(base.BaseAPITest):
         lb = self.get(
             self.LB_PATH.format(lb_id=lb1.get('id')),
             params={'fields': ['id', 'project_id']}).json.get(self.root_tag)
-        self.assertIn(u'id', lb)
-        self.assertIn(u'project_id', lb)
-        self.assertNotIn(u'description', lb)
+        self.assertIn('id', lb)
+        self.assertIn('project_id', lb)
+        self.assertNotIn('description', lb)
 
     def test_get_all_admin_state_up_filter(self):
         self.create_load_balancer(uuidutils.generate_uuid(),

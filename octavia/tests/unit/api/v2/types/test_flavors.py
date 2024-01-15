@@ -20,7 +20,7 @@ from octavia.api.v2.types import flavors as flavor_type
 from octavia.tests.unit.api.common import base
 
 
-class TestFlavor(object):
+class TestFlavor:
 
     _type = None
 

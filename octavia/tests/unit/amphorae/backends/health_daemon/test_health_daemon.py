@@ -337,7 +337,7 @@ class TestHealthDaemon(base.TestCase):
                                  mock_get_stats, mock_is_running):
         health_daemon.COUNTERS = None
         health_daemon.COUNTERS_FILE = None
-        lb1_stats_socket = '/var/lib/octavia/{0}/haproxy.sock'.format(LB_ID1)
+        lb1_stats_socket = f'/var/lib/octavia/{LB_ID1}/haproxy.sock'
         mock_list_files.return_value = {LB_ID1: lb1_stats_socket}
 
         mock_is_running.return_value = True
@@ -374,7 +374,7 @@ class TestHealthDaemon(base.TestCase):
                                              mock_is_running):
         health_daemon.COUNTERS = None
         health_daemon.COUNTERS_FILE = None
-        lb1_stats_socket = '/var/lib/octavia/{0}/haproxy.sock'.format(LB_ID1)
+        lb1_stats_socket = f'/var/lib/octavia/{LB_ID1}/haproxy.sock'
         mock_list_files.return_value = {LB_ID1: lb1_stats_socket}
 
         mock_is_running.return_value = False
@@ -472,7 +472,7 @@ class TestHealthDaemon(base.TestCase):
                              mock_get_stats, mock_is_running):
         health_daemon.COUNTERS = None
         health_daemon.COUNTERS_FILE = None
-        lb1_stats_socket = '/var/lib/octavia/{0}/haproxy.sock'.format(LB_ID1)
+        lb1_stats_socket = f'/var/lib/octavia/{LB_ID1}/haproxy.sock'
         mock_list_files.return_value = {LB_ID1: lb1_stats_socket}
 
         mock_is_running.return_value = True

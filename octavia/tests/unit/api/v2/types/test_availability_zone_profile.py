@@ -20,7 +20,7 @@ from octavia.common import constants
 from octavia.tests.unit.api.common import base
 
 
-class TestAvailabilityZoneProfile(object):
+class TestAvailabilityZoneProfile:
 
     _type = None
 

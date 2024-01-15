@@ -37,7 +37,7 @@ class TestInterface(base.TestCase):
 
         ifaces = ('eth0', 'eth7', 'eth8')
         mock_listdir.return_value = [
-            "{}.json".format(iface)
+            f"{iface}.json"
             for iface in ifaces
         ]
         mock_listdir.return_value.extend(["invalidfile"])
@@ -48,7 +48,7 @@ class TestInterface(base.TestCase):
 
         for iface in ifaces:
             f = os.path.join(consts.AMP_NET_DIR_TEMPLATE,
-                             "{}.json".format(iface))
+                             f"{iface}.json")
             self.assertIn(f, config_file_list)
 
         # unsupported file
@@ -277,7 +277,7 @@ class TestInterface(base.TestCase):
              "/var/lib/dhclient/dhclient-{}.leases".format(
                  iface),
              "-pf",
-             "/run/dhclient-{}.pid".format(iface),
+             f"/run/dhclient-{iface}.pid",
              iface], stderr=-2)
 
     @mock.patch('subprocess.check_output')
@@ -294,7 +294,7 @@ class TestInterface(base.TestCase):
              "/var/lib/dhclient/dhclient-{}.leases".format(
                  iface),
              "-pf",
-             "/run/dhclient-{}.pid".format(iface),
+             f"/run/dhclient-{iface}.pid",
              iface], stderr=-2)
 
     @mock.patch('subprocess.check_output')
@@ -924,13 +924,13 @@ class TestInterface(base.TestCase):
                        "/var/lib/dhclient/dhclient-{}.leases".format(
                            iface.name),
                        "-pf",
-                       "/run/dhclient-{}.pid".format(iface.name),
+                       f"/run/dhclient-{iface.name}.pid",
                        iface.name], stderr=-2),
             mock.call(["/sbin/sysctl", "-w",
-                       "net.ipv6.conf.{}.accept_ra=2".format(iface.name)],
+                       f"net.ipv6.conf.{iface.name}.accept_ra=2"],
                       stderr=-2),
             mock.call(["/sbin/sysctl", "-w",
-                       "net.ipv6.conf.{}.autoconf=1".format(iface.name)],
+                       f"net.ipv6.conf.{iface.name}.autoconf=1"],
                       stderr=-2),
             mock.call(["post-up", iface.name])
         ])
@@ -1341,13 +1341,13 @@ class TestInterface(base.TestCase):
                        "/var/lib/dhclient/dhclient-{}.leases".format(
                            iface.name),
                        "-pf",
-                       "/run/dhclient-{}.pid".format(iface.name),
+                       f"/run/dhclient-{iface.name}.pid",
                        iface.name], stderr=-2),
             mock.call(["/sbin/sysctl", "-w",
-                       "net.ipv6.conf.{}.accept_ra=0".format(iface.name)],
+                       f"net.ipv6.conf.{iface.name}.accept_ra=0"],
                       stderr=-2),
             mock.call(["/sbin/sysctl", "-w",
-                       "net.ipv6.conf.{}.autoconf=0".format(iface.name)],
+                       f"net.ipv6.conf.{iface.name}.autoconf=0"],
                       stderr=-2),
             mock.call(["post-down", iface.name])
         ])

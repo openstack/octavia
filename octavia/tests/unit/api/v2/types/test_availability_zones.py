@@ -20,7 +20,7 @@ from octavia.api.v2.types import availability_zones as availability_zone_type
 from octavia.tests.unit.api.common import base
 
 
-class TestAvailabilityZone(object):
+class TestAvailabilityZone:
 
     _type = None
 

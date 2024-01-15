@@ -20,7 +20,7 @@ from octavia.common import constants
 from octavia.tests.unit.api.common import base
 
 
-class TestFlavorProfile(object):
+class TestFlavorProfile:
 
     _type = None
 

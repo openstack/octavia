@@ -34,7 +34,7 @@ class TestBarbicanManager(base.TestCase):
         self.barbican_endpoint = 'http://localhost:9311/v1'
         self.secret_uuid = uuid.uuid4()
 
-        self.secret_ref = '{0}/secrets/{1}'.format(
+        self.secret_ref = '{}/secrets/{}'.format(
             self.barbican_endpoint, self.secret_uuid
         )
 

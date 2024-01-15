@@ -21,7 +21,7 @@ from octavia.api.v2.types import load_balancer as lb_type
 from octavia.tests.unit.api.common import base
 
 
-class TestLoadBalancer(object):
+class TestLoadBalancer:
 
     _type = None
 

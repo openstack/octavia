@@ -189,9 +189,9 @@ class TestFlavorProfiles(base.BaseAPITest):
                 'fields': ['id', constants.PROVIDER_NAME]}
         ).json.get(self.root_tag)
         self.assertEqual(fp.get('id'), response.get('id'))
-        self.assertIn(u'id', response)
+        self.assertIn('id', response)
         self.assertIn(constants.PROVIDER_NAME, response)
-        self.assertNotIn(u'name', response)
+        self.assertNotIn('name', response)
         self.assertNotIn(constants.FLAVOR_DATA, response)
 
     def test_get_authorized(self):
@@ -241,15 +241,15 @@ class TestFlavorProfiles(base.BaseAPITest):
     def test_get_all(self):
         fp1 = self.create_flavor_profile('test1', 'noop_driver',
                                          '{"image": "ubuntu"}')
-        ref_fp_1 = {u'flavor_data': u'{"image": "ubuntu"}',
-                    u'id': fp1.get('id'), u'name': u'test1',
-                    constants.PROVIDER_NAME: u'noop_driver'}
+        ref_fp_1 = {'flavor_data': '{"image": "ubuntu"}',
+                    'id': fp1.get('id'), 'name': 'test1',
+                    constants.PROVIDER_NAME: 'noop_driver'}
         self.assertTrue(uuidutils.is_uuid_like(fp1.get('id')))
         fp2 = self.create_flavor_profile('test2', 'noop_driver-alt',
                                          '{"image": "ubuntu"}')
-        ref_fp_2 = {u'flavor_data': u'{"image": "ubuntu"}',
-                    u'id': fp2.get('id'), u'name': u'test2',
-                    constants.PROVIDER_NAME: u'noop_driver-alt'}
+        ref_fp_2 = {'flavor_data': '{"image": "ubuntu"}',
+                    'id': fp2.get('id'), 'name': 'test2',
+                    constants.PROVIDER_NAME: 'noop_driver-alt'}
         self.assertTrue(uuidutils.is_uuid_like(fp2.get('id')))
 
         response = self.get(self.FPS_PATH)
@@ -271,8 +271,8 @@ class TestFlavorProfiles(base.BaseAPITest):
         api_list = response.json.get(self.root_tag_list)
         self.assertEqual(2, len(api_list))
         for profile in api_list:
-            self.assertIn(u'id', profile)
-            self.assertIn(u'name', profile)
+            self.assertIn('id', profile)
+            self.assertIn('name', profile)
             self.assertNotIn(constants.PROVIDER_NAME, profile)
             self.assertNotIn(constants.FLAVOR_DATA, profile)
 

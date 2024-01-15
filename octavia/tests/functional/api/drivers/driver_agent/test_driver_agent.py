@@ -54,7 +54,7 @@ class DriverAgentTest(base.OctaviaDBTestBase):
             uuidutils.generate_uuid())
         sqlite_db_file = '/tmp/octavia-{}.sqlite.db'.format(
             uuidutils.generate_uuid())
-        sqlite_db_connection = 'sqlite:///{}'.format(sqlite_db_file)
+        sqlite_db_connection = f'sqlite:///{sqlite_db_file}'
 
         # Note that because the driver agent is a multi-process
         # agent we must use a sqlite file rather than an

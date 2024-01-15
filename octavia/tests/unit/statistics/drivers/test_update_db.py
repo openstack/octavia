@@ -25,7 +25,7 @@ from octavia.tests.unit import base
 
 class TestStatsUpdateDb(base.TestCase):
     def setUp(self):
-        super(TestStatsUpdateDb, self).setUp()
+        super().setUp()
         self.amphora_id = uuidutils.generate_uuid()
         self.listener_id = uuidutils.generate_uuid()
 

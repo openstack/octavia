@@ -24,7 +24,7 @@ from octavia.tests.functional.db import base
 from sqlalchemy.orm import collections
 
 
-class ModelTestMixin(object):
+class ModelTestMixin:
 
     FAKE_IP = '10.0.0.1'
     FAKE_UUID_1 = uuidutils.generate_uuid()

@@ -156,11 +156,11 @@ class HackingTestCase(base.BaseTestCase):
     def test_no_log_translations(self):
         for log in checks._all_log_levels:
             for hint in checks._all_hints:
-                bad = 'LOG.%s(%s("Bad"))' % (log, hint)
+                bad = f'LOG.{log}({hint}("Bad"))'
                 self.assertEqual(
                     1, len(list(checks.no_translate_logs(bad, 'f'))))
                 # Catch abuses when used with a variable and not a literal
-                bad = 'LOG.%s(%s(msg))' % (log, hint)
+                bad = f'LOG.{log}({hint}(msg))'
                 self.assertEqual(
                     1, len(list(checks.no_translate_logs(bad, 'f'))))
                 # Do not do validations in tests

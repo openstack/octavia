@@ -27,7 +27,7 @@ class TestGlanceClient(base.TestCase):
         self.manager = glance_common.ImageManager()
         self.manager.manager = mock.MagicMock()
 
-        super(TestGlanceClient, self).setUp()
+        super().setUp()
 
     def test_no_images(self):
         self.manager.manager.list.return_value = []

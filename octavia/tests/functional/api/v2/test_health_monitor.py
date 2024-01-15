@@ -688,9 +688,9 @@ class TestHealthMonitor(base.BaseAPITest):
         hms = self.get(self.HMS_PATH, params={
             'fields': ['id', 'project_id']}).json
         for hm in hms['healthmonitors']:
-            self.assertIn(u'id', hm)
-            self.assertIn(u'project_id', hm)
-            self.assertNotIn(u'description', hm)
+            self.assertIn('id', hm)
+            self.assertIn('project_id', hm)
+            self.assertNotIn('description', hm)
 
     def test_get_one_fields_filter(self):
         pool1 = self.create_pool(
@@ -709,9 +709,9 @@ class TestHealthMonitor(base.BaseAPITest):
         hm = self.get(
             self.HM_PATH.format(healthmonitor_id=hm1.get('id')),
             params={'fields': ['id', 'project_id']}).json.get(self.root_tag)
-        self.assertIn(u'id', hm)
-        self.assertIn(u'project_id', hm)
-        self.assertNotIn(u'description', hm)
+        self.assertIn('id', hm)
+        self.assertIn('project_id', hm)
+        self.assertNotIn('description', hm)
 
     def test_get_all_filter(self):
         pool1 = self.create_pool(

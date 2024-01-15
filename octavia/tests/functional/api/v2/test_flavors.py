@@ -184,16 +184,16 @@ class TestFlavors(base.BaseAPITest):
                 'fields': ['id', 'flavor_profile_id']}).json.get(self.root_tag)
         self.assertEqual(flavor.get('id'), response.get('id'))
         self.assertEqual(self.fp.get('id'), response.get('flavor_profile_id'))
-        self.assertIn(u'id', response)
-        self.assertIn(u'flavor_profile_id', response)
-        self.assertNotIn(u'name', response)
-        self.assertNotIn(u'description', response)
-        self.assertNotIn(u'enabled', response)
+        self.assertIn('id', response)
+        self.assertIn('flavor_profile_id', response)
+        self.assertNotIn('name', response)
+        self.assertNotIn('description', response)
+        self.assertNotIn('enabled', response)
 
     def test_get_one_deleted_id(self):
         response = self.get(
             self.FLAVOR_PATH.format(flavor_id=constants.NIL_UUID), status=404)
-        self.assertEqual('Flavor {} not found.'.format(constants.NIL_UUID),
+        self.assertEqual(f'Flavor {constants.NIL_UUID} not found.',
                          response.json.get('faultstring'))
 
     def test_get_authorized(self):
@@ -251,18 +251,18 @@ class TestFlavors(base.BaseAPITest):
                                      True)
         self.assertTrue(uuidutils.is_uuid_like(flavor1.get('id')))
         ref_flavor_1 = {
-            u'description': u'description', u'enabled': True,
-            u'flavor_profile_id': self.fp.get('id'),
-            u'id': flavor1.get('id'),
-            u'name': u'name1'}
+            'description': 'description', 'enabled': True,
+            'flavor_profile_id': self.fp.get('id'),
+            'id': flavor1.get('id'),
+            'name': 'name1'}
         flavor2 = self.create_flavor('name2', 'description', self.fp.get('id'),
                                      True)
         self.assertTrue(uuidutils.is_uuid_like(flavor2.get('id')))
         ref_flavor_2 = {
-            u'description': u'description', u'enabled': True,
-            u'flavor_profile_id': self.fp.get('id'),
-            u'id': flavor2.get('id'),
-            u'name': u'name2'}
+            'description': 'description', 'enabled': True,
+            'flavor_profile_id': self.fp.get('id'),
+            'id': flavor2.get('id'),
+            'name': 'name2'}
         response = self.get(self.FLAVORS_PATH)
         api_list = response.json.get(self.root_tag_list)
         self.assertEqual(2, len(api_list))
@@ -281,11 +281,11 @@ class TestFlavors(base.BaseAPITest):
         api_list = response.json.get(self.root_tag_list)
         self.assertEqual(2, len(api_list))
         for flavor in api_list:
-            self.assertIn(u'id', flavor)
-            self.assertIn(u'name', flavor)
-            self.assertNotIn(u'flavor_profile_id', flavor)
-            self.assertNotIn(u'description', flavor)
-            self.assertNotIn(u'enabled', flavor)
+            self.assertIn('id', flavor)
+            self.assertIn('name', flavor)
+            self.assertNotIn('flavor_profile_id', flavor)
+            self.assertNotIn('description', flavor)
+            self.assertNotIn('enabled', flavor)
 
     def test_get_all_authorized(self):
         flavor1 = self.create_flavor('name1', 'description', self.fp.get('id'),
@@ -368,7 +368,7 @@ class TestFlavors(base.BaseAPITest):
         response = self.put(
             self.FLAVOR_PATH.format(flavor_id=constants.NIL_UUID), body,
             status=404)
-        self.assertEqual('Flavor {} not found.'.format(constants.NIL_UUID),
+        self.assertEqual(f'Flavor {constants.NIL_UUID} not found.',
                          response.json.get('faultstring'))
 
     def test_update_none(self):
@@ -522,7 +522,7 @@ class TestFlavors(base.BaseAPITest):
     def test_delete_deleted_id(self):
         response = self.delete(
             self.FLAVOR_PATH.format(flavor_id=constants.NIL_UUID), status=404)
-        self.assertEqual('Flavor {} not found.'.format(constants.NIL_UUID),
+        self.assertEqual(f'Flavor {constants.NIL_UUID} not found.',
                          response.json.get('faultstring'))
 
     def test_delete_authorized(self):

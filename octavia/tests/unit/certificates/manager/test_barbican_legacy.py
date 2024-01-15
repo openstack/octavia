@@ -39,7 +39,7 @@ class TestBarbicanManager(base.TestCase):
         self.private_key_uuid = uuidutils.generate_uuid()
         self.private_key_passphrase_uuid = uuidutils.generate_uuid()
 
-        self.container_ref = '{0}/containers/{1}'.format(
+        self.container_ref = '{}/containers/{}'.format(
             self.barbican_endpoint, self.container_uuid
         )
 

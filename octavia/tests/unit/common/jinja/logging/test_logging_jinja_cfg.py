@@ -89,7 +89,7 @@ class LoggingJinjaTestCase(base.TestCase):
 
         lj = logging_jinja_cfg.LoggingJinjaTemplater()
         expected_config = (
-            u'*.* stop')
+            '*.* stop')
 
         logging_cfg = lj.build_logging_config()
 

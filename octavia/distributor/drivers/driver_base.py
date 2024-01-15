@@ -20,7 +20,7 @@ import abc
 # a single amphora, or multiple amphora among other options.
 
 
-class DistributorDriver(object, metaclass=abc.ABCMeta):
+class DistributorDriver(metaclass=abc.ABCMeta):
     @abc.abstractmethod
     def get_create_distributor_subflow(self):
         """Get a subflow to create a distributor

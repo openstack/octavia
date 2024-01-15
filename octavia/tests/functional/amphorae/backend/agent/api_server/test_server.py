@@ -230,7 +230,7 @@ class TestServerTestCase(base.TestCase):
                                          data='test')
             self.assertEqual(400, rv.status_code)
             self.assertEqual(
-                {'message': 'Invalid request', u'details': u'random error'},
+                {'message': 'Invalid request', 'details': 'random error'},
                 jsonutils.loads(rv.data.decode('utf-8')))
             mode = stat.S_IRUSR | stat.S_IWUSR
             mock_open.assert_called_with(file_name, flags, mode)
@@ -497,7 +497,7 @@ class TestServerTestCase(base.TestCase):
             rv = self.centos_app.delete('/' + api_server.VERSION +
                                         '/listeners/123')
         self.assertEqual(200, rv.status_code)
-        self.assertEqual({u'message': u'OK'},
+        self.assertEqual({'message': 'OK'},
                          jsonutils.loads(rv.data.decode('utf-8')))
         mock_rmtree.assert_called_with('/var/lib/octavia/123')
 
@@ -524,7 +524,7 @@ class TestServerTestCase(base.TestCase):
             rv = self.centos_app.delete('/' + api_server.VERSION +
                                         '/listeners/123')
         self.assertEqual(200, rv.status_code)
-        self.assertEqual({u'message': u'OK'},
+        self.assertEqual({'message': 'OK'},
                          jsonutils.loads(rv.data.decode('utf-8')))
         mock_rmtree.assert_called_with('/var/lib/octavia/123')
 
@@ -551,7 +551,7 @@ class TestServerTestCase(base.TestCase):
             rv = self.centos_app.delete('/' + api_server.VERSION +
                                         '/listeners/123')
         self.assertEqual(200, rv.status_code)
-        self.assertEqual({u'message': u'OK'},
+        self.assertEqual({'message': 'OK'},
                          jsonutils.loads(rv.data.decode('utf-8')))
 
         if init_system == consts.INIT_SYSTEMD:
@@ -575,7 +575,7 @@ class TestServerTestCase(base.TestCase):
             rv = self.centos_app.delete('/' + api_server.VERSION +
                                         '/listeners/123')
         self.assertEqual(200, rv.status_code)
-        self.assertEqual({u'message': u'OK'},
+        self.assertEqual({'message': 'OK'},
                          jsonutils.loads(rv.data.decode('utf-8')))
 
         if init_system == consts.INIT_SYSTEMD:
@@ -600,7 +600,7 @@ class TestServerTestCase(base.TestCase):
             rv = self.centos_app.delete('/' + api_server.VERSION +
                                         '/listeners/123')
         self.assertEqual(200, rv.status_code)
-        self.assertEqual({u'message': u'OK'},
+        self.assertEqual({'message': 'OK'},
                          jsonutils.loads(rv.data.decode('utf-8')))
         mock_pid.assert_called_once_with('123')
         mock_check_output.assert_any_call(
@@ -630,7 +630,7 @@ class TestServerTestCase(base.TestCase):
             rv = self.centos_app.delete('/' + api_server.VERSION +
                                         '/listeners/123')
         self.assertEqual(200, rv.status_code)
-        self.assertEqual({u'message': u'OK'},
+        self.assertEqual({'message': 'OK'},
                          jsonutils.loads(rv.data.decode('utf-8')))
         mock_pid.assert_called_with('123')
         mock_check_output.assert_any_call(
@@ -1105,7 +1105,7 @@ class TestServerTestCase(base.TestCase):
             mock_fdopen.assert_any_call(123, 'r+')
 
             expected_dict = {
-                consts.NAME: "eth{}".format(test_int_num),
+                consts.NAME: f"eth{test_int_num}",
                 consts.ADDRESSES: [
                     {
                         consts.DHCP: True,
@@ -1189,7 +1189,7 @@ class TestServerTestCase(base.TestCase):
             mock_fdopen.assert_any_call(123, 'r+')
 
             expected_dict = {
-                consts.NAME: "eth{}".format(test_int_num),
+                consts.NAME: f"eth{test_int_num}",
                 consts.MTU: 1450,
                 consts.ADDRESSES: [
                     {consts.ADDRESS: '10.0.0.5', consts.PREFIXLEN: 24}
@@ -1259,7 +1259,7 @@ class TestServerTestCase(base.TestCase):
             mock_fdopen.assert_any_call(123, 'r+')
 
             expected_dict = {
-                consts.NAME: "eth{}".format(test_int_num),
+                consts.NAME: f"eth{test_int_num}",
                 consts.MTU: 1450,
                 consts.ADDRESSES: [
                     {consts.ADDRESS: '2001:0db8::2',
@@ -2977,8 +2977,8 @@ class TestServerTestCase(base.TestCase):
                          'haproxy_count': haproxy_count,
                          'haproxy_version': '9.9.99-9',
                          'hostname': 'test-host',
-                         'ipvsadm_version': u'2.2.22-2',
-                         'keepalived_version': u'1.1.11-1',
+                         'ipvsadm_version': '2.2.22-2',
+                         'keepalived_version': '1.1.11-1',
                          'listeners': [listener_id],
                          'load': [load_1min, load_5min, load_15min],
                          'memory': {'buffers': Buffers,

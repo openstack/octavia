@@ -383,9 +383,9 @@ class TestListener(base.BaseAPITest):
         lis = self.get(self.LISTENERS_PATH, params={
             'fields': ['id', 'project_id']}).json
         for li in lis['listeners']:
-            self.assertIn(u'id', li)
-            self.assertIn(u'project_id', li)
-            self.assertNotIn(u'description', li)
+            self.assertIn('id', li)
+            self.assertIn('project_id', li)
+            self.assertNotIn('description', li)
 
     def test_get_one_fields_filter(self):
         listener1 = self.create_listener(
@@ -396,9 +396,9 @@ class TestListener(base.BaseAPITest):
         li = self.get(
             self.LISTENER_PATH.format(listener_id=listener1.get('id')),
             params={'fields': ['id', 'project_id']}).json.get(self.root_tag)
-        self.assertIn(u'id', li)
-        self.assertIn(u'project_id', li)
-        self.assertNotIn(u'description', li)
+        self.assertIn('id', li)
+        self.assertIn('project_id', li)
+        self.assertNotIn('description', li)
 
     def test_get_all_filter(self):
         li1 = self.create_listener(constants.PROTOCOL_HTTP,
@@ -699,10 +699,10 @@ class TestListener(base.BaseAPITest):
             optionals.update({field[0]: 1})
             fault = resp.get('faultstring')
             self.assertIn(
-                'Invalid input for field/attribute {0}'.format(
+                'Invalid input for field/attribute {}'.format(
                     field[0]), fault)
             self.assertIn(
-                'Value should be lower or equal to {0}'.format(
+                'Value should be lower or equal to {}'.format(
                     constants.MAX_TIMEOUT), fault)
 
     def test_create_with_timeouts_too_low(self):
@@ -717,7 +717,7 @@ class TestListener(base.BaseAPITest):
         self.assertIn(
             'Invalid input for field/attribute timeout_tcp_inspect', fault)
         self.assertIn(
-            'Value should be greater or equal to {0}'.format(
+            'Value should be greater or equal to {}'.format(
                 constants.MIN_TIMEOUT), fault)
 
     def test_create_udp_case(self):
@@ -807,7 +807,7 @@ class TestListener(base.BaseAPITest):
         self.assertIn(
             'Certificate container references are not allowed on ', fault)
         self.assertIn(
-            '{} protocol listeners.'.format(constants.PROTOCOL_TCP), fault)
+            f'{constants.PROTOCOL_TCP} protocol listeners.', fault)
 
     def test_create_without_certs_if_terminated_https(self):
         optionals = {
@@ -1276,7 +1276,7 @@ class TestListener(base.BaseAPITest):
         self._test_create_with_allowed_cidrs(allowed_cidrs, lb_id)
 
     def test_create_with_bad_allowed_cidrs(self):
-        allowed_cidrs = [u'10.0.1.0/33', u'172.16.55.1.0/25']
+        allowed_cidrs = ['10.0.1.0/33', '172.16.55.1.0/25']
         lb_listener = {
             'protocol': constants.PROTOCOL_TCP,
             'protocol_port': 80,
@@ -2576,7 +2576,7 @@ class TestListener(base.BaseAPITest):
                                         default_tls_container_ref=cert_id,
                                         status=400)
         self.assertIn(
-            'The selected protocol is not allowed in this deployment: {0}'
+            'The selected protocol is not allowed in this deployment: {}'
             .format(constants.PROTOCOL_TERMINATED_HTTPS),
             listener.get('faultstring'))
 
@@ -2776,7 +2776,7 @@ class TestListener(base.BaseAPITest):
             lb_listener['insert_headers'] = header
             body = self._build_body(lb_listener)
             listener = self.post(self.LISTENERS_PATH, body, status=400).json
-            self.assertIn('{0} is not a valid option for {1}'.format(
+            self.assertIn('{} is not a valid option for {}'.format(
                 [name],
                 '%s protocol listener.' % constants.PROTOCOL_HTTP),
                 listener.get('faultstring'))
@@ -2829,7 +2829,7 @@ class TestListener(base.BaseAPITest):
             listener_id=listener['listener'].get('id'))
         update_listener = self.put(
             listener_path, new_listener, status=400).json
-        self.assertIn('{0} is not a valid option for {1}'.format(
+        self.assertIn('{} is not a valid option for {}'.format(
             '[\'X-Bad-Header\']', 'insert_headers'),
             update_listener.get('faultstring'))
 

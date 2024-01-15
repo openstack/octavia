@@ -553,9 +553,9 @@ class TestPool(base.BaseAPITest):
         pools = self.get(self.POOLS_PATH, params={
             'fields': ['id', 'project_id']}).json
         for pool in pools['pools']:
-            self.assertIn(u'id', pool)
-            self.assertIn(u'project_id', pool)
-            self.assertNotIn(u'description', pool)
+            self.assertIn('id', pool)
+            self.assertIn('project_id', pool)
+            self.assertNotIn('description', pool)
 
     def test_get_one_fields_filter(self):
         pool1 = self.create_pool(
@@ -568,9 +568,9 @@ class TestPool(base.BaseAPITest):
         pool = self.get(
             self.POOL_PATH.format(pool_id=pool1.get('id')),
             params={'fields': ['id', 'project_id']}).json.get(self.root_tag)
-        self.assertIn(u'id', pool)
-        self.assertIn(u'project_id', pool)
-        self.assertNotIn(u'description', pool)
+        self.assertIn('id', pool)
+        self.assertIn('project_id', pool)
+        self.assertNotIn('description', pool)
 
     def test_get_all_filter(self):
         po1 = self.create_pool(

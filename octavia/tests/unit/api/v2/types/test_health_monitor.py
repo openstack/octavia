@@ -22,7 +22,7 @@ from octavia.common import constants
 from octavia.tests.unit.api.v2.types import base
 
 
-class TestHealthMonitor(object):
+class TestHealthMonitor:
 
     _type = None
 

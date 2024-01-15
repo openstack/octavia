@@ -22,7 +22,7 @@ import octavia.tests.unit.base as base
 class TestRetryTasks(base.TestCase):
 
     def setUp(self):
-        super(TestRetryTasks, self).setUp()
+        super().setUp()
 
     @mock.patch('time.sleep')
     def test_sleeping_retry_times_controller(self, mock_sleep):

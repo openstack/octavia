@@ -48,7 +48,7 @@ class OpenFixture(fixtures.Fixture):
 
 def assert_address_lists_equal(obj, l1, l2):
     obj.assertEqual(len(l1), len(l2),
-                    "Address lists don't match: {} vs {}".format(l1, l2))
+                    f"Address lists don't match: {l1} vs {l2}")
     for a1, a2 in zip(l1, l2):
         if consts.ADDRESS in a1 and consts.ADDRESS in a2:
             obj.assertEqual(
@@ -62,7 +62,7 @@ def assert_address_lists_equal(obj, l1, l2):
 
 def assert_route_lists_equal(obj, l1, l2):
     obj.assertEqual(len(l1), len(l2),
-                    "Routes don't match: {} vs {}".format(l1, l2))
+                    f"Routes don't match: {l1} vs {l2}")
     for r1, r2 in zip(l1, l2):
         obj.assertEqual(
             ipaddress.ip_network(r1[consts.DST]),

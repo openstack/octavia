@@ -26,7 +26,7 @@ from octavia.common import data_models
 from octavia.tests.unit.api.common import base
 
 
-class TestSessionPersistence(object):
+class TestSessionPersistence:
 
     _type = None
 
