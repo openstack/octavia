@@ -28,6 +28,7 @@ from pyroute2.netlink.rtnl import ifaddrmsg
 from pyroute2.netlink.rtnl import rt_proto
 
 from octavia.amphorae.backends.utils import interface_file
+from octavia.amphorae.backends.utils import nftable_utils
 from octavia.common import constants as consts
 from octavia.common import exceptions
 
@@ -175,8 +176,55 @@ class InterfaceController(object):
         ip_network = ipaddress.ip_network(address, strict=False)
         return ip_network.compressed
 
+    def _setup_nftables_chain(self, interface):
+        # TODO(johnsom) Move this to pyroute2 when the nftables library
+        #               improves.
+
+        # Create the nftable
+        cmd = [consts.NFT_CMD, consts.NFT_ADD, 'table', consts.NFT_FAMILY,
+               consts.NFT_VIP_TABLE]
+        try:
+            subprocess.check_output(cmd, stderr=subprocess.STDOUT)
+        except Exception as e:
+            if hasattr(e, 'output'):
+                LOG.error(e.output)
+            else:
+                LOG.error(e)
+            raise
+
+        # Create the chain with -310 priority to put it in front of the
+        # lvs-masquerade configured chain
+        cmd = [consts.NFT_CMD, consts.NFT_ADD, 'chain', consts.NFT_FAMILY,
+               consts.NFT_VIP_TABLE, consts.NFT_VIP_CHAIN,
+               '{', 'type', 'filter', 'hook', 'ingress', 'device',
+               interface.name, 'priority', consts.NFT_SRIOV_PRIORITY, ';',
+               'policy', 'drop', ';', '}']
+        try:
+            subprocess.check_output(cmd, stderr=subprocess.STDOUT)
+        except Exception as e:
+            if hasattr(e, 'output'):
+                LOG.error(e.output)
+            else:
+                LOG.error(e)
+            raise
+
+        nftable_utils.write_nftable_vip_rules_file(interface.name, [])
+
+        cmd = [consts.NFT_CMD, '-o', '-f', consts.NFT_VIP_RULES_FILE]
+        try:
+            subprocess.check_output(cmd, stderr=subprocess.STDOUT)
+        except Exception as e:
+            if hasattr(e, 'output'):
+                LOG.error(e.output)
+            else:
+                LOG.error(e)
+            raise
+
     def up(self, interface):
         LOG.info("Setting interface %s up", interface.name)
+
+        if interface.is_sriov:
+            self._setup_nftables_chain(interface)
 
         with pyroute2.IPRoute() as ipr:
             idx = ipr.link_lookup(ifname=interface.name)[0]

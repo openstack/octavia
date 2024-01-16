@@ -366,6 +366,7 @@ ID = 'id'
 IMAGE_ID = 'image_id'
 IP_ADDRESS = 'ip_address'
 IPV6_ICMP = 'ipv6-icmp'
+IS_SRIOV = 'is_sriov'
 LB_NETWORK_IP = 'lb_network_ip'
 L7POLICY = 'l7policy'
 L7POLICY_ID = 'l7policy_id'
@@ -967,3 +968,12 @@ IFLA_IFNAME = 'IFLA_IFNAME'
 
 # Amphora network directory
 AMP_NET_DIR_TEMPLATE = '/etc/octavia/interfaces/'
+
+# Amphora nftables constants
+NFT_ADD = 'add'
+NFT_CMD = '/usr/sbin/nft'
+NFT_FAMILY = 'inet'
+NFT_VIP_RULES_FILE = '/var/lib/octavia/nftables-vip.rules'
+NFT_VIP_TABLE = 'amphora-vip'
+NFT_VIP_CHAIN = 'amphora-vip-chain'
+NFT_SRIOV_PRIORITY = '-310'

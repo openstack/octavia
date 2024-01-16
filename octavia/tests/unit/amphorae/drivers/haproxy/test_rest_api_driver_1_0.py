@@ -113,7 +113,8 @@ class TestHaproxyAmphoraLoadBalancerDriverTest(base.TestCase):
                             'vrrp_ip': self.amp.vrrp_ip,
                             'mtu': FAKE_MTU,
                             'host_routes': host_routes_data,
-                            'additional_vips': []}
+                            'additional_vips': [],
+                            'is_sriov': False}
 
         self.timeout_dict = {constants.REQ_CONN_TIMEOUT: 1,
                              constants.REQ_READ_TIMEOUT: 2,
@@ -766,6 +767,7 @@ class TestHaproxyAmphoraLoadBalancerDriverTest(base.TestCase):
                 'host_routes': netinfo['host_routes']
             }
         ]
+        netinfo['is_sriov'] = False
         self.driver.clients[API_VERSION].plug_vip.assert_called_once_with(
             self.amp, self.lb.vip.ip_address, netinfo)
 
@@ -815,7 +817,8 @@ class TestHaproxyAmphoraLoadBalancerDriverTest(base.TestCase):
                                vrrp_ip=self.amp.vrrp_ip,
                                host_routes=[],
                                additional_vips=[],
-                               mtu=FAKE_MTU
+                               mtu=FAKE_MTU,
+                               is_sriov=False
                            )))
 
     def test_post_network_plug_with_host_routes(self):
