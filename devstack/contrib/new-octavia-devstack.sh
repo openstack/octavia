@@ -34,11 +34,11 @@ LOG_COLOR=True
 # Pre-requisite
 ENABLED_SERVICES=key,rabbit,mysql
 # Nova
-ENABLED_SERVICES+=,n-api,n-obj,n-cpu,n-cond,n-sch
+ENABLED_SERVICES+=,n-api,n-cpu,n-cond,n-sch
 # Placement service needed for Nova
 ENABLED_SERVICES+=,placement-api,placement-client
 # Glance
-ENABLED_SERVICES+=,g-api,g-reg
+ENABLED_SERVICES+=,g-api
 # Neutron
 ENABLED_SERVICES+=,neutron-api,neutron-agent,neutron-dhcp,neutron-l3
 ENABLED_SERVICES+=,neutron-metadata-agent,neutron-qos
