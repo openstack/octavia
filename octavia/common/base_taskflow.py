@@ -148,12 +148,13 @@ class DynamicLoggingConductor(impl_blocking.BlockingConductor):
         if (not CONF.task_flow.jobboard_save_logbook and
                 job.state == states.COMPLETE):
             LOG.debug("Job %s is complete. Cleaning up job logbook.", job.name)
-            try:
-                self._persistence.get_connection().destroy_logbook(
-                    job.book.uuid)
-            except taskflow_exc.NotFound:
-                LOG.debug("Logbook for job %s has been already cleaned up",
-                          job.name)
+            if job.book:
+                try:
+                    self._persistence.get_connection().destroy_logbook(
+                        job.book.uuid)
+                except taskflow_exc.NotFound:
+                    LOG.debug("Logbook for job %s has been already cleaned up",
+                              job.name)
 
 
 class RedisDynamicLoggingConductor(DynamicLoggingConductor):
