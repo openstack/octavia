@@ -1,0 +1,7 @@
+---
+fixes:
+  - |
+    Usage of ``castellan_cert_manager`` as cert_manager has been significantly
+    improved. Now you can define configuration options for castellan in
+    octavia.conf and they will be passed properly to castellan beckend. This
+    allows to use allowed castellan backends as for certificate storage.
