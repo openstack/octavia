@@ -56,11 +56,6 @@ class CalculateAmphoraDelta(BaseNetworkTask):
     def execute(self, loadbalancer, amphora, availability_zone):
         LOG.debug("Calculating network delta for amphora id: %s", amphora.id)
 
-        vip_subnet_to_net_map = {
-            loadbalancer.vip.subnet_id:
-            loadbalancer.vip.network_id,
-        }
-
         # Figure out what networks we want
         # seed with lb network(s)
         if (availability_zone and
@@ -75,12 +70,10 @@ class CalculateAmphoraDelta(BaseNetworkTask):
         loadbalancer = self.lb_repo.get(
             db_apis.get_session(), id=loadbalancer.id)
 
-        desired_subnet_to_net_map = {}
-        for mgmt_net_id in management_nets:
-            for subnet_id in self.network_driver.get_network(
-                    mgmt_net_id).subnets:
-                desired_subnet_to_net_map[subnet_id] = mgmt_net_id
-        desired_subnet_to_net_map.update(vip_subnet_to_net_map)
+        desired_subnet_to_net_map = {
+            loadbalancer.vip.subnet_id:
+            loadbalancer.vip.network_id,
+        }
 
         for pool in loadbalancer.pools:
             for member in pool.members:
@@ -99,7 +92,12 @@ class CalculateAmphoraDelta(BaseNetworkTask):
         nics = self.network_driver.get_plugged_networks(
             amphora.compute_id)
         # we don't have two nics in the same network
-        network_to_nic_map = {nic.network_id: nic for nic in nics}
+        # Don't include the nics connected to the management network, we don't
+        # want to update these interfaces.
+        network_to_nic_map = {
+            nic.network_id: nic
+            for nic in nics
+            if nic.network_id not in management_nets}
 
         plugged_network_ids = set(network_to_nic_map)
 
