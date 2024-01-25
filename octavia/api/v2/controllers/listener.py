@@ -156,14 +156,18 @@ class ListenersController(base.BaseController):
                     value=headers,
                     option='%s protocol listener.' % listener_protocol)
 
-    def _validate_cidr_compatible_with_vip(self, vip, allowed_cidrs):
+    def _validate_cidr_compatible_with_vip(self, vips, allowed_cidrs):
         for cidr in allowed_cidrs:
-            # Check if CIDR IP version matches VIP IP version
-            if common_utils.is_cidr_ipv6(cidr) != common_utils.is_ipv6(vip):
-                msg = _("CIDR %(cidr)s IP version incompatible with VIP "
-                        "%(vip)s IP version.")
+            for vip in vips:
+                # Check if CIDR IP version matches VIP IP version
+                if (common_utils.is_cidr_ipv6(cidr) ==
+                        common_utils.is_ipv6(vip)):
+                    break
+            else:
+                msg = _("CIDR %(cidr)s IP version incompatible with all VIPs "
+                        "%(vips)s IP version.")
                 raise exceptions.ValidationException(
-                    detail=msg % {'cidr': cidr, 'vip': vip})
+                    detail=msg % {'cidr': cidr, 'vips': vips})
 
     def _validate_create_listener(self, lock_session, listener_dict):
         """Validate listener for wrong protocol or duplicate listeners
@@ -306,10 +310,11 @@ class ListenersController(base.BaseController):
         # Validate allowed CIDRs
         allowed_cidrs = listener_dict.get('allowed_cidrs', []) or []
         lb_id = listener_dict.get('load_balancer_id')
-        vip_db = self.repositories.vip.get(
-            lock_session, load_balancer_id=lb_id)
-        vip_address = vip_db.ip_address
-        self._validate_cidr_compatible_with_vip(vip_address, allowed_cidrs)
+        lb_db = self.repositories.load_balancer.get(
+            lock_session, id=lb_id)
+        vip_addresses = [lb_db.vip.ip_address]
+        vip_addresses.extend([vip.ip_address for vip in lb_db.additional_vips])
+        self._validate_cidr_compatible_with_vip(vip_addresses, allowed_cidrs)
 
         if _can_tls_offload:
             # Validate TLS version list
@@ -525,9 +530,13 @@ class ListenersController(base.BaseController):
 
         # Validate allowed CIDRs
         if (listener.allowed_cidrs and listener.allowed_cidrs != wtypes.Unset):
-            vip_address = db_listener.load_balancer.vip.ip_address
+            vip_addresses = [db_listener.load_balancer.vip.ip_address]
+            vip_addresses.extend(
+                [vip.ip_address
+                 for vip in db_listener.load_balancer.additional_vips]
+            )
             self._validate_cidr_compatible_with_vip(
-                vip_address, listener.allowed_cidrs)
+                vip_addresses, listener.allowed_cidrs)
 
         # Check TLS cipher prohibit list
         if listener.tls_ciphers:
