@@ -9,7 +9,6 @@
       - publish-openstack-docs-pti
       - release-notes-jobs-python3
       - octavia-tox-tips
-      - octavia-tox-sqlalchemy-tips
     check:
       jobs:
         - openstack-tox-pip-check-reqs:
