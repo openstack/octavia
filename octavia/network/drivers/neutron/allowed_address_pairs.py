@@ -147,6 +147,10 @@ class AllowedAddressPairsDriver(neutron_base.BaseNeutronDriver):
         address = ipaddress.ip_address(ip)
         return 'IPv6' if address.version == 6 else 'IPv4'
 
+    def _get_ethertype_for_cidr(self, cidr):
+        net = ipaddress.ip_network(cidr)
+        return 'IPv6' if net.version == 6 else 'IPv4'
+
     def _update_security_group_rules(self, load_balancer, sec_grp_id):
         rules = self.neutron_client.list_security_group_rules(
             security_group_id=sec_grp_id)
@@ -224,11 +228,15 @@ class AllowedAddressPairsDriver(neutron_base.BaseNeutronDriver):
             ethertypes.add(self._get_ethertype_for_ip(add_vip.ip_address))
         for port_protocol in add_ports:
             for ethertype in ethertypes:
-                self._create_security_group_rule(sec_grp_id, port_protocol[1],
-                                                 port_min=port_protocol[0],
-                                                 port_max=port_protocol[0],
-                                                 ethertype=ethertype,
-                                                 cidr=port_protocol[2])
+                cidr = port_protocol[2]
+                if not cidr or self._get_ethertype_for_cidr(cidr) == ethertype:
+                    self._create_security_group_rule(
+                        sec_grp_id, port_protocol[1],
+                        port_min=port_protocol[0],
+                        port_max=port_protocol[0],
+                        ethertype=ethertype,
+                        cidr=cidr,
+                    )
 
         # Currently we are using the VIP network for VRRP
         # so we need to open up the protocols for it
