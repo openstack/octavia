@@ -262,7 +262,3 @@ def main():
     else:
         print("Unsupported protocol '{}'".format(protocol))
         sys.exit(1)
-
-
-if __name__ == '__main__':
-    main()

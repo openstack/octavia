@@ -36,7 +36,3 @@ def main():
            workers=CONF.controller_worker.workers, args=(CONF,))
     oslo_config_glue.setup(sm, CONF, reload_method="mutate")
     sm.run()
-
-
-if __name__ == "__main__":
-    main()

@@ -1,4 +1,3 @@
-#!/usr/bin/python3
 #    Copyright 2022 Red Hat
 #
 #    Licensed under the Apache License, Version 2.0 (the "License"); you may
@@ -810,7 +809,3 @@ def main():
                 httpd.serve_forever()
         except Exception:
             time.sleep(1)
-
-
-if __name__ == "__main__":
-    main()
