@@ -541,12 +541,9 @@ function build_mgmt_network {
     # Create network and attach a subnet
     openstack network create lb-mgmt-net
     if [ $SERVICE_IP_VERSION == '6' ] ; then
-        openstack subnet create --subnet-range $OCTAVIA_MGMT_SUBNET_IPV6 --allocation-pool start=$OCTAVIA_MGMT_SUBNET_IPV6_START,end=$OCTAVIA_MGMT_SUBNET_IPV6_END --network lb-mgmt-net --ip-version 6 --ipv6-address-mode slaac --ipv6-ra-mode slaac lb-mgmt-subnet
-        # SLAAC needs a router on the subnet to advertise the prefix.
-        openstack router create lb-mgmt-router
-        openstack router add subnet lb-mgmt-router lb-mgmt-subnet
+        openstack subnet create --subnet-range $OCTAVIA_MGMT_SUBNET_IPV6 --allocation-pool start=$OCTAVIA_MGMT_SUBNET_IPV6_START,end=$OCTAVIA_MGMT_SUBNET_IPV6_END --network lb-mgmt-net --ip-version 6 --gateway none --no-dhcp lb-mgmt-subnet
     else
-        openstack subnet create --subnet-range $OCTAVIA_MGMT_SUBNET --allocation-pool start=$OCTAVIA_MGMT_SUBNET_START,end=$OCTAVIA_MGMT_SUBNET_END --network lb-mgmt-net lb-mgmt-subnet
+        openstack subnet create --subnet-range $OCTAVIA_MGMT_SUBNET --allocation-pool start=$OCTAVIA_MGMT_SUBNET_START,end=$OCTAVIA_MGMT_SUBNET_END --network lb-mgmt-net --gateway none --no-dhcp lb-mgmt-subnet
     fi
 
     # Create security group and rules
