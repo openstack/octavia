@@ -67,7 +67,8 @@ class TestL7Rule(base.BaseAPITest):
         self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
         auth_strategy = self.conf.conf.api_settings.get('auth_strategy')
         self.conf.config(group='api_settings', auth_strategy=constants.TESTING)
-        with mock.patch.object(octavia.common.context.Context, 'project_id',
+        with mock.patch.object(octavia.common.context.RequestContext,
+                               'project_id',
                                self.project_id):
             override_credentials = {
                 'service_user_id': None,
@@ -98,7 +99,8 @@ class TestL7Rule(base.BaseAPITest):
         self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
         auth_strategy = self.conf.conf.api_settings.get('auth_strategy')
         self.conf.config(group='api_settings', auth_strategy=constants.TESTING)
-        with mock.patch.object(octavia.common.context.Context, 'project_id',
+        with mock.patch.object(octavia.common.context.RequestContext,
+                               'project_id',
                                self.project_id):
             response = self.get(self.l7rule_path.format(
                 l7rule_id=l7rule.get('id')), status=403).json
@@ -164,7 +166,8 @@ class TestL7Rule(base.BaseAPITest):
         self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
         auth_strategy = self.conf.conf.api_settings.get('auth_strategy')
         self.conf.config(group='api_settings', auth_strategy=constants.TESTING)
-        with mock.patch.object(octavia.common.context.Context, 'project_id',
+        with mock.patch.object(octavia.common.context.RequestContext,
+                               'project_id',
                                self.project_id):
             override_credentials = {
                 'service_user_id': None,
@@ -208,7 +211,8 @@ class TestL7Rule(base.BaseAPITest):
         self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
         auth_strategy = self.conf.conf.api_settings.get('auth_strategy')
         self.conf.config(group='api_settings', auth_strategy=constants.TESTING)
-        with mock.patch.object(octavia.common.context.Context, 'project_id',
+        with mock.patch.object(octavia.common.context.RequestContext,
+                               'project_id',
                                None):
             override_credentials = {
                 'service_user_id': None,
@@ -244,7 +248,8 @@ class TestL7Rule(base.BaseAPITest):
         self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
         auth_strategy = self.conf.conf.api_settings.get('auth_strategy')
         self.conf.config(group='api_settings', auth_strategy=constants.TESTING)
-        with mock.patch.object(octavia.common.context.Context, 'project_id',
+        with mock.patch.object(octavia.common.context.RequestContext,
+                               'project_id',
                                self.project_id):
             rules = self.get(self.l7rules_path, status=403)
 
@@ -528,7 +533,8 @@ class TestL7Rule(base.BaseAPITest):
         auth_strategy = self.conf.conf.api_settings.get('auth_strategy')
         self.conf.config(group='api_settings', auth_strategy=constants.TESTING)
 
-        with mock.patch.object(octavia.common.context.Context, 'project_id',
+        with mock.patch.object(octavia.common.context.RequestContext,
+                               'project_id',
                                self.project_id):
             override_credentials = {
                 'service_user_id': None,
@@ -572,7 +578,8 @@ class TestL7Rule(base.BaseAPITest):
         auth_strategy = self.conf.conf.api_settings.get('auth_strategy')
         self.conf.config(group='api_settings', auth_strategy=constants.TESTING)
 
-        with mock.patch.object(octavia.common.context.Context, 'project_id',
+        with mock.patch.object(octavia.common.context.RequestContext,
+                               'project_id',
                                self.project_id):
             api_l7rule = self.create_l7rule(
                 self.l7policy_id, constants.L7RULE_TYPE_HOST_NAME,
@@ -906,7 +913,8 @@ class TestL7Rule(base.BaseAPITest):
         self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
         auth_strategy = self.conf.conf.api_settings.get('auth_strategy')
         self.conf.config(group='api_settings', auth_strategy=constants.TESTING)
-        with mock.patch.object(octavia.common.context.Context, 'project_id',
+        with mock.patch.object(octavia.common.context.RequestContext,
+                               'project_id',
                                self.project_id):
             override_credentials = {
                 'service_user_id': None,
@@ -948,7 +956,8 @@ class TestL7Rule(base.BaseAPITest):
         self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
         auth_strategy = self.conf.conf.api_settings.get('auth_strategy')
         self.conf.config(group='api_settings', auth_strategy=constants.TESTING)
-        with mock.patch.object(octavia.common.context.Context, 'project_id',
+        with mock.patch.object(octavia.common.context.RequestContext,
+                               'project_id',
                                self.project_id):
             response = self.put(self.l7rule_path.format(
                 l7rule_id=api_l7rule.get('id')),
@@ -1108,7 +1117,8 @@ class TestL7Rule(base.BaseAPITest):
         self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
         auth_strategy = self.conf.conf.api_settings.get('auth_strategy')
         self.conf.config(group='api_settings', auth_strategy=constants.TESTING)
-        with mock.patch.object(octavia.common.context.Context, 'project_id',
+        with mock.patch.object(octavia.common.context.RequestContext,
+                               'project_id',
                                self.project_id):
             override_credentials = {
                 'service_user_id': None,
@@ -1158,7 +1168,8 @@ class TestL7Rule(base.BaseAPITest):
         self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
         auth_strategy = self.conf.conf.api_settings.get('auth_strategy')
         self.conf.config(group='api_settings', auth_strategy=constants.TESTING)
-        with mock.patch.object(octavia.common.context.Context, 'project_id',
+        with mock.patch.object(octavia.common.context.RequestContext,
+                               'project_id',
                                self.project_id):
             self.delete(
                 self.l7rule_path.format(l7rule_id=api_l7rule.get('id')),
