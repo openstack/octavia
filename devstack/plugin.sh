@@ -748,12 +748,12 @@ function octavia_cleanup {
 }
 
 function add_load-balancer_roles {
-    openstack role create load-balancer_observer
-    openstack role create load-balancer_global_observer
-    openstack role create load-balancer_member
-    openstack role create load-balancer_admin
-    openstack role create load-balancer_quota_admin
-    openstack role add --user demo --project demo load-balancer_member
+    get_or_create_role load-balancer_observer
+    get_or_create_role load-balancer_global_observer
+    get_or_create_role load-balancer_member
+    get_or_create_role load-balancer_admin
+    get_or_create_role load-balancer_quota_admin
+    get_or_add_user_project_role load-balancer_member demo demo
 }
 
 function octavia_init {
