@@ -80,14 +80,14 @@ class KeystoneSession(object):
 
                 config = getattr(cfg.CONF, self.section)
                 for opt in config:
-                    # For each option in the [neutron] section, get its setting
-                    # location, if the location is 'opt_default' or
-                    # 'set_default', it means that the option is not configured
-                    # in the config file, it should be replaced with the one
-                    # from [service_auth]
+                    # For each option in the [section] section, get its setting
+                    # location, if the location is 'opt_default', it means that
+                    # the option is not configured in the config file.
+                    # if the option is also defined in [service_auth], the
+                    # option of the [section] can be replaced by the one from
+                    # [service_auth]
                     loc = cfg.CONF.get_location(opt, self.section)
-                    if not loc or loc.location in (cfg.Locations.opt_default,
-                                                   cfg.Locations.set_default):
+                    if not loc or loc.location == cfg.Locations.opt_default:
                         if hasattr(cfg.CONF.service_auth, opt):
                             cur_value = getattr(config, opt)
                             value = getattr(cfg.CONF.service_auth, opt)

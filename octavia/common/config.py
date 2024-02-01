@@ -935,24 +935,29 @@ def register_cli_opts():
 def handle_neutron_deprecations():
     # Apply neutron deprecated options to their new setting if needed
 
-    # Basicaly: if the value of the deprecated option is not the default:
+    # Basically: if the new option is not set and the value of the deprecated
+    # option is not the default, it means that the deprecated setting is still
+    # used in the config file:
     # * convert it to a valid "new" value if needed
     # * set it as the default for the new option
     # Thus [neutron].<new_option> has an higher precedence than
     # [neutron].<deprecated_option>
     loc = cfg.CONF.get_location('endpoint', 'neutron')
-    if loc and loc.location != cfg.Locations.opt_default:
+    new_loc = cfg.CONF.get_location('endpoint_override', 'neutron')
+    if not new_loc and loc and loc.location != cfg.Locations.opt_default:
         cfg.CONF.set_default('endpoint_override', cfg.CONF.neutron.endpoint,
                              'neutron')
 
     loc = cfg.CONF.get_location('endpoint_type', 'neutron')
-    if loc and loc.location != cfg.Locations.opt_default:
+    new_loc = cfg.CONF.get_location('valid_interfaces', 'neutron')
+    if not new_loc and loc and loc.location != cfg.Locations.opt_default:
         endpoint_type = cfg.CONF.neutron.endpoint_type.replace('URL', '')
         cfg.CONF.set_default('valid_interfaces', [endpoint_type],
                              'neutron')
 
     loc = cfg.CONF.get_location('ca_certificates_file', 'neutron')
-    if loc and loc.location != cfg.Locations.opt_default:
+    new_loc = cfg.CONF.get_location('cafile', 'neutron')
+    if not new_loc and loc and loc.location != cfg.Locations.opt_default:
         cfg.CONF.set_default('cafile', cfg.CONF.neutron.ca_certificates_file,
                              'neutron')
 

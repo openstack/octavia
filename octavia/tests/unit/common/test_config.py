@@ -78,3 +78,38 @@ class TestConfig(base.TestCase):
         self.assertEqual(
             3,
             conf.conf.haproxy_amphora.active_connection_retry_interval)
+
+    def test_handle_neutron_deprecations(self):
+        conf = self.useFixture(oslo_fixture.Config(config.cfg.CONF))
+
+        # The deprecated settings are copied to the new settings
+        conf.config(endpoint='my_endpoint',
+                    endpoint_type='internal',
+                    ca_certificates_file='/path/to/certs',
+                    group='neutron')
+
+        config.handle_neutron_deprecations()
+
+        self.assertEqual('my_endpoint', conf.conf.neutron.endpoint_override)
+        self.assertEqual(['internal'], conf.conf.neutron.valid_interfaces)
+        self.assertEqual('/path/to/certs', conf.conf.neutron.cafile)
+
+    # Test case for https://bugs.launchpad.net/octavia/+bug/2051604
+    def test_handle_neutron_deprecations_with_precedence(self):
+        conf = self.useFixture(oslo_fixture.Config(config.cfg.CONF))
+
+        # The deprecated settings should not override the new settings when
+        # they exist
+        conf.config(endpoint='my_old_endpoint',
+                    endpoint_type='old_type',
+                    ca_certificates_file='/path/to/old_certs',
+                    endpoint_override='my_endpoint',
+                    valid_interfaces=['internal'],
+                    cafile='/path/to/certs',
+                    group='neutron')
+
+        config.handle_neutron_deprecations()
+
+        self.assertEqual('my_endpoint', conf.conf.neutron.endpoint_override)
+        self.assertEqual(['internal'], conf.conf.neutron.valid_interfaces)
+        self.assertEqual('/path/to/certs', conf.conf.neutron.cafile)
