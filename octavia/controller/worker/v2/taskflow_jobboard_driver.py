@@ -91,10 +91,15 @@ class RedisTaskFlowDriver(JobboardTaskFlowDriver):
             'board': 'redis',
             'host': CONF.task_flow.jobboard_backend_hosts[0],
             'port': CONF.task_flow.jobboard_backend_port,
-            'password': CONF.task_flow.jobboard_backend_password,
             'namespace': CONF.task_flow.jobboard_backend_namespace,
             'sentinel': CONF.task_flow.jobboard_redis_sentinel,
         }
+        if CONF.task_flow.jobboard_backend_username is not None:
+            jobboard_backend_conf['username'] = (
+                CONF.task_flow.jobboard_backend_username)
+        if CONF.task_flow.jobboard_backend_password is not None:
+            jobboard_backend_conf['password'] = (
+                CONF.task_flow.jobboard_backend_password)
         jobboard_backend_conf.update(
             CONF.task_flow.jobboard_redis_backend_ssl_options)
         return job_backends.backend(
