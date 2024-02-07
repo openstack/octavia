@@ -1198,7 +1198,7 @@ class ListenerRepository(BaseRepository):
                 if not listener_db.provisioning_status in [consts.ACTIVE, consts.ERROR]:
                     return
             elif provisioning_status == consts.PENDING_UPDATE:
-                if listener_db.provisioning_status != consts.ACTIVE:
+                if not listener_db.provisioning_status in [consts.ACTIVE, consts.ERROR]:
                     return
             elif provisioning_status == consts.ACTIVE:
                 if not listener_db.provisioning_status in [consts.PENDING_CREATE, consts.PENDING_UPDATE]:
