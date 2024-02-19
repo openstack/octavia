@@ -120,7 +120,10 @@ class BarbicanCertManager(cert_mgr.CertManager):
             return pkcs12.PKCS12Cert(cert_secret.payload)
         except exceptions.UnreadablePKCS12:
             raise
-        except Exception:
+        except Exception as e:
+            LOG.warning('Failed to load PKCS12Cert for secret %s with %s',
+                        cert_ref, str(e))
+            LOG.warning('Falling back to the barbican_legacy implementation.')
             # If our get fails, try with the legacy driver.
             # TODO(rm_work): Remove this code when the deprecation cycle for
             # the legacy driver is complete.
