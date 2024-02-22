@@ -1,0 +1,7 @@
+---
+fixes:
+  - |
+    Added a workaround that prevent the listener PUT API call from failing if
+    haproxy crashes during a reload. The amphora-agent ensures that in case of
+    crashes, haproxy is correctly restarted and ready to accept incoming
+    requests (see https://bugs.launchpad.net/octavia/+bug/2054666)

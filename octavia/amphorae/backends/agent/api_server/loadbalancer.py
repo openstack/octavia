@@ -18,6 +18,7 @@ import re
 import shutil
 import stat
 import subprocess
+import time
 
 import flask
 import jinja2
@@ -35,6 +36,8 @@ from octavia.common import utils as octavia_utils
 
 LOG = logging.getLogger(__name__)
 BUFFER = 100
+HAPROXY_RELOAD_RETRIES = 3
+HAPROXY_QUERY_RETRIES = 5
 
 CONF = cfg.CONF
 
@@ -224,6 +227,23 @@ class Loadbalancer:
 
         return res
 
+    def _check_haproxy_uptime(self, lb_id):
+        stat_sock_file = util.haproxy_sock_path(lb_id)
+        lb_query = haproxy_query.HAProxyQuery(stat_sock_file)
+        retries = HAPROXY_QUERY_RETRIES
+        for idx in range(retries):
+            try:
+                info = lb_query.show_info()
+                uptime_sec = info['Uptime_sec']
+            except Exception as e:
+                LOG.warning('Failed to get haproxy info: %s, retrying.', e)
+                time.sleep(1)
+                continue
+            uptime = int(uptime_sec)
+            return uptime
+        LOG.error('Failed to get haproxy uptime after %d tries.', retries)
+        return None
+
     def start_stop_lb(self, lb_id, action):
         action = action.lower()
         if action not in [consts.AMP_ACTION_START,
@@ -257,20 +277,55 @@ class Loadbalancer:
                     # failure!
                     LOG.warning('Failed to save haproxy-%s state!', lb_id)
 
-        cmd = ("/usr/sbin/service haproxy-{lb_id} {action}".format(
-            lb_id=lb_id, action=action))
+        retries = (HAPROXY_RELOAD_RETRIES
+                   if action == consts.AMP_ACTION_RELOAD
+                   else 1)
+        saved_exc = None
+        for idx in range(retries):
+            cmd = ("/usr/sbin/service haproxy-{lb_id} {action}".format(
+                lb_id=lb_id, action=action))
 
-        try:
-            subprocess.check_output(cmd.split(), stderr=subprocess.STDOUT)
-        except subprocess.CalledProcessError as e:
-            if b'Job is already running' not in e.output:
-                LOG.debug(
-                    "Failed to %(action)s haproxy-%(lb_id)s service: %(err)s "
-                    "%(out)s", {'action': action, 'lb_id': lb_id,
-                                'err': e, 'out': e.output})
-                return webob.Response(json={
-                    'message': f"Error {action}ing haproxy",
-                    'details': e.output}, status=500)
+            try:
+                subprocess.check_output(cmd.split(), stderr=subprocess.STDOUT)
+            except subprocess.CalledProcessError as e:
+                # Mitigation for
+                # https://bugs.launchpad.net/octavia/+bug/2054666
+                if (b'is not active, cannot reload.' in e.output and
+                        action == consts.AMP_ACTION_RELOAD):
+
+                    saved_exc = e
+
+                    LOG.debug(
+                        "Failed to %(action)s haproxy-%(lb_id)s service: "
+                        "%(err)s %(out)s", {'action': action, 'lb_id': lb_id,
+                                            'err': e, 'out': e.output})
+
+                    # Wait a few seconds and check that haproxy was restarted
+                    uptime = self._check_haproxy_uptime(lb_id)
+                    # If haproxy is not reachable or was restarted more than 15
+                    # sec ago, let's retry (or maybe restart?)
+                    if not uptime or uptime > 15:
+                        continue
+                    # haproxy probably crashed and was restarted, log it and
+                    # continue
+                    LOG.warning("An error occured with haproxy while it "
+                                "was reloaded, check the haproxy logs for "
+                                "more details.")
+                    break
+                if b'Job is already running' not in e.output:
+                    LOG.debug(
+                        "Failed to %(action)s haproxy-%(lb_id)s service: "
+                        "%(err)s %(out)s", {'action': action, 'lb_id': lb_id,
+                                            'err': e, 'out': e.output})
+                    return webob.Response(json={
+                        'message': f"Error {action}ing haproxy",
+                        'details': e.output}, status=500)
+            break
+        else:
+            # no break, we reach the retry limit for reloads
+            return webob.Response(json={
+                'message': f"Error {action}ing haproxy",
+                'details': saved_exc.output if saved_exc else ''}, status=500)
 
         # If we are not in active/standby we need to send an IP
         # advertisement (GARP or NA). Keepalived handles this for

@@ -56,6 +56,8 @@ class ListenerTestCase(base.TestCase):
             consts.OFFLINE,
             self.test_loadbalancer._check_haproxy_status(LISTENER_ID1))
 
+    @mock.patch('time.sleep')
+    @mock.patch('octavia.amphorae.backends.agent.api_server.loadbalancer.LOG')
     @mock.patch('octavia.amphorae.backends.agent.api_server.loadbalancer.'
                 'Loadbalancer._check_haproxy_status')
     @mock.patch('octavia.amphorae.backends.agent.api_server.util.'
@@ -67,7 +69,7 @@ class ListenerTestCase(base.TestCase):
     @mock.patch('octavia.amphorae.backends.utils.haproxy_query.HAProxyQuery')
     def test_start_stop_lb(self, mock_haproxy_query, mock_check_output,
                            mock_lb_exists, mock_path_exists, mock_vrrp_update,
-                           mock_check_status):
+                           mock_check_status, mock_LOG, mock_time_sleep):
         listener_id = uuidutils.generate_uuid()
 
         conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
@@ -207,6 +209,65 @@ class ListenerTestCase(base.TestCase):
         mock_path_exists.assert_not_called()
         mock_vrrp_update.assert_not_called()
         mock_check_output.assert_not_called()
+
+        # haproxy error on reload
+        mock_check_output.reset_mock()
+        mock_lb_exists.reset_mock()
+        mock_path_exists.reset_mock()
+        mock_vrrp_update.reset_mock()
+        mock_check_status.reset_mock()
+        mock_LOG.reset_mock()
+
+        mock_check_output.side_effect = [
+            subprocess.CalledProcessError(
+                output=b'haproxy.service is not active, cannot reload.',
+                returncode=-2, cmd='service'),
+            None]
+        mock_check_status.return_value = 'ACTIVE'
+        mock_check_status.side_effect = None
+
+        mock_query = mock.Mock()
+        mock_haproxy_query.return_value = mock_query
+        mock_query.show_info.side_effect = [Exception("error"),
+                                            {'Uptime_sec': 5}]
+
+        result = self.test_loadbalancer.start_stop_lb(listener_id, 'reload')
+        self.assertEqual(202, result.status_code)
+
+        LOG_last_call = mock_LOG.mock_calls[-1]
+        self.assertIn('An error occured with haproxy', LOG_last_call[1][0])
+
+        # haproxy error on reload - retry limit
+        print("--")
+        mock_check_output.reset_mock()
+        mock_lb_exists.reset_mock()
+        mock_path_exists.reset_mock()
+        mock_vrrp_update.reset_mock()
+        mock_check_status.reset_mock()
+        mock_LOG.reset_mock()
+
+        mock_check_output.side_effect = [
+            subprocess.CalledProcessError(
+                output=b'haproxy.service is not active, cannot reload.',
+                returncode=-2, cmd='service'),
+            subprocess.CalledProcessError(
+                output=b'haproxy.service is not active, cannot reload.',
+                returncode=-2, cmd='service'),
+            subprocess.CalledProcessError(
+                output=b'haproxy.service is not active, cannot reload.',
+                returncode=-2, cmd='service')]
+        mock_check_status.return_value = 'ACTIVE'
+        mock_check_status.side_effect = None
+
+        mock_query = mock.Mock()
+        mock_haproxy_query.return_value = mock_query
+        mock_query.show_info.side_effect = Exception("error")
+
+        result = self.test_loadbalancer.start_stop_lb(listener_id, 'reload')
+        self.assertEqual(500, result.status_code)
+        self.assertEqual('Error reloading haproxy', result.json['message'])
+        self.assertEqual('haproxy.service is not active, cannot reload.',
+                         result.json['details'])
 
     @mock.patch('octavia.amphorae.backends.agent.api_server.util.'
                 'config_path')
