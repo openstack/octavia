@@ -12,6 +12,7 @@ doc/source/contributor/devref/erd.svg
 doc/source/contributor/devref/flow_diagrams/
 doc/source/contributor/devref/flow_diagrams_v2/
 doc/source/contributor/modules
+etc/octavia/*.sample
 api-ref/build
 .idea/*
 .vscode/*
