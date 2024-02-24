@@ -191,3 +191,9 @@ class exception_logger(object):
                     self.logger(e)
             return None
         return call
+
+
+def map_protocol_to_nftable_protocol(rule_dict):
+    rule_dict[constants.PROTOCOL] = (
+        constants.L4_PROTOCOL_MAP[rule_dict[constants.PROTOCOL]])
+    return rule_dict

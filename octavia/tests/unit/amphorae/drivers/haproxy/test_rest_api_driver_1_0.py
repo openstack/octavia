@@ -1548,3 +1548,13 @@ class TestAmphoraAPIClientTest(base.TestCase):
         self.assertRaises(exc.InternalServerError,
                           self.driver.update_agent_config, self.amp,
                           "some_file")
+
+    @requests_mock.mock()
+    def test_set_interface_rules(self, m):
+        ip_addr = '192.0.2.44'
+        rules = ('[{"protocol":"TCP","cidr":"192.0.2.0/24","port":8080},'
+                 '{"protocol":"UDP","cidr":null,"port":80}]')
+        m.put(f'{self.base_url_ver}/interface/{ip_addr}/rules')
+
+        self.driver.set_interface_rules(self.amp, ip_addr, rules)
+        self.assertTrue(m.called)

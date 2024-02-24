@@ -34,19 +34,31 @@ class TestListenerFlows(base.TestCase):
 
     def test_get_create_listener_flow(self, mock_get_net_driver):
 
-        listener_flow = self.ListenerFlow.get_create_listener_flow()
+        flavor_dict = {
+            constants.SRIOV_VIP: True,
+            constants.LOADBALANCER_TOPOLOGY: constants.TOPOLOGY_SINGLE}
+        listener_flow = self.ListenerFlow.get_create_listener_flow(
+            flavor_dict=flavor_dict)
 
         self.assertIsInstance(listener_flow, flow.Flow)
 
         self.assertIn(constants.LISTENERS, listener_flow.requires)
         self.assertIn(constants.LOADBALANCER_ID, listener_flow.requires)
 
+        self.assertIn(constants.AMPHORAE_NETWORK_CONFIG,
+                      listener_flow.provides)
+        self.assertIn(constants.AMPHORAE, listener_flow.provides)
+        self.assertIn(constants.AMPHORA_FIREWALL_RULES, listener_flow.provides)
+
         self.assertEqual(2, len(listener_flow.requires))
-        self.assertEqual(0, len(listener_flow.provides))
+        self.assertEqual(3, len(listener_flow.provides))
 
     def test_get_delete_listener_flow(self, mock_get_net_driver):
-
-        listener_flow = self.ListenerFlow.get_delete_listener_flow()
+        flavor_dict = {
+            constants.SRIOV_VIP: True,
+            constants.LOADBALANCER_TOPOLOGY: constants.TOPOLOGY_SINGLE}
+        listener_flow = self.ListenerFlow.get_delete_listener_flow(
+            flavor_dict=flavor_dict)
 
         self.assertIsInstance(listener_flow, flow.Flow)
 
@@ -54,25 +66,42 @@ class TestListenerFlows(base.TestCase):
         self.assertIn(constants.LOADBALANCER_ID, listener_flow.requires)
         self.assertIn(constants.PROJECT_ID, listener_flow.requires)
 
+        self.assertIn(constants.AMPHORAE_NETWORK_CONFIG,
+                      listener_flow.provides)
+        self.assertIn(constants.AMPHORAE, listener_flow.provides)
+        self.assertIn(constants.AMPHORA_FIREWALL_RULES, listener_flow.provides)
+
         self.assertEqual(3, len(listener_flow.requires))
-        self.assertEqual(0, len(listener_flow.provides))
+        self.assertEqual(3, len(listener_flow.provides))
 
     def test_get_delete_listener_internal_flow(self, mock_get_net_driver):
+        flavor_dict = {
+            constants.SRIOV_VIP: True,
+            constants.LOADBALANCER_TOPOLOGY: constants.TOPOLOGY_SINGLE}
         fake_listener = {constants.LISTENER_ID: uuidutils.generate_uuid()}
         listener_flow = self.ListenerFlow.get_delete_listener_internal_flow(
-            fake_listener)
+            fake_listener, flavor_dict=flavor_dict)
 
         self.assertIsInstance(listener_flow, flow.Flow)
 
         self.assertIn(constants.LOADBALANCER_ID, listener_flow.requires)
         self.assertIn(constants.PROJECT_ID, listener_flow.requires)
 
+        self.assertIn(constants.AMPHORAE_NETWORK_CONFIG,
+                      listener_flow.provides)
+        self.assertIn(constants.AMPHORAE, listener_flow.provides)
+        self.assertIn(constants.AMPHORA_FIREWALL_RULES, listener_flow.provides)
+
         self.assertEqual(2, len(listener_flow.requires))
-        self.assertEqual(0, len(listener_flow.provides))
+        self.assertEqual(3, len(listener_flow.provides))
 
     def test_get_update_listener_flow(self, mock_get_net_driver):
+        flavor_dict = {
+            constants.SRIOV_VIP: True,
+            constants.LOADBALANCER_TOPOLOGY: constants.TOPOLOGY_SINGLE}
 
-        listener_flow = self.ListenerFlow.get_update_listener_flow()
+        listener_flow = self.ListenerFlow.get_update_listener_flow(
+            flavor_dict=flavor_dict)
 
         self.assertIsInstance(listener_flow, flow.Flow)
 
@@ -81,14 +110,28 @@ class TestListenerFlows(base.TestCase):
         self.assertIn(constants.LISTENERS, listener_flow.requires)
         self.assertIn(constants.LOADBALANCER_ID, listener_flow.requires)
 
+        self.assertIn(constants.AMPHORAE_NETWORK_CONFIG,
+                      listener_flow.provides)
+        self.assertIn(constants.AMPHORAE, listener_flow.provides)
+        self.assertIn(constants.AMPHORA_FIREWALL_RULES, listener_flow.provides)
+
         self.assertEqual(4, len(listener_flow.requires))
-        self.assertEqual(0, len(listener_flow.provides))
+        self.assertEqual(3, len(listener_flow.provides))
 
     def test_get_create_all_listeners_flow(self, mock_get_net_driver):
-        listeners_flow = self.ListenerFlow.get_create_all_listeners_flow()
+        flavor_dict = {
+            constants.SRIOV_VIP: True,
+            constants.LOADBALANCER_TOPOLOGY: constants.TOPOLOGY_ACTIVE_STANDBY}
+        listeners_flow = self.ListenerFlow.get_create_all_listeners_flow(
+            flavor_dict=flavor_dict)
         self.assertIsInstance(listeners_flow, flow.Flow)
         self.assertIn(constants.LOADBALANCER, listeners_flow.requires)
         self.assertIn(constants.LOADBALANCER_ID, listeners_flow.requires)
         self.assertIn(constants.LOADBALANCER, listeners_flow.provides)
+        self.assertIn(constants.AMPHORAE_NETWORK_CONFIG,
+                      listeners_flow.provides)
+        self.assertIn(constants.AMPHORAE, listeners_flow.provides)
+        self.assertIn(constants.AMPHORA_FIREWALL_RULES,
+                      listeners_flow.provides)
         self.assertEqual(2, len(listeners_flow.requires))
-        self.assertEqual(2, len(listeners_flow.provides))
+        self.assertEqual(5, len(listeners_flow.provides))

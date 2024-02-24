@@ -16,6 +16,7 @@ import os
 import stat
 
 import flask
+from jsonschema import validate
 from oslo_config import cfg
 from oslo_log import log as logging
 import webob
@@ -29,7 +30,9 @@ from octavia.amphorae.backends.agent.api_server import keepalivedlvs
 from octavia.amphorae.backends.agent.api_server import loadbalancer
 from octavia.amphorae.backends.agent.api_server import osutils
 from octavia.amphorae.backends.agent.api_server import plug
+from octavia.amphorae.backends.agent.api_server import rules_schema
 from octavia.amphorae.backends.agent.api_server import util
+from octavia.amphorae.backends.utils import nftable_utils
 from octavia.common import constants as consts
 
 
@@ -137,6 +140,9 @@ class Server(object):
         self.app.add_url_rule(rule=PATH_PREFIX + '/interface/<ip_addr>',
                               view_func=self.get_interface,
                               methods=['GET'])
+        self.app.add_url_rule(rule=PATH_PREFIX + '/interface/<ip_addr>/rules',
+                              view_func=self.set_interface_rules,
+                              methods=['PUT'])
 
     def upload_haproxy_config(self, amphora_id, lb_id):
         return self._loadbalancer.upload_haproxy_config(amphora_id, lb_id)
@@ -257,3 +263,23 @@ class Server(object):
 
     def version_discovery(self):
         return webob.Response(json={'api_version': api_server.VERSION})
+
+    def set_interface_rules(self, ip_addr):
+        interface_webob = self._amphora_info.get_interface(ip_addr)
+
+        if interface_webob.status_code != 200:
+            return interface_webob
+        interface = interface_webob.json['interface']
+
+        try:
+            rules_info = flask.request.get_json()
+            validate(rules_info, rules_schema.SUPPORTED_RULES_SCHEMA)
+        except Exception as e:
+            raise exceptions.BadRequest(
+                description='Invalid rules information') from e
+
+        nftable_utils.write_nftable_vip_rules_file(interface, rules_info)
+
+        nftable_utils.load_nftables_file()
+
+        return webob.Response(json={'message': 'OK'}, status=200)

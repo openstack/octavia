@@ -28,6 +28,7 @@ from octavia.controller.worker.v2.tasks import database_tasks
 from octavia.controller.worker.v2.tasks import lifecycle_tasks
 from octavia.controller.worker.v2.tasks import network_tasks
 from octavia.controller.worker.v2.tasks import retry_tasks
+from octavia.controller.worker.v2.tasks import shim_tasks
 
 CONF = cfg.CONF
 LOG = logging.getLogger(__name__)
@@ -227,7 +228,7 @@ class AmphoraFlows(object):
 
     def get_vrrp_subflow(self, prefix, timeout_dict=None,
                          create_vrrp_group=True,
-                         get_amphorae_status=True):
+                         get_amphorae_status=True, flavor_dict=None):
         sf_name = prefix + '-' + constants.GET_VRRP_SUBFLOW
         vrrp_subflow = linear_flow.Flow(sf_name)
 
@@ -259,7 +260,7 @@ class AmphoraFlows(object):
         # unordered subflow.
         update_amps_subflow = unordered_flow.Flow('VRRP-update-subflow')
 
-        # We have three tasks to run in order, per amphora
+        # We have tasks to run in order, per amphora
         amp_0_subflow = linear_flow.Flow('VRRP-amp-0-update-subflow')
 
         amp_0_subflow.add(amphora_driver_tasks.AmphoraIndexUpdateVRRPInterface(
@@ -278,6 +279,20 @@ class AmphoraFlows(object):
             rebind={constants.NEW_AMPHORA_ID: constants.AMPHORA_ID},
             inject={constants.AMPHORA_INDEX: 0,
                     constants.TIMEOUT_DICT: timeout_dict}))
+
+        if flavor_dict and flavor_dict.get(constants.SRIOV_VIP, False):
+            amp_0_subflow.add(database_tasks.GetAmphoraFirewallRules(
+                name=sf_name + '-0-' + constants.GET_AMPHORA_FIREWALL_RULES,
+                requires=(constants.AMPHORAE,
+                          constants.AMPHORAE_NETWORK_CONFIG),
+                provides=constants.AMPHORA_FIREWALL_RULES,
+                inject={constants.AMPHORA_INDEX: 0}))
+
+            amp_0_subflow.add(amphora_driver_tasks.SetAmphoraFirewallRules(
+                name=sf_name + '-0-' + constants.SET_AMPHORA_FIREWALL_RULES,
+                requires=(constants.AMPHORAE,
+                          constants.AMPHORA_FIREWALL_RULES),
+                inject={constants.AMPHORA_INDEX: 0}))
 
         amp_0_subflow.add(amphora_driver_tasks.AmphoraIndexVRRPStart(
             name=sf_name + '-0-' + constants.AMP_VRRP_START,
@@ -304,6 +319,21 @@ class AmphoraFlows(object):
             rebind={constants.NEW_AMPHORA_ID: constants.AMPHORA_ID},
             inject={constants.AMPHORA_INDEX: 1,
                     constants.TIMEOUT_DICT: timeout_dict}))
+
+        if flavor_dict and flavor_dict.get(constants.SRIOV_VIP, False):
+            amp_1_subflow.add(database_tasks.GetAmphoraFirewallRules(
+                name=sf_name + '-1-' + constants.GET_AMPHORA_FIREWALL_RULES,
+                requires=(constants.AMPHORAE,
+                          constants.AMPHORAE_NETWORK_CONFIG),
+                provides=constants.AMPHORA_FIREWALL_RULES,
+                inject={constants.AMPHORA_INDEX: 1}))
+
+            amp_1_subflow.add(amphora_driver_tasks.SetAmphoraFirewallRules(
+                name=sf_name + '-1-' + constants.SET_AMPHORA_FIREWALL_RULES,
+                requires=(constants.AMPHORAE,
+                          constants.AMPHORA_FIREWALL_RULES),
+                inject={constants.AMPHORA_INDEX: 1}))
+
         amp_1_subflow.add(amphora_driver_tasks.AmphoraIndexVRRPStart(
             name=sf_name + '-1-' + constants.AMP_VRRP_START,
             requires=(constants.AMPHORAE, constants.AMPHORAE_STATUS),
@@ -442,6 +472,27 @@ class AmphoraFlows(object):
             name=prefix + '-' + constants.AMPHORA_POST_VIP_PLUG,
             requires=(constants.AMPHORA, constants.LOADBALANCER,
                       constants.AMPHORAE_NETWORK_CONFIG)))
+
+        if flavor_dict and flavor_dict.get(constants.SRIOV_VIP, False):
+            amp_for_failover_flow.add(
+                shim_tasks.AmphoraToAmphoraeWithVRRPIP(
+                    name=prefix + '-' + constants.AMPHORA_TO_AMPHORAE_VRRP_IP,
+                    requires=(constants.AMPHORA, constants.BASE_PORT),
+                    provides=constants.NEW_AMPHORAE))
+            amp_for_failover_flow.add(database_tasks.GetAmphoraFirewallRules(
+                name=prefix + '-' + constants.GET_AMPHORA_FIREWALL_RULES,
+                requires=(constants.AMPHORAE,
+                          constants.AMPHORAE_NETWORK_CONFIG),
+                rebind={constants.AMPHORAE: constants.NEW_AMPHORAE},
+                provides=constants.AMPHORA_FIREWALL_RULES,
+                inject={constants.AMPHORA_INDEX: 0}))
+            amp_for_failover_flow.add(
+                amphora_driver_tasks.SetAmphoraFirewallRules(
+                    name=prefix + '-' + constants.SET_AMPHORA_FIREWALL_RULES,
+                    requires=(constants.AMPHORAE,
+                              constants.AMPHORA_FIREWALL_RULES),
+                    rebind={constants.AMPHORAE: constants.NEW_AMPHORAE},
+                    inject={constants.AMPHORA_INDEX: 0}))
 
         # Plug member ports
         amp_for_failover_flow.add(network_tasks.CalculateAmphoraDelta(
@@ -601,7 +652,8 @@ class AmphoraFlows(object):
             failover_amp_flow.add(
                 self.get_vrrp_subflow(constants.GET_VRRP_SUBFLOW,
                                       timeout_dict, create_vrrp_group=False,
-                                      get_amphorae_status=False))
+                                      get_amphorae_status=False,
+                                      flavor_dict=flavor_dict))
 
         # Reload the listener. This needs to be done here because
         # it will create the required haproxy check scripts for

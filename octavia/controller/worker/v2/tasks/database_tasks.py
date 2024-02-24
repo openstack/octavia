@@ -14,6 +14,7 @@
 #
 
 from cryptography import fernet
+from octavia_lib.common import constants as lib_consts
 from oslo_config import cfg
 from oslo_db import exception as odb_exceptions
 from oslo_log import log as logging
@@ -27,6 +28,7 @@ from taskflow.types import failure
 from octavia.api.drivers import utils as provider_utils
 from octavia.common import constants
 from octavia.common import data_models
+from octavia.common import exceptions
 from octavia.common.tls_utils import cert_parser
 from octavia.common import utils
 from octavia.controller.worker import task_utils as task_utilities
@@ -3073,3 +3075,47 @@ class UpdatePoolMembersOperatingStatusInDB(BaseDatabaseTask):
         with db_apis.session().begin() as session:
             self.member_repo.update_pool_members(
                 session, pool_id, operating_status=operating_status)
+
+
+class GetAmphoraFirewallRules(BaseDatabaseTask):
+    """Task to build firewall rules for the amphora."""
+
+    def execute(self, amphorae, amphora_index, amphorae_network_config):
+        this_amp_id = amphorae[amphora_index][constants.ID]
+        amp_net_config = amphorae_network_config[this_amp_id]
+
+        lb_dict = amp_net_config[constants.AMPHORA]['load_balancer']
+        vip_dict = lb_dict[constants.VIP]
+
+        if vip_dict[constants.VNIC_TYPE] != constants.VNIC_TYPE_DIRECT:
+            LOG.debug('Load balancer VIP port is not SR-IOV enabled. Skipping '
+                      'firewall rules update.')
+            return [{'non-sriov-vip': True}]
+
+        session = db_apis.get_session()
+        with session.begin():
+            rules = self.listener_repo.get_port_protocol_cidr_for_lb(
+                session,
+                amp_net_config[constants.AMPHORA][constants.LOAD_BALANCER_ID])
+
+        # If we are act/stdby, inject the VRRP firewall rule(s)
+        if lb_dict[constants.TOPOLOGY] == constants.TOPOLOGY_ACTIVE_STANDBY:
+            for amp_cfg in lb_dict[constants.AMPHORAE]:
+                if (amp_cfg[constants.ID] != this_amp_id and
+                        amp_cfg[constants.STATUS] ==
+                        lib_consts.AMPHORA_ALLOCATED):
+                    vrrp_ip = amp_cfg[constants.VRRP_IP]
+                    vrrp_ip_ver = utils.ip_version(vrrp_ip)
+
+                    if vrrp_ip_ver == 4:
+                        vrrp_ip_cidr = f'{vrrp_ip}/32'
+                    elif vrrp_ip_ver == 6:
+                        vrrp_ip_cidr = f'{vrrp_ip}/128'
+                    else:
+                        raise exceptions.InvalidIPAddress(ip_addr=vrrp_ip)
+
+                    rules.append({constants.PROTOCOL: constants.VRRP,
+                                  constants.CIDR: vrrp_ip_cidr,
+                                  constants.PORT: 112})
+        LOG.debug('Amphora %s SR-IOV firewall rules: %s', this_amp_id, rules)
+        return rules

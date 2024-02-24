@@ -598,6 +598,24 @@ class HaproxyAmphoraLoadBalancerDriver(
             amphora, ip_address, timeout_dict, log_error=False)
         return response_json.get('interface', None)
 
+    def set_interface_rules(self, amphora: db_models.Amphora,
+                            ip_address, rules):
+        """Sets interface firewall rules in the amphora
+
+        :param amphora: The amphora to query.
+        :param ip_address: The IP address assigned to the interface the rules
+                           will be applied on.
+        :param rules: The l1st of allow rules to apply.
+        """
+        try:
+            self._populate_amphora_api_version(amphora)
+            self.clients[amphora.api_version].set_interface_rules(
+                amphora, ip_address, rules)
+        except exc.NotFound as e:
+            LOG.debug('Amphora %s does not support the set_interface_rules '
+                      'API.', amphora.id)
+            raise driver_except.AmpDriverNotImplementedError() from e
+
 
 # Check a custom hostname
 class CustomHostNameCheckingAdapter(requests.adapters.HTTPAdapter):
@@ -866,4 +884,8 @@ class AmphoraAPIClient1_0(AmphoraAPIClientBase):
 
     def update_agent_config(self, amp, agent_config, timeout_dict=None):
         r = self.put(amp, 'config', timeout_dict, data=agent_config)
+        return exc.check_exception(r)
+
+    def set_interface_rules(self, amp, ip_address, rules):
+        r = self.put(amp, f'interface/{ip_address}/rules', json=rules)
         return exc.check_exception(r)

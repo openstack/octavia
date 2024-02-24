@@ -252,6 +252,17 @@ class AmphoraLoadBalancerDriver(object, metaclass=abc.ABCMeta):
         :raises TimeOutException: The amphora didn't reply
         """
 
+    @abc.abstractmethod
+    def set_interface_rules(self, amphora: db_models.Amphora, ip_address,
+                            rules):
+        """Sets interface firewall rules in the amphora
+
+        :param amphora: The amphora to query.
+        :param ip_address: The IP address assigned to the interface the rules
+                           will be applied on.
+        :param rules: The l1st of allow rules to apply.
+        """
+
 
 class VRRPDriverMixin(object, metaclass=abc.ABCMeta):
     """Abstract mixin class for VRRP support in loadbalancer amphorae

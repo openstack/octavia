@@ -1,0 +1,9 @@
+---
+features:
+  - |
+    Octavia Amphora based load balancers now support using SR-IOV virtual
+    functions (VF) on the VIP port(s) of the load balancer. This is enabled
+    by using an Octavia Flavor that includes the 'sriov_vip': True setting.
+upgrade:
+  - |
+    You must update the amphora image to support the SR-IOV VIP feature.

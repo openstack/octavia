@@ -24,6 +24,7 @@ from oslo_config import fixture as oslo_fixture
 from oslo_serialization import jsonutils
 from oslo_utils.secretutils import md5
 from oslo_utils import uuidutils
+import webob
 
 from octavia.amphorae.backends.agent import api_server
 from octavia.amphorae.backends.agent.api_server import certificate_update
@@ -3055,3 +3056,39 @@ class TestServerTestCase(base.TestCase):
         self.assertEqual(200, rv.status_code)
         self.assertEqual(expected_dict,
                          jsonutils.loads(rv.data.decode('utf-8')))
+
+    @mock.patch('octavia.amphorae.backends.utils.nftable_utils.'
+                'load_nftables_file')
+    @mock.patch('octavia.amphorae.backends.utils.nftable_utils.'
+                'write_nftable_vip_rules_file')
+    @mock.patch('octavia.amphorae.backends.agent.api_server.amphora_info.'
+                'AmphoraInfo.get_interface')
+    def test_set_interface_rules(self, mock_get_int, mock_write_rules,
+                                 mock_load_rules):
+        mock_get_int.side_effect = [
+            webob.Response(status=400),
+            webob.Response(status=200, json={'interface': 'fake1'}),
+            webob.Response(status=200, json={'interface': 'fake1'})]
+
+        # Test can't find interface
+        rv = self.ubuntu_app.put('/' + api_server.VERSION +
+                                 '/interface/192.0.2.10/rules', data='fake')
+        self.assertEqual(400, rv.status_code)
+        mock_write_rules.assert_not_called()
+
+        # Test schema validation failure
+        rv = self.ubuntu_app.put('/' + api_server.VERSION +
+                                 '/interface/192.0.2.10/rules', data='fake')
+        self.assertEqual('400 Bad Request', rv.status)
+
+        # Test successful path
+        rules_json = ('[{"protocol":"TCP","cidr":"192.0.2.0/24","port":8080},'
+                      '{"protocol":"UDP","cidr":null,"port":80}]')
+        rv = self.ubuntu_app.put('/' + api_server.VERSION +
+                                 '/interface/192.0.2.10/rules',
+                                 data=rules_json,
+                                 content_type='application/json')
+        self.assertEqual('200 OK', rv.status)
+        mock_write_rules.assert_called_once_with('fake1',
+                                                 jsonutils.loads(rules_json))
+        mock_load_rules.assert_called_once()

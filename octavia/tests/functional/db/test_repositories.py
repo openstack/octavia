@@ -2762,6 +2762,14 @@ class TestListenerRepositoryTest(BaseRepositoryTest):
         self.assertEqual(constants.PENDING_UPDATE,
                          new_listener.provisioning_status)
 
+    def test_get_port_protocol_cidr_for_lb(self):
+        self.create_listener(self.FAKE_UUID_1, 80,
+                             provisioning_status=constants.ACTIVE)
+        rules = self.listener_repo.get_port_protocol_cidr_for_lb(
+            self.session, self.FAKE_UUID_1)
+        self.assertEqual([{'protocol': 'TCP', 'cidr': None, 'port': 80}],
+                         rules)
+
 
 class ListenerStatisticsRepositoryTest(BaseRepositoryTest):
 

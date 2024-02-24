@@ -93,10 +93,12 @@ class LoadBalancerFlows(object):
 
         post_amp_prefix = constants.POST_LB_AMP_ASSOCIATION_SUBFLOW
         lb_create_flow.add(
-            self.get_post_lb_amp_association_flow(post_amp_prefix, topology))
+            self.get_post_lb_amp_association_flow(post_amp_prefix, topology,
+                                                  flavor_dict=flavor_dict))
 
         if listeners:
-            lb_create_flow.add(*self._create_listeners_flow())
+            lb_create_flow.add(
+                *self._create_listeners_flow(flavor_dict=flavor_dict))
 
         lb_create_flow.add(
             database_tasks.MarkLBActiveInDB(
@@ -177,6 +179,7 @@ class LoadBalancerFlows(object):
 
     def _get_amp_net_subflow(self, sf_name, flavor_dict=None):
         flows = []
+        # If we have an SRIOV VIP, we need to setup a firewall in the amp
         if flavor_dict and flavor_dict.get(constants.SRIOV_VIP, False):
             flows.append(network_tasks.CreateSRIOVBasePort(
                 name=sf_name + '-' + constants.PLUG_VIP_AMPHORA,
@@ -192,7 +195,25 @@ class LoadBalancerFlows(object):
                 requires=(constants.LOADBALANCER, constants.AMPHORA,
                           constants.PORT_DATA),
                 provides=constants.AMP_DATA))
-            # TODO(johnsom) nftables need to be handled here in the SG patch
+            flows.append(network_tasks.ApplyQosAmphora(
+                name=sf_name + '-' + constants.APPLY_QOS_AMP,
+                requires=(constants.LOADBALANCER, constants.AMP_DATA,
+                          constants.UPDATE_DICT)))
+            flows.append(database_tasks.UpdateAmphoraVIPData(
+                name=sf_name + '-' + constants.UPDATE_AMPHORA_VIP_DATA,
+                requires=constants.AMP_DATA))
+            flows.append(network_tasks.GetAmphoraNetworkConfigs(
+                name=sf_name + '-' + constants.GET_AMP_NETWORK_CONFIG,
+                requires=(constants.LOADBALANCER, constants.AMPHORA),
+                provides=constants.AMPHORA_NETWORK_CONFIG))
+            # SR-IOV firewall rules are handled in AmphoraPostVIPPlug
+            # interface.py up
+            flows.append(amphora_driver_tasks.AmphoraPostVIPPlug(
+                name=sf_name + '-' + constants.AMP_POST_VIP_PLUG,
+                rebind={constants.AMPHORAE_NETWORK_CONFIG:
+                        constants.AMPHORA_NETWORK_CONFIG},
+                requires=(constants.LOADBALANCER,
+                          constants.AMPHORAE_NETWORK_CONFIG)))
         else:
             flows.append(network_tasks.PlugVIPAmphora(
                 name=sf_name + '-' + constants.PLUG_VIP_AMPHORA,
@@ -219,7 +240,7 @@ class LoadBalancerFlows(object):
                       constants.AMPHORAE_NETWORK_CONFIG)))
         return flows
 
-    def _create_listeners_flow(self):
+    def _create_listeners_flow(self, flavor_dict=None):
         flows = []
         flows.append(
             database_tasks.ReloadLoadBalancer(
@@ -252,11 +273,13 @@ class LoadBalancerFlows(object):
             )
         )
         flows.append(
-            self.listener_flows.get_create_all_listeners_flow()
+            self.listener_flows.get_create_all_listeners_flow(
+                flavor_dict=flavor_dict)
         )
         return flows
 
-    def get_post_lb_amp_association_flow(self, prefix, topology):
+    def get_post_lb_amp_association_flow(self, prefix, topology,
+                                         flavor_dict=None):
         """Reload the loadbalancer and create networking subflows for
 
         created/allocated amphorae.
@@ -274,14 +297,15 @@ class LoadBalancerFlows(object):
             post_create_LB_flow.add(database_tasks.GetAmphoraeFromLoadbalancer(
                 requires=constants.LOADBALANCER_ID,
                 provides=constants.AMPHORAE))
-            vrrp_subflow = self.amp_flows.get_vrrp_subflow(prefix)
+            vrrp_subflow = self.amp_flows.get_vrrp_subflow(
+                prefix, flavor_dict=flavor_dict)
             post_create_LB_flow.add(vrrp_subflow)
 
         post_create_LB_flow.add(database_tasks.UpdateLoadbalancerInDB(
             requires=[constants.LOADBALANCER, constants.UPDATE_DICT]))
         return post_create_LB_flow
 
-    def _get_delete_listeners_flow(self, listeners):
+    def _get_delete_listeners_flow(self, listeners, flavor_dict=None):
         """Sets up an internal delete flow
 
         :param listeners: A list of listener dicts
@@ -291,7 +315,7 @@ class LoadBalancerFlows(object):
         for listener in listeners:
             listeners_delete_flow.add(
                 self.listener_flows.get_delete_listener_internal_flow(
-                    listener))
+                    listener, flavor_dict=flavor_dict))
         return listeners_delete_flow
 
     def get_delete_load_balancer_flow(self, lb):
@@ -705,7 +729,7 @@ class LoadBalancerFlows(object):
             failover_LB_flow.add(self.amp_flows.get_vrrp_subflow(
                 new_amp_role + '-' + constants.GET_VRRP_SUBFLOW,
                 timeout_dict, create_vrrp_group=False,
-                get_amphorae_status=False))
+                get_amphorae_status=False, flavor_dict=lb[constants.FLAVOR]))
 
             # #### End of standby ####
 

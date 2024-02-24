@@ -760,3 +760,26 @@ class AmphoraeGetConnectivityStatus(BaseAmphoraTask):
                 amphorae_status[amphora_id][constants.UNREACHABLE] = False
 
         return amphorae_status
+
+
+class SetAmphoraFirewallRules(BaseAmphoraTask):
+    """Task to push updated firewall ruls to an amphora."""
+
+    def execute(self, amphorae: List[dict], amphora_index: int,
+                amphora_firewall_rules: List[dict]):
+
+        if (amphora_firewall_rules and
+                amphora_firewall_rules[0].get('non-sriov-vip', False)):
+            # Not an SRIOV VIP, so skip setting firewall rules.
+            # This is already logged in GetAmphoraFirewallRules.
+            return
+
+        session = db_apis.get_session()
+        with session.begin():
+            db_amp = self.amphora_repo.get(
+                session, id=amphorae[amphora_index][constants.ID])
+
+        self.amphora_driver.set_interface_rules(
+            db_amp,
+            amphorae[amphora_index][constants.VRRP_IP],
+            amphora_firewall_rules)

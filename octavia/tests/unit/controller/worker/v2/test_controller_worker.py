@@ -70,7 +70,7 @@ _db_load_balancer_mock = mock.MagicMock()
 _load_balancer_mock = {
     constants.LOADBALANCER_ID: LB_ID,
     constants.TOPOLOGY: constants.TOPOLOGY_SINGLE,
-    constants.FLAVOR_ID: None,
+    constants.FLAVOR_ID: 1,
     constants.AVAILABILITY_ZONE: None,
     constants.SERVER_GROUP_ID: None
 }
@@ -133,7 +133,7 @@ class TestControllerWorker(base.TestCase):
         _db_load_balancer_mock.amphorae = _db_amphora_mock
         _db_load_balancer_mock.vip = _vip_mock
         _db_load_balancer_mock.id = LB_ID
-        _db_load_balancer_mock.flavor_id = None
+        _db_load_balancer_mock.flavor_id = 1
         _db_load_balancer_mock.availability_zone = None
         _db_load_balancer_mock.server_group_id = None
         _db_load_balancer_mock.project_id = PROJECT_ID
@@ -331,7 +331,10 @@ class TestControllerWorker(base.TestCase):
         cw.update_health_monitor(_health_mon_mock,
                                  HEALTH_UPDATE_DICT)
 
+    @mock.patch('octavia.db.repositories.FlavorRepository.'
+                'get_flavor_metadata_dict', return_value={})
     def test_create_listener(self,
+                             mock_get_flavor_dict,
                              mock_api_get_session,
                              mock_dyn_log_listener,
                              mock_taskflow_load,
@@ -355,42 +358,19 @@ class TestControllerWorker(base.TestCase):
         provider_lb = provider_utils.db_loadbalancer_to_provider_loadbalancer(
             _db_load_balancer_mock).to_dict(recurse=True)
 
+        flavor_dict = {constants.LOADBALANCER_TOPOLOGY:
+                       constants.TOPOLOGY_SINGLE}
         (cw.services_controller.run_poster.
             assert_called_once_with(
-                flow_utils.get_create_listener_flow, store={
-                    constants.LOADBALANCER: provider_lb,
-                    constants.LOADBALANCER_ID: LB_ID,
-                    constants.LISTENERS: [listener_dict]}))
+                flow_utils.get_create_listener_flow, flavor_dict=flavor_dict,
+                store={constants.LOADBALANCER: provider_lb,
+                       constants.LOADBALANCER_ID: LB_ID,
+                       constants.LISTENERS: [listener_dict]}))
 
+    @mock.patch('octavia.db.repositories.FlavorRepository.'
+                'get_flavor_metadata_dict', return_value={})
     def test_delete_listener(self,
-                             mock_api_get_session,
-                             mock_dyn_log_listener,
-                             mock_taskflow_load,
-                             mock_pool_repo_get,
-                             mock_member_repo_get,
-                             mock_l7rule_repo_get,
-                             mock_l7policy_repo_get,
-                             mock_listener_repo_get,
-                             mock_lb_repo_get,
-                             mock_health_mon_repo_get,
-                             mock_amp_repo_get):
-
-        _flow_mock.reset_mock()
-
-        listener_dict = {constants.LISTENER_ID: LISTENER_ID,
-                         constants.LOADBALANCER_ID: LB_ID,
-                         constants.PROJECT_ID: PROJECT_ID}
-        cw = controller_worker.ControllerWorker()
-        cw.delete_listener(listener_dict)
-
-        (cw.services_controller.run_poster.
-         assert_called_once_with(
-             flow_utils.get_delete_listener_flow,
-             store={constants.LISTENER: self.ref_listener_dict,
-                    constants.LOADBALANCER_ID: LB_ID,
-                    constants.PROJECT_ID: PROJECT_ID}))
-
-    def test_update_listener(self,
+                             mock_get_flavor_dict,
                              mock_api_get_session,
                              mock_dyn_log_listener,
                              mock_taskflow_load,
@@ -406,6 +386,48 @@ class TestControllerWorker(base.TestCase):
         load_balancer_mock = mock.MagicMock()
         load_balancer_mock.provisioning_status = constants.PENDING_UPDATE
         load_balancer_mock.id = LB_ID
+        load_balancer_mock.flavor_id = 1
+        load_balancer_mock.topology = constants.TOPOLOGY_SINGLE
+        mock_lb_repo_get.return_value = load_balancer_mock
+
+        _flow_mock.reset_mock()
+
+        listener_dict = {constants.LISTENER_ID: LISTENER_ID,
+                         constants.LOADBALANCER_ID: LB_ID,
+                         constants.PROJECT_ID: PROJECT_ID}
+        cw = controller_worker.ControllerWorker()
+        cw.delete_listener(listener_dict)
+
+        flavor_dict = {constants.LOADBALANCER_TOPOLOGY:
+                       constants.TOPOLOGY_SINGLE}
+        (cw.services_controller.run_poster.
+         assert_called_once_with(
+             flow_utils.get_delete_listener_flow, flavor_dict=flavor_dict,
+             store={constants.LISTENER: self.ref_listener_dict,
+                    constants.LOADBALANCER_ID: LB_ID,
+                    constants.PROJECT_ID: PROJECT_ID}))
+
+    @mock.patch('octavia.db.repositories.FlavorRepository.'
+                'get_flavor_metadata_dict', return_value={})
+    def test_update_listener(self,
+                             mock_get_flavor_dict,
+                             mock_api_get_session,
+                             mock_dyn_log_listener,
+                             mock_taskflow_load,
+                             mock_pool_repo_get,
+                             mock_member_repo_get,
+                             mock_l7rule_repo_get,
+                             mock_l7policy_repo_get,
+                             mock_listener_repo_get,
+                             mock_lb_repo_get,
+                             mock_health_mon_repo_get,
+                             mock_amp_repo_get):
+
+        load_balancer_mock = mock.MagicMock()
+        load_balancer_mock.provisioning_status = constants.PENDING_UPDATE
+        load_balancer_mock.id = LB_ID
+        load_balancer_mock.flavor_id = None
+        load_balancer_mock.topology = constants.TOPOLOGY_SINGLE
         mock_lb_repo_get.return_value = load_balancer_mock
 
         _flow_mock.reset_mock()
@@ -416,8 +438,11 @@ class TestControllerWorker(base.TestCase):
         cw = controller_worker.ControllerWorker()
         cw.update_listener(listener_dict, LISTENER_UPDATE_DICT)
 
+        flavor_dict = {constants.LOADBALANCER_TOPOLOGY:
+                       constants.TOPOLOGY_SINGLE}
         (cw.services_controller.run_poster.
             assert_called_once_with(flow_utils.get_update_listener_flow,
+                                    flavor_dict=flavor_dict,
                                     store={constants.LISTENER: listener_dict,
                                            constants.UPDATE_DICT:
                                            LISTENER_UPDATE_DICT,
@@ -425,10 +450,13 @@ class TestControllerWorker(base.TestCase):
                                            constants.LISTENERS:
                                            [listener_dict]}))
 
+    @mock.patch('octavia.db.repositories.FlavorRepository.'
+                'get_flavor_metadata_dict', return_value={})
     @mock.patch("octavia.controller.worker.v2.controller_worker."
                 "ControllerWorker._get_db_obj_until_pending_update")
     def test_update_listener_timeout(self,
                                      mock__get_db_obj_until_pending,
+                                     mock_get_flavor_dict,
                                      mock_api_get_session,
                                      mock_dyn_log_listener,
                                      mock_taskflow_load,
@@ -443,6 +471,7 @@ class TestControllerWorker(base.TestCase):
         load_balancer_mock = mock.MagicMock()
         load_balancer_mock.provisioning_status = constants.PENDING_UPDATE
         load_balancer_mock.id = LB_ID
+        load_balancer_mock.flavor_id = 1
         _flow_mock.reset_mock()
         _listener_mock.provisioning_status = constants.PENDING_UPDATE
         last_attempt_mock = mock.MagicMock()
@@ -2095,10 +2124,13 @@ class TestControllerWorker(base.TestCase):
                           cw._get_amphorae_for_failover,
                           load_balancer_mock)
 
+    @mock.patch('octavia.db.repositories.FlavorRepository.'
+                'get_flavor_metadata_dict')
     @mock.patch('octavia.controller.worker.v2.controller_worker.'
                 'ControllerWorker._get_amphorae_for_failover')
     def test_failover_loadbalancer_single(self,
                                           mock_get_amps_for_failover,
+                                          mock_get_flavor_dict,
                                           mock_api_get_session,
                                           mock_dyn_log_listener,
                                           mock_taskflow_load,
@@ -2113,6 +2145,7 @@ class TestControllerWorker(base.TestCase):
         _flow_mock.reset_mock()
         mock_lb_repo_get.return_value = _db_load_balancer_mock
         mock_get_amps_for_failover.return_value = [_amphora_mock]
+        mock_get_flavor_dict.return_value = {}
         provider_lb = provider_utils.db_loadbalancer_to_provider_loadbalancer(
             _db_load_balancer_mock).to_dict()
 
