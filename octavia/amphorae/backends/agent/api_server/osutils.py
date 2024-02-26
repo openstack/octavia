@@ -38,8 +38,7 @@ class BaseOS(object):
     @classmethod
     def _get_subclasses(cls):
         for subclass in cls.__subclasses__():
-            for sc in subclass._get_subclasses():
-                yield sc
+            yield from subclass._get_subclasses()
             yield subclass
 
     @classmethod
