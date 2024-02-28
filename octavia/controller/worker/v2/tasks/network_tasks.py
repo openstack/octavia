@@ -984,10 +984,9 @@ class CreateVIPBasePort(BaseNetworkTask):
             return
         try:
             port_name = constants.AMP_BASE_PORT_PREFIX + amphora_id
-            for port in result:
-                self.network_driver.delete_port(port.id)
-                LOG.info('Deleted port %s with ID %s for amphora %s due to a '
-                         'revert.', port_name, port.id, amphora_id)
+            self.network_driver.delete_port(result[constants.ID])
+            LOG.info('Deleted port %s with ID %s for amphora %s due to a '
+                     'revert.', port_name, result[constants.ID], amphora_id)
         except Exception as e:
             LOG.error('Failed to delete port %s. Resources may still be in '
                       'use for a port intended for amphora %s due to error '
