@@ -1,0 +1,5 @@
+---
+features:
+  - |
+    Now the ``[database] connection_recycle_time`` option is also used by
+    connections in MySQL persistence driver.

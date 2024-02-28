@@ -41,6 +41,7 @@ class MysqlPersistenceDriver(object):
             'max_pool_size': CONF.database.max_pool_size,
             'max_overflow': CONF.database.max_overflow,
             'pool_timeout': CONF.database.pool_timeout,
+            'idle_timeout': CONF.database.connection_recycle_time
         }
 
     def initialize(self):
