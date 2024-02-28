@@ -1,0 +1,7 @@
+---
+fixes:
+  - |
+    Fixed an issue when a failover reverts, a neutron port may get abandoned.
+    The issue was logged with "Failed to delete port",
+    "Resources may still be in use for a port intended for amphora", and
+    "Search for a port named octavia-lb-vrrp-<uuid>".
