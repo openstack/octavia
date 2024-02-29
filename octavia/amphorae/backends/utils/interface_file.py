@@ -25,9 +25,8 @@ CONF = cfg.CONF
 
 
 class InterfaceFile(object):
-    def __init__(self, name, if_type,
-                 mtu=None, addresses=None,
-                 routes=None, rules=None, scripts=None):
+    def __init__(self, name, if_type, mtu=None, addresses=None,
+                 routes=None, rules=None, scripts=None, is_sriov=False):
         self.name = name
         self.if_type = if_type
         self.mtu = mtu
@@ -38,6 +37,7 @@ class InterfaceFile(object):
             consts.IFACE_UP: [],
             consts.IFACE_DOWN: []
         }
+        self.is_sriov = is_sriov
 
     @classmethod
     def get_extensions(cls):
@@ -98,7 +98,8 @@ class InterfaceFile(object):
                 consts.ADDRESSES: self.addresses,
                 consts.ROUTES: self.routes,
                 consts.RULES: self.rules,
-                consts.SCRIPTS: self.scripts
+                consts.SCRIPTS: self.scripts,
+                consts.IS_SRIOV: self.is_sriov
             }
             if self.mtu:
                 interface[consts.MTU] = self.mtu
@@ -106,12 +107,14 @@ class InterfaceFile(object):
 
 
 class VIPInterfaceFile(InterfaceFile):
-    def __init__(self, name, mtu, vips, vrrp_info, fixed_ips, topology):
+    def __init__(self, name, mtu, vips, vrrp_info, fixed_ips, topology,
+                 is_sriov=False):
 
-        super().__init__(name, if_type=consts.VIP, mtu=mtu)
+        super().__init__(name, if_type=consts.VIP, mtu=mtu, is_sriov=is_sriov)
 
         has_ipv4 = any(vip['ip_version'] == 4 for vip in vips)
         has_ipv6 = any(vip['ip_version'] == 6 for vip in vips)
+
         if vrrp_info:
             self.addresses.append({
                 consts.ADDRESS: vrrp_info['ip'],

@@ -340,7 +340,7 @@ class HaproxyAmphoraLoadBalancerDriver(
     def finalize_amphora(self, amphora):
         pass
 
-    def _build_net_info(self, port, amphora, subnet, mtu=None):
+    def _build_net_info(self, port, amphora, subnet, mtu=None, sriov=False):
         # NOTE(blogan): using the vrrp port here because that
         # is what the allowed address pairs network driver sets
         # this particular port to.  This does expose a bit of
@@ -359,7 +359,8 @@ class HaproxyAmphoraLoadBalancerDriver(
                     'vrrp_ip': amphora[consts.VRRP_IP],
                     'mtu': mtu or port[consts.NETWORK][consts.MTU],
                     'host_routes': host_routes,
-                    'additional_vips': []}
+                    'additional_vips': [],
+                    'is_sriov': sriov}
         return net_info
 
     def post_vip_plug(self, amphora, load_balancer, amphorae_network_config,
@@ -370,9 +371,12 @@ class HaproxyAmphoraLoadBalancerDriver(
             mtu = port[consts.NETWORK][consts.MTU]
             LOG.debug("Post-VIP-Plugging with vrrp_ip %s vrrp_port %s",
                       amphora.vrrp_ip, port[consts.ID])
+            sriov = False
+            if load_balancer.vip.vnic_type == consts.VNIC_TYPE_DIRECT:
+                sriov = True
             net_info = self._build_net_info(
                 port, amphora.to_dict(),
-                vip_subnet.to_dict(recurse=True), mtu)
+                vip_subnet.to_dict(recurse=True), mtu, sriov)
             for add_vip in additional_vip_data:
                 add_host_routes = [{'nexthop': hr.nexthop,
                                     'destination': hr.destination}

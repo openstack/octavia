@@ -203,7 +203,8 @@ class Server(object):
                                    net_info.get('mtu'),
                                    net_info.get('vrrp_ip'),
                                    net_info.get('host_routes', ()),
-                                   net_info.get('additional_vips', ()))
+                                   net_info.get('additional_vips', ()),
+                                   net_info.get('is_sriov', False))
 
     def plug_network(self):
         try:

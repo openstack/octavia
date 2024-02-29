@@ -163,7 +163,8 @@ class TestOSUtils(base.TestCase):
             mtu=MTU,
             vrrp_info=None,
             fixed_ips=None,
-            topology="SINGLE")
+            topology="SINGLE",
+            is_sriov=False)
         mock_vip_interface_file.return_value.write.assert_called_once()
 
         # Now test with an IPv6 VIP
@@ -193,7 +194,8 @@ class TestOSUtils(base.TestCase):
             mtu=MTU,
             vrrp_info=None,
             fixed_ips=None,
-            topology="SINGLE")
+            topology="SINGLE",
+            is_sriov=False)
 
     @mock.patch('octavia.amphorae.backends.utils.interface_file.'
                 'PortInterfaceFile')

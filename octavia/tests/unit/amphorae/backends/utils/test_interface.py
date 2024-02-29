@@ -448,6 +448,148 @@ class TestInterface(base.TestCase):
             mock.call(["post-up", "eth1"])
         ])
 
+    @mock.patch('octavia.amphorae.backends.utils.nftable_utils.'
+                'write_nftable_vip_rules_file')
+    @mock.patch('pyroute2.IPRoute.rule')
+    @mock.patch('pyroute2.IPRoute.route')
+    @mock.patch('pyroute2.IPRoute.addr')
+    @mock.patch('pyroute2.IPRoute.link')
+    @mock.patch('pyroute2.IPRoute.get_links')
+    @mock.patch('pyroute2.IPRoute.link_lookup')
+    @mock.patch('subprocess.check_output')
+    def test_up_sriov(self, mock_check_output, mock_link_lookup,
+                      mock_get_links, mock_link, mock_addr, mock_route,
+                      mock_rule, mock_nftable):
+        iface = interface_file.InterfaceFile(
+            name="fake-eth1",
+            if_type="vip",
+            mtu=1450,
+            addresses=[{
+                consts.ADDRESS: '192.0.2.4',
+                consts.PREFIXLEN: 24
+            }, {
+                consts.ADDRESS: '198.51.100.4',
+                consts.PREFIXLEN: 16
+            }, {
+                consts.ADDRESS: '2001:db8::3',
+                consts.PREFIXLEN: 64
+            }],
+            routes=[{
+                consts.DST: '203.0.113.0/24',
+                consts.GATEWAY: '192.0.2.1',
+                consts.TABLE: 10,
+                consts.ONLINK: True
+            }, {
+                consts.DST: '198.51.100.0/24',
+                consts.GATEWAY: '192.0.2.2',
+                consts.PREFSRC: '192.0.2.4',
+                consts.SCOPE: 'link'
+            }, {
+                consts.DST: '2001:db8:2::1/128',
+                consts.GATEWAY: '2001:db8::1'
+            }],
+            rules=[{
+                consts.SRC: '203.0.113.1',
+                consts.SRC_LEN: 32,
+                consts.TABLE: 20,
+            }, {
+                consts.SRC: '2001:db8::1',
+                consts.SRC_LEN: 128,
+                consts.TABLE: 40,
+            }],
+            scripts={
+                consts.IFACE_UP: [{
+                    consts.COMMAND: "post-up fake-eth1"
+                }],
+                consts.IFACE_DOWN: [{
+                    consts.COMMAND: "post-down fake-eth1"
+                }],
+            },
+            is_sriov=True)
+
+        idx = mock.MagicMock()
+        mock_link_lookup.return_value = [idx]
+
+        mock_get_links.return_value = [{
+            consts.STATE: consts.IFACE_DOWN
+        }]
+
+        controller = interface.InterfaceController()
+        controller.up(iface)
+
+        mock_link.assert_called_once_with(
+            controller.SET,
+            index=idx,
+            state=consts.IFACE_UP,
+            mtu=1450)
+
+        mock_addr.assert_has_calls([
+            mock.call(controller.ADD,
+                      index=idx,
+                      address='192.0.2.4',
+                      prefixlen=24,
+                      family=socket.AF_INET),
+            mock.call(controller.ADD,
+                      index=idx,
+                      address='198.51.100.4',
+                      prefixlen=16,
+                      family=socket.AF_INET),
+            mock.call(controller.ADD,
+                      index=idx,
+                      address='2001:db8::3',
+                      prefixlen=64,
+                      family=socket.AF_INET6)
+        ])
+
+        mock_route.assert_has_calls([
+            mock.call(controller.ADD,
+                      oif=idx,
+                      dst='203.0.113.0/24',
+                      gateway='192.0.2.1',
+                      table=10,
+                      onlink=True,
+                      family=socket.AF_INET),
+            mock.call(controller.ADD,
+                      oif=idx,
+                      dst='198.51.100.0/24',
+                      gateway='192.0.2.2',
+                      prefsrc='192.0.2.4',
+                      scope='link',
+                      family=socket.AF_INET),
+            mock.call(controller.ADD,
+                      oif=idx,
+                      dst='2001:db8:2::1/128',
+                      gateway='2001:db8::1',
+                      family=socket.AF_INET6)])
+
+        mock_rule.assert_has_calls([
+            mock.call(controller.ADD,
+                      src="203.0.113.1",
+                      src_len=32,
+                      table=20,
+                      family=socket.AF_INET),
+            mock.call(controller.ADD,
+                      src="2001:db8::1",
+                      src_len=128,
+                      table=40,
+                      family=socket.AF_INET6)])
+
+        mock_check_output.assert_has_calls([
+            mock.call([consts.NFT_CMD, consts.NFT_ADD, 'table',
+                       consts.NFT_FAMILY, consts.NFT_VIP_TABLE], stderr=-2),
+            mock.call([consts.NFT_CMD, consts.NFT_ADD, 'chain',
+                       consts.NFT_FAMILY, consts.NFT_VIP_TABLE,
+                       consts.NFT_VIP_CHAIN, '{', 'type', 'filter', 'hook',
+                       'ingress', 'device', 'fake-eth1', 'priority',
+                       consts.NFT_SRIOV_PRIORITY, ';', 'policy', 'drop', ';',
+                       '}'], stderr=-2),
+            mock.call([consts.NFT_CMD, '-o', '-f', consts.NFT_VIP_RULES_FILE],
+                      stderr=-2),
+            mock.call(["post-up", "fake-eth1"])
+        ])
+
+        mock_nftable.assert_called_once_with('fake-eth1', [])
+
     @mock.patch('pyroute2.IPRoute.rule')
     @mock.patch('pyroute2.IPRoute.route')
     @mock.patch('pyroute2.IPRoute.addr')

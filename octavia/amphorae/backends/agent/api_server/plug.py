@@ -78,7 +78,7 @@ class Plug(object):
 
     def plug_vip(self, vip, subnet_cidr, gateway,
                  mac_address, mtu=None, vrrp_ip=None, host_routes=(),
-                 additional_vips=()):
+                 additional_vips=(), is_sriov=False):
         vips = [{
             'ip_address': vip,
             'subnet_cidr': subnet_cidr,
@@ -118,7 +118,8 @@ class Plug(object):
             interface=primary_interface,
             vips=rendered_vips,
             mtu=mtu,
-            vrrp_info=vrrp_info)
+            vrrp_info=vrrp_info,
+            is_sriov=is_sriov)
 
         # Update the list of interfaces to add to the namespace
         # This is used in the amphora reboot case to re-establish the namespace

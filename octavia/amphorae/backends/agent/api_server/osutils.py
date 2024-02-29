@@ -64,14 +64,15 @@ class BaseOS(object):
         interface.write()
 
     def write_vip_interface_file(self, interface, vips, mtu, vrrp_info,
-                                 fixed_ips=None):
+                                 fixed_ips=None, is_sriov=False):
         vip_interface = interface_file.VIPInterfaceFile(
             name=interface,
             mtu=mtu,
             vips=vips,
             vrrp_info=vrrp_info,
             fixed_ips=fixed_ips,
-            topology=CONF.controller_worker.loadbalancer_topology)
+            topology=CONF.controller_worker.loadbalancer_topology,
+            is_sriov=is_sriov)
         vip_interface.write()
 
     def write_port_interface_file(self, interface, fixed_ips, mtu):

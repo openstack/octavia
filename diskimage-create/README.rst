@@ -274,6 +274,11 @@ OCTAVIA_REPO_PATH
     - Default: <directory above the script location>
     - Reference: https://github.com/openstack/octavia
 
+DIB_OCTAVIA_AMP_USE_NFTABLES
+    - Boolean that configures nftables inside the amphora image
+    - Required for SR-IOV enabled amphora
+    - Default: True
+
 Using distribution packages for amphora agent
 ---------------------------------------------
 By default, amphora agent is installed from Octavia Git repository.

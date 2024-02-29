@@ -86,4 +86,19 @@ Octavia flavor that will use the compute flavor.
    $ openstack loadbalancer flavorprofile create --name amphora-sriov-profile --provider amphora --flavor-data '{"compute_flavor": "amphora-sriov-flavor", "sriov_vip": true}'
    $ openstack loadbalancer flavor create --name SRIOV-public-members --flavorprofile amphora-sriov-profile --description "A load balancer that uses SR-IOV for the 'public' network and 'members' network." --enable
 
+Building the Amphora Image
+~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+Neutron does not support security groups on SR-IOV ports, so Octavia will use
+nftables inside the Amphroa to provide network security. The amphora image
+must be built with nftables enabled for SR-IOV enabled load balancers. Images
+with nftables enabled can be used for both SR-IOV enabled load balancers as
+well as load balancers that are not using SR-IOV ports. When the SR-IOV for
+load balancer VIP ports feature was added to Octavia, the default setting for
+using nftables has been changed to `True`. Prior to this it needed to be
+enabled by setting an environment variable before building the Amphora image:
+
+.. code-block:: bash
+
+   $ export DIB_OCTAVIA_AMP_USE_NFTABLES=True
+   $ ./diskimage-create.sh

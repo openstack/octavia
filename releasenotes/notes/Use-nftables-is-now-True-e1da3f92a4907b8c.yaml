@@ -1,0 +1,4 @@
+---
+other:
+  - |
+    Amphora images will now be built with nftables by default.

@@ -670,9 +670,11 @@ def sample_vrrp_group_tuple():
         smtp_connect_timeout='')
 
 
-def sample_vip_tuple(ip_address='10.0.0.2', subnet_id='vip_subnet_uuid'):
-    vip = collections.namedtuple('vip', ('ip_address', 'subnet_id'))
-    return vip(ip_address=ip_address, subnet_id=subnet_id)
+def sample_vip_tuple(ip_address='10.0.0.2', subnet_id='vip_subnet_uuid',
+                     vnic_type='normal'):
+    vip = collections.namedtuple('vip', ('ip_address', 'subnet_id',
+                                         'vnic_type'))
+    return vip(ip_address=ip_address, subnet_id=subnet_id, vnic_type=vnic_type)
 
 
 def sample_listener_tuple(proto=None, monitor=True, alloc_default_pool=True,
