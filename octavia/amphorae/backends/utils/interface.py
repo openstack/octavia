@@ -210,15 +210,7 @@ class InterfaceController(object):
 
         nftable_utils.write_nftable_vip_rules_file(interface.name, [])
 
-        cmd = [consts.NFT_CMD, '-o', '-f', consts.NFT_VIP_RULES_FILE]
-        try:
-            subprocess.check_output(cmd, stderr=subprocess.STDOUT)
-        except Exception as e:
-            if hasattr(e, 'output'):
-                LOG.error(e.output)
-            else:
-                LOG.error(e)
-            raise
+        nftable_utils.load_nftables_file()
 
     def up(self, interface):
         LOG.info("Setting interface %s up", interface.name)

@@ -139,20 +139,21 @@ def get_update_l7rule_flow():
     return L7_RULES_FLOWS.get_update_l7rule_flow()
 
 
-def get_create_listener_flow():
-    return LISTENER_FLOWS.get_create_listener_flow()
+def get_create_listener_flow(flavor_dict=None):
+    return LISTENER_FLOWS.get_create_listener_flow(flavor_dict=flavor_dict)
 
 
-def get_create_all_listeners_flow():
-    return LISTENER_FLOWS.get_create_all_listeners_flow()
+def get_create_all_listeners_flow(flavor_dict=None):
+    return LISTENER_FLOWS.get_create_all_listeners_flow(
+        flavor_dict=flavor_dict)
 
 
-def get_delete_listener_flow():
-    return LISTENER_FLOWS.get_delete_listener_flow()
+def get_delete_listener_flow(flavor_dict=None):
+    return LISTENER_FLOWS.get_delete_listener_flow(flavor_dict=flavor_dict)
 
 
-def get_update_listener_flow():
-    return LISTENER_FLOWS.get_update_listener_flow()
+def get_update_listener_flow(flavor_dict=None):
+    return LISTENER_FLOWS.get_update_listener_flow(flavor_dict=flavor_dict)
 
 
 def get_create_member_flow():

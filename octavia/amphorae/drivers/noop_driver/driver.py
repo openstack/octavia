@@ -218,3 +218,6 @@ class NoopAmphoraLoadBalancerDriver(
 
     def check(self, amphora, timeout_dict=None):
         pass
+
+    def set_interface_rules(self, amphora, ip_address, rules):
+        pass

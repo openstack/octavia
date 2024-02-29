@@ -13,7 +13,7 @@
 # under the License.
 from unittest import mock
 
-from octavia.amphorae.driver_exceptions.exceptions import AmpVersionUnsupported
+from octavia.amphorae.driver_exceptions import exceptions as driver_except
 from octavia.amphorae.drivers.haproxy import exceptions as exc
 from octavia.amphorae.drivers.haproxy import rest_api_driver
 import octavia.tests.unit.base as base
@@ -87,6 +87,28 @@ class TestHAProxyAmphoraDriver(base.TestCase):
         mock_amp = mock.MagicMock()
         mock_amp.api_version = "0.5"
 
-        self.assertRaises(AmpVersionUnsupported,
+        self.assertRaises(driver_except.AmpVersionUnsupported,
                           self.driver._populate_amphora_api_version,
                           mock_amp)
+
+    @mock.patch('octavia.amphorae.drivers.haproxy.rest_api_driver.'
+                'HaproxyAmphoraLoadBalancerDriver.'
+                '_populate_amphora_api_version')
+    def test_set_interface_rules(self, mock_api_version):
+
+        IP_ADDRESS = '203.0.113.44'
+        amphora_mock = mock.MagicMock()
+        amphora_mock.api_version = '0'
+        client_mock = mock.MagicMock()
+        client_mock.set_interface_rules.side_effect = [mock.DEFAULT,
+                                                       exc.NotFound]
+        self.driver.clients['0'] = client_mock
+
+        self.driver.set_interface_rules(amphora_mock, IP_ADDRESS, 'fake_rules')
+        mock_api_version.assert_called_once_with(amphora_mock)
+        client_mock.set_interface_rules.assert_called_once_with(
+            amphora_mock, IP_ADDRESS, 'fake_rules')
+
+        self.assertRaises(driver_except.AmpDriverNotImplementedError,
+                          self.driver.set_interface_rules, amphora_mock,
+                          IP_ADDRESS, 'fake_rules')

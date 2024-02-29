@@ -359,10 +359,13 @@ class TestLoadBalancerFlows(base.TestCase):
         self.assertIn(constants.VIP, failover_flow.provides)
         self.assertIn(constants.ADDITIONAL_VIPS, failover_flow.provides)
         self.assertIn(constants.VIP_SG_ID, failover_flow.provides)
+        self.assertIn(constants.AMPHORA_FIREWALL_RULES, failover_flow.provides)
+        self.assertIn(constants.SUBNET, failover_flow.provides)
+        self.assertIn(constants.NEW_AMPHORAE, failover_flow.provides)
 
         self.assertEqual(6, len(failover_flow.requires),
                          failover_flow.requires)
-        self.assertEqual(14, len(failover_flow.provides),
+        self.assertEqual(16, len(failover_flow.provides),
                          failover_flow.provides)
 
     @mock.patch('octavia.common.rpc.NOTIFIER',
@@ -435,10 +438,14 @@ class TestLoadBalancerFlows(base.TestCase):
         self.assertIn(constants.VIP, failover_flow.provides)
         self.assertIn(constants.ADDITIONAL_VIPS, failover_flow.provides)
         self.assertIn(constants.VIP_SG_ID, failover_flow.provides)
+        self.assertIn(constants.SUBNET, failover_flow.provides)
+        self.assertIn(constants.AMPHORA_FIREWALL_RULES, failover_flow.provides)
+        self.assertIn(constants.SUBNET, failover_flow.provides)
+        self.assertIn(constants.NEW_AMPHORAE, failover_flow.provides)
 
         self.assertEqual(6, len(failover_flow.requires),
                          failover_flow.requires)
-        self.assertEqual(14, len(failover_flow.provides),
+        self.assertEqual(16, len(failover_flow.provides),
                          failover_flow.provides)
 
     @mock.patch('octavia.common.rpc.NOTIFIER',

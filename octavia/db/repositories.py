@@ -39,6 +39,7 @@ from sqlalchemy import update
 from octavia.common import constants as consts
 from octavia.common import data_models
 from octavia.common import exceptions
+from octavia.common import utils
 from octavia.common import validate
 from octavia.db import api as db_api
 from octavia.db import models
@@ -1084,6 +1085,23 @@ class ListenerRepository(BaseRepository):
              [consts.ERROR, consts.ACTIVE])).
          update({self.model_class.provisioning_status: consts.ACTIVE},
                 synchronize_session='fetch'))
+
+    def get_port_protocol_cidr_for_lb(self, session, loadbalancer_id):
+        # readability variables
+        Listener = self.model_class
+        ListenerCidr = models.ListenerCidr
+
+        stmt = (select(Listener.protocol,
+                       ListenerCidr.cidr,
+                       Listener.protocol_port.label(consts.PORT))
+                .select_from(Listener)
+                .join(models.ListenerCidr,
+                      Listener.id == ListenerCidr.listener_id, isouter=True)
+                .where(Listener.load_balancer_id == loadbalancer_id))
+        rows = session.execute(stmt)
+
+        return [utils.map_protocol_to_nftable_protocol(u._asdict()) for u
+                in rows.all()]
 
 
 class ListenerStatisticsRepository(BaseRepository):

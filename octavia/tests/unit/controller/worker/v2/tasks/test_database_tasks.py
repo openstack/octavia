@@ -12,6 +12,7 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 #
+import copy
 import random
 from unittest import mock
 
@@ -24,6 +25,7 @@ from taskflow.types import failure
 from octavia.api.drivers import utils as provider_utils
 from octavia.common import constants
 from octavia.common import data_models
+from octavia.common import exceptions
 from octavia.common import utils
 from octavia.controller.worker.v2.tasks import database_tasks
 from octavia.db import repositories as repo
@@ -31,6 +33,7 @@ import octavia.tests.unit.base as base
 
 
 AMP_ID = uuidutils.generate_uuid()
+AMP2_ID = uuidutils.generate_uuid()
 COMPUTE_ID = uuidutils.generate_uuid()
 LB_ID = uuidutils.generate_uuid()
 SERVER_GROUP_ID = uuidutils.generate_uuid()
@@ -2987,3 +2990,100 @@ class TestDatabaseTasks(base.TestCase):
             mock_session,
             POOL_ID,
             operating_status=constants.ONLINE)
+
+    @mock.patch('octavia.common.utils.ip_version')
+    @mock.patch('octavia.db.api.get_session')
+    @mock.patch('octavia.db.repositories.ListenerRepository.'
+                'get_port_protocol_cidr_for_lb')
+    def test_get_amphora_firewall_rules(self,
+                                        mock_get_port_for_lb,
+                                        mock_db_get_session,
+                                        mock_ip_version,
+                                        mock_generate_uuid,
+                                        mock_LOG,
+                                        mock_get_session,
+                                        mock_loadbalancer_repo_update,
+                                        mock_listener_repo_update,
+                                        mock_amphora_repo_update,
+                                        mock_amphora_repo_delete):
+
+        amphora_dict = {constants.ID: AMP_ID}
+        rules = [{'protocol': 'TCP', 'cidr': '192.0.2.0/24', 'port': 80},
+                 {'protocol': 'TCP', 'cidr': '198.51.100.0/24', 'port': 80}]
+        vrrp_rules = [
+            {'protocol': 'TCP', 'cidr': '192.0.2.0/24', 'port': 80},
+            {'protocol': 'TCP', 'cidr': '198.51.100.0/24', 'port': 80},
+            {'cidr': '203.0.113.5/32', 'port': 112, 'protocol': 'vrrp'}]
+        mock_get_port_for_lb.side_effect = [
+            copy.deepcopy(rules), copy.deepcopy(rules), copy.deepcopy(rules),
+            copy.deepcopy(rules)]
+        mock_ip_version.side_effect = [4, 6, 55]
+
+        get_amp_fw_rules = database_tasks.GetAmphoraFirewallRules()
+
+        # Test non-SRIOV VIP
+        amphora_net_cfg_dict = {
+            AMP_ID: {constants.AMPHORA: {
+                     'load_balancer': {constants.VIP: {
+                         constants.VNIC_TYPE: constants.VNIC_TYPE_NORMAL}}}}}
+        result = get_amp_fw_rules.execute([amphora_dict], 0,
+                                          amphora_net_cfg_dict)
+        self.assertEqual([{'non-sriov-vip': True}], result)
+
+        # Test SRIOV VIP - Single
+        amphora_net_cfg_dict = {
+            AMP_ID: {constants.AMPHORA: {
+                'load_balancer': {constants.VIP: {
+                    constants.VNIC_TYPE: constants.VNIC_TYPE_DIRECT},
+                    constants.TOPOLOGY: constants.TOPOLOGY_SINGLE},
+                constants.LOAD_BALANCER_ID: LB_ID}}}
+        result = get_amp_fw_rules.execute([amphora_dict], 0,
+                                          amphora_net_cfg_dict)
+        mock_get_port_for_lb.assert_called_once_with(mock_db_get_session(),
+                                                     LB_ID)
+        self.assertEqual(rules, result)
+
+        mock_get_port_for_lb.reset_mock()
+
+        # Test SRIOV VIP - Active/Standby
+        amphora_net_cfg_dict = {
+            AMP_ID: {constants.AMPHORA: {
+                'load_balancer': {constants.VIP: {
+                    constants.VNIC_TYPE: constants.VNIC_TYPE_DIRECT},
+                    constants.TOPOLOGY: constants.TOPOLOGY_ACTIVE_STANDBY,
+                    constants.AMPHORAE: [{
+                        constants.ID: AMP_ID,
+                        constants.STATUS: constants.AMPHORA_ALLOCATED},
+                        {constants.ID: AMP2_ID,
+                         constants.STATUS: constants.AMPHORA_ALLOCATED,
+                         constants.VRRP_IP: '203.0.113.5'}]},
+                constants.LOAD_BALANCER_ID: LB_ID}}}
+
+        # IPv4 path
+        mock_get_port_for_lb.reset_mock()
+        vrrp_rules = [
+            {'protocol': 'TCP', 'cidr': '192.0.2.0/24', 'port': 80},
+            {'protocol': 'TCP', 'cidr': '198.51.100.0/24', 'port': 80},
+            {'cidr': '203.0.113.5/32', 'port': 112, 'protocol': 'vrrp'}]
+        result = get_amp_fw_rules.execute([amphora_dict], 0,
+                                          amphora_net_cfg_dict)
+        mock_get_port_for_lb.assert_called_once_with(mock_db_get_session(),
+                                                     LB_ID)
+        self.assertEqual(vrrp_rules, result)
+
+        # IPv6 path
+        mock_get_port_for_lb.reset_mock()
+        vrrp_rules = [
+            {'protocol': 'TCP', 'cidr': '192.0.2.0/24', 'port': 80},
+            {'protocol': 'TCP', 'cidr': '198.51.100.0/24', 'port': 80},
+            {'cidr': '203.0.113.5/128', 'port': 112, 'protocol': 'vrrp'}]
+        result = get_amp_fw_rules.execute([amphora_dict], 0,
+                                          amphora_net_cfg_dict)
+        mock_get_port_for_lb.assert_called_once_with(mock_db_get_session(),
+                                                     LB_ID)
+        self.assertEqual(vrrp_rules, result)
+
+        # Bogus IP version path
+        self.assertRaises(exceptions.InvalidIPAddress,
+                          get_amp_fw_rules.execute, [amphora_dict], 0,
+                          amphora_net_cfg_dict)

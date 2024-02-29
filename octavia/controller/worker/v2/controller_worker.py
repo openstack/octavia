@@ -270,6 +270,14 @@ class ControllerWorker(object):
             raise db_exceptions.NoResultFound
 
         load_balancer = db_listener.load_balancer
+        flavor_dict = {}
+        if load_balancer.flavor_id:
+            with session.begin():
+                flavor_dict = (
+                    self._flavor_repo.get_flavor_metadata_dict(
+                        session, load_balancer.flavor_id))
+        flavor_dict[constants.LOADBALANCER_TOPOLOGY] = load_balancer.topology
+
         provider_lb = provider_utils.db_loadbalancer_to_provider_loadbalancer(
             load_balancer).to_dict(recurse=True)
 
@@ -279,7 +287,7 @@ class ControllerWorker(object):
 
         self.run_flow(
             flow_utils.get_create_listener_flow,
-            store=store)
+            flavor_dict=flavor_dict, store=store)
 
     def delete_listener(self, listener):
         """Deletes a listener.
@@ -288,12 +296,32 @@ class ControllerWorker(object):
         :returns: None
         :raises ListenerNotFound: The referenced listener was not found
         """
+        try:
+            db_lb = self._get_db_obj_until_pending_update(
+                self._lb_repo, listener[constants.LOADBALANCER_ID])
+        except tenacity.RetryError as e:
+            LOG.warning('Loadbalancer did not go into %s in 60 seconds. '
+                        'This either due to an in-progress Octavia upgrade '
+                        'or an overloaded and failing database. Assuming '
+                        'an upgrade is in progress and continuing.',
+                        constants.PENDING_UPDATE)
+            db_lb = e.last_attempt.result()
+
+        flavor_dict = {}
+        if db_lb.flavor_id:
+            session = db_apis.get_session()
+            with session.begin():
+                flavor_dict = (
+                    self._flavor_repo.get_flavor_metadata_dict(
+                        session, db_lb.flavor_id))
+        flavor_dict[constants.LOADBALANCER_TOPOLOGY] = db_lb.topology
+
         store = {constants.LISTENER: listener,
                  constants.LOADBALANCER_ID:
                      listener[constants.LOADBALANCER_ID],
                  constants.PROJECT_ID: listener[constants.PROJECT_ID]}
         self.run_flow(
-            flow_utils.get_delete_listener_flow,
+            flow_utils.get_delete_listener_flow, flavor_dict=flavor_dict,
             store=store)
 
     def update_listener(self, listener, listener_updates):
@@ -315,12 +343,21 @@ class ControllerWorker(object):
                         constants.PENDING_UPDATE)
             db_lb = e.last_attempt.result()
 
+        session = db_apis.get_session()
+        flavor_dict = {}
+        if db_lb.flavor_id:
+            with session.begin():
+                flavor_dict = (
+                    self._flavor_repo.get_flavor_metadata_dict(
+                        session, db_lb.flavor_id))
+        flavor_dict[constants.LOADBALANCER_TOPOLOGY] = db_lb.topology
+
         store = {constants.LISTENER: listener,
                  constants.UPDATE_DICT: listener_updates,
                  constants.LOADBALANCER_ID: db_lb.id,
                  constants.LISTENERS: [listener]}
         self.run_flow(
-            flow_utils.get_update_listener_flow,
+            flow_utils.get_update_listener_flow, flavor_dict=flavor_dict,
             store=store)
 
     @tenacity.retry(
@@ -998,16 +1035,14 @@ class ControllerWorker(object):
                 lb_id = loadbalancer.id
                 # Even if the LB doesn't have a flavor, create one and
                 # pass through the topology.
+                flavor_dict = {}
                 if loadbalancer.flavor_id:
                     with session.begin():
                         flavor_dict = (
                             self._flavor_repo.get_flavor_metadata_dict(
                                 session, loadbalancer.flavor_id))
-                    flavor_dict[constants.LOADBALANCER_TOPOLOGY] = (
-                        loadbalancer.topology)
-                else:
-                    flavor_dict = {constants.LOADBALANCER_TOPOLOGY:
-                                   loadbalancer.topology}
+                flavor_dict[constants.LOADBALANCER_TOPOLOGY] = (
+                    loadbalancer.topology)
                 if loadbalancer.availability_zone:
                     with session.begin():
                         az_metadata = (
@@ -1162,13 +1197,12 @@ class ControllerWorker(object):
             # We must provide a topology in the flavor definition
             # here for the amphora to be created with the correct
             # configuration.
+            flavor = {}
             if lb.flavor_id:
                 with session.begin():
                     flavor = self._flavor_repo.get_flavor_metadata_dict(
                         session, lb.flavor_id)
-                flavor[constants.LOADBALANCER_TOPOLOGY] = lb.topology
-            else:
-                flavor = {constants.LOADBALANCER_TOPOLOGY: lb.topology}
+            flavor[constants.LOADBALANCER_TOPOLOGY] = lb.topology
 
             if lb:
                 provider_lb_dict = (

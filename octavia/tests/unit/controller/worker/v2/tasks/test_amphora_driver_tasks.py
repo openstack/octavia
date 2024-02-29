@@ -1246,3 +1246,31 @@ class TestAmphoraDriverTasks(base.TestCase):
             ret[amphora1_mock[constants.ID]][constants.UNREACHABLE])
         self.assertTrue(
             ret[amphora2_mock[constants.ID]][constants.UNREACHABLE])
+
+    def test_set_amphora_firewall_rules(self,
+                                        mock_driver,
+                                        mock_generate_uuid,
+                                        mock_log,
+                                        mock_get_session,
+                                        mock_listener_repo_get,
+                                        mock_listener_repo_update,
+                                        mock_amphora_repo_get,
+                                        mock_amphora_repo_update):
+        amphora = {constants.ID: AMP_ID, constants.VRRP_IP: '192.0.2.88'}
+        mock_amphora_repo_get.return_value = _db_amphora_mock
+
+        set_amp_fw_rules = amphora_driver_tasks.SetAmphoraFirewallRules()
+
+        # Test non-SRIOV VIP path
+        set_amp_fw_rules.execute([amphora], 0, [{'non-sriov-vip': True}])
+
+        mock_get_session.assert_not_called()
+        mock_driver.set_interface_rules.assert_not_called()
+
+        # Test SRIOV VIP path
+        set_amp_fw_rules.execute([amphora], 0, [{'fake_rule': True}])
+
+        mock_amphora_repo_get.assert_called_once_with(_session_mock, id=AMP_ID)
+
+        mock_driver.set_interface_rules.assert_called_once_with(
+            _db_amphora_mock, '192.0.2.88', [{'fake_rule': True}])

@@ -13,6 +13,7 @@
 #    under the License.
 from unittest import mock
 
+from octavia_lib.common import constants as lib_consts
 from oslo_utils import uuidutils
 
 from octavia.common import constants
@@ -139,3 +140,41 @@ class TestConfig(base.TestCase):
         expected_sg_name = constants.VIP_SECURITY_GROUP_PREFIX + FAKE_LB_ID
         self.assertEqual(expected_sg_name,
                          utils.get_vip_security_group_name(FAKE_LB_ID))
+
+    def test_map_protocol_to_nftable_protocol(self):
+        result = utils.map_protocol_to_nftable_protocol(
+            {constants.PROTOCOL: lib_consts.PROTOCOL_TCP})
+        self.assertEqual({constants.PROTOCOL: lib_consts.PROTOCOL_TCP}, result)
+
+        result = utils.map_protocol_to_nftable_protocol(
+            {constants.PROTOCOL: lib_consts.PROTOCOL_HTTP})
+        self.assertEqual({constants.PROTOCOL: lib_consts.PROTOCOL_TCP}, result)
+
+        result = utils.map_protocol_to_nftable_protocol(
+            {constants.PROTOCOL: lib_consts.PROTOCOL_HTTPS})
+        self.assertEqual({constants.PROTOCOL: lib_consts.PROTOCOL_TCP}, result)
+
+        result = utils.map_protocol_to_nftable_protocol(
+            {constants.PROTOCOL: lib_consts.PROTOCOL_TERMINATED_HTTPS})
+        self.assertEqual({constants.PROTOCOL: lib_consts.PROTOCOL_TCP}, result)
+
+        result = utils.map_protocol_to_nftable_protocol(
+            {constants.PROTOCOL: lib_consts.PROTOCOL_PROXY})
+        self.assertEqual({constants.PROTOCOL: lib_consts.PROTOCOL_TCP}, result)
+
+        result = utils.map_protocol_to_nftable_protocol(
+            {constants.PROTOCOL: lib_consts.PROTOCOL_PROXYV2})
+        self.assertEqual({constants.PROTOCOL: lib_consts.PROTOCOL_TCP}, result)
+
+        result = utils.map_protocol_to_nftable_protocol(
+            {constants.PROTOCOL: lib_consts.PROTOCOL_UDP})
+        self.assertEqual({constants.PROTOCOL: lib_consts.PROTOCOL_UDP}, result)
+
+        result = utils.map_protocol_to_nftable_protocol(
+            {constants.PROTOCOL: lib_consts.PROTOCOL_SCTP})
+        self.assertEqual({constants.PROTOCOL: lib_consts.PROTOCOL_SCTP},
+                         result)
+
+        result = utils.map_protocol_to_nftable_protocol(
+            {constants.PROTOCOL: lib_consts.PROTOCOL_PROMETHEUS})
+        self.assertEqual({constants.PROTOCOL: lib_consts.PROTOCOL_TCP}, result)
