@@ -496,6 +496,13 @@ class LoadBalancersController(base.BaseController):
                 load_balancer.vip_network_id,
                 valid_networks=az_dict.get(constants.VALID_VIP_NETWORKS))
 
+            # Apply the anticipated vNIC type so the create will return the
+            # right vip_vnic_type
+            if flavor_dict and flavor_dict.get(constants.SRIOV_VIP, False):
+                vip_dict[constants.VNIC_TYPE] = constants.VNIC_TYPE_DIRECT
+            else:
+                vip_dict[constants.VNIC_TYPE] = constants.VNIC_TYPE_NORMAL
+
             db_lb = self.repositories.create_load_balancer_and_vip(
                 lock_session, lb_dict, vip_dict, additional_vip_dicts)
 

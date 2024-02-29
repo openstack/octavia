@@ -25,13 +25,15 @@ class BaseLoadBalancerType(types.BaseType):
                           'vip_port_id': 'vip.port_id',
                           'vip_network_id': 'vip.network_id',
                           'vip_qos_policy_id': 'vip.qos_policy_id',
+                          'vip_vnic_type': 'vip.vnic_type',
                           'admin_state_up': 'enabled'}
     _child_map = {'vip': {
         'ip_address': 'vip_address',
         'subnet_id': 'vip_subnet_id',
         'port_id': 'vip_port_id',
         'network_id': 'vip_network_id',
-        'qos_policy_id': 'vip_qos_policy_id'}}
+        'qos_policy_id': 'vip_qos_policy_id',
+        'vnic_type': 'vip_vnic_type'}}
 
 
 class AdditionalVipsType(types.BaseType):
@@ -63,6 +65,7 @@ class LoadBalancerResponse(BaseLoadBalancerType):
     vip_qos_policy_id = wtypes.wsattr(wtypes.UuidType())
     tags = wtypes.wsattr(wtypes.ArrayType(wtypes.StringType()))
     availability_zone = wtypes.wsattr(wtypes.StringType())
+    vip_vnic_type = wtypes.wsattr(wtypes.StringType())
 
     @classmethod
     def from_data_model(cls, data_model, children=False):
@@ -74,6 +77,7 @@ class LoadBalancerResponse(BaseLoadBalancerType):
             result.vip_address = data_model.vip.ip_address
             result.vip_network_id = data_model.vip.network_id
             result.vip_qos_policy_id = data_model.vip.qos_policy_id
+            result.vip_vnic_type = data_model.vip.vnic_type
         result.additional_vips = [
             AdditionalVipsType.from_data_model(i)
             for i in data_model.additional_vips]

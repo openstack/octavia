@@ -162,7 +162,8 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
                'port_id': uuidutils.generate_uuid(),
                'subnet_id': uuidutils.generate_uuid(),
                'network_id': uuidutils.generate_uuid(),
-               'qos_policy_id': None, 'octavia_owned': True}
+               'qos_policy_id': None, 'octavia_owned': True,
+               'vnic_type': None}
         additional_vips = [{'subnet_id': uuidutils.generate_uuid(),
                             'ip_address': '192.0.2.2'}]
         lb_dm = self.repos.create_load_balancer_and_vip(self.session, lb, vip,

@@ -2829,6 +2829,7 @@ class TestLoadBalancerGraph(base.BaseAPITest):
             'flavor_id': None,
             'provider': 'noop_driver',
             'tags': [],
+            'vip_vnic_type': constants.VNIC_TYPE_NORMAL,
         }
         expected_lb.update(create_lb)
         expected_lb['listeners'] = expected_listeners
@@ -3193,6 +3194,22 @@ class TestLoadBalancerGraph(base.BaseAPITest):
         error_text = response.json.get('faultstring')
         self.assertIn('All VIP subnets must belong to the same network.',
                       error_text)
+
+    @mock.patch('octavia.api.v2.controllers.load_balancer.'
+                'LoadBalancersController._apply_flavor_to_lb_dict',
+                return_value={constants.SRIOV_VIP: True})
+    def test_with_vip_vnic_type_direct(self, mock_flavor_dict):
+        create_lb, expected_lb = self._get_lb_bodies(
+            [], [])
+        expected_lb[constants.VIP_VNIC_TYPE] = constants.VNIC_TYPE_DIRECT
+
+        body = self._build_body(create_lb)
+
+        response = self.post(self.LBS_PATH, body)
+        self._assert_graphs_equal(expected_lb, response.json['loadbalancer'])
+
+        api_lb = response.json.get(self.root_tag)
+        self._assert_graphs_equal(expected_lb, api_lb)
 
     def test_with_one_listener(self):
         create_listener, expected_listener = self._get_listener_bodies()

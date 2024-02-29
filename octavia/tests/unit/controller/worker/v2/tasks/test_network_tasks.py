@@ -1800,3 +1800,108 @@ class TestNetworkTasks(base.TestCase):
         self.assertIsNone(result)
         mock_driver.get_security_group.assert_called_once_with(SG_NAME)
         mock_get_sg_name.assert_called_once_with(LB_ID)
+
+    @mock.patch('octavia.db.repositories.LoadBalancerRepository.get')
+    @mock.patch('octavia.db.api.get_session', return_value=_session_mock)
+    def test_create_SRIOV_base_port(self, mock_get_session, mock_lb_repo_get,
+                                    mock_get_net_driver):
+        AMP_ID = uuidutils.generate_uuid()
+        LB_ID = uuidutils.generate_uuid()
+        PORT_ID = uuidutils.generate_uuid()
+        VIP_NETWORK_ID = uuidutils.generate_uuid()
+        VIP_QOS_ID = uuidutils.generate_uuid()
+        VIP_SUBNET_ID = uuidutils.generate_uuid()
+        VIP_IP_ADDRESS = '203.0.113.81'
+        VIP_IP_ADDRESS2 = 'fd08::1'
+        mock_driver = mock.MagicMock()
+        mock_get_net_driver.return_value = mock_driver
+        port_mock = mock.MagicMock()
+        port_mock.id = PORT_ID
+        subnet_dict = {constants.ID: VIP_SUBNET_ID}
+        amphora_dict = {constants.ID: AMP_ID}
+        lb_dict = {constants.LOADBALANCER_ID: LB_ID,
+                   constants.VIP_ADDRESS: VIP_IP_ADDRESS,
+                   constants.VIP_NETWORK_ID: VIP_NETWORK_ID,
+                   constants.VIP_QOS_POLICY_ID: VIP_QOS_ID}
+        addl_vips = [o_data_models.AdditionalVip(
+            ip_address=VIP_IP_ADDRESS2)]
+        lb_mock = mock.MagicMock()
+        lb_mock.additional_vips = addl_vips
+        mock_lb_repo_get.return_value = lb_mock
+
+        mock_driver.create_port.side_effect = [
+            port_mock, exceptions.OctaviaException('boom'),
+            exceptions.OctaviaException('boom'),
+            exceptions.OctaviaException('boom')]
+        mock_driver.delete_port.side_effect = [mock.DEFAULT, Exception('boom')]
+
+        net_task = network_tasks.CreateSRIOVBasePort()
+
+        # Limit the retry attempts for the test run to save time
+        net_task.execute.retry.stop = tenacity.stop_after_attempt(2)
+
+        # Test execute
+        result = net_task.execute(lb_dict, amphora_dict, subnet_dict)
+
+        self.assertEqual(port_mock.to_dict(), result)
+        mock_driver.create_port.assert_called_once_with(
+            VIP_NETWORK_ID, name=constants.AMP_BASE_PORT_PREFIX + AMP_ID,
+            fixed_ips=[{constants.SUBNET_ID: VIP_SUBNET_ID}],
+            secondary_ips=[VIP_IP_ADDRESS2, VIP_IP_ADDRESS],
+            qos_policy_id=VIP_QOS_ID, vnic_type=constants.VNIC_TYPE_DIRECT)
+
+        # Test execute exception
+        mock_driver.reset_mock()
+
+        self.assertRaises(exceptions.OctaviaException, net_task.execute,
+                          lb_dict, amphora_dict, subnet_dict)
+
+        # Test revert when this task failed
+        mock_driver.reset_mock()
+
+        net_task.revert(failure.Failure.from_exception(Exception('boom')),
+                        lb_dict, amphora_dict, subnet_dict)
+
+        mock_driver.delete_port.assert_not_called()
+
+        # Test revert
+        mock_driver.reset_mock()
+
+        # The execute path generates a port dict, so this will be the result
+        # passed into the revert method by Taskflow
+        port_dict = {constants.ID: PORT_ID}
+
+        net_task.revert(port_dict, lb_dict, amphora_dict, subnet_dict)
+
+        mock_driver.delete_port.assert_called_once_with(PORT_ID)
+
+        # Test revert exception
+        mock_driver.reset_mock()
+
+        net_task.revert(port_dict, lb_dict, amphora_dict, subnet_dict)
+
+        mock_driver.delete_port.assert_called_once_with(PORT_ID)
+
+    def test_build_amp_data(self, mock_get_net_driver):
+        VIP_ADDRESS = '203.0.113.33'
+        VIP_PORT_ID = uuidutils.generate_uuid()
+        lb_dict = {constants.VIP_ADDRESS: VIP_ADDRESS,
+                   constants.VIP_PORT_ID: VIP_PORT_ID}
+        amphora_dict = {}
+        BASE_PORT_ID = uuidutils.generate_uuid()
+        BASE_PORT_IP = '203.0.113.50'
+        port_data_dict = {
+            constants.ID: BASE_PORT_ID,
+            constants.FIXED_IPS: [{constants.IP_ADDRESS: BASE_PORT_IP}]}
+
+        expected_amp_data = {constants.HA_IP: VIP_ADDRESS,
+                             constants.HA_PORT_ID: VIP_PORT_ID,
+                             constants.VRRP_ID: 1,
+                             constants.VRRP_PORT_ID: BASE_PORT_ID,
+                             constants.VRRP_IP: BASE_PORT_IP}
+
+        net_task = network_tasks.BuildAMPData()
+
+        result = net_task.execute(lb_dict, amphora_dict, port_data_dict)
+
+        self.assertEqual(expected_amp_data, result)

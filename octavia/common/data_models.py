@@ -557,7 +557,8 @@ class Vip(BaseDataModel):
 
     def __init__(self, load_balancer_id=None, ip_address=None,
                  subnet_id=None, network_id=None, port_id=None,
-                 load_balancer=None, qos_policy_id=None, octavia_owned=None):
+                 load_balancer=None, qos_policy_id=None, octavia_owned=None,
+                 vnic_type=None):
         self.load_balancer_id = load_balancer_id
         self.ip_address = ip_address
         self.subnet_id = subnet_id
@@ -566,6 +567,7 @@ class Vip(BaseDataModel):
         self.load_balancer = load_balancer
         self.qos_policy_id = qos_policy_id
         self.octavia_owned = octavia_owned
+        self.vnic_type = vnic_type
 
 
 class AdditionalVip(BaseDataModel):

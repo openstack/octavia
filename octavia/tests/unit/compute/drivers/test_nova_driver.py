@@ -457,6 +457,28 @@ class TestNovaClient(base.TestCase):
                           self.manager.attach_network_or_port,
                           self.compute_id, self.network_id)
 
+    def test_attach_network_or_port_fail_claim_pci_exception(self):
+        self.manager.manager.interface_attach.side_effect = [
+            nova_exceptions.BadRequest('Failed to claim PCI device'),
+            nova_exceptions.BadRequest('NotAClaimFailure')]
+        self.assertRaises(exceptions.ComputeNoResourcesException,
+                          self.manager.attach_network_or_port,
+                          self.compute_id, self.network_id)
+        self.assertRaises(nova_exceptions.BadRequest,
+                          self.manager.attach_network_or_port,
+                          self.compute_id, self.network_id)
+
+    def test_attach_network_or_port_port_bind_fail_exception(self):
+        self.manager.manager.interface_attach.side_effect = [
+            nova_exceptions.ClientException('PortBindingFailed'),
+            nova_exceptions.ClientException('NotABindFailure')]
+        self.assertRaises(exceptions.ComputeNoResourcesException,
+                          self.manager.attach_network_or_port,
+                          self.compute_id, self.network_id)
+        self.assertRaises(nova_exceptions.ClientException,
+                          self.manager.attach_network_or_port,
+                          self.compute_id, self.network_id)
+
     def test_attach_network_or_port_unknown_exception(self):
         self.manager.manager.interface_attach.side_effect = [Exception('boom')]
         self.assertRaises(exceptions.ComputeUnknownException,

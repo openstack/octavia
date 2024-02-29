@@ -371,7 +371,8 @@ class AmphoraFlows(object):
 
     def get_amphora_for_lb_failover_subflow(
             self, prefix, role=constants.ROLE_STANDALONE,
-            failed_amp_vrrp_port_id=None, is_vrrp_ipv6=False):
+            failed_amp_vrrp_port_id=None, is_vrrp_ipv6=False,
+            flavor_dict=None):
         """Creates a new amphora that will be used in a failover flow.
 
         :requires: loadbalancer_id, flavor, vip, vip_sg_id, loadbalancer
@@ -392,13 +393,24 @@ class AmphoraFlows(object):
             prefix=prefix + '-' + constants.FAILOVER_LOADBALANCER_FLOW,
             role=role))
 
-        # Create the VIP base (aka VRRP) port for the amphora.
-        amp_for_failover_flow.add(network_tasks.CreateVIPBasePort(
-            name=prefix + '-' + constants.CREATE_VIP_BASE_PORT,
-            requires=(constants.VIP, constants.VIP_SG_ID,
-                      constants.AMPHORA_ID,
-                      constants.ADDITIONAL_VIPS),
-            provides=constants.BASE_PORT))
+        if flavor_dict and flavor_dict.get(constants.SRIOV_VIP, False):
+            amp_for_failover_flow.add(network_tasks.GetSubnetFromVIP(
+                name=prefix + '-' + constants.GET_SUBNET_FROM_VIP,
+                requires=constants.LOADBALANCER,
+                provides=constants.SUBNET))
+            amp_for_failover_flow.add(network_tasks.CreateSRIOVBasePort(
+                name=prefix + '-' + constants.PLUG_VIP_AMPHORA,
+                requires=(constants.LOADBALANCER, constants.AMPHORA,
+                          constants.SUBNET),
+                provides=constants.BASE_PORT))
+        else:
+            # Create the VIP base (aka VRRP) port for the amphora.
+            amp_for_failover_flow.add(network_tasks.CreateVIPBasePort(
+                name=prefix + '-' + constants.CREATE_VIP_BASE_PORT,
+                requires=(constants.VIP, constants.VIP_SG_ID,
+                          constants.AMPHORA_ID,
+                          constants.ADDITIONAL_VIPS),
+                provides=constants.BASE_PORT))
 
         # Attach the VIP base (aka VRRP) port to the amphora.
         amp_for_failover_flow.add(compute_tasks.AttachPort(
@@ -449,7 +461,8 @@ class AmphoraFlows(object):
 
         return amp_for_failover_flow
 
-    def get_failover_amphora_flow(self, failed_amphora, lb_amp_count):
+    def get_failover_amphora_flow(self, failed_amphora, lb_amp_count,
+                                  flavor_dict=None):
         """Get a Taskflow flow to failover an amphora.
 
         1. Build a replacement amphora.
@@ -459,6 +472,7 @@ class AmphoraFlows(object):
 
         :param failed_amphora: The amphora dict to failover.
         :param lb_amp_count: The number of amphora on this load balancer.
+        :param flavor_dict: The load balancer flavor dictionary.
         :returns: The flow that will provide the failover.
         """
         failover_amp_flow = linear_flow.Flow(
@@ -519,7 +533,7 @@ class AmphoraFlows(object):
                 role=failed_amphora[constants.ROLE],
                 failed_amp_vrrp_port_id=failed_amphora.get(
                     constants.VRRP_PORT_ID),
-                is_vrrp_ipv6=is_vrrp_ipv6))
+                is_vrrp_ipv6=is_vrrp_ipv6, flavor_dict=flavor_dict))
 
         failover_amp_flow.add(
             self.get_delete_amphora_flow(

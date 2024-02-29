@@ -12,6 +12,7 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+from octavia.common import constants
 from octavia.common import data_models
 
 
@@ -81,7 +82,8 @@ class Port(data_models.BaseDataModel):
     def __init__(self, id=None, name=None, device_id=None, device_owner=None,
                  mac_address=None, network_id=None, status=None,
                  project_id=None, admin_state_up=None, fixed_ips=None,
-                 network=None, qos_policy_id=None, security_group_ids=None):
+                 network=None, qos_policy_id=None, security_group_ids=None,
+                 vnic_type=constants.VNIC_TYPE_NORMAL):
         self.id = id
         self.name = name
         self.device_id = device_id
@@ -95,6 +97,7 @@ class Port(data_models.BaseDataModel):
         self.network = network
         self.qos_policy_id = qos_policy_id
         self.security_group_ids = security_group_ids or []
+        self.vnic_type = vnic_type
 
     def get_subnet_id(self, fixed_ip_address):
         for fixed_ip in self.fixed_ips:

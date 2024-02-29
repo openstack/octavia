@@ -1038,3 +1038,60 @@ class GetVIPSecurityGroupID(BaseNetworkTask):
                 else:
                     ctxt.reraise = False
         return None
+
+
+class CreateSRIOVBasePort(BaseNetworkTask):
+    """Task to create a SRIOV base port for an amphora."""
+
+    @tenacity.retry(retry=tenacity.retry_if_exception_type(),
+                    stop=tenacity.stop_after_attempt(
+                        CONF.networking.max_retries),
+                    wait=tenacity.wait_exponential(
+                        multiplier=CONF.networking.retry_backoff,
+                        min=CONF.networking.retry_interval,
+                        max=CONF.networking.retry_max), reraise=True)
+    def execute(self, loadbalancer, amphora, subnet):
+        session = db_apis.get_session()
+        with session.begin():
+            db_lb = self.loadbalancer_repo.get(
+                session, id=loadbalancer[constants.LOADBALANCER_ID])
+        port_name = constants.AMP_BASE_PORT_PREFIX + amphora[constants.ID]
+        fixed_ips = [{constants.SUBNET_ID: subnet[constants.ID]}]
+        addl_vips = [obj.ip_address for obj in db_lb.additional_vips]
+        addl_vips.append(loadbalancer[constants.VIP_ADDRESS])
+        port = self.network_driver.create_port(
+            loadbalancer[constants.VIP_NETWORK_ID],
+            name=port_name, fixed_ips=fixed_ips,
+            secondary_ips=addl_vips,
+            qos_policy_id=loadbalancer[constants.VIP_QOS_POLICY_ID],
+            vnic_type=constants.VNIC_TYPE_DIRECT)
+        LOG.info('Created port %s with ID %s for amphora %s',
+                 port_name, port.id, amphora[constants.ID])
+        return port.to_dict(recurse=True)
+
+    def revert(self, result, loadbalancer, amphora, subnet, *args, **kwargs):
+        if isinstance(result, failure.Failure):
+            return
+        try:
+            port_name = constants.AMP_BASE_PORT_PREFIX + amphora['id']
+            self.network_driver.delete_port(result[constants.ID])
+            LOG.info('Deleted port %s with ID %s for amphora %s due to a '
+                     'revert.', port_name, result[constants.ID], amphora['id'])
+        except Exception as e:
+            LOG.error('Failed to delete port %s. Resources may still be in '
+                      'use for a port intended for amphora %s due to error '
+                      '%s. Search for a port named %s',
+                      result, amphora['id'], str(e), port_name)
+
+
+class BuildAMPData(BaseNetworkTask):
+    """Glue task to store the AMP_DATA dict from netork port information."""
+
+    def execute(self, loadbalancer, amphora, port_data):
+        amphora[constants.HA_IP] = loadbalancer[constants.VIP_ADDRESS]
+        amphora[constants.HA_PORT_ID] = loadbalancer[constants.VIP_PORT_ID]
+        amphora[constants.VRRP_ID] = 1
+        amphora[constants.VRRP_PORT_ID] = port_data[constants.ID]
+        amphora[constants.VRRP_IP] = port_data[
+            constants.FIXED_IPS][0][constants.IP_ADDRESS]
+        return amphora

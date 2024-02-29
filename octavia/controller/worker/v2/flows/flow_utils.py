@@ -32,9 +32,9 @@ M_FLOWS = member_flows.MemberFlows()
 P_FLOWS = pool_flows.PoolFlows()
 
 
-def get_create_load_balancer_flow(topology, listeners=None):
-    return LB_FLOWS.get_create_load_balancer_flow(topology,
-                                                  listeners=listeners)
+def get_create_load_balancer_flow(topology, listeners=None, flavor_dict=None):
+    return LB_FLOWS.get_create_load_balancer_flow(
+        topology, listeners=listeners, flavor_dict=flavor_dict)
 
 
 def get_delete_load_balancer_flow(lb):
@@ -90,8 +90,9 @@ def get_failover_LB_flow(amps, lb):
     return LB_FLOWS.get_failover_LB_flow(amps, lb)
 
 
-def get_failover_amphora_flow(amphora_dict, lb_amp_count):
-    return AMP_FLOWS.get_failover_amphora_flow(amphora_dict, lb_amp_count)
+def get_failover_amphora_flow(amphora_dict, lb_amp_count, flavor_dict=None):
+    return AMP_FLOWS.get_failover_amphora_flow(amphora_dict, lb_amp_count,
+                                               flavor_dict=flavor_dict)
 
 
 def cert_rotate_amphora_flow():

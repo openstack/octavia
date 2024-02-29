@@ -375,7 +375,7 @@ class ControllerWorker(object):
         }
         self.run_flow(
             flow_utils.get_create_load_balancer_flow,
-            topology, listeners=listeners_dicts,
+            topology, listeners=listeners_dicts, flavor_dict=flavor,
             store=store)
 
     def delete_load_balancer(self, load_balancer, cascade=False):
@@ -1035,7 +1035,7 @@ class ControllerWorker(object):
 
             self.run_flow(
                 flow_utils.get_failover_amphora_flow,
-                amphora.to_dict(), lb_amp_count,
+                amphora.to_dict(), lb_amp_count, flavor_dict=flavor_dict,
                 store=stored_params)
 
             LOG.info("Successfully completed the failover for an amphora: %s",

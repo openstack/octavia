@@ -47,6 +47,11 @@ SUPPORTED_FLAVOR_SCHEMA = {
         consts.AMP_IMAGE_TAG: {
             "type": "string",
             "description": "The amphora image tag."
-        }
+        },
+        consts.SRIOV_VIP: {
+            "type": "boolean",
+            "description": "When true, the VIP port will be created using an "
+                           "SR-IOV VF port."
+        },
     }
 }

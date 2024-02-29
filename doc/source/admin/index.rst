@@ -37,6 +37,7 @@ Optional Installation and Configuration Guides
    flavors.rst
    apache-httpd.rst
    failover-circuit-breaker.rst
+   sr-iov.rst
 
 Maintenance and Operations
 --------------------------

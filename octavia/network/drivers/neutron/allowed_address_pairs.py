@@ -34,7 +34,6 @@ from octavia.network.drivers.neutron import utils
 LOG = logging.getLogger(__name__)
 AAP_EXT_ALIAS = 'allowed-address-pairs'
 PROJECT_ID_ALIAS = 'project-id'
-OCTAVIA_OWNER = 'Octavia'
 
 CONF = cfg.CONF
 
@@ -89,7 +88,7 @@ class AllowedAddressPairsDriver(neutron_base.BaseNeutronDriver):
                 constants.NETWORK_ID: subnet.network_id,
                 constants.FIXED_IPS: [{'subnet_id': subnet.id}],
                 constants.ADMIN_STATE_UP: True,
-                constants.DEVICE_OWNER: OCTAVIA_OWNER,
+                constants.DEVICE_OWNER: constants.OCTAVIA_OWNER,
             }
             new_port = self.network_proxy.create_port(**port)
             new_port = utils.convert_port_to_model(new_port)
@@ -385,7 +384,7 @@ class AllowedAddressPairsDriver(neutron_base.BaseNeutronDriver):
 
         self._delete_security_group(vip, port)
 
-        if port and port.device_owner == OCTAVIA_OWNER:
+        if port and port.device_owner == constants.OCTAVIA_OWNER:
             try:
                 self.network_proxy.delete_port(vip.port_id)
             except os_exceptions.ResourceNotFound:
@@ -468,6 +467,16 @@ class AllowedAddressPairsDriver(neutron_base.BaseNeutronDriver):
         return list_of_dicts
 
     def allocate_vip(self, load_balancer):
+        """Allocates a virtual ip.
+
+        Reserves the IP for later use as the frontend connection of a load
+        balancer.
+
+        :param load_balancer: octavia.common.data_models.LoadBalancer instance
+        :return: octavia.common.data_models.Vip,
+                 list(octavia.common.data_models.AdditionalVip)
+        :raises: AllocateVIPException, PortNotFound, SubnetNotFound
+        """
         if load_balancer.vip.port_id:
             try:
                 port = self.get_port(load_balancer.vip.port_id)
@@ -512,7 +521,7 @@ class AllowedAddressPairsDriver(neutron_base.BaseNeutronDriver):
 
         fixed_ip = {}
         if load_balancer.vip.subnet_id:
-            fixed_ip['subnet_id'] = load_balancer.vip.subnet_id
+            fixed_ip[constants.SUBNET_ID] = load_balancer.vip.subnet_id
         if load_balancer.vip.ip_address:
             fixed_ip[constants.IP_ADDRESS] = load_balancer.vip.ip_address
 
@@ -544,7 +553,7 @@ class AllowedAddressPairsDriver(neutron_base.BaseNeutronDriver):
             constants.NETWORK_ID: load_balancer.vip.network_id,
             constants.ADMIN_STATE_UP: False,
             'device_id': 'lb-{0}'.format(load_balancer.id),
-            constants.DEVICE_OWNER: OCTAVIA_OWNER,
+            constants.DEVICE_OWNER: constants.OCTAVIA_OWNER,
             project_id_key: load_balancer.project_id}
 
         if fixed_ips:
@@ -817,7 +826,8 @@ class AllowedAddressPairsDriver(neutron_base.BaseNeutronDriver):
 
     def create_port(self, network_id, name=None, fixed_ips=(),
                     secondary_ips=(), security_group_ids=(),
-                    admin_state_up=True, qos_policy_id=None):
+                    admin_state_up=True, qos_policy_id=None,
+                    vnic_type=constants.VNIC_TYPE_NORMAL):
         """Creates a network port.
 
         fixed_ips = [{'subnet_id': <id>, ('ip_addrss': <IP>')},]
@@ -829,6 +839,7 @@ class AllowedAddressPairsDriver(neutron_base.BaseNeutronDriver):
         :param secondary_ips: A list of secondary IPs to add to the port.
         :param security_group_ids: A list of security group IDs for the port.
         :param qos_policy_id: The QoS policy ID to apply to the port.
+        :param vnic_type: The vNIC type this port should attach to.
         :returns port: A port data model object.
         """
         try:
@@ -837,7 +848,8 @@ class AllowedAddressPairsDriver(neutron_base.BaseNeutronDriver):
                 aap_list.append({constants.IP_ADDRESS: ip})
             port = {constants.NETWORK_ID: network_id,
                     constants.ADMIN_STATE_UP: admin_state_up,
-                    constants.DEVICE_OWNER: OCTAVIA_OWNER}
+                    constants.DEVICE_OWNER: constants.OCTAVIA_OWNER,
+                    constants.BINDING_VNIC_TYPE: vnic_type}
             if aap_list:
                 port[constants.ALLOWED_ADDRESS_PAIRS] = aap_list
             if fixed_ips:

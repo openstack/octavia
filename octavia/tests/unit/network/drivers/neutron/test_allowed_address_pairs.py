@@ -109,8 +109,7 @@ class TestAllowedAddressPairsDriver(base.TestCase):
         vip = lb.vip
         sec_grp_id = 'lb-sec-grp1'
         show_port = self.driver.network_proxy.get_port
-        show_port.return_value = Port(
-            device_owner=allowed_address_pairs.OCTAVIA_OWNER)
+        show_port.return_value = Port(device_owner=constants.OCTAVIA_OWNER)
         delete_port = self.driver.network_proxy.delete_port
         delete_sec_grp = self.driver.network_proxy.delete_security_group
         list_security_groups = self.driver.network_proxy.find_security_group
@@ -131,7 +130,7 @@ class TestAllowedAddressPairsDriver(base.TestCase):
         sec_grp_id = 'lb-sec-grp1'
         show_port = self.driver.network_proxy.get_port
         show_port.return_value = Port(
-            device_owner=allowed_address_pairs.OCTAVIA_OWNER)
+            device_owner=constants.OCTAVIA_OWNER)
         delete_port = self.driver.network_proxy.delete_port
         delete_sec_grp = self.driver.network_proxy.delete_security_group
         list_security_groups = self.driver.network_proxy.find_security_group
@@ -150,7 +149,7 @@ class TestAllowedAddressPairsDriver(base.TestCase):
         vip = lb.vip
         sec_grp_id = 'lb-sec-grp1'
         show_port = self.driver.network_proxy.get_port
-        port = Port(device_owner=allowed_address_pairs.OCTAVIA_OWNER)
+        port = Port(device_owner=constants.OCTAVIA_OWNER)
         show_port.side_effect = [port, Exception]
         list_security_groups = self.driver.network_proxy.find_security_group
         list_security_groups.return_value = SecurityGroup(id=sec_grp_id)
@@ -164,7 +163,7 @@ class TestAllowedAddressPairsDriver(base.TestCase):
         sec_grp_id = 'lb-sec-grp1'
         show_port = self.driver.network_proxy.get_port
         show_port.return_value = Port(
-            device_owner=allowed_address_pairs.OCTAVIA_OWNER)
+            device_owner=constants.OCTAVIA_OWNER)
         delete_port = self.driver.network_proxy.delete_port
         delete_port.side_effect = os_exceptions.ResourceNotFound
         delete_sec_grp = self.driver.network_proxy.delete_security_group
@@ -183,7 +182,7 @@ class TestAllowedAddressPairsDriver(base.TestCase):
         vip = lb.vip
         show_port = self.driver.network_proxy.get_port
         show_port.return_value = Port(
-            device_owner=allowed_address_pairs.OCTAVIA_OWNER)
+            device_owner=constants.OCTAVIA_OWNER)
         delete_port = self.driver.network_proxy.delete_port
         delete_sec_grp = self.driver.network_proxy.delete_security_group
         list_security_groups = self.driver.network_proxy.find_security_group
@@ -198,7 +197,7 @@ class TestAllowedAddressPairsDriver(base.TestCase):
         vip.load_balancer = lb
         show_port = self.driver.network_proxy.get_port
         show_port.return_value = Port(
-            device_owner=allowed_address_pairs.OCTAVIA_OWNER)
+            device_owner=constants.OCTAVIA_OWNER)
         delete_port = self.driver.network_proxy.delete_port
         delete_port.side_effect = [None, None, TypeError]
         self.assertRaises(network_base.DeallocateVIPException,
@@ -214,7 +213,7 @@ class TestAllowedAddressPairsDriver(base.TestCase):
         vip = lb.vip
         show_port = self.driver.network_proxy.get_port
         show_port.return_value = Port(
-            device_owner=allowed_address_pairs.OCTAVIA_OWNER)
+            device_owner=constants.OCTAVIA_OWNER)
         delete_port = self.driver.network_proxy.delete_port
         list_ports = self.driver.network_proxy.ports
         find_security_group = self.driver.network_proxy.find_security_group
@@ -256,7 +255,7 @@ class TestAllowedAddressPairsDriver(base.TestCase):
         vip.load_balancer = lb
         show_port = self.driver.network_proxy.get_port
         show_port.return_value = Port(
-            device_owner=allowed_address_pairs.OCTAVIA_OWNER)
+            device_owner=constants.OCTAVIA_OWNER)
         update_port = self.driver.network_proxy.update_port
         update_port.side_effect = os_exceptions.ResourceNotFound
         self.driver.deallocate_vip(vip)
@@ -557,8 +556,7 @@ class TestAllowedAddressPairsDriver(base.TestCase):
         show_port = self.driver.network_proxy.get_port
         show_port.return_value = bad_existing_port
         port_create_dict = Port(**t_constants.MOCK_NEUTRON_PORT.to_dict())
-        port_create_dict['device_owner'] = (
-            allowed_address_pairs.OCTAVIA_OWNER)
+        port_create_dict['device_owner'] = constants.OCTAVIA_OWNER
         port_create_dict['device_id'] = 'lb-1'
         create_port = self.driver.network_proxy.create_port
         create_port.return_value = port_create_dict
@@ -578,7 +576,7 @@ class TestAllowedAddressPairsDriver(base.TestCase):
             'name': 'octavia-lb-1',
             'network_id': t_constants.MOCK_NETWORK_ID,
             'device_id': 'lb-1',
-            'device_owner': allowed_address_pairs.OCTAVIA_OWNER,
+            'device_owner': constants.OCTAVIA_OWNER,
             'admin_state_up': False,
             'project_id': 'test-project',
             'fixed_ips': [{'subnet_id': t_constants.MOCK_SUBNET_ID}]
@@ -600,8 +598,7 @@ class TestAllowedAddressPairsDriver(base.TestCase):
     def test_allocate_vip_when_port_not_found(self, mock_check_ext,
                                               mock_get_port):
         port_create_dict = Port(**t_constants.MOCK_NEUTRON_PORT.to_dict())
-        port_create_dict['device_owner'] = (
-            allowed_address_pairs.OCTAVIA_OWNER)
+        port_create_dict['device_owner'] = constants.OCTAVIA_OWNER
         port_create_dict['device_id'] = 'lb-1'
         create_port = self.driver.network_proxy.create_port
         create_port.return_value = port_create_dict
@@ -620,7 +617,7 @@ class TestAllowedAddressPairsDriver(base.TestCase):
             'name': 'octavia-lb-1',
             'network_id': t_constants.MOCK_NETWORK_ID,
             'device_id': 'lb-1',
-            'device_owner': allowed_address_pairs.OCTAVIA_OWNER,
+            'device_owner': constants.OCTAVIA_OWNER,
             'admin_state_up': False,
             'project_id': 'test-project',
             'fixed_ips': [{'subnet_id': t_constants.MOCK_SUBNET_ID}]
@@ -660,8 +657,7 @@ class TestAllowedAddressPairsDriver(base.TestCase):
                 '_check_extension_enabled', return_value=True)
     def test_allocate_vip_when_no_port_provided(self, mock_check_ext):
         port_create_dict = Port(**t_constants.MOCK_NEUTRON_PORT.to_dict())
-        port_create_dict['device_owner'] = (
-            allowed_address_pairs.OCTAVIA_OWNER)
+        port_create_dict['device_owner'] = constants.OCTAVIA_OWNER
         port_create_dict['device_id'] = 'lb-1'
         create_port = self.driver.network_proxy.create_port
         create_port.return_value = port_create_dict
@@ -680,7 +676,7 @@ class TestAllowedAddressPairsDriver(base.TestCase):
             'name': 'octavia-lb-1',
             'network_id': t_constants.MOCK_NETWORK_ID,
             'device_id': 'lb-1',
-            'device_owner': allowed_address_pairs.OCTAVIA_OWNER,
+            'device_owner': constants.OCTAVIA_OWNER,
             'admin_state_up': False,
             'project_id': 'test-project',
             'fixed_ips': [{'ip_address': t_constants.MOCK_IP_ADDRESS,
@@ -698,8 +694,7 @@ class TestAllowedAddressPairsDriver(base.TestCase):
                 '_check_extension_enabled', return_value=True)
     def test_allocate_vip_when_no_port_fixed_ip(self, mock_check_ext):
         port_create_dict = Port(**t_constants.MOCK_NEUTRON_PORT.to_dict())
-        port_create_dict['device_owner'] = (
-            allowed_address_pairs.OCTAVIA_OWNER)
+        port_create_dict['device_owner'] = constants.OCTAVIA_OWNER
         port_create_dict['device_id'] = 'lb-1'
         create_port = self.driver.network_proxy.create_port
         create_port.return_value = port_create_dict
@@ -718,7 +713,7 @@ class TestAllowedAddressPairsDriver(base.TestCase):
             'name': 'octavia-lb-1',
             'network_id': t_constants.MOCK_NETWORK_ID,
             'device_id': 'lb-1',
-            'device_owner': allowed_address_pairs.OCTAVIA_OWNER,
+            'device_owner': constants.OCTAVIA_OWNER,
             'admin_state_up': False,
             'project_id': 'test-project',
             'fixed_ips': [{'subnet_id': t_constants.MOCK_SUBNET_ID,
@@ -736,8 +731,7 @@ class TestAllowedAddressPairsDriver(base.TestCase):
                 '_check_extension_enabled', return_value=True)
     def test_allocate_vip_when_no_port_no_fixed_ip(self, mock_check_ext):
         port_create_dict = Port(**t_constants.MOCK_NEUTRON_PORT.to_dict())
-        port_create_dict['device_owner'] = (
-            allowed_address_pairs.OCTAVIA_OWNER)
+        port_create_dict['device_owner'] = constants.OCTAVIA_OWNER
         port_create_dict['device_id'] = 'lb-1'
         create_port = self.driver.network_proxy.create_port
         create_port.return_value = port_create_dict
@@ -754,7 +748,7 @@ class TestAllowedAddressPairsDriver(base.TestCase):
             'name': 'octavia-lb-1',
             'network_id': t_constants.MOCK_NETWORK_ID,
             'device_id': 'lb-1',
-            'device_owner': allowed_address_pairs.OCTAVIA_OWNER,
+            'device_owner': constants.OCTAVIA_OWNER,
             'admin_state_up': False,
             'project_id': 'test-project'}
         create_port.assert_called_once_with(**exp_create_port_call)
@@ -767,8 +761,7 @@ class TestAllowedAddressPairsDriver(base.TestCase):
                 '_check_extension_enabled', return_value=False)
     def test_allocate_vip_when_no_port_provided_tenant(self, mock_check_ext):
         port_create_dict = Port(**t_constants.MOCK_NEUTRON_PORT.to_dict())
-        port_create_dict['device_owner'] = (
-            allowed_address_pairs.OCTAVIA_OWNER)
+        port_create_dict['device_owner'] = constants.OCTAVIA_OWNER
         port_create_dict['device_id'] = 'lb-1'
         create_port = self.driver.network_proxy.create_port
         create_port.return_value = port_create_dict
@@ -787,7 +780,7 @@ class TestAllowedAddressPairsDriver(base.TestCase):
             'name': 'octavia-lb-1',
             'network_id': t_constants.MOCK_NETWORK_ID,
             'device_id': 'lb-1',
-            'device_owner': allowed_address_pairs.OCTAVIA_OWNER,
+            'device_owner': constants.OCTAVIA_OWNER,
             'admin_state_up': False,
             'tenant_id': 'test-project',
             'fixed_ips': [{'ip_address': t_constants.MOCK_IP_ADDRESS,
@@ -805,8 +798,7 @@ class TestAllowedAddressPairsDriver(base.TestCase):
                 '_check_extension_enabled', return_value=False)
     def test_allocate_vip_with_additional_vips(self, mock_check_ext):
         port_create_dict = Port(**t_constants.MOCK_NEUTRON_PORT.to_dict())
-        port_create_dict['device_owner'] = (
-            allowed_address_pairs.OCTAVIA_OWNER)
+        port_create_dict['device_owner'] = constants.OCTAVIA_OWNER
         port_create_dict['device_id'] = 'lb-1'
         create_port = self.driver.network_proxy.create_port
         create_port.return_value = port_create_dict
@@ -830,7 +822,7 @@ class TestAllowedAddressPairsDriver(base.TestCase):
             'name': 'octavia-lb-1',
             'network_id': t_constants.MOCK_NETWORK_ID,
             'device_id': 'lb-1',
-            'device_owner': allowed_address_pairs.OCTAVIA_OWNER,
+            'device_owner': constants.OCTAVIA_OWNER,
             'admin_state_up': False,
             'tenant_id': 'test-project',
             'fixed_ips': [
@@ -1579,7 +1571,8 @@ class TestAllowedAddressPairsDriver(base.TestCase):
                                'project_id': t_constants.MOCK_PROJECT_ID,
                                'qos_policy_id': QOS_POLICY_ID,
                                'security_group_ids': [],
-                               'status': t_constants.MOCK_STATUS}
+                               'status': t_constants.MOCK_STATUS,
+                               'vnic_type': constants.VNIC_TYPE_NORMAL}
 
         self.driver.network_proxy.create_port.side_effect = [
             MOCK_NEUTRON_PORT, MOCK_NEUTRON_PORT, Exception('boom')]
@@ -1595,13 +1588,14 @@ class TestAllowedAddressPairsDriver(base.TestCase):
         self.driver.network_proxy.create_port.assert_called_once_with(
             **{
                 'network_id': NETWORK_ID, 'admin_state_up': ADMIN_STATE_UP,
-                'device_owner': allowed_address_pairs.OCTAVIA_OWNER,
+                'device_owner': constants.OCTAVIA_OWNER,
                 'allowed_address_pairs': [
                     {'ip_address': IP_ADDRESS2}, {'ip_address': IP_ADDRESS3}],
                 'fixed_ips': [{
                     'subnet_id': SUBNET1_ID, 'ip_address': IP_ADDRESS1}],
                 'name': FAKE_NAME, 'qos_policy_id': QOS_POLICY_ID,
-                'security_groups': [SECURITY_GROUP_ID]})
+                'security_groups': [SECURITY_GROUP_ID],
+                'binding_vnic_type': constants.VNIC_TYPE_NORMAL})
 
         # Test minimal successful path
         result = self.driver.create_port(NETWORK_ID)

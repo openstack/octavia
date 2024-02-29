@@ -254,6 +254,11 @@ class ComputePortInUseException(OctaviaException):
     message = _('Compute driver reports port %(port)s is already in use.')
 
 
+class ComputeNoResourcesException(OctaviaException):
+    message = _('The compute service does not have the resources available to '
+                'fulfill the request')
+
+
 class ComputeUnknownException(OctaviaException):
     message = _('Unknown exception from the compute driver: %(exc)s.')
 
