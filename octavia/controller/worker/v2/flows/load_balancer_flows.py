@@ -195,25 +195,6 @@ class LoadBalancerFlows(object):
                 requires=(constants.LOADBALANCER, constants.AMPHORA,
                           constants.PORT_DATA),
                 provides=constants.AMP_DATA))
-            flows.append(network_tasks.ApplyQosAmphora(
-                name=sf_name + '-' + constants.APPLY_QOS_AMP,
-                requires=(constants.LOADBALANCER, constants.AMP_DATA,
-                          constants.UPDATE_DICT)))
-            flows.append(database_tasks.UpdateAmphoraVIPData(
-                name=sf_name + '-' + constants.UPDATE_AMPHORA_VIP_DATA,
-                requires=constants.AMP_DATA))
-            flows.append(network_tasks.GetAmphoraNetworkConfigs(
-                name=sf_name + '-' + constants.GET_AMP_NETWORK_CONFIG,
-                requires=(constants.LOADBALANCER, constants.AMPHORA),
-                provides=constants.AMPHORA_NETWORK_CONFIG))
-            # SR-IOV firewall rules are handled in AmphoraPostVIPPlug
-            # interface.py up
-            flows.append(amphora_driver_tasks.AmphoraPostVIPPlug(
-                name=sf_name + '-' + constants.AMP_POST_VIP_PLUG,
-                rebind={constants.AMPHORAE_NETWORK_CONFIG:
-                        constants.AMPHORA_NETWORK_CONFIG},
-                requires=(constants.LOADBALANCER,
-                          constants.AMPHORAE_NETWORK_CONFIG)))
         else:
             flows.append(network_tasks.PlugVIPAmphora(
                 name=sf_name + '-' + constants.PLUG_VIP_AMPHORA,
