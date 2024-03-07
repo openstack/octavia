@@ -1,0 +1,10 @@
+---
+features:
+  - |
+    The new ``[task_flow] jobboard_backend_username`` option has been added, to
+    support Redis ACL feature.
+
+  - |
+    Previously, redis jobboard driver used only the first host in
+    ``[task_flow] jobboard_backend_hosts`` when connecting to Redis Sentinel.
+    Now the driver attempts the other hosts as fallbacks.
