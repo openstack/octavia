@@ -579,7 +579,9 @@ task_flow_opts = [
                 help='Jobboard backend server host(s).'),
     cfg.PortOpt('jobboard_backend_port', default=6379,
                 help='Jobboard backend server port'),
-    cfg.StrOpt('jobboard_backend_password', default='', secret=True,
+    cfg.StrOpt('jobboard_backend_username',
+               help='Jobboard backend server user name'),
+    cfg.StrOpt('jobboard_backend_password', secret=True,
                help='Jobboard backend server password'),
     cfg.StrOpt('jobboard_backend_namespace', default='octavia_jobboard',
                help='Jobboard name that should be used to store taskflow '
