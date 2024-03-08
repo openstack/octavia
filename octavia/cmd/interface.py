@@ -84,7 +84,3 @@ def main():
     except Exception as e:
         print("Error: {}".format(e))
         sys.exit(2)
-
-
-if __name__ == "__main__":
-    main()

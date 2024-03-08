@@ -12,8 +12,6 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-import sys
-
 from oslo_config import cfg
 from oslo_upgradecheck import common_checks
 from oslo_upgradecheck import upgradecheck
@@ -120,7 +118,3 @@ class Checks(upgradecheck.UpgradeCommands):
 def main():
     return upgradecheck.main(
         CONF, project='octavia', upgrade_command=Checks())
-
-
-if __name__ == '__main__':
-    sys.exit(main())
