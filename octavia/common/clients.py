@@ -79,11 +79,22 @@ class NeutronAuth(object):
         ksession = keystone.KeystoneSession('neutron')
         if not cls.neutron_client:
             sess = ksession.get_session()
-
-            kwargs = {}
+            kwargs = {'region_name': CONF.neutron.region_name}
+            # TODO(ricolin) `interface` option don't take list as option yet.
+            # We can move away from this when openstacksdk no longer depends
+            # on `interface`.
+            try:
+                interface = CONF.neutron.valid_interfaces[0]
+            except (TypeError, LookupError):
+                interface = CONF.neutron.valid_interfaces
+            if interface:
+                kwargs['interface'] = interface
             if CONF.neutron.endpoint_override:
                 kwargs['network_endpoint_override'] = (
                     CONF.neutron.endpoint_override)
+                if CONF.neutron.endpoint_override.startswith("https"):
+                    kwargs['insecure'] = CONF.neutron.insecure
+                    kwargs['cacert'] = CONF.neutron.cafile
 
             conn = openstack.connection.Connection(
                 session=sess, **kwargs)
