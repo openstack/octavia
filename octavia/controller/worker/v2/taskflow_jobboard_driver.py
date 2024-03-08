@@ -88,12 +88,22 @@ class RedisTaskFlowDriver(JobboardTaskFlowDriver):
         self.persistence_driver = persistence_driver
 
     def job_board(self, persistence):
+
+        def _format_server(host, port):
+            if ':' in host:
+                return '[%s]:%d' % (host, port)
+            return '%s:%d' % (host, port)
+
         jobboard_backend_conf = {
             'board': 'redis',
             'host': CONF.task_flow.jobboard_backend_hosts[0],
             'port': CONF.task_flow.jobboard_backend_port,
             'namespace': CONF.task_flow.jobboard_backend_namespace,
             'sentinel': CONF.task_flow.jobboard_redis_sentinel,
+            'sentinel_fallbacks': [
+                _format_server(host, CONF.task_flow.jobboard_backend_port)
+                for host in CONF.task_flow.jobboard_backend_hosts[1:]
+            ]
         }
         if CONF.task_flow.jobboard_backend_username is not None:
             jobboard_backend_conf['username'] = (
