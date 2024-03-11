@@ -68,13 +68,11 @@ below.
 
 ::
 
-    openstack loadbalancer create --name lb1 --vip-subnet-id public-subnet
-    # Re-run the following until lb1 shows ACTIVE and ONLINE statuses:
-    openstack loadbalancer show lb1
-    openstack loadbalancer listener create --name listener1 --protocol HTTP --protocol-port 80 lb1
-    openstack loadbalancer pool create --name pool1 --lb-algorithm ROUND_ROBIN --listener listener1 --protocol HTTP
-    openstack loadbalancer member create --subnet-id private-subnet --address 192.0.2.10 --protocol-port 80 pool1
-    openstack loadbalancer member create --subnet-id private-subnet --address 192.0.2.11 --protocol-port 80 pool1
+    openstack loadbalancer create --name lb1 --vip-subnet-id public-subnet --wait
+    openstack loadbalancer listener create --name listener1 --protocol HTTP --protocol-port 80 --wait lb1
+    openstack loadbalancer pool create --name pool1 --lb-algorithm ROUND_ROBIN --listener listener1 --protocol HTTP --wait
+    openstack loadbalancer member create --subnet-id private-subnet --address 192.0.2.10 --protocol-port 80 --wait pool1
+    openstack loadbalancer member create --subnet-id private-subnet --address 192.0.2.11 --protocol-port 80 --wait pool1
 
 
 .. _basic-lb-with-hm:
@@ -113,14 +111,12 @@ a floating IP. See :ref:`basic-lb-with-hm-and-fip` below.
 
 ::
 
-    openstack loadbalancer create --name lb1 --vip-subnet-id public-subnet
-    # Re-run the following until lb1 shows ACTIVE and ONLINE statuses:
-    openstack loadbalancer show lb1
-    openstack loadbalancer listener create --name listener1 --protocol HTTP --protocol-port 80 lb1
-    openstack loadbalancer pool create --name pool1 --lb-algorithm ROUND_ROBIN --listener listener1 --protocol HTTP
-    openstack loadbalancer healthmonitor create --delay 5 --max-retries 4 --timeout 10 --type HTTP --url-path /healthcheck pool1
-    openstack loadbalancer member create --subnet-id private-subnet --address 192.0.2.10 --protocol-port 80 pool1
-    openstack loadbalancer member create --subnet-id private-subnet --address 192.0.2.11 --protocol-port 80 pool1
+    openstack loadbalancer create --name lb1 --vip-subnet-id public-subnet --wait
+    openstack loadbalancer listener create --name listener1 --protocol HTTP --protocol-port 80 --wait lb1
+    openstack loadbalancer pool create --name pool1 --lb-algorithm ROUND_ROBIN --listener listener1 --protocol HTTP --wait
+    openstack loadbalancer healthmonitor create --delay 5 --max-retries 4 --timeout 10 --type HTTP --url-path /healthcheck --wait pool1
+    openstack loadbalancer member create --subnet-id private-subnet --address 192.0.2.10 --protocol-port 80 --wait pool1
+    openstack loadbalancer member create --subnet-id private-subnet --address 192.0.2.11 --protocol-port 80 --wait pool1
 
 
 .. _basic-lb-with-hm-and-fip:
@@ -162,14 +158,12 @@ do not work with IPv6.
 
 ::
 
-    openstack loadbalancer create --name lb1 --vip-subnet-id private-subnet
-    # Re-run the following until lb1 shows ACTIVE and ONLINE statuses:
-    openstack loadbalancer show lb1
-    openstack loadbalancer listener create --name listener1 --protocol HTTP --protocol-port 80 lb1
-    openstack loadbalancer pool create --name pool1 --lb-algorithm ROUND_ROBIN --listener listener1 --protocol HTTP
-    openstack loadbalancer healthmonitor create --delay 5 --max-retries 4 --timeout 10 --type HTTP --url-path /healthcheck pool1
-    openstack loadbalancer member create --subnet-id private-subnet --address 192.0.2.10 --protocol-port 80 pool1
-    openstack loadbalancer member create --subnet-id private-subnet --address 192.0.2.11 --protocol-port 80 pool1
+    openstack loadbalancer create --name lb1 --vip-subnet-id private-subnet --wait
+    openstack loadbalancer listener create --name listener1 --protocol HTTP --protocol-port 80 --wait lb1
+    openstack loadbalancer pool create --name pool1 --lb-algorithm ROUND_ROBIN --listener listener1 --protocol HTTP --wait
+    openstack loadbalancer healthmonitor create --delay 5 --max-retries 4 --timeout 10 --type HTTP --url-path /healthcheck --wait pool1
+    openstack loadbalancer member create --subnet-id private-subnet --address 192.0.2.10 --protocol-port 80 --wait pool1
+    openstack loadbalancer member create --subnet-id private-subnet --address 192.0.2.11 --protocol-port 80 --wait pool1
     openstack floating ip create public
     # The following IDs should be visible in the output of previous commands
     openstack floating ip set --port <load_balancer_vip_port_id> <floating_ip_id>
@@ -206,14 +200,12 @@ Deploy a basic HTTP load balancer with session persistence
 
 ::
 
-    openstack loadbalancer create --name lb1 --vip-subnet-id public-subnet
-    # Re-run the following until lb1 shows ACTIVE and ONLINE statuses:
-    openstack loadbalancer show lb1
-    openstack loadbalancer listener create --name listener1 --protocol HTTP --protocol-port 80 lb1
-    openstack loadbalancer pool create --name pool1 --lb-algorithm ROUND_ROBIN --listener listener1 --protocol HTTP --session-persistence type=APP_COOKIE,cookie_name=PHPSESSIONID
-    openstack loadbalancer healthmonitor create --delay 5 --max-retries 4 --timeout 10 --type HTTP --url-path /healthcheck pool1
-    openstack loadbalancer member create --subnet-id private-subnet --address 192.0.2.10 --protocol-port 80 pool1
-    openstack loadbalancer member create --subnet-id private-subnet --address 192.0.2.11 --protocol-port 80 pool1
+    openstack loadbalancer create --name lb1 --vip-subnet-id public-subnet --wait
+    openstack loadbalancer listener create --name listener1 --protocol HTTP --protocol-port 80 --wait lb1
+    openstack loadbalancer pool create --name pool1 --lb-algorithm ROUND_ROBIN --listener listener1 --protocol HTTP --session-persistence type=APP_COOKIE,cookie_name=PHPSESSIONID --wait
+    openstack loadbalancer healthmonitor create --delay 5 --max-retries 4 --timeout 10 --type HTTP --url-path /healthcheck --wait pool1
+    openstack loadbalancer member create --subnet-id private-subnet --address 192.0.2.10 --protocol-port 80 --wait pool1
+    openstack loadbalancer member create --subnet-id private-subnet --address 192.0.2.11 --protocol-port 80 --wait pool1
 
 
 Deploy a TCP load balancer
@@ -244,14 +236,12 @@ This is generally suitable when load balancing a non-HTTP TCP-based service.
 
 ::
 
-    openstack loadbalancer create --name lb1 --vip-subnet-id public-subnet
-    # Re-run the following until lb1 shows ACTIVE and ONLINE statuses:
-    openstack loadbalancer show lb1
-    openstack loadbalancer listener create --name listener1 --protocol TCP --protocol-port 23456 lb1
-    openstack loadbalancer pool create --name pool1 --lb-algorithm ROUND_ROBIN --listener listener1 --protocol TCP
-    openstack loadbalancer healthmonitor create --delay 5 --max-retries 4 --timeout 10 --type TCP pool1
-    openstack loadbalancer member create --subnet-id private-subnet --address 192.0.2.10 --protocol-port 80 pool1
-    openstack loadbalancer member create --subnet-id private-subnet --address 192.0.2.11 --protocol-port 80 pool1
+    openstack loadbalancer create --name lb1 --vip-subnet-id public-subnet --wait
+    openstack loadbalancer listener create --name listener1 --protocol TCP --protocol-port 23456 --wait lb1
+    openstack loadbalancer pool create --name pool1 --lb-algorithm ROUND_ROBIN --listener listener1 --protocol TCP --wait
+    openstack loadbalancer healthmonitor create --delay 5 --max-retries 4 --timeout 10 --type TCP --wait pool1
+    openstack loadbalancer member create --subnet-id private-subnet --address 192.0.2.10 --protocol-port 80 --wait pool1
+    openstack loadbalancer member create --subnet-id private-subnet --address 192.0.2.11 --protocol-port 80 --wait pool1
 
 
 Deploy a QoS ruled load balancer
@@ -294,13 +284,11 @@ incoming or outgoing traffic.
 
     openstack network qos policy create qos-policy-bandwidth
     openstack network qos rule create --type bandwidth_limit --max-kbps 1024 --max-burst-kbits 1024 qos-policy-bandwidth
-    openstack loadbalancer create --name lb1 --vip-subnet-id public-subnet --vip-qos-policy-id qos-policy-bandwidth
-    # Re-run the following until lb1 shows ACTIVE and ONLINE statuses:
-    openstack loadbalancer show lb1
-    openstack loadbalancer listener create --name listener1 lb1 --protocol HTTP --protocol-port 80
-    openstack loadbalancer pool create --name pool1 --lb-algorithm ROUND_ROBIN --listener listener1 --protocol HTTP
-    openstack loadbalancer member create --subnet-id <private_subnet_id> --address 192.0.2.10 --protocol-port 80 pool1
-    openstack loadbalancer member create --subnet-id <private_subnet_id> --address 192.0.2.11 --protocol-port 80 pool1
+    openstack loadbalancer create --name lb1 --vip-subnet-id public-subnet --vip-qos-policy-id qos-policy-bandwidth --wait
+    openstack loadbalancer listener create --name listener1 lb1 --protocol HTTP --protocol-port 80 --wait
+    openstack loadbalancer pool create --name pool1 --lb-algorithm ROUND_ROBIN --listener listener1 --protocol HTTP --wait
+    openstack loadbalancer member create --subnet-id <private_subnet_id> --address 192.0.2.10 --protocol-port 80 --wait pool1
+    openstack loadbalancer member create --subnet-id <private_subnet_id> --address 192.0.2.11 --protocol-port 80 --wait pool1
 
 
 Deploy a load balancer with access control list
@@ -331,13 +319,11 @@ source IP addresses. Any other incoming traffic will be rejected.
 
 ::
 
-    openstack loadbalancer create --name lb1 --vip-subnet-id public-subnet
-    # Re-run the following until lb1 shows ACTIVE and ONLINE statuses:
-    openstack loadbalancer show lb1
-    openstack loadbalancer listener create --name listener1 --protocol TCP --protocol-port 23456 --allowed-cidr 192.0.2.0/24 --allowed-cidr 198.51.100/24 lb1
-    openstack loadbalancer pool create --name pool1 --lb-algorithm ROUND_ROBIN --listener listener1 --protocol TCP
-    openstack loadbalancer member create --subnet-id private-subnet --address 192.0.2.10 --protocol-port 80 pool1
-    openstack loadbalancer member create --subnet-id private-subnet --address 192.0.2.11 --protocol-port 80 pool1
+    openstack loadbalancer create --name lb1 --vip-subnet-id public-subnet --wait
+    openstack loadbalancer listener create --name listener1 --protocol TCP --protocol-port 23456 --allowed-cidr 192.0.2.0/24 --allowed-cidr 198.51.100/24 --wait lb1
+    openstack loadbalancer pool create --name pool1 --lb-algorithm ROUND_ROBIN --listener listener1 --protocol TCP --wait
+    openstack loadbalancer member create --subnet-id private-subnet --address 192.0.2.10 --protocol-port 80 --wait pool1
+    openstack loadbalancer member create --subnet-id private-subnet --address 192.0.2.11 --protocol-port 80 --wait pool1
 
 
 Deploy a non-terminated HTTPS load balancer
@@ -376,14 +362,12 @@ cannot be used with non-terminated HTTPS.
 
 ::
 
-    openstack loadbalancer create --name lb1 --vip-subnet-id public-subnet
-    # Re-run the following until lb1 shows ACTIVE and ONLINE statuses:
-    openstack loadbalancer show lb1
-    openstack loadbalancer listener create --name listener1 --protocol HTTPS --protocol-port 443 lb1
-    openstack loadbalancer pool create --name pool1 --lb-algorithm ROUND_ROBIN --listener listener1 --protocol HTTPS
-    openstack loadbalancer healthmonitor create --delay 5 --max-retries 4 --timeout 10 --type HTTPS --url-path /healthcheck pool1
-    openstack loadbalancer member create --subnet-id private-subnet --address 192.0.2.10 --protocol-port 443 pool1
-    openstack loadbalancer member create --subnet-id private-subnet --address 192.0.2.11 --protocol-port 443 pool1
+    openstack loadbalancer create --name lb1 --vip-subnet-id public-subnet --wait
+    openstack loadbalancer listener create --name listener1 --protocol HTTPS --protocol-port 443 --wait lb1
+    openstack loadbalancer pool create --name pool1 --lb-algorithm ROUND_ROBIN --listener listener1 --protocol HTTPS --wait
+    openstack loadbalancer healthmonitor create --delay 5 --max-retries 4 --timeout 10 --type HTTPS --url-path /healthcheck --wait pool1
+    openstack loadbalancer member create --subnet-id private-subnet --address 192.0.2.10 --protocol-port 443 --wait pool1
+    openstack loadbalancer member create --subnet-id private-subnet --address 192.0.2.11 --protocol-port 443 --wait pool1
 
 
 .. _basic-tls-terminated-listener:
@@ -432,13 +416,11 @@ balancer features, like Layer 7 features and header manipulation.
 
     openssl pkcs12 -export -inkey server.key -in server.crt -certfile ca-chain.crt -passout pass: -out server.p12
     openstack secret store --name='tls_secret1' -t 'application/octet-stream' -e 'base64' --payload="$(base64 < server.p12)"
-    openstack loadbalancer create --name lb1 --vip-subnet-id public-subnet
-    # Re-run the following until lb1 shows ACTIVE and ONLINE statuses:
-    openstack loadbalancer show lb1
-    openstack loadbalancer listener create --protocol-port 443 --protocol TERMINATED_HTTPS --name listener1 --default-tls-container=$(openstack secret list | awk '/ tls_secret1 / {print $2}') lb1
-    openstack loadbalancer pool create --name pool1 --lb-algorithm ROUND_ROBIN --listener listener1 --protocol HTTP
-    openstack loadbalancer member create --subnet-id private-subnet --address 192.0.2.10 --protocol-port 80 pool1
-    openstack loadbalancer member create --subnet-id private-subnet --address 192.0.2.11 --protocol-port 80 pool1
+    openstack loadbalancer create --name lb1 --vip-subnet-id public-subnet --wait
+    openstack loadbalancer listener create --protocol-port 443 --protocol TERMINATED_HTTPS --name listener1 --default-tls-container=$(openstack secret list | awk '/ tls_secret1 / {print $2}') --wait lb1
+    openstack loadbalancer pool create --name pool1 --lb-algorithm ROUND_ROBIN --listener listener1 --protocol HTTP --wait
+    openstack loadbalancer member create --subnet-id private-subnet --address 192.0.2.10 --protocol-port 80 --wait pool1
+    openstack loadbalancer member create --subnet-id private-subnet --address 192.0.2.11 --protocol-port 80 --wait pool1
 
 .. note::
     A good security practise for production servers is to enable
@@ -494,13 +476,11 @@ listener using Server Name Indication (SNI) technology.
     openssl pkcs12 -export -inkey server2.key -in server2.crt -certfile ca-chain2.crt -passout pass: -out server2.p12
     openstack secret store --name='tls_secret1' -t 'application/octet-stream' -e 'base64' --payload="$(base64 < server.p12)"
     openstack secret store --name='tls_secret2' -t 'application/octet-stream' -e 'base64' --payload="$(base64 < server2.p12)"
-    openstack loadbalancer create --name lb1 --vip-subnet-id public-subnet
-    # Re-run the following until lb1 shows ACTIVE and ONLINE statuses:
-    openstack loadbalancer show lb1
-    openstack loadbalancer listener create --protocol-port 443 --protocol TERMINATED_HTTPS --name listener1 --default-tls-container=$(openstack secret list | awk '/ tls_secret1 / {print $2}') --sni-container-refs $(openstack secret list | awk '/ tls_secret1 / {print $2}') $(openstack secret list | awk '/ tls_secret2 / {print $2}') -- lb1
-    openstack loadbalancer pool create --name pool1 --lb-algorithm ROUND_ROBIN --listener listener1 --protocol HTTP
-    openstack loadbalancer member create --subnet-id private-subnet --address 192.0.2.10 --protocol-port 80 pool1
-    openstack loadbalancer member create --subnet-id private-subnet --address 192.0.2.11 --protocol-port 80 pool1
+    openstack loadbalancer create --name lb1 --vip-subnet-id public-subnet --wait
+    openstack loadbalancer listener create --protocol-port 443 --protocol TERMINATED_HTTPS --name listener1 --default-tls-container=$(openstack secret list | awk '/ tls_secret1 / {print $2}') --sni-container-refs $(openstack secret list | awk '/ tls_secret1 / {print $2}') $(openstack secret list | awk '/ tls_secret2 / {print $2}') --wait -- lb1
+    openstack loadbalancer pool create --name pool1 --lb-algorithm ROUND_ROBIN --listener listener1 --protocol HTTP --wait
+    openstack loadbalancer member create --subnet-id private-subnet --address 192.0.2.10 --protocol-port 80 --wait pool1
+    openstack loadbalancer member create --subnet-id private-subnet --address 192.0.2.11 --protocol-port 80 --wait pool1
 
 Deploy a TLS-terminated HTTPS load balancer with client authentication
 ----------------------------------------------------------------------
@@ -560,13 +540,11 @@ authentication.
     openstack secret store --name='tls_secret1' -t 'application/octet-stream' -e 'base64' --payload="$(base64 < server.p12)"
     openstack secret store --name='client_ca_cert' -t 'application/octet-stream' -e 'base64' --payload="$(base64 < client_ca.pem)"
     openstack secret store --name='client_ca_crl' -t 'application/octet-stream' -e 'base64' --payload="$(base64 < client_ca.crl)"
-    openstack loadbalancer create --name lb1 --vip-subnet-id public-subnet
-    # Re-run the following until lb1 shows ACTIVE and ONLINE statuses:
-    openstack loadbalancer show lb1
-    openstack loadbalancer listener create --protocol-port 443 --protocol TERMINATED_HTTPS --name listener1 --default-tls-container=$(openstack secret list | awk '/ tls_secret1 / {print $2}') --client-authentication=MANDATORY --client-ca-tls-container-ref=$(openstack secret list | awk '/ client_ca_cert / {print $2}') --client-crl-container=$(openstack secret list | awk '/ client_ca_crl / {print $2}') lb1
-    openstack loadbalancer pool create --name pool1 --lb-algorithm ROUND_ROBIN --listener listener1 --protocol HTTP
-    openstack loadbalancer member create --subnet-id private-subnet --address 192.0.2.10 --protocol-port 80 pool1
-    openstack loadbalancer member create --subnet-id private-subnet --address 192.0.2.11 --protocol-port 80 pool1
+    openstack loadbalancer create --name lb1 --vip-subnet-id public-subnet --wait
+    openstack loadbalancer listener create --protocol-port 443 --protocol TERMINATED_HTTPS --name listener1 --default-tls-container=$(openstack secret list | awk '/ tls_secret1 / {print $2}') --client-authentication=MANDATORY --client-ca-tls-container-ref=$(openstack secret list | awk '/ client_ca_cert / {print $2}') --client-crl-container=$(openstack secret list | awk '/ client_ca_crl / {print $2}') --wait lb1
+    openstack loadbalancer pool create --name pool1 --lb-algorithm ROUND_ROBIN --listener listener1 --protocol HTTP --wait
+    openstack loadbalancer member create --subnet-id private-subnet --address 192.0.2.10 --protocol-port 80 --wait pool1
+    openstack loadbalancer member create --subnet-id private-subnet --address 192.0.2.11 --protocol-port 80 --wait pool1
 
 .. _h2-alpn-tls-terminated-listener:
 
@@ -613,13 +591,11 @@ Protocol Negotiation (ALPN) TLS extension.
 
     openssl pkcs12 -export -inkey server.key -in server.crt -certfile ca-chain.crt -passout pass: -out server.p12
     openstack secret store --name='tls_secret1' -t 'application/octet-stream' -e 'base64' --payload="$(base64 < server.p12)"
-    openstack loadbalancer create --name lb1 --vip-subnet-id public-subnet
-    # Re-run the following until lb1 shows ACTIVE and ONLINE statuses:
-    openstack loadbalancer show lb1
-    openstack loadbalancer listener create --protocol-port 443 --protocol TERMINATED_HTTPS --alpn-protocol h2 --alpn-protocol http/1.1 --name listener1 --default-tls-container=$(openstack secret list | awk '/ tls_secret1 / {print $2}') lb1
-    openstack loadbalancer pool create --name pool1 --lb-algorithm ROUND_ROBIN --listener listener1 --protocol HTTP
-    openstack loadbalancer member create --subnet-id private-subnet --address 192.0.2.10 --protocol-port 80 pool1
-    openstack loadbalancer member create --subnet-id private-subnet --address 192.0.2.11 --protocol-port 80 pool1
+    openstack loadbalancer create --name lb1 --vip-subnet-id public-subnet --wait
+    openstack loadbalancer listener create --protocol-port 443 --protocol TERMINATED_HTTPS --alpn-protocol h2 --alpn-protocol http/1.1 --name listener1 --default-tls-container=$(openstack secret list | awk '/ tls_secret1 / {print $2}') --wait lb1
+    openstack loadbalancer pool create --name pool1 --lb-algorithm ROUND_ROBIN --listener listener1 --protocol HTTP --wait
+    openstack loadbalancer member create --subnet-id private-subnet --address 192.0.2.10 --protocol-port 80 --wait pool1
+    openstack loadbalancer member create --subnet-id private-subnet --address 192.0.2.11 --protocol-port 80 --wait pool1
 
 Deploy HTTP and TLS-terminated HTTPS load balancing on the same IP and backend
 ------------------------------------------------------------------------------
@@ -673,14 +649,12 @@ HTTP just get redirected to the HTTPS listener), then please see `the example
 
     openssl pkcs12 -export -inkey server.key -in server.crt -certfile ca-chain.crt -passout pass: -out server.p12
     openstack secret store --name='tls_secret1' -t 'application/octet-stream' -e 'base64' --payload="$(base64 < server.p12)"
-    openstack loadbalancer create --name lb1 --vip-subnet-id public-subnet
-    # Re-run the following until lb1 shows ACTIVE and ONLINE statuses:
-    openstack loadbalancer show lb1
-    openstack loadbalancer listener create --protocol-port 443 --protocol TERMINATED_HTTPS --name listener1 --default-tls-container=$(openstack secret list | awk '/ tls_secret1 / {print $2}') lb1
-    openstack loadbalancer pool create --name pool1 --lb-algorithm ROUND_ROBIN --listener listener1 --protocol HTTP
-    openstack loadbalancer member create --subnet-id private-subnet --address 192.0.2.10 --protocol-port 80 pool1
-    openstack loadbalancer member create --subnet-id private-subnet --address 192.0.2.11 --protocol-port 80 pool1
-    openstack loadbalancer listener create --protocol-port 80 --protocol HTTP --name listener2 --default-pool pool1 lb1
+    openstack loadbalancer create --name lb1 --vip-subnet-id public-subnet --wait
+    openstack loadbalancer listener create --protocol-port 443 --protocol TERMINATED_HTTPS --name listener1 --default-tls-container=$(openstack secret list | awk '/ tls_secret1 / {print $2}') --wait lb1
+    openstack loadbalancer pool create --name pool1 --lb-algorithm ROUND_ROBIN --listener listener1 --protocol HTTP --wait
+    openstack loadbalancer member create --subnet-id private-subnet --address 192.0.2.10 --protocol-port 80 --wait pool1
+    openstack loadbalancer member create --subnet-id private-subnet --address 192.0.2.11 --protocol-port 80 --wait pool1
+    openstack loadbalancer listener create --protocol-port 80 --protocol HTTP --name listener2 --default-pool pool1 --wait lb1
 
 .. _pool-with-backend-reencryption:
 
@@ -725,13 +699,11 @@ terminated listener, see the above section
 
     openstack secret store --name='member_ca_cert' -t 'application/octet-stream' -e 'base64' --payload="$(base64 < member_ca.pem)"
     openstack secret store --name='member_ca_crl' -t 'application/octet-stream' -e 'base64' --payload="$(base64 < member_ca.crl)"
-    openstack loadbalancer create --name lb1 --vip-subnet-id public-subnet
-    # Re-run the following until lb1 shows ACTIVE and ONLINE statuses:
-    openstack loadbalancer show lb1
-    openstack loadbalancer listener create --name listener1 --protocol HTTP --protocol-port 80 lb1
-    openstack loadbalancer pool create --name pool1 --lb-algorithm ROUND_ROBIN --listener listener1 --protocol HTTP --enable-tls --ca-tls-container-ref $(openstack secret list | awk '/ member_ca_cert / {print $2}') --crl-container-ref $(openstack secret list | awk '/ member_ca_crl / {print $2}')
-    openstack loadbalancer member create --subnet-id private-subnet --address 192.0.2.10 --protocol-port 443 pool1
-    openstack loadbalancer member create --subnet-id private-subnet --address 192.0.2.11 --protocol-port 443 pool1
+    openstack loadbalancer create --name lb1 --vip-subnet-id public-subnet --wait
+    openstack loadbalancer listener create --name listener1 --protocol HTTP --protocol-port 80 --wait lb1
+    openstack loadbalancer pool create --name pool1 --lb-algorithm ROUND_ROBIN --listener listener1 --protocol HTTP --enable-tls --ca-tls-container-ref $(openstack secret list | awk '/ member_ca_cert / {print $2}') --crl-container-ref $(openstack secret list | awk '/ member_ca_crl / {print $2}') --wait
+    openstack loadbalancer member create --subnet-id private-subnet --address 192.0.2.10 --protocol-port 443 --wait pool1
+    openstack loadbalancer member create --subnet-id private-subnet --address 192.0.2.11 --protocol-port 443 --wait pool1
 
 Deploy a load balancer with backend re-encryption and client authentication
 ---------------------------------------------------------------------------
@@ -787,13 +759,11 @@ terminated listener, see the above section
     openstack secret store --name='member_secret1' -t 'application/octet-stream' -e 'base64' --payload="$(base64 < member.p12)"
     openstack secret store --name='member_ca_cert' -t 'application/octet-stream' -e 'base64' --payload="$(base64 < member_ca.pem)"
     openstack secret store --name='member_ca_crl' -t 'application/octet-stream' -e 'base64' --payload="$(base64 < member_ca.crl)"
-    openstack loadbalancer create --name lb1 --vip-subnet-id public-subnet
-    # Re-run the following until lb1 shows ACTIVE and ONLINE statuses:
-    openstack loadbalancer show lb1
-    openstack loadbalancer listener create --name listener1 --protocol HTTP --protocol-port 80 lb1
-    openstack loadbalancer pool create --name pool1 --lb-algorithm ROUND_ROBIN --listener listener1 --protocol HTTP --enable-tls --ca-tls-container-ref $(openstack secret list | awk '/ member_ca_cert / {print $2}') --crl-container-ref $(openstack secret list | awk '/ member_ca_crl / {print $2}') --tls-container-ref $(openstack secret list | awk '/ member_secret1 / {print $2}')
-    openstack loadbalancer member create --subnet-id private-subnet --address 192.0.2.10 --protocol-port 443 pool1
-    openstack loadbalancer member create --subnet-id private-subnet --address 192.0.2.11 --protocol-port 443 pool1
+    openstack loadbalancer create --name lb1 --vip-subnet-id public-subnet --wait
+    openstack loadbalancer listener create --name listener1 --protocol HTTP --protocol-port 80 --wait lb1
+    openstack loadbalancer pool create --name pool1 --lb-algorithm ROUND_ROBIN --listener listener1 --protocol HTTP --enable-tls --ca-tls-container-ref $(openstack secret list | awk '/ member_ca_cert / {print $2}') --crl-container-ref $(openstack secret list | awk '/ member_ca_crl / {print $2}') --tls-container-ref $(openstack secret list | awk '/ member_secret1 / {print $2}') --wait
+    openstack loadbalancer member create --subnet-id private-subnet --address 192.0.2.10 --protocol-port 443 --wait pool1
+    openstack loadbalancer member create --subnet-id private-subnet --address 192.0.2.11 --protocol-port 443 --wait pool1
 
 Deploy a HTTP/2 load balancer with ALPN TLS extension and backend re-encryption
 -------------------------------------------------------------------------------
@@ -876,14 +846,12 @@ This is a load balancer solution suitable for UDP-based services.
 
 ::
 
-    openstack loadbalancer create --name lb1 --vip-subnet-id public-subnet
-    # Re-run the following until lb1 shows ACTIVE and ONLINE statuses:
-    openstack loadbalancer show lb1
-    openstack loadbalancer listener create --name listener1 --protocol UDP --protocol-port 1234 lb1
-    openstack loadbalancer pool create --name pool1 --lb-algorithm ROUND_ROBIN --listener listener1 --protocol UDP
-    openstack loadbalancer healthmonitor create --delay 3 --max-retries 2 --timeout 2 --type UDP-CONNECT pool1
-    openstack loadbalancer member create --subnet-id private-subnet --address 192.0.2.10 --protocol-port 1234 pool1
-    openstack loadbalancer member create --subnet-id private-subnet --address 192.0.2.11 --protocol-port 1234 pool1
+    openstack loadbalancer create --name lb1 --vip-subnet-id public-subnet --wait
+    openstack loadbalancer listener create --name listener1 --protocol UDP --protocol-port 1234 --wait lb1
+    openstack loadbalancer pool create --name pool1 --lb-algorithm ROUND_ROBIN --listener listener1 --protocol UDP --wait
+    openstack loadbalancer healthmonitor create --delay 3 --max-retries 2 --timeout 2 --type UDP-CONNECT --wait pool1
+    openstack loadbalancer member create --subnet-id private-subnet --address 192.0.2.10 --protocol-port 1234 --wait pool1
+    openstack loadbalancer member create --subnet-id private-subnet --address 192.0.2.11 --protocol-port 1234 --wait pool1
 
 
 .. _health-monitor-best-practices:
