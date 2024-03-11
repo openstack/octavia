@@ -52,3 +52,35 @@ class TestKeystoneSession(base.TestCase):
             [call("Overriding [%s].%s with '%s'", 'neutron', 'cafile',
                   'bar')]
         )
+
+    # Test case for https://bugs.launchpad.net/octavia/+bug/2051604
+    @mock.patch("octavia.common.keystone.ks_loading"
+                ".load_auth_from_conf_options")
+    @mock.patch("octavia.common.keystone.LOG")
+    def test_get_auth_neutron_override_endpoint(self,
+                                                mock_log,
+                                                mock_load_auth):
+        opt_mock = mock.MagicMock()
+        opt_mock.dest = "foo"
+        conf = oslo_fixture.Config(cfg.CONF)
+        conf.conf.set_default('endpoint_override', 'default_endpoint',
+                              'service_auth')
+        conf.conf.set_default('endpoint_override', 'new_endpoint',
+                              'neutron')
+
+        mock_load_auth.side_effect = [
+            ks_exceptions.auth_plugins.MissingRequiredOptions(
+                [opt_mock]),
+            None,
+            None
+        ]
+
+        sess = ks.KeystoneSession("neutron")
+        sess.get_auth()
+
+        # [service_auth].endpoint_override should not override
+        # [neutron].endpoint_override
+        self.assertNotIn(
+            call("Overriding [%s].%s with '%s'", 'neutron',
+                 'endpoint_override', 'default_endpoint'),
+            mock_log.debug.mock_calls)

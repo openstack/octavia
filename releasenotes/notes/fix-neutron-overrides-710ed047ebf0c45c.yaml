@@ -1,0 +1,8 @@
+---
+fixes:
+  - |
+    Fixed a bug when the deprecated settings (``endpoint``, ``endpoint_type``,
+    ``ca_certificates_file``) are used in the ``[neutron]`` section of the
+    configuration file. The connection to the neutron service may have used
+    some settings from the ``[service_auth]`` section or used undefined
+    settings.
