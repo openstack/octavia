@@ -35,6 +35,7 @@ class TestCase(testtools.TestCase):
         config.register_cli_opts()
         self.addCleanup(mock.patch.stopall)
         self.addCleanup(self.clean_caches)
+        self.addCleanup(cfg.CONF.reset)
 
         self.warning_fixture = self.useFixture(oc_fixtures.WarningsFixture())
 

@@ -15,6 +15,7 @@ import contextlib
 
 from oslo_config import cfg
 from oslo_log import log
+from oslo_utils import strutils
 from taskflow.jobs import backends as job_backends
 from taskflow.persistence import backends as persistence_backends
 
@@ -113,6 +114,19 @@ class RedisTaskFlowDriver(JobboardTaskFlowDriver):
                 CONF.task_flow.jobboard_backend_password)
         jobboard_backend_conf.update(
             CONF.task_flow.jobboard_redis_backend_ssl_options)
+
+        sentinel_kwargs = CONF.task_flow.jobboard_redis_sentinel_ssl_options
+        if 'ssl' in sentinel_kwargs:
+            sentinel_kwargs['ssl'] = strutils.bool_from_string(
+                sentinel_kwargs['ssl'])
+        if CONF.task_flow.jobboard_redis_sentinel_username is not None:
+            sentinel_kwargs['username'] = (
+                CONF.task_flow.jobboard_redis_sentinel_username)
+        if CONF.task_flow.jobboard_redis_sentinel_password is not None:
+            sentinel_kwargs['password'] = (
+                CONF.task_flow.jobboard_redis_sentinel_password)
+        jobboard_backend_conf['sentinel_kwargs'] = sentinel_kwargs
+
         return job_backends.backend(
             CONF.task_flow.jobboard_backend_namespace,
             jobboard_backend_conf,
