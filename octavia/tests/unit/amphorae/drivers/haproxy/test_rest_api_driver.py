@@ -105,9 +105,9 @@ class TestHAProxyAmphoraDriver(base.TestCase):
         self.driver.clients['0'] = client_mock
 
         self.driver.set_interface_rules(amphora_mock, IP_ADDRESS, 'fake_rules')
-        mock_api_version.assert_called_once_with(amphora_mock)
+        mock_api_version.assert_called_once_with(amphora_mock, None)
         client_mock.set_interface_rules.assert_called_once_with(
-            amphora_mock, IP_ADDRESS, 'fake_rules')
+            amphora_mock, IP_ADDRESS, 'fake_rules', timeout_dict=None)
 
         self.assertRaises(driver_except.AmpDriverNotImplementedError,
                           self.driver.set_interface_rules, amphora_mock,

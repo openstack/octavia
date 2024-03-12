@@ -290,9 +290,10 @@ class AmphoraFlows(object):
 
             amp_0_subflow.add(amphora_driver_tasks.SetAmphoraFirewallRules(
                 name=sf_name + '-0-' + constants.SET_AMPHORA_FIREWALL_RULES,
-                requires=(constants.AMPHORAE,
+                requires=(constants.AMPHORAE, constants.AMPHORAE_STATUS,
                           constants.AMPHORA_FIREWALL_RULES),
-                inject={constants.AMPHORA_INDEX: 0}))
+                inject={constants.AMPHORA_INDEX: 0,
+                        constants.TIMEOUT_DICT: timeout_dict}))
 
         amp_0_subflow.add(amphora_driver_tasks.AmphoraIndexVRRPStart(
             name=sf_name + '-0-' + constants.AMP_VRRP_START,
@@ -330,9 +331,10 @@ class AmphoraFlows(object):
 
             amp_1_subflow.add(amphora_driver_tasks.SetAmphoraFirewallRules(
                 name=sf_name + '-1-' + constants.SET_AMPHORA_FIREWALL_RULES,
-                requires=(constants.AMPHORAE,
+                requires=(constants.AMPHORAE, constants.AMPHORAE_STATUS,
                           constants.AMPHORA_FIREWALL_RULES),
-                inject={constants.AMPHORA_INDEX: 1}))
+                inject={constants.AMPHORA_INDEX: 1,
+                        constants.TIMEOUT_DICT: timeout_dict}))
 
         amp_1_subflow.add(amphora_driver_tasks.AmphoraIndexVRRPStart(
             name=sf_name + '-1-' + constants.AMP_VRRP_START,

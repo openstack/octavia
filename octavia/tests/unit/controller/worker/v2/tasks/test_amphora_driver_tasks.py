@@ -1262,15 +1262,18 @@ class TestAmphoraDriverTasks(base.TestCase):
         set_amp_fw_rules = amphora_driver_tasks.SetAmphoraFirewallRules()
 
         # Test non-SRIOV VIP path
-        set_amp_fw_rules.execute([amphora], 0, [{'non-sriov-vip': True}])
+        set_amp_fw_rules.execute([amphora], 0, [{'non-sriov-vip': True}], {},
+                                 timeout_dict=None)
 
         mock_get_session.assert_not_called()
         mock_driver.set_interface_rules.assert_not_called()
 
         # Test SRIOV VIP path
-        set_amp_fw_rules.execute([amphora], 0, [{'fake_rule': True}])
+        set_amp_fw_rules.execute([amphora], 0, [{'fake_rule': True}], {},
+                                 timeout_dict=None)
 
         mock_amphora_repo_get.assert_called_once_with(_session_mock, id=AMP_ID)
 
         mock_driver.set_interface_rules.assert_called_once_with(
-            _db_amphora_mock, '192.0.2.88', [{'fake_rule': True}])
+            _db_amphora_mock, '192.0.2.88', [{'fake_rule': True}],
+            timeout_dict=None)

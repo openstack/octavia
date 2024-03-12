@@ -599,7 +599,7 @@ class HaproxyAmphoraLoadBalancerDriver(
         return response_json.get('interface', None)
 
     def set_interface_rules(self, amphora: db_models.Amphora,
-                            ip_address, rules):
+                            ip_address, rules, timeout_dict=None):
         """Sets interface firewall rules in the amphora
 
         :param amphora: The amphora to query.
@@ -608,9 +608,9 @@ class HaproxyAmphoraLoadBalancerDriver(
         :param rules: The l1st of allow rules to apply.
         """
         try:
-            self._populate_amphora_api_version(amphora)
+            self._populate_amphora_api_version(amphora, timeout_dict)
             self.clients[amphora.api_version].set_interface_rules(
-                amphora, ip_address, rules)
+                amphora, ip_address, rules, timeout_dict=timeout_dict)
         except exc.NotFound as e:
             LOG.debug('Amphora %s does not support the set_interface_rules '
                       'API.', amphora.id)
@@ -886,6 +886,7 @@ class AmphoraAPIClient1_0(AmphoraAPIClientBase):
         r = self.put(amp, 'config', timeout_dict, data=agent_config)
         return exc.check_exception(r)
 
-    def set_interface_rules(self, amp, ip_address, rules):
-        r = self.put(amp, f'interface/{ip_address}/rules', json=rules)
+    def set_interface_rules(self, amp, ip_address, rules, timeout_dict=None):
+        r = self.put(amp, f'interface/{ip_address}/rules', timeout_dict,
+                     json=rules)
         return exc.check_exception(r)
