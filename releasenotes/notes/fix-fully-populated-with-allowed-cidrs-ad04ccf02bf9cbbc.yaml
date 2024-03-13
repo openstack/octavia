@@ -1,0 +1,7 @@
+---
+fixes:
+  - |
+    Fixed a bug when creating a load balancer and a listener with
+    ``allowed_cidrs`` with the fully-populated load balancer API, the call was
+    rejected because Octavia could not validate that the IP addresses of the
+    ``allowed_cidrs`` have the same family as the VIP address.
