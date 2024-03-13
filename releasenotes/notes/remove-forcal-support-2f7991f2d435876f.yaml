@@ -1,0 +1,5 @@
+---
+upgrade:
+  - |
+    The diskimage-builder elements for amphora image no longer supports Ubuntu
+    Focal.
