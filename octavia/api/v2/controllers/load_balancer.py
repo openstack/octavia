@@ -552,6 +552,13 @@ class LoadBalancersController(base.BaseController):
                     subnet_id=add_vip.subnet_id)
 
             if listeners or pools:
+                # expire_all is required here, it ensures that the loadbalancer
+                # will be re-fetched with its associated vip in _graph_create.
+                # without expire_all the vip attributes that have been updated
+                # just before this call may not be set correctly in the
+                # loadbalancer object.
+                lock_session.expire_all()
+
                 db_pools, db_lists = self._graph_create(
                     context.session, lock_session, db_lb, listeners, pools)
 
