@@ -7,10 +7,6 @@ fi
 set -eu
 set -o pipefail
 
-if [[ "$DISTRO_NAME" =~ (rhel|centos) ]] && [ "$DIB_RELEASE" == "8" ]; then
-    chkconfig network on
-fi
-
 if [[ "$DISTRO_NAME" =~ (ubuntu) ]] && [ "$DIB_RELEASE" == "focal" ]; then
     systemctl enable systemd-networkd
 fi

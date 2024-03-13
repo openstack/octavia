@@ -1,15 +1,6 @@
 {
   "release": {
     "rhel": {
-      "8": {
-        "isc-dhcp-client": "dhcp-client",
-        "python3-dev": "platform-python-devel",
-        "python3-venv": "python3-virtualenv",
-        "python3": "python36",
-        "vlan": "",
-        "screen": "",
-        "dkms": ""
-      },
       "9": {
         "isc-dhcp-client": "dhcp-client",
         "python3-dev": "platform-python-devel",
@@ -22,15 +13,6 @@
       }
     },
     "centos": {
-      "8": {
-        "isc-dhcp-client": "dhcp-client",
-        "python3-dev": "platform-python-devel",
-        "python3-venv": "python3-virtualenv",
-        "python3": "python36",
-        "vlan": "",
-        "screen": "",
-        "dkms": ""
-      },
       "9-stream": {
         "isc-dhcp-client": "dhcp-client",
         "python3-dev": "platform-python-devel",
