@@ -122,10 +122,6 @@
         #- octavia-grenade-skip-level
     periodic:
       jobs:
-        - publish-openstack-octavia-amphora-image-focal:
-            branches:
-              regex: ^stable/.*$
-              negate: true
         - publish-openstack-octavia-amphora-image-jammy:
             branches:
               regex: ^stable/.*$

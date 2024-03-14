@@ -9,16 +9,6 @@
         - openstack/octavia-lib
 
 - job:
-    name: publish-openstack-octavia-amphora-image-focal
-    parent: publish-openstack-octavia-amphora-image
-    nodeset: ubuntu-focal
-    description: |
-      Publish Ubuntu Focal (20.04) based amphora image to tarballs.o.o.
-    vars:
-        amphora_os: ubuntu
-        amphora_os_release: focal
-
-- job:
     name: publish-openstack-octavia-amphora-image-jammy
     parent: publish-openstack-octavia-amphora-image
     nodeset: ubuntu-jammy
@@ -187,18 +177,6 @@
     vars:
         amphora_os: ubuntu
         amphora_os_release: jammy
-
-- job:
-    name: octavia-amphora-image-build-live-focal
-    parent: octavia-amphora-image-build
-    description: |
-      Builds an Ubuntu Focal amphora image using diskimage-builder from Git
-      master. This job does not publish the image.
-    required-projects:
-        - openstack/diskimage-builder
-    vars:
-        amphora_os: ubuntu
-        amphora_os_release: focal
 
 - job:
     name: octavia-amphora-image-build-live-jammy
