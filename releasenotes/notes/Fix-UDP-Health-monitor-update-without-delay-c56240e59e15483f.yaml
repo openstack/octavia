@@ -1,0 +1,4 @@
+---
+fixes:
+  - |
+    Fixed error on update UDP Health Monitor with empty "delay" parameter
