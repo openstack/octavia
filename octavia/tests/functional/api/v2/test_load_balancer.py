@@ -2054,6 +2054,37 @@ class TestLoadBalancer(base.BaseAPITest):
             self.put(self.LB_PATH.format(lb_id=lb_dict.get('id')),
                      lb_json, status=400)
 
+    def test_update_with_sg_ids(self):
+        project_id = uuidutils.generate_uuid()
+        sg1_id = uuidutils.generate_uuid()
+        sg2_id = uuidutils.generate_uuid()
+        lb = self.create_load_balancer(uuidutils.generate_uuid(),
+                                       name='lb1',
+                                       project_id=project_id,
+                                       vip_sg_ids=[sg1_id, sg2_id])
+        lb_dict = lb.get(self.root_tag)
+        lb_id = lb_dict.get('id')
+        self.assertEqual(sorted([sg1_id, sg2_id]),
+                         sorted(lb_dict['vip_sg_ids']))
+        self.set_lb_status(lb_dict.get('id'))
+
+        lb_json = self._build_body({'vip_sg_ids': [sg2_id]})
+        self.put(self.LB_PATH.format(lb_id=lb_id),
+                 lb_json, status=200)
+        self.set_lb_status(lb_dict.get('id'))
+        response = self.get(self.LB_PATH.format(lb_id=lb_id))
+        lb_dict = response.json.get(self.root_tag)
+        self.assertEqual(sorted([sg2_id]),
+                         sorted(lb_dict['vip_sg_ids']))
+
+        lb_json = self._build_body({'vip_sg_ids': []})
+        lb = self.put(self.LB_PATH.format(lb_id=lb_dict.get('id')),
+                      lb_json, status=200)
+        self.set_lb_status(lb_dict.get('id'))
+        response = self.get(self.LB_PATH.format(lb_id=lb_id))
+        lb_dict = response.json.get(self.root_tag)
+        self.assertEqual(0, len(lb_dict['vip_sg_ids']))
+
     def test_update_bad_lb_id(self):
         path = self.LB_PATH.format(lb_id='SEAN-CONNERY')
         self.put(path, body={}, status=404)
@@ -2735,7 +2766,12 @@ class TestLoadBalancerGraph(base.BaseAPITest):
         expected_additional_vips = expected_graph.pop('additional_vips', [])
         observed_additional_vips = observed_graph_copy.pop('additional_vips',
                                                            [])
+        expected_vip_sg_ids = expected_graph.pop('vip_sg_ids', [])
+        observed_vip_sg_ids = observed_graph_copy.pop('vip_sg_ids', [])
         self.assertEqual(expected_graph, observed_graph_copy)
+
+        self.assertEqual(sorted(expected_vip_sg_ids),
+                         sorted(observed_vip_sg_ids))
 
         self.assertEqual(len(expected_pools), len(observed_pools))
 
@@ -2800,7 +2836,8 @@ class TestLoadBalancerGraph(base.BaseAPITest):
             self.assertIn(observed_add_vip, expected_additional_vips)
 
     def _get_lb_bodies(self, create_listeners, expected_listeners,
-                       create_pools=None, additional_vips=None):
+                       create_pools=None, additional_vips=None,
+                       vip_sg_ids=None):
         create_lb = {
             'name': 'lb1',
             'project_id': self._project_id,
@@ -2811,6 +2848,8 @@ class TestLoadBalancerGraph(base.BaseAPITest):
             'listeners': create_listeners,
             'pools': create_pools or []
         }
+        if vip_sg_ids:
+            create_lb['vip_sg_ids'] = vip_sg_ids
         if additional_vips:
             create_lb.update({'additional_vips': additional_vips})
         expected_lb = {
@@ -2830,6 +2869,7 @@ class TestLoadBalancerGraph(base.BaseAPITest):
             'provider': 'noop_driver',
             'tags': [],
             'vip_vnic_type': constants.VNIC_TYPE_NORMAL,
+            'vip_sg_ids': vip_sg_ids or [],
         }
         expected_lb.update(create_lb)
         expected_lb['listeners'] = expected_listeners
@@ -3211,6 +3251,16 @@ class TestLoadBalancerGraph(base.BaseAPITest):
         api_lb = response.json.get(self.root_tag)
         self._assert_graphs_equal(expected_lb, api_lb)
 
+    def test_with_sg_ids(self):
+        create_lb, expected_lb = self._get_lb_bodies(
+            [], [], vip_sg_ids=[uuidutils.generate_uuid(),
+                                uuidutils.generate_uuid()])
+
+        body = self._build_body(create_lb)
+        response = self.post(self.LBS_PATH, body)
+        api_lb = response.json.get(self.root_tag)
+        self._assert_graphs_equal(expected_lb, api_lb)
+
     def test_with_one_listener(self):
         create_listener, expected_listener = self._get_listener_bodies()
         create_lb, expected_lb = self._get_lb_bodies([create_listener],
@@ -3219,6 +3269,53 @@ class TestLoadBalancerGraph(base.BaseAPITest):
         response = self.post(self.LBS_PATH, body)
         api_lb = response.json.get(self.root_tag)
         self._assert_graphs_equal(expected_lb, api_lb)
+
+    def test_with_one_listener_sg_ids(self):
+        create_listener, expected_listener = self._get_listener_bodies()
+        create_lb, expected_lb = self._get_lb_bodies(
+            [create_listener], [expected_listener],
+            vip_sg_ids=[uuidutils.generate_uuid(),
+                        uuidutils.generate_uuid()])
+
+        body = self._build_body(create_lb)
+        response = self.post(self.LBS_PATH, body)
+        api_lb = response.json.get(self.root_tag)
+        self._assert_graphs_equal(expected_lb, api_lb)
+
+    @mock.patch('octavia.api.v2.controllers.load_balancer.'
+                'LoadBalancersController._apply_flavor_to_lb_dict',
+                return_value={constants.SRIOV_VIP: True})
+    def test_with_vip_vnic_type_direct_and_sg_ids(self, mock_flavor_dict):
+        create_lb, expected_lb = self._get_lb_bodies(
+            [], [],
+            vip_sg_ids=[uuidutils.generate_uuid(),
+                        uuidutils.generate_uuid()])
+        expected_lb[constants.VIP_VNIC_TYPE] = constants.VNIC_TYPE_DIRECT
+
+        body = self._build_body(create_lb)
+
+        response = self.post(self.LBS_PATH, body, status=400,
+                             expect_errors=True)
+        error_text = response.json.get('faultstring')
+        self.assertIn("VIP Security Groups are not allowed with VNIC "
+                      "direct type", error_text)
+
+    def test_with_one_listener_sg_ids_and_allowed_cidrs(self):
+        allowed_cidrs = ['10.0.1.0/24']
+        create_listener, expected_listener = self._get_listener_bodies(
+            create_allowed_cidrs=allowed_cidrs,
+            expected_allowed_cidrs=allowed_cidrs)
+        create_lb, expected_lb = self._get_lb_bodies(
+            [create_listener], [expected_listener],
+            vip_sg_ids=[uuidutils.generate_uuid(),
+                        uuidutils.generate_uuid()])
+
+        body = self._build_body(create_lb)
+        response = self.post(self.LBS_PATH, body, status=400,
+                             expect_errors=True)
+        error_text = response.json.get('faultstring')
+        self.assertIn("Allowed CIDRs are not allowed when using custom "
+                      "VIP Security Groups", error_text)
 
     def test_with_one_listener_with_default_timeouts(self):
         self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))

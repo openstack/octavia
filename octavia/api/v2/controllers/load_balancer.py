@@ -307,6 +307,19 @@ class LoadBalancersController(base.BaseController):
         # Multi-vip validation for ensuring subnets are "sane"
         self._validate_subnets_share_network_but_no_duplicates(load_balancer)
 
+        # Validate optional security groups
+        if load_balancer.vip_sg_ids:
+            for sg_id in load_balancer.vip_sg_ids:
+                validate.security_group_exists(sg_id, context=context)
+
+    def _validate_vnic_type(self, vnic_type: str,
+                            load_balancer: lb_types.LoadBalancerPOST):
+        if (vnic_type == constants.VNIC_TYPE_DIRECT and
+                load_balancer.vip_sg_ids):
+            msg = _("VIP Security Groups are not allowed with VNIC direct "
+                    "type")
+            raise exceptions.ValidationException(detail=msg)
+
     @staticmethod
     def _create_vip_port_if_not_exist(load_balancer_db):
         """Create vip port."""
@@ -433,7 +446,7 @@ class LoadBalancersController(base.BaseController):
 
     @wsme_pecan.wsexpose(lb_types.LoadBalancerFullRootResponse,
                          body=lb_types.LoadBalancerRootPOST, status_code=201)
-    def post(self, load_balancer):
+    def post(self, load_balancer: lb_types.LoadBalancerRootPOST):
         """Creates a load balancer."""
         load_balancer = load_balancer.loadbalancer
         context = pecan_request.context.get('octavia_context')
@@ -502,6 +515,9 @@ class LoadBalancersController(base.BaseController):
                 vip_dict[constants.VNIC_TYPE] = constants.VNIC_TYPE_DIRECT
             else:
                 vip_dict[constants.VNIC_TYPE] = constants.VNIC_TYPE_NORMAL
+
+            self._validate_vnic_type(vip_dict[constants.VNIC_TYPE],
+                                     load_balancer)
 
             db_lb = self.repositories.create_load_balancer_and_vip(
                 lock_session, lb_dict, vip_dict, additional_vip_dicts)
@@ -723,6 +739,15 @@ class LoadBalancersController(base.BaseController):
             if load_balancer.vip_qos_policy_id is not None:
                 if db_lb.vip.qos_policy_id != load_balancer.vip_qos_policy_id:
                     validate.qos_policy_exists(load_balancer.vip_qos_policy_id)
+
+        if not isinstance(load_balancer.vip_sg_ids, wtypes.UnsetType):
+            if load_balancer.vip_sg_ids is None:
+                load_balancer.vip_sg_ids = []
+            else:
+                for sg_id in load_balancer.vip_sg_ids:
+                    validate.security_group_exists(sg_id, context=context)
+
+        self._validate_vnic_type(db_lb.vip.vnic_type, load_balancer)
 
         # Load the driver early as it also provides validation
         driver = driver_factory.get_driver(db_lb.provider)

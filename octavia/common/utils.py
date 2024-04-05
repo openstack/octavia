@@ -23,6 +23,7 @@ import hashlib
 import ipaddress
 import re
 import socket
+import typing
 
 from oslo_config import cfg
 from oslo_log import log as logging
@@ -30,6 +31,8 @@ from oslo_utils import excutils
 from stevedore import driver as stevedore_driver
 
 from octavia.common import constants
+if typing.TYPE_CHECKING:
+    from octavia.network import base as network_base
 
 CONF = cfg.CONF
 
@@ -61,7 +64,7 @@ def get_amphora_driver():
     return amphora_driver
 
 
-def get_network_driver():
+def get_network_driver() -> 'network_base.AbstractNetworkDriver':
     CONF.import_group('controller_worker', 'octavia.common.config')
     network_driver = stevedore_driver.DriverManager(
         namespace='octavia.network.drivers',

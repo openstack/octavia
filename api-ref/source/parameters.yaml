@@ -1780,6 +1780,22 @@ vip_qos_policy_id-optional:
   in: body
   required: false
   type: uuid
+vip_sg_ids:
+  description: |
+    The list of Security Group IDs of the Virtual IP (VIP) port of the Load
+    Balancer.
+  in: body
+  required: true
+  type: array
+  min_version: 2.29
+vip_sg_ids-optional:
+  description: |
+    The list of Security Group IDs of the Virtual IP (VIP) port of the Load
+    Balancer.
+  in: body
+  required: false
+  type: array
+  min_version: 2.29
 vip_subnet_id:
   description: |
     The ID of the subnet for the Virtual IP (VIP).

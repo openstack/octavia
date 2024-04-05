@@ -149,6 +149,9 @@ class RootController:
         self._add_a_version(versions, 'v2.27', 'v2', 'SUPPORTED',
                             '2023-05-05T00:00:00Z', host_url)
         # Add port vnic_type for SR-IOV
-        self._add_a_version(versions, 'v2.28', 'v2', 'CURRENT',
+        self._add_a_version(versions, 'v2.28', 'v2', 'SUPPORTED',
                             '2023-11-08T00:00:00Z', host_url)
+        # Add VIP SGs
+        self._add_a_version(versions, 'v2.29', 'v2', 'CURRENT',
+                            '2024-10-15T00:00:00Z', host_url)
         return {'versions': versions}
