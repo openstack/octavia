@@ -253,9 +253,17 @@ class Repositories:
             lb_dict['id'] = uuidutils.generate_uuid()
         lb = models.LoadBalancer(**lb_dict)
         session.add(lb)
+        vip_sg_ids = vip_dict.pop(consts.SG_IDS, [])
         vip_dict['load_balancer_id'] = lb_dict['id']
         vip = models.Vip(**vip_dict)
         session.add(vip)
+        if vip_sg_ids:
+            vip_dict[consts.SG_IDS] = vip_sg_ids
+            for vip_sg_id in vip_sg_ids:
+                vip_sg = models.VipSecurityGroup(
+                    load_balancer_id=lb_dict['id'],
+                    sg_id=vip_sg_id)
+                session.add(vip_sg)
         for add_vip_dict in additional_vip_dicts:
             add_vip_dict['load_balancer_id'] = lb_dict['id']
             add_vip_dict['network_id'] = vip_dict.get('network_id')
@@ -712,6 +720,8 @@ class LoadBalancerRepository(BaseRepository):
         query_options = (
             subqueryload(models.LoadBalancer.vip),
             subqueryload(models.LoadBalancer.additional_vips),
+            (subqueryload(models.LoadBalancer.vip).
+             subqueryload(models.Vip.sgs)),
             subqueryload(models.LoadBalancer.amphorae),
             subqueryload(models.LoadBalancer.pools),
             subqueryload(models.LoadBalancer.listeners),
@@ -789,8 +799,24 @@ class VipRepository(BaseRepository):
 
     def update(self, session, load_balancer_id, **model_kwargs):
         """Updates a vip entity in the database by load_balancer_id."""
-        session.query(self.model_class).filter_by(
-            load_balancer_id=load_balancer_id).update(model_kwargs)
+        sg_ids = model_kwargs.pop(consts.SG_IDS, None)
+
+        vip = session.query(self.model_class).filter_by(
+            load_balancer_id=load_balancer_id)
+        if model_kwargs:
+            vip.update(model_kwargs)
+
+        # NOTE(gthiemonge) the vip must be updated when sg_ids is []
+        # (removal of current sg_ids)
+        if sg_ids is not None:
+            vip = vip.first()
+            vip.sgs = [
+                models.VipSecurityGroup(
+                    load_balancer_id=load_balancer_id,
+                    sg_id=sg_id)
+                for sg_id in sg_ids]
+
+        session.flush()
 
 
 class AdditionalVipRepository(BaseRepository):

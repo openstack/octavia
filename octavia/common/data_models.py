@@ -558,7 +558,7 @@ class Vip(BaseDataModel):
     def __init__(self, load_balancer_id=None, ip_address=None,
                  subnet_id=None, network_id=None, port_id=None,
                  load_balancer=None, qos_policy_id=None, octavia_owned=None,
-                 vnic_type=None):
+                 vnic_type=None, sg_ids=None):
         self.load_balancer_id = load_balancer_id
         self.ip_address = ip_address
         self.subnet_id = subnet_id
@@ -568,6 +568,18 @@ class Vip(BaseDataModel):
         self.qos_policy_id = qos_policy_id
         self.octavia_owned = octavia_owned
         self.vnic_type = vnic_type
+        self.sg_ids = sg_ids or []
+
+    def to_dict(self, **kwargs):
+        ret = super().to_dict(**kwargs)
+        if kwargs.get('recurse') is not True:
+            # NOTE(gthiemonge) we need to return the associated SG IDs but as
+            # sg_ids is a list, they are only added with recurse=True, which
+            # does a full recursion on the Vip, adding the associated
+            # LoadBalancer, its Listeners, etc...
+            # Adding it directly here avoids unnecessary recursion
+            ret[constants.SG_IDS] = self.sg_ids
+        return ret
 
 
 class AdditionalVip(BaseDataModel):
@@ -886,3 +898,9 @@ class ListenerCidr(BaseDataModel):
     # object. Otherwise we recurse down the "ghost" listener object.
     def to_dict(self, **kwargs):
         return {'cidr': self.cidr, 'listener_id': self.listener_id}
+
+
+class VipSecurityGroup(BaseDataModel):
+    def __init__(self, load_balancer_id: str = None, sg_id: str = None):
+        self.load_balancer_id = load_balancer_id
+        self.sg_id = sg_id

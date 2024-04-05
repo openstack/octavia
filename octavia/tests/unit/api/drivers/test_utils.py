@@ -16,6 +16,7 @@ from unittest import mock
 
 from octavia_lib.api.drivers import data_models as driver_dm
 from octavia_lib.api.drivers import exceptions as lib_exceptions
+from oslo_utils import uuidutils
 
 from octavia.api.drivers import utils
 from octavia.common import constants
@@ -109,6 +110,7 @@ class TestUtils(base.TestCase):
                                       listener_certs, listener_certs,
                                       listener_certs]
         mock_get_flavor.return_value = {'shaved_ice': 'cherry'}
+        sg_id = uuidutils.generate_uuid()
         test_lb_dict = {'name': 'lb1',
                         'project_id': self.sample_data.project_id,
                         'vip_subnet_id': self.sample_data.subnet_id,
@@ -116,6 +118,7 @@ class TestUtils(base.TestCase):
                         'vip_address': self.sample_data.ip_address,
                         'vip_network_id': self.sample_data.network_id,
                         'vip_qos_policy_id': self.sample_data.qos_policy_id,
+                        'vip_sg_ids': [sg_id],
                         'id': self.sample_data.lb_id,
                         'listeners': [],
                         'pools': [],
@@ -136,6 +139,7 @@ class TestUtils(base.TestCase):
             'vip_port_id': self.sample_data.port_id,
             'vip_qos_policy_id': self.sample_data.qos_policy_id,
             'vip_network_id': self.sample_data.network_id,
+            'vip_sg_ids': [sg_id],
             'pools': self.sample_data.provider_pools,
             'flavor': {'shaved_ice': 'cherry'},
             'name': 'lb1'}
@@ -143,7 +147,8 @@ class TestUtils(base.TestCase):
                               network_id=self.sample_data.network_id,
                               port_id=self.sample_data.port_id,
                               subnet_id=self.sample_data.subnet_id,
-                              qos_policy_id=self.sample_data.qos_policy_id)
+                              qos_policy_id=self.sample_data.qos_policy_id,
+                              sg_ids=[sg_id])
 
         provider_lb_dict = utils.lb_dict_to_provider_dict(
             test_lb_dict, vip=vip, db_pools=self.sample_data.test_db_pools,

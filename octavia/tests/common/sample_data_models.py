@@ -50,6 +50,9 @@ class SampleDriverDataModels:
         self.pool_ca_container_ref = uuidutils.generate_uuid()
         self.pool_crl_container_ref = uuidutils.generate_uuid()
 
+        self.vip_sg_ids = [uuidutils.generate_uuid(),
+                           uuidutils.generate_uuid()]
+
         self.pool1_id = uuidutils.generate_uuid()
         self.pool2_id = uuidutils.generate_uuid()
 
@@ -600,6 +603,7 @@ class SampleDriverDataModels:
                               constants.PORT_ID: self.port_id,
                               lib_consts.SUBNET_ID: self.subnet_id,
                               constants.QOS_POLICY_ID: self.qos_policy_id,
+                              constants.SG_IDS: self.vip_sg_ids,
                               constants.OCTAVIA_OWNED: None}
 
         self.provider_vip_dict = {
@@ -608,6 +612,7 @@ class SampleDriverDataModels:
             lib_consts.VIP_PORT_ID: self.port_id,
             lib_consts.VIP_SUBNET_ID: self.subnet_id,
             lib_consts.VIP_QOS_POLICY_ID: self.qos_policy_id,
+            lib_consts.VIP_SG_IDS: self.vip_sg_ids,
             constants.OCTAVIA_OWNED: None}
 
         self.test_additional_vip_dict = {
@@ -627,7 +632,8 @@ class SampleDriverDataModels:
             network_id=self.network_id,
             port_id=self.port_id,
             subnet_id=self.subnet_id,
-            qos_policy_id=self.qos_policy_id)
+            qos_policy_id=self.qos_policy_id,
+            sg_ids=self.vip_sg_ids)
 
         self.db_additional_vip = data_models.AdditionalVip(
             ip_address=self.ip_address2,
