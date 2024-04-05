@@ -876,7 +876,7 @@ class AllowedAddressPairsDriver(neutron_base.BaseNeutronDriver):
             raise base.CreatePortException(message)
 
     def get_security_group(self, sg_name):
-        """Retrieves the security group by it's name.
+        """Retrieves the security group by its name.
 
         :param sg_name: The security group name.
         :return: octavia.network.data_models.SecurityGroup, None if not enabled
