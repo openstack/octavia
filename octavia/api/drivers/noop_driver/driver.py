@@ -50,7 +50,8 @@ class NoopManager:
         vip = data_models.VIP(vip_address=vip_address,
                               vip_network_id=vip_network_id,
                               vip_port_id=vip_port_id,
-                              vip_subnet_id=vip_subnet_id)
+                              vip_subnet_id=vip_subnet_id,
+                              vip_sg_ids=vip_dictionary.get('vip_sg_ids', []))
 
         vip_return_dict = vip.to_dict()
         additional_vip_dicts = additional_vip_dicts or []

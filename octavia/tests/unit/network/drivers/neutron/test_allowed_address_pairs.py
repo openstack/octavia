@@ -326,6 +326,9 @@ class TestAllowedAddressPairsDriver(base.TestCase):
         lb_mock.id = LB_ID
         vip_mock = mock.MagicMock()
         vip_mock.port_id = VIP_PORT_ID
+        vip_sg = mock.MagicMock()
+        vip_sg.id = uuidutils.generate_uuid()
+        vip_mock.sg_ids = [vip_sg.id]
         security_group_dict = {'id': SG_ID}
         mock_get_sg_name.return_value = TEST_SG_NAME
 
@@ -358,7 +361,7 @@ class TestAllowedAddressPairsDriver(base.TestCase):
         test_driver._update_security_group_rules.assert_called_once_with(
             lb_mock, SG_ID)
         test_driver._add_vip_security_group_to_port.assert_called_once_with(
-            LB_ID, VIP_PORT_ID, SG_ID)
+            LB_ID, VIP_PORT_ID, SG_ID, vip_sg_ids=[vip_sg.id])
 
         # Test by security group name
         test_driver._add_vip_security_group_to_port.reset_mock()
@@ -374,7 +377,60 @@ class TestAllowedAddressPairsDriver(base.TestCase):
         test_driver._update_security_group_rules.assert_called_once_with(
             lb_mock, SG_ID)
         test_driver._add_vip_security_group_to_port.assert_called_once_with(
-            LB_ID, VIP_PORT_ID, SG_ID)
+            LB_ID, VIP_PORT_ID, SG_ID, vip_sg_ids=[vip_sg.id])
+
+    def test_update_aap_port_sg(self):
+        LB_ID = uuidutils.generate_uuid()
+        SG_ID = uuidutils.generate_uuid()
+        VIP_PORT_ID = uuidutils.generate_uuid()
+        VRRP_PORT_ID = uuidutils.generate_uuid()
+        lb_mock = mock.MagicMock()
+        lb_mock.id = LB_ID
+        amp_mock = mock.MagicMock()
+        amp_mock.vrrp_port_id = VRRP_PORT_ID
+        vip_mock = mock.MagicMock()
+        vip_mock.port_id = VIP_PORT_ID
+        vip_sg = mock.MagicMock()
+        vip_sg.id = uuidutils.generate_uuid()
+        vip_mock.sg_ids = [vip_sg.id]
+        security_group_dict = {'id': SG_ID}
+
+        test_driver = allowed_address_pairs.AllowedAddressPairsDriver()
+
+        test_driver._add_vip_security_group_to_port = mock.MagicMock()
+        test_driver._create_security_group = mock.MagicMock()
+        test_driver._get_lb_security_group = mock.MagicMock()
+        test_driver._update_security_group_rules = mock.MagicMock()
+        test_driver._get_lb_security_group.side_effect = [security_group_dict,
+                                                          None]
+
+        # Test security groups disabled
+        test_driver.sec_grp_enabled = False
+
+        test_driver.update_aap_port_sg(lb_mock, amp_mock, vip_mock)
+
+        test_driver._add_vip_security_group_to_port.assert_not_called()
+        test_driver._get_lb_security_group.assert_not_called()
+        test_driver._update_security_group_rules.assert_not_called()
+
+        # Normal path
+        test_driver.sec_grp_enabled = True
+
+        test_driver.update_aap_port_sg(lb_mock, amp_mock, vip_mock)
+
+        test_driver._update_security_group_rules.assert_not_called()
+        test_driver._add_vip_security_group_to_port.assert_called_once_with(
+            LB_ID, VRRP_PORT_ID, SG_ID, vip_sg_ids=[vip_sg.id])
+
+        # No LB SG
+        test_driver._add_vip_security_group_to_port.reset_mock()
+        test_driver._get_lb_security_group.reset_mock()
+        test_driver._update_security_group_rules.reset_mock()
+
+        test_driver.update_aap_port_sg(lb_mock, amp_mock, vip_mock)
+
+        test_driver._update_security_group_rules.assert_not_called()
+        test_driver._add_vip_security_group_to_port.assert_not_called()
 
     def test_plug_aap_port(self):
         lb = dmh.generate_load_balancer_tree()

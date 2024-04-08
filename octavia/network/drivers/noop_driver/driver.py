@@ -87,6 +87,18 @@ class NoopManager:
                                   vip.ip_address)] = (load_balancer, vip,
                                                       'update_vip_sg')
 
+    def update_aap_port_sg(self,
+                           load_balancer: data_models.LoadBalancer,
+                           amphora: data_models.Amphora,
+                           vip: data_models.Vip):
+        LOG.debug("Network %s no-op, update_aap_port_sg load_balancer %s, "
+                  " vip %s, amphora %s", self.__class__.__name__,
+                  load_balancer.id, vip.ip_address, amphora)
+        self.networkconfigconfig[(amphora.id,
+                                  vip.ip_address)] = (load_balancer, vip,
+                                                      amphora,
+                                                      'update_aap_port_sg')
+
     def plug_aap_port(self, load_balancer, vip, amphora, subnet):
         LOG.debug("Network %s no-op, plug_aap_port loadbalancer %s, vip %s,"
                   " amphora %s, subnet %s",
@@ -525,6 +537,12 @@ class NoopNetworkDriver(driver_base.AbstractNetworkDriver):
 
     def update_vip_sg(self, load_balancer, vip):
         self.driver.update_vip_sg(load_balancer, vip)
+
+    def update_aap_port_sg(self,
+                           load_balancer: data_models.LoadBalancer,
+                           amphora: data_models.Amphora,
+                           vip: data_models.Vip):
+        self.driver.update_aap_port_sg(load_balancer, amphora, vip)
 
     def plug_aap_port(self, load_balancer, vip, amphora, subnet):
         return self.driver.plug_aap_port(load_balancer, vip, amphora, subnet)

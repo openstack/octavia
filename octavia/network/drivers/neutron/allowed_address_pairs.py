@@ -80,7 +80,7 @@ class AllowedAddressPairsDriver(neutron_base.BaseNeutronDriver):
                 return interface
         return None
 
-    def _plug_amphora_vip(self, amphora, subnet):
+    def _plug_amphora_vip(self, amphora, subnet, vip: data_models.Vip):
         # We need a vip port owned by Octavia for Act/Stby and failover
         try:
             port = {
@@ -89,7 +89,9 @@ class AllowedAddressPairsDriver(neutron_base.BaseNeutronDriver):
                 constants.FIXED_IPS: [{'subnet_id': subnet.id}],
                 constants.ADMIN_STATE_UP: True,
                 constants.DEVICE_OWNER: constants.OCTAVIA_OWNER,
+                constants.SECURITY_GROUP_IDS: vip.sg_ids
             }
+
             new_port = self.network_proxy.create_port(**port)
             new_port = utils.convert_port_to_model(new_port)
 
@@ -149,7 +151,12 @@ class AllowedAddressPairsDriver(neutron_base.BaseNeutronDriver):
         net = ipaddress.ip_network(cidr)
         return 'IPv6' if net.version == 6 else 'IPv4'
 
-    def _update_security_group_rules(self, load_balancer, sec_grp_id):
+    def _update_security_group_rules(self,
+                                     load_balancer: data_models.LoadBalancer,
+                                     sec_grp_id):
+        # Skip adding listener rules if sgs is not None or not empty
+        skip_listener_rules = load_balancer.vip.sg_ids
+
         rules = tuple(self.network_proxy.security_group_rules(
             security_group_id=sec_grp_id))
 
@@ -160,19 +167,20 @@ class AllowedAddressPairsDriver(neutron_base.BaseNeutronDriver):
                                                  constants.DELETED]):
                 continue
 
-            protocol = constants.PROTOCOL_TCP.lower()
-            if listener.protocol == constants.PROTOCOL_UDP:
-                protocol = constants.PROTOCOL_UDP.lower()
-            elif listener.protocol == lib_consts.PROTOCOL_SCTP:
-                protocol = lib_consts.PROTOCOL_SCTP.lower()
+            if not skip_listener_rules:
+                protocol = constants.PROTOCOL_TCP.lower()
+                if listener.protocol == constants.PROTOCOL_UDP:
+                    protocol = constants.PROTOCOL_UDP.lower()
+                elif listener.protocol == lib_consts.PROTOCOL_SCTP:
+                    protocol = lib_consts.PROTOCOL_SCTP.lower()
 
-            if listener.allowed_cidrs:
-                for ac in listener.allowed_cidrs:
-                    port = (listener.protocol_port, protocol, ac.cidr)
+                if listener.allowed_cidrs:
+                    for ac in listener.allowed_cidrs:
+                        port = (listener.protocol_port, protocol, ac.cidr)
+                        updated_ports.append(port)
+                else:
+                    port = (listener.protocol_port, protocol, None)
                     updated_ports.append(port)
-            else:
-                port = (listener.protocol_port, protocol, None)
-                updated_ports.append(port)
 
             listener_peer_ports.append(listener.peer_port)
 
@@ -262,12 +270,15 @@ class AllowedAddressPairsDriver(neutron_base.BaseNeutronDriver):
                 raise base.PlugVIPException(str(e))
 
     def _add_vip_security_group_to_port(self, load_balancer_id, port_id,
-                                        sec_grp_id=None):
-        sec_grp_id = (sec_grp_id or
-                      self._get_lb_security_group(load_balancer_id).get(
-                          constants.ID))
+                                        sec_grp_id: str = None,
+                                        vip_sg_ids: list[str] = None):
+        sec_grp_ids = [sec_grp_id or
+                       self._get_lb_security_group(load_balancer_id).get(
+                           constants.ID)]
+        if vip_sg_ids:
+            sec_grp_ids += vip_sg_ids
         try:
-            self._add_security_group_to_port(sec_grp_id, port_id)
+            self._update_security_groups(sec_grp_ids, port_id)
         except base.PortNotFound:
             raise
         except base.NetworkException as e:
@@ -409,15 +420,28 @@ class AllowedAddressPairsDriver(neutron_base.BaseNeutronDriver):
             self._update_security_group_rules(load_balancer,
                                               sec_grp.get(constants.ID))
             self._add_vip_security_group_to_port(load_balancer.id, vip.port_id,
-                                                 sec_grp.get(constants.ID))
+                                                 sec_grp.get(constants.ID),
+                                                 vip_sg_ids=vip.sg_ids)
             return sec_grp.get(constants.ID)
         return None
+
+    def update_aap_port_sg(self,
+                           load_balancer: data_models.LoadBalancer,
+                           amphora: data_models.Amphora,
+                           vip: data_models.Vip):
+        if self.sec_grp_enabled:
+            sec_grp = self._get_lb_security_group(load_balancer.id)
+            if sec_grp:
+                self._add_vip_security_group_to_port(load_balancer.id,
+                                                     amphora.vrrp_port_id,
+                                                     sec_grp.get(constants.ID),
+                                                     vip_sg_ids=vip.sg_ids)
 
     def plug_aap_port(self, load_balancer, vip, amphora, subnet):
         interface = self._get_plugged_interface(
             amphora.compute_id, subnet.network_id, amphora.lb_network_ip)
         if not interface:
-            interface = self._plug_amphora_vip(amphora, subnet)
+            interface = self._plug_amphora_vip(amphora, subnet, vip)
 
         aap_address_list = [vip.ip_address]
         for add_vip in load_balancer.additional_vips:
@@ -426,7 +450,8 @@ class AllowedAddressPairsDriver(neutron_base.BaseNeutronDriver):
 
         if self.sec_grp_enabled:
             self._add_vip_security_group_to_port(load_balancer.id,
-                                                 interface.port_id)
+                                                 interface.port_id,
+                                                 vip_sg_ids=vip.sg_ids)
         vrrp_ip = None
         for fixed_ip in interface.fixed_ips:
             is_correct_subnet = fixed_ip.subnet_id == subnet.id
@@ -466,7 +491,7 @@ class AllowedAddressPairsDriver(neutron_base.BaseNeutronDriver):
             list_of_dicts.append(fixed_ip.to_dict())
         return list_of_dicts
 
-    def allocate_vip(self, load_balancer):
+    def allocate_vip(self, load_balancer: data_models.LoadBalancer):
         """Allocates a virtual ip.
 
         Reserves the IP for later use as the frontend connection of a load
@@ -557,6 +582,9 @@ class AllowedAddressPairsDriver(neutron_base.BaseNeutronDriver):
             'device_id': f'lb-{load_balancer.id}',
             constants.DEVICE_OWNER: constants.OCTAVIA_OWNER,
             project_id_key: load_balancer.project_id}
+
+        if load_balancer.vip.sg_ids:
+            port[constants.SECURITY_GROUP_IDS] = load_balancer.vip.sg_ids
 
         if fixed_ips:
             port[constants.FIXED_IPS] = fixed_ips

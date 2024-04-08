@@ -372,6 +372,11 @@ class LoadBalancerFlows:
         update_LB_flow = linear_flow.Flow(constants.UPDATE_LOADBALANCER_FLOW)
         update_LB_flow.add(lifecycle_tasks.LoadBalancerToErrorOnRevertTask(
             requires=constants.LOADBALANCER))
+        update_LB_flow.add(network_tasks.UpdateVIPSecurityGroup(
+            requires=constants.LOADBALANCER_ID,
+            provides=constants.VIP_SG_ID))
+        update_LB_flow.add(network_tasks.UpdateAmphoraSecurityGroup(
+            requires=constants.LOADBALANCER_ID))
         update_LB_flow.add(network_tasks.ApplyQos(
             requires=(constants.LOADBALANCER, constants.UPDATE_DICT)))
         update_LB_flow.add(amphora_driver_tasks.ListenersUpdate(

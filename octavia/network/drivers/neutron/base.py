@@ -81,21 +81,22 @@ class BaseNeutronDriver(base.AbstractNetworkDriver):
                 fixed_ip = port_fixed_ip
             else:
                 additional_ips.append(port_fixed_ip)
+        kwargs = {
+            'ip_address': None,
+            'subnet_id': None
+        }
         if fixed_ip:
-            primary_vip = data_models.Vip(ip_address=fixed_ip.ip_address,
-                                          subnet_id=fixed_ip.subnet_id,
-                                          network_id=port.network_id,
-                                          port_id=port.id,
-                                          load_balancer=load_balancer,
-                                          load_balancer_id=load_balancer.id,
-                                          octavia_owned=octavia_owned)
-        else:
-            primary_vip = data_models.Vip(ip_address=None, subnet_id=None,
-                                          network_id=port.network_id,
-                                          port_id=port.id,
-                                          load_balancer=load_balancer,
-                                          load_balancer_id=load_balancer.id,
-                                          octavia_owned=octavia_owned)
+            kwargs['ip_address'] = fixed_ip.ip_address
+            kwargs['subnet_id'] = fixed_ip.subnet_id
+
+        primary_vip = data_models.Vip(
+            network_id=port.network_id,
+            port_id=port.id,
+            load_balancer=load_balancer,
+            load_balancer_id=load_balancer.id,
+            octavia_owned=octavia_owned,
+            sg_ids=load_balancer.vip.sg_ids,
+            **kwargs)
         additional_vips = [
             data_models.AdditionalVip(
                 ip_address=add_fixed_ip.ip_address,
@@ -128,11 +129,12 @@ class BaseNeutronDriver(base.AbstractNetworkDriver):
         self.network_proxy.update_port(port_id,
                                        allowed_address_pairs=aap)
 
-    def _add_security_group_to_port(self, sec_grp_id, port_id):
+    def _update_security_groups(self, sec_grp_ids: list[str],
+                                port_id: str):
         # Note: Neutron accepts the SG even if it already exists
         try:
             self.network_proxy.update_port(
-                port_id, security_groups=[sec_grp_id])
+                port_id, security_groups=sec_grp_ids)
         except os_exceptions.NotFoundException as e:
             raise base.PortNotFound(str(e))
         except Exception as e:
