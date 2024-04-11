@@ -1,0 +1,6 @@
+---
+fixes:
+  - |
+    Fix the issue, when "limit" parameter in request less or equal 0.
+    Now it returns resources according pagination_max_limit as expected,
+    instead of error.
