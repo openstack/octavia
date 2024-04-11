@@ -169,7 +169,7 @@ class PaginationHelper(object):
             # TODO(rm_work) Do we need to know when there are more vs exact?
             # We safely know if we have a full page, but it might include the
             # last element or it might not, it is unclear
-            if len(model_list) >= self.limit:
+            if self.limit is None or len(model_list) >= self.limit:
                 next_attr.append("marker={}".format(model_list[-1].get('id')))
                 next_link = {
                     "rel": "next",
