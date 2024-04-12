@@ -56,7 +56,7 @@ class QuotaResponse(base.BaseType):
 
     @classmethod
     def from_data_model(cls, data_model, children=False):
-        quotas = super(QuotaResponse, cls).from_data_model(
+        quotas = super().from_data_model(
             data_model, children=children)
         quotas.quota = QuotaBase.from_data_model(data_model)
         return quotas
@@ -83,7 +83,7 @@ class QuotaAllBase(base.BaseType):
 
     @classmethod
     def from_data_model(cls, data_model, children=False):
-        quotas = super(QuotaAllBase, cls).from_data_model(
+        quotas = super().from_data_model(
             data_model, children=children)
         # For backwards compatibility, remove in T
         quotas.load_balancer = quotas.loadbalancer

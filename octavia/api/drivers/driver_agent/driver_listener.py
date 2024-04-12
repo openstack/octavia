@@ -62,7 +62,7 @@ class StatusRequestHandler(socketserver.BaseRequestHandler):
 
         # Send the response
         json_data = jsonutils.dump_as_bytes(response)
-        len_str = '{}\n'.format(len(json_data)).encode('utf-8')
+        len_str = f'{len(json_data)}\n'.encode()
         try:
             self.request.send(len_str)
             self.request.sendall(json_data)
@@ -86,7 +86,7 @@ class StatsRequestHandler(socketserver.BaseRequestHandler):
 
         # Send the response
         json_data = jsonutils.dump_as_bytes(response)
-        len_str = '{}\n'.format(len(json_data)).encode('utf-8')
+        len_str = f'{len(json_data)}\n'.encode()
         try:
             self.request.send(len_str)
             self.request.sendall(json_data)
@@ -109,7 +109,7 @@ class GetRequestHandler(socketserver.BaseRequestHandler):
 
         # Send the response
         json_data = jsonutils.dump_as_bytes(response)
-        len_str = '{}\n'.format(len(json_data)).encode('utf-8')
+        len_str = f'{len(json_data)}\n'.encode()
         try:
             self.request.send(len_str)
             self.request.sendall(json_data)

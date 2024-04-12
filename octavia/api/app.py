@@ -80,8 +80,7 @@ def _wrap_app(app):
                 audit_map_file=CONF.audit.audit_map_file,
                 ignore_req_list=CONF.audit.ignore_req_list
             )
-        except (EnvironmentError, OSError,
-                audit_middleware.PycadfAuditApiConfigError) as e:
+        except (OSError, audit_middleware.PycadfAuditApiConfigError) as e:
             raise exceptions.InputFileError(
                 file_name=CONF.audit.audit_map_file,
                 reason=e

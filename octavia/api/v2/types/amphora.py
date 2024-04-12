@@ -47,7 +47,7 @@ class AmphoraResponse(BaseAmphoraType):
 
     @classmethod
     def from_data_model(cls, data_model, children=False):
-        amphorae = super(AmphoraResponse, cls).from_data_model(
+        amphorae = super().from_data_model(
             data_model, children=children)
 
         return amphorae

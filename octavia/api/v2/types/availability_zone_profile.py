@@ -31,8 +31,7 @@ class AvailabilityZoneProfileResponse(BaseAvailabilityZoneProfileType):
 
     @classmethod
     def from_data_model(cls, data_model, children=False):
-        availability_zone_profile = super(
-            AvailabilityZoneProfileResponse, cls).from_data_model(
+        availability_zone_profile = super().from_data_model(
             data_model, children=children)
         return availability_zone_profile
 

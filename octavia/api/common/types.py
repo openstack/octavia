@@ -127,7 +127,7 @@ class BaseMeta(wtypes.BaseMeta):
                 get_tenant_id, set_tenant_id)
             # This will let us know if tenant_id was explicitly set to Unset
             dct['_unset_tenant'] = False
-        return super(BaseMeta, mcs).__new__(mcs, name, bases, dct)
+        return super().__new__(mcs, name, bases, dct)
 
 
 class BaseType(wtypes.Base, metaclass=BaseMeta):

@@ -27,7 +27,7 @@ CONF = cfg.CONF
 LOG = logging.getLogger(__name__)
 
 
-class RootController(object):
+class RootController:
     """The controller with which the pecan wsgi app should be created."""
 
     def __init__(self):
@@ -65,7 +65,7 @@ class RootController(object):
         host_url = pecan_request.path_url
 
         if not host_url.endswith('/'):
-            host_url = '{}/'.format(host_url)
+            host_url = f'{host_url}/'
 
         versions = []
         self._add_a_version(versions, 'v2.0', 'v2', 'SUPPORTED',

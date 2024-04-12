@@ -45,7 +45,7 @@ class MemberResponse(BaseMemberType):
 
     @classmethod
     def from_data_model(cls, data_model, children=False):
-        member = super(MemberResponse, cls).from_data_model(
+        member = super().from_data_model(
             data_model, children=children)
         return member
 
@@ -142,7 +142,7 @@ class MemberStatusResponse(BaseMemberType):
 
     @classmethod
     def from_data_model(cls, data_model, children=False):
-        member = super(MemberStatusResponse, cls).from_data_model(
+        member = super().from_data_model(
             data_model, children=children)
 
         if not member.name:

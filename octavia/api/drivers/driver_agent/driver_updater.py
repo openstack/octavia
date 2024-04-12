@@ -29,7 +29,7 @@ from octavia.statistics import stats_base
 LOG = logging.getLogger(__name__)
 
 
-class DriverUpdater(object):
+class DriverUpdater:
 
     def __init__(self, **kwargs):
         self.repos = repo.Repositories()

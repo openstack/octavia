@@ -48,7 +48,7 @@ class L7PolicyResponse(BaseL7PolicyType):
 
     @classmethod
     def from_data_model(cls, data_model, children=False):
-        policy = super(L7PolicyResponse, cls).from_data_model(
+        policy = super().from_data_model(
             data_model, children=children)
 
         if cls._full_response():

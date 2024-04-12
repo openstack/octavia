@@ -31,8 +31,7 @@ class AvailabilityZoneResponse(BaseAvailabilityZoneType):
 
     @classmethod
     def from_data_model(cls, data_model, children=False):
-        availability_zone = super(
-            AvailabilityZoneResponse, cls).from_data_model(
+        availability_zone = super().from_data_model(
             data_model, children=children)
         return availability_zone
 

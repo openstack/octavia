@@ -32,7 +32,7 @@ class FlavorResponse(BaseFlavorType):
 
     @classmethod
     def from_data_model(cls, data_model, children=False):
-        flavor = super(FlavorResponse, cls).from_data_model(
+        flavor = super().from_data_model(
             data_model, children=children)
         return flavor
 
