@@ -20,7 +20,7 @@ from oslo_config import cfg
 CONF = cfg.CONF
 
 
-class LvsListenerApiServerBase(object, metaclass=abc.ABCMeta):
+class LvsListenerApiServerBase(metaclass=abc.ABCMeta):
     """Base LVS Listener Server API
 
     """

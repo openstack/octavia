@@ -55,7 +55,7 @@ def register_app_error_handler(app):
         app.register_error_handler(code, make_json_error)
 
 
-class Server(object):
+class Server:
     def __init__(self):
         self.app = flask.Flask(__name__)
         self._osutils = osutils.BaseOS.get_os_util()

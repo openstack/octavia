@@ -24,7 +24,7 @@ from octavia.i18n import _
 LOG = logging.getLogger(__name__)
 
 
-class HAProxyQuery(object):
+class HAProxyQuery:
     """Class used for querying the HAProxy statistics socket.
 
     The CSV output is defined in the HAProxy documentation:
@@ -51,7 +51,7 @@ class HAProxyQuery(object):
 
         try:
             sock.connect(self.socket)
-        except socket.error as e:
+        except OSError as e:
             raise Exception(
                 _("HAProxy '{0}' query failed.").format(query)) from e
 

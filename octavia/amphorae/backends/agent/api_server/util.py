@@ -48,13 +48,13 @@ class UnknownInitError(Exception):
 def init_path(lb_id, init_system):
     if init_system == consts.INIT_SYSTEMD:
         return os.path.join(consts.SYSTEMD_DIR,
-                            'haproxy-{0}.service'.format(lb_id))
+                            f'haproxy-{lb_id}.service')
     if init_system == consts.INIT_UPSTART:
         return os.path.join(consts.UPSTART_DIR,
-                            'haproxy-{0}.conf'.format(lb_id))
+                            f'haproxy-{lb_id}.conf')
     if init_system == consts.INIT_SYSVINIT:
         return os.path.join(consts.SYSVINIT_DIR,
-                            'haproxy-{0}'.format(lb_id))
+                            f'haproxy-{lb_id}')
     raise UnknownInitError()
 
 
@@ -120,13 +120,13 @@ def state_file_path(lb_id):
 
 
 def get_haproxy_pid(lb_id):
-    with open(pid_path(lb_id), 'r', encoding='utf-8') as f:
+    with open(pid_path(lb_id), encoding='utf-8') as f:
         return f.readline().rstrip()
 
 
 def get_keepalivedlvs_pid(listener_id):
     pid_file = keepalived_lvs_pids_path(listener_id)[0]
-    with open(pid_file, 'r', encoding='utf-8') as f:
+    with open(pid_file, encoding='utf-8') as f:
         return f.readline().rstrip()
 
 
@@ -228,8 +228,7 @@ def is_lvs_listener_running(listener_id):
 
 def get_os_init_system():
     if os.path.exists(consts.INIT_PROC_COMM_PATH):
-        with open(consts.INIT_PROC_COMM_PATH,
-                  'r', encoding='utf-8') as init_comm:
+        with open(consts.INIT_PROC_COMM_PATH, encoding='utf-8') as init_comm:
             init_proc_name = init_comm.read().rstrip('\n')
             if init_proc_name == consts.INIT_SYSTEMD:
                 return consts.INIT_SYSTEMD
@@ -268,7 +267,7 @@ def install_netns_systemd_service():
 
 
 def run_systemctl_command(command, service):
-    cmd = "systemctl {cmd} {srvc}".format(cmd=command, srvc=service)
+    cmd = f"systemctl {command} {service}"
     try:
         subprocess.check_output(cmd.split(), stderr=subprocess.STDOUT)
     except subprocess.CalledProcessError as e:
@@ -295,7 +294,7 @@ def get_backend_for_lb_object(object_id):
 
 
 def parse_haproxy_file(lb_id):
-    with open(config_path(lb_id), 'r', encoding='utf-8') as file:
+    with open(config_path(lb_id), encoding='utf-8') as file:
         cfg = file.read()
 
         listeners = {}
@@ -376,7 +375,7 @@ def get_haproxy_vip_addresses(lb_id):
     :returns: List of VIP addresses (IPv4 and IPv6)
     """
     vips = []
-    with open(config_path(lb_id), 'r', encoding='utf-8') as file:
+    with open(config_path(lb_id), encoding='utf-8') as file:
         for line in file:
             current_line = line.strip()
             if current_line.startswith('bind'):

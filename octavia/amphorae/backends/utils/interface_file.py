@@ -24,7 +24,7 @@ from octavia.common import constants as consts
 CONF = cfg.CONF
 
 
-class InterfaceFile(object):
+class InterfaceFile:
     def __init__(self, name, if_type, mtu=None, addresses=None,
                  routes=None, rules=None, scripts=None, is_sriov=False):
         self.name = name
@@ -88,7 +88,7 @@ class InterfaceFile(object):
         except OSError:
             pass
 
-        interface_file = "{}.json".format(self.name)
+        interface_file = f"{self.name}.json"
 
         with os.fdopen(os.open(os.path.join(net_dir, interface_file),
                                flags, mode), 'w') as fp:

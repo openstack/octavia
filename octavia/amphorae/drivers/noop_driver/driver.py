@@ -23,7 +23,7 @@ from octavia.db import repositories
 LOG = logging.getLogger(__name__)
 
 
-class NoopManager(object):
+class NoopManager:
 
     def __init__(self):
         super().__init__()

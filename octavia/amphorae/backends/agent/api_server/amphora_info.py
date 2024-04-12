@@ -30,7 +30,7 @@ from octavia.common import exceptions
 LOG = logging.getLogger(__name__)
 
 
-class AmphoraInfo(object):
+class AmphoraInfo:
     def __init__(self, osutils):
         self._osutils = osutils
 
@@ -135,7 +135,7 @@ class AmphoraInfo(object):
     def _get_meminfo(self):
         re_parser = re.compile(r'^(?P<key>\S*):\s*(?P<value>\d*)\s*kB')
         result = {}
-        with open('/proc/meminfo', 'r', encoding='utf-8') as meminfo:
+        with open('/proc/meminfo', encoding='utf-8') as meminfo:
             for line in meminfo:
                 match = re_parser.match(line)
                 if not match:
@@ -199,7 +199,7 @@ class AmphoraInfo(object):
     def _get_active_tuned_profiles(self) -> str:
         """Returns the active TuneD profile(s)"""
         try:
-            with open("/etc/tuned/active_profile", "r", encoding="utf-8") as f:
+            with open("/etc/tuned/active_profile", encoding="utf-8") as f:
                 return f.read(1024).strip()
         except OSError as ex:
             LOG.debug("Reading active TuneD profiles failed: %r", ex)

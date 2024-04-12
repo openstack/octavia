@@ -29,7 +29,7 @@ CONF = cfg.CONF
 LOG = logging.getLogger(__name__)
 
 
-class BaseOS(object):
+class BaseOS:
 
     def __init__(self, os_name):
         self.os_name = os_name
@@ -97,7 +97,7 @@ class BaseOS(object):
                       e, e.output)
             raise exceptions.HTTPException(
                 response=webob.Response(json={
-                    'message': 'Error plugging {0}'.format(name),
+                    'message': f'Error plugging {name}',
                     'details': e.output}, status=500))
 
 
@@ -109,7 +109,7 @@ class Ubuntu(BaseOS):
 
     def cmd_get_version_of_installed_package(self, package_name):
         name = self._map_package_name(package_name)
-        return "dpkg-query -W -f=${{Version}} {name}".format(name=name)
+        return f"dpkg-query -W -f=${{Version}} {name}"
 
 
 class RH(BaseOS):
@@ -120,7 +120,7 @@ class RH(BaseOS):
 
     def cmd_get_version_of_installed_package(self, package_name):
         name = self._map_package_name(package_name)
-        return "rpm -q --queryformat %{{VERSION}} {name}".format(name=name)
+        return f"rpm -q --queryformat %{{VERSION}} {name}"
 
 
 class CentOS(RH):

@@ -147,7 +147,7 @@ def get_lvs_listener_resource_ipports_nsname(listener_id):
     #                            'HealthMonitor': {'id': healthmonitor-id}}
     resource_ipport_mapping = {}
     with open(util.keepalived_lvs_cfg_path(listener_id),
-              'r', encoding='utf-8') as f:
+              encoding='utf-8') as f:
         cfg = f.read()
 
         ret = VS_ADDRESS_REGEX.findall(cfg)
@@ -260,7 +260,7 @@ def get_lvs_listener_pool_status(listener_id):
     restarting = config_stat.st_mtime > check_pid_stat.st_mtime
 
     with open(util.keepalived_lvs_cfg_path(listener_id),
-              'r', encoding='utf-8') as f:
+              encoding='utf-8') as f:
         cfg = f.read()
         hm_enabled = len(CHECKER_REGEX.findall(cfg)) > 0
 

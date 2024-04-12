@@ -19,7 +19,7 @@ from typing import Optional
 from octavia.db import models as db_models
 
 
-class AmphoraLoadBalancerDriver(object, metaclass=abc.ABCMeta):
+class AmphoraLoadBalancerDriver(metaclass=abc.ABCMeta):
     @abc.abstractmethod
     def update_amphora_listeners(self, loadbalancer, amphora,
                                  timeout_dict):
@@ -264,7 +264,7 @@ class AmphoraLoadBalancerDriver(object, metaclass=abc.ABCMeta):
         """
 
 
-class VRRPDriverMixin(object, metaclass=abc.ABCMeta):
+class VRRPDriverMixin(metaclass=abc.ABCMeta):
     """Abstract mixin class for VRRP support in loadbalancer amphorae
 
     Usage: To plug VRRP support in another service driver XYZ, use:
