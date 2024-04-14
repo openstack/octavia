@@ -30,5 +30,5 @@ down_revision = '543f5d8e4e56'
 def upgrade():
     bind = op.get_bind()
     md = sa.MetaData()
-    sa.Table('operating_status', md, autoload=True, autoload_with=bind)
+    sa.Table('operating_status', md, autoload_with=bind)
     op.bulk_insert(md.tables['operating_status'], [{'name': 'NO_MONITOR'}])
