@@ -55,7 +55,7 @@ def update_stats_on_done(stats, fut):
         stats['failover_failed'] += 1
 
 
-class HealthManager(object):
+class HealthManager:
     def __init__(self, exit_event):
         self.cw = cw2.ControllerWorker()
         self.threads = CONF.health_manager.failover_threads

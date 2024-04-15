@@ -22,7 +22,7 @@ LOG = log.getLogger(__name__)
 CONF = cfg.CONF
 
 
-class JobboardTaskFlowDriver(object, metaclass=abc.ABCMeta):
+class JobboardTaskFlowDriver(metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     def job_board(self, persistence):
@@ -33,7 +33,7 @@ class JobboardTaskFlowDriver(object, metaclass=abc.ABCMeta):
         """
 
 
-class MysqlPersistenceDriver(object):
+class MysqlPersistenceDriver:
 
     def __init__(self):
         self.persistence_conf = {
@@ -68,7 +68,7 @@ class ZookeeperTaskFlowDriver(JobboardTaskFlowDriver):
 
     def job_board(self, persistence):
         job_backends_hosts = ','.join(
-            ['%s:%s' % (host, CONF.task_flow.jobboard_backend_port)
+            [f'{host}:{CONF.task_flow.jobboard_backend_port}'
              for host in CONF.task_flow.jobboard_backend_hosts])
         jobboard_backend_conf = {
             'board': 'zookeeper',

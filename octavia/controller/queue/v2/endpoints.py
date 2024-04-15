@@ -24,7 +24,7 @@ CONF = cfg.CONF
 LOG = logging.getLogger(__name__)
 
 
-class Endpoints(object):
+class Endpoints:
 
     # API version history:
     #   1.0 - Initial version.

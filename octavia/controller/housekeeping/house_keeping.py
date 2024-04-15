@@ -27,7 +27,7 @@ LOG = logging.getLogger(__name__)
 CONF = cfg.CONF
 
 
-class DatabaseCleanup(object):
+class DatabaseCleanup:
     def __init__(self):
         self.amp_repo = repo.AmphoraRepository()
         self.amp_health_repo = repo.AmphoraHealthRepository()
@@ -76,7 +76,7 @@ class DatabaseCleanup(object):
                 LOG.info('Deleted load balancer id : %s', lb_id)
 
 
-class CertRotation(object):
+class CertRotation:
     def __init__(self):
         self.threads = CONF.house_keeping.cert_rotate_threads
         self.cw = cw2.ControllerWorker()

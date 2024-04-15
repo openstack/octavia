@@ -37,7 +37,7 @@ CONF = cfg.CONF
 LOG = logging.getLogger(__name__)
 
 
-class LoadBalancerFlows(object):
+class LoadBalancerFlows:
 
     def __init__(self):
         self.amp_flows = amphora_flows.AmphoraFlows()
