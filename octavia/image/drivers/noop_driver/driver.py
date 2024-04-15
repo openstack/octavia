@@ -19,7 +19,7 @@ from octavia.image import image_base as driver_base
 LOG = logging.getLogger(__name__)
 
 
-class NoopManager(object):
+class NoopManager:
     def __init__(self):
         super().__init__()
         self.imageconfig = {}

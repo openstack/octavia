@@ -31,7 +31,7 @@ _NOOP_MANAGER_VARS = {
 }
 
 
-class NoopManager(object):
+class NoopManager:
 
     def __init__(self):
         super().__init__()

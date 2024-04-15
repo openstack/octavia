@@ -475,7 +475,9 @@ class AllowedAddressPairsDriver(neutron_base.BaseNeutronDriver):
         :param load_balancer: octavia.common.data_models.LoadBalancer instance
         :return: octavia.common.data_models.Vip,
                  list(octavia.common.data_models.AdditionalVip)
-        :raises: AllocateVIPException, PortNotFound, SubnetNotFound
+        :raises AllocateVIPException: generic error allocating the VIP
+        :raises PortNotFound: port was not found
+        :raises SubnetNotFound: subnet was not found
         """
         if load_balancer.vip.port_id:
             try:
@@ -500,7 +502,7 @@ class AllowedAddressPairsDriver(neutron_base.BaseNeutronDriver):
                     self.delete_port(load_balancer.vip.port_id)
                 else:
                     raise base.AllocateVIPException(
-                        'VIP port {0} is broken, but is owned by project {1} '
+                        'VIP port {} is broken, but is owned by project {} '
                         'so will not be recreated. Aborting VIP allocation.'
                         .format(port.id, port.project_id))
             except base.AllocateVIPException as e:
@@ -552,7 +554,7 @@ class AllowedAddressPairsDriver(neutron_base.BaseNeutronDriver):
             constants.NAME: 'octavia-lb-' + load_balancer.id,
             constants.NETWORK_ID: load_balancer.vip.network_id,
             constants.ADMIN_STATE_UP: False,
-            'device_id': 'lb-{0}'.format(load_balancer.id),
+            'device_id': f'lb-{load_balancer.id}',
             constants.DEVICE_OWNER: constants.OCTAVIA_OWNER,
             project_id_key: load_balancer.project_id}
 
@@ -615,7 +617,7 @@ class AllowedAddressPairsDriver(neutron_base.BaseNeutronDriver):
         try:
             subnet = self.get_subnet(vip.subnet_id)
         except base.SubnetNotFound as e:
-            msg = ("Can't unplug vip because vip subnet {0} was not "
+            msg = ("Can't unplug vip because vip subnet {} was not "
                    "found").format(vip.subnet_id)
             LOG.exception(msg)
             raise base.PluggedVIPNotFound(msg) from e
