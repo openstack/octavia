@@ -115,12 +115,6 @@
         - octavia-tox-py311-tips
         - octavia-tox-functional-py311-tips
 
-- project-template:
-    name: octavia-tox-sqlalchemy-tips
-    check:
-      jobs:
-        - octavia-tox-functional-py311-sqlalchemy-tips
-
 - job:
     name: octavia-tox-py311-tips
     parent: openstack-tox-py311
@@ -144,26 +138,6 @@
     required-projects:
       - openstack/octavia-lib
       - openstack/octavia
-
-# Temporary job until SQLAlchemy 2.0 is no longer blocked by upper-requirements
-# NOTE(stephenfin): We only need functional tests since DB interactions are
-# stubbed out in unit tests
-- job:
-    name: octavia-tox-functional-py311-sqlalchemy-tips
-    parent: openstack-tox-functional-py311
-    description: |
-      Run tox python 3.11 functional against master of sqlalchemy and related
-      projects
-    # The job only tests the latest and shouldn't be run on the stable branches
-    branches:
-       regex: ^(stable|unmaintained)
-       negate: true
-    required-projects:
-      - name: openstack/oslo.db
-      - name: github.com/sqlalchemy/sqlalchemy
-        override-checkout: main
-      - name: github.com/sqlalchemy/alembic
-        override-checkout: main
 
 - job:
     name: octavia-amphora-image-build
