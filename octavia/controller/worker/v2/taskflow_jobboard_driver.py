@@ -131,3 +131,33 @@ class RedisTaskFlowDriver(JobboardTaskFlowDriver):
             CONF.task_flow.jobboard_backend_namespace,
             jobboard_backend_conf,
             persistence=persistence)
+
+
+class EtcdTaskFlowDriver(JobboardTaskFlowDriver):
+
+    def __init__(self, persistence_driver):
+        self.persistence_driver = persistence_driver
+
+    def job_board(self, persistence):
+        jobboard_backend_conf = {
+            'board': 'etcd',
+            'host': CONF.task_flow.jobboard_backend_hosts[0],
+            'port': CONF.task_flow.jobboard_backend_port,
+            'path': CONF.task_flow.jobboard_backend_namespace,
+            'ttl': CONF.task_flow.jobboard_expiration_time,
+        }
+        if CONF.task_flow.jobboard_etcd_ssl_options['use_ssl']:
+            jobboard_backend_conf.update(
+                CONF.task_flow.jobboard_etcd_ssl_options)
+            jobboard_backend_conf.pop('use_ssl')
+            jobboard_backend_conf['protocol'] = 'https'
+        if CONF.task_flow.jobboard_etcd_timeout is not None:
+            jobboard_backend_conf['timeout'] = (
+                CONF.task_flow.jobboard_etcd_timeout)
+        if CONF.task_flow.jobboard_etcd_api_path is not None:
+            jobboard_backend_conf['api_path'] = (
+                CONF.task_flow.jobboard_etcd_api_path)
+
+        return job_backends.backend(CONF.task_flow.jobboard_backend_namespace,
+                                    jobboard_backend_conf,
+                                    persistence=persistence)

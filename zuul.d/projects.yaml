@@ -127,3 +127,5 @@
     experimental:
       jobs:
         - octavia-v2-dsvm-scenario-nftables
+        - octavia-v2-dsvm-scenario-traffic-ops-jobboard-etcd
+        - octavia-v2-dsvm-scenario-non-traffic-ops-jobboard-etcd

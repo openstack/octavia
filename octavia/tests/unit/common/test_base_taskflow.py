@@ -130,12 +130,13 @@ class TestTaskFlowServiceController(base.TestCase):
         job1.wait.assert_called_once()
         job2.wait.assert_called_once()
 
-    @mock.patch('octavia.common.base_taskflow.RedisDynamicLoggingConductor')
+    @mock.patch('octavia.common.base_taskflow.'
+                'ExtendExpiryDynamicLoggingConductor')
     @mock.patch('octavia.common.base_taskflow.DynamicLoggingConductor')
     @mock.patch('concurrent.futures.ThreadPoolExecutor')
-    def test_run_conductor(self, mock_threadpoolexec, dynamiccond, rediscond):
+    def test_run_conductor(self, mock_threadpoolexec, dynamiccond, expirycond):
         self.service_controller.run_conductor("test")
-        rediscond.assert_called_once_with(
+        expirycond.assert_called_once_with(
             "test", self.jobboard_mock.__enter__(),
             persistence=self.persistence_mock.__enter__(),
             engine='parallel',

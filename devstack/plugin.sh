@@ -10,7 +10,7 @@ GET_PIP_CACHE_LOCATION=/opt/stack/cache/files/get-pip.py
 
 function octavia_install {
     if [[ ${OCTAVIA_ENABLE_AMPHORAV2_JOBBOARD} == True ]]; then
-        setup_develop $OCTAVIA_DIR redis
+        setup_develop $OCTAVIA_DIR ${OCTAVIA_JOBBOARD_BACKEND}
     else
         setup_develop $OCTAVIA_DIR
     fi
@@ -299,6 +299,11 @@ function octavia_configure {
         iniset $OCTAVIA_CONF task_flow persistence_connection "mysql+pymysql://${DATABASE_USER}:${DATABASE_PASSWORD}@${DATABASE_HOST}:3306/octavia_persistence"
         iniset $OCTAVIA_CONF task_flow jobboard_expiration_time ${OCTAVIA_JOBBOARD_EXPIRATION_TIME}
         iniset $OCTAVIA_CONF task_flow jobboard_enabled True
+        if [[ ${OCTAVIA_JOBBOARD_BACKEND} == "etcd" ]]; then
+            iniset $OCTAVIA_CONF task_flow jobboard_backend_driver etcd_taskflow_driver
+            iniset $OCTAVIA_CONF task_flow jobboard_backend_port 2379
+            iniset $OCTAVIA_CONF task_flow jobboard_backend_hosts ${SERVICE_HOST}
+        fi
     fi
     # Configure keystone auth_token for all users
     configure_keystone_authtoken_middleware $OCTAVIA_CONF octavia

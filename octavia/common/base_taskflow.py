@@ -156,7 +156,7 @@ class DynamicLoggingConductor(impl_blocking.BlockingConductor):
                               job.name)
 
 
-class RedisDynamicLoggingConductor(DynamicLoggingConductor):
+class ExtendExpiryDynamicLoggingConductor(DynamicLoggingConductor):
 
     def _listeners_from_job(self, job, engine):
         listeners = super()._listeners_from_job(job, engine)
@@ -206,20 +206,29 @@ class TaskFlowServiceController:
     def run_conductor(self, name):
         with self.driver.persistence_driver.get_persistence() as persistence:
             with self.driver.job_board(persistence) as board:
-                # Redis do not expire jobs by default, so jobs won't be resumed
-                # with restart of controller. Add expiry for board and use
-                # special listener.
-                if (CONF.task_flow.jobboard_backend_driver ==
-                        'redis_taskflow_driver'):
-                    conductor = RedisDynamicLoggingConductor(
+                # Redis and etcd do not expire jobs by default, so jobs won't
+                # be resumed with restart of controller. Add expiry for board
+                # and use special listener.
+                if (CONF.task_flow.jobboard_backend_driver in (
+                        'etcd_taskflow_driver',
+                        'redis_taskflow_driver')):
+                    conductor = ExtendExpiryDynamicLoggingConductor(
                         name, board, persistence=persistence,
                         engine=CONF.task_flow.engine,
                         engine_options={
                             'max_workers': CONF.task_flow.max_workers
                         })
-                    board.claim = functools.partial(
-                        board.claim,
-                        expiry=CONF.task_flow.jobboard_expiration_time)
+                    if (CONF.task_flow.jobboard_backend_driver ==
+                            'redis_taskflow_driver'):
+                        # Hack for redis only:
+                        # The TTL of the jobs of the Redis Jobboard driver can
+                        # be only overriden by using the 'expiry' parameter of
+                        # the 'claim' function
+                        # For the Etcd driver, the default TTL for all the
+                        # locks can be configured while creating the backend
+                        board.claim = functools.partial(
+                            board.claim,
+                            expiry=CONF.task_flow.jobboard_expiration_time)
                 else:
                     conductor = DynamicLoggingConductor(
                         name, board, persistence=persistence,

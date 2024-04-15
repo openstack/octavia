@@ -555,8 +555,10 @@ task_flow_opts = [
                choices=[('redis_taskflow_driver',
                          'Driver that will use Redis to store job states.'),
                         ('zookeeper_taskflow_driver',
-                         'Driver that will use Zookeeper to store job states.')
-                        ],
+                         'Driver that will use Zookeeper to store job '
+                         'states.'),
+                        ('etcd_taskflow_driver',
+                         'Driver that will user Etcd to store job states.')],
                help='Jobboard backend driver that will monitor job state.'),
     cfg.ListOpt('jobboard_backend_hosts', default=['127.0.0.1'],
                 help='Jobboard backend server host(s).'),
@@ -596,6 +598,16 @@ task_flow_opts = [
                          'keyfile_password': None,
                          'certfile': None,
                          'verify_certs': True}),
+    cfg.DictOpt('jobboard_etcd_ssl_options',
+                help='Etcd jobboard backend ssl configuration options.',
+                default={'use_ssl': False,
+                         'ca_cert': None,
+                         'cert_key': None,
+                         'cert_cert': None}),
+    cfg.IntOpt('jobboard_etcd_timeout', default=None,
+               help='Timeout when communicating with the Etcd backend.'),
+    cfg.StrOpt('jobboard_etcd_api_path', default=None,
+               help='API Path of the Etcd server.'),
     cfg.IntOpt('jobboard_expiration_time', default=30,
                help='For backends like redis claiming jobs requiring setting '
                     'the expiry - how many seconds the claim should be '
