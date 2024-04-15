@@ -43,7 +43,7 @@ def migrate_pools():
 
     j = pool_table.join(lb_table,
                         pool_table.c.load_balancer_id == lb_table.c.id)
-    stmt = sa.select([pool_table.c.id]).select_from(j).where(
+    stmt = sa.select(pool_table.c.id).select_from(j).where(
         lb_table.c.provider == 'ovn')
     result = conn.execute(stmt)
 
