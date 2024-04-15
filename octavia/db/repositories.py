@@ -49,7 +49,7 @@ CONF = cfg.CONF
 LOG = logging.getLogger(__name__)
 
 
-class BaseRepository(object):
+class BaseRepository:
     model_class = None
 
     def count(self, session, **filters):
@@ -209,7 +209,7 @@ class BaseRepository(object):
         return id_list
 
 
-class Repositories(object):
+class Repositories:
     def __init__(self):
         self.load_balancer = LoadBalancerRepository()
         self.vip = VipRepository()
@@ -1943,7 +1943,7 @@ class QuotasRepository(BaseRepository):
         session.flush()
 
 
-class _GetALLExceptDELETEDIdMixin(object):
+class _GetALLExceptDELETEDIdMixin:
 
     def get_all(self, session, pagination_helper=None,
                 query_options=None, **filters):

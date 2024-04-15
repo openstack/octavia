@@ -28,6 +28,6 @@ down_revision = '48660b6643f0'
 
 
 def upgrade():
-    with op.batch_alter_table(u'vip') as batch_op:
-        batch_op.alter_column(u'network_id', new_column_name=u'subnet_id',
+    with op.batch_alter_table('vip') as batch_op:
+        batch_op.alter_column('network_id', new_column_name='subnet_id',
                               existing_type=sa.String(36))

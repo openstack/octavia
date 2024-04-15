@@ -30,6 +30,6 @@ down_revision = '10d38216ad34'
 
 def upgrade():
     op.add_column(
-        u'amphora',
-        sa.Column(u'image_id', sa.String(36), nullable=True)
+        'amphora',
+        sa.Column('image_id', sa.String(36), nullable=True)
     )

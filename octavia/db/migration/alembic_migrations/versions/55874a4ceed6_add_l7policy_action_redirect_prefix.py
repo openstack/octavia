@@ -32,13 +32,13 @@ down_revision = '76aacf2e176c'
 def upgrade():
     # Add column redirect_prefix
     op.add_column(
-        u'l7policy',
-        sa.Column(u'redirect_prefix', sa.String(255), nullable=True)
+        'l7policy',
+        sa.Column('redirect_prefix', sa.String(255), nullable=True)
     )
     insert_table = sql.table(
-        u'l7policy_action',
-        sql.column(u'name', sa.String),
-        sql.column(u'description', sa.String)
+        'l7policy_action',
+        sql.column('name', sa.String),
+        sql.column('description', sa.String)
     )
 
     op.bulk_insert(

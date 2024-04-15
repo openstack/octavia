@@ -34,9 +34,9 @@ def upgrade():
     for table in tables:
         op.add_column(
             table,
-            sa.Column(u'created_at', sa.DateTime(), nullable=True)
+            sa.Column('created_at', sa.DateTime(), nullable=True)
         )
         op.add_column(
             table,
-            sa.Column(u'updated_at', sa.DateTime(), nullable=True)
+            sa.Column('updated_at', sa.DateTime(), nullable=True)
         )

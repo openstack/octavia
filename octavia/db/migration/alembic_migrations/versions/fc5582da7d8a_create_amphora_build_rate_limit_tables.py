@@ -31,16 +31,16 @@ down_revision = '443fe6676637'
 
 def upgrade():
     op.create_table(
-        u'amphora_build_slots',
-        sa.Column(u'id', sa.Integer(), primary_key=True),
-        sa.Column(u'slots_used', sa.Integer(), default=0)
+        'amphora_build_slots',
+        sa.Column('id', sa.Integer(), primary_key=True),
+        sa.Column('slots_used', sa.Integer(), default=0)
     )
 
     # Create temporary table for table data seeding
     insert_table = sql.table(
-        u'amphora_build_slots',
-        sql.column(u'id', sa.Integer),
-        sql.column(u'slots_used', sa.Integer)
+        'amphora_build_slots',
+        sql.column('id', sa.Integer),
+        sql.column('slots_used', sa.Integer)
     )
 
     op.bulk_insert(
@@ -51,12 +51,12 @@ def upgrade():
     )
 
     op.create_table(
-        u'amphora_build_request',
-        sa.Column(u'amphora_id', sa.String(36), nullable=True,
+        'amphora_build_request',
+        sa.Column('amphora_id', sa.String(36), nullable=True,
                   primary_key=True),
-        sa.Column(u'priority', sa.Integer()),
-        sa.Column(u'created_time', sa.DateTime(timezone=True), nullable=False),
-        sa.Column(u'status', sa.String(16), default='WAITING', nullable=False)
+        sa.Column('priority', sa.Integer()),
+        sa.Column('created_time', sa.DateTime(timezone=True), nullable=False),
+        sa.Column('status', sa.String(16), default='WAITING', nullable=False)
     )
 
 

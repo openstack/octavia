@@ -30,10 +30,10 @@ down_revision = '0aee2b450512'
 
 def upgrade():
     op.add_column(
-        u'amphora',
-        sa.Column(u'created_at', sa.DateTime(), nullable=True)
+        'amphora',
+        sa.Column('created_at', sa.DateTime(), nullable=True)
     )
     op.add_column(
-        u'amphora',
-        sa.Column(u'updated_at', sa.DateTime(), nullable=True)
+        'amphora',
+        sa.Column('updated_at', sa.DateTime(), nullable=True)
     )

@@ -29,10 +29,10 @@ down_revision = '256852d5ff7c'
 
 def upgrade():
     op.create_table(
-        u'amphora_health',
-        sa.Column(u'amphora_id', sa.String(36), nullable=False,
+        'amphora_health',
+        sa.Column('amphora_id', sa.String(36), nullable=False,
                   primary_key=True),
-        sa.Column(u'last_update', sa.DateTime(timezone=True),
+        sa.Column('last_update', sa.DateTime(timezone=True),
                   nullable=False)
 
     )

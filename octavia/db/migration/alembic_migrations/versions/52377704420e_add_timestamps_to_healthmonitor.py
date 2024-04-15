@@ -32,24 +32,24 @@ down_revision = 'd85ca7258d21'
 
 def upgrade():
     op.add_column(
-        u'health_monitor',
-        sa.Column(u'created_at', sa.DateTime(), nullable=True)
+        'health_monitor',
+        sa.Column('created_at', sa.DateTime(), nullable=True)
     )
     op.add_column(
-        u'health_monitor',
-        sa.Column(u'updated_at', sa.DateTime(), nullable=True)
+        'health_monitor',
+        sa.Column('updated_at', sa.DateTime(), nullable=True)
     )
 
-    op.add_column(u'health_monitor',
-                  sa.Column(u'operating_status',
+    op.add_column('health_monitor',
+                  sa.Column('operating_status',
                             sa.String(16),
                             nullable=False,
                             server_default=constants.ONLINE)
                   )
-    op.alter_column(u'health_monitor', u'operating_status',
+    op.alter_column('health_monitor', 'operating_status',
                     existing_type=sa.String(16), server_default=None)
 
     op.create_foreign_key(
-        u'fk_health_monitor_operating_status_name', u'health_monitor',
-        u'operating_status', [u'operating_status'], [u'name']
+        'fk_health_monitor_operating_status_name', 'health_monitor',
+        'operating_status', ['operating_status'], ['name']
     )

@@ -36,8 +36,8 @@ def upgrade():
                             nullable=True)
                   )
     op.create_foreign_key(
-        u'fk_health_monitor_provisioning_status_name', u'health_monitor',
-        u'provisioning_status', [u'provisioning_status'], [u'name']
+        'fk_health_monitor_provisioning_status_name', 'health_monitor',
+        'provisioning_status', ['provisioning_status'], ['name']
     )
 
     op.add_column('l7policy',
@@ -46,8 +46,8 @@ def upgrade():
                             nullable=True)
                   )
     op.create_foreign_key(
-        u'fk_l7policy_provisioning_status_name', u'l7policy',
-        u'provisioning_status', [u'provisioning_status'], [u'name']
+        'fk_l7policy_provisioning_status_name', 'l7policy',
+        'provisioning_status', ['provisioning_status'], ['name']
     )
 
     op.add_column('l7rule',
@@ -56,8 +56,8 @@ def upgrade():
                             nullable=True)
                   )
     op.create_foreign_key(
-        u'fk_l7rule_provisioning_status_name', u'l7rule',
-        u'provisioning_status', [u'provisioning_status'], [u'name']
+        'fk_l7rule_provisioning_status_name', 'l7rule',
+        'provisioning_status', ['provisioning_status'], ['name']
     )
 
     op.add_column('member',
@@ -66,8 +66,8 @@ def upgrade():
                             nullable=True)
                   )
     op.create_foreign_key(
-        u'fk_member_provisioning_status_name', u'member',
-        u'provisioning_status', [u'provisioning_status'], [u'name']
+        'fk_member_provisioning_status_name', 'member',
+        'provisioning_status', ['provisioning_status'], ['name']
     )
 
     op.add_column('pool',
@@ -76,6 +76,6 @@ def upgrade():
                             nullable=True)
                   )
     op.create_foreign_key(
-        u'fk_pool_provisioning_status_name', u'pool',
-        u'provisioning_status', [u'provisioning_status'], [u'name']
+        'fk_pool_provisioning_status_name', 'pool',
+        'provisioning_status', ['provisioning_status'], ['name']
     )

@@ -30,15 +30,15 @@ down_revision = '6ac558d7fc21'
 
 def upgrade():
     op.create_table(
-        u'additional_vip',
-        sa.Column(u'load_balancer_id', sa.String(36), nullable=False,
+        'additional_vip',
+        sa.Column('load_balancer_id', sa.String(36), nullable=False,
                   index=True),
-        sa.Column(u'ip_address', sa.String(64), nullable=True),
-        sa.Column(u'port_id', sa.String(36), nullable=True),
-        sa.Column(u'subnet_id', sa.String(36), nullable=True),
-        sa.Column(u'network_id', sa.String(36), nullable=True),
-        sa.ForeignKeyConstraint([u'load_balancer_id'], [u'load_balancer.id'],
-                                name=u'fk_add_vip_load_balancer_id'),
-        sa.PrimaryKeyConstraint(u'load_balancer_id', u'subnet_id',
-                                name=u'pk_add_vip_load_balancer_subnet'),
+        sa.Column('ip_address', sa.String(64), nullable=True),
+        sa.Column('port_id', sa.String(36), nullable=True),
+        sa.Column('subnet_id', sa.String(36), nullable=True),
+        sa.Column('network_id', sa.String(36), nullable=True),
+        sa.ForeignKeyConstraint(['load_balancer_id'], ['load_balancer.id'],
+                                name='fk_add_vip_load_balancer_id'),
+        sa.PrimaryKeyConstraint('load_balancer_id', 'subnet_id',
+                                name='pk_add_vip_load_balancer_subnet'),
     )

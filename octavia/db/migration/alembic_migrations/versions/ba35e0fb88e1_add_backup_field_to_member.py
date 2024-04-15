@@ -30,5 +30,5 @@ down_revision = '034756a182a2'
 
 
 def upgrade():
-    op.add_column(u'member', sa.Column(u'backup', sa.Boolean(),
-                                       nullable=False, default=False))
+    op.add_column('member', sa.Column('backup', sa.Boolean(),
+                                      nullable=False, default=False))

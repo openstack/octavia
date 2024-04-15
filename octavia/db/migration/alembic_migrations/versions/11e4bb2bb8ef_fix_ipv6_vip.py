@@ -27,4 +27,4 @@ down_revision = '211982b05afc'
 
 
 def upgrade():
-    op.alter_column(u'vip', u'ip_address', type_=sa.String(64))
+    op.alter_column('vip', 'ip_address', type_=sa.String(64))

@@ -32,15 +32,15 @@ down_revision = '298eac0640a7'
 
 def upgrade():
     op.create_table(
-        u'lb_topology',
-        sa.Column(u'name', sa.String(36), primary_key=True),
-        sa.Column(u'description', sa.String(255), nullable=True)
+        'lb_topology',
+        sa.Column('name', sa.String(36), primary_key=True),
+        sa.Column('description', sa.String(255), nullable=True)
     )
 
     insert_table = sql.table(
-        u'lb_topology',
-        sql.column(u'name', sa.String),
-        sql.column(u'description', sa.String)
+        'lb_topology',
+        sql.column('name', sa.String),
+        sql.column('description', sa.String)
     )
 
     op.bulk_insert(
@@ -52,15 +52,15 @@ def upgrade():
     )
 
     op.create_table(
-        u'amphora_roles',
-        sa.Column(u'name', sa.String(36), primary_key=True),
-        sa.Column(u'description', sa.String(255), nullable=True)
+        'amphora_roles',
+        sa.Column('name', sa.String(36), primary_key=True),
+        sa.Column('description', sa.String(255), nullable=True)
     )
 
     insert_table = sql.table(
-        u'amphora_roles',
-        sql.column(u'name', sa.String),
-        sql.column(u'description', sa.String)
+        'amphora_roles',
+        sql.column('name', sa.String),
+        sql.column('description', sa.String)
     )
 
     op.bulk_insert(
@@ -73,17 +73,17 @@ def upgrade():
     )
 
     op.add_column(
-        u'load_balancer',
-        sa.Column(u'topology', sa.String(36),
-                  sa.ForeignKey(u'lb_topology.name',
-                                name=u'fk_lb_topology_name'),
+        'load_balancer',
+        sa.Column('topology', sa.String(36),
+                  sa.ForeignKey('lb_topology.name',
+                                name='fk_lb_topology_name'),
                   nullable=True)
     )
 
     op.add_column(
-        u'amphora',
-        sa.Column(u'role', sa.String(36),
-                  sa.ForeignKey(u'amphora_roles.name',
-                                name=u'fk_amphora_roles_name'),
+        'amphora',
+        sa.Column('role', sa.String(36),
+                  sa.ForeignKey('amphora_roles.name',
+                                name='fk_amphora_roles_name'),
                   nullable=True)
     )

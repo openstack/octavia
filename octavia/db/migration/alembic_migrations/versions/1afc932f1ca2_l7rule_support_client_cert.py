@@ -36,9 +36,9 @@ new_fields = ['SSL_CONN_HAS_CERT', 'SSL_VERIFY_RESULT', 'SSL_DN_FIELD']
 def upgrade():
 
     insert_table = sql.table(
-        u'l7rule_type',
-        sql.column(u'name', sa.String),
-        sql.column(u'description', sa.String)
+        'l7rule_type',
+        sql.column('name', sa.String),
+        sql.column('description', sa.String)
     )
     cows = [{'name': field} for field in new_fields]
     op.bulk_insert(insert_table, cows)

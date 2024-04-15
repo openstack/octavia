@@ -143,29 +143,29 @@ class OctaviaBase(models.ModelBase):
         return f"{self.__class__.__name__}({params})"
 
 
-class LookupTableMixin(object):
+class LookupTableMixin:
     """Mixin to add to classes that are lookup tables."""
     name = sa.Column(sa.String(255), primary_key=True, nullable=False)
     description = sa.Column(sa.String(255), nullable=True)
 
 
-class IdMixin(object):
+class IdMixin:
     """Id mixin, add to subclasses that have an id."""
     id = sa.Column(sa.String(36), primary_key=True,
                    default=uuidutils.generate_uuid)
 
 
-class ProjectMixin(object):
+class ProjectMixin:
     """Tenant mixin, add to subclasses that have a project."""
     project_id = sa.Column(sa.String(36))
 
 
-class NameMixin(object):
+class NameMixin:
     """Name mixin to add to classes which need a name."""
     name = sa.Column(sa.String(255), nullable=True)
 
 
-class TagMixin(object):
+class TagMixin:
     """Tags mixin to add to classes which need tags.
 
     The class must realize the specified db relationship as well.

@@ -55,8 +55,8 @@ def migrate_pools():
 
 def upgrade():
     insert_table = sa.table(
-        u'algorithm',
-        sa.column(u'name', sa.String(255)),
+        'algorithm',
+        sa.column('name', sa.String(255)),
     )
     op.bulk_insert(
         insert_table,

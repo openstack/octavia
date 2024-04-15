@@ -32,11 +32,11 @@ down_revision = 'dcf88e59aae4'
 
 def upgrade():
     insert_table = sql.table(
-        u'flavor_profile',
-        sa.Column(u'id', sa.String(36), nullable=False),
-        sa.Column(u'name', sa.String(255), nullable=False),
-        sa.Column(u'provider_name', sa.String(255), nullable=False),
-        sa.Column(u'flavor_data', sa.String(4096), nullable=False),
+        'flavor_profile',
+        sa.Column('id', sa.String(36), nullable=False),
+        sa.Column('name', sa.String(255), nullable=False),
+        sa.Column('provider_name', sa.String(255), nullable=False),
+        sa.Column('flavor_data', sa.String(4096), nullable=False),
     )
 
     op.bulk_insert(
@@ -48,12 +48,12 @@ def upgrade():
     )
 
     insert_table = sql.table(
-        u'flavor',
-        sa.Column(u'id', sa.String(36), nullable=False),
-        sa.Column(u'name', sa.String(255), nullable=False),
-        sa.Column(u'description', sa.String(255), nullable=True),
-        sa.Column(u'enabled', sa.Boolean(), nullable=False),
-        sa.Column(u'flavor_profile_id', sa.String(36), nullable=False),
+        'flavor',
+        sa.Column('id', sa.String(36), nullable=False),
+        sa.Column('name', sa.String(255), nullable=False),
+        sa.Column('description', sa.String(255), nullable=True),
+        sa.Column('enabled', sa.Boolean(), nullable=False),
+        sa.Column('flavor_profile_id', sa.String(36), nullable=False),
     )
 
     op.bulk_insert(

@@ -28,5 +28,5 @@ down_revision = '3f8ff3be828e'
 
 
 def upgrade():
-    op.add_column(u'vip',
-                  sa.Column(u'network_id', sa.String(36), nullable=True))
+    op.add_column('vip',
+                  sa.Column('network_id', sa.String(36), nullable=True))

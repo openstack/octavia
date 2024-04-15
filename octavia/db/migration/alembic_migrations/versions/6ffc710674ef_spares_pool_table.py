@@ -30,6 +30,6 @@ down_revision = '7432f1d4ea83'
 
 def upgrade():
     op.create_table(
-        u'spares_pool',
-        sa.Column(u'updated_at', sa.DateTime(), primary_key=True,
+        'spares_pool',
+        sa.Column('updated_at', sa.DateTime(), primary_key=True,
                   server_default=sa.func.current_timestamp()))

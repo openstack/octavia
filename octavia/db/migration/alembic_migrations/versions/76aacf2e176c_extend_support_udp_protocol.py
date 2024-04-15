@@ -30,7 +30,7 @@ from sqlalchemy import sql
 revision = '76aacf2e176c'
 down_revision = 'ebbcc72b4e5e'
 
-tables = [u'protocol', u'health_monitor_type']
+tables = ['protocol', 'health_monitor_type']
 new_fields = ['UDP', 'UDP-CONNECT']
 
 
@@ -40,8 +40,8 @@ def upgrade():
     for table, new_field in zip(tables, new_fields):
         insert_table = sql.table(
             table,
-            sql.column(u'name', sa.String),
-            sql.column(u'description', sa.String)
+            sql.column('name', sa.String),
+            sql.column('description', sa.String)
         )
 
         op.bulk_insert(

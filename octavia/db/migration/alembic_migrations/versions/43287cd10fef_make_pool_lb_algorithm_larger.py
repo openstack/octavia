@@ -30,14 +30,14 @@ down_revision = '6abb04f24c5'
 
 def upgrade():
     op.drop_constraint(
-        u'fk_pool_algorithm_name', u'pool',
-        type_=u'foreignkey'
+        'fk_pool_algorithm_name', 'pool',
+        type_='foreignkey'
     )
-    op.alter_column(u'algorithm', u'name', nullable=False,
+    op.alter_column('algorithm', 'name', nullable=False,
                     existing_type=sa.String(255))
-    op.alter_column(u'pool', u'lb_algorithm', nullable=False,
+    op.alter_column('pool', 'lb_algorithm', nullable=False,
                     existing_type=sa.String(255))
     op.create_foreign_key(
-        u'fk_pool_algorithm_name', u'pool',
-        u'algorithm', [u'lb_algorithm'], [u'name']
+        'fk_pool_algorithm_name', 'pool',
+        'algorithm', ['lb_algorithm'], ['name']
     )

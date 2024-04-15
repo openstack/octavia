@@ -30,7 +30,7 @@ down_revision = 'a1f689aecc1d'
 
 
 def upgrade():
-    op.add_column(u'pool', sa.Column(u'ca_tls_certificate_id', sa.String(255),
-                                     nullable=True))
-    op.add_column(u'pool', sa.Column(u'crl_container_id', sa.String(255),
-                                     nullable=True))
+    op.add_column('pool', sa.Column('ca_tls_certificate_id', sa.String(255),
+                                    nullable=True))
+    op.add_column('pool', sa.Column('crl_container_id', sa.String(255),
+                                    nullable=True))

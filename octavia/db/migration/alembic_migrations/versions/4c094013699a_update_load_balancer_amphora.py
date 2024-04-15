@@ -30,18 +30,18 @@ down_revision = '35dee79d5865'
 
 def upgrade():
     op.add_column(
-        u'amphora',
-        sa.Column(u'load_balancer_id', sa.String(36),
-                  sa.ForeignKey(u'load_balancer.id',
-                                name=u'fk_amphora_load_balancer_id'),
+        'amphora',
+        sa.Column('load_balancer_id', sa.String(36),
+                  sa.ForeignKey('load_balancer.id',
+                                name='fk_amphora_load_balancer_id'),
                   nullable=True)
     )
-    op.drop_table(u'load_balancer_amphora')
+    op.drop_table('load_balancer_amphora')
     op.drop_constraint(
-        u'fk_container_provisioning_status_name', u'amphora',
-        type_=u'foreignkey'
+        'fk_container_provisioning_status_name', 'amphora',
+        type_='foreignkey'
     )
     op.create_foreign_key(
-        u'fk_amphora_provisioning_status_name', u'amphora',
-        u'provisioning_status', [u'status'], [u'name']
+        'fk_amphora_provisioning_status_name', 'amphora',
+        'provisioning_status', ['status'], ['name']
     )

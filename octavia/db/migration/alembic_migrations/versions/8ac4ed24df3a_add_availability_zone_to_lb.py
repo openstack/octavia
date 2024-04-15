@@ -29,13 +29,13 @@ down_revision = 'c761c8a71579'
 
 
 def upgrade():
-    op.add_column(u'load_balancer',
-                  sa.Column(u'availability_zone',
+    op.add_column('load_balancer',
+                  sa.Column('availability_zone',
                             sa.String(255),
                             nullable=True)
                   )
 
     op.create_foreign_key(
-        u'fk_load_balancer_availability_zone_name', u'load_balancer',
-        u'availability_zone', [u'availability_zone'], [u'name']
+        'fk_load_balancer_availability_zone_name', 'load_balancer',
+        'availability_zone', ['availability_zone'], ['name']
     )

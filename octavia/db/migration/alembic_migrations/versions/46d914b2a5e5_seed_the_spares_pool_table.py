@@ -34,8 +34,8 @@ down_revision = '6ffc710674ef'
 def upgrade():
     # Create temporary table for table data seeding
     insert_table = sa.table(
-        u'spares_pool',
-        sa.column(u'updated_at', sa.DateTime),
+        'spares_pool',
+        sa.column('updated_at', sa.DateTime),
     )
 
     # Note: The date/time doesn't matter, we just need to seed the table.

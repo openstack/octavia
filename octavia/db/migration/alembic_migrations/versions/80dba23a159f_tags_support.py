@@ -29,9 +29,9 @@ down_revision = '55874a4ceed6'
 
 def upgrade():
     op.create_table(
-        u'tags',
-        sa.Column(u'resource_id', sa.String(36), primary_key=True,
+        'tags',
+        sa.Column('resource_id', sa.String(36), primary_key=True,
                   nullable=False),
-        sa.Column(u'tag', sa.String(255), primary_key=True, nullable=False,
+        sa.Column('tag', sa.String(255), primary_key=True, nullable=False,
                   index=True),
     )

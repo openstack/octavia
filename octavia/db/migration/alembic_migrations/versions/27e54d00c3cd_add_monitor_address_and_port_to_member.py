@@ -30,13 +30,13 @@ down_revision = '5309960964f8'
 
 
 def upgrade():
-    op.add_column(u'member',
-                  sa.Column(u'monitor_address',
+    op.add_column('member',
+                  sa.Column('monitor_address',
                             sa.String(64),
                             nullable=True)
                   )
-    op.add_column(u'member',
-                  sa.Column(u'monitor_port',
+    op.add_column('member',
+                  sa.Column('monitor_port',
                             sa.Integer(),
                             nullable=True)
                   )

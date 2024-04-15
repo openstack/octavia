@@ -29,5 +29,5 @@ down_revision = '4aeb9e23ad43'
 
 
 def upgrade():
-    op.add_column(u'amphora', sa.Column(u'cached_zone', sa.String(255),
-                                        nullable=True))
+    op.add_column('amphora', sa.Column('cached_zone', sa.String(255),
+                                       nullable=True))

@@ -29,12 +29,12 @@ down_revision = 'a5762a99609a'
 
 def upgrade():
     op.create_table(
-        u'listener_cidr',
-        sa.Column(u'listener_id', sa.String(36), nullable=False),
-        sa.Column(u'cidr', sa.String(64), nullable=False),
+        'listener_cidr',
+        sa.Column('listener_id', sa.String(36), nullable=False),
+        sa.Column('cidr', sa.String(64), nullable=False),
 
-        sa.ForeignKeyConstraint([u'listener_id'],
-                                [u'listener.id'],
-                                name=u'fk_listener_cidr_listener_id'),
-        sa.PrimaryKeyConstraint(u'listener_id', u'cidr')
+        sa.ForeignKeyConstraint(['listener_id'],
+                                ['listener.id'],
+                                name='fk_listener_cidr_listener_id'),
+        sa.PrimaryKeyConstraint('listener_id', 'cidr')
     )
