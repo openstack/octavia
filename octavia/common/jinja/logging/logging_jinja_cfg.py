@@ -25,7 +25,7 @@ TEMPLATES_DIR = (os.path.dirname(os.path.realpath(__file__)) +
                  constants.LOGGING_TEMPLATES + '/')
 
 
-class LoggingJinjaTemplater(object):
+class LoggingJinjaTemplater:
 
     def __init__(self, logging_templates=None):
         self.logging_templates = logging_templates or TEMPLATES_DIR

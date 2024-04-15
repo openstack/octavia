@@ -19,7 +19,7 @@ Certificate Generator API
 import abc
 
 
-class CertGenerator(object, metaclass=abc.ABCMeta):
+class CertGenerator(metaclass=abc.ABCMeta):
     """Base Cert Generator Interface
 
     A Certificate Generator is responsible for generating private keys,

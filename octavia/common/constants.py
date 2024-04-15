@@ -773,22 +773,22 @@ RULE_API_READ_QUOTA = 'rule:load-balancer:read-quota'
 RULE_API_READ_QUOTA_GLOBAL = 'rule:load-balancer:read-quota-global'
 RULE_API_WRITE_QUOTA = 'rule:load-balancer:write-quota'
 
-RBAC_LOADBALANCER = '{}:loadbalancer:'.format(LOADBALANCER_API)
-RBAC_LISTENER = '{}:listener:'.format(LOADBALANCER_API)
-RBAC_POOL = '{}:pool:'.format(LOADBALANCER_API)
-RBAC_MEMBER = '{}:member:'.format(LOADBALANCER_API)
-RBAC_HEALTHMONITOR = '{}:healthmonitor:'.format(LOADBALANCER_API)
-RBAC_L7POLICY = '{}:l7policy:'.format(LOADBALANCER_API)
-RBAC_L7RULE = '{}:l7rule:'.format(LOADBALANCER_API)
-RBAC_QUOTA = '{}:quota:'.format(LOADBALANCER_API)
-RBAC_AMPHORA = '{}:amphora:'.format(LOADBALANCER_API)
-RBAC_PROVIDER = '{}:provider:'.format(LOADBALANCER_API)
-RBAC_PROVIDER_FLAVOR = '{}:provider-flavor:'.format(LOADBALANCER_API)
+RBAC_LOADBALANCER = f'{LOADBALANCER_API}:loadbalancer:'
+RBAC_LISTENER = f'{LOADBALANCER_API}:listener:'
+RBAC_POOL = f'{LOADBALANCER_API}:pool:'
+RBAC_MEMBER = f'{LOADBALANCER_API}:member:'
+RBAC_HEALTHMONITOR = f'{LOADBALANCER_API}:healthmonitor:'
+RBAC_L7POLICY = f'{LOADBALANCER_API}:l7policy:'
+RBAC_L7RULE = f'{LOADBALANCER_API}:l7rule:'
+RBAC_QUOTA = f'{LOADBALANCER_API}:quota:'
+RBAC_AMPHORA = f'{LOADBALANCER_API}:amphora:'
+RBAC_PROVIDER = f'{LOADBALANCER_API}:provider:'
+RBAC_PROVIDER_FLAVOR = f'{LOADBALANCER_API}:provider-flavor:'
 RBAC_PROVIDER_AVAILABILITY_ZONE = '{}:provider-availability-zone:'.format(
     LOADBALANCER_API)
-RBAC_FLAVOR = '{}:flavor:'.format(LOADBALANCER_API)
-RBAC_FLAVOR_PROFILE = '{}:flavor-profile:'.format(LOADBALANCER_API)
-RBAC_AVAILABILITY_ZONE = '{}:availability-zone:'.format(LOADBALANCER_API)
+RBAC_FLAVOR = f'{LOADBALANCER_API}:flavor:'
+RBAC_FLAVOR_PROFILE = f'{LOADBALANCER_API}:flavor-profile:'
+RBAC_AVAILABILITY_ZONE = f'{LOADBALANCER_API}:availability-zone:'
 RBAC_AVAILABILITY_ZONE_PROFILE = '{}:availability-zone-profile:'.format(
     LOADBALANCER_API)
 

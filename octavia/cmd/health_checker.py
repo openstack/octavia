@@ -186,7 +186,7 @@ def sctp_health_check(ip_address, port, timeout=2):
 
     data = _sctp_build_init_packet(src_port, port, tag)
 
-    print("Sending INIT packet to {}:{}".format(ip_address, port))
+    print(f"Sending INIT packet to {ip_address}:{port}")
     s.send(data)
 
     start = time.time()
@@ -211,13 +211,13 @@ def sctp_health_check(ip_address, port, timeout=2):
             print("Received ABORT")
             ret = 1
         else:  # Others: unknown error
-            print("Received {} Type chunk".format(response_type))
+            print(f"Received {response_type} Type chunk")
             send_abort = True
             ret = 3
 
         break
     else:
-        print("Timeout after {} seconds.".format(timeout))
+        print(f"Timeout after {timeout} seconds.")
         # Timeout
         ret = 2
 
@@ -260,5 +260,5 @@ def main():
         ret = sctp_health_check(destination, port, timeout=default_timeout)
         sys.exit(ret)
     else:
-        print("Unsupported protocol '{}'".format(protocol))
+        print(f"Unsupported protocol '{protocol}'")
         sys.exit(1)

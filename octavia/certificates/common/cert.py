@@ -16,7 +16,7 @@
 import abc
 
 
-class Cert(object, metaclass=abc.ABCMeta):
+class Cert(metaclass=abc.ABCMeta):
     """Base class to represent all certificates."""
 
     @abc.abstractmethod
