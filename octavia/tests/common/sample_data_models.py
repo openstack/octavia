@@ -23,7 +23,7 @@ from octavia.common import constants
 from octavia.common import data_models
 
 
-class SampleDriverDataModels(object):
+class SampleDriverDataModels:
 
     def __init__(self):
         self.project_id = uuidutils.generate_uuid()

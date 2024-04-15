@@ -186,15 +186,15 @@ class TestAvailabilityZones(base.BaseAPITest):
         self.assertEqual(az.get('name'), response.get('name'))
         self.assertEqual(self.azp.get('id'),
                          response.get('availability_zone_profile_id'))
-        self.assertIn(u'availability_zone_profile_id', response)
-        self.assertNotIn(u'description', response)
-        self.assertNotIn(u'enabled', response)
+        self.assertIn('availability_zone_profile_id', response)
+        self.assertNotIn('description', response)
+        self.assertNotIn('enabled', response)
 
     def test_get_one_deleted_name(self):
         response = self.get(
             self.AZ_PATH.format(az_name=constants.NIL_UUID), status=404)
         self.assertEqual(
-            'Availability Zone {} not found.'.format(constants.NIL_UUID),
+            f'Availability Zone {constants.NIL_UUID} not found.',
             response.json.get('faultstring'))
 
     def test_get_authorized(self):
@@ -249,15 +249,15 @@ class TestAvailabilityZones(base.BaseAPITest):
         self.create_availability_zone(
             'name1', 'description', self.azp.get('id'), True)
         ref_az_1 = {
-            u'description': u'description', u'enabled': True,
-            u'availability_zone_profile_id': self.azp.get('id'),
-            u'name': u'name1'}
+            'description': 'description', 'enabled': True,
+            'availability_zone_profile_id': self.azp.get('id'),
+            'name': 'name1'}
         self.create_availability_zone(
             'name2', 'description', self.azp.get('id'), True)
         ref_az_2 = {
-            u'description': u'description', u'enabled': True,
-            u'availability_zone_profile_id': self.azp.get('id'),
-            u'name': u'name2'}
+            'description': 'description', 'enabled': True,
+            'availability_zone_profile_id': self.azp.get('id'),
+            'name': 'name2'}
         response = self.get(self.AZS_PATH)
         api_list = response.json.get(self.root_tag_list)
         self.assertEqual(2, len(api_list))
@@ -274,10 +274,10 @@ class TestAvailabilityZones(base.BaseAPITest):
         api_list = response.json.get(self.root_tag_list)
         self.assertEqual(2, len(api_list))
         for az in api_list:
-            self.assertIn(u'name', az)
-            self.assertNotIn(u'availability_zone_profile_id', az)
-            self.assertNotIn(u'description', az)
-            self.assertNotIn(u'enabled', az)
+            self.assertIn('name', az)
+            self.assertNotIn('availability_zone_profile_id', az)
+            self.assertNotIn('description', az)
+            self.assertNotIn('enabled', az)
 
     def test_get_all_authorized(self):
         self.create_availability_zone(
@@ -355,7 +355,7 @@ class TestAvailabilityZones(base.BaseAPITest):
             self.AZ_PATH.format(az_name=constants.NIL_UUID), body,
             status=404)
         self.assertEqual(
-            'Availability Zone {} not found.'.format(constants.NIL_UUID),
+            f'Availability Zone {constants.NIL_UUID} not found.',
             response.json.get('faultstring'))
 
     def test_update_none(self):
@@ -505,7 +505,7 @@ class TestAvailabilityZones(base.BaseAPITest):
         response = self.delete(
             self.AZ_PATH.format(az_name=constants.NIL_UUID), status=404)
         self.assertEqual(
-            'Availability Zone {} not found.'.format(constants.NIL_UUID),
+            f'Availability Zone {constants.NIL_UUID} not found.',
             response.json.get('faultstring'))
 
     def test_delete_authorized(self):

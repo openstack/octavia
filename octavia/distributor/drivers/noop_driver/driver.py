@@ -38,7 +38,7 @@ class NoopProvidesRequiresTask(task.Task):
         return self.provides_dict.values()
 
 
-class NoopManager(object):
+class NoopManager:
     def __init__(self):
         super().__init__()
 

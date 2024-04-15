@@ -33,10 +33,10 @@ class TestProvider(base.BaseAPITest):
         super().setUp()
 
     def test_get_all_providers(self):
-        octavia_dict = {u'description': u'Octavia driver.',
-                        u'name': u'octavia'}
-        amphora_dict = {u'description': u'Amp driver.', u'name': u'amphora'}
-        noop_dict = {u'description': u'NoOp driver.', u'name': u'noop_driver'}
+        octavia_dict = {'description': 'Octavia driver.',
+                        'name': 'octavia'}
+        amphora_dict = {'description': 'Amp driver.', 'name': 'amphora'}
+        noop_dict = {'description': 'NoOp driver.', 'name': 'noop_driver'}
         providers = self.get(self.PROVIDERS_PATH).json.get(self.root_tag_list)
         self.assertEqual(4, len(providers))
         self.assertIn(octavia_dict, providers)
@@ -44,9 +44,9 @@ class TestProvider(base.BaseAPITest):
         self.assertIn(noop_dict, providers)
 
     def test_get_all_providers_fields(self):
-        octavia_dict = {u'name': u'octavia'}
-        amphora_dict = {u'name': u'amphora'}
-        noop_dict = {u'name': u'noop_driver'}
+        octavia_dict = {'name': 'octavia'}
+        amphora_dict = {'name': 'amphora'}
+        noop_dict = {'name': 'noop_driver'}
         providers = self.get(self.PROVIDERS_PATH, params={'fields': ['name']})
         providers_list = providers.json.get(self.root_tag_list)
         self.assertEqual(4, len(providers_list))

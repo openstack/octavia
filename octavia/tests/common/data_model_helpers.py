@@ -35,10 +35,10 @@ def generate_load_balancer(vip=None, amphorae=None,
     additional_vips = additional_vips or []
     global LB_SEED
     LB_SEED += 1
-    lb = data_models.LoadBalancer(id='lb{0}-id'.format(LB_SEED),
+    lb = data_models.LoadBalancer(id=f'lb{LB_SEED}-id',
                                   project_id='2',
-                                  name='lb{0}'.format(LB_SEED),
-                                  description='lb{0}'.format(LB_SEED),
+                                  name=f'lb{LB_SEED}',
+                                  description=f'lb{LB_SEED}',
                                   vip=vip,
                                   topology=topology,
                                   amphorae=amphorae)
@@ -68,9 +68,9 @@ VIP_SEED = 0
 def generate_vip(load_balancer=None):
     global VIP_SEED
     VIP_SEED += 1
-    vip = data_models.Vip(ip_address='10.0.0.{0}'.format(VIP_SEED),
+    vip = data_models.Vip(ip_address=f'10.0.0.{VIP_SEED}',
                           subnet_id=ut_constants.MOCK_VIP_SUBNET_ID,
-                          port_id='vrrp-port-{0}'.format(VIP_SEED),
+                          port_id=f'vrrp-port-{VIP_SEED}',
                           load_balancer=load_balancer)
     if load_balancer:
         vip.load_balancer_id = load_balancer.id
@@ -83,12 +83,12 @@ AMP_SEED = 0
 def generate_amphora(load_balancer=None):
     global AMP_SEED
     AMP_SEED += 1
-    amp = data_models.Amphora(id='amp{0}-id'.format(AMP_SEED),
-                              compute_id='amp{0}-compute-id'.format(AMP_SEED),
+    amp = data_models.Amphora(id=f'amp{AMP_SEED}-id',
+                              compute_id=f'amp{AMP_SEED}-compute-id',
                               status='ACTIVE',
-                              lb_network_ip='99.99.99.{0}'.format(AMP_SEED),
-                              vrrp_ip='55.55.55.{0}'.format(AMP_SEED),
-                              vrrp_port_id='vrrp_port-{0}-id'.format(AMP_SEED),
+                              lb_network_ip=f'99.99.99.{AMP_SEED}',
+                              vrrp_ip=f'55.55.55.{AMP_SEED}',
+                              vrrp_port_id=f'vrrp_port-{AMP_SEED}-id',
                               load_balancer=load_balancer)
     if load_balancer:
         amp.load_balancer_id = load_balancer.id

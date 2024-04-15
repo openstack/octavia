@@ -356,9 +356,9 @@ class TestL7Rule(base.BaseAPITest):
         l7rus = self.get(self.l7rules_path, params={
             'fields': ['id', 'compare_type']}).json
         for l7ru in l7rus['rules']:
-            self.assertIn(u'id', l7ru)
-            self.assertIn(u'compare_type', l7ru)
-            self.assertNotIn(u'project_id', l7ru)
+            self.assertIn('id', l7ru)
+            self.assertIn('compare_type', l7ru)
+            self.assertNotIn('project_id', l7ru)
 
     def test_get_one_fields_filter(self):
         l7r1 = self.create_l7rule(
@@ -370,9 +370,9 @@ class TestL7Rule(base.BaseAPITest):
         l7ru = self.get(
             self.l7rule_path.format(l7rule_id=l7r1.get('id')),
             params={'fields': ['id', 'compare_type']}).json.get(self.root_tag)
-        self.assertIn(u'id', l7ru)
-        self.assertIn(u'compare_type', l7ru)
-        self.assertNotIn(u'project_id', l7ru)
+        self.assertIn('id', l7ru)
+        self.assertIn('compare_type', l7ru)
+        self.assertNotIn('project_id', l7ru)
 
     def test_get_all_filter(self):
         ru1 = self.create_l7rule(
@@ -797,7 +797,7 @@ class TestL7Rule(base.BaseAPITest):
                   'key': 'no-need-key'}
         response = req_func(first_req_arg, self._build_body(l7rule),
                             status=400).json
-        self.assertIn('L7rule type {0} does not use the "key" field.'.format(
+        self.assertIn('L7rule type {} does not use the "key" field.'.format(
             constants.L7RULE_TYPE_SSL_CONN_HAS_CERT),
             response.get('faultstring'))
 
@@ -806,7 +806,7 @@ class TestL7Rule(base.BaseAPITest):
         response = req_func(first_req_arg, self._build_body(l7rule),
                             status=400).json
         self.assertIn(
-            'L7rule value {0} is not a boolean True string.'.format(
+            'L7rule value {} is not a boolean True string.'.format(
                 l7rule['value']), response.get('faultstring'))
 
         l7rule['value'] = 'tRUe'
@@ -814,7 +814,7 @@ class TestL7Rule(base.BaseAPITest):
         response = req_func(first_req_arg, self._build_body(l7rule),
                             status=400).json
         self.assertIn(
-            'L7rule type {0} only supports the {1} compare type.'.format(
+            'L7rule type {} only supports the {} compare type.'.format(
                 constants.L7RULE_TYPE_SSL_CONN_HAS_CERT,
                 constants.L7RULE_COMPARE_TYPE_EQUAL_TO),
             response.get('faultstring'))
@@ -829,14 +829,14 @@ class TestL7Rule(base.BaseAPITest):
         response = req_func(first_req_arg, self._build_body(l7rule),
                             status=400).json
         self.assertIn(
-            'L7rule type {0} does not use the "key" field.'.format(
+            'L7rule type {} does not use the "key" field.'.format(
                 l7rule['type']), response.get('faultstring'))
 
         l7rule.pop('key')
         response = req_func(first_req_arg, self._build_body(l7rule),
                             status=400).json
         self.assertIn(
-            'L7rule type {0} needs a int value, which is >= 0'.format(
+            'L7rule type {} needs a int value, which is >= 0'.format(
                 l7rule['type']), response.get('faultstring'))
 
         l7rule['value'] = '0'
@@ -844,7 +844,7 @@ class TestL7Rule(base.BaseAPITest):
         response = req_func(first_req_arg, self._build_body(l7rule),
                             status=400).json
         self.assertIn(
-            'L7rule type {0} only supports the {1} compare type.'.format(
+            'L7rule type {} only supports the {} compare type.'.format(
                 l7rule['type'], constants.L7RULE_COMPARE_TYPE_EQUAL_TO),
             response.get('faultstring'))
 
@@ -861,7 +861,7 @@ class TestL7Rule(base.BaseAPITest):
         response = req_func(first_req_arg, self._build_body(l7rule),
                             status=400).json
         self.assertIn(
-            'L7rule type {0} needs to specify a key and a value.'.format(
+            'L7rule type {} needs to specify a key and a value.'.format(
                 l7rule['type']), response.get('faultstring'))
 
         l7rule['key'] = 'NOT_SUPPORTED_DN_FIELD'

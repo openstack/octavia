@@ -523,9 +523,9 @@ class TestL7Policy(base.BaseAPITest):
         l7pos = self.get(self.L7POLICIES_PATH, params={
             'fields': ['id', 'project_id']}).json
         for l7po in l7pos['l7policies']:
-            self.assertIn(u'id', l7po)
-            self.assertIn(u'project_id', l7po)
-            self.assertNotIn(u'description', l7po)
+            self.assertIn('id', l7po)
+            self.assertIn('project_id', l7po)
+            self.assertNotIn('description', l7po)
 
     def test_get_one_fields_filter(self):
         l7p1 = self.create_l7policy(
@@ -536,9 +536,9 @@ class TestL7Policy(base.BaseAPITest):
         l7po = self.get(
             self.L7POLICY_PATH.format(l7policy_id=l7p1.get('id')),
             params={'fields': ['id', 'project_id']}).json.get(self.root_tag)
-        self.assertIn(u'id', l7po)
-        self.assertIn(u'project_id', l7po)
-        self.assertNotIn(u'description', l7po)
+        self.assertIn('id', l7po)
+        self.assertIn('project_id', l7po)
+        self.assertNotIn('description', l7po)
 
     def test_get_all_filter(self):
         policy1 = self.create_l7policy(

@@ -29,7 +29,7 @@ STATS_DRIVERS = ['stats_db', 'stats_logger']
 class TestStatsBase(base.TestCase):
 
     def setUp(self):
-        super(TestStatsBase, self).setUp()
+        super().setUp()
 
         self.conf = oslo_fixture.Config(cfg.CONF)
         self.conf.config(group="controller_worker",

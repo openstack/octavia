@@ -113,19 +113,19 @@ class TestOSUtils(base.TestCase):
     @mock.patch('octavia.amphorae.backends.utils.interface_file.'
                 'VIPInterfaceFile')
     def test_write_vip_interface_file(self, mock_vip_interface_file):
-        netns_interface = u'eth1234'
-        FIXED_IP = u'192.0.2.2'
-        SUBNET_CIDR = u'192.0.2.0/24'
-        GATEWAY = u'192.51.100.1'
-        DEST1 = u'198.51.100.0/24'
-        DEST2 = u'203.0.113.0/24'
-        NEXTHOP = u'192.0.2.1'
+        netns_interface = 'eth1234'
+        FIXED_IP = '192.0.2.2'
+        SUBNET_CIDR = '192.0.2.0/24'
+        GATEWAY = '192.51.100.1'
+        DEST1 = '198.51.100.0/24'
+        DEST2 = '203.0.113.0/24'
+        NEXTHOP = '192.0.2.1'
         MTU = 1450
-        FIXED_IP_IPV6 = u'2001:0db8:0000:0000:0000:0000:0000:000a'
+        FIXED_IP_IPV6 = '2001:0db8:0000:0000:0000:0000:0000:000a'
         # Subnet prefix is purposefully not 32, because that coincidentally
         # matches the result of any arbitrary IPv4->prefixlen conversion
-        SUBNET_CIDR_IPV6 = u'2001:db8::/70'
-        GATEWAY_IPV6 = u'2001:0db8:0000:0000:0000:0000:0000:0001'
+        SUBNET_CIDR_IPV6 = '2001:db8::/70'
+        GATEWAY_IPV6 = '2001:0db8:0000:0000:0000:0000:0000:0001'
 
         ip = ipaddress.ip_address(FIXED_IP)
         network = ipaddress.ip_network(SUBNET_CIDR)
@@ -200,15 +200,15 @@ class TestOSUtils(base.TestCase):
     @mock.patch('octavia.amphorae.backends.utils.interface_file.'
                 'PortInterfaceFile')
     def test_write_port_interface_file(self, mock_port_interface_file):
-        FIXED_IP = u'192.0.2.2'
-        NEXTHOP = u'192.0.2.1'
-        DEST = u'198.51.100.0/24'
+        FIXED_IP = '192.0.2.2'
+        NEXTHOP = '192.0.2.1'
+        DEST = '198.51.100.0/24'
         host_routes = [
             {'nexthop': NEXTHOP, 'destination': ipaddress.ip_network(DEST)}
         ]
-        FIXED_IP_IPV6 = u'2001:db8::2'
-        NEXTHOP_IPV6 = u'2001:db8::1'
-        DEST_IPV6 = u'2001:db8:51:100::/64'
+        FIXED_IP_IPV6 = '2001:db8::2'
+        NEXTHOP_IPV6 = '2001:db8::1'
+        DEST_IPV6 = '2001:db8:51:100::/64'
         host_routes_ipv6 = [
             {'nexthop': NEXTHOP_IPV6,
              'destination': ipaddress.ip_network(DEST_IPV6)}

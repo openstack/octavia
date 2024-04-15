@@ -22,7 +22,7 @@ from openstack.network.v2.subnet import Subnet
 from octavia.common import constants
 
 
-class MockNovaInterface(object):
+class MockNovaInterface:
     net_id = None
     port_id = None
     fixed_ips = []

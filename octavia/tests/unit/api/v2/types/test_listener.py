@@ -22,7 +22,7 @@ from octavia.common import constants
 from octavia.tests.unit.api.common import base
 
 
-class TestListener(object):
+class TestListener:
 
     _type = None
 

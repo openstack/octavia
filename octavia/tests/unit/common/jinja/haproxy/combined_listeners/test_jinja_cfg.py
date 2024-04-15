@@ -1555,11 +1555,9 @@ class TestHaproxyCfg(base.TestCase):
               "check check-alpn {alpn} inter 30s fall 3 rise 2 cookie "
               "sample_member_id_2 {opts} alpn {alpn}\n\n").format(
             maxconn=constants.HAPROXY_DEFAULT_MAXCONN,
-            opts="%s %s %s %s %s %s" % (
-                "ssl", "crt", pool_client_cert,
-                "ca-file %s" % pool_ca_cert,
-                "crl-file %s" % pool_crl,
-                "verify required sni ssl_fc_sni no-sslv3 no-tlsv10 no-tlsv11"),
+            opts=(f"ssl crt {pool_client_cert} ca-file {pool_ca_cert} "
+                  f"crl-file {pool_crl} verify required sni ssl_fc_sni "
+                  f"no-sslv3 no-tlsv10 no-tlsv11"),
             alpn=",".join(constants.AMPHORA_SUPPORTED_ALPN_PROTOCOLS))
         rendered_obj = self.jinja_cfg.render_loadbalancer_obj(
             sample_configs_combined.sample_amphora_tuple(),

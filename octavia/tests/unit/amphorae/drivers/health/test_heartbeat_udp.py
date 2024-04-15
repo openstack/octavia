@@ -124,7 +124,7 @@ class TestHeartbeatUDP(base.TestCase):
                 }
             },
             "pools": {
-                "pool-id-1:{}".format(self.listener_id): {
+                f"pool-id-1:{self.listener_id}": {
                     "status": constants.UP,
                     "members": {
                         "member-id-1": {
@@ -160,7 +160,7 @@ class TestHeartbeatUDP(base.TestCase):
                 }
             },
             "pools": {
-                "pool-id-1:{}".format(self.listener_id): {
+                f"pool-id-1:{self.listener_id}": {
                     "status": constants.UP,
                     "members": {
                         "member-id-1": {
@@ -296,7 +296,7 @@ class TestUpdateHealthDb(base.TestCase):
     FAKE_UUID_1 = uuidutils.generate_uuid()
 
     def setUp(self):
-        super(TestUpdateHealthDb, self).setUp()
+        super().setUp()
 
         session_patch = mock.patch('octavia.db.api.get_session')
         self.addCleanup(session_patch.stop)

@@ -36,7 +36,7 @@ class KeepalivedLvsTestCase(base.TestCase):
             mock.call(
                 json=dict(message='UDP Listener Not Found',
                           details="No UDP listener with UUID: "
-                                  "{0}".format(self.FAKE_ID)), status=404),
+                                  "{}".format(self.FAKE_ID)), status=404),
             mock.call(json={'message': 'OK'})
         ]
         m_webob.Response.assert_has_calls(calls)

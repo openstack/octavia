@@ -28,7 +28,7 @@ CONF = cfg.CONF
 class TestHealthCheckerCMD(base.TestCase):
 
     def setUp(self):
-        super(TestHealthCheckerCMD, self).setUp()
+        super().setUp()
         self.CONF = self.useFixture(oslo_fixture.Config(cfg.CONF))
 
     def test_crc32c(self):

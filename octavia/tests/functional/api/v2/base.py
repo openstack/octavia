@@ -170,7 +170,7 @@ class BaseAPITest(base_db_test.OctaviaDBTestBase):
         full_path = self._get_full_path(path)
         param_string = ""
         for k, v in params.items():
-            param_string += "{key}={value}&".format(key=k, value=v)
+            param_string += f"{k}={v}&"
         if param_string:
             full_path = "{path}?{params}".format(
                 path=full_path, params=param_string.rstrip("&"))

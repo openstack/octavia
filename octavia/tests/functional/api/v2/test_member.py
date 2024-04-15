@@ -352,10 +352,10 @@ class TestMember(base.BaseAPITest):
         members = self.get(self.members_path, params={
             'fields': ['id', 'address']}).json
         for member in members['members']:
-            self.assertIn(u'id', member)
-            self.assertIn(u'address', member)
-            self.assertNotIn(u'name', member)
-            self.assertNotIn(u'monitor_address', member)
+            self.assertIn('id', member)
+            self.assertIn('address', member)
+            self.assertNotIn('name', member)
+            self.assertNotIn('monitor_address', member)
 
     def test_get_one_fields_filter(self):
         member1 = self.create_member(
@@ -365,10 +365,10 @@ class TestMember(base.BaseAPITest):
         member = self.get(
             self.member_path.format(member_id=member1.get('id')),
             params={'fields': ['id', 'address']}).json.get(self.root_tag)
-        self.assertIn(u'id', member)
-        self.assertIn(u'address', member)
-        self.assertNotIn(u'name', member)
-        self.assertNotIn(u'monitor_address', member)
+        self.assertIn('id', member)
+        self.assertIn('address', member)
+        self.assertNotIn('name', member)
+        self.assertNotIn('monitor_address', member)
 
     def test_get_all_filter(self):
         mem1 = self.create_member(self.pool_id,
@@ -689,7 +689,7 @@ class TestMember(base.BaseAPITest):
         # Order matters here
         provider_creates += provider_updates
 
-        mock_provider.assert_called_once_with(u'noop_driver',
+        mock_provider.assert_called_once_with('noop_driver',
                                               mock_driver.member_batch_update,
                                               self.pool_id, provider_creates)
 
@@ -732,7 +732,7 @@ class TestMember(base.BaseAPITest):
             provider_dict['name'] = None
             provider_members.append(driver_dm.Member(**provider_dict))
 
-        mock_provider.assert_called_once_with(u'noop_driver',
+        mock_provider.assert_called_once_with('noop_driver',
                                               mock_driver.member_batch_update,
                                               self.pool_id, provider_members)
 
@@ -792,7 +792,7 @@ class TestMember(base.BaseAPITest):
         req_dict = [member1, member2, member5, member6]
         body = {self.root_tag_list: req_dict}
         path = self.MEMBERS_PATH.format(pool_id=self.pool_id)
-        path = "{}?additive_only=True".format(path)
+        path = f"{path}?additive_only=True"
         self.put(path, body, status=202)
         returned_members = self.get(
             self.MEMBERS_PATH.format(pool_id=self.pool_id)
@@ -834,7 +834,7 @@ class TestMember(base.BaseAPITest):
         provider_creates += provider_updates
         provider_creates += provider_ignored
 
-        mock_provider.assert_called_once_with(u'noop_driver',
+        mock_provider.assert_called_once_with('noop_driver',
                                               mock_driver.member_batch_update,
                                               self.pool_id, provider_creates)
 
@@ -885,7 +885,7 @@ class TestMember(base.BaseAPITest):
             del provider_dict['subnet_id']
             provider_members.append(driver_dm.Member(**provider_dict))
 
-        mock_provider.assert_called_once_with(u'noop_driver',
+        mock_provider.assert_called_once_with('noop_driver',
                                               mock_driver.member_batch_update,
                                               self.pool_id, provider_members)
 
@@ -971,7 +971,7 @@ class TestMember(base.BaseAPITest):
                  rm['protocol_port'],
                  rm['provisioning_status']), expected_members)
 
-        mock_provider.assert_called_once_with(u'noop_driver',
+        mock_provider.assert_called_once_with('noop_driver',
                                               mock_driver.member_batch_update,
                                               self.pool_id, provider_members)
 

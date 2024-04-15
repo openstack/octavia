@@ -62,13 +62,13 @@ class TestLocalManager(base.TestCase):
         mode = stat.S_IRUSR | stat.S_IWUSR  # mode 0600
         open_mock.assert_has_calls([
             mock.call(
-                os.path.join('/tmp/{0}.crt'.format(cert_id)), flags, mode),
+                os.path.join(f'/tmp/{cert_id}.crt'), flags, mode),
             mock.call(
-                os.path.join('/tmp/{0}.key'.format(cert_id)), flags, mode),
+                os.path.join(f'/tmp/{cert_id}.key'), flags, mode),
             mock.call(
-                os.path.join('/tmp/{0}.int'.format(cert_id)), flags, mode),
+                os.path.join(f'/tmp/{cert_id}.int'), flags, mode),
             mock.call(
-                os.path.join('/tmp/{0}.pass'.format(cert_id)), flags, mode)
+                os.path.join(f'/tmp/{cert_id}.pass'), flags, mode)
         ], any_order=True)
 
         # Verify the writes were made
@@ -98,10 +98,10 @@ class TestLocalManager(base.TestCase):
         # Verify the correct files were opened
         flags = os.O_RDONLY
         open_mock.assert_has_calls([
-            mock.call(os.path.join('/tmp/{0}.crt'.format(cert_id)), flags),
-            mock.call(os.path.join('/tmp/{0}.key'.format(cert_id)), flags),
-            mock.call(os.path.join('/tmp/{0}.int'.format(cert_id)), flags),
-            mock.call(os.path.join('/tmp/{0}.pass'.format(cert_id)), flags)
+            mock.call(os.path.join(f'/tmp/{cert_id}.crt'), flags),
+            mock.call(os.path.join(f'/tmp/{cert_id}.key'), flags),
+            mock.call(os.path.join(f'/tmp/{cert_id}.int'), flags),
+            mock.call(os.path.join(f'/tmp/{cert_id}.pass'), flags)
         ], any_order=True)
 
         # The returned data should be a Cert object
@@ -117,10 +117,10 @@ class TestLocalManager(base.TestCase):
 
         # Verify the correct files were removed
         remove_mock.assert_has_calls([
-            mock.call(os.path.join('/tmp/{0}.crt'.format(cert_id))),
-            mock.call(os.path.join('/tmp/{0}.key'.format(cert_id))),
-            mock.call(os.path.join('/tmp/{0}.int'.format(cert_id))),
-            mock.call(os.path.join('/tmp/{0}.pass'.format(cert_id)))
+            mock.call(os.path.join(f'/tmp/{cert_id}.crt')),
+            mock.call(os.path.join(f'/tmp/{cert_id}.key')),
+            mock.call(os.path.join(f'/tmp/{cert_id}.int')),
+            mock.call(os.path.join(f'/tmp/{cert_id}.pass'))
         ], any_order=True)
 
     def test_store_cert(self):
@@ -151,8 +151,7 @@ class TestLocalManager(base.TestCase):
 
         # Verify the correct files were opened
         flags = os.O_RDONLY
-        open_mock.assert_called_once_with('/tmp/{0}.crt'.format(secret_id),
-                                          flags)
+        open_mock.assert_called_once_with(f'/tmp/{secret_id}.crt', flags)
 
         # Test failure path
         with mock.patch('os.open', open_mock), mock.patch.object(

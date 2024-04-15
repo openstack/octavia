@@ -275,7 +275,7 @@ class TestUtil(base.TestCase):
             pass
 
         # Bad listener mode
-        fake_cfg = 'stats socket foo\nfrontend {}\nmode\n'.format(LISTENER_ID1)
+        fake_cfg = f'stats socket foo\nfrontend {LISTENER_ID1}\nmode\n'
         self.useFixture(test_utils.OpenFixture(path, fake_cfg))
         self.assertRaises(util.ParsingError, util.parse_haproxy_file,
                           LISTENER_ID1)

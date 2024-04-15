@@ -34,7 +34,7 @@ class BaseLocalCSRTestCase(base.TestCase):
         )
         csr = x509.CertificateSigningRequestBuilder().subject_name(
             x509.Name([
-                x509.NameAttribute(x509.oid.NameOID.COMMON_NAME, u"test"),
+                x509.NameAttribute(x509.oid.NameOID.COMMON_NAME, "test"),
             ])).sign(csr_key, hashes.SHA256(), backends.default_backend())
         self.certificate_signing_request = csr.public_bytes(
             serialization.Encoding.PEM)

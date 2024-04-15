@@ -70,7 +70,7 @@ class TestHaproxyAmphoraLoadBalancerDriverTest(base.TestCase):
             'api_version': API_VERSION}
         self.driver.clients[
             API_VERSION].get_info.return_value = {
-            'haproxy_version': u'1.6.3-1ubuntu0.1',
+            'haproxy_version': '1.6.3-1ubuntu0.1',
             'api_version': API_VERSION}
         self.driver.jinja_combo = mock.MagicMock()
         self.driver.lvs_jinja = mock.MagicMock()
@@ -356,7 +356,7 @@ class TestHaproxyAmphoraLoadBalancerDriverTest(base.TestCase):
         self.driver.cert_manager.get_secret.return_value = fake_secret
         ref_md5 = md5(fake_secret, usedforsecurity=False).hexdigest()  # nosec
         ref_id = hashlib.sha1(fake_secret).hexdigest()  # nosec
-        ref_name = '{id}.pem'.format(id=ref_id)
+        ref_name = f'{ref_id}.pem'
 
         result = self.driver._process_secret(
             sample_listener, sample_listener.client_ca_tls_certificate_id,
@@ -419,7 +419,7 @@ class TestHaproxyAmphoraLoadBalancerDriverTest(base.TestCase):
         fake_pem = b'fake pem'
         mock_build_pem.return_value = fake_pem
         ref_md5 = md5(fake_pem, usedforsecurity=False).hexdigest()  # nosec
-        ref_name = '{id}.pem'.format(id=pool_cert.id)
+        ref_name = f'{pool_cert.id}.pem'
         ref_path = '{cert_dir}/{lb_id}/{name}'.format(
             cert_dir=fake_cert_dir, lb_id=sample_listener.load_balancer.id,
             name=ref_name)
@@ -637,7 +637,7 @@ class TestHaproxyAmphoraLoadBalancerDriverTest(base.TestCase):
             # Ensure that at least one call in each pair has been seen
             if (dcp_calls[0] not in mock_calls and
                     dcp_calls[1] not in mock_calls):
-                raise Exception("%s not found in %s" % (dcp_calls, mock_calls))
+                raise Exception(f"{dcp_calls} not found in {mock_calls}")
 
         # Now just make sure we did an update and not a delete
         self.driver.clients[API_VERSION].delete_listener.assert_not_called()
@@ -951,7 +951,7 @@ class TestAmphoraAPIClientTest(base.TestCase):
     @requests_mock.mock()
     def test_get_api_version(self, mock_requests):
         ref_api_version = {'api_version': '0.1'}
-        mock_requests.get('{base}/'.format(base=self.base_url),
+        mock_requests.get(f'{self.base_url}/',
                           json=ref_api_version)
         result = self.driver.get_api_version(self.amp)
         self.assertEqual(ref_api_version, result)
@@ -960,7 +960,7 @@ class TestAmphoraAPIClientTest(base.TestCase):
     def test_get_info(self, m):
         info = {"hostname": "some_hostname", "version": "some_version",
                 "api_version": "1.0", "uuid": FAKE_UUID_1}
-        m.get("{base}/info".format(base=self.base_url_ver),
+        m.get(f"{self.base_url_ver}/info",
               json=info)
         information = self.driver.get_info(self.amp)
         self.assertEqual(info, information)
@@ -969,7 +969,7 @@ class TestAmphoraAPIClientTest(base.TestCase):
     def test_get_info_with_timeout_dict(self, m):
         info = {"hostname": "some_hostname", "version": "some_version",
                 "api_version": "1.0", "uuid": FAKE_UUID_1}
-        m.get("{base}/info".format(base=self.base_url_ver),
+        m.get(f"{self.base_url_ver}/info",
               json=info)
         timeout_dict = {
             constants.CONN_MAX_RETRIES: 100,
@@ -980,27 +980,27 @@ class TestAmphoraAPIClientTest(base.TestCase):
 
     @requests_mock.mock()
     def test_get_info_unauthorized(self, m):
-        m.get("{base}/info".format(base=self.base_url_ver),
+        m.get(f"{self.base_url_ver}/info",
               status_code=401)
         self.assertRaises(exc.Unauthorized, self.driver.get_info, self.amp)
 
     @requests_mock.mock()
     def test_get_info_missing(self, m):
-        m.get("{base}/info".format(base=self.base_url_ver),
+        m.get(f"{self.base_url_ver}/info",
               status_code=404,
               headers={'content-type': 'application/json'})
         self.assertRaises(exc.NotFound, self.driver.get_info, self.amp)
 
     @requests_mock.mock()
     def test_get_info_server_error(self, m):
-        m.get("{base}/info".format(base=self.base_url_ver),
+        m.get(f"{self.base_url_ver}/info",
               status_code=500)
         self.assertRaises(exc.InternalServerError, self.driver.get_info,
                           self.amp)
 
     @requests_mock.mock()
     def test_get_info_service_unavailable(self, m):
-        m.get("{base}/info".format(base=self.base_url_ver),
+        m.get(f"{self.base_url_ver}/info",
               status_code=503)
         self.assertRaises(exc.ServiceUnavailable, self.driver.get_info,
                           self.amp)
@@ -1011,34 +1011,34 @@ class TestAmphoraAPIClientTest(base.TestCase):
                    "api_version": "1.0", "uuid": FAKE_UUID_1,
                    "network_tx": "some_tx", "network_rx": "some_rx",
                    "active": True, "haproxy_count": 10}
-        m.get("{base}/details".format(base=self.base_url_ver),
+        m.get(f"{self.base_url_ver}/details",
               json=details)
         amp_details = self.driver.get_details(self.amp)
         self.assertEqual(details, amp_details)
 
     @requests_mock.mock()
     def test_get_details_unauthorized(self, m):
-        m.get("{base}/details".format(base=self.base_url_ver),
+        m.get(f"{self.base_url_ver}/details",
               status_code=401)
         self.assertRaises(exc.Unauthorized, self.driver.get_details, self.amp)
 
     @requests_mock.mock()
     def test_get_details_missing(self, m):
-        m.get("{base}/details".format(base=self.base_url_ver),
+        m.get(f"{self.base_url_ver}/details",
               status_code=404,
               headers={'content-type': 'application/json'})
         self.assertRaises(exc.NotFound, self.driver.get_details, self.amp)
 
     @requests_mock.mock()
     def test_get_details_server_error(self, m):
-        m.get("{base}/details".format(base=self.base_url_ver),
+        m.get(f"{self.base_url_ver}/details",
               status_code=500)
         self.assertRaises(exc.InternalServerError, self.driver.get_details,
                           self.amp)
 
     @requests_mock.mock()
     def test_get_details_service_unavailable(self, m):
-        m.get("{base}/details".format(base=self.base_url_ver),
+        m.get(f"{self.base_url_ver}/details",
               status_code=503)
         self.assertRaises(exc.ServiceUnavailable, self.driver.get_details,
                           self.amp)
@@ -1047,21 +1047,21 @@ class TestAmphoraAPIClientTest(base.TestCase):
     def test_get_all_listeners(self, m):
         listeners = [{"status": "ONLINE", "provisioning_status": "ACTIVE",
                       "type": "PASSIVE", "uuid": FAKE_UUID_1}]
-        m.get("{base}/listeners".format(base=self.base_url_ver),
+        m.get(f"{self.base_url_ver}/listeners",
               json=listeners)
         all_listeners = self.driver.get_all_listeners(self.amp)
         self.assertEqual(listeners, all_listeners)
 
     @requests_mock.mock()
     def test_get_all_listeners_unauthorized(self, m):
-        m.get("{base}/listeners".format(base=self.base_url_ver),
+        m.get(f"{self.base_url_ver}/listeners",
               status_code=401)
         self.assertRaises(exc.Unauthorized, self.driver.get_all_listeners,
                           self.amp)
 
     @requests_mock.mock()
     def test_get_all_listeners_missing(self, m):
-        m.get("{base}/listeners".format(base=self.base_url_ver),
+        m.get(f"{self.base_url_ver}/listeners",
               status_code=404,
               headers={'content-type': 'application/json'})
         self.assertRaises(exc.NotFound, self.driver.get_all_listeners,
@@ -1069,14 +1069,14 @@ class TestAmphoraAPIClientTest(base.TestCase):
 
     @requests_mock.mock()
     def test_get_all_listeners_server_error(self, m):
-        m.get("{base}/listeners".format(base=self.base_url_ver),
+        m.get(f"{self.base_url_ver}/listeners",
               status_code=500)
         self.assertRaises(exc.InternalServerError,
                           self.driver.get_all_listeners, self.amp)
 
     @requests_mock.mock()
     def test_get_all_listeners_service_unavailable(self, m):
-        m.get("{base}/listeners".format(base=self.base_url_ver),
+        m.get(f"{self.base_url_ver}/listeners",
               status_code=503)
         self.assertRaises(exc.ServiceUnavailable,
                           self.driver.get_all_listeners, self.amp)
@@ -1214,14 +1214,14 @@ class TestAmphoraAPIClientTest(base.TestCase):
 
     @requests_mock.mock()
     def test_update_cert_for_rotation(self, m):
-        m.put("{base}/certificate".format(base=self.base_url_ver))
+        m.put(f"{self.base_url_ver}/certificate")
         resp_body = self.driver.update_cert_for_rotation(self.amp,
                                                          "some_file")
         self.assertEqual(200, resp_body.status_code)
 
     @requests_mock.mock()
     def test_update_invalid_cert_for_rotation(self, m):
-        m.put("{base}/certificate".format(base=self.base_url_ver),
+        m.put(f"{self.base_url_ver}/certificate",
               status_code=400)
         self.assertRaises(exc.InvalidRequest,
                           self.driver.update_cert_for_rotation, self.amp,
@@ -1229,7 +1229,7 @@ class TestAmphoraAPIClientTest(base.TestCase):
 
     @requests_mock.mock()
     def test_update_cert_for_rotation_unauthorized(self, m):
-        m.put("{base}/certificate".format(base=self.base_url_ver),
+        m.put(f"{self.base_url_ver}/certificate",
               status_code=401)
         self.assertRaises(exc.Unauthorized,
                           self.driver.update_cert_for_rotation, self.amp,
@@ -1237,7 +1237,7 @@ class TestAmphoraAPIClientTest(base.TestCase):
 
     @requests_mock.mock()
     def test_update_cert_for_rotation_error(self, m):
-        m.put("{base}/certificate".format(base=self.base_url_ver),
+        m.put(f"{self.base_url_ver}/certificate",
               status_code=500)
         self.assertRaises(exc.InternalServerError,
                           self.driver.update_cert_for_rotation, self.amp,
@@ -1245,7 +1245,7 @@ class TestAmphoraAPIClientTest(base.TestCase):
 
     @requests_mock.mock()
     def test_update_cert_for_rotation_unavailable(self, m):
-        m.put("{base}/certificate".format(base=self.base_url_ver),
+        m.put(f"{self.base_url_ver}/certificate",
               status_code=503)
         self.assertRaises(exc.ServiceUnavailable,
                           self.driver.update_cert_for_rotation, self.amp,
@@ -1538,13 +1538,13 @@ class TestAmphoraAPIClientTest(base.TestCase):
 
     @requests_mock.mock()
     def test_update_agent_config(self, m):
-        m.put("{base}/config".format(base=self.base_url_ver))
+        m.put(f"{self.base_url_ver}/config")
         resp_body = self.driver.update_agent_config(self.amp, "some_file")
         self.assertEqual(200, resp_body.status_code)
 
     @requests_mock.mock()
     def test_update_agent_config_error(self, m):
-        m.put("{base}/config".format(base=self.base_url_ver), status_code=500)
+        m.put(f"{self.base_url_ver}/config", status_code=500)
         self.assertRaises(exc.InternalServerError,
                           self.driver.update_agent_config, self.amp,
                           "some_file")

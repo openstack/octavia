@@ -77,7 +77,7 @@ class ListenerTestCase(base.TestCase):
 
         # Happy path - No VRRP
         ref_command_split = ['/usr/sbin/service']
-        ref_command_split.append('haproxy-{}'.format(listener_id))
+        ref_command_split.append(f'haproxy-{listener_id}')
         ref_command_split.append(consts.AMP_ACTION_START)
 
         result = self.test_loadbalancer.start_stop_lb(
@@ -90,7 +90,7 @@ class ListenerTestCase(base.TestCase):
         self.assertEqual(202, result.status_code)
         self.assertEqual('OK', result.json['message'])
         ref_details = ('Configuration file is valid\n'
-                       'haproxy daemon for {0} started'.format(listener_id))
+                       'haproxy daemon for {} started'.format(listener_id))
         self.assertEqual(ref_details, result.json['details'])
 
         # Happy path - VRRP - RELOAD
@@ -102,7 +102,7 @@ class ListenerTestCase(base.TestCase):
         mock_check_output.reset_mock()
 
         ref_command_split = ['/usr/sbin/service']
-        ref_command_split.append('haproxy-{}'.format(listener_id))
+        ref_command_split.append(f'haproxy-{listener_id}')
         ref_command_split.append(consts.AMP_ACTION_RELOAD)
 
         result = self.test_loadbalancer.start_stop_lb(
@@ -115,8 +115,8 @@ class ListenerTestCase(base.TestCase):
                                                  consts.AMP_ACTION_RELOAD)
         self.assertEqual(202, result.status_code)
         self.assertEqual('OK', result.json['message'])
-        ref_details = ('Listener {0} {1}ed'.format(listener_id,
-                                                   consts.AMP_ACTION_RELOAD))
+        ref_details = ('Listener {} {}ed'.format(listener_id,
+                                                 consts.AMP_ACTION_RELOAD))
         self.assertEqual(ref_details, result.json['details'])
 
         # Happy path - VRRP - RELOAD - OFFLINE
@@ -125,7 +125,7 @@ class ListenerTestCase(base.TestCase):
         mock_check_output.reset_mock()
 
         ref_command_split = ['/usr/sbin/service']
-        ref_command_split.append('haproxy-{}'.format(listener_id))
+        ref_command_split.append(f'haproxy-{listener_id}')
         ref_command_split.append(consts.AMP_ACTION_START)
 
         result = self.test_loadbalancer.start_stop_lb(
@@ -139,7 +139,7 @@ class ListenerTestCase(base.TestCase):
         self.assertEqual(202, result.status_code)
         self.assertEqual('OK', result.json['message'])
         ref_details = ('Configuration file is valid\n'
-                       'haproxy daemon for {0} started'.format(listener_id))
+                       'haproxy daemon for {} started'.format(listener_id))
         self.assertEqual(ref_details, result.json['details'])
 
         # Unhappy path - Not already running
@@ -151,7 +151,7 @@ class ListenerTestCase(base.TestCase):
         mock_check_output.reset_mock()
 
         ref_command_split = ['/usr/sbin/service']
-        ref_command_split.append('haproxy-{}'.format(listener_id))
+        ref_command_split.append(f'haproxy-{listener_id}')
         ref_command_split.append(consts.AMP_ACTION_START)
 
         mock_check_output.side_effect = subprocess.CalledProcessError(
@@ -165,7 +165,7 @@ class ListenerTestCase(base.TestCase):
         mock_lb_exists.assert_called_once_with(listener_id)
         mock_vrrp_update.assert_not_called()
         self.assertEqual(500, result.status_code)
-        self.assertEqual('Error {}ing haproxy'.format(consts.AMP_ACTION_START),
+        self.assertEqual(f'Error {consts.AMP_ACTION_START}ing haproxy',
                          result.json['message'])
         self.assertEqual('bogus', result.json['details'])
 
@@ -175,7 +175,7 @@ class ListenerTestCase(base.TestCase):
         mock_check_output.reset_mock()
 
         ref_command_split = ['/usr/sbin/service']
-        ref_command_split.append('haproxy-{}'.format(listener_id))
+        ref_command_split.append(f'haproxy-{listener_id}')
         ref_command_split.append(consts.AMP_ACTION_START)
 
         mock_check_output.side_effect = subprocess.CalledProcessError(
@@ -191,7 +191,7 @@ class ListenerTestCase(base.TestCase):
         self.assertEqual(202, result.status_code)
         self.assertEqual('OK', result.json['message'])
         ref_details = ('Configuration file is valid\n'
-                       'haproxy daemon for {0} started'.format(listener_id))
+                       'haproxy daemon for {} started'.format(listener_id))
         self.assertEqual(ref_details, result.json['details'])
 
         # Invalid action

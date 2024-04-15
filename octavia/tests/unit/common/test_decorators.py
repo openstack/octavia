@@ -23,13 +23,13 @@ import octavia.tests.unit.base as base
 class TestDecorator(base.TestCase):
 
     @dec.rename_kwargs(a='z')
-    class TestClass(object):
+    class TestClass:
         def __init__(self, x, z=None):
             self.x = x
             self.z = z
 
     @dec.rename_kwargs(a='z')
-    class TestClassDupe(object):
+    class TestClassDupe:
         def __init__(self, x, z=None):
             self.x = x
             self.z = z
