@@ -228,8 +228,9 @@ class TestPaginationHelper(base.TestCase):
         links = helper._make_links(model_list)
         self.assertEqual(links[0].rel, "previous")
         self.assertEqual(
-            links[1].href,
-            "{base_uri}{path}?limit={limit}&marker={marker}".format(
+            links[0].href,
+            ("{base_uri}{path}?limit={limit}&marker={marker}"
+             "&page_reverse=True").format(
                 base_uri=api_base_uri,
                 path=request_mock.path,
                 limit=params['limit'],
@@ -242,4 +243,70 @@ class TestPaginationHelper(base.TestCase):
                 base_uri=api_base_uri,
                 path=request_mock.path,
                 limit=params['limit'],
+                marker=member1.id))
+
+    @mock.patch('octavia.api.common.pagination.request')
+    def test_make_links_with_zero_limit(self, request_mock):
+        request_mock.path = "/lbaas/v2/pools/1/members"
+        request_mock.path_url = "http://localhost" + request_mock.path
+        api_base_uri = "https://127.0.0.1"
+        conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
+        conf.config(group='api_settings', api_base_uri=api_base_uri)
+        member1 = models.Member()
+        member1.id = uuidutils.generate_uuid()
+        model_list = [member1]
+
+        params = {'limit': 0, 'marker': member1.id}
+        helper = pagination.PaginationHelper(params)
+        links = helper._make_links(model_list)
+        self.assertEqual(links[0].rel, "previous")
+        self.assertEqual(
+            links[0].href,
+            ("{base_uri}{path}?limit={limit}&marker={marker}"
+             "&page_reverse=True").format(
+                base_uri=api_base_uri,
+                path=request_mock.path,
+                limit=None,
+                marker=member1.id
+            ))
+        self.assertEqual(links[1].rel, "next")
+        self.assertEqual(
+            links[1].href,
+            "{base_uri}{path}?limit={limit}&marker={marker}".format(
+                base_uri=api_base_uri,
+                path=request_mock.path,
+                limit=None,
+                marker=member1.id))
+
+    @mock.patch('octavia.api.common.pagination.request')
+    def test_make_links_with_negative_limit(self, request_mock):
+        request_mock.path = "/lbaas/v2/pools/1/members"
+        request_mock.path_url = "http://localhost" + request_mock.path
+        api_base_uri = "https://127.0.0.1"
+        conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
+        conf.config(group='api_settings', api_base_uri=api_base_uri)
+        member1 = models.Member()
+        member1.id = uuidutils.generate_uuid()
+        model_list = [member1]
+
+        params = {'limit': -1, 'marker': member1.id}
+        helper = pagination.PaginationHelper(params)
+        links = helper._make_links(model_list)
+        self.assertEqual(links[0].rel, "previous")
+        self.assertEqual(
+            links[0].href,
+            ("{base_uri}{path}?limit={limit}&marker={marker}"
+             "&page_reverse=True").format(
+                base_uri=api_base_uri,
+                path=request_mock.path,
+                limit=None,
+                marker=member1.id
+            ))
+        self.assertEqual(links[1].rel, "next")
+        self.assertEqual(
+            links[1].href,
+            "{base_uri}{path}?limit={limit}&marker={marker}".format(
+                base_uri=api_base_uri,
+                path=request_mock.path,
+                limit=None,
                 marker=member1.id))
