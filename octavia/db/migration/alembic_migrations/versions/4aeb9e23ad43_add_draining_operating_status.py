@@ -30,5 +30,5 @@ down_revision = 'e6672bda93bf'
 def upgrade():
     bind = op.get_bind()
     md = sa.MetaData()
-    sa.Table('operating_status', md, autoload=True, autoload_with=bind)
+    sa.Table('operating_status', md, autoload_with=bind)
     op.bulk_insert(md.tables['operating_status'], [{'name': 'DRAINING'}])
