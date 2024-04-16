@@ -1772,6 +1772,24 @@ class TestHealthMonitor(base.BaseAPITest):
             pool_prov_status=constants.PENDING_UPDATE,
             hm_prov_status=constants.PENDING_UPDATE)
 
+    def test_update_udp_case_with_udp_hm(self):
+        api_hm = self.create_health_monitor(
+            self.udp_pool_with_listener_id,
+            constants.HEALTH_MONITOR_UDP_CONNECT, 3, 1, 1, 1).get(
+            self.root_tag)
+        self.set_lb_status(self.udp_lb_id)
+        new_hm = {'timeout': 2}
+        self.put(
+            self.HM_PATH.format(healthmonitor_id=api_hm.get('id')),
+            self._build_body(new_hm))
+        self.assert_correct_status(
+            lb_id=self.udp_lb_id, listener_id=self.udp_listener_id,
+            pool_id=self.udp_pool_with_listener_id, hm_id=api_hm.get('id'),
+            lb_prov_status=constants.PENDING_UPDATE,
+            listener_prov_status=constants.PENDING_UPDATE,
+            pool_prov_status=constants.PENDING_UPDATE,
+            hm_prov_status=constants.PENDING_UPDATE)
+
     def test_negative_update_udp_case(self):
         api_hm = self.create_health_monitor(
             self.udp_pool_with_listener_id,
