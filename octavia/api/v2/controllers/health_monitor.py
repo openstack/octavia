@@ -188,7 +188,9 @@ class HealthMonitorController(base.BaseController):
             request.type == consts.HEALTH_MONITOR_UDP_CONNECT)
         conf_min_delay = (
             CONF.api_settings.udp_connect_min_interval_health_monitor)
-        if hm_is_type_udp and request.delay < conf_min_delay:
+        if (hm_is_type_udp and
+                not isinstance(request.delay, wtypes.UnsetType) and
+                request.delay < conf_min_delay):
             raise exceptions.ValidationException(detail=_(
                 "The request delay value %(delay)s should be larger than "
                 "%(conf_min_delay)s for %(type)s health monitor type.") % {
