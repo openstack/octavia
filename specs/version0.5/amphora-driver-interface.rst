@@ -285,5 +285,3 @@ References
 ==========
 [1] https://martinfowler.com/bliki/CircuitBreaker.html
 [2] https://docs.openstack.org/taskflow/latest/
-
-
