@@ -54,8 +54,8 @@ def upgrade():
                             sa.ForeignKey('load_balancer.id'), nullable=True))
 
     # Populate this new column appropriately
-    select_obj = sa.select([listener.c.load_balancer_id,
-                           listener.c.default_pool_id]).where(
+    select_obj = sa.select(listener.c.load_balancer_id,
+                           listener.c.default_pool_id).where(
                                listener.c.default_pool_id is not None)
     result = conn.execute(select_obj)
     for row in result:
