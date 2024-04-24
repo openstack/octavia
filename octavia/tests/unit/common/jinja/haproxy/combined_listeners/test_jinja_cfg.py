@@ -686,7 +686,6 @@ class TestHaproxyCfg(base.TestCase):
               "    balance roundrobin\n"
               "    cookie SRV insert indirect nocache\n"
               "    timeout check 31s\n"
-              "    option ssl-hello-chk\n"
               "    fullconn {maxconn}\n"
               "    option allbackups\n"
               "    timeout connect 5000\n"
