@@ -117,7 +117,8 @@ class TestFlavors(base.BaseAPITest):
         auth_strategy = self.conf.conf.api_settings.get('auth_strategy')
         self.conf.config(group='api_settings', auth_strategy=constants.TESTING)
         project_id = uuidutils.generate_uuid()
-        with mock.patch.object(octavia.common.context.Context, 'project_id',
+        with mock.patch.object(octavia.common.context.RequestContext,
+                               'project_id',
                                project_id):
             override_credentials = {
                 'service_user_id': None,
@@ -204,7 +205,8 @@ class TestFlavors(base.BaseAPITest):
         auth_strategy = self.conf.conf.api_settings.get('auth_strategy')
         self.conf.config(group='api_settings', auth_strategy=constants.TESTING)
         project_id = uuidutils.generate_uuid()
-        with mock.patch.object(octavia.common.context.Context, 'project_id',
+        with mock.patch.object(octavia.common.context.RequestContext,
+                               'project_id',
                                project_id):
             override_credentials = {
                 'service_user_id': None,
@@ -297,7 +299,8 @@ class TestFlavors(base.BaseAPITest):
         auth_strategy = self.conf.conf.api_settings.get('auth_strategy')
         self.conf.config(group='api_settings', auth_strategy=constants.TESTING)
         project_id = uuidutils.generate_uuid()
-        with mock.patch.object(octavia.common.context.Context, 'project_id',
+        with mock.patch.object(octavia.common.context.RequestContext,
+                               'project_id',
                                project_id):
             override_credentials = {
                 'service_user_id': None,
@@ -426,7 +429,8 @@ class TestFlavors(base.BaseAPITest):
         auth_strategy = self.conf.conf.api_settings.get('auth_strategy')
         self.conf.config(group='api_settings', auth_strategy=constants.TESTING)
         project_id = uuidutils.generate_uuid()
-        with mock.patch.object(octavia.common.context.Context, 'project_id',
+        with mock.patch.object(octavia.common.context.RequestContext,
+                               'project_id',
                                project_id):
             override_credentials = {
                 'service_user_id': None,
@@ -529,7 +533,8 @@ class TestFlavors(base.BaseAPITest):
         auth_strategy = self.conf.conf.api_settings.get('auth_strategy')
         self.conf.config(group='api_settings', auth_strategy=constants.TESTING)
         project_id = uuidutils.generate_uuid()
-        with mock.patch.object(octavia.common.context.Context, 'project_id',
+        with mock.patch.object(octavia.common.context.RequestContext,
+                               'project_id',
                                project_id):
             override_credentials = {
                 'service_user_id': None,
