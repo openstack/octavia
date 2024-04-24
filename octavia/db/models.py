@@ -234,7 +234,8 @@ class Member(base_models.BASE, base_models.IdMixin, base_models.ProjectMixin,
         single_parent=True,
         lazy='subquery',
         cascade='all,delete-orphan',
-        primaryjoin='and_(foreign(Tags.resource_id)==Member.id)'
+        primaryjoin='and_(foreign(Tags.resource_id)==Member.id)',
+        overlaps='_tags'
     )
 
     def __str__(self):
@@ -297,7 +298,8 @@ class HealthMonitor(base_models.BASE, base_models.IdMixin,
         single_parent=True,
         lazy='subquery',
         cascade='all,delete-orphan',
-        primaryjoin='and_(foreign(Tags.resource_id)==HealthMonitor.id)'
+        primaryjoin='and_(foreign(Tags.resource_id)==HealthMonitor.id)',
+        overlaps='_tags'
     )
     http_version = sa.Column(sa.Float, nullable=True)
     domain_name = sa.Column(sa.String(255), nullable=True)
@@ -359,7 +361,8 @@ class Pool(base_models.BASE, base_models.IdMixin, base_models.ProjectMixin,
         single_parent=True,
         lazy='subquery',
         cascade='all,delete-orphan',
-        primaryjoin='and_(foreign(Tags.resource_id)==Pool.id)'
+        primaryjoin='and_(foreign(Tags.resource_id)==Pool.id)',
+        overlaps='_tags'
     )
     tls_certificate_id = sa.Column(sa.String(255), nullable=True)
     ca_tls_certificate_id = sa.Column(sa.String(255), nullable=True)
@@ -439,7 +442,8 @@ class LoadBalancer(base_models.BASE, base_models.IdMixin,
         single_parent=True,
         lazy='subquery',
         cascade='all,delete-orphan',
-        primaryjoin='and_(foreign(Tags.resource_id)==LoadBalancer.id)'
+        primaryjoin='and_(foreign(Tags.resource_id)==LoadBalancer.id)',
+        overlaps='_tags'
     )
     flavor_id = sa.Column(
         sa.String(36),
@@ -601,7 +605,8 @@ class Listener(base_models.BASE, base_models.IdMixin,
         single_parent=True,
         lazy='subquery',
         cascade='all,delete-orphan',
-        primaryjoin='and_(foreign(Tags.resource_id)==Listener.id)'
+        primaryjoin='and_(foreign(Tags.resource_id)==Listener.id)',
+        overlaps='_tags'
     )
 
     # This property should be a unique list of the default_pool and anything
@@ -756,7 +761,8 @@ class L7Rule(base_models.BASE, base_models.IdMixin, base_models.ProjectMixin,
         single_parent=True,
         lazy='subquery',
         cascade='all,delete-orphan',
-        primaryjoin='and_(foreign(Tags.resource_id)==L7Rule.id)'
+        primaryjoin='and_(foreign(Tags.resource_id)==L7Rule.id)',
+        overlaps='_tags'
     )
 
     def __str__(self):
@@ -821,7 +827,8 @@ class L7Policy(base_models.BASE, base_models.IdMixin, base_models.ProjectMixin,
         single_parent=True,
         lazy='subquery',
         cascade='all,delete-orphan',
-        primaryjoin='and_(foreign(Tags.resource_id)==L7Policy.id)'
+        primaryjoin='and_(foreign(Tags.resource_id)==L7Policy.id)',
+        overlaps='_tags'
     )
 
     def __str__(self):
