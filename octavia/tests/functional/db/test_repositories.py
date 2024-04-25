@@ -3721,21 +3721,12 @@ class AmphoraRepositoryTest(BaseRepositoryTest):
         self.assertIsInstance(new_amphora, data_models.Amphora)
 
     def test_get_lb_for_amphora(self):
-        # TODO(bzhao) this test will raise error as there are more than 64
-        # tables in a Join statement in sqlite env. This is a new issue when
-        # we introduce resources tags and client certificates, both of them
-        # are 1:1 relationship. But we can image that if we have many
-        # associated loadbalancer subresources, such as listeners, pools,
-        # members and l7 resources. Even though, we don't have tags and
-        # client certificates features, we will still hit this issue in
-        # sqlite env.
-        self.skipTest("No idea how this should work yet")
         amphora = self.create_amphora(self.FAKE_UUID_1)
         self.amphora_repo.associate(self.session, self.lb.id, amphora.id)
         self.session.commit()
         lb = self.amphora_repo.get_lb_for_amphora(self.session, amphora.id)
         self.assertIsNotNone(lb)
-        self.assertEqual(self.lb, lb)
+        self.assertEqual(self.lb.id, lb.id)
 
     def test_get_all_deleted_expiring_amphora(self):
         exp_age = datetime.timedelta(seconds=self.FAKE_EXP_AGE)
