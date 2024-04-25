@@ -112,20 +112,20 @@
     name: octavia-tox-tips
     check:
       jobs:
-        - octavia-tox-py39-tips
-        - octavia-tox-functional-py39-tips
+        - octavia-tox-py311-tips
+        - octavia-tox-functional-py311-tips
 
 - project-template:
     name: octavia-tox-sqlalchemy-tips
     check:
       jobs:
-        - octavia-tox-functional-py39-sqlalchemy-tips
+        - octavia-tox-functional-py311-sqlalchemy-tips
 
 - job:
-    name: octavia-tox-py39-tips
-    parent: openstack-tox-py39
+    name: octavia-tox-py311-tips
+    parent: openstack-tox-py311
     description: |
-      Run tox python 3.9 unit tests against master of related libraries.
+      Run tox python 3.11 unit tests against master of related libraries.
     vars:
       tox_install_siblings: true
       zuul_work_dir: src/opendev.org/openstack/octavia
@@ -134,10 +134,10 @@
       - openstack/octavia
 
 - job:
-    name: octavia-tox-functional-py39-tips
-    parent: openstack-tox-functional-py39
+    name: octavia-tox-functional-py311-tips
+    parent: openstack-tox-functional-py311
     description: |
-      Run tox python 3.9 functional against master of related libraries.
+      Run tox python 3.11 functional against master of related libraries.
     vars:
       tox_install_siblings: true
       zuul_work_dir: src/opendev.org/openstack/octavia
@@ -149,13 +149,14 @@
 # NOTE(stephenfin): We only need functional tests since DB interactions are
 # stubbed out in unit tests
 - job:
-    name: octavia-tox-functional-py39-sqlalchemy-tips
-    parent: openstack-tox-functional-py39
+    name: octavia-tox-functional-py311-sqlalchemy-tips
+    parent: openstack-tox-functional-py311
     description: |
-      Run tox python 3.9 functional against master of sqlalchemy and related projects
+      Run tox python 3.11 functional against master of sqlalchemy and related
+      projects
     # The job only tests the latest and shouldn't be run on the stable branches
     branches:
-       regex: ^stable
+       regex: ^(stable|unmaintained)
        negate: true
     required-projects:
       - name: openstack/oslo.db
