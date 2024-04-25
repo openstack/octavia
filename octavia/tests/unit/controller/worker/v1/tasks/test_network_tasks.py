@@ -162,7 +162,6 @@ class TestNetworkTasks(base.TestCase):
         mock_lb_repo_get.return_value = lb_mock
         mock_driver.get_port.return_value = vrrp_port
         mock_driver.get_subnet.return_value = member_subnet
-        mock_driver.get_network.return_value = mgmt_net
         mock_driver.get_plugged_networks.return_value = [
             mgmt_interface,
             vrrp_interface,
@@ -200,9 +199,6 @@ class TestNetworkTasks(base.TestCase):
 
         mgmt_subnet = data_models.Subnet(
             id=self.mgmt_subnet_id, network_id=self.mgmt_net_id)
-        mgmt_net = data_models.Network(
-            id=self.mgmt_net_id,
-            subnets=[mgmt_subnet.id])
         mgmt_ip_address = mock.MagicMock()
         mgmt_interface = data_models.Interface(
             network_id=self.mgmt_net_id,
@@ -273,7 +269,6 @@ class TestNetworkTasks(base.TestCase):
                 fixed_ips=vrrp_port.fixed_ips)]
         mock_driver.get_port.return_value = vrrp_port
         mock_driver.get_subnet.return_value = vrrp_subnet
-        mock_driver.get_network.return_value = mgmt_net
 
         calc_delta = network_tasks.CalculateDelta()
 
@@ -376,10 +371,6 @@ class TestNetworkTasks(base.TestCase):
         mgmt2_subnet = data_models.Subnet(
             id=mgmt2_subnet_id,
             network_id=mgmt2_net_id)
-        mgmt2_net = data_models.Network(
-            id=mgmt2_net_id,
-            subnets=[mgmt2_subnet.id]
-        )
         mgmt2_interface = data_models.Interface(
             network_id=mgmt2_net_id,
             fixed_ips=[
@@ -388,7 +379,6 @@ class TestNetworkTasks(base.TestCase):
                     subnet_id=mgmt2_subnet_id,
                 )
             ])
-        mock_driver.get_network.return_value = mgmt2_net
         az = {
             constants.MANAGEMENT_NETWORK: mgmt2_net_id,
         }
@@ -408,7 +398,6 @@ class TestNetworkTasks(base.TestCase):
         # Test with one amp and one pool and one member, wrong network plugged
         # Delta should be one network/subnet to add and one to remove
         mock_driver.reset_mock()
-        mock_driver.get_network.return_value = mgmt_net
         member_mock = mock.MagicMock()
         member_mock.subnet_id = member_private_subnet.id
         pool_mock.members = [member_mock]
