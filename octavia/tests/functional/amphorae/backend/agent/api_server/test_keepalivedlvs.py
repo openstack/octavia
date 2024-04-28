@@ -314,7 +314,8 @@ class KeepalivedLvsTestCase(base.TestCase):
         cmd = ("/usr/sbin/service octavia-keepalivedlvs-{listener_id}"
                " {action}".format(listener_id=self.FAKE_ID, action='start'))
         mock_check_output.assert_called_once_with(cmd.split(),
-                                                  stderr=subprocess.STDOUT)
+                                                  stderr=subprocess.STDOUT,
+                                                  encoding='utf-8')
         self.assertEqual(202, res.status_code)
 
         res = self.test_keepalivedlvs.manage_lvs_listener(self.FAKE_ID,
@@ -347,8 +348,10 @@ class KeepalivedLvsTestCase(base.TestCase):
         cmd2 = ("systemctl disable "
                 "octavia-keepalivedlvs-{list}".format(list=self.FAKE_ID))
         calls = [
-            mock.call(cmd1.split(), stderr=subprocess.STDOUT),
-            mock.call(cmd2.split(), stderr=subprocess.STDOUT)
+            mock.call(cmd1.split(), stderr=subprocess.STDOUT,
+                      encoding='utf-8'),
+            mock.call(cmd2.split(), stderr=subprocess.STDOUT,
+                      encoding='utf-8')
         ]
         m_check_output.assert_has_calls(calls)
         self.assertEqual(200, res.status_code)

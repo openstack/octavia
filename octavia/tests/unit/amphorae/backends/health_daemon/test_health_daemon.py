@@ -12,6 +12,7 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 #
+import json
 import os
 import queue
 from unittest import mock
@@ -19,7 +20,6 @@ from unittest import mock
 from oslo_config import cfg
 from oslo_config import fixture as oslo_fixture
 from oslo_utils import uuidutils
-import simplejson
 
 from octavia.amphorae.backends.health_daemon import health_daemon
 from octavia.common import constants
@@ -345,7 +345,7 @@ class TestHealthDaemon(base.TestCase):
 
         with mock.patch('os.open'), mock.patch.object(
                 os, 'fdopen', self.mock_open) as mock_fdopen:
-            mock_fdopen().read.return_value = simplejson.dumps({
+            mock_fdopen().read.return_value = json.dumps({
                 LISTENER_ID1: {'bin': 1, 'bout': 2},
             })
             msg = health_daemon.build_stats_message()
@@ -353,7 +353,7 @@ class TestHealthDaemon(base.TestCase):
         self.assertEqual(SAMPLE_STATS_MSG, msg)
 
         mock_get_stats.assert_any_call(lb1_stats_socket)
-        mock_fdopen().write.assert_called_once_with(simplejson.dumps({
+        mock_fdopen().write.assert_called_once_with(json.dumps({
             LISTENER_ID1: {
                 'bin': int(FRONTEND_STATS['bin']),
                 'bout': int(FRONTEND_STATS['bout']),
@@ -450,14 +450,14 @@ class TestHealthDaemon(base.TestCase):
 
         with mock.patch('os.open'), mock.patch.object(
                 os, 'fdopen', self.mock_open) as mock_fdopen:
-            mock_fdopen().read.return_value = simplejson.dumps({
+            mock_fdopen().read.return_value = json.dumps({
                 udp_listener_id1: {
                     'bin': 1, 'bout': 2, "ereq": 0, "stot": 0}
             })
             msg = health_daemon.build_stats_message()
 
         self.assertEqual(expected, msg)
-        mock_fdopen().write.assert_called_once_with(simplejson.dumps({
+        mock_fdopen().write.assert_called_once_with(json.dumps({
             udp_listener_id1: {'bin': 5, 'bout': 10, 'ereq': 0, 'stot': 5},
             udp_listener_id3: {'bin': 0, 'bout': 0, 'ereq': 0, 'stot': 0},
         }))
@@ -480,7 +480,7 @@ class TestHealthDaemon(base.TestCase):
 
         with mock.patch('os.open'), mock.patch.object(
                 os, 'fdopen', self.mock_open) as mock_fdopen:
-            mock_fdopen().read.return_value = simplejson.dumps({
+            mock_fdopen().read.return_value = json.dumps({
                 LISTENER_ID1: {'bin': 15, 'bout': 20},
             })
             msg = health_daemon.build_stats_message()
@@ -488,7 +488,7 @@ class TestHealthDaemon(base.TestCase):
         self.assertEqual(SAMPLE_MSG_HAPROXY_RESTART, msg)
 
         mock_get_stats.assert_any_call(lb1_stats_socket)
-        mock_fdopen().write.assert_called_once_with(simplejson.dumps({
+        mock_fdopen().write.assert_called_once_with(json.dumps({
             LISTENER_ID1: {
                 'bin': int(FRONTEND_STATS['bin']),
                 'bout': int(FRONTEND_STATS['bout']),

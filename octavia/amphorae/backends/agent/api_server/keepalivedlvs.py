@@ -143,7 +143,8 @@ class KeepalivedLvs(lvs_listener_base.LvsListenerApiServerBase):
             init_enable_cmd = f"insserv {file_path}"
             try:
                 subprocess.check_output(init_enable_cmd.split(),
-                                        stderr=subprocess.STDOUT)
+                                        stderr=subprocess.STDOUT,
+                                        encoding='utf-8')
             except subprocess.CalledProcessError as e:
                 LOG.debug('Failed to enable '
                           'octavia-keepalivedlvs service: '
@@ -220,7 +221,8 @@ class KeepalivedLvs(lvs_listener_base.LvsListenerApiServerBase):
                f"octavia-keepalivedlvs-{listener_id} {action}")
 
         try:
-            subprocess.check_output(cmd.split(), stderr=subprocess.STDOUT)
+            subprocess.check_output(cmd.split(), stderr=subprocess.STDOUT,
+                                    encoding='utf-8')
         except subprocess.CalledProcessError as e:
             LOG.debug('Failed to %s keepalivedlvs listener %s',
                       listener_id + ' : ' + action, e)
@@ -281,7 +283,8 @@ class KeepalivedLvs(lvs_listener_base.LvsListenerApiServerBase):
             cmd = (f"/usr/sbin/service "
                    f"octavia-keepalivedlvs-{listener_id} stop")
             try:
-                subprocess.check_output(cmd.split(), stderr=subprocess.STDOUT)
+                subprocess.check_output(cmd.split(), stderr=subprocess.STDOUT,
+                                        encoding='utf-8')
             except subprocess.CalledProcessError as e:
                 LOG.error("Failed to stop keepalivedlvs service: %s", e)
                 return webob.Response(json={
@@ -309,7 +312,8 @@ class KeepalivedLvs(lvs_listener_base.LvsListenerApiServerBase):
             init_disable_cmd = f"insserv -r {init_path}"
             try:
                 subprocess.check_output(init_disable_cmd.split(),
-                                        stderr=subprocess.STDOUT)
+                                        stderr=subprocess.STDOUT,
+                                        encoding='utf-8')
             except subprocess.CalledProcessError as e:
                 LOG.error("Failed to disable "
                           "octavia-keepalivedlvs-%(list)s service: "

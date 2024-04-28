@@ -15,6 +15,7 @@
 #    under the License.
 
 import errno
+import json
 import os
 import queue
 import stat
@@ -22,7 +23,6 @@ import time
 
 from oslo_config import cfg
 from oslo_log import log as logging
-import simplejson
 
 from octavia.amphorae.backends.agent.api_server import util
 from octavia.amphorae.backends.health_daemon import health_sender
@@ -73,8 +73,8 @@ def get_counters():
     global COUNTERS
     if COUNTERS is None:
         try:
-            COUNTERS = simplejson.load(get_counters_file()) or {}
-        except (simplejson.JSONDecodeError, AttributeError):
+            COUNTERS = json.load(get_counters_file()) or {}
+        except (json.JSONDecodeError, AttributeError):
             COUNTERS = {}
     return COUNTERS
 
@@ -84,7 +84,7 @@ def persist_counters():
     if COUNTERS is None:
         return
     try:
-        stats = simplejson.dumps(COUNTERS)
+        stats = json.dumps(COUNTERS)
         counters_file = get_counters_file()
         counters_file.truncate(0)
         counters_file.write(stats)

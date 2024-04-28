@@ -35,7 +35,8 @@ class KeepalivedTestCase(base.TestCase):
         cmd = ("/usr/sbin/service octavia-keepalived {action}".format(
             action='start'))
         mock_check_output.assert_called_once_with(cmd.split(),
-                                                  stderr=subprocess.STDOUT)
+                                                  stderr=subprocess.STDOUT,
+                                                  encoding='utf-8')
         self.assertEqual(202, res.status_code)
 
         res = self.test_keepalived.manager_keepalived_service('restart')

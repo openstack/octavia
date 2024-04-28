@@ -269,7 +269,8 @@ def install_netns_systemd_service():
 def run_systemctl_command(command, service):
     cmd = f"systemctl {command} {service}"
     try:
-        subprocess.check_output(cmd.split(), stderr=subprocess.STDOUT)
+        subprocess.check_output(cmd.split(), stderr=subprocess.STDOUT,
+                                encoding='utf-8')
     except subprocess.CalledProcessError as e:
         LOG.error("Failed to %(cmd)s %(srvc)s service: "
                   "%(err)s %(out)s", {'cmd': command, 'srvc': service,

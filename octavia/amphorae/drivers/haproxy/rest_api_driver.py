@@ -14,6 +14,7 @@
 # under the License.
 import functools
 import hashlib
+import json
 import os
 import ssl
 import time
@@ -24,7 +25,6 @@ from oslo_context import context as oslo_context
 from oslo_log import log as logging
 from oslo_utils.secretutils import md5
 import requests
-import simplejson
 from stevedore import driver as stevedore_driver
 
 from octavia.amphorae.driver_exceptions import exceptions as driver_except
@@ -723,7 +723,7 @@ class AmphoraAPIClientBase:
                         if 'No suitable network interface found' in json_data:
                             LOG.debug("Amphora network interface not found.")
                             raise requests.ConnectionError
-                    except simplejson.JSONDecodeError:  # if r.json() fails
+                    except json.JSONDecodeError:  # if r.json() fails
                         pass  # TODO(rm_work) Should we do something?
                 return r
             except (requests.ConnectionError, requests.Timeout) as e:

@@ -86,7 +86,8 @@ class ListenerTestCase(base.TestCase):
             listener_id, consts.AMP_ACTION_START)
 
         mock_check_output.assert_called_once_with(ref_command_split,
-                                                  stderr=subprocess.STDOUT)
+                                                  stderr=subprocess.STDOUT,
+                                                  encoding='utf-8')
         mock_lb_exists.assert_called_once_with(listener_id)
         mock_vrrp_update.assert_not_called()
         self.assertEqual(202, result.status_code)
@@ -111,7 +112,8 @@ class ListenerTestCase(base.TestCase):
             listener_id, consts.AMP_ACTION_RELOAD)
 
         mock_check_output.assert_called_once_with(ref_command_split,
-                                                  stderr=subprocess.STDOUT)
+                                                  stderr=subprocess.STDOUT,
+                                                  encoding='utf-8')
         mock_lb_exists.assert_called_once_with(listener_id)
         mock_vrrp_update.assert_called_once_with(listener_id,
                                                  consts.AMP_ACTION_RELOAD)
@@ -134,7 +136,8 @@ class ListenerTestCase(base.TestCase):
             listener_id, consts.AMP_ACTION_RELOAD)
 
         mock_check_output.assert_called_once_with(ref_command_split,
-                                                  stderr=subprocess.STDOUT)
+                                                  stderr=subprocess.STDOUT,
+                                                  encoding='utf-8')
         mock_lb_exists.assert_called_once_with(listener_id)
         mock_vrrp_update.assert_called_once_with(listener_id,
                                                  consts.AMP_ACTION_RELOAD)
@@ -157,13 +160,14 @@ class ListenerTestCase(base.TestCase):
         ref_command_split.append(consts.AMP_ACTION_START)
 
         mock_check_output.side_effect = subprocess.CalledProcessError(
-            output=b'bogus', returncode=-2, cmd='sit')
+            output='bogus', returncode=-2, cmd='sit')
 
         result = self.test_loadbalancer.start_stop_lb(
             listener_id, consts.AMP_ACTION_START)
 
         mock_check_output.assert_called_once_with(ref_command_split,
-                                                  stderr=subprocess.STDOUT)
+                                                  stderr=subprocess.STDOUT,
+                                                  encoding='utf-8')
         mock_lb_exists.assert_called_once_with(listener_id)
         mock_vrrp_update.assert_not_called()
         self.assertEqual(500, result.status_code)
@@ -181,13 +185,14 @@ class ListenerTestCase(base.TestCase):
         ref_command_split.append(consts.AMP_ACTION_START)
 
         mock_check_output.side_effect = subprocess.CalledProcessError(
-            output=b'Job is already running', returncode=-2, cmd='sit')
+            output='Job is already running', returncode=-2, cmd='sit')
 
         result = self.test_loadbalancer.start_stop_lb(
             listener_id, consts.AMP_ACTION_START)
 
         mock_check_output.assert_called_once_with(ref_command_split,
-                                                  stderr=subprocess.STDOUT)
+                                                  stderr=subprocess.STDOUT,
+                                                  encoding='utf-8')
         mock_lb_exists.assert_called_once_with(listener_id)
         mock_vrrp_update.assert_not_called()
         self.assertEqual(202, result.status_code)
@@ -220,7 +225,7 @@ class ListenerTestCase(base.TestCase):
 
         mock_check_output.side_effect = [
             subprocess.CalledProcessError(
-                output=b'haproxy.service is not active, cannot reload.',
+                output='haproxy.service is not active, cannot reload.',
                 returncode=-2, cmd='service'),
             None]
         mock_check_status.return_value = 'ACTIVE'
@@ -248,13 +253,13 @@ class ListenerTestCase(base.TestCase):
 
         mock_check_output.side_effect = [
             subprocess.CalledProcessError(
-                output=b'haproxy.service is not active, cannot reload.',
+                output='haproxy.service is not active, cannot reload.',
                 returncode=-2, cmd='service'),
             subprocess.CalledProcessError(
-                output=b'haproxy.service is not active, cannot reload.',
+                output='haproxy.service is not active, cannot reload.',
                 returncode=-2, cmd='service'),
             subprocess.CalledProcessError(
-                output=b'haproxy.service is not active, cannot reload.',
+                output='haproxy.service is not active, cannot reload.',
                 returncode=-2, cmd='service')]
         mock_check_status.return_value = 'ACTIVE'
         mock_check_status.side_effect = None

@@ -134,7 +134,8 @@ class Loadbalancer:
             haproxy_ug=consts.HAPROXY_USER_GROUP_CFG)
 
         try:
-            subprocess.check_output(cmd.split(), stderr=subprocess.STDOUT)
+            subprocess.check_output(cmd.split(), stderr=subprocess.STDOUT,
+                                    encoding='utf-8')
         except subprocess.CalledProcessError as e:
             LOG.error("Failed to verify haproxy file: %s %s", e, e.output)
             # Save the last config that failed validation for debugging
@@ -213,7 +214,8 @@ class Loadbalancer:
         elif init_system == consts.INIT_SYSVINIT:
             try:
                 subprocess.check_output(init_enable_cmd.split(),
-                                        stderr=subprocess.STDOUT)
+                                        stderr=subprocess.STDOUT,
+                                        encoding='utf-8')
             except subprocess.CalledProcessError as e:
                 LOG.error("Failed to enable haproxy-%(lb_id)s service: "
                           "%(err)s %(out)s", {'lb_id': lb_id, 'err': e,
@@ -286,11 +288,12 @@ class Loadbalancer:
                 lb_id=lb_id, action=action))
 
             try:
-                subprocess.check_output(cmd.split(), stderr=subprocess.STDOUT)
+                subprocess.check_output(cmd.split(), stderr=subprocess.STDOUT,
+                                        encoding='utf-8')
             except subprocess.CalledProcessError as e:
                 # Mitigation for
                 # https://bugs.launchpad.net/octavia/+bug/2054666
-                if (b'is not active, cannot reload.' in e.output and
+                if ('is not active, cannot reload.' in e.output and
                         action == consts.AMP_ACTION_RELOAD):
 
                     saved_exc = e
@@ -312,20 +315,21 @@ class Loadbalancer:
                                 "was reloaded, check the haproxy logs for "
                                 "more details.")
                     break
-                if b'Job is already running' not in e.output:
+                if 'Job is already running' not in e.output:
                     LOG.debug(
                         "Failed to %(action)s haproxy-%(lb_id)s service: "
                         "%(err)s %(out)s", {'action': action, 'lb_id': lb_id,
                                             'err': e, 'out': e.output})
                     return webob.Response(json={
                         'message': f"Error {action}ing haproxy",
-                        'details': e.output}, status=500)
+                        'details': e.output
+                    }, status=500)
             break
         else:
             # no break, we reach the retry limit for reloads
             return webob.Response(json={
                 'message': f"Error {action}ing haproxy",
-                'details': saved_exc.output if saved_exc else ''}, status=500)
+                'details': saved_exc.output}, status=500)
 
         # If we are not in active/standby we need to send an IP
         # advertisement (GARP or NA). Keepalived handles this for
@@ -360,7 +364,8 @@ class Loadbalancer:
                 os.path.join('/proc', util.get_haproxy_pid(lb_id))):
             cmd = f"/usr/sbin/service haproxy-{lb_id} stop"
             try:
-                subprocess.check_output(cmd.split(), stderr=subprocess.STDOUT)
+                subprocess.check_output(cmd.split(), stderr=subprocess.STDOUT,
+                                        encoding='utf-8')
             except subprocess.CalledProcessError as e:
                 LOG.error("Failed to stop haproxy-%s service: %s %s",
                           lb_id, e, e.output)
@@ -401,7 +406,8 @@ class Loadbalancer:
             init_disable_cmd = f"insserv -r {init_path}"
             try:
                 subprocess.check_output(init_disable_cmd.split(),
-                                        stderr=subprocess.STDOUT)
+                                        stderr=subprocess.STDOUT,
+                                        encoding='utf-8')
             except subprocess.CalledProcessError as e:
                 LOG.error("Failed to disable haproxy-%(lb_id)s service: "
                           "%(err)s %(out)s", {'lb_id': lb_id, 'err': e,

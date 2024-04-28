@@ -38,7 +38,7 @@ import octavia.tests.unit.base as base
 
 
 AMP_AGENT_CONF_PATH = '/etc/octavia/amphora-agent.conf'
-RANDOM_ERROR = b'random error'
+RANDOM_ERROR = 'random error'
 OK = dict(message='OK')
 FAKE_INTERFACE = 'eth33'
 
@@ -137,7 +137,7 @@ class TestServerTestCase(base.TestCase):
                     haproxy_ug=consts.HAPROXY_USER_GROUP_CFG,
                     peer=(octavia_utils.
                           base64_sha1_string('amp_123').rstrip('='))).split(),
-                stderr=-2)
+                stderr=subprocess.STDOUT, encoding='utf-8')
             mock_rename.assert_called_with(
                 '/var/lib/octavia/123/haproxy.cfg.new',
                 '/var/lib/octavia/123/haproxy.cfg')
@@ -145,11 +145,11 @@ class TestServerTestCase(base.TestCase):
         if init_system == consts.INIT_SYSTEMD:
             mock_subprocess.assert_any_call(
                 "systemctl enable haproxy-123".split(),
-                stderr=subprocess.STDOUT)
+                stderr=subprocess.STDOUT, encoding='utf-8')
         elif init_system == consts.INIT_SYSVINIT:
             mock_subprocess.assert_any_call(
                 "insserv /etc/init.d/haproxy-123".split(),
-                stderr=subprocess.STDOUT)
+                stderr=subprocess.STDOUT, encoding='utf-8')
         else:
             self.assertIn(init_system, consts.VALID_INIT_SYSTEMS)
 
@@ -243,7 +243,7 @@ class TestServerTestCase(base.TestCase):
                     haproxy_ug=consts.HAPROXY_USER_GROUP_CFG,
                     peer=(octavia_utils.
                           base64_sha1_string('amp_123').rstrip('='))).split(),
-                stderr=-2)
+                stderr=subprocess.STDOUT, encoding='utf-8')
             mock_rename.assert_called_with(
                 '/var/lib/octavia/123/haproxy.cfg.new',
                 '/var/lib/octavia/123/haproxy.cfg.new-failed')
@@ -321,7 +321,8 @@ class TestServerTestCase(base.TestCase):
                         ' 123 started'},
             jsonutils.loads(rv.data.decode('utf-8')))
         mock_subprocess.assert_called_with(
-            ['/usr/sbin/service', 'haproxy-123', 'start'], stderr=-2)
+            ['/usr/sbin/service', 'haproxy-123', 'start'],
+            stderr=subprocess.STDOUT, encoding='utf-8')
 
         mock_exists.return_value = True
         mock_subprocess.side_effect = subprocess.CalledProcessError(
@@ -336,10 +337,11 @@ class TestServerTestCase(base.TestCase):
         self.assertEqual(
             {
                 'message': 'Error starting haproxy',
-                'details': RANDOM_ERROR.decode('utf-8'),
+                'details': RANDOM_ERROR,
             }, jsonutils.loads(rv.data.decode('utf-8')))
         mock_subprocess.assert_called_with(
-            ['/usr/sbin/service', 'haproxy-123', 'start'], stderr=-2)
+            ['/usr/sbin/service', 'haproxy-123', 'start'],
+            stderr=subprocess.STDOUT, encoding='utf-8')
 
     def test_ubuntu_reload(self):
         self._test_reload(consts.UBUNTU)
@@ -377,7 +379,8 @@ class TestServerTestCase(base.TestCase):
              'details': 'Listener 123 reloaded'},
             jsonutils.loads(rv.data.decode('utf-8')))
         mock_subprocess.assert_called_with(
-            ['/usr/sbin/service', 'haproxy-123', 'reload'], stderr=-2)
+            ['/usr/sbin/service', 'haproxy-123', 'reload'],
+            stderr=subprocess.STDOUT, encoding='utf-8')
 
         # Process not running so start
         mock_exists.return_value = True
@@ -395,7 +398,8 @@ class TestServerTestCase(base.TestCase):
                         ' 123 started'},
             jsonutils.loads(rv.data.decode('utf-8')))
         mock_subprocess.assert_called_with(
-            ['/usr/sbin/service', 'haproxy-123', 'start'], stderr=-2)
+            ['/usr/sbin/service', 'haproxy-123', 'start'],
+            stderr=subprocess.STDOUT, encoding='utf-8')
 
     def test_ubuntu_info(self):
         self._test_info(consts.UBUNTU)
@@ -604,19 +608,22 @@ class TestServerTestCase(base.TestCase):
                          jsonutils.loads(rv.data.decode('utf-8')))
         mock_pid.assert_called_once_with('123')
         mock_check_output.assert_any_call(
-            ['/usr/sbin/service', 'haproxy-123', 'stop'], stderr=-2)
+            ['/usr/sbin/service', 'haproxy-123', 'stop'],
+            stderr=subprocess.STDOUT, encoding='utf-8')
 
         if init_system == consts.INIT_SYSTEMD:
             mock_check_output.assert_any_call(
                 "systemctl disable haproxy-123".split(),
-                stderr=subprocess.STDOUT)
+                stderr=subprocess.STDOUT,
+                encoding='utf-8')
         elif init_system == consts.INIT_UPSTART:
             mock_remove.assert_any_call(consts.UPSTART_DIR +
                                         '/haproxy-123.conf')
         elif init_system == consts.INIT_SYSVINIT:
             mock_check_output.assert_any_call(
                 "insserv -r /etc/init.d/haproxy-123".split(),
-                stderr=subprocess.STDOUT)
+                stderr=subprocess.STDOUT,
+                encoding='utf-8')
         else:
             self.assertIn(init_system, consts.VALID_INIT_SYSTEMS)
 
@@ -634,19 +641,22 @@ class TestServerTestCase(base.TestCase):
                          jsonutils.loads(rv.data.decode('utf-8')))
         mock_pid.assert_called_with('123')
         mock_check_output.assert_any_call(
-            ['/usr/sbin/service', 'haproxy-123', 'stop'], stderr=-2)
+            ['/usr/sbin/service', 'haproxy-123', 'stop'],
+            stderr=subprocess.STDOUT, encoding='utf-8')
 
         if init_system == consts.INIT_SYSTEMD:
             mock_check_output.assert_any_call(
                 "systemctl disable haproxy-123".split(),
-                stderr=subprocess.STDOUT)
+                stderr=subprocess.STDOUT,
+                encoding='utf-8')
         elif init_system == consts.INIT_UPSTART:
             mock_remove.assert_any_call(consts.UPSTART_DIR +
                                         '/haproxy-123.conf')
         elif init_system == consts.INIT_SYSVINIT:
             mock_check_output.assert_any_call(
                 "insserv -r /etc/init.d/haproxy-123".split(),
-                stderr=subprocess.STDOUT)
+                stderr=subprocess.STDOUT,
+                encoding='utf-8')
         else:
             self.assertIn(init_system, consts.VALID_INIT_SYSTEMS)
 
@@ -1014,7 +1024,7 @@ class TestServerTestCase(base.TestCase):
             for idx in range(test_int_num)]
         mock_isfile.return_value = True
 
-        mock_check_output.return_value = b"1\n2\n3\n"
+        mock_check_output.return_value = "1\n2\n3\n"
 
         test_int_num = str(test_int_num)
 
@@ -1145,7 +1155,8 @@ class TestServerTestCase(base.TestCase):
 
             mock_check_output.assert_called_with(
                 ['ip', 'netns', 'exec', consts.AMPHORA_NAMESPACE,
-                 'amphora-interface', 'up', 'eth' + test_int_num], stderr=-2)
+                 'amphora-interface', 'up', 'eth' + test_int_num],
+                stderr=subprocess.STDOUT, encoding='utf-8')
 
         # fixed IPs happy path
         port_info = {'mac_address': '123', 'mtu': 1450, 'fixed_ips': [
@@ -1215,7 +1226,8 @@ class TestServerTestCase(base.TestCase):
 
             mock_check_output.assert_called_with(
                 ['ip', 'netns', 'exec', consts.AMPHORA_NAMESPACE,
-                 'amphora-interface', 'up', 'eth' + test_int_num], stderr=-2)
+                 'amphora-interface', 'up', 'eth' + test_int_num],
+                stderr=subprocess.STDOUT, encoding='utf-8')
 
         # fixed IPs happy path IPv6
         port_info = {'mac_address': '123', 'mtu': 1450, 'fixed_ips': [
@@ -1285,7 +1297,8 @@ class TestServerTestCase(base.TestCase):
 
             mock_check_output.assert_called_with(
                 ['ip', 'netns', 'exec', consts.AMPHORA_NAMESPACE,
-                 'amphora-interface', 'up', 'eth' + test_int_num], stderr=-2)
+                 'amphora-interface', 'up', 'eth' + test_int_num],
+                stderr=subprocess.STDOUT, encoding='utf-8')
 
         # fixed IPs, bogus IP
         port_info = {'mac_address': '123', 'fixed_ips': [
@@ -1314,9 +1327,10 @@ class TestServerTestCase(base.TestCase):
         # same as above but ifup fails
         port_info = {'mac_address': '123', 'fixed_ips': [
             {'ip_address': '10.0.0.5', 'subnet_cidr': '10.0.0.0/24'}]}
-        mock_check_output.side_effect = [subprocess.CalledProcessError(
-            7, 'test', RANDOM_ERROR), subprocess.CalledProcessError(
-            7, 'test', RANDOM_ERROR)]
+        mock_check_output.side_effect = [
+            subprocess.CalledProcessError(7, 'test', RANDOM_ERROR),
+            subprocess.CalledProcessError(7, 'test', RANDOM_ERROR)
+        ]
 
         m = self.useFixture(test_utils.OpenFixture(file_name)).mock_open
         with mock.patch('os.open'), mock.patch.object(os, 'fdopen', m):
@@ -1332,7 +1346,7 @@ class TestServerTestCase(base.TestCase):
                                           data=jsonutils.dumps(port_info))
             self.assertEqual(500, rv.status_code)
             self.assertEqual(
-                {'details': RANDOM_ERROR.decode('utf-8'),
+                {'details': RANDOM_ERROR,
                  'message': 'Error plugging network'},
                 jsonutils.loads(rv.data.decode('utf-8')))
 
@@ -1477,7 +1491,8 @@ class TestServerTestCase(base.TestCase):
 
             mock_check_output.assert_called_with(
                 ['ip', 'netns', 'exec', consts.AMPHORA_NAMESPACE,
-                 'amphora-interface', 'up', 'eth3'], stderr=-2)
+                 'amphora-interface', 'up', 'eth3'], stderr=subprocess.STDOUT,
+                encoding='utf-8')
 
     def test_ubuntu_plug_VIP4(self):
         self._test_plug_VIP4(consts.UBUNTU)
@@ -1732,7 +1747,8 @@ class TestServerTestCase(base.TestCase):
             mock_check_output.assert_called_with(
                 ['ip', 'netns', 'exec', consts.AMPHORA_NAMESPACE,
                  'amphora-interface', 'up',
-                 consts.NETNS_PRIMARY_INTERFACE], stderr=-2)
+                 consts.NETNS_PRIMARY_INTERFACE], stderr=subprocess.STDOUT,
+                encoding='utf-8')
 
         # One Interface down, Happy Path IPv4
         mode = stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IROTH
@@ -1832,12 +1848,13 @@ class TestServerTestCase(base.TestCase):
             mock_check_output.assert_called_with(
                 ['ip', 'netns', 'exec', consts.AMPHORA_NAMESPACE,
                  'amphora-interface', 'up',
-                 consts.NETNS_PRIMARY_INTERFACE], stderr=-2)
+                 consts.NETNS_PRIMARY_INTERFACE], stderr=subprocess.STDOUT,
+                encoding='utf-8')
 
         mock_check_output.side_effect = [
-            subprocess.CalledProcessError(
-                7, 'test', RANDOM_ERROR), subprocess.CalledProcessError(
-                7, 'test', RANDOM_ERROR)]
+            subprocess.CalledProcessError(7, 'test', RANDOM_ERROR),
+            subprocess.CalledProcessError(7, 'test', RANDOM_ERROR)
+        ]
 
         m = self.useFixture(test_utils.OpenFixture(file_name)).mock_open
         with mock.patch('os.open'), mock.patch.object(os, 'fdopen', m):
@@ -1853,7 +1870,7 @@ class TestServerTestCase(base.TestCase):
                                           data=jsonutils.dumps(subnet_info))
             self.assertEqual(500, rv.status_code)
             self.assertEqual(
-                {'details': RANDOM_ERROR.decode('utf-8'),
+                {'details': RANDOM_ERROR,
                  'message': 'Error plugging VIP'},
                 jsonutils.loads(rv.data.decode('utf-8')))
 
@@ -2086,9 +2103,14 @@ class TestServerTestCase(base.TestCase):
                 self, args[0], expected_dict)
 
             mock_check_output.assert_called_with(
-                ['ip', 'netns', 'exec', consts.AMPHORA_NAMESPACE,
+                [
+                    'ip', 'netns', 'exec', consts.AMPHORA_NAMESPACE,
                     'amphora-interface', 'up', '{netns_int}'.format(
-                        netns_int=consts.NETNS_PRIMARY_INTERFACE)], stderr=-2)
+                        netns_int=consts.NETNS_PRIMARY_INTERFACE
+                    )
+                ],
+                stderr=subprocess.STDOUT,
+                encoding='utf-8')
 
         # One Interface down, Happy Path IPv6
         flags = os.O_WRONLY | os.O_CREAT | os.O_TRUNC
@@ -2181,14 +2203,14 @@ class TestServerTestCase(base.TestCase):
             test_utils.assert_interface_files_equal(
                 self, args[0], expected_dict)
 
-            mock_check_output.assert_called_with(
-                ['ip', 'netns', 'exec', consts.AMPHORA_NAMESPACE,
-                    'amphora-interface', 'up', '{netns_int}'.format(
-                        netns_int=consts.NETNS_PRIMARY_INTERFACE)], stderr=-2)
+            mock_check_output.assert_called_with([
+                'ip', 'netns', 'exec', consts.AMPHORA_NAMESPACE,
+                'amphora-interface', 'up', consts.NETNS_PRIMARY_INTERFACE
+            ], stderr=subprocess.STDOUT, encoding='utf-8')
         mock_check_output.side_effect = [
-            subprocess.CalledProcessError(
-                7, 'test', RANDOM_ERROR), subprocess.CalledProcessError(
-                7, 'test', RANDOM_ERROR)]
+            subprocess.CalledProcessError(7, 'test', RANDOM_ERROR),
+            subprocess.CalledProcessError(7, 'test', RANDOM_ERROR)
+        ]
 
         m = self.useFixture(test_utils.OpenFixture(file_name)).mock_open
         with mock.patch('os.open'), mock.patch.object(os, 'fdopen', m):
@@ -2204,7 +2226,7 @@ class TestServerTestCase(base.TestCase):
                                           data=jsonutils.dumps(subnet_info))
             self.assertEqual(500, rv.status_code)
             self.assertEqual(
-                {'details': RANDOM_ERROR.decode('utf-8'),
+                {'details': RANDOM_ERROR,
                  'message': 'Error plugging VIP'},
                 jsonutils.loads(rv.data.decode('utf-8')))
 
@@ -2421,10 +2443,11 @@ class TestServerTestCase(base.TestCase):
             test_utils.assert_interface_files_equal(
                 self, args[0], expected_dict)
 
-            mock_check_output.assert_called_with(
-                ['ip', 'netns', 'exec', consts.AMPHORA_NAMESPACE,
-                 'amphora-interface', 'up',
-                 consts.NETNS_PRIMARY_INTERFACE], stderr=-2)
+            mock_check_output.assert_called_with([
+                'ip', 'netns', 'exec', consts.AMPHORA_NAMESPACE,
+                'amphora-interface', 'up',
+                consts.NETNS_PRIMARY_INTERFACE
+            ], stderr=subprocess.STDOUT, encoding='utf-8')
 
     def test_ubuntu_plug_VIP6_with_additional_VIP(self):
         self._test_plug_VIP6_with_additional_VIP(consts.UBUNTU)
@@ -2638,10 +2661,10 @@ class TestServerTestCase(base.TestCase):
             test_utils.assert_interface_files_equal(
                 self, args[0], expected_dict)
 
-            mock_check_output.assert_called_with(
-                ['ip', 'netns', 'exec', consts.AMPHORA_NAMESPACE,
-                 'amphora-interface', 'up',
-                 consts.NETNS_PRIMARY_INTERFACE], stderr=-2)
+            mock_check_output.assert_called_with([
+                'ip', 'netns', 'exec', consts.AMPHORA_NAMESPACE,
+                'amphora-interface', 'up', consts.NETNS_PRIMARY_INTERFACE
+            ], stderr=subprocess.STDOUT, encoding='utf-8')
 
     def test_ubuntu_get_interface(self):
         self._test_get_interface(consts.UBUNTU)

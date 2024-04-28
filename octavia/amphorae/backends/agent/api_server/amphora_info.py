@@ -105,7 +105,7 @@ class AmphoraInfo:
     def _get_version_of_installed_package(self, name):
 
         cmd = self._osutils.cmd_get_version_of_installed_package(name)
-        version = subprocess.check_output(cmd.split())
+        version = subprocess.check_output(cmd.split(), encoding='utf-8')
         return version
 
     def _count_haproxy_processes(self, lb_list):
