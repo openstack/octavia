@@ -1331,11 +1331,11 @@ class TestHaproxyCfg(base.TestCase):
               "    timeout connect 5000\n"
               "    timeout server 50000\n"
               "    server sample_member_id_1 10.0.0.99:82 weight 13 "
-              "check inter 30s fall 3 rise 2 cookie sample_member_id_1 "
-              "{opts} alpn {alpn}\n"
+              "check check-alpn {alpn} inter 30s fall 3 rise 2 cookie "
+              "sample_member_id_1 {opts} alpn {alpn}\n"
               "    server sample_member_id_2 10.0.0.98:82 weight 13 "
-              "check inter 30s fall 3 rise 2 cookie sample_member_id_2 "
-              "{opts} alpn {alpn}\n\n").format(
+              "check check-alpn {alpn} inter 30s fall 3 rise 2 cookie "
+              "sample_member_id_2 {opts} alpn {alpn}\n\n").format(
             maxconn=constants.HAPROXY_DEFAULT_MAXCONN,
             opts="ssl crt %s verify none sni ssl_fc_sni" % cert_file_path +
                  " ciphers " + constants.CIPHERS_OWASP_SUITE_B +
@@ -1410,11 +1410,11 @@ class TestHaproxyCfg(base.TestCase):
               "    timeout connect 5000\n"
               "    timeout server 50000\n"
               "    server sample_member_id_1 10.0.0.99:82 weight 13 "
-              "check inter 30s fall 3 rise 2 cookie sample_member_id_1 "
-              "{opts} alpn {alpn}\n"
+              "check check-alpn {alpn} inter 30s fall 3 rise 2 cookie "
+              "sample_member_id_1 {opts} alpn {alpn}\n"
               "    server sample_member_id_2 10.0.0.98:82 weight 13 "
-              "check inter 30s fall 3 rise 2 cookie sample_member_id_2 "
-              "{opts} alpn {alpn}\n\n").format(
+              "check check-alpn {alpn} inter 30s fall 3 rise 2 cookie "
+              "sample_member_id_2 {opts} alpn {alpn}\n\n").format(
             maxconn=constants.HAPROXY_DEFAULT_MAXCONN,
             opts="ssl crt %s verify none sni ssl_fc_sni" % cert_file_path +
                  " ciphers " + constants.CIPHERS_OWASP_SUITE_B,
@@ -1450,11 +1450,11 @@ class TestHaproxyCfg(base.TestCase):
               "    timeout connect 5000\n"
               "    timeout server 50000\n"
               "    server sample_member_id_1 10.0.0.99:82 weight 13 "
-              "check inter 30s fall 3 rise 2 cookie sample_member_id_1 "
-              "{opts} alpn {alpn}\n"
+              "check check-alpn {alpn} inter 30s fall 3 rise 2 cookie "
+              "sample_member_id_1 {opts} alpn {alpn}\n"
               "    server sample_member_id_2 10.0.0.98:82 weight 13 "
-              "check inter 30s fall 3 rise 2 cookie sample_member_id_2 "
-              "{opts} alpn {alpn}\n\n").format(
+              "check check-alpn {alpn} inter 30s fall 3 rise 2 cookie "
+              "sample_member_id_2 {opts} alpn {alpn}\n\n").format(
             maxconn=constants.HAPROXY_DEFAULT_MAXCONN,
             opts="ssl crt %s verify none sni ssl_fc_sni" % cert_file_path +
                  " no-sslv3 no-tlsv10 no-tlsv11",
@@ -1550,11 +1550,11 @@ class TestHaproxyCfg(base.TestCase):
               "    timeout connect 5000\n"
               "    timeout server 50000\n"
               "    server sample_member_id_1 10.0.0.99:82 weight 13 "
-              "check inter 30s fall 3 rise 2 cookie sample_member_id_1 "
-              "{opts} alpn {alpn}\n"
+              "check check-alpn {alpn} inter 30s fall 3 rise 2 cookie "
+              "sample_member_id_1 {opts} alpn {alpn}\n"
               "    server sample_member_id_2 10.0.0.98:82 weight 13 "
-              "check inter 30s fall 3 rise 2 cookie sample_member_id_2 "
-              "{opts} alpn {alpn}\n\n").format(
+              "check check-alpn {alpn} inter 30s fall 3 rise 2 cookie "
+              "sample_member_id_2 {opts} alpn {alpn}\n\n").format(
             maxconn=constants.HAPROXY_DEFAULT_MAXCONN,
             opts="%s %s %s %s %s %s" % (
                 "ssl", "crt", pool_client_cert,
