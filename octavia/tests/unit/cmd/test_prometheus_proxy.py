@@ -147,6 +147,7 @@ class TestPrometheusProxyCMD(base.TestCase):
         mock_http.shutdown.assert_called_once()
 
     @mock.patch('threading.Thread')
+    @mock.patch('http.server.ThreadingHTTPServer.__init__')
     @mock.patch('http.server.ThreadingHTTPServer.serve_forever')
     @mock.patch('octavia.amphorae.backends.utils.network_namespace.'
                 'NetworkNamespace.__exit__')
@@ -155,12 +156,18 @@ class TestPrometheusProxyCMD(base.TestCase):
     @mock.patch('octavia.cmd.prometheus_proxy.EXIT_EVENT')
     @mock.patch('octavia.cmd.prometheus_proxy.SignalHandler')
     def test_main(self, mock_signal_handler, mock_exit_event, mock_netns_enter,
-                  mock_netns_exit, mock_serve_forever, mock_thread):
+                  mock_netns_exit, mock_serve_forever, mock_server_init,
+                  mock_thread):
 
         mock_exit_event.is_set.side_effect = [False, False, True]
         mock_netns_enter.side_effect = [Exception('boom'), True]
 
+        mock_server_init.return_value = None
+
         prometheus_proxy.main()
 
         mock_signal_handler.assert_called_once()
+        mock_server_init.assert_called_once_with(
+            ('127.0.0.1', 9102),
+            prometheus_proxy.PrometheusProxy)
         mock_serve_forever.assert_called_once()
