@@ -1,0 +1,6 @@
+---
+fixes:
+  - |
+    Fixed a potential issue when deleting a load balancer with an amphora that
+    was not fully created, the deletion may have failed when deallocating the
+    VIP port, leaving the load balancer in ERROR state.

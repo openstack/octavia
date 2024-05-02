@@ -122,6 +122,28 @@ class TestAllowedAddressPairsDriver(base.TestCase):
         delete_port.assert_has_calls(calls, any_order=True)
         delete_sec_grp.assert_called_once_with(sec_grp_id)
 
+    def test_deallocate_vip_no_vrrp_port(self):
+        lb = dmh.generate_load_balancer_tree()
+        lb.vip.load_balancer = lb
+        # amphora 0 doesn't have a vrrp_port_id
+        lb.amphorae[0].vrrp_port_id = None
+        vip = lb.vip
+        sec_grp_id = 'lb-sec-grp1'
+        show_port = self.driver.network_proxy.get_port
+        show_port.return_value = Port(
+            device_owner=allowed_address_pairs.OCTAVIA_OWNER)
+        delete_port = self.driver.network_proxy.delete_port
+        delete_sec_grp = self.driver.network_proxy.delete_security_group
+        list_security_groups = self.driver.network_proxy.find_security_group
+        list_security_groups.return_value = SecurityGroup(id=sec_grp_id)
+        self.driver.deallocate_vip(vip)
+        # not called for lb.amphorae[0]
+        calls = [mock.call(vip.port_id),
+                 mock.call(lb.amphorae[1].vrrp_port_id)]
+        delete_port.assert_has_calls(calls, any_order=True)
+        self.assertEqual(2, delete_port.call_count)
+        delete_sec_grp.assert_called_once_with(sec_grp_id)
+
     def test_deallocate_vip_no_port(self):
         lb = dmh.generate_load_balancer_tree()
         lb.vip.load_balancer = lb
