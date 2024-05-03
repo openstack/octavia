@@ -1,0 +1,4 @@
+---
+fixes:
+  - |
+    Fixed wrong endpoint information in neutron client configuration.
