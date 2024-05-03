@@ -204,8 +204,7 @@ class NoopManager(object):
                 return len(self.known_subnets) + 1
 
             def __iter__(self):
-                for subnet_id in self.known_subnets:
-                    yield subnet_id
+                yield from self.known_subnets
                 subnet = network_models.Subnet(id=uuidutils.generate_uuid(),
                                                network_id=self.network.id)
                 self.known_subnets[subnet.id] = subnet

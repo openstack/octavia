@@ -164,16 +164,14 @@ def _parse_pkcs7_bundle(pkcs7):
     if PKCS7_BEG in pkcs7:
         try:
             for substrate in _read_pem_blocks(pkcs7):
-                for cert in _get_certs_from_pkcs7_substrate(substrate):
-                    yield cert
+                yield from _get_certs_from_pkcs7_substrate(substrate)
         except Exception as e:
             LOG.exception('Unreadable Certificate.')
             raise exceptions.UnreadableCert from e
 
     # If no PEM encoding, assume this is DER encoded and try to decode
     else:
-        for cert in _get_certs_from_pkcs7_substrate(pkcs7):
-            yield cert
+        yield from _get_certs_from_pkcs7_substrate(pkcs7)
 
 
 def _read_pem_blocks(data):
