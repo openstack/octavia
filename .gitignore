@@ -4,6 +4,7 @@ build-stamp
 ChangeLog
 cover/
 .coverage
+.coverage.*
 covhtml/
 dist/
 doc/build
