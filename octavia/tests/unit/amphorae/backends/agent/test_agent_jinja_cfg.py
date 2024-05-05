@@ -39,7 +39,6 @@ class AgentJinjaTestCase(base.TestCase):
                          amphora_udp_driver='keepalived_lvs'),
         self.conf.config(group="haproxy_amphora",
                          base_cert_dir='/var/lib/octavia/certs')
-        self.conf.config(group="haproxy_amphora", use_upstart='True')
         self.conf.config(group="haproxy_amphora", base_path='/var/lib/octavia')
         self.conf.config(group="haproxy_amphora", bind_host='0.0.0.0')
         self.conf.config(group="haproxy_amphora", bind_port=9443)
@@ -70,7 +69,6 @@ class AgentJinjaTestCase(base.TestCase):
                            'haproxy_cmd = /usr/sbin/haproxy\n'
                            'respawn_count = 2\n'
                            'respawn_interval = 2\n'
-                           'use_upstart = True\n'
                            'user_log_facility = 0\n'
                            'administrative_log_facility = 1\n\n'
                            '[health_manager]\n'
@@ -96,7 +94,6 @@ class AgentJinjaTestCase(base.TestCase):
 
     def test_build_agent_config_with_interfaces_file(self):
         ajc = agent_jinja_cfg.AgentJinjaTemplater()
-        self.conf.config(group="haproxy_amphora", use_upstart='False')
         self.conf.config(group="amphora_agent",
                          administrative_log_facility=1)
         self.conf.config(group="amphora_agent", user_log_facility=0)
@@ -112,7 +109,6 @@ class AgentJinjaTestCase(base.TestCase):
                            'haproxy_cmd = /usr/sbin/haproxy\n'
                            'respawn_count = 2\n'
                            'respawn_interval = 2\n'
-                           'use_upstart = False\n'
                            'user_log_facility = 0\n'
                            'administrative_log_facility = 1\n\n'
                            '[health_manager]\n'
@@ -156,7 +152,6 @@ class AgentJinjaTestCase(base.TestCase):
                            'haproxy_cmd = /usr/sbin/haproxy\n'
                            'respawn_count = 2\n'
                            'respawn_interval = 2\n'
-                           'use_upstart = True\n'
                            'user_log_facility = 0\n'
                            'administrative_log_facility = 1\n\n'
                            '[health_manager]\n'
