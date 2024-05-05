@@ -1,0 +1,5 @@
+---
+upgrade:
+  - |
+    The deprecated ``[amphora_agent] agent_server_network_file`` option has
+    been removed.
