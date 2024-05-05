@@ -1,0 +1,9 @@
+---
+upgrade:
+  - |
+    The deprecated ``[health_manager] health_update_driver`` option was
+    removed.
+
+  - |
+    The deprecated ``[health_manager] stats_update_driver`` option has been
+    removed. Use the ``[controller_worker] statistics_drivers`` option instead.
