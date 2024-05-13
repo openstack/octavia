@@ -44,15 +44,14 @@ class TestListenerFlows(base.TestCase):
 
         self.assertIn(constants.LISTENERS, listener_flow.requires)
         self.assertIn(constants.LOADBALANCER_ID, listener_flow.requires)
-        self.assertIn(constants.AMPHORAE_STATUS, listener_flow.requires)
 
         self.assertIn(constants.AMPHORAE_NETWORK_CONFIG,
                       listener_flow.provides)
         self.assertIn(constants.AMPHORAE, listener_flow.provides)
         self.assertIn(constants.AMPHORA_FIREWALL_RULES, listener_flow.provides)
 
-        self.assertEqual(3, len(listener_flow.requires))
-        self.assertEqual(3, len(listener_flow.provides))
+        self.assertEqual(2, len(listener_flow.requires))
+        self.assertEqual(4, len(listener_flow.provides))
 
     def test_get_delete_listener_flow(self, mock_get_net_driver):
         flavor_dict = {
@@ -66,15 +65,14 @@ class TestListenerFlows(base.TestCase):
         self.assertIn(constants.LISTENER, listener_flow.requires)
         self.assertIn(constants.LOADBALANCER_ID, listener_flow.requires)
         self.assertIn(constants.PROJECT_ID, listener_flow.requires)
-        self.assertIn(constants.AMPHORAE_STATUS, listener_flow.requires)
 
         self.assertIn(constants.AMPHORAE_NETWORK_CONFIG,
                       listener_flow.provides)
         self.assertIn(constants.AMPHORAE, listener_flow.provides)
         self.assertIn(constants.AMPHORA_FIREWALL_RULES, listener_flow.provides)
 
-        self.assertEqual(4, len(listener_flow.requires))
-        self.assertEqual(3, len(listener_flow.provides))
+        self.assertEqual(3, len(listener_flow.requires))
+        self.assertEqual(4, len(listener_flow.provides))
 
     def test_get_delete_listener_internal_flow(self, mock_get_net_driver):
         flavor_dict = {
@@ -88,15 +86,14 @@ class TestListenerFlows(base.TestCase):
 
         self.assertIn(constants.LOADBALANCER_ID, listener_flow.requires)
         self.assertIn(constants.PROJECT_ID, listener_flow.requires)
-        self.assertIn(constants.AMPHORAE_STATUS, listener_flow.requires)
 
         self.assertIn(constants.AMPHORAE_NETWORK_CONFIG,
                       listener_flow.provides)
         self.assertIn(constants.AMPHORAE, listener_flow.provides)
         self.assertIn(constants.AMPHORA_FIREWALL_RULES, listener_flow.provides)
 
-        self.assertEqual(3, len(listener_flow.requires))
-        self.assertEqual(3, len(listener_flow.provides))
+        self.assertEqual(2, len(listener_flow.requires))
+        self.assertEqual(4, len(listener_flow.provides))
 
     def test_get_update_listener_flow(self, mock_get_net_driver):
         flavor_dict = {
@@ -112,15 +109,14 @@ class TestListenerFlows(base.TestCase):
         self.assertIn(constants.UPDATE_DICT, listener_flow.requires)
         self.assertIn(constants.LISTENERS, listener_flow.requires)
         self.assertIn(constants.LOADBALANCER_ID, listener_flow.requires)
-        self.assertIn(constants.AMPHORAE_STATUS, listener_flow.requires)
 
         self.assertIn(constants.AMPHORAE_NETWORK_CONFIG,
                       listener_flow.provides)
         self.assertIn(constants.AMPHORAE, listener_flow.provides)
         self.assertIn(constants.AMPHORA_FIREWALL_RULES, listener_flow.provides)
 
-        self.assertEqual(5, len(listener_flow.requires))
-        self.assertEqual(3, len(listener_flow.provides))
+        self.assertEqual(4, len(listener_flow.requires))
+        self.assertEqual(4, len(listener_flow.provides))
 
     def test_get_create_all_listeners_flow(self, mock_get_net_driver):
         flavor_dict = {
@@ -131,12 +127,11 @@ class TestListenerFlows(base.TestCase):
         self.assertIsInstance(listeners_flow, flow.Flow)
         self.assertIn(constants.LOADBALANCER, listeners_flow.requires)
         self.assertIn(constants.LOADBALANCER_ID, listeners_flow.requires)
-        self.assertIn(constants.AMPHORAE_STATUS, listeners_flow.requires)
         self.assertIn(constants.LOADBALANCER, listeners_flow.provides)
         self.assertIn(constants.AMPHORAE_NETWORK_CONFIG,
                       listeners_flow.provides)
         self.assertIn(constants.AMPHORAE, listeners_flow.provides)
         self.assertIn(constants.AMPHORA_FIREWALL_RULES,
                       listeners_flow.provides)
-        self.assertEqual(3, len(listeners_flow.requires))
-        self.assertEqual(5, len(listeners_flow.provides))
+        self.assertEqual(2, len(listeners_flow.requires))
+        self.assertEqual(6, len(listeners_flow.provides))
