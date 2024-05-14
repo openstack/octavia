@@ -57,19 +57,6 @@
             irrelevant-files: *irrelevant-files
         - octavia-v2-dsvm-tls-barbican:
             irrelevant-files: *irrelevant-files
-        - octavia-grenade:
-            irrelevant-files: &grenade-irrelevant-files
-              - ^.*\.rst$
-              - ^api-ref/.*$
-              - ^doc/.*$
-              - ^octavia/tests/.*$
-              - ^releasenotes/.*$
-              - ^setup.cfg$
-              - ^tools/.*$
-              - ^(test-|)requirements.txt$
-              - ^tox.ini$
-        - octavia-grenade-skip-level:
-            irrelevant-files: *grenade-irrelevant-files
         - octavia-v2-dsvm-tls-barbican-fips:
             irrelevant-files: *irrelevant-files
             voting: false
@@ -118,8 +105,6 @@
         - octavia-v2-dsvm-scenario-traffic-ops
         - octavia-v2-dsvm-scenario-non-traffic-ops
         - octavia-v2-dsvm-tls-barbican
-        - octavia-grenade
-        - octavia-grenade-skip-level
     periodic:
       jobs:
         - publish-openstack-octavia-amphora-image-focal:
@@ -136,6 +121,5 @@
         - octavia-v2-dsvm-noop-api-amphora-v2
         - octavia-v2-dsvm-tls-barbican-amphora-v2
         - octavia-v2-act-stdby-dsvm-scenario-amphora-v2
-        - octavia-grenade-amphora-v2
         - octavia-v2-dsvm-cinder-amphora-v2
         - octavia-v2-dsvm-scenario-two-node-amphora-v2
