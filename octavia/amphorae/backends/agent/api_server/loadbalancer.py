@@ -396,12 +396,9 @@ class Loadbalancer:
             util.run_systemctl_command(
                 consts.DISABLE, "haproxy-{lb_id}".format(
                     lb_id=lb_id))
+
         elif init_system == consts.INIT_SYSVINIT:
             init_disable_cmd = f"insserv -r {init_path}"
-        elif init_system != consts.INIT_UPSTART:
-            raise util.UnknownInitError()
-
-        if init_system == consts.INIT_SYSVINIT:
             try:
                 subprocess.check_output(init_disable_cmd.split(),
                                         stderr=subprocess.STDOUT)
@@ -412,6 +409,9 @@ class Loadbalancer:
                 return webob.Response(json={
                     'message': "Error disabling haproxy-{} service".format(
                         lb_id), 'details': e.output}, status=500)
+
+        elif init_system != consts.INIT_UPSTART:
+            raise util.UnknownInitError()
 
         # delete the directory + init script for that listener
         shutil.rmtree(util.haproxy_dir(lb_id))

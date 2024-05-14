@@ -304,12 +304,9 @@ class KeepalivedLvs(lvs_listener_base.LvsListenerApiServerBase):
         if init_system == consts.INIT_SYSTEMD:
             util.run_systemctl_command(
                 consts.DISABLE, f"octavia-keepalivedlvs-{listener_id}")
+
         elif init_system == consts.INIT_SYSVINIT:
             init_disable_cmd = f"insserv -r {init_path}"
-        elif init_system != consts.INIT_UPSTART:
-            raise util.UnknownInitError()
-
-        if init_system == consts.INIT_SYSVINIT:
             try:
                 subprocess.check_output(init_disable_cmd.split(),
                                         stderr=subprocess.STDOUT)
@@ -322,6 +319,9 @@ class KeepalivedLvs(lvs_listener_base.LvsListenerApiServerBase):
                         "Error disabling octavia-keepalivedlvs-"
                         "{} service".format(listener_id)),
                     'details': e.output}, status=500)
+
+        elif init_system != consts.INIT_UPSTART:
+            raise util.UnknownInitError()
 
         # delete init script ,config file and log file for that listener
         if os.path.exists(init_path):

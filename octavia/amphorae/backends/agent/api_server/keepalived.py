@@ -64,6 +64,7 @@ class Keepalived:
 
         file_path = util.keepalived_init_path(init_system)
 
+        init_enable_cmd = None
         if init_system == consts.INIT_SYSTEMD:
             template = SYSTEMD_TEMPLATE
             init_enable_cmd = "systemctl enable octavia-keepalived"
@@ -117,7 +118,7 @@ class Keepalived:
         util.vrrp_check_script_update(None, consts.AMP_ACTION_START)
 
         # Make sure the new service is enabled on boot
-        if init_system != consts.INIT_UPSTART:
+        if init_enable_cmd is not None:
             try:
                 subprocess.check_output(init_enable_cmd.split(),
                                         stderr=subprocess.STDOUT)

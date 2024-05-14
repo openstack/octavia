@@ -193,6 +193,7 @@ def _read_pem_blocks(data):
     state = stSpam
     if isinstance(data, bytes):
         data = data.decode('utf-8')
+    certLines = []
     for certLine in data.replace('\r', '').split('\n'):
         if not certLine:
             continue

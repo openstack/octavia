@@ -342,8 +342,6 @@ class NovaServerGroupDelete(BaseComputeTask):
     def execute(self, server_group_id):
         if server_group_id is not None:
             self.compute.delete_server_group(server_group_id)
-        else:
-            return
 
 
 class AttachPort(BaseComputeTask):
