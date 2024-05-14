@@ -30,6 +30,8 @@ from octavia.tests import fixtures as oc_fixtures
 
 class OctaviaDBTestBase(test_base.BaseTestCase):
 
+    facade = None
+
     def setUp(self, connection_string='sqlite://'):
         super().setUp()
 
@@ -73,10 +75,17 @@ class OctaviaDBTestBase(test_base.BaseTestCase):
                                                          sqlite_fk=True)
             engine = facade.get_engine()
             session = facade.get_session(expire_on_commit=True)
+            self.facade = facade
         else:
             engine = db_api.get_engine()
             session = db_api.get_session()
         return engine, session
+
+    def get_session(self):
+        if 'sqlite:///' in self.connection_string:
+            return self.facade.get_session(expire_on_commit=True)
+        else:
+            return db_api.get_session()
 
     def _seed_lookup_tables(self, session):
         self._seed_lookup_table(
