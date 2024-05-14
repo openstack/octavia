@@ -1,0 +1,7 @@
+---
+fixes:
+  - |
+    Bug fix: The response body of the LB API, when creating a new load
+    balancer, now correctly includes information about the health monitor.
+    Previously, this information was consistently null, despite configuring
+    a health monitor.
