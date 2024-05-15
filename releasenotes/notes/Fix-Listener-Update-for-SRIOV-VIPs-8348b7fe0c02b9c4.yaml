@@ -1,0 +1,4 @@
+---
+fixes:
+  - |
+    Fixed an issue updating listeners when using SR-IOV VIP ports.
