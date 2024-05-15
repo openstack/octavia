@@ -99,8 +99,8 @@ METRIC_MAP = {
         ("octavia_loadbalancer_current_frontend_ssl_key_rate ", None, None),
     "haproxy_process_max_frontend_ssl_key_rate ":
         ("octavia_loadbalancer_max_frontend_ssl_key_rate ", None, None),
-    "haproxy_process_frontent_ssl_reuse ":
-        ("octavia_loadbalancer_frontent_ssl_reuse ", None, None),
+    "haproxy_process_frontend_ssl_reuse ":
+        ("octavia_loadbalancer_frontend_ssl_reuse ", None, None),
     "haproxy_process_current_backend_ssl_key_rate ":
         ("octavia_loadbalancer_current_backend_ssl_key_rate ", None, None),
     "haproxy_process_max_backend_ssl_key_rate ":
@@ -123,8 +123,8 @@ METRIC_MAP = {
     # Listener metrics
     "haproxy_frontend_status ":
         ("octavia_listener_status ",
-         "# HELP octavia_listener_status Current status of the listener. "
-         "0=OFFLINE, 1=ONLINE, 2=DEGRADED.\n", None),
+         "# HELP octavia_listener_status Current status of the listener.\n",
+         None),
     "haproxy_frontend_status{":
         ("octavia_listener_status{", None, {"proxy=": "listener="}),
     "haproxy_frontend_current_sessions ":
@@ -263,8 +263,7 @@ METRIC_MAP = {
     # Pool Metrics
     "haproxy_backend_status ":
         ("octavia_pool_status ",
-         "# HELP octavia_pool_status Current status of the pool. 0=OFFLINE, "
-         "1=ONLINE.\n", None),
+         "# HELP octavia_pool_status Current status of the pool.\n", None),
     "haproxy_backend_status{":
         ("octavia_pool_status{", None, {"proxy=": "pool="}),
     "haproxy_backend_current_sessions ":
@@ -475,8 +474,7 @@ METRIC_MAP = {
     # Member Metrics
     "haproxy_server_status ":
         ("octavia_member_status ",
-         "# HELP octavia_member_status Current status of the member. "
-         "0=ERROR, 1=ONLINE, 2=OFFLINE, 3=DRAIN.\n", None),
+         "# HELP octavia_member_status Current status of the member.\n", None),
     "haproxy_server_status{":
         ("octavia_member_status{", None,
          {"proxy=": "pool=", "server=": "member="}),
@@ -682,14 +680,14 @@ METRIC_MAP = {
     "haproxy_server_http_responses_total{":
         ("octavia_member_http_responses_total{", None,
          {"proxy=": "pool=", "server=": "member="}),
-    "haproxy_server_server_idle_connections_current ":
+    "haproxy_server_idle_connections_current ":
         ("octavia_member_idle_connections_current ", None, None),
-    "haproxy_server_server_idle_connections_current{":
+    "haproxy_server_idle_connections_current{":
         ("octavia_member_idle_connections_current{", None,
          {"proxy=": "pool=", "server=": "member="}),
-    "haproxy_server_server_idle_connections_limit ":
+    "haproxy_server_idle_connections_limit ":
         ("octavia_member_idle_connections_limit ", None, None),
-    "haproxy_server_server_idle_connections_limit{":
+    "haproxy_server_idle_connections_limit{":
         ("octavia_member_idle_connections_limit{", None,
          {"proxy=": "pool=", "server=": "member="}),
 }

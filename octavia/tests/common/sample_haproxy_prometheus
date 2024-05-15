@@ -94,9 +94,9 @@ haproxy_process_current_frontend_ssl_key_rate 0
 # HELP haproxy_process_max_frontend_ssl_key_rate Maximum observed frontend SSL Key computation per second.
 # TYPE haproxy_process_max_frontend_ssl_key_rate gauge
 haproxy_process_max_frontend_ssl_key_rate 0
-# HELP haproxy_process_frontent_ssl_reuse SSL session reuse ratio (percent).
-# TYPE haproxy_process_frontent_ssl_reuse gauge
-haproxy_process_frontent_ssl_reuse 0
+# HELP haproxy_process_frontend_ssl_reuse SSL session reuse ratio (percent).
+# TYPE haproxy_process_frontend_ssl_reuse gauge
+haproxy_process_frontend_ssl_reuse 0
 # HELP haproxy_process_current_backend_ssl_key_rate Current backend SSL Key computation per second over last elapsed second.
 # TYPE haproxy_process_current_backend_ssl_key_rate gauge
 haproxy_process_current_backend_ssl_key_rate 0
@@ -870,17 +870,17 @@ haproxy_server_http_responses_total{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:
 haproxy_server_http_responses_total{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:1a0c13c0-8e69-46c7-a68a-ca4937996d74",server="88ee5795-d594-478b-8591-455acf30164f",code="other"} 0
 haproxy_server_http_responses_total{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:0b248d39-eb90-4180-91aa-5363be7df4db",server="edf6ca81-b5d5-4d94-a656-f6028d8bbb77",code="other"} 0
 haproxy_server_http_responses_total{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:0b248d39-eb90-4180-91aa-5363be7df4db",server="88ee5795-d594-478b-8591-455acf30164f",code="other"} 0
-# HELP haproxy_server_server_idle_connections_current Current number of idle connections available for reuse
-# TYPE haproxy_server_server_idle_connections_current gauge
-haproxy_server_server_idle_connections_current{proxy="prometheus-exporter-internal",server="prometheus-internal"} 0
-haproxy_server_server_idle_connections_current{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:1a0c13c0-8e69-46c7-a68a-ca4937996d74",server="edf6ca81-b5d5-4d94-a656-f6028d8bbb77"} 0
-haproxy_server_server_idle_connections_current{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:1a0c13c0-8e69-46c7-a68a-ca4937996d74",server="88ee5795-d594-478b-8591-455acf30164f"} 0
-haproxy_server_server_idle_connections_current{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:0b248d39-eb90-4180-91aa-5363be7df4db",server="edf6ca81-b5d5-4d94-a656-f6028d8bbb77"} 0
-haproxy_server_server_idle_connections_current{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:0b248d39-eb90-4180-91aa-5363be7df4db",server="88ee5795-d594-478b-8591-455acf30164f"} 0
-# HELP haproxy_server_server_idle_connections_limit Limit on the number of available idle connections
-# TYPE haproxy_server_server_idle_connections_limit gauge
-haproxy_server_server_idle_connections_limit{proxy="prometheus-exporter-internal",server="prometheus-internal"} 0
-haproxy_server_server_idle_connections_limit{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:1a0c13c0-8e69-46c7-a68a-ca4937996d74",server="edf6ca81-b5d5-4d94-a656-f6028d8bbb77"} 0
-haproxy_server_server_idle_connections_limit{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:1a0c13c0-8e69-46c7-a68a-ca4937996d74",server="88ee5795-d594-478b-8591-455acf30164f"} 0
-haproxy_server_server_idle_connections_limit{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:0b248d39-eb90-4180-91aa-5363be7df4db",server="edf6ca81-b5d5-4d94-a656-f6028d8bbb77"} 0
-haproxy_server_server_idle_connections_limit{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:0b248d39-eb90-4180-91aa-5363be7df4db",server="88ee5795-d594-478b-8591-455acf30164f"} 0
+# HELP haproxy_server_idle_connections_current Current number of idle connections available for reuse
+# TYPE haproxy_server_idle_connections_current gauge
+haproxy_server_idle_connections_current{proxy="prometheus-exporter-internal",server="prometheus-internal"} 0
+haproxy_server_idle_connections_current{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:1a0c13c0-8e69-46c7-a68a-ca4937996d74",server="edf6ca81-b5d5-4d94-a656-f6028d8bbb77"} 0
+haproxy_server_idle_connections_current{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:1a0c13c0-8e69-46c7-a68a-ca4937996d74",server="88ee5795-d594-478b-8591-455acf30164f"} 0
+haproxy_server_idle_connections_current{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:0b248d39-eb90-4180-91aa-5363be7df4db",server="edf6ca81-b5d5-4d94-a656-f6028d8bbb77"} 0
+haproxy_server_idle_connections_current{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:0b248d39-eb90-4180-91aa-5363be7df4db",server="88ee5795-d594-478b-8591-455acf30164f"} 0
+# HELP haproxy_server_idle_connections_limit Limit on the number of available idle connections
+# TYPE haproxy_server_idle_connections_limit gauge
+haproxy_server_idle_connections_limit{proxy="prometheus-exporter-internal",server="prometheus-internal"} 0
+haproxy_server_idle_connections_limit{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:1a0c13c0-8e69-46c7-a68a-ca4937996d74",server="edf6ca81-b5d5-4d94-a656-f6028d8bbb77"} 0
+haproxy_server_idle_connections_limit{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:1a0c13c0-8e69-46c7-a68a-ca4937996d74",server="88ee5795-d594-478b-8591-455acf30164f"} 0
+haproxy_server_idle_connections_limit{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:0b248d39-eb90-4180-91aa-5363be7df4db",server="edf6ca81-b5d5-4d94-a656-f6028d8bbb77"} 0
+haproxy_server_idle_connections_limit{proxy="6034884d-ed47-49d5-ade7-8fa2c4501a74:0b248d39-eb90-4180-91aa-5363be7df4db",server="88ee5795-d594-478b-8591-455acf30164f"} 0
