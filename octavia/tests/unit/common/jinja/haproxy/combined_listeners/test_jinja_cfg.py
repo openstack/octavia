@@ -30,6 +30,13 @@ CONF = cfg.CONF
 
 
 class TestHaproxyCfg(base.TestCase):
+    DEFAULT_TLS_CIPHERS = ':'.join(
+        sorted(set(constants.CIPHERS_OWASP_SUITE_B.split(':')) -
+               set(constants.DEFAULT_TLS_1_3_SUPPORTED_CIPHERS.split(':'))))
+    DEFAULT_TLS_CIPHERSUITES = ':'.join(
+        sorted(set(constants.CIPHERS_OWASP_SUITE_B.split(':')) &
+               set(constants.DEFAULT_TLS_1_3_SUPPORTED_CIPHERS.split(':'))))
+
     def setUp(self):
         super().setUp()
         self.jinja_cfg = jinja_cfg.JinjaTemplater(
@@ -55,8 +62,9 @@ class TestHaproxyCfg(base.TestCase):
               f"ssl crt-list {FAKE_CRT_LIST_FILENAME} "
               "ca-file /var/lib/octavia/certs/sample_loadbalancer_id_1/"
               "client_ca.pem verify required crl-file /var/lib/octavia/"
-              "certs/sample_loadbalancer_id_1/SHA_ID.pem ciphers "
-              f"{constants.CIPHERS_OWASP_SUITE_B} "
+              "certs/sample_loadbalancer_id_1/SHA_ID.pem"
+              f" ciphers {self.DEFAULT_TLS_CIPHERS} "
+              f"ciphersuites {self.DEFAULT_TLS_CIPHERSUITES} "
               "no-sslv3 no-tlsv10 no-tlsv11 alpn "
               f"{','.join(constants.AMPHORA_SUPPORTED_ALPN_PROTOCOLS)}\n"
               "    mode http\n"
@@ -97,6 +105,126 @@ class TestHaproxyCfg(base.TestCase):
                 frontend=fe, backend=be),
             rendered_obj)
 
+    def test_render_template_tlsv1_2_ciphers_only(self):
+        conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
+        conf.config(group="haproxy_amphora", base_cert_dir='/fake_cert_dir')
+        tlsv1_2_ciphers = ("ECDHE-ECDSA-AES128-GCM-SHA256:"
+                           "ECDHE-RSA-AES128-GCM-SHA256")
+        FAKE_CRT_LIST_FILENAME = os.path.join(
+            CONF.haproxy_amphora.base_cert_dir,
+            'sample_loadbalancer_id_1/sample_listener_id_1.pem')
+        fe = ("frontend sample_listener_id_1\n"
+              f"    maxconn {constants.HAPROXY_DEFAULT_MAXCONN}\n"
+              "    redirect scheme https if !{ ssl_fc }\n"
+              "    http-response set-header Strict-Transport-Security "
+              "\"max-age=10000000; includeSubDomains; preload;\"\n"
+              "    bind 10.0.0.2:443 "
+              f"ssl crt-list {FAKE_CRT_LIST_FILENAME} "
+              "ca-file /var/lib/octavia/certs/sample_loadbalancer_id_1/"
+              "client_ca.pem verify required crl-file /var/lib/octavia/"
+              "certs/sample_loadbalancer_id_1/SHA_ID.pem"
+              f" ciphers {tlsv1_2_ciphers} "
+              "no-sslv3 no-tlsv10 no-tlsv11 alpn "
+              f"{','.join(constants.AMPHORA_SUPPORTED_ALPN_PROTOCOLS)}\n"
+              "    mode http\n"
+              "    default_backend sample_pool_id_1:sample_listener_id_1\n"
+              "    timeout client 50000\n")
+        be = ("backend sample_pool_id_1:sample_listener_id_1\n"
+              "    mode http\n"
+              "    balance roundrobin\n"
+              "    cookie SRV insert indirect nocache\n"
+              "    timeout check 31s\n"
+              "    option httpchk GET /index.html HTTP/1.0\n"
+              "    http-check expect rstatus 418\n"
+              f"    fullconn {constants.HAPROXY_DEFAULT_MAXCONN}\n"
+              "    option allbackups\n"
+              "    timeout connect 5000\n"
+              "    timeout server 50000\n"
+              "    server sample_member_id_1 10.0.0.99:82 "
+              "weight 13 check inter 30s fall 3 rise 2 "
+              "cookie sample_member_id_1\n"
+              "    server sample_member_id_2 10.0.0.98:82 "
+              "weight 13 check inter 30s fall 3 rise 2 cookie "
+              "sample_member_id_2\n\n")
+        tls_tupe = {'cont_id_1':
+                    sample_configs_combined.sample_tls_container_tuple(
+                        id='tls_container_id',
+                        certificate='imaCert1', private_key='imaPrivateKey1',
+                        primary_cn='FakeCN'),
+                    'cont_id_ca': 'client_ca.pem',
+                    'cont_id_crl': 'SHA_ID.pem'}
+        rendered_obj = self.jinja_cfg.render_loadbalancer_obj(
+            sample_configs_combined.sample_amphora_tuple(),
+            [sample_configs_combined.sample_listener_tuple(
+                proto='TERMINATED_HTTPS', tls=True, sni=True,
+                client_ca_cert=True, client_crl_cert=True,
+                tls_ciphers=tlsv1_2_ciphers)],
+            tls_tupe)
+        self.assertEqual(
+            sample_configs_combined.sample_base_expected_config(
+                frontend=fe, backend=be),
+            rendered_obj)
+
+    def test_render_template_tlsv1_3_ciphers_only(self):
+        conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
+        conf.config(group="haproxy_amphora", base_cert_dir='/fake_cert_dir')
+        tlsv1_3_ciphers = ("TLS_AES_256_GCM_SHA384:"
+                           "TLS_CHACHA20_POLY1305_SHA256")
+        FAKE_CRT_LIST_FILENAME = os.path.join(
+            CONF.haproxy_amphora.base_cert_dir,
+            'sample_loadbalancer_id_1/sample_listener_id_1.pem')
+        fe = ("frontend sample_listener_id_1\n"
+              f"    maxconn {constants.HAPROXY_DEFAULT_MAXCONN}\n"
+              "    redirect scheme https if !{ ssl_fc }\n"
+              "    http-response set-header Strict-Transport-Security "
+              "\"max-age=10000000; includeSubDomains; preload;\"\n"
+              "    bind 10.0.0.2:443 "
+              f"ssl crt-list {FAKE_CRT_LIST_FILENAME} "
+              "ca-file /var/lib/octavia/certs/sample_loadbalancer_id_1/"
+              "client_ca.pem verify required crl-file /var/lib/octavia/"
+              "certs/sample_loadbalancer_id_1/SHA_ID.pem"
+              f" ciphersuites {tlsv1_3_ciphers} "
+              "no-sslv3 no-tlsv10 no-tlsv11 alpn "
+              f"{','.join(constants.AMPHORA_SUPPORTED_ALPN_PROTOCOLS)}\n"
+              "    mode http\n"
+              "    default_backend sample_pool_id_1:sample_listener_id_1\n"
+              "    timeout client 50000\n")
+        be = ("backend sample_pool_id_1:sample_listener_id_1\n"
+              "    mode http\n"
+              "    balance roundrobin\n"
+              "    cookie SRV insert indirect nocache\n"
+              "    timeout check 31s\n"
+              "    option httpchk GET /index.html HTTP/1.0\n"
+              "    http-check expect rstatus 418\n"
+              f"    fullconn {constants.HAPROXY_DEFAULT_MAXCONN}\n"
+              "    option allbackups\n"
+              "    timeout connect 5000\n"
+              "    timeout server 50000\n"
+              "    server sample_member_id_1 10.0.0.99:82 "
+              "weight 13 check inter 30s fall 3 rise 2 "
+              "cookie sample_member_id_1\n"
+              "    server sample_member_id_2 10.0.0.98:82 "
+              "weight 13 check inter 30s fall 3 rise 2 cookie "
+              "sample_member_id_2\n\n")
+        tls_tupe = {'cont_id_1':
+                    sample_configs_combined.sample_tls_container_tuple(
+                        id='tls_container_id',
+                        certificate='imaCert1', private_key='imaPrivateKey1',
+                        primary_cn='FakeCN'),
+                    'cont_id_ca': 'client_ca.pem',
+                    'cont_id_crl': 'SHA_ID.pem'}
+        rendered_obj = self.jinja_cfg.render_loadbalancer_obj(
+            sample_configs_combined.sample_amphora_tuple(),
+            [sample_configs_combined.sample_listener_tuple(
+                proto='TERMINATED_HTTPS', tls=True, sni=True,
+                client_ca_cert=True, client_crl_cert=True,
+                tls_ciphers=tlsv1_3_ciphers)],
+            tls_tupe)
+        self.assertEqual(
+            sample_configs_combined.sample_base_expected_config(
+                frontend=fe, backend=be),
+            rendered_obj)
+
     def test_render_template_tls_no_sni(self):
         conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
         conf.config(group="haproxy_amphora", base_cert_dir='/fake_cert_dir')
@@ -109,9 +237,10 @@ class TestHaproxyCfg(base.TestCase):
               "    redirect scheme https if !{ ssl_fc }\n"
               "    http-response set-header Strict-Transport-Security "
               "\"max-age=10000000; includeSubDomains; preload;\"\n"
-              f"    bind 10.0.0.2:443 ssl crt-list {FAKE_CRT_LIST_FILENAME}"
-              f"   ciphers {constants.CIPHERS_OWASP_SUITE_B} no-sslv3 "
-              f"no-tlsv10 no-tlsv11 alpn {alpn}\n"
+              f"    bind 10.0.0.2:443 ssl crt-list {FAKE_CRT_LIST_FILENAME} "
+              f"ciphers {self.DEFAULT_TLS_CIPHERS} "
+              f"ciphersuites {self.DEFAULT_TLS_CIPHERSUITES} "
+              f"no-sslv3 no-tlsv10 no-tlsv11 alpn {alpn}\n"
               "    mode http\n"
               "    default_backend sample_pool_id_1:sample_listener_id_1\n"
               "    timeout client 50000\n")
@@ -160,7 +289,7 @@ class TestHaproxyCfg(base.TestCase):
               "    http-response set-header Strict-Transport-Security "
               "\"max-age=10000000; includeSubDomains; preload;\"\n"
               "    bind 10.0.0.2:443 ssl crt-list "
-              f"{FAKE_CRT_LIST_FILENAME}    "
+              f"{FAKE_CRT_LIST_FILENAME} "
               f"no-sslv3 no-tlsv10 no-tlsv11 alpn {alpn}\n"
               "    mode http\n"
               "    default_backend sample_pool_id_1:sample_listener_id_1\n"
@@ -214,8 +343,9 @@ class TestHaproxyCfg(base.TestCase):
               f"ssl crt-list {FAKE_CRT_LIST_FILENAME} "
               "ca-file /var/lib/octavia/certs/sample_loadbalancer_id_1/"
               "client_ca.pem verify required crl-file /var/lib/octavia/"
-              "certs/sample_loadbalancer_id_1/SHA_ID.pem ciphers "
-              f"{constants.CIPHERS_OWASP_SUITE_B} "
+              "certs/sample_loadbalancer_id_1/SHA_ID.pem "
+              f"ciphers {self.DEFAULT_TLS_CIPHERS} "
+              f"ciphersuites {self.DEFAULT_TLS_CIPHERSUITES} "
               f"alpn {alpn}\n"
               "    mode http\n"
               "    default_backend sample_pool_id_1:sample_listener_id_1\n"
@@ -269,7 +399,7 @@ class TestHaproxyCfg(base.TestCase):
               "    http-response set-header Strict-Transport-Security "
               "\"max-age=10000000; includeSubDomains; preload;\"\n"
               "    bind 10.0.0.2:443 ssl crt-list "
-              f"{FAKE_CRT_LIST_FILENAME}    "
+              f"{FAKE_CRT_LIST_FILENAME} "
               f"alpn {alpn}\n"
               "    mode http\n"
               "    default_backend sample_pool_id_1:sample_listener_id_1\n"
@@ -321,9 +451,9 @@ class TestHaproxyCfg(base.TestCase):
               "    redirect scheme https if !{ ssl_fc }\n"
               "    http-response set-header Strict-Transport-Security "
               "\"max-age=10000000; includeSubDomains; preload;\"\n"
-              "    bind 10.0.0.2:443 ssl crt-list "
-              f"{FAKE_CRT_LIST_FILENAME}   "
-              f"ciphers {constants.CIPHERS_OWASP_SUITE_B} "
+              f"    bind 10.0.0.2:443 ssl crt-list {FAKE_CRT_LIST_FILENAME} "
+              f"ciphers {self.DEFAULT_TLS_CIPHERS} "
+              f"ciphersuites {self.DEFAULT_TLS_CIPHERSUITES} "
               f"no-sslv3 no-tlsv10 no-tlsv11 alpn {alpn}\n"
               "    mode http\n"
               "    default_backend sample_pool_id_1:sample_listener_id_1\n"
@@ -374,9 +504,10 @@ class TestHaproxyCfg(base.TestCase):
               "    http-response set-header Strict-Transport-Security "
               "\"max-age=10000000; includeSubDomains; preload;\"\n"
               "    bind 10.0.0.2:443 ssl crt-list "
-              f"{FAKE_CRT_LIST_FILENAME}   "
-              f"ciphers {constants.CIPHERS_OWASP_SUITE_B} no-sslv3 "
-              f"no-tlsv10 no-tlsv11\n"
+              f"{FAKE_CRT_LIST_FILENAME} "
+              f"ciphers {self.DEFAULT_TLS_CIPHERS} "
+              f"ciphersuites {self.DEFAULT_TLS_CIPHERSUITES} "
+              f"no-sslv3 no-tlsv10 no-tlsv11\n"
               "    mode http\n"
               "    default_backend sample_pool_id_1:sample_listener_id_1\n"
               "    timeout client 50000\n")
@@ -426,8 +557,9 @@ class TestHaproxyCfg(base.TestCase):
               "    http-response set-header Strict-Transport-Security "
               "\"max-age=10000000;\"\n"
               "    bind 10.0.0.2:443 ssl crt-list "
-              f"{FAKE_CRT_LIST_FILENAME}   "
-              f"ciphers {constants.CIPHERS_OWASP_SUITE_B} "
+              f"{FAKE_CRT_LIST_FILENAME} "
+              f"ciphers {self.DEFAULT_TLS_CIPHERS} "
+              f"ciphersuites {self.DEFAULT_TLS_CIPHERSUITES} "
               "no-sslv3 no-tlsv10 no-tlsv11\n"
               "    mode http\n"
               "    default_backend sample_pool_id_1:sample_listener_id_1\n"
@@ -481,8 +613,9 @@ class TestHaproxyCfg(base.TestCase):
               f"ssl crt-list {FAKE_CRT_LIST_FILENAME} "
               "ca-file /var/lib/octavia/certs/sample_loadbalancer_id_1/"
               "client_ca.pem verify required crl-file /var/lib/octavia/"
-              "certs/sample_loadbalancer_id_1/SHA_ID.pem ciphers "
-              f"{constants.CIPHERS_OWASP_SUITE_B} "
+              "certs/sample_loadbalancer_id_1/SHA_ID.pem "
+              f"ciphers {self.DEFAULT_TLS_CIPHERS} "
+              f"ciphersuites {self.DEFAULT_TLS_CIPHERSUITES} "
               f"no-sslv3 no-tlsv10 no-tlsv11 alpn {alpn}\n"
               "    mode http\n"
               "    default_backend sample_pool_id_1:sample_listener_id_1\n"
@@ -1180,7 +1313,8 @@ class TestHaproxyCfg(base.TestCase):
               "    http-response set-header Strict-Transport-Security "
               "\"max-age=10000000; includeSubDomains; preload;\"\n"
               "    bind 10.0.0.2:443 "
-              f"ciphers {constants.CIPHERS_OWASP_SUITE_B} "
+              f"ciphers {self.DEFAULT_TLS_CIPHERS} "
+              f"ciphersuites {self.DEFAULT_TLS_CIPHERSUITES} "
               "no-sslv3 no-tlsv10 no-tlsv11 alpn "
               f"{','.join(constants.AMPHORA_SUPPORTED_ALPN_PROTOCOLS)}\n"
               "    mode http\n"
@@ -1354,7 +1488,8 @@ class TestHaproxyCfg(base.TestCase):
         cert_file_path = os.path.join(self.jinja_cfg.base_crt_dir,
                                       'sample_listener_id_1', 'fake path')
         opts = (f"ssl crt {cert_file_path} verify none sni ssl_fc_sni "
-                f"ciphers {constants.CIPHERS_OWASP_SUITE_B} "
+                f"ciphers {self.DEFAULT_TLS_CIPHERS} "
+                f"ciphersuites {self.DEFAULT_TLS_CIPHERSUITES} "
                 f"no-sslv3 no-tlsv10 no-tlsv11")
         alpn = ",".join(constants.AMPHORA_SUPPORTED_ALPN_PROTOCOLS)
         be = ("backend sample_pool_id_1:sample_listener_id_1\n"
@@ -1393,7 +1528,8 @@ class TestHaproxyCfg(base.TestCase):
         cert_file_path = os.path.join(self.jinja_cfg.base_crt_dir,
                                       'sample_listener_id_1', 'fake path')
         opts = (f"ssl crt {cert_file_path} verify none sni ssl_fc_sni "
-                f"ciphers {constants.CIPHERS_OWASP_SUITE_B} "
+                f"ciphers {self.DEFAULT_TLS_CIPHERS} "
+                f"ciphersuites {self.DEFAULT_TLS_CIPHERSUITES} "
                 f"no-sslv3 no-tlsv10 no-tlsv11")
         be = ("backend sample_pool_id_1:sample_listener_id_1\n"
               "    mode http\n"
@@ -1431,7 +1567,8 @@ class TestHaproxyCfg(base.TestCase):
         cert_file_path = os.path.join(self.jinja_cfg.base_crt_dir,
                                       'sample_listener_id_1', 'fake path')
         opts = (f"ssl crt {cert_file_path} verify none sni ssl_fc_sni "
-                f"ciphers {constants.CIPHERS_OWASP_SUITE_B}")
+                f"ciphers {self.DEFAULT_TLS_CIPHERS} "
+                f"ciphersuites {self.DEFAULT_TLS_CIPHERSUITES}")
         alpn = ",".join(constants.AMPHORA_SUPPORTED_ALPN_PROTOCOLS)
         be = ("backend sample_pool_id_1:sample_listener_id_1\n"
               "    mode http\n"
@@ -1957,8 +2094,9 @@ class TestHaproxyCfg(base.TestCase):
               "    redirect scheme https if !{ ssl_fc }\n"
               "    http-response set-header Strict-Transport-Security "
               "\"max-age=10000000; includeSubDomains; preload;\"\n"
-              "    bind 10.0.0.2:443 ciphers "
-              f"{constants.CIPHERS_OWASP_SUITE_B} "
+              "    bind 10.0.0.2:443 "
+              f"ciphers {self.DEFAULT_TLS_CIPHERS} "
+              f"ciphersuites {self.DEFAULT_TLS_CIPHERSUITES} "
               f"no-sslv3 no-tlsv10 no-tlsv11 alpn {alpn}\n"
               "    mode http\n"
               "        acl sample_l7rule_id_1 path -m beg /api\n"
@@ -2151,9 +2289,9 @@ class TestHaproxyCfg(base.TestCase):
         ret = self.jinja_cfg._transform_listener(
             in_listener, None, {}, in_listener.load_balancer)
         # Should fall back to default, not use the tainted value
+        self.assertEqual(self.DEFAULT_TLS_CIPHERS, ret['tls_ciphers'])
         self.assertEqual(
-            cfg.CONF.api_settings.default_listener_ciphers,
-            ret['tls_ciphers'])
+            self.DEFAULT_TLS_CIPHERSUITES, ret['tlsv1_3_ciphers'])
 
     def test_transform_listener_tls_ciphers_valid(self):
         valid = 'ECDHE-RSA-AES128-GCM-SHA256:AES256-SHA'
@@ -2162,20 +2300,22 @@ class TestHaproxyCfg(base.TestCase):
             tls_ciphers=valid)
         ret = self.jinja_cfg._transform_listener(
             in_listener, None, {}, in_listener.load_balancer)
-        self.assertEqual(valid, ret['tls_ciphers'])
+        expected = ":".join(sorted(set(valid.split(":"))))
+        self.assertEqual(expected, ret['tls_ciphers'])
 
     def test_transform_pool_tls_ciphers_injection_fallback(self):
         tainted = 'AES128-SHA\ncheck'
         in_pool = sample_configs_combined.sample_pool_tuple(
             tls_enabled=True, tls_ciphers=tainted)
         ret = self.jinja_cfg._transform_pool(in_pool, {}, False)
+        self.assertEqual(self.DEFAULT_TLS_CIPHERS, ret['tls_ciphers'])
         self.assertEqual(
-            cfg.CONF.api_settings.default_pool_ciphers,
-            ret['tls_ciphers'])
+            self.DEFAULT_TLS_CIPHERSUITES, ret['tlsv1_3_ciphers'])
 
     def test_transform_pool_tls_ciphers_valid(self):
         valid = 'ECDHE-RSA-AES128-GCM-SHA256:AES256-SHA'
         in_pool = sample_configs_combined.sample_pool_tuple(
             tls_enabled=True, tls_ciphers=valid)
         ret = self.jinja_cfg._transform_pool(in_pool, {}, False)
-        self.assertEqual(valid, ret['tls_ciphers'])
+        expected = ":".join(sorted(set(valid.split(":"))))
+        self.assertEqual(expected, ret['tls_ciphers'])
