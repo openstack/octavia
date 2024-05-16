@@ -142,6 +142,10 @@ api_opts = [
                     choices=constants.SUPPORTED_ALPN_PROTOCOLS),
                 help=_('List of ALPN protocols to use for new TLS-enabled '
                        'pools.')),
+    cfg.StrOpt('tls1_3_supported_ciphers',
+               default=constants.DEFAULT_TLS_1_3_SUPPORTED_CIPHERS,
+               help=_('String of colon separated ciphersuites that are '
+                      'only supported by TLSv1.3 or newer versions.')),
 ]
 
 # Options only used by the amphora agent

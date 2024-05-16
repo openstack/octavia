@@ -904,17 +904,30 @@ CIPHERS_OWASP_SUITE_B = ('TLS_AES_128_GCM_SHA256:TLS_AES_256_GCM_SHA384:'
                          'DHE-RSA-AES128-GCM-SHA256:DHE-RSA-AES256-GCM-SHA384:'
                          'DHE-RSA-CHACHA20-POLY1305')
 
+DEFAULT_TLS_1_3_SUPPORTED_CIPHERS = (
+    "TLS_AES_128_GCM_SHA256:"
+    "TLS_AES_256_GCM_SHA384:"
+    "TLS_CHACHA20_POLY1305_SHA256:"
+    "TLS_AES_128_CCM_SHA256:"
+    "TLS_AES_128_CCM_8_SHA256"
+)
+
 TLS_VERSIONS_OWASP_SUITE_B = [lib_consts.TLS_VERSION_1_2,
                               lib_consts.TLS_VERSION_1_3]
 
-# All supported TLS versions in ascending order (oldest to newest)
-TLS_ALL_VERSIONS = [
+# Pre TLSv1.3 versions in ascending order (oldest to newest)
+TLS_PRE_1_3_VERSIONS = [
     lib_consts.SSL_VERSION_3,
     lib_consts.TLS_VERSION_1,
     lib_consts.TLS_VERSION_1_1,
     lib_consts.TLS_VERSION_1_2,
-    lib_consts.TLS_VERSION_1_3
 ]
+# Newer TLS versions in ascending order (oldest to newest)
+TLS_1_3_AND_NEWER_VERSIONS = [
+    lib_consts.TLS_VERSION_1_3,
+]
+# All supported TLS versions in ascending order (oldest to newest)
+TLS_ALL_VERSIONS = TLS_PRE_1_3_VERSIONS + TLS_1_3_AND_NEWER_VERSIONS
 
 VIP_SECURITY_GROUP_PREFIX = 'lb-'
 
