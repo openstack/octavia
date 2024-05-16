@@ -34,19 +34,24 @@ peers {{ "%s_peers"|format(loadbalancer.id.replace("-", ""))|trim() }}
         {% set def_crt_opt = "" %}
     {% endif %}
     {% if listener.client_ca_tls_path and listener.client_auth %}
-        {% set client_ca_opt = "ca-file %s verify %s"|format(listener.client_ca_tls_path, listener.client_auth)|trim() %}
+        {% set client_ca_opt = " ca-file %s verify %s"|format(listener.client_ca_tls_path, listener.client_auth) %}
     {% else %}
         {% set client_ca_opt = "" %}
     {% endif %}
     {% if listener.client_crl_path and listener.client_ca_tls_path %}
-        {% set ca_crl_opt = "crl-file %s"|format(listener.client_crl_path)|trim() %}
+        {% set ca_crl_opt = " crl-file %s"|format(listener.client_crl_path) %}
     {% else %}
         {% set ca_crl_opt = "" %}
     {% endif %}
-    {% if listener.tls_ciphers is defined %}
-        {% set ciphers_opt = "ciphers %s"|format(listener.tls_ciphers)|trim() %}
+    {% if listener.tls_ciphers is defined and listener.tls_ciphers %}
+        {% set ciphers_opt = " ciphers %s"|format(listener.tls_ciphers) %}
     {% else %}
         {% set ciphers_opt = "" %}
+    {% endif %}
+    {% if listener.tlsv1_3_ciphers is defined and listener.tlsv1_3_ciphers %}
+        {% set ciphersuites_opt = " ciphersuites %s"|format(listener.tlsv1_3_ciphers) %}
+    {% else %}
+        {% set ciphersuites_opt = "" %}
     {% endif %}
     {% set tls_versions_opt = "" %}
     {% if listener.tls_versions is defined %}
@@ -67,13 +72,13 @@ peers {{ "%s_peers"|format(loadbalancer.id.replace("-", ""))|trim() }}
         {% endif %}
     {% endif %}
     {% if listener.alpn_protocols is defined %}
-        {% set alpn_opt = "alpn %s"|format(listener.alpn_protocols)|trim() %}
+        {% set alpn_opt = " alpn %s"|format(listener.alpn_protocols) %}
     {% else %}
         {% set alpn_opt = "" %}
     {% endif %}
 
 bind {{ lb_vip_address }}:{{ listener.protocol_port }} {{
-"%s %s %s %s%s %s"|format(def_crt_opt, client_ca_opt, ca_crl_opt, ciphers_opt, tls_versions_opt, alpn_opt)|trim() }}
+"%s%s%s%s%s%s%s"|format(def_crt_opt, client_ca_opt, ca_crl_opt, ciphers_opt, ciphersuites_opt, tls_versions_opt, alpn_opt)|trim() }}
 {% endmacro %}
 
 
@@ -283,10 +288,15 @@ frontend {{ listener.id }}
     {% elif pool.tls_enabled %}
         {% set def_verify_opt = " verify none" %}
     {% endif %}
-    {% if pool.tls_ciphers is defined %}
+    {% if pool.tls_ciphers is defined and pool.tls_ciphers %}
         {% set ciphers_opt = " ciphers %s"|format(pool.tls_ciphers) %}
     {% else %}
         {% set ciphers_opt = "" %}
+    {% endif %}
+    {% if pool.tlsv1_3_ciphers is defined and pool.tlsv1_3_ciphers %}
+        {% set ciphersuites_opt = " ciphersuites %s"|format(pool.tlsv1_3_ciphers) %}
+    {% else %}
+        {% set ciphersuites_opt = "" %}
     {% endif %}
     {% set tls_versions_opt = "" %}
     {% if pool.tls_versions is defined %}
@@ -311,11 +321,11 @@ frontend {{ listener.id }}
     {% else %}
         {% set alpn_opt = "" %}
     {% endif %}
-    {{ "server %s %s:%d weight %s%s%s%s%s%s%s%s%s%s%s%s%s%s%s"|e|format(
+    {{ "server %s %s:%d weight %s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s"|e|format(
         member.id, member.address, member.protocol_port, member.weight,
         hm_opt, persistence_opt, proxy_protocol_opt, member_backup_opt,
         member_enabled_opt, def_opt_prefix, def_crt_opt, ca_opt, crl_opt,
-        def_verify_opt, def_sni_opt, ciphers_opt, tls_versions_opt,
+        def_verify_opt, def_sni_opt, ciphers_opt, ciphersuites_opt, tls_versions_opt,
         alpn_opt)|trim() }}
 {% endmacro %}
 
