@@ -344,7 +344,6 @@ class TestLoadBalancerFlows(base.TestCase):
         self.assertIn(constants.FLAVOR, failover_flow.requires)
         self.assertIn(constants.LOADBALANCER, failover_flow.requires)
         self.assertIn(constants.LOADBALANCER_ID, failover_flow.requires)
-        self.assertIn(constants.AMPHORAE_STATUS, failover_flow.requires)
 
         self.assertIn(constants.UPDATED_PORTS, failover_flow.provides)
         self.assertIn(constants.AMPHORA, failover_flow.provides)
@@ -364,9 +363,9 @@ class TestLoadBalancerFlows(base.TestCase):
         self.assertIn(constants.SUBNET, failover_flow.provides)
         self.assertIn(constants.NEW_AMPHORAE, failover_flow.provides)
 
-        self.assertEqual(7, len(failover_flow.requires),
+        self.assertEqual(6, len(failover_flow.requires),
                          failover_flow.requires)
-        self.assertEqual(16, len(failover_flow.provides),
+        self.assertEqual(17, len(failover_flow.provides),
                          failover_flow.provides)
 
     @mock.patch('octavia.common.rpc.NOTIFIER',
@@ -424,7 +423,6 @@ class TestLoadBalancerFlows(base.TestCase):
         self.assertIn(constants.FLAVOR, failover_flow.requires)
         self.assertIn(constants.LOADBALANCER, failover_flow.requires)
         self.assertIn(constants.LOADBALANCER_ID, failover_flow.requires)
-        self.assertIn(constants.AMPHORAE_STATUS, failover_flow.requires)
 
         self.assertIn(constants.UPDATED_PORTS, failover_flow.provides)
         self.assertIn(constants.AMPHORA, failover_flow.provides)
@@ -445,9 +443,9 @@ class TestLoadBalancerFlows(base.TestCase):
         self.assertIn(constants.SUBNET, failover_flow.provides)
         self.assertIn(constants.NEW_AMPHORAE, failover_flow.provides)
 
-        self.assertEqual(7, len(failover_flow.requires),
+        self.assertEqual(6, len(failover_flow.requires),
                          failover_flow.requires)
-        self.assertEqual(16, len(failover_flow.provides),
+        self.assertEqual(17, len(failover_flow.provides),
                          failover_flow.provides)
 
     @mock.patch('octavia.common.rpc.NOTIFIER',

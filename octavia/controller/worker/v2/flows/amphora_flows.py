@@ -404,7 +404,7 @@ class AmphoraFlows:
     def get_amphora_for_lb_failover_subflow(
             self, prefix, role=constants.ROLE_STANDALONE,
             failed_amp_vrrp_port_id=None, is_vrrp_ipv6=False,
-            flavor_dict=None):
+            flavor_dict=None, timeout_dict=None):
         """Creates a new amphora that will be used in a failover flow.
 
         :requires: loadbalancer_id, flavor, vip, vip_sg_id, loadbalancer
@@ -489,12 +489,23 @@ class AmphoraFlows:
                 provides=constants.AMPHORA_FIREWALL_RULES,
                 inject={constants.AMPHORA_INDEX: 0}))
             amp_for_failover_flow.add(
+                amphora_driver_tasks.AmphoraeGetConnectivityStatus(
+                    name=(prefix + '-' +
+                          constants.AMPHORAE_GET_CONNECTIVITY_STATUS),
+                    requires=constants.AMPHORAE,
+                    rebind={constants.AMPHORAE: constants.NEW_AMPHORAE},
+                    inject={constants.TIMEOUT_DICT: timeout_dict,
+                            constants.NEW_AMPHORA_ID: constants.NIL_UUID},
+                    provides=constants.AMPHORAE_STATUS))
+            amp_for_failover_flow.add(
                 amphora_driver_tasks.SetAmphoraFirewallRules(
                     name=prefix + '-' + constants.SET_AMPHORA_FIREWALL_RULES,
                     requires=(constants.AMPHORAE,
-                              constants.AMPHORA_FIREWALL_RULES),
+                              constants.AMPHORA_FIREWALL_RULES,
+                              constants.AMPHORAE_STATUS),
                     rebind={constants.AMPHORAE: constants.NEW_AMPHORAE},
-                    inject={constants.AMPHORA_INDEX: 0}))
+                    inject={constants.AMPHORA_INDEX: 0,
+                            constants.TIMEOUT_DICT: timeout_dict}))
 
         # Plug member ports
         amp_for_failover_flow.add(network_tasks.CalculateAmphoraDelta(
