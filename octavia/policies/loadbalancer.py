@@ -35,6 +35,12 @@ rules = [
         [{'method': 'POST', 'path': '/v2/lbaas/loadbalancers'}]
     ),
     policy.DocumentedRuleDefault(
+        f'{constants.RBAC_LOADBALANCER}{constants.RBAC_POST}:vip_sg_ids',
+        constants.RULE_API_WRITE,
+        "Create a Load Balancer with VIP Security Groups",
+        [{'method': 'POST', 'path': '/v2/lbaas/loadbalancers'}]
+    ),
+    policy.DocumentedRuleDefault(
         f'{constants.RBAC_LOADBALANCER}{constants.RBAC_GET_ONE}',
         constants.RULE_API_READ,
         "Show Load Balancer details",
@@ -45,6 +51,13 @@ rules = [
         f'{constants.RBAC_LOADBALANCER}{constants.RBAC_PUT}',
         constants.RULE_API_WRITE,
         "Update a Load Balancer",
+        [{'method': 'PUT',
+          'path': '/v2/lbaas/loadbalancers/{loadbalancer_id}'}]
+    ),
+    policy.DocumentedRuleDefault(
+        f'{constants.RBAC_LOADBALANCER}{constants.RBAC_PUT}:vip_sg_ids',
+        constants.RULE_API_WRITE,
+        "Update the VIP Security Groups of a Load Balancer",
         [{'method': 'PUT',
           'path': '/v2/lbaas/loadbalancers/{loadbalancer_id}'}]
     ),

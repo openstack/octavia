@@ -462,6 +462,10 @@ class LoadBalancersController(base.BaseController):
 
         self._auth_validate_action(context, load_balancer.project_id,
                                    constants.RBAC_POST)
+        if not isinstance(load_balancer.vip_sg_ids, wtypes.UnsetType):
+            self._auth_validate_action(
+                context, load_balancer.project_id,
+                f"{constants.RBAC_POST}:vip_sg_ids")
 
         self._validate_vip_request_object(load_balancer, context=context)
 
@@ -732,6 +736,9 @@ class LoadBalancersController(base.BaseController):
 
         self._auth_validate_action(context, db_lb.project_id,
                                    constants.RBAC_PUT)
+        if not isinstance(load_balancer.vip_sg_ids, wtypes.UnsetType):
+            self._auth_validate_action(context, db_lb.project_id,
+                                       f"{constants.RBAC_PUT}:vip_sg_ids")
 
         if not isinstance(load_balancer.vip_qos_policy_id, wtypes.UnsetType):
             network_driver = utils.get_network_driver()
