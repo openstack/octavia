@@ -940,47 +940,6 @@ class TestAllowedAddressPairsDriver(base.TestCase):
         mock_unplug_network.assert_called_once_with(
             lb.amphorae[0].compute_id, subnet.network_id)
 
-    def test_plug_network_when_compute_instance_cant_be_found(self):
-        net_id = t_constants.MOCK_NOVA_INTERFACE.net_id
-        network_attach = self.driver.compute.attach_network_or_port
-        network_attach.side_effect = exceptions.NotFound(
-            resource='Instance not found', id=1)
-        self.assertRaises(network_base.AmphoraNotFound,
-                          self.driver.plug_network,
-                          t_constants.MOCK_COMPUTE_ID, net_id)
-
-    def test_plug_network_when_network_cant_be_found(self):
-        net_id = t_constants.MOCK_NOVA_INTERFACE.net_id
-        network_attach = self.driver.compute.attach_network_or_port
-        network_attach.side_effect = nova_exceptions.NotFound(
-            404, message='Network not found')
-        self.assertRaises(network_base.NetworkException,
-                          self.driver.plug_network,
-                          t_constants.MOCK_COMPUTE_ID, net_id)
-
-    def test_plug_network_when_interface_attach_fails(self):
-        net_id = t_constants.MOCK_NOVA_INTERFACE.net_id
-        network_attach = self.driver.compute.attach_network_or_port
-        network_attach.side_effect = TypeError
-        self.assertRaises(network_base.PlugNetworkException,
-                          self.driver.plug_network,
-                          t_constants.MOCK_COMPUTE_ID, net_id)
-
-    def test_plug_network(self):
-        net_id = t_constants.MOCK_NOVA_INTERFACE.net_id
-        network_attach = self.driver.compute.attach_network_or_port
-        network_attach.return_value = t_constants.MOCK_NOVA_INTERFACE
-        oct_interface = self.driver.plug_network(
-            t_constants.MOCK_COMPUTE_ID, net_id)
-        exp_ips = [fixed_ip.get('ip_address')
-                   for fixed_ip in t_constants.MOCK_NOVA_INTERFACE.fixed_ips]
-        actual_ips = [fixed_ip.ip_address
-                      for fixed_ip in oct_interface.fixed_ips]
-        self.assertEqual(exp_ips, actual_ips)
-        self.assertEqual(t_constants.MOCK_COMPUTE_ID,
-                         oct_interface.compute_id)
-        self.assertEqual(net_id, oct_interface.network_id)
-
     def test_unplug_network_when_compute_port_cant_be_found(self):
         net_id = t_constants.MOCK_NOVA_INTERFACE.net_id
         list_ports = self.driver.network_proxy.ports
@@ -1558,7 +1517,8 @@ class TestAllowedAddressPairsDriver(base.TestCase):
             'fixed_ips': [{'ip_address': IP_ADDRESS1,
                            'subnet_id': SUBNET1_ID}],
             'security_groups': [],
-            'qos_policy_id': QOS_POLICY_ID})
+            'qos_policy_id': QOS_POLICY_ID,
+            'binding_vnic_type': constants.VNIC_TYPE_NORMAL})
 
         reference_port_dict = {'admin_state_up': ADMIN_STATE_UP,
                                'device_id': t_constants.MOCK_DEVICE_ID,

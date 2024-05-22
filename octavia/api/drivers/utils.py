@@ -462,6 +462,12 @@ def db_members_to_provider_members(db_members):
 
 def db_member_to_provider_member(db_member):
     new_member_dict = member_dict_to_provider_dict(db_member.to_dict())
+    if constants.REQUEST_SRIOV in new_member_dict:
+        request_sriov = new_member_dict.pop(constants.REQUEST_SRIOV)
+        if request_sriov:
+            new_member_dict[constants.VNIC_TYPE] = constants.VNIC_TYPE_DIRECT
+        else:
+            new_member_dict[constants.VNIC_TYPE] = constants.VNIC_TYPE_NORMAL
     return driver_dm.Member.from_dict(new_member_dict)
 
 

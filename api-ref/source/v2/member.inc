@@ -62,6 +62,7 @@ Response Parameters
    - tags: tags
    - updated_at: updated_at
    - weight: weight
+   - vnic_type: member_vnic_type
 
 Response Example
 ----------------
@@ -156,6 +157,7 @@ Request
    - pool_id: path-pool-id
    - project_id: project_id-optional-deprecated
    - protocol_port: protocol_port
+   - request_sriov: request_sriov
    - subnet_id: subnet_id-optional
    - tags: tags-optional
    - weight: weight-optional
@@ -193,6 +195,7 @@ Response Parameters
    - tags: tags
    - updated_at: updated_at
    - weight: weight
+   - vnic_type: member_vnic_type
 
 Response Example
 ----------------
@@ -260,6 +263,7 @@ Response Parameters
    - tags: tags
    - updated_at: updated_at
    - weight: weight
+   - vnic_type: member_vnic_type
 
 Response Example
 ----------------
@@ -347,6 +351,7 @@ Response Parameters
    - tags: tags
    - updated_at: updated_at
    - weight: weight
+   - vnic_type: member_vnic_type
 
 Response Example
 ----------------
@@ -414,6 +419,7 @@ Request
    - pool_id: path-pool-id
    - project_id: project_id-optional-deprecated
    - protocol_port: protocol_port
+   - request_sriov: request_sriov
    - subnet_id: subnet_id-optional
    - tags: tags-optional
    - weight: weight-optional

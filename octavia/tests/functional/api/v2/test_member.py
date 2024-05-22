@@ -18,6 +18,7 @@ from octavia_lib.api.drivers import data_models as driver_dm
 from oslo_config import cfg
 from oslo_config import fixture as oslo_fixture
 from oslo_utils import uuidutils
+from sqlalchemy.orm import exc as sa_exception
 
 from octavia.api.drivers import utils as driver_utils
 from octavia.common import constants
@@ -621,6 +622,55 @@ class TestMember(base.BaseAPITest):
         response = self.create_member(self.pool_id, '192.0.2.1', 80,
                                       status=500)
         self.assertIn('Provider \'bad_driver\' reports error: broken',
+                      response.get('faultstring'))
+
+    def test_create_with_sriov(self):
+        flavor_profile = self.create_flavor_profile(
+            'sriov-member-create', 'noop_driver',
+            f'{{"{constants.ALLOW_MEMBER_SRIOV}": true}}')
+
+        flavor = self.create_flavor('sriov-member-create', '',
+                                    flavor_profile['id'], True)
+
+        vip_subnet_id = uuidutils.generate_uuid()
+        lb = self.create_load_balancer(vip_subnet_id, flavor_id=flavor['id'])
+        lb_id = lb.get('loadbalancer').get('id')
+        self.set_lb_status(lb_id)
+
+        listener = self.create_listener(
+            constants.PROTOCOL_HTTP, 80,
+            lb_id=lb_id)
+        listener_id = listener.get('listener').get('id')
+        self.set_lb_status(lb_id)
+
+        pool_with_listener = self.create_pool(
+            lb_id, constants.PROTOCOL_HTTP,
+            constants.LB_ALGORITHM_ROUND_ROBIN, listener_id=listener_id)
+        pool_with_listener_id = pool_with_listener.get('pool').get('id')
+        self.set_lb_status(lb_id)
+
+        api_member = self.create_member(
+            pool_with_listener_id, '192.0.2.1',
+            80, request_sriov=True).get(self.root_tag)
+        self.assertEqual(constants.VNIC_TYPE_DIRECT,
+                         api_member[constants.VNIC_TYPE])
+
+    def test_create_with_sriov_disabled(self):
+        # Test with no flavor enabling SR-IOV members
+        response = self.create_member(
+            self.pool_id, '192.0.2.1',
+            80, request_sriov=True, status=400)
+        self.assertIn('flavor does not allow SR-IOV member ports',
+                      response.get('faultstring'))
+
+    @mock.patch('octavia.db.repositories.FlavorRepository.'
+                'get_flavor_metadata_dict')
+    def test_create_with_sriov_missing_flavor(self, mock_get_flavor):
+        mock_get_flavor.side_effect = sa_exception.NoResultFound()
+        response = self.create_member(
+            self.pool_id, '192.0.2.1',
+            80, request_sriov=True, status=400)
+        self.assertIn('flavor does not allow SR-IOV member ports',
                       response.get('faultstring'))
 
     @mock.patch('octavia.api.drivers.driver_factory.get_driver')

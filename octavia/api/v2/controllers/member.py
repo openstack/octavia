@@ -19,6 +19,7 @@ from oslo_log import log as logging
 from oslo_utils import excutils
 from oslo_utils import strutils
 from pecan import request as pecan_request
+from sqlalchemy.orm import exc as sa_exception
 from wsme import types as wtypes
 from wsmeext import pecan as wsme_pecan
 
@@ -146,10 +147,20 @@ class MemberController(base.BaseController):
         member = member_.member
         context = pecan_request.context.get('octavia_context')
 
+        flavor_dict = {}
         with context.session.begin():
             pool = self.repositories.pool.get(context.session, id=self.pool_id)
             member.project_id, provider = self._get_lb_project_id_provider(
                 context.session, pool.load_balancer_id)
+            if pool.load_balancer.flavor_id:
+                try:
+                    flavor_dict = (
+                        self.repositories.flavor.get_flavor_metadata_dict(
+                            context.session, pool.load_balancer.flavor_id))
+                except sa_exception.NoResultFound:
+                    LOG.error("load balancer has a flavor ID: %s that was not "
+                              "found in the database. Assuming no flavor.",
+                              pool.load_balancer.flavor_id)
 
         self._auth_validate_action(context, member.project_id,
                                    constants.RBAC_POST)
@@ -173,8 +184,23 @@ class MemberController(base.BaseController):
                 raise exceptions.QuotaException(
                     resource=data_models.Member._name())
 
-            member_dict = db_prepare.create_member(member.to_dict(
-                render_unsets=True), self.pool_id, bool(pool.health_monitor))
+            db_member_dict = member.to_dict(render_unsets=True)
+
+            # Validate and store port SR-IOV vnic_type
+            request_sriov = db_member_dict.pop('request_sriov')
+            if (request_sriov and not
+                    flavor_dict.get(constants.ALLOW_MEMBER_SRIOV, False)):
+                raise exceptions.MemberSRIOVDisabled
+            if request_sriov:
+                db_member_dict[constants.VNIC_TYPE] = (
+                    constants.VNIC_TYPE_DIRECT)
+            else:
+                db_member_dict[constants.VNIC_TYPE] = (
+                    constants.VNIC_TYPE_NORMAL)
+
+            member_dict = db_prepare.create_member(db_member_dict,
+                                                   self.pool_id,
+                                                   bool(pool.health_monitor))
 
             self._test_lb_and_listener_and_pool_statuses(context.session)
 
@@ -204,6 +230,28 @@ class MemberController(base.BaseController):
 
     def _graph_create(self, lock_session, member_dict):
         pool = self.repositories.pool.get(lock_session, id=self.pool_id)
+
+        # Validate and store port SR-IOV vnic_type
+        request_sriov = member_dict.pop('request_sriov')
+        flavor_dict = {}
+        if pool.load_balancer.flavor_id:
+            try:
+                flavor_dict = (
+                    self.repositories.flavor.get_flavor_metadata_dict(
+                        lock_session, pool.load_balancer.flavor_id))
+            except sa_exception.NoResultFound:
+                LOG.error("load balancer has a flavor ID: %s that was not "
+                          "found in the database. Assuming no flavor.",
+                          pool.load_balancer.flavor_id)
+        if (request_sriov and not
+                flavor_dict.get(constants.ALLOW_MEMBER_SRIOV, False)):
+            raise exceptions.MemberSRIOVDisabled
+
+        if request_sriov:
+            member_dict[constants.VNIC_TYPE] = constants.VNIC_TYPE_DIRECT
+        else:
+            member_dict[constants.VNIC_TYPE] = constants.VNIC_TYPE_NORMAL
+
         member_dict = db_prepare.create_member(
             member_dict, self.pool_id, bool(pool.health_monitor))
         db_member = self._validate_create_member(lock_session, member_dict)
@@ -440,6 +488,11 @@ class MembersController(MemberController):
                 m.project_id = db_pool.project_id
                 db_member_dict = m.to_dict(render_unsets=False)
                 db_member_dict.pop('id')
+                # We don't allow updating the vnic_type
+                # TODO(johnsom) Give the user an error once we change the
+                #               wsme type for batch member update to not use
+                #               the MemberPOST type
+                db_member_dict.pop(constants.REQUEST_SRIOV)
                 self.repositories.member.update(
                     context.session, m.id, **db_member_dict)
 

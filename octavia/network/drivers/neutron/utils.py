@@ -12,7 +12,6 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-
 from openstack.network.v2.network_ip_availability import NetworkIPAvailability
 
 from octavia.network import data_models as network_models
@@ -52,7 +51,8 @@ def convert_port_to_model(port):
         admin_state_up=port.is_admin_state_up,
         fixed_ips=fixed_ips,
         qos_policy_id=port.qos_policy_id,
-        security_group_ids=port.security_group_ids
+        security_group_ids=port.security_group_ids,
+        vnic_type=port.binding_vnic_type
     )
 
 

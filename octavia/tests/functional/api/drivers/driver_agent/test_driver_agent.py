@@ -503,7 +503,8 @@ class DriverAgentTest(base.OctaviaDBTestBase):
                     lib_consts.MONITOR_PORT,
                     lib_consts.SUBNET_ID,
                     lib_consts.WEIGHT,
-                    lib_consts.BACKUP):
+                    lib_consts.BACKUP,
+                    lib_consts.VNIC_TYPE):
             self.assertEqual(provider_member_dict.get(key),
                              result_member_dict.get(key))
 

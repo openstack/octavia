@@ -61,6 +61,8 @@ class OctaviaBase(models.ModelBase):
                     obj.load_balancer_id + obj.subnet_id)
         if obj.__class__.__name__ in ['VipSecurityGroup']:
             return obj.__class__.__name__ + obj.load_balancer_id + obj.sg_id
+        if obj.__class__.__name__ in ['AmphoraMemberPort']:
+            return obj.__class__.__name__ + obj.port_id
         raise NotImplementedError
 
     def to_data_model(

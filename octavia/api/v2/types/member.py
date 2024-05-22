@@ -42,6 +42,7 @@ class MemberResponse(BaseMemberType):
     monitor_address = wtypes.wsattr(types.IPAddressType())
     monitor_port = wtypes.wsattr(wtypes.IntegerType())
     tags = wtypes.wsattr(wtypes.ArrayType(wtypes.StringType()))
+    vnic_type = wtypes.wsattr(wtypes.StringType())
 
     @classmethod
     def from_data_model(cls, data_model, children=False):
@@ -85,6 +86,7 @@ class MemberPOST(BaseMemberType):
         default=None)
     monitor_address = wtypes.wsattr(types.IPAddressType(), default=None)
     tags = wtypes.wsattr(wtypes.ArrayType(wtypes.StringType(max_length=255)))
+    request_sriov = wtypes.wsattr(bool, default=False)
 
 
 class MemberRootPOST(types.BaseType):
@@ -129,6 +131,7 @@ class MemberSingleCreate(BaseMemberType):
         minimum=constants.MIN_PORT_NUMBER, maximum=constants.MAX_PORT_NUMBER))
     monitor_address = wtypes.wsattr(types.IPAddressType())
     tags = wtypes.wsattr(wtypes.ArrayType(wtypes.StringType(max_length=255)))
+    request_sriov = wtypes.wsattr(bool, default=False)
 
 
 class MemberStatusResponse(BaseMemberType):

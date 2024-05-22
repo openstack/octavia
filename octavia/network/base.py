@@ -162,16 +162,6 @@ class AbstractNetworkDriver(metaclass=abc.ABCMeta):
         """
 
     @abc.abstractmethod
-    def plug_network(self, compute_id, network_id):
-        """Connects an existing amphora to an existing network.
-
-        :param compute_id: id of an amphora in the compute service
-        :param network_id: id of a network
-        :return: octavia.network.data_models.Interface instance
-        :raises: PlugNetworkException, AmphoraNotFound, NetworkNotFound
-        """
-
-    @abc.abstractmethod
     def unplug_network(self, compute_id, network_id):
         """Disconnects an existing amphora from an existing network.
 

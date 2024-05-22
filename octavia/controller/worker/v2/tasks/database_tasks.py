@@ -55,6 +55,7 @@ class BaseDatabaseTask(task.Task):
         self.l7policy_repo = repo.L7PolicyRepository()
         self.l7rule_repo = repo.L7RuleRepository()
         self.task_utils = task_utilities.TaskUtils()
+        self.amphora_member_port_repo = repo.AmphoraMemberPortRepository()
         super().__init__(**kwargs)
 
     def _delete_from_amp_health(self, session, amphora_id):
@@ -418,6 +419,21 @@ class DeleteL7RuleInDB(BaseDatabaseTask):
                       "provisioning_status to ERROR due to: %(except)s",
                       {'l7rule': l7rule[constants.L7RULE_ID],
                        'except': str(e)})
+
+
+class DeleteAmpMemberPortInDB(BaseDatabaseTask):
+    """Delete an amphora member port record in the DB."""
+
+    def execute(self, port_id):
+        """Delete the amphora member port in DB
+
+        :param port_id: The port_id to be deleted
+        :returns: None
+        """
+
+        LOG.debug("Delete in DB for amphora member port %s", port_id)
+        with db_apis.session().begin() as session:
+            self.amphora_member_port_repo.delete(session, port_id=port_id)
 
 
 class ReloadAmphora(BaseDatabaseTask):

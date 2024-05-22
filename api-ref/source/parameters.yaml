@@ -1215,6 +1215,14 @@ member-ids:
   in: body
   required: true
   type: array
+member_vnic_type:
+  description: |
+    The member vNIC type used for the member port. One of ``normal`` or
+    ``direct``.
+  in: body
+  required: true
+  type: string
+  min_version: 2.29
 members-status-object-list:
   description: |
     A list of members status objects.
@@ -1479,6 +1487,14 @@ request_errors:
   in: body
   required: true
   type: integer
+request_sriov:
+  description: |
+    Request that an SR-IOV VF be used for the member network port. Defaults to
+    ``false``.
+  in: body
+  required: false
+  type: boolean
+  min_version: 2.29
 session_persistence:
   description: |
     A JSON object specifying the session persistence for the pool or ``null``

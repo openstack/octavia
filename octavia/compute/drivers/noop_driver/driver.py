@@ -125,13 +125,13 @@ class NoopManager:
                     compute_id=compute_id))
             connection.commit()
 
-        # TODO(johnsom) Add vnic_type here
         return network_models.Interface(
             id=uuidutils.generate_uuid(),
             compute_id=compute_id,
             network_id=network_id,
             fixed_ips=[],
             port_id=uuidutils.generate_uuid(),
+            vnic_type=constants.VNIC_TYPE_NORMAL
         )
 
     def detach_port(self, compute_id, port_id):

@@ -148,10 +148,13 @@ class RootController:
         # HTTP Strict Transport Security (HSTS)
         self._add_a_version(versions, 'v2.27', 'v2', 'SUPPORTED',
                             '2023-05-05T00:00:00Z', host_url)
-        # Add port vnic_type for SR-IOV
+        # Add VIP port vnic_type for SR-IOV
         self._add_a_version(versions, 'v2.28', 'v2', 'SUPPORTED',
                             '2023-11-08T00:00:00Z', host_url)
         # Add VIP SGs
-        self._add_a_version(versions, 'v2.29', 'v2', 'CURRENT',
+        self._add_a_version(versions, 'v2.29', 'v2', 'SUPPORTED',
                             '2024-10-15T00:00:00Z', host_url)
+        # Add member port SR-IOV support
+        self._add_a_version(versions, 'v2.30', 'v2', 'CURRENT',
+                            '2025-02-26T00:00:00Z', host_url)
         return {'versions': versions}

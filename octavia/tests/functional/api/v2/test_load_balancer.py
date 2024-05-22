@@ -2837,7 +2837,7 @@ class TestLoadBalancerGraph(base.BaseAPITest):
 
     def _get_lb_bodies(self, create_listeners, expected_listeners,
                        create_pools=None, additional_vips=None,
-                       vip_sg_ids=None):
+                       vip_sg_ids=None, flavor_id=None, sriov=False):
         create_lb = {
             'name': 'lb1',
             'project_id': self._project_id,
@@ -2871,6 +2871,11 @@ class TestLoadBalancerGraph(base.BaseAPITest):
             'vip_vnic_type': constants.VNIC_TYPE_NORMAL,
             'vip_sg_ids': vip_sg_ids or [],
         }
+        if flavor_id:
+            create_lb['flavor_id'] = flavor_id
+            expected_lb['flavor_id'] = flavor_id
+        if sriov:
+            expected_lb['vip_vnic_type'] = constants.VNIC_TYPE_DIRECT
         expected_lb.update(create_lb)
         expected_lb['listeners'] = expected_listeners
         expected_lb['pools'] = create_pools or []
@@ -3043,7 +3048,7 @@ class TestLoadBalancerGraph(base.BaseAPITest):
             expected_pool['healthmonitor'] = expected_hm
         return create_pool, expected_pool
 
-    def _get_member_bodies(self, protocol_port=80):
+    def _get_member_bodies(self, protocol_port=80, sriov=False):
         create_member = {
             'address': '10.0.0.1',
             'protocol_port': protocol_port
@@ -3056,6 +3061,9 @@ class TestLoadBalancerGraph(base.BaseAPITest):
             'project_id': self._project_id,
             'tags': []
         }
+        if sriov:
+            create_member[constants.REQUEST_SRIOV] = True
+            expected_member[constants.VNIC_TYPE] = constants.VNIC_TYPE_DIRECT
         expected_member.update(create_member)
         return create_member, expected_member
 
@@ -3395,6 +3403,47 @@ class TestLoadBalancerGraph(base.BaseAPITest):
         response = self.post(self.LBS_PATH, body)
         api_lb = response.json.get(self.root_tag)
         self._assert_graphs_equal(expected_lb, api_lb)
+
+    def test_with_one_listener_one_member_sriov(self):
+        flavor_profile = self.create_flavor_profile(
+            'sriov-graph-create', 'noop_driver',
+            f'{{"{constants.ALLOW_MEMBER_SRIOV}": true, '
+            f'"{constants.SRIOV_VIP}": true}}')
+
+        flavor = self.create_flavor('sriov-graph-create', '',
+                                    flavor_profile['id'], True)
+
+        create_member, expected_member = self._get_member_bodies(sriov=True)
+        create_pool, expected_pool = self._get_pool_bodies(
+            create_members=[create_member],
+            expected_members=[expected_member])
+        create_listener, expected_listener = self._get_listener_bodies(
+            create_default_pool_name=create_pool['name'])
+        create_lb, expected_lb = self._get_lb_bodies(
+            create_listeners=[create_listener],
+            expected_listeners=[expected_listener],
+            create_pools=[create_pool], flavor_id=flavor['id'], sriov=True)
+        body = self._build_body(create_lb)
+        response = self.post(self.LBS_PATH, body)
+        api_lb = response.json.get(self.root_tag)
+        self._assert_graphs_equal(expected_lb, api_lb)
+
+    def test_with_one_listener_one_member_sriov_disabled(self):
+        create_member, expected_member = self._get_member_bodies(sriov=True)
+        create_pool, expected_pool = self._get_pool_bodies(
+            create_members=[create_member],
+            expected_members=[expected_member])
+        create_listener, expected_listener = self._get_listener_bodies(
+            create_default_pool_name=create_pool['name'])
+        create_lb, expected_lb = self._get_lb_bodies(
+            create_listeners=[create_listener],
+            expected_listeners=[expected_listener],
+            create_pools=[create_pool])
+        body = self._build_body(create_lb)
+        response = self.post(self.LBS_PATH, body, status=400)
+        error_text = response.json.get('faultstring')
+        self.assertIn('flavor does not allow SR-IOV member ports.',
+                      error_text)
 
     def test_with_one_listener_one_hm(self):
         create_hm, expected_hm = self._get_hm_bodies()

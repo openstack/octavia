@@ -984,6 +984,12 @@ contain the following:
 |                       |        | service existing connections. A valid    |
 |                       |        | value is from 0 to 256. Default is 1.    |
 +-----------------------+--------+------------------------------------------+
+| vnic_type             | string | The member vNIC type used for the member |
+|                       |        | port. One of normal or direct.           |
++-----------------------+--------+------------------------------------------+
+
+..note:: The vnic_type of normal and direct are the same as those defined by
+         neutron ports.
 
 Delete
 ^^^^^^

@@ -423,6 +423,7 @@ REQ_CONN_TIMEOUT = 'req_conn_timeout'
 REQ_READ_TIMEOUT = 'req_read_timeout'
 REQUEST_ERRORS = 'request_errors'
 REQUEST_ID = 'request_id'
+REQUEST_SRIOV = 'request_sriov'
 ROLE = 'role'
 SECURITY_GROUPS = 'security_groups'
 SECURITY_GROUP_RULES = 'security_group_rules'
@@ -586,6 +587,7 @@ ATTACH_PORT = 'attach-port'
 CALCULATE_AMPHORA_DELTA = 'calculate-amphora-delta'
 CREATE_VIP_BASE_PORT = 'create-vip-base-port'
 DELETE_AMPHORA = 'delete-amphora'
+DELETE_AMPHORA_MEMBER_PORTS = 'delete-amphora-member-ports'
 DELETE_PORT = 'delete-port'
 DISABLE_AMP_HEALTH_MONITORING = 'disable-amphora-health-monitoring'
 GET_AMPHORA_FIREWALL_RULES = 'get-amphora-firewall-rules'
@@ -927,6 +929,7 @@ AMPHORA_SUPPORTED_ALPN_PROTOCOLS = [lib_consts.ALPN_PROTOCOL_HTTP_2,
                                     lib_consts.ALPN_PROTOCOL_HTTP_1_0]
 
 SRIOV_VIP = 'sriov_vip'
+ALLOW_MEMBER_SRIOV = 'allow_member_sriov'
 
 # Amphora interface fields
 IF_TYPE = 'if_type'
