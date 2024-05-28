@@ -190,6 +190,37 @@ CFG_FILE_TEMPLATE_mixed = (
     "    # Member %(member_id5)s is disabled\n\n"
     "}")
 
+CFG_FILE_TEMPLATE_mixed_no_ipv6_member = (
+    "# Configuration for Listener %(listener_id)s\n\n"
+    "net_namespace %(ns_name)s\n\n"
+    "virtual_server_group ipv4-group {\n"
+    "   10.0.0.37 7777\n"
+    "}\n\n"
+    "virtual_server group ipv4-group {\n"
+    "    lb_algo rr\n"
+    "    lvs_method NAT\n"
+    "    protocol udp\n\n\n"
+    "    # Configuration for Pool %(pool_id)s\n"
+    "    # Configuration for Member %(member_id1)s\n"
+    "    real_server 10.0.0.25 2222 {\n"
+    "        weight 3\n"
+    "        MISC_CHECK {\n\n"
+    "            misc_path \"/usr/bin/check_script.sh\"\n\n"
+    "            misc_timeout 5\n\n"
+    "        }\n\n"
+    "    }\n\n"
+    "    # Member %(member_id2)s is disabled\n\n"
+    "}\n"
+    "virtual_server_group ipv6-group {\n"
+    "   fd79:35e2:9963:0:f816:3eff:fe6d:7a2a 7777\n"
+    "}\n\n"
+    "virtual_server group ipv6-group {\n"
+    "    lb_algo rr\n"
+    "    lvs_method NAT\n"
+    "    protocol udp\n\n\n"
+    "    # Configuration for Pool %(pool_id)s\n"
+    "}")
+
 CFG_FILE_TEMPLATE_DISABLED_LISTENER = (
     "# Listener %(listener_id)s is disabled \n\n"
     "net_namespace %(ns_name)s\n\n"
@@ -233,6 +264,7 @@ class LvsQueryTestCase(base.TestCase):
         self.member_id4_v6 = uuidutils.generate_uuid()
         self.member_id5_v6 = uuidutils.generate_uuid()
         self.listener_id_mixed = uuidutils.generate_uuid()
+        self.listener_id_mixed_no_ipv6_member = uuidutils.generate_uuid()
         self.pool_id_mixed = uuidutils.generate_uuid()
         self.disabled_listener_id = uuidutils.generate_uuid()
         cfg_content_v4 = CFG_FILE_TEMPLATE_v4 % {
@@ -264,6 +296,15 @@ class LvsQueryTestCase(base.TestCase):
             'member_id4': self.member_id4_v6,
             'member_id5': self.member_id5_v6
         }
+        cfg_content_mixed_no_ipv6_member = (
+            CFG_FILE_TEMPLATE_mixed_no_ipv6_member % {
+                'listener_id': self.listener_id_mixed,
+                'ns_name': constants.AMPHORA_NAMESPACE,
+                'pool_id': self.pool_id_mixed,
+                'member_id1': self.member_id1_v4,
+                'member_id2': self.member_id2_v4
+            }
+        )
         cfg_content_disabled_listener = (
             CFG_FILE_TEMPLATE_DISABLED_LISTENER % {
                 'listener_id': self.listener_id_v6,
@@ -277,6 +318,10 @@ class LvsQueryTestCase(base.TestCase):
         self.useFixture(test_utils.OpenFixture(
             util.keepalived_lvs_cfg_path(self.listener_id_mixed),
             cfg_content_mixed))
+        self.useFixture(test_utils.OpenFixture(
+            util.keepalived_lvs_cfg_path(
+                self.listener_id_mixed_no_ipv6_member),
+            cfg_content_mixed_no_ipv6_member))
         self.useFixture(test_utils.OpenFixture(
             util.keepalived_lvs_cfg_path(self.disabled_listener_id),
             cfg_content_disabled_listener))
@@ -628,6 +673,29 @@ class LvsQueryTestCase(base.TestCase):
         mock_is_running.return_value = False
         res = lvs_query.get_lvs_listeners_stats()
         self.assertEqual({}, res)
+
+        # listener for both ipv4 and ipv6, but no member in the ipv6 pool
+        mock_is_running.return_value = True
+        mock_get_listener.return_value = [
+            self.listener_id_mixed_no_ipv6_member]
+        output_list = list()
+        output_list.append(IPVSADM_OUTPUT_TEMPLATE % {
+            "listener_ipport": "10.0.0.37:7777",
+            "member1_ipport": "10.0.0.25:2222",
+            "member2_ipport": "10.0.0.35:3333"})
+        output_list.append(IPVSADM_STATS_OUTPUT_TEMPLATE % {
+            "listener_ipport": "10.0.0.37:7777",
+            "member1_ipport": "10.0.0.25:2222",
+            "member2_ipport": "10.0.0.35:3333"})
+        mock_check_output.side_effect = output_list
+        res = lvs_query.get_lvs_listeners_stats()
+        # We can check the expected result reference the stats sample,
+        # that means this func can compute the stats info of single listener.
+        expected = {self.listener_id_mixed_no_ipv6_member: {
+            'status': constants.OPEN,
+            'stats': {'bin': 6387472, 'stot': 5, 'bout': 7490,
+                      'ereq': 0, 'scur': 0}}}
+        self.assertEqual(expected, res)
 
     @mock.patch('subprocess.check_output')
     @mock.patch("octavia.amphorae.backends.agent.api_server.util."
