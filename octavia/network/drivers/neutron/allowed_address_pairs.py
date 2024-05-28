@@ -362,12 +362,14 @@ class AllowedAddressPairsDriver(neutron_base.BaseNeutronDriver):
         This can happen if a failover has occurred.
         """
         for amphora in vip.load_balancer.amphorae:
-            try:
-                self.neutron_client.delete_port(amphora.vrrp_port_id)
-            except (neutron_client_exceptions.NotFound,
-                    neutron_client_exceptions.PortNotFoundClient):
-                LOG.debug('VIP instance port %s already deleted. Skipping.',
-                          amphora.vrrp_port_id)
+            if amphora.vrrp_port_id:
+                try:
+                    self.neutron_client.delete_port(amphora.vrrp_port_id)
+                except (neutron_client_exceptions.NotFound,
+                        neutron_client_exceptions.PortNotFoundClient):
+                    LOG.debug(
+                        'VIP instance port %s already deleted. Skipping.',
+                        amphora.vrrp_port_id)
 
         try:
             port = self.get_port(vip.port_id)
