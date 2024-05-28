@@ -1,0 +1,6 @@
+---
+fixes:
+  - |
+    Fixed the issue with session persistence based on source IP not working for
+    IPv6 load balancers. Session persistence now functions properly for IPv4,
+    IPv6 and dual-stack load balancers.
