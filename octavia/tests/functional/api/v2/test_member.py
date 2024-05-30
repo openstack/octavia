@@ -915,6 +915,38 @@ class TestMember(base.BaseAPITest):
 
     @mock.patch('octavia.api.drivers.driver_factory.get_driver')
     @mock.patch('octavia.api.drivers.utils.call_provider')
+    def test_update_members_member_duplicate(
+            self, mock_provider, mock_get_driver):
+        mock_driver = mock.MagicMock()
+        mock_driver.name = 'noop_driver'
+        mock_get_driver.return_value = mock_driver
+        subnet_id = uuidutils.generate_uuid()
+
+        member1 = {'address': '192.0.2.1', 'protocol_port': 80,
+                   'project_id': self.project_id, 'subnet_id': subnet_id}
+
+        req_dict = [member1]
+        body = {self.root_tag_list: req_dict}
+        path = self.MEMBERS_PATH.format(pool_id=self.pool_id)
+        self.put(path, body, status=202)
+
+        self.set_lb_status(self.lb_id)
+
+        # Same member (same address and protocol_port) updated twice in the
+        # same PUT request
+        member1 = {'address': '192.0.2.1', 'protocol_port': 80,
+                   'project_id': self.project_id, 'subnet_id': subnet_id,
+                   'name': 'member1'}
+        member2 = {'address': '192.0.2.1', 'protocol_port': 80,
+                   'project_id': self.project_id, 'subnet_id': subnet_id,
+                   'name': 'member2'}
+
+        req_dict = [member1, member2]
+        body = {self.root_tag_list: req_dict}
+        self.put(path, body, status=400)
+
+    @mock.patch('octavia.api.drivers.driver_factory.get_driver')
+    @mock.patch('octavia.api.drivers.utils.call_provider')
     def test_update_members_subnet_not_found(
             self, mock_provider, mock_get_driver):
         mock_driver = mock.MagicMock()
