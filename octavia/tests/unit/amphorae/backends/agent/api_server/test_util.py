@@ -51,30 +51,10 @@ class TestUtil(base.TestCase):
         self.assertEqual(fake_path, result)
 
     def test_keepalived_lvs_init_path(self):
-        # Test systemd
         ref_path = (consts.SYSTEMD_DIR + '/' +
-                    consts.KEEPALIVED_SYSTEMD_PREFIX % str(self.listener_id))
-        result = util.keepalived_lvs_init_path(consts.INIT_SYSTEMD,
-                                               self.listener_id)
+                    consts.KEEPALIVEDLVS_SYSTEMD % self.listener_id)
+        result = util.keepalived_lvs_init_path(self.listener_id)
         self.assertEqual(ref_path, result)
-
-        # Test upstart
-        ref_path = (consts.UPSTART_DIR + '/' +
-                    consts.KEEPALIVED_UPSTART_PREFIX % str(self.listener_id))
-        result = util.keepalived_lvs_init_path(consts.INIT_UPSTART,
-                                               self.listener_id)
-        self.assertEqual(ref_path, result)
-
-        # Test sysvinit
-        ref_path = (consts.SYSVINIT_DIR + '/' +
-                    consts.KEEPALIVED_SYSVINIT_PREFIX % str(self.listener_id))
-        result = util.keepalived_lvs_init_path(consts.INIT_SYSVINIT,
-                                               self.listener_id)
-        self.assertEqual(ref_path, result)
-
-        # Test bad init system
-        self.assertRaises(util.UnknownInitError, util.keepalived_lvs_init_path,
-                          'bogus_init', self.listener_id)
 
     def test_keepalived_lvs_pids_path(self):
         fake_path = '/fake/path'
@@ -167,7 +147,12 @@ class TestUtil(base.TestCase):
 
         mock_check_output.side_effect = subprocess.CalledProcessError(1,
                                                                       'boom')
-        util.run_systemctl_command('test', 'world')
+        self.assertRaises(subprocess.CalledProcessError,
+                          util.run_systemctl_command, 'test', 'world')
+
+        mock_check_output.side_effect = subprocess.CalledProcessError(1,
+                                                                      'boom')
+        util.run_systemctl_command('test', 'world', False)
 
     @mock.patch('octavia.amphorae.backends.agent.api_server.util.config_path')
     @mock.patch('octavia.amphorae.backends.agent.api_server.util.'

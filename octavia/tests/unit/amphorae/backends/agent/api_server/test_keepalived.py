@@ -32,7 +32,7 @@ class KeepalivedTestCase(base.TestCase):
     @mock.patch('subprocess.check_output')
     def test_manager_keepalived_service(self, mock_check_output):
         res = self.test_keepalived.manager_keepalived_service('start')
-        cmd = "/usr/sbin/service octavia-keepalived start"
+        cmd = 'systemctl start octavia-keepalived.service'
         mock_check_output.assert_called_once_with(cmd.split(),
                                                   stderr=subprocess.STDOUT,
                                                   encoding='utf-8')

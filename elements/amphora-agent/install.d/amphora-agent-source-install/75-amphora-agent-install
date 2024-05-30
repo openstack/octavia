@@ -41,17 +41,9 @@ mkdir -p /var/lib/octavia
 install -D -g root -o root -m 0644 ${SCRIPTDIR}/amphora-agent.logrotate /etc/logrotate.d/amphora-agent
 
 case "$DIB_INIT_SYSTEM" in
-    upstart)
-        install -D -g root -o root -m 0644 ${SCRIPTDIR}/amphora-agent.conf /etc/init/amphora-agent.conf
-        install -D -g root -o root -m 0644 ${SCRIPTDIR}/prometheus-proxy.conf /etc/init/prometheus-proxy.conf
-        ;;
     systemd)
         install -D -g root -o root -m 0644 ${SCRIPTDIR}/amphora-agent.service /usr/lib/systemd/system/amphora-agent.service
         install -D -g root -o root -m 0644 ${SCRIPTDIR}/prometheus-proxy.service /usr/lib/systemd/system/prometheus-proxy.service
-        ;;
-    sysv)
-        install -D -g root -o root -m 0644 ${SCRIPTDIR}/amphora-agent.init /etc/init.d/amphora-agent.init
-        install -D -g root -o root -m 0644 ${SCRIPTDIR}/prometheus-proxy.init /etc/init.d/prometheus-proxy.init
         ;;
     *)
         echo "Unsupported init system"

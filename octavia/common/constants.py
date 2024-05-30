@@ -694,9 +694,7 @@ MIN_QUOTA = QUOTA_UNLIMITED
 MAX_QUOTA = 2000000000
 
 HAPROXY_BASE_PEER_PORT = 1025
-KEEPALIVED_JINJA2_UPSTART = 'keepalived.upstart.j2'
 KEEPALIVED_JINJA2_SYSTEMD = 'keepalived.systemd.j2'
-KEEPALIVED_JINJA2_SYSVINIT = 'keepalived.sysvinit.j2'
 CHECK_SCRIPT_CONF = 'keepalived_check_script.conf.j2'
 KEEPALIVED_CHECK_SCRIPT = 'keepalived_lvs_check_script.sh.j2'
 
@@ -722,26 +720,17 @@ AMP_ACTION_RELOAD = 'reload'
 AMP_ACTION_RESTART = 'restart'
 GLANCE_IMAGE_ACTIVE = 'active'
 
-INIT_SYSTEMD = 'systemd'
-INIT_UPSTART = 'upstart'
-INIT_SYSVINIT = 'sysvinit'
-INIT_UNKOWN = 'unknown'
-VALID_INIT_SYSTEMS = (INIT_SYSTEMD, INIT_SYSVINIT, INIT_UPSTART)
 INIT_PATH = '/sbin/init'
 
 SYSTEMD_DIR = '/usr/lib/systemd/system'
-SYSVINIT_DIR = '/etc/init.d'
-UPSTART_DIR = '/etc/init'
 
 INIT_PROC_COMM_PATH = '/proc/1/comm'
 
-KEEPALIVED_SYSTEMD = 'octavia-keepalived.service'
-KEEPALIVED_SYSVINIT = 'octavia-keepalived'
-KEEPALIVED_UPSTART = 'octavia-keepalived.conf'
+LOADBALANCER_SYSTEMD = 'haproxy-%s.service'
 
-KEEPALIVED_SYSTEMD_PREFIX = 'octavia-keepalivedlvs-%s.service'
-KEEPALIVED_SYSVINIT_PREFIX = 'octavia-keepalivedlvs-%s'
-KEEPALIVED_UPSTART_PREFIX = 'octavia-keepalivedlvs-%s.conf'
+KEEPALIVED_SYSTEMD = 'octavia-keepalived.service'
+
+KEEPALIVEDLVS_SYSTEMD = 'octavia-keepalivedlvs-%s.service'
 
 # Authentication
 KEYSTONE = 'keystone'
@@ -821,6 +810,10 @@ AMPHORAV2 = 'amphorav2'
 # systemctl commands
 DISABLE = 'disable'
 ENABLE = 'enable'
+STOP = 'stop'
+START = 'start'
+RESTART = 'restart'
+RELOAD = 'reload'
 
 # systemd amphora netns service prefix
 AMP_NETNS_SVC_PREFIX = 'amphora-netns'

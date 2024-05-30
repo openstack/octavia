@@ -1,0 +1,13 @@
+---
+upgrade:
+  - |
+    SysVinit and Upstart are no longer supported as init system in amphora
+    instances. The only supported init system is now systemd.
+
+deprecations:
+  - |
+    The following options have been deprecated and have no effect now. These
+    options were used by Upstart support which has been removed.
+
+    - ``[haproxy_amphora] respawn_count``
+    - ``[haproxy_amphora] respawn_interval``

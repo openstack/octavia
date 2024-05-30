@@ -41,41 +41,18 @@ class ParsingError(Exception):
     pass
 
 
-class UnknownInitError(Exception):
-    pass
-
-
-def init_path(lb_id, init_system):
-    if init_system == consts.INIT_SYSTEMD:
-        return os.path.join(consts.SYSTEMD_DIR,
-                            f'haproxy-{lb_id}.service')
-    if init_system == consts.INIT_UPSTART:
-        return os.path.join(consts.UPSTART_DIR,
-                            f'haproxy-{lb_id}.conf')
-    if init_system == consts.INIT_SYSVINIT:
-        return os.path.join(consts.SYSVINIT_DIR,
-                            f'haproxy-{lb_id}')
-    raise UnknownInitError()
+def init_path(lb_id):
+    return os.path.join(consts.SYSTEMD_DIR, f'haproxy-{lb_id}.service')
 
 
 def keepalived_lvs_dir():
     return os.path.join(CONF.haproxy_amphora.base_path, 'lvs')
 
 
-def keepalived_lvs_init_path(init_system, listener_id):
-    if init_system == consts.INIT_SYSTEMD:
-        return os.path.join(consts.SYSTEMD_DIR,
-                            consts.KEEPALIVED_SYSTEMD_PREFIX %
-                            str(listener_id))
-    if init_system == consts.INIT_UPSTART:
-        return os.path.join(consts.UPSTART_DIR,
-                            consts.KEEPALIVED_UPSTART_PREFIX %
-                            str(listener_id))
-    if init_system == consts.INIT_SYSVINIT:
-        return os.path.join(consts.SYSVINIT_DIR,
-                            consts.KEEPALIVED_SYSVINIT_PREFIX %
-                            str(listener_id))
-    raise UnknownInitError()
+def keepalived_lvs_init_path(listener_id):
+    return os.path.join(consts.SYSTEMD_DIR,
+                        consts.KEEPALIVEDLVS_SYSTEMD %
+                        str(listener_id))
 
 
 def keepalived_backend_check_script_dir():
@@ -142,14 +119,8 @@ def keepalived_dir():
     return os.path.join(CONF.haproxy_amphora.base_path, 'vrrp')
 
 
-def keepalived_init_path(init_system):
-    if init_system == consts.INIT_SYSTEMD:
-        return os.path.join(consts.SYSTEMD_DIR, consts.KEEPALIVED_SYSTEMD)
-    if init_system == consts.INIT_UPSTART:
-        return os.path.join(consts.UPSTART_DIR, consts.KEEPALIVED_UPSTART)
-    if init_system == consts.INIT_SYSVINIT:
-        return os.path.join(consts.SYSVINIT_DIR, consts.KEEPALIVED_SYSVINIT)
-    raise UnknownInitError()
+def keepalived_init_path():
+    return os.path.join(consts.SYSTEMD_DIR, consts.KEEPALIVED_SYSTEMD)
 
 
 def keepalived_pid_path():
@@ -225,23 +196,6 @@ def is_lvs_listener_running(listener_id):
         os.path.join('/proc', get_keepalivedlvs_pid(listener_id)))
 
 
-def get_os_init_system():
-    if os.path.exists(consts.INIT_PROC_COMM_PATH):
-        with open(consts.INIT_PROC_COMM_PATH, encoding='utf-8') as init_comm:
-            init_proc_name = init_comm.read().rstrip('\n')
-            if init_proc_name == consts.INIT_SYSTEMD:
-                return consts.INIT_SYSTEMD
-            if init_proc_name == 'init':
-                init_path = consts.INIT_PATH
-                if os.path.exists(init_path):
-                    args = [init_path, '--version']
-                    init_version = subprocess.check_output(args, shell=False)
-                    if consts.INIT_UPSTART in str(init_version, 'utf-8'):
-                        return consts.INIT_UPSTART
-                    return consts.INIT_SYSVINIT
-    return consts.INIT_UNKOWN
-
-
 def install_netns_systemd_service():
     flags = os.O_WRONLY | os.O_CREAT | os.O_TRUNC
     # mode 00644
@@ -265,15 +219,17 @@ def install_netns_systemd_service():
             text_file.write(text)
 
 
-def run_systemctl_command(command, service):
+def run_systemctl_command(command, service, raise_error=True):
     cmd = f"systemctl {command} {service}"
     try:
         subprocess.check_output(cmd.split(), stderr=subprocess.STDOUT,
                                 encoding='utf-8')
     except subprocess.CalledProcessError as e:
-        LOG.error("Failed to %(cmd)s %(srvc)s service: "
+        LOG.debug("Failed to %(cmd)s %(srvc)s service: "
                   "%(err)s %(out)s", {'cmd': command, 'srvc': service,
                                       'err': e, 'out': e.output})
+        if raise_error:
+            raise
 
 
 def get_backend_for_lb_object(object_id):

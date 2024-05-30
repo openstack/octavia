@@ -34,8 +34,6 @@ LOG = logging.getLogger(__name__)
 
 j2_env = jinja2.Environment(autoescape=True, loader=jinja2.FileSystemLoader(
     os.path.dirname(os.path.realpath(__file__)) + consts.AGENT_API_TEMPLATES))
-UPSTART_TEMPLATE = j2_env.get_template(consts.KEEPALIVED_JINJA2_UPSTART)
-SYSVINIT_TEMPLATE = j2_env.get_template(consts.KEEPALIVED_JINJA2_SYSVINIT)
 SYSTEMD_TEMPLATE = j2_env.get_template(consts.KEEPALIVED_JINJA2_SYSTEMD)
 check_script_template = j2_env.get_template(consts.CHECK_SCRIPT_CONF)
 
@@ -60,34 +58,17 @@ class Keepalived:
                 f.write(b)
                 b = stream.read(BUFFER)
 
-        init_system = util.get_os_init_system()
+        file_path = util.keepalived_init_path()
 
-        file_path = util.keepalived_init_path(init_system)
+        template = SYSTEMD_TEMPLATE
 
-        init_enable_cmd = None
-        if init_system == consts.INIT_SYSTEMD:
-            template = SYSTEMD_TEMPLATE
-            init_enable_cmd = "systemctl enable octavia-keepalived"
+        # Render and install the network namespace systemd service
+        util.install_netns_systemd_service()
+        util.run_systemctl_command(
+            consts.ENABLE, consts.AMP_NETNS_SVC_PREFIX, False)
 
-            # Render and install the network namespace systemd service
-            util.install_netns_systemd_service()
-            util.run_systemctl_command(
-                consts.ENABLE, consts.AMP_NETNS_SVC_PREFIX)
-        elif init_system == consts.INIT_UPSTART:
-            template = UPSTART_TEMPLATE
-        elif init_system == consts.INIT_SYSVINIT:
-            template = SYSVINIT_TEMPLATE
-            init_enable_cmd = f"insserv {file_path}"
-        else:
-            raise util.UnknownInitError()
-
-        if init_system == consts.INIT_SYSTEMD:
-            # mode 00644
-            mode = stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IROTH
-        else:
-            # mode 00755
-            mode = (stat.S_IRWXU | stat.S_IRGRP | stat.S_IXGRP |
-                    stat.S_IROTH | stat.S_IXOTH)
+        # mode 00644
+        mode = stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IROTH
         if not os.path.exists(file_path):
             with os.fdopen(os.open(file_path, flags, mode), 'w') as text_file:
                 text = template.render(
@@ -118,17 +99,13 @@ class Keepalived:
         util.vrrp_check_script_update(None, consts.AMP_ACTION_START)
 
         # Make sure the new service is enabled on boot
-        if init_enable_cmd is not None:
-            try:
-                subprocess.check_output(init_enable_cmd.split(),
-                                        stderr=subprocess.STDOUT,
-                                        encoding='utf-8')
-            except subprocess.CalledProcessError as e:
-                LOG.debug('Failed to enable octavia-keepalived service: '
-                          '%(err)s %(output)s', {'err': e, 'output': e.output})
-                return webob.Response(json={
-                    'message': "Error enabling octavia-keepalived service",
-                    'details': e.output}, status=500)
+        try:
+            util.run_systemctl_command(consts.ENABLE,
+                                       consts.KEEPALIVED_SYSTEMD)
+        except subprocess.CalledProcessError as e:
+            return webob.Response(json={
+                'message': "Error enabling octavia-keepalived service",
+                'details': e.output}, status=500)
 
         res = webob.Response(json={'message': 'OK'}, status=200)
         res.headers['ETag'] = stream.get_md5()
@@ -158,14 +135,10 @@ class Keepalived:
             except OSError:
                 pass
 
-        cmd = f"/usr/sbin/service octavia-keepalived {action}"
-
         try:
-            subprocess.check_output(cmd.split(), stderr=subprocess.STDOUT,
-                                    encoding='utf-8')
+            util.run_systemctl_command(action,
+                                       consts.KEEPALIVED_SYSTEMD)
         except subprocess.CalledProcessError as e:
-            LOG.debug('Failed to %s octavia-keepalived service: %s %s',
-                      action, e, e.output)
             return webob.Response(json={
                 'message': f"Failed to {action} octavia-keepalived service",
                 'details': e.output}, status=500)

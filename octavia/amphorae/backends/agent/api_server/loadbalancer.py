@@ -41,8 +41,6 @@ HAPROXY_QUERY_RETRIES = 5
 
 CONF = cfg.CONF
 
-UPSTART_CONF = 'upstart.conf.j2'
-SYSVINIT_CONF = 'sysvinit.conf.j2'
 SYSTEMD_CONF = 'systemd.conf.j2'
 
 JINJA_ENV = jinja2.Environment(
@@ -50,8 +48,6 @@ JINJA_ENV = jinja2.Environment(
     loader=jinja2.FileSystemLoader(os.path.dirname(
         os.path.realpath(__file__)
     ) + consts.AGENT_API_TEMPLATES))
-UPSTART_TEMPLATE = JINJA_ENV.get_template(UPSTART_CONF)
-SYSVINIT_TEMPLATE = JINJA_ENV.get_template(SYSVINIT_CONF)
 SYSTEMD_TEMPLATE = JINJA_ENV.get_template(SYSTEMD_CONF)
 
 
@@ -146,43 +142,16 @@ class Loadbalancer:
         # file ok - move it
         os.rename(name, util.config_path(lb_id))
 
-        try:
+        init_path = util.init_path(lb_id)
 
-            init_system = util.get_os_init_system()
+        template = SYSTEMD_TEMPLATE
+        # Render and install the network namespace systemd service
+        util.install_netns_systemd_service()
+        util.run_systemctl_command(
+            consts.ENABLE, consts.AMP_NETNS_SVC_PREFIX + '.service', False)
 
-            LOG.debug('Found init system: %s', init_system)
-
-            init_path = util.init_path(lb_id, init_system)
-
-            if init_system == consts.INIT_SYSTEMD:
-                template = SYSTEMD_TEMPLATE
-                # Render and install the network namespace systemd service
-                util.install_netns_systemd_service()
-                util.run_systemctl_command(
-                    consts.ENABLE, consts.AMP_NETNS_SVC_PREFIX + '.service')
-            elif init_system == consts.INIT_UPSTART:
-                template = UPSTART_TEMPLATE
-            elif init_system == consts.INIT_SYSVINIT:
-                template = SYSVINIT_TEMPLATE
-                init_enable_cmd = f"insserv {init_path}"
-            else:
-                raise util.UnknownInitError()
-
-        except util.UnknownInitError:
-            LOG.error("Unknown init system found.")
-            return webob.Response(json={
-                'message': "Unknown init system in amphora",
-                'details': "The amphora image is running an unknown init "
-                           "system.  We can't create the init configuration "
-                           "file for the load balancing process."}, status=500)
-
-        if init_system == consts.INIT_SYSTEMD:
-            # mode 00644
-            mode = stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IROTH
-        else:
-            # mode 00755
-            mode = (stat.S_IRWXU | stat.S_IRGRP | stat.S_IXGRP |
-                    stat.S_IROTH | stat.S_IXOTH)
+        # mode 00644
+        mode = stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IROTH
 
         hap_major, hap_minor = haproxy_compatibility.get_haproxy_versions()
         if not os.path.exists(init_path):
@@ -196,9 +165,6 @@ class Loadbalancer:
                     haproxy_state_file=util.state_file_path(lb_id),
                     haproxy_socket=util.haproxy_sock_path(lb_id),
                     haproxy_user_group_cfg=consts.HAPROXY_USER_GROUP_CFG,
-                    respawn_count=util.CONF.haproxy_amphora.respawn_count,
-                    respawn_interval=(util.CONF.haproxy_amphora.
-                                      respawn_interval),
                     amphora_netns=consts.AMP_NETNS_SVC_PREFIX,
                     amphora_nsname=consts.AMPHORA_NAMESPACE,
                     haproxy_major_version=hap_major,
@@ -207,21 +173,13 @@ class Loadbalancer:
                 text_file.write(text)
 
         # Make sure the new service is enabled on boot
-        if init_system == consts.INIT_SYSTEMD:
+        try:
             util.run_systemctl_command(
-                consts.ENABLE, f"haproxy-{lb_id}")
-        elif init_system == consts.INIT_SYSVINIT:
-            try:
-                subprocess.check_output(init_enable_cmd.split(),
-                                        stderr=subprocess.STDOUT,
-                                        encoding='utf-8')
-            except subprocess.CalledProcessError as e:
-                LOG.error("Failed to enable haproxy-%(lb_id)s service: "
-                          "%(err)s %(out)s", {'lb_id': lb_id, 'err': e,
-                                              'out': e.output})
-                return webob.Response(json={
-                    'message': "Error enabling haproxy-{} service".format(
-                        lb_id), 'details': e.output}, status=500)
+                consts.ENABLE, consts.LOADBALANCER_SYSTEMD % lb_id)
+        except subprocess.CalledProcessError as e:
+            return webob.Response(json={
+                'message': "Error enabling octavia-keepalived service",
+                'details': e.output}, status=500)
 
         res = webob.Response(json={'message': 'OK'}, status=202)
         res.headers['ETag'] = stream.get_md5()
@@ -283,11 +241,9 @@ class Loadbalancer:
                    else 1)
         saved_exc = None
         for idx in range(retries):
-            cmd = f"/usr/sbin/service haproxy-{lb_id} {action}"
-
             try:
-                subprocess.check_output(cmd.split(), stderr=subprocess.STDOUT,
-                                        encoding='utf-8')
+                util.run_systemctl_command(
+                    action, consts.LOADBALANCER_SYSTEMD % lb_id)
             except subprocess.CalledProcessError as e:
                 # Mitigation for
                 # https://bugs.launchpad.net/octavia/+bug/2054666
@@ -295,11 +251,6 @@ class Loadbalancer:
                         action == consts.AMP_ACTION_RELOAD):
 
                     saved_exc = e
-
-                    LOG.debug(
-                        "Failed to %(action)s haproxy-%(lb_id)s service: "
-                        "%(err)s %(out)s", {'action': action, 'lb_id': lb_id,
-                                            'err': e, 'out': e.output})
 
                     # Wait a few seconds and check that haproxy was restarted
                     uptime = self._check_haproxy_uptime(lb_id)
@@ -314,10 +265,6 @@ class Loadbalancer:
                                 "more details.")
                     break
                 if 'Job is already running' not in e.output:
-                    LOG.debug(
-                        "Failed to %(action)s haproxy-%(lb_id)s service: "
-                        "%(err)s %(out)s", {'action': action, 'lb_id': lb_id,
-                                            'err': e, 'out': e.output})
                     return webob.Response(json={
                         'message': f"Error {action}ing haproxy",
                         'details': e.output
@@ -358,10 +305,9 @@ class Loadbalancer:
         # check if that haproxy is still running and if stop it
         if os.path.exists(util.pid_path(lb_id)) and os.path.exists(
                 os.path.join('/proc', util.get_haproxy_pid(lb_id))):
-            cmd = f"/usr/sbin/service haproxy-{lb_id} stop"
             try:
-                subprocess.check_output(cmd.split(), stderr=subprocess.STDOUT,
-                                        encoding='utf-8')
+                util.run_systemctl_command(
+                    consts.STOP, consts.LOADBALANCER_SYSTEMD % lb_id)
             except subprocess.CalledProcessError as e:
                 LOG.error("Failed to stop haproxy-%s service: %s %s",
                           lb_id, e, e.output)
@@ -390,28 +336,10 @@ class Loadbalancer:
             pass
 
         # disable the service
-        init_system = util.get_os_init_system()
-        init_path = util.init_path(lb_id, init_system)
+        init_path = util.init_path(lb_id)
 
-        if init_system == consts.INIT_SYSTEMD:
-            util.run_systemctl_command(
-                consts.DISABLE, f"haproxy-{lb_id}")
-        elif init_system == consts.INIT_SYSVINIT:
-            init_disable_cmd = f"insserv -r {init_path}"
-            try:
-                subprocess.check_output(init_disable_cmd.split(),
-                                        stderr=subprocess.STDOUT,
-                                        encoding='utf-8')
-            except subprocess.CalledProcessError as e:
-                LOG.error("Failed to disable haproxy-%(lb_id)s service: "
-                          "%(err)s %(out)s", {'lb_id': lb_id, 'err': e,
-                                              'out': e.output})
-                return webob.Response(json={
-                    'message': "Error disabling haproxy-{} service".format(
-                        lb_id), 'details': e.output}, status=500)
-
-        elif init_system != consts.INIT_UPSTART:
-            raise util.UnknownInitError()
+        util.run_systemctl_command(
+            consts.DISABLE, consts.LOADBALANCER_SYSTEMD % lb_id, False)
 
         # delete the directory + init script for that listener
         shutil.rmtree(util.haproxy_dir(lb_id))

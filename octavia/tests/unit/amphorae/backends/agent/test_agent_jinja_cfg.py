@@ -44,8 +44,6 @@ class AgentJinjaTestCase(base.TestCase):
         self.conf.config(group="haproxy_amphora", bind_port=9443)
         self.conf.config(group="haproxy_amphora",
                          haproxy_cmd='/usr/sbin/haproxy')
-        self.conf.config(group="haproxy_amphora", respawn_count=2)
-        self.conf.config(group="haproxy_amphora", respawn_interval=2)
         self.conf.config(group="health_manager",
                          controller_ip_port_list=['192.0.2.10:5555'])
         self.conf.config(group="health_manager", heartbeat_interval=10)
@@ -67,8 +65,6 @@ class AgentJinjaTestCase(base.TestCase):
                            'bind_host = 0.0.0.0\n'
                            'bind_port = 9443\n'
                            'haproxy_cmd = /usr/sbin/haproxy\n'
-                           'respawn_count = 2\n'
-                           'respawn_interval = 2\n'
                            'user_log_facility = 0\n'
                            'administrative_log_facility = 1\n\n'
                            '[health_manager]\n'
@@ -107,8 +103,6 @@ class AgentJinjaTestCase(base.TestCase):
                            'bind_host = 0.0.0.0\n'
                            'bind_port = 9443\n'
                            'haproxy_cmd = /usr/sbin/haproxy\n'
-                           'respawn_count = 2\n'
-                           'respawn_interval = 2\n'
                            'user_log_facility = 0\n'
                            'administrative_log_facility = 1\n\n'
                            '[health_manager]\n'
@@ -150,8 +144,6 @@ class AgentJinjaTestCase(base.TestCase):
                            'bind_host = 0.0.0.0\n'
                            'bind_port = 9443\n'
                            'haproxy_cmd = /usr/sbin/haproxy\n'
-                           'respawn_count = 2\n'
-                           'respawn_interval = 2\n'
                            'user_log_facility = 0\n'
                            'administrative_log_facility = 1\n\n'
                            '[health_manager]\n'

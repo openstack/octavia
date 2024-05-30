@@ -78,14 +78,13 @@ class ListenerTestCase(base.TestCase):
         mock_check_status.side_effect = ['bogus', consts.OFFLINE]
 
         # Happy path - No VRRP
-        ref_command_split = ['/usr/sbin/service']
-        ref_command_split.append(f'haproxy-{listener_id}')
-        ref_command_split.append(consts.AMP_ACTION_START)
+        cmd = "systemctl {action} haproxy-{listener_id}.service".format(
+            action=consts.AMP_ACTION_START, listener_id=listener_id)
 
         result = self.test_loadbalancer.start_stop_lb(
             listener_id, consts.AMP_ACTION_START)
 
-        mock_check_output.assert_called_once_with(ref_command_split,
+        mock_check_output.assert_called_once_with(cmd.split(),
                                                   stderr=subprocess.STDOUT,
                                                   encoding='utf-8')
         mock_lb_exists.assert_called_once_with(listener_id)
@@ -104,14 +103,13 @@ class ListenerTestCase(base.TestCase):
         mock_vrrp_update.reset_mock()
         mock_check_output.reset_mock()
 
-        ref_command_split = ['/usr/sbin/service']
-        ref_command_split.append(f'haproxy-{listener_id}')
-        ref_command_split.append(consts.AMP_ACTION_RELOAD)
+        cmd = "systemctl {action} haproxy-{listener_id}.service".format(
+            action=consts.AMP_ACTION_RELOAD, listener_id=listener_id)
 
         result = self.test_loadbalancer.start_stop_lb(
             listener_id, consts.AMP_ACTION_RELOAD)
 
-        mock_check_output.assert_called_once_with(ref_command_split,
+        mock_check_output.assert_called_once_with(cmd.split(),
                                                   stderr=subprocess.STDOUT,
                                                   encoding='utf-8')
         mock_lb_exists.assert_called_once_with(listener_id)
@@ -127,14 +125,13 @@ class ListenerTestCase(base.TestCase):
         mock_vrrp_update.reset_mock()
         mock_check_output.reset_mock()
 
-        ref_command_split = ['/usr/sbin/service']
-        ref_command_split.append(f'haproxy-{listener_id}')
-        ref_command_split.append(consts.AMP_ACTION_START)
+        cmd = "systemctl {action} haproxy-{listener_id}.service".format(
+            action=consts.AMP_ACTION_START, listener_id=listener_id)
 
         result = self.test_loadbalancer.start_stop_lb(
             listener_id, consts.AMP_ACTION_RELOAD)
 
-        mock_check_output.assert_called_once_with(ref_command_split,
+        mock_check_output.assert_called_once_with(cmd.split(),
                                                   stderr=subprocess.STDOUT,
                                                   encoding='utf-8')
         mock_lb_exists.assert_called_once_with(listener_id)
@@ -154,9 +151,8 @@ class ListenerTestCase(base.TestCase):
         mock_vrrp_update.reset_mock()
         mock_check_output.reset_mock()
 
-        ref_command_split = ['/usr/sbin/service']
-        ref_command_split.append(f'haproxy-{listener_id}')
-        ref_command_split.append(consts.AMP_ACTION_START)
+        cmd = "systemctl {action} haproxy-{listener_id}.service".format(
+            action=consts.AMP_ACTION_START, listener_id=listener_id)
 
         mock_check_output.side_effect = subprocess.CalledProcessError(
             output='bogus', returncode=-2, cmd='sit')
@@ -164,7 +160,7 @@ class ListenerTestCase(base.TestCase):
         result = self.test_loadbalancer.start_stop_lb(
             listener_id, consts.AMP_ACTION_START)
 
-        mock_check_output.assert_called_once_with(ref_command_split,
+        mock_check_output.assert_called_once_with(cmd.split(),
                                                   stderr=subprocess.STDOUT,
                                                   encoding='utf-8')
         mock_lb_exists.assert_called_once_with(listener_id)
@@ -179,9 +175,8 @@ class ListenerTestCase(base.TestCase):
         mock_vrrp_update.reset_mock()
         mock_check_output.reset_mock()
 
-        ref_command_split = ['/usr/sbin/service']
-        ref_command_split.append(f'haproxy-{listener_id}')
-        ref_command_split.append(consts.AMP_ACTION_START)
+        cmd = "systemctl {action} haproxy-{listener_id}.service".format(
+            action=consts.AMP_ACTION_START, listener_id=listener_id)
 
         mock_check_output.side_effect = subprocess.CalledProcessError(
             output='Job is already running', returncode=-2, cmd='sit')
@@ -189,7 +184,7 @@ class ListenerTestCase(base.TestCase):
         result = self.test_loadbalancer.start_stop_lb(
             listener_id, consts.AMP_ACTION_START)
 
-        mock_check_output.assert_called_once_with(ref_command_split,
+        mock_check_output.assert_called_once_with(cmd.split(),
                                                   stderr=subprocess.STDOUT,
                                                   encoding='utf-8')
         mock_lb_exists.assert_called_once_with(listener_id)

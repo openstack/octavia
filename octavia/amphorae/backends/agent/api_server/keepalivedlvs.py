@@ -38,8 +38,6 @@ LOG = logging.getLogger(__name__)
 
 j2_env = jinja2.Environment(autoescape=True, loader=jinja2.FileSystemLoader(
     os.path.dirname(os.path.realpath(__file__)) + consts.AGENT_API_TEMPLATES))
-UPSTART_TEMPLATE = j2_env.get_template(consts.KEEPALIVED_JINJA2_UPSTART)
-SYSVINIT_TEMPLATE = j2_env.get_template(consts.KEEPALIVED_JINJA2_SYSVINIT)
 SYSTEMD_TEMPLATE = j2_env.get_template(consts.KEEPALIVED_JINJA2_SYSTEMD)
 check_script_file_template = j2_env.get_template(
     consts.KEEPALIVED_CHECK_SCRIPT)
@@ -92,32 +90,18 @@ class KeepalivedLvs(lvs_listener_base.LvsListenerApiServerBase):
                 f.write(b)
                 b = stream.read(BUFFER)
 
-        init_system = util.get_os_init_system()
+        file_path = util.keepalived_lvs_init_path(listener_id)
 
-        file_path = util.keepalived_lvs_init_path(init_system, listener_id)
+        template = SYSTEMD_TEMPLATE
 
-        if init_system == consts.INIT_SYSTEMD:
-            template = SYSTEMD_TEMPLATE
-
-            # Render and install the network namespace systemd service
-            util.install_netns_systemd_service()
-            util.run_systemctl_command(
-                consts.ENABLE, consts.AMP_NETNS_SVC_PREFIX)
-        elif init_system == consts.INIT_UPSTART:
-            template = UPSTART_TEMPLATE
-        elif init_system == consts.INIT_SYSVINIT:
-            template = SYSVINIT_TEMPLATE
-        else:
-            raise util.UnknownInitError()
+        # Render and install the network namespace systemd service
+        util.install_netns_systemd_service()
+        util.run_systemctl_command(
+            consts.ENABLE, consts.AMP_NETNS_SVC_PREFIX, False)
 
         # Render and install the keepalivedlvs init script
-        if init_system == consts.INIT_SYSTEMD:
-            # mode 00644
-            mode = stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IROTH
-        else:
-            # mode 00755
-            mode = (stat.S_IRWXU | stat.S_IRGRP | stat.S_IXGRP |
-                    stat.S_IROTH | stat.S_IXOTH)
+        # mode 00644
+        mode = stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IROTH
         keepalived_pid, vrrp_pid, check_pid = util.keepalived_lvs_pids_path(
             listener_id)
         if not os.path.exists(file_path):
@@ -136,23 +120,15 @@ class KeepalivedLvs(lvs_listener_base.LvsListenerApiServerBase):
                 text_file.write(text)
 
         # Make sure the keepalivedlvs service is enabled on boot
-        if init_system == consts.INIT_SYSTEMD:
+        try:
             util.run_systemctl_command(
-                consts.ENABLE, f"octavia-keepalivedlvs-{str(listener_id)}")
-        elif init_system == consts.INIT_SYSVINIT:
-            init_enable_cmd = f"insserv {file_path}"
-            try:
-                subprocess.check_output(init_enable_cmd.split(),
-                                        stderr=subprocess.STDOUT,
-                                        encoding='utf-8')
-            except subprocess.CalledProcessError as e:
-                LOG.debug('Failed to enable '
-                          'octavia-keepalivedlvs service: '
-                          '%(err)s', {'err': str(e)})
-                return webob.Response(json={
-                    'message': ("Error enabling "
-                                "octavia-keepalivedlvs service"),
-                    'details': e.output}, status=500)
+                consts.ENABLE,
+                consts.KEEPALIVEDLVS_SYSTEMD % listener_id)
+        except subprocess.CalledProcessError as e:
+            return webob.Response(json={
+                'message': ("Error enabling "
+                            "octavia-keepalivedlvs service"),
+                'details': e.output}, status=500)
 
         if NEED_CHECK:
             # inject the check script for keepalived process
@@ -166,7 +142,6 @@ class KeepalivedLvs(lvs_listener_base.LvsListenerApiServerBase):
                                'w') as script_file:
                     text = check_script_file_template.render(
                         consts=consts,
-                        init_system=init_system,
                         keepalived_lvs_pid_dir=util.keepalived_lvs_dir()
                     )
                     script_file.write(text)
@@ -217,15 +192,10 @@ class KeepalivedLvs(lvs_listener_base.LvsListenerApiServerBase):
             if consts.OFFLINE == self._check_lvs_listener_status(listener_id):
                 action = consts.AMP_ACTION_START
 
-        cmd = ("/usr/sbin/service "
-               f"octavia-keepalivedlvs-{listener_id} {action}")
-
         try:
-            subprocess.check_output(cmd.split(), stderr=subprocess.STDOUT,
-                                    encoding='utf-8')
+            util.run_systemctl_command(
+                action, consts.KEEPALIVEDLVS_SYSTEMD % listener_id)
         except subprocess.CalledProcessError as e:
-            LOG.debug('Failed to %s keepalivedlvs listener %s',
-                      listener_id + ' : ' + action, e)
             return webob.Response(json={
                 'message': (f"Failed to {action} keepalivedlvs listener "
                             f"{listener_id}"),
@@ -280,11 +250,10 @@ class KeepalivedLvs(lvs_listener_base.LvsListenerApiServerBase):
         if os.path.exists(keepalived_pid) and os.path.exists(
                 os.path.join('/proc',
                              util.get_keepalivedlvs_pid(listener_id))):
-            cmd = (f"/usr/sbin/service "
-                   f"octavia-keepalivedlvs-{listener_id} stop")
             try:
-                subprocess.check_output(cmd.split(), stderr=subprocess.STDOUT,
-                                        encoding='utf-8')
+                util.run_systemctl_command(
+                    consts.STOP,
+                    consts.KEEPALIVEDLVS_SYSTEMD % listener_id)
             except subprocess.CalledProcessError as e:
                 LOG.error("Failed to stop keepalivedlvs service: %s", e)
                 return webob.Response(json={
@@ -301,31 +270,21 @@ class KeepalivedLvs(lvs_listener_base.LvsListenerApiServerBase):
                 os.remove(pid)
 
         # disable the service
-        init_system = util.get_os_init_system()
-        init_path = util.keepalived_lvs_init_path(init_system, listener_id)
+        init_path = util.keepalived_lvs_init_path(listener_id)
 
-        if init_system == consts.INIT_SYSTEMD:
+        try:
             util.run_systemctl_command(
-                consts.DISABLE, f"octavia-keepalivedlvs-{listener_id}")
-
-        elif init_system == consts.INIT_SYSVINIT:
-            init_disable_cmd = f"insserv -r {init_path}"
-            try:
-                subprocess.check_output(init_disable_cmd.split(),
-                                        stderr=subprocess.STDOUT,
-                                        encoding='utf-8')
-            except subprocess.CalledProcessError as e:
-                LOG.error("Failed to disable "
-                          "octavia-keepalivedlvs-%(list)s service: "
-                          "%(err)s", {'list': listener_id, 'err': str(e)})
-                return webob.Response(json={
-                    'message': (
-                        f"Error disabling octavia-keepalivedlvs-{listener_id} "
-                        f"service"),
-                    'details': e.output}, status=500)
-
-        elif init_system != consts.INIT_UPSTART:
-            raise util.UnknownInitError()
+                consts.DISABLE,
+                consts.KEEPALIVEDLVS_SYSTEMD % listener_id)
+        except subprocess.CalledProcessError as e:
+            LOG.error("Failed to disable "
+                      "octavia-keepalivedlvs-%(list)s service: "
+                      "%(err)s", {'list': listener_id, 'err': str(e)})
+            return webob.Response(json={
+                'message': (
+                    f"Error disabling octavia-keepalivedlvs-{listener_id} "
+                    "service"),
+                'details': e.output}, status=500)
 
         # delete init script ,config file and log file for that listener
         if os.path.exists(init_path):

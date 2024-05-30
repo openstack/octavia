@@ -116,8 +116,6 @@ class KeepalivedLvsTestCase(base.TestCase):
                 'install_netns_systemd_service')
     @mock.patch('pyroute2.NetNS', create=True)
     @mock.patch('shutil.copy2')
-    @mock.patch('octavia.amphorae.backends.agent.api_server.util.'
-                'get_os_init_system', return_value=consts.INIT_SYSTEMD)
     @mock.patch('os.chmod')
     @mock.patch('os.path.exists')
     @mock.patch('os.makedirs')
@@ -125,8 +123,7 @@ class KeepalivedLvsTestCase(base.TestCase):
     @mock.patch('subprocess.check_output')
     def test_upload_lvs_listener_config_no_vrrp_check_dir(
             self, m_check_output, m_os_rm, m_os_mkdir, m_exists, m_os_chmod,
-            m_os_sysinit, m_copy2, mock_netns, mock_install_netns,
-            mock_systemctl):
+            m_copy2, mock_netns, mock_install_netns, mock_systemctl):
         m_exists.side_effect = [False, False, True, True, False, False]
         cfg_path = util.keepalived_lvs_cfg_path(self.FAKE_ID)
         m = self.useFixture(test_utils.OpenFixture(cfg_path)).mock_open
@@ -143,9 +140,10 @@ class KeepalivedLvsTestCase(base.TestCase):
             mock_install_netns.assert_called_once()
             systemctl_calls = [
                 mock.call(consts.ENABLE,
-                          consts.AMP_NETNS_SVC_PREFIX),
-                mock.call(consts.ENABLE,
-                          f'octavia-keepalivedlvs-{str(self.FAKE_ID)}'),
+                          consts.AMP_NETNS_SVC_PREFIX, False),
+                mock.call(
+                    consts.ENABLE,
+                    'octavia-keepalivedlvs-%s.service' % self.FAKE_ID),
             ]
             mock_systemctl.assert_has_calls(systemctl_calls)
             os_mkdir_calls = [
@@ -159,8 +157,7 @@ class KeepalivedLvsTestCase(base.TestCase):
 
             flags = os.O_WRONLY | os.O_CREAT | os.O_TRUNC
             mode = stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IROTH
-            systemd_cfg_path = util.keepalived_lvs_init_path(
-                consts.INIT_SYSTEMD, self.FAKE_ID)
+            systemd_cfg_path = util.keepalived_lvs_init_path(self.FAKE_ID)
 
             m_open_calls = [
                 mock.call(cfg_path, flags, mode),
@@ -181,8 +178,6 @@ class KeepalivedLvsTestCase(base.TestCase):
                 'install_netns_systemd_service')
     @mock.patch('pyroute2.NetNS', create=True)
     @mock.patch('shutil.copy2')
-    @mock.patch('octavia.amphorae.backends.agent.api_server.util.'
-                'get_os_init_system', return_value=consts.INIT_SYSTEMD)
     @mock.patch('os.chmod')
     @mock.patch('os.path.exists')
     @mock.patch('os.makedirs')
@@ -190,8 +185,8 @@ class KeepalivedLvsTestCase(base.TestCase):
     @mock.patch('subprocess.check_output')
     def test_upload_lvs_listener_config_with_vrrp_check_dir(
             self, m_check_output, m_os_rm, m_os_mkdir, m_exists, m_os_chmod,
-            m_os_sysinit, m_copy2, mock_netns, mock_install_netns,
-            mock_systemctl, mock_get_lbs, mock_get_lvs_listeners):
+            m_copy2, mock_netns, mock_install_netns, mock_systemctl,
+            mock_get_lbs, mock_get_lvs_listeners):
         m_exists.side_effect = [False, False, True, True, False, False, False]
         mock_get_lbs.return_value = []
         mock_get_lvs_listeners.return_value = [self.FAKE_ID]
@@ -219,9 +214,10 @@ class KeepalivedLvsTestCase(base.TestCase):
             mock_install_netns.assert_called_once()
             systemctl_calls = [
                 mock.call(consts.ENABLE,
-                          consts.AMP_NETNS_SVC_PREFIX),
-                mock.call(consts.ENABLE,
-                          f'octavia-keepalivedlvs-{str(self.FAKE_ID)}'),
+                          consts.AMP_NETNS_SVC_PREFIX, False),
+                mock.call(
+                    consts.ENABLE,
+                    'octavia-keepalivedlvs-%s.service' % self.FAKE_ID)
             ]
             mock_systemctl.assert_has_calls(systemctl_calls)
 
@@ -229,8 +225,7 @@ class KeepalivedLvsTestCase(base.TestCase):
                 util.keepalived_backend_check_script_path(), stat.S_IEXEC)
             flags = os.O_WRONLY | os.O_CREAT | os.O_TRUNC
             mode = stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IROTH
-            systemd_cfg_path = util.keepalived_lvs_init_path(
-                consts.INIT_SYSTEMD, self.FAKE_ID)
+            systemd_cfg_path = util.keepalived_lvs_init_path(self.FAKE_ID)
             script_path = os.path.join(
                 util.keepalived_check_scripts_dir(),
                 keepalivedlvs.KEEPALIVED_CHECK_SCRIPT_NAME)
@@ -252,8 +247,6 @@ class KeepalivedLvsTestCase(base.TestCase):
     @mock.patch('octavia.amphorae.backends.agent.api_server.util.'
                 'install_netns_systemd_service')
     @mock.patch('shutil.copy2')
-    @mock.patch('octavia.amphorae.backends.agent.api_server.util.'
-                'get_os_init_system', return_value=consts.INIT_SYSTEMD)
     @mock.patch('os.chmod')
     @mock.patch('os.path.exists')
     @mock.patch('os.makedirs')
@@ -261,7 +254,7 @@ class KeepalivedLvsTestCase(base.TestCase):
     @mock.patch('subprocess.check_output')
     def test_upload_lvs_listener_config_start_service_failure(
             self, m_check_output, m_os_rm, m_os_mkdir, m_exists, m_os_chmod,
-            m_os_sysinit, m_copy2, mock_install_netns, mock_systemctl):
+            m_copy2, mock_install_netns, mock_systemctl):
         m_exists.side_effect = [False, False, True, True, False]
         cfg_path = util.keepalived_lvs_cfg_path(self.FAKE_ID)
         m = self.useFixture(test_utils.OpenFixture(cfg_path)).mock_open
@@ -283,9 +276,10 @@ class KeepalivedLvsTestCase(base.TestCase):
             mock_install_netns.assert_called_once()
             systemctl_calls = [
                 mock.call(consts.ENABLE,
-                          consts.AMP_NETNS_SVC_PREFIX),
-                mock.call(consts.ENABLE,
-                          f'octavia-keepalivedlvs-{str(self.FAKE_ID)}'),
+                          consts.AMP_NETNS_SVC_PREFIX, False),
+                mock.call(
+                    consts.ENABLE,
+                    'octavia-keepalivedlvs-%s.service' % self.FAKE_ID)
             ]
             mock_systemctl.assert_has_calls(systemctl_calls)
 
@@ -293,8 +287,7 @@ class KeepalivedLvsTestCase(base.TestCase):
                 util.keepalived_backend_check_script_path(), stat.S_IEXEC)
             flags = os.O_WRONLY | os.O_CREAT | os.O_TRUNC
             mode = stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IROTH
-            systemd_cfg_path = util.keepalived_lvs_init_path(
-                consts.INIT_SYSTEMD, self.FAKE_ID)
+            systemd_cfg_path = util.keepalived_lvs_init_path(self.FAKE_ID)
             m_open_calls = [
                 mock.call(cfg_path, flags, mode),
                 mock.call(systemd_cfg_path, flags, mode)
@@ -311,7 +304,7 @@ class KeepalivedLvsTestCase(base.TestCase):
     def test_manage_lvs_listener(self, mock_lvs_exist, mock_check_output):
         res = self.test_keepalivedlvs.manage_lvs_listener(self.FAKE_ID,
                                                           'start')
-        cmd = f"/usr/sbin/service octavia-keepalivedlvs-{self.FAKE_ID} start"
+        cmd = f"systemctl start octavia-keepalivedlvs-{self.FAKE_ID}.service"
         mock_check_output.assert_called_once_with(cmd.split(),
                                                   stderr=subprocess.STDOUT,
                                                   encoding='utf-8')
@@ -331,19 +324,18 @@ class KeepalivedLvsTestCase(base.TestCase):
     @mock.patch('octavia.amphorae.backends.agent.api_server.util.'
                 'get_lvs_listeners', return_value=[LISTENER_ID])
     @mock.patch('octavia.amphorae.backends.agent.api_server.util.'
-                'get_os_init_system', return_value=consts.INIT_SYSTEMD)
-    @mock.patch('octavia.amphorae.backends.agent.api_server.util.'
                 'get_keepalivedlvs_pid', return_value="12345")
     @mock.patch('subprocess.check_output')
     @mock.patch('os.remove')
     @mock.patch('os.path.exists')
     def test_delete_lvs_listener(self, m_exist, m_remove, m_check_output,
-                                 mget_pid, m_init_sys, mget_lvs_listeners):
+                                 mget_pid, mget_lvs_listeners):
         m_exist.return_value = True
         res = self.test_keepalivedlvs.delete_lvs_listener(self.FAKE_ID)
 
-        cmd1 = f"/usr/sbin/service octavia-keepalivedlvs-{self.FAKE_ID} stop"
-        cmd2 = f"systemctl disable octavia-keepalivedlvs-{self.FAKE_ID}"
+        cmd1 = f"systemctl stop octavia-keepalivedlvs-{self.FAKE_ID}.service"
+        cmd2 = ("systemctl disable "
+                f"octavia-keepalivedlvs-{self.FAKE_ID}.service")
         calls = [
             mock.call(cmd1.split(), stderr=subprocess.STDOUT,
                       encoding='utf-8'),
@@ -360,9 +352,10 @@ class KeepalivedLvsTestCase(base.TestCase):
         self.test_keepalivedlvs.delete_lvs_listener(self.FAKE_ID)
         calls = [
             mock.call(
-                json=dict(message='UDP Listener Not Found',
-                          details="No UDP listener with UUID: "
-                                  "{}".format(self.FAKE_ID)), status=404),
+                json=dict(
+                    message='UDP Listener Not Found',
+                    details=f"No UDP listener with UUID: {self.FAKE_ID}"
+                ), status=404),
             mock.call(json={'message': 'OK'})
         ]
         m_webob.Response.assert_has_calls(calls)
@@ -382,16 +375,13 @@ class KeepalivedLvsTestCase(base.TestCase):
                           'details': None}, res.json)
 
     @mock.patch('octavia.amphorae.backends.agent.api_server.util.'
-                'get_os_init_system', return_value=consts.INIT_SYSVINIT)
-    @mock.patch('octavia.amphorae.backends.agent.api_server.util.'
                 'get_keepalivedlvs_pid', return_value="12345")
     @mock.patch('subprocess.check_output')
     @mock.patch('os.remove')
     @mock.patch('os.path.exists')
     def test_delete_lvs_listener_disable_service_fail(self, m_exist, m_remove,
                                                       m_check_output,
-                                                      mget_pid,
-                                                      m_init_sys):
+                                                      mget_pid):
         m_exist.return_value = True
         m_check_output.side_effect = [True,
                                       subprocess.CalledProcessError(
@@ -402,19 +392,3 @@ class KeepalivedLvsTestCase(base.TestCase):
             'message': f'Error disabling octavia-keepalivedlvs-{self.FAKE_ID} '
                        f'service',
             'details': None}, res.json)
-
-    @mock.patch('octavia.amphorae.backends.agent.api_server.util.'
-                'get_os_init_system')
-    @mock.patch('octavia.amphorae.backends.agent.api_server.util.'
-                'get_keepalivedlvs_pid', return_value="12345")
-    @mock.patch('subprocess.check_output')
-    @mock.patch('os.remove')
-    @mock.patch('os.path.exists')
-    def test_delete_lvs_listener_unsupported_sysinit(self, m_exist, m_remove,
-                                                     m_check_output, mget_pid,
-                                                     m_init_sys):
-        m_exist.return_value = True
-        self.assertRaises(
-            util.UnknownInitError,
-            self.test_keepalivedlvs.delete_lvs_listener,
-            self.FAKE_ID)

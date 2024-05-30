@@ -23,8 +23,6 @@ base_path = {{ base_path }}
 bind_host = {{ bind_host }}
 bind_port = {{ bind_port }}
 haproxy_cmd = {{ haproxy_cmd }}
-respawn_count = {{ respawn_count }}
-respawn_interval = {{ respawn_interval }}
 user_log_facility = {{ user_log_facility }}
 administrative_log_facility = {{ administrative_log_facility }}
 

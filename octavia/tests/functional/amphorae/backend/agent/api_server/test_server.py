@@ -69,29 +69,11 @@ class TestServerTestCase(base.TestCase):
             self.centos_test_server = server.Server()
             self.centos_app = self.centos_test_server.app.test_client()
 
-    @mock.patch('octavia.amphorae.backends.agent.api_server.util.'
-                'get_os_init_system', return_value=consts.INIT_SYSTEMD)
-    def test_ubuntu_haproxy_systemd(self, mock_init_system):
-        self._test_haproxy(consts.INIT_SYSTEMD, consts.UBUNTU,
-                           mock_init_system)
+    def test_ubuntu_haproxy(self):
+        self._test_haproxy(consts.UBUNTU)
 
-    @mock.patch('octavia.amphorae.backends.agent.api_server.util.'
-                'get_os_init_system', return_value=consts.INIT_SYSTEMD)
-    def test_centos_haproxy_systemd(self, mock_init_system):
-        self._test_haproxy(consts.INIT_SYSTEMD, consts.CENTOS,
-                           mock_init_system)
-
-    @mock.patch('octavia.amphorae.backends.agent.api_server.util.'
-                'get_os_init_system', return_value=consts.INIT_SYSVINIT)
-    def test_ubuntu_haproxy_sysvinit(self, mock_init_system):
-        self._test_haproxy(consts.INIT_SYSVINIT, consts.UBUNTU,
-                           mock_init_system)
-
-    @mock.patch('octavia.amphorae.backends.agent.api_server.util.'
-                'get_os_init_system', return_value=consts.INIT_UPSTART)
-    def test_ubuntu_haproxy_upstart(self, mock_init_system):
-        self._test_haproxy(consts.INIT_UPSTART, consts.UBUNTU,
-                           mock_init_system)
+    def test_centos_haproxy(self):
+        self._test_haproxy(consts.CENTOS)
 
     @mock.patch('octavia.amphorae.backends.agent.api_server.'
                 'haproxy_compatibility.get_haproxy_versions')
@@ -99,7 +81,7 @@ class TestServerTestCase(base.TestCase):
     @mock.patch('os.makedirs')
     @mock.patch('os.rename')
     @mock.patch('subprocess.check_output')
-    def _test_haproxy(self, init_system, distro, mock_init_system,
+    def _test_haproxy(self, distro,
                       mock_subprocess, mock_rename,
                       mock_makedirs, mock_exists, mock_get_version):
 
@@ -142,16 +124,10 @@ class TestServerTestCase(base.TestCase):
                 '/var/lib/octavia/123/haproxy.cfg.new',
                 '/var/lib/octavia/123/haproxy.cfg')
 
-        if init_system == consts.INIT_SYSTEMD:
-            mock_subprocess.assert_any_call(
-                "systemctl enable haproxy-123".split(),
-                stderr=subprocess.STDOUT, encoding='utf-8')
-        elif init_system == consts.INIT_SYSVINIT:
-            mock_subprocess.assert_any_call(
-                "insserv /etc/init.d/haproxy-123".split(),
-                stderr=subprocess.STDOUT, encoding='utf-8')
-        else:
-            self.assertIn(init_system, consts.VALID_INIT_SYSTEMS)
+        mock_subprocess.assert_any_call(
+            ['systemctl', 'enable', 'haproxy-123.service'],
+            stderr=subprocess.STDOUT,
+            encoding='utf-8')
 
         # exception writing
         m = self.useFixture(test_utils.OpenFixture(file_name)).mock_open
@@ -171,14 +147,7 @@ class TestServerTestCase(base.TestCase):
 
         # check if files get created
         mock_exists.return_value = False
-        if init_system == consts.INIT_SYSTEMD:
-            init_path = consts.SYSTEMD_DIR + '/haproxy-123.service'
-        elif init_system == consts.INIT_UPSTART:
-            init_path = consts.UPSTART_DIR + '/haproxy-123.conf'
-        elif init_system == consts.INIT_SYSVINIT:
-            init_path = consts.SYSVINIT_DIR + '/haproxy-123'
-        else:
-            self.assertIn(init_system, consts.VALID_INIT_SYSTEMS)
+        init_path = consts.SYSTEMD_DIR + '/haproxy-123.service'
 
         m = self.useFixture(test_utils.OpenFixture(init_path)).mock_open
         # happy case upstart file exists
@@ -198,12 +167,8 @@ class TestServerTestCase(base.TestCase):
                                          data='test')
 
             self.assertEqual(202, rv.status_code)
-            if init_system == consts.INIT_SYSTEMD:
-                mode = (stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP |
-                        stat.S_IROTH)
-            else:
-                mode = (stat.S_IRWXU | stat.S_IRGRP | stat.S_IXGRP |
-                        stat.S_IROTH | stat.S_IXOTH)
+            mode = (stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP |
+                    stat.S_IROTH)
             mock_open.assert_called_with(init_path, flags, mode)
             mock_fdopen.assert_called_with(123, 'w')
             handle = mock_fdopen()
@@ -247,23 +212,6 @@ class TestServerTestCase(base.TestCase):
             mock_rename.assert_called_with(
                 '/var/lib/octavia/123/haproxy.cfg.new',
                 '/var/lib/octavia/123/haproxy.cfg.new-failed')
-
-        # unhappy path with bogus init system
-        mock_init_system.return_value = 'bogus'
-        with mock.patch('os.open') as mock_open, mock.patch.object(
-                os, 'fdopen', m) as mock_fdopen, mock.patch(
-                'distro.id') as mock_distro_id:
-            mock_open.return_value = 123
-            mock_distro_id.return_value = distro
-            if distro == consts.UBUNTU:
-                rv = self.ubuntu_app.put('/' + api_server.VERSION +
-                                         '/loadbalancer/amp_123/123/haproxy',
-                                         data='test')
-            elif distro == consts.CENTOS:
-                rv = self.ubuntu_app.put('/' + api_server.VERSION +
-                                         '/loadbalancer/amp_123/123/haproxy',
-                                         data='test')
-            self.assertEqual(500, rv.status_code)
 
     def test_ubuntu_start(self):
         self._test_start(consts.UBUNTU)
@@ -321,8 +269,9 @@ class TestServerTestCase(base.TestCase):
                         ' 123 started'},
             jsonutils.loads(rv.data.decode('utf-8')))
         mock_subprocess.assert_called_with(
-            ['/usr/sbin/service', 'haproxy-123', 'start'],
-            stderr=subprocess.STDOUT, encoding='utf-8')
+            ['systemctl', 'start', 'haproxy-123.service'],
+            stderr=subprocess.STDOUT,
+            encoding='utf-8')
 
         mock_exists.return_value = True
         mock_subprocess.side_effect = subprocess.CalledProcessError(
@@ -340,7 +289,7 @@ class TestServerTestCase(base.TestCase):
                 'details': RANDOM_ERROR,
             }, jsonutils.loads(rv.data.decode('utf-8')))
         mock_subprocess.assert_called_with(
-            ['/usr/sbin/service', 'haproxy-123', 'start'],
+            ['systemctl', 'start', 'haproxy-123.service'],
             stderr=subprocess.STDOUT, encoding='utf-8')
 
     def test_ubuntu_reload(self):
@@ -379,7 +328,7 @@ class TestServerTestCase(base.TestCase):
              'details': 'Listener 123 reloaded'},
             jsonutils.loads(rv.data.decode('utf-8')))
         mock_subprocess.assert_called_with(
-            ['/usr/sbin/service', 'haproxy-123', 'reload'],
+            ['systemctl', 'reload', 'haproxy-123.service'],
             stderr=subprocess.STDOUT, encoding='utf-8')
 
         # Process not running so start
@@ -398,7 +347,7 @@ class TestServerTestCase(base.TestCase):
                         ' 123 started'},
             jsonutils.loads(rv.data.decode('utf-8')))
         mock_subprocess.assert_called_with(
-            ['/usr/sbin/service', 'haproxy-123', 'start'],
+            ['systemctl', 'start', 'haproxy-123.service'],
             stderr=subprocess.STDOUT, encoding='utf-8')
 
     def test_ubuntu_info(self):
@@ -432,39 +381,13 @@ class TestServerTestCase(base.TestCase):
 
     @mock.patch('octavia.amphorae.backends.agent.api_server.util.'
                 'get_backend_for_lb_object', return_value='HAPROXY')
-    @mock.patch('octavia.amphorae.backends.agent.api_server.util.'
-                'get_os_init_system', return_value=consts.INIT_SYSTEMD)
-    def test_delete_ubuntu_listener_systemd(self, mock_init_system,
-                                            mock_get_proto):
-        self._test_delete_listener(consts.INIT_SYSTEMD, consts.UBUNTU,
-                                   mock_init_system)
+    def test_delete_ubuntu_listener(self, mock_get_proto):
+        self._test_delete_listener(consts.UBUNTU)
 
     @mock.patch('octavia.amphorae.backends.agent.api_server.util.'
                 'get_backend_for_lb_object', return_value='HAPROXY')
-    @mock.patch('octavia.amphorae.backends.agent.api_server.util.'
-                'get_os_init_system', return_value=consts.INIT_SYSTEMD)
-    def test_delete_centos_listener_systemd(self, mock_init_system,
-                                            mock_get_proto):
-        self._test_delete_listener(consts.INIT_SYSTEMD, consts.CENTOS,
-                                   mock_init_system)
-
-    @mock.patch('octavia.amphorae.backends.agent.api_server.util.'
-                'get_backend_for_lb_object', return_value='HAPROXY')
-    @mock.patch('octavia.amphorae.backends.agent.api_server.util.'
-                'get_os_init_system', return_value=consts.INIT_SYSVINIT)
-    def test_delete_ubuntu_listener_sysvinit(self, mock_init_system,
-                                             mock_get_proto):
-        self._test_delete_listener(consts.INIT_SYSVINIT, consts.UBUNTU,
-                                   mock_init_system)
-
-    @mock.patch('octavia.amphorae.backends.agent.api_server.util.'
-                'get_backend_for_lb_object', return_value='HAPROXY')
-    @mock.patch('octavia.amphorae.backends.agent.api_server.util.'
-                'get_os_init_system', return_value=consts.INIT_UPSTART)
-    def test_delete_ubuntu_listener_upstart(self, mock_init_system,
-                                            mock_get_proto):
-        self._test_delete_listener(consts.INIT_UPSTART, consts.UBUNTU,
-                                   mock_init_system)
+    def test_delete_centos_listener(self, mock_get_proto):
+        self._test_delete_listener(consts.CENTOS)
 
     @mock.patch('os.listdir')
     @mock.patch('os.path.exists')
@@ -475,7 +398,7 @@ class TestServerTestCase(base.TestCase):
                 'get_haproxy_pid')
     @mock.patch('shutil.rmtree')
     @mock.patch('os.remove')
-    def _test_delete_listener(self, init_system, distro, mock_init_system,
+    def _test_delete_listener(self, distro,
                               mock_remove, mock_rmtree, mock_pid, mock_vrrp,
                               mock_check_output, mock_exists, mock_listdir):
         self.assertIn(distro, [consts.UBUNTU, consts.CENTOS])
@@ -505,17 +428,8 @@ class TestServerTestCase(base.TestCase):
                          jsonutils.loads(rv.data.decode('utf-8')))
         mock_rmtree.assert_called_with('/var/lib/octavia/123')
 
-        if init_system == consts.INIT_SYSTEMD:
-            mock_exists.assert_called_with(consts.SYSTEMD_DIR +
-                                           '/haproxy-123.service')
-        elif init_system == consts.INIT_UPSTART:
-            mock_exists.assert_called_with(consts.UPSTART_DIR +
-                                           '/haproxy-123.conf')
-        elif init_system == consts.INIT_SYSVINIT:
-            mock_exists.assert_called_with(consts.SYSVINIT_DIR +
-                                           '/haproxy-123')
-        else:
-            self.assertIn(init_system, consts.VALID_INIT_SYSTEMS)
+        mock_exists.assert_called_with(consts.SYSTEMD_DIR +
+                                       '/haproxy-123.service')
 
         mock_exists.assert_any_call('/var/lib/octavia/123/123.pid')
 
@@ -532,17 +446,8 @@ class TestServerTestCase(base.TestCase):
                          jsonutils.loads(rv.data.decode('utf-8')))
         mock_rmtree.assert_called_with('/var/lib/octavia/123')
 
-        if init_system == consts.INIT_SYSTEMD:
-            mock_exists.assert_called_with(consts.SYSTEMD_DIR +
-                                           '/haproxy-123.service')
-        elif init_system == consts.INIT_UPSTART:
-            mock_exists.assert_called_with(consts.UPSTART_DIR +
-                                           '/haproxy-123.conf')
-        elif init_system == consts.INIT_SYSVINIT:
-            mock_exists.assert_called_with(consts.SYSVINIT_DIR +
-                                           '/haproxy-123')
-        else:
-            self.assertIn(init_system, consts.VALID_INIT_SYSTEMS)
+        mock_exists.assert_called_with(consts.SYSTEMD_DIR +
+                                       '/haproxy-123.service')
 
         mock_exists.assert_any_call('/var/lib/octavia/123/123.pid')
 
@@ -558,17 +463,8 @@ class TestServerTestCase(base.TestCase):
         self.assertEqual({'message': 'OK'},
                          jsonutils.loads(rv.data.decode('utf-8')))
 
-        if init_system == consts.INIT_SYSTEMD:
-            mock_remove.assert_called_with(consts.SYSTEMD_DIR +
-                                           '/haproxy-123.service')
-        elif init_system == consts.INIT_UPSTART:
-            mock_remove.assert_called_with(consts.UPSTART_DIR +
-                                           '/haproxy-123.conf')
-        elif init_system == consts.INIT_SYSVINIT:
-            mock_remove.assert_called_with(consts.SYSVINIT_DIR +
-                                           '/haproxy-123')
-        else:
-            self.assertIn(init_system, consts.VALID_INIT_SYSTEMS)
+        mock_remove.assert_called_with(consts.SYSTEMD_DIR +
+                                       '/haproxy-123.service')
 
         # service is stopped + upstart script + vrrp
         mock_exists.side_effect = [True, True, False, True, True]
@@ -582,17 +478,8 @@ class TestServerTestCase(base.TestCase):
         self.assertEqual({'message': 'OK'},
                          jsonutils.loads(rv.data.decode('utf-8')))
 
-        if init_system == consts.INIT_SYSTEMD:
-            mock_remove.assert_called_with(consts.SYSTEMD_DIR +
-                                           '/haproxy-123.service')
-        elif init_system == consts.INIT_UPSTART:
-            mock_remove.assert_called_with(consts.UPSTART_DIR +
-                                           '/haproxy-123.conf')
-        elif init_system == consts.INIT_SYSVINIT:
-            mock_remove.assert_called_with(consts.SYSVINIT_DIR +
-                                           '/haproxy-123')
-        else:
-            self.assertIn(init_system, consts.VALID_INIT_SYSTEMS)
+        mock_remove.assert_called_with(consts.SYSTEMD_DIR +
+                                       '/haproxy-123.service')
 
         # service is running + upstart script + no vrrp
         mock_exists.side_effect = [True, True, True, True, False, True]
@@ -608,24 +495,12 @@ class TestServerTestCase(base.TestCase):
                          jsonutils.loads(rv.data.decode('utf-8')))
         mock_pid.assert_called_once_with('123')
         mock_check_output.assert_any_call(
-            ['/usr/sbin/service', 'haproxy-123', 'stop'],
+            ['systemctl', 'stop', 'haproxy-123.service'],
             stderr=subprocess.STDOUT, encoding='utf-8')
 
-        if init_system == consts.INIT_SYSTEMD:
-            mock_check_output.assert_any_call(
-                "systemctl disable haproxy-123".split(),
-                stderr=subprocess.STDOUT,
-                encoding='utf-8')
-        elif init_system == consts.INIT_UPSTART:
-            mock_remove.assert_any_call(consts.UPSTART_DIR +
-                                        '/haproxy-123.conf')
-        elif init_system == consts.INIT_SYSVINIT:
-            mock_check_output.assert_any_call(
-                "insserv -r /etc/init.d/haproxy-123".split(),
-                stderr=subprocess.STDOUT,
-                encoding='utf-8')
-        else:
-            self.assertIn(init_system, consts.VALID_INIT_SYSTEMS)
+        mock_check_output.assert_any_call(
+            ['systemctl', 'disable', 'haproxy-123.service'],
+            stderr=subprocess.STDOUT, encoding='utf-8')
 
         # service is running + upstart script + vrrp
         mock_exists.side_effect = [True, True, True, True, True, True]
@@ -641,24 +516,12 @@ class TestServerTestCase(base.TestCase):
                          jsonutils.loads(rv.data.decode('utf-8')))
         mock_pid.assert_called_with('123')
         mock_check_output.assert_any_call(
-            ['/usr/sbin/service', 'haproxy-123', 'stop'],
+            ['systemctl', 'stop', 'haproxy-123.service'],
             stderr=subprocess.STDOUT, encoding='utf-8')
 
-        if init_system == consts.INIT_SYSTEMD:
-            mock_check_output.assert_any_call(
-                "systemctl disable haproxy-123".split(),
-                stderr=subprocess.STDOUT,
-                encoding='utf-8')
-        elif init_system == consts.INIT_UPSTART:
-            mock_remove.assert_any_call(consts.UPSTART_DIR +
-                                        '/haproxy-123.conf')
-        elif init_system == consts.INIT_SYSVINIT:
-            mock_check_output.assert_any_call(
-                "insserv -r /etc/init.d/haproxy-123".split(),
-                stderr=subprocess.STDOUT,
-                encoding='utf-8')
-        else:
-            self.assertIn(init_system, consts.VALID_INIT_SYSTEMS)
+        mock_check_output.assert_any_call(
+            ['systemctl', 'disable', 'haproxy-123.service'],
+            stderr=subprocess.STDOUT, encoding='utf-8')
 
         # service is running + stopping fails
         mock_exists.side_effect = [True, True, True, True]
@@ -2716,31 +2579,13 @@ class TestServerTestCase(base.TestCase):
                                      content_type='application/json')
         self.assertEqual(400, rv.status_code)
 
-    @mock.patch('octavia.amphorae.backends.agent.api_server.util.'
-                'get_os_init_system', return_value=consts.INIT_SYSTEMD)
-    def test_ubuntu_upload_keepalived_config_systemd(self, mock_init_system):
+    def test_ubuntu_upload_keepalived_config(self):
         with mock.patch('distro.id', return_value='ubuntu'):
-            self._test_upload_keepalived_config(
-                consts.INIT_SYSTEMD, consts.UBUNTU, mock_init_system)
+            self._test_upload_keepalived_config(consts.UBUNTU)
 
-    @mock.patch('octavia.amphorae.backends.agent.api_server.util.'
-                'get_os_init_system', return_value=consts.INIT_SYSTEMD)
-    def test_centos_upload_keepalived_config_systemd(self, mock_init_system):
+    def test_centos_upload_keepalived_config(self):
         with mock.patch('distro.id', return_value='centos'):
-            self._test_upload_keepalived_config(
-                consts.INIT_SYSTEMD, consts.CENTOS, mock_init_system)
-
-    @mock.patch('octavia.amphorae.backends.agent.api_server.util.'
-                'get_os_init_system', return_value=consts.INIT_UPSTART)
-    def test_ubuntu_upload_keepalived_config_upstart(self, mock_init_system):
-        self._test_upload_keepalived_config(consts.INIT_UPSTART,
-                                            consts.UBUNTU, mock_init_system)
-
-    @mock.patch('octavia.amphorae.backends.agent.api_server.util.'
-                'get_os_init_system', return_value=consts.INIT_SYSVINIT)
-    def test_ubuntu_upload_keepalived_config_sysvinit(self, mock_init_system):
-        self._test_upload_keepalived_config(consts.INIT_SYSVINIT,
-                                            consts.UBUNTU, mock_init_system)
+            self._test_upload_keepalived_config(consts.CENTOS)
 
     @mock.patch('octavia.amphorae.backends.agent.api_server.util.'
                 'vrrp_check_script_update')
@@ -2749,8 +2594,7 @@ class TestServerTestCase(base.TestCase):
     @mock.patch('os.rename')
     @mock.patch('subprocess.check_output')
     @mock.patch('os.remove')
-    def _test_upload_keepalived_config(self, init_system, distro,
-                                       mock_init_system, mock_remove,
+    def _test_upload_keepalived_config(self, distro, mock_remove,
                                        mock_subprocess, mock_rename,
                                        mock_makedirs, mock_exists,
                                        mock_vrrp_check):
