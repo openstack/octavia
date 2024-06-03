@@ -1323,7 +1323,7 @@ class TestHealthMonitor(base.BaseAPITest):
                                provisioning_status=constants.ERROR)
         api_hm = self.create_health_monitor(
             pool1_id, constants.HEALTH_MONITOR_HTTP, 1, 1, 1, 1, status=409)
-        ref_msg = 'Pool %s is immutable and cannot be updated.' % pool1_id
+        ref_msg = f'Pool {pool1_id} is immutable and cannot be updated.'
         self.assertEqual(ref_msg, api_hm.get('faultstring'))
 
     def test_create_with_listener(self):
@@ -1852,8 +1852,7 @@ class TestHealthMonitor(base.BaseAPITest):
                                             1, 1, 1, 1).get(self.root_tag)
         new_hm = {constants.DELAY: None}
         self.set_lb_status(self.lb_id)
-        expect_error_msg = ("None is not a valid option for %s" %
-                            constants.DELAY)
+        expect_error_msg = f"None is not a valid option for {constants.DELAY}"
         res = self.put(self.HM_PATH.format(healthmonitor_id=api_hm.get('id')),
                        self._build_body(new_hm), status=400)
         self.assertEqual(expect_error_msg, res.json['faultstring'])
@@ -1864,8 +1863,8 @@ class TestHealthMonitor(base.BaseAPITest):
                                             1, 1, 1, 1).get(self.root_tag)
         new_hm = {constants.MAX_RETRIES: None}
         self.set_lb_status(self.lb_id)
-        expect_error_msg = ("None is not a valid option for %s" %
-                            constants.MAX_RETRIES)
+        expect_error_msg = (f"None is not a valid option for "
+                            f"{constants.MAX_RETRIES}")
         res = self.put(self.HM_PATH.format(healthmonitor_id=api_hm.get('id')),
                        self._build_body(new_hm), status=400)
         self.assertEqual(expect_error_msg, res.json['faultstring'])
@@ -1876,8 +1875,8 @@ class TestHealthMonitor(base.BaseAPITest):
                                             1, 1, 1, 1).get(self.root_tag)
         new_hm = {constants.TIMEOUT: None}
         self.set_lb_status(self.lb_id)
-        expect_error_msg = ("None is not a valid option for %s" %
-                            constants.TIMEOUT)
+        expect_error_msg = (f"None is not a valid option for "
+                            f"{constants.TIMEOUT}")
         res = self.put(self.HM_PATH.format(healthmonitor_id=api_hm.get('id')),
                        self._build_body(new_hm), status=400)
         self.assertEqual(expect_error_msg, res.json['faultstring'])

@@ -152,7 +152,7 @@ class HealthMonitorController(base.BaseController):
         if hm_dict.get('http_version') and hm_dict.get('domain_name'):
             if hm_dict['http_version'] < 1.1:
                 raise exceptions.InvalidOption(
-                    value='http_version %s' % hm_dict['http_version'],
+                    value=f"http_version {hm_dict['http_version']}",
                     option='health monitors HTTP 1.1 domain name health check')
 
         try:
@@ -317,7 +317,7 @@ class HealthMonitorController(base.BaseController):
             http_version = health_monitor.http_version or db_hm.http_version
             if http_version < 1.1:
                 raise exceptions.InvalidOption(
-                    value='http_version %s' % http_version,
+                    value=f'http_version {http_version}',
                     option='health monitors HTTP 1.1 domain name health check')
 
     def _set_default_on_none(self, health_monitor):

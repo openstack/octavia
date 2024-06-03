@@ -599,8 +599,7 @@ class TestL7Rule(base.BaseAPITest):
             l7policy_id, constants.L7RULE_TYPE_HOST_NAME,
             constants.L7RULE_COMPARE_TYPE_EQUAL_TO,
             'www.example.com', status=409)
-        ref_msg = ('L7Policy %s is immutable and cannot be updated.' %
-                   l7policy_id)
+        ref_msg = f'L7Policy {l7policy_id} is immutable and cannot be updated.'
         self.assertEqual(ref_msg, api_l7rule.get('faultstring'))
 
     def test_create_path_rule(self):

@@ -55,8 +55,7 @@ def _process_wrapper(exit_event, proc_name, function, agent_name=None):
     signal.signal(signal.SIGINT, signal.SIG_IGN)
     signal.signal(signal.SIGHUP, _mutate_config)
     if agent_name:
-        process_title = 'octavia-driver-agent - {} -- {}'.format(
-            proc_name, agent_name)
+        process_title = f'octavia-driver-agent - {proc_name} -- {agent_name}'
     else:
         process_title = f'octavia-driver-agent - {proc_name}'
     setproctitle.setproctitle(process_title)

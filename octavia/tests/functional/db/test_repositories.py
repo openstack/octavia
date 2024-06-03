@@ -128,8 +128,8 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
                            'additional_vip')
         for repo_attr in repo_attr_names:
             single_repo = getattr(self.repos, repo_attr, None)
-            message = ("Class Repositories should have %s instance"
-                       " variable.") % repo_attr
+            message = (f"Class Repositories should have {repo_attr} instance "
+                       f"variable.")
             self.assertIsNotNone(single_repo, message=message)
             message = (("instance variable, %(repo_name)s, of class "
                         "Repositories should be an instance of %(base)s") %

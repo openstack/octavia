@@ -190,11 +190,8 @@ class TestPaginationHelper(base.TestCase):
         self.assertEqual(links[0].rel, "next")
         self.assertEqual(
             links[0].href,
-            "{path_url}?limit={limit}&marker={marker}".format(
-                path_url=request_mock.path_url,
-                limit=params['limit'],
-                marker=member1.id
-            ))
+            f"{request_mock.path_url}?limit={params['limit']}&"
+            f"marker={member1.id}")
 
     @mock.patch('octavia.api.common.pagination.request')
     def test_make_links_prev(self, request_mock):
@@ -210,17 +207,13 @@ class TestPaginationHelper(base.TestCase):
         self.assertEqual(links[0].rel, "previous")
         self.assertEqual(
             links[1].href,
-            "{path_url}?limit={limit}&marker={marker}".format(
-                path_url=request_mock.path_url,
-                limit=params['limit'],
-                marker=member1.id))
+            f"{request_mock.path_url}?limit={params['limit']}&"
+            f"marker={member1.id}")
         self.assertEqual(links[1].rel, "next")
         self.assertEqual(
             links[1].href,
-            "{path_url}?limit={limit}&marker={marker}".format(
-                path_url=request_mock.path_url,
-                limit=params['limit'],
-                marker=member1.id))
+            f"{request_mock.path_url}?limit={params['limit']}&"
+            f"marker={member1.id}")
 
     @mock.patch('octavia.api.common.pagination.request')
     def test_make_links_with_configured_url(self, request_mock):

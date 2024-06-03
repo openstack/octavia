@@ -75,14 +75,14 @@ def main():
         'certfile': CONF.amphora_agent.agent_server_cert,
         'ca_certs': CONF.amphora_agent.agent_server_ca,
         'cert_reqs': ssl.CERT_REQUIRED,
-        'ssl_version': getattr(ssl, "PROTOCOL_%s" % proto),
+        'ssl_version': getattr(ssl, f"PROTOCOL_{proto}"),
         'preload_app': True,
         'accesslog': '/var/log/amphora-agent.log',
         'errorlog': '/var/log/amphora-agent.log',
         'loglevel': 'debug',
         'syslog': True,
-        'syslog_facility': 'local{}'.format(
-            CONF.amphora_agent.administrative_log_facility),
+        'syslog_facility': (
+            f'local{CONF.amphora_agent.administrative_log_facility}'),
         'syslog_addr': 'unix://run/rsyslog/octavia/log#dgram',
 
     }

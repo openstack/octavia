@@ -17,8 +17,7 @@ from octavia.common import constants
 
 rules = [
     policy.DocumentedRuleDefault(
-        '{rbac_obj}{action}'.format(rbac_obj=constants.RBAC_PROVIDER_FLAVOR,
-                                    action=constants.RBAC_GET_ALL),
+        f'{constants.RBAC_PROVIDER_FLAVOR}{constants.RBAC_GET_ALL}',
         constants.RULE_API_ADMIN,
         "List the provider flavor capabilities.",
         [{'method': 'GET',

@@ -591,7 +591,7 @@ class TestMember(base.BaseAPITest):
         self.set_object_status(self.pool_repo, pool1_id,
                                provisioning_status=constants.ERROR)
         api_member = self.create_member(pool1_id, '192.0.2.1', 80, status=409)
-        ref_msg = 'Pool %s is immutable and cannot be updated.' % pool1_id
+        ref_msg = f'Pool {pool1_id} is immutable and cannot be updated.'
         self.assertEqual(ref_msg, api_member.get('faultstring'))
 
     # TODO(rm_work) Remove after deprecation of project_id in POST (R series)
@@ -1434,7 +1434,7 @@ class TestMember(base.BaseAPITest):
         member_path = self.MEMBERS_PATH.format(
             pool_id=bad_pool_id) + '/' + api_member['id']
         result = self.delete(member_path, status=404).json
-        ref_msg = 'Member %s not found.' % api_member['id']
+        ref_msg = f"Member {api_member['id']} not found."
         self.assertEqual(ref_msg, result.get('faultstring'))
 
     @mock.patch('octavia.api.drivers.utils.call_provider')

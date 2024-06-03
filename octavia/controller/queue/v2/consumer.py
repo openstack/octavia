@@ -53,8 +53,7 @@ class ConsumerService(cotyledon.Service):
         if CONF.task_flow.jobboard_enabled:
             for e in self.endpoints:
                 e.worker.services_controller.run_conductor(
-                    'octavia-task-flow-conductor-%s' %
-                    uuidutils.generate_uuid())
+                    f'octavia-task-flow-conductor-{uuidutils.generate_uuid()}')
 
     def terminate(self):
         if self.message_listener:

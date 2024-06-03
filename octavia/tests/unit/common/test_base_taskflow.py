@@ -92,7 +92,7 @@ class TestTaskFlowServiceController(base.TestCase):
     def test_run_poster(self, mock_engines, mockuuid):
         flow_factory = mock.MagicMock()
         flow_factory.__name__ = 'testname'
-        job_name = 'testname-%s' % self._mock_uuid
+        job_name = f'testname-{self._mock_uuid}'
         job_details = {'store': 'test'}
         with mock.patch.object(self.service_controller, '_wait_for_job'
                                ) as wait:

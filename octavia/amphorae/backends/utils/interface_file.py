@@ -168,7 +168,7 @@ class VIPInterfaceFile(InterfaceFile):
             })
 
             vip_cidr = ipaddress.ip_network(
-                "{}/{}".format(vip['ip_address'], vip['prefixlen']),
+                f"{vip['ip_address']}/{vip['prefixlen']}",
                 strict=False)
             self.routes.append({
                 consts.DST: vip_cidr.exploded,

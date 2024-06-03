@@ -51,8 +51,7 @@ class TestNetworkNamespace(base.TestCase):
         mock_cdll.return_value = mock_cdll_obj
         mock_getpid.return_value = FAKE_PID
         expected_current_netns = f'/proc/{FAKE_PID}/ns/net'
-        expected_target_netns = '/var/run/netns/{netns}'.format(
-            netns=FAKE_NETNS)
+        expected_target_netns = f'/var/run/netns/{FAKE_NETNS}'
 
         netns = network_namespace.NetworkNamespace(FAKE_NETNS)
 
@@ -73,8 +72,7 @@ class TestNetworkNamespace(base.TestCase):
         mock_cdll_obj = mock.MagicMock()
         mock_cdll.return_value = mock_cdll_obj
         expected_current_netns = f'/proc/{FAKE_PID}/ns/net'
-        expected_target_netns = '/var/run/netns/{netns}'.format(
-            netns=FAKE_NETNS)
+        expected_target_netns = f'/var/run/netns/{FAKE_NETNS}'
 
         netns = network_namespace.NetworkNamespace(FAKE_NETNS)
 

@@ -17,46 +17,40 @@ from octavia.common import constants
 
 rules = [
     policy.DocumentedRuleDefault(
-        '{rbac_obj}{action}'.format(rbac_obj=constants.RBAC_QUOTA,
-                                    action=constants.RBAC_GET_ALL),
+        f'{constants.RBAC_QUOTA}{constants.RBAC_GET_ALL}',
         constants.RULE_API_READ_QUOTA,
         "List Quotas",
         [{'method': 'GET', 'path': '/v2/lbaas/quotas'}]
     ),
     policy.DocumentedRuleDefault(
-        '{rbac_obj}{action}'.format(rbac_obj=constants.RBAC_QUOTA,
-                                    action=constants.RBAC_GET_ALL_GLOBAL),
+        f'{constants.RBAC_QUOTA}{constants.RBAC_GET_ALL_GLOBAL}',
         constants.RULE_API_READ_QUOTA_GLOBAL,
         "List Quotas including resources owned by others",
         [{'method': 'GET', 'path': '/v2/lbaas/quotas'}]
     ),
     policy.DocumentedRuleDefault(
-        '{rbac_obj}{action}'.format(rbac_obj=constants.RBAC_QUOTA,
-                                    action=constants.RBAC_GET_ONE),
+        f'{constants.RBAC_QUOTA}{constants.RBAC_GET_ONE}',
         constants.RULE_API_READ_QUOTA,
         "Show Quota details",
         [{'method': 'GET',
           'path': '/v2/lbaas/quotas/{project_id}'}]
     ),
     policy.DocumentedRuleDefault(
-        '{rbac_obj}{action}'.format(rbac_obj=constants.RBAC_QUOTA,
-                                    action=constants.RBAC_PUT),
+        f'{constants.RBAC_QUOTA}{constants.RBAC_PUT}',
         constants.RULE_API_WRITE_QUOTA,
         "Update a Quota",
         [{'method': 'PUT',
           'path': '/v2/lbaas/quotas/{project_id}'}]
     ),
     policy.DocumentedRuleDefault(
-        '{rbac_obj}{action}'.format(rbac_obj=constants.RBAC_QUOTA,
-                                    action=constants.RBAC_DELETE),
+        f'{constants.RBAC_QUOTA}{constants.RBAC_DELETE}',
         constants.RULE_API_WRITE_QUOTA,
         "Reset a Quota",
         [{'method': 'DELETE',
           'path': '/v2/lbaas/quotas/{project_id}'}]
     ),
     policy.DocumentedRuleDefault(
-        '{rbac_obj}{action}'.format(rbac_obj=constants.RBAC_QUOTA,
-                                    action=constants.RBAC_GET_DEFAULTS),
+        f'{constants.RBAC_QUOTA}{constants.RBAC_GET_DEFAULTS}',
         constants.RULE_API_READ_QUOTA,
         "Show Default Quota for a Project",
         [{'method': 'GET',

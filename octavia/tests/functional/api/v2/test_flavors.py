@@ -510,7 +510,7 @@ class TestFlavors(base.BaseAPITest):
         self.delete(self.FLAVOR_PATH.format(flavor_id=flavor.get('id')))
         response = self.get(self.FLAVOR_PATH.format(
             flavor_id=flavor.get('id')), status=404)
-        err_msg = "Flavor %s not found." % flavor.get('id')
+        err_msg = f"Flavor {flavor.get('id')} not found."
         self.assertEqual(err_msg, response.json.get('faultstring'))
 
     def test_delete_nonexistent_id(self):
@@ -557,7 +557,7 @@ class TestFlavors(base.BaseAPITest):
         self.conf.config(group='api_settings', auth_strategy=auth_strategy)
         response = self.get(self.FLAVOR_PATH.format(
             flavor_id=flavor.get('id')), status=404)
-        err_msg = "Flavor %s not found." % flavor.get('id')
+        err_msg = f"Flavor {flavor.get('id')} not found."
         self.assertEqual(err_msg, response.json.get('faultstring'))
 
     def test_delete_not_authorized(self):

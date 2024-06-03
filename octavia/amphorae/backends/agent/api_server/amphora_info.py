@@ -129,7 +129,7 @@ class AmphoraInfo:
         extend_data = {}
         for extend in extend_info:
             package_version = self._get_version_of_installed_package(extend)
-            extend_data['%s_version' % extend] = package_version
+            extend_data[f'{extend}_version'] = package_version
         return extend_data
 
     def _get_meminfo(self):

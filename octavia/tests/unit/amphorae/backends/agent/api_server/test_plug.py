@@ -111,8 +111,7 @@ class TestPlug(base.TestCase):
             )
         mock_webob.Response.assert_any_call(json={
             'message': 'OK',
-            'details': 'VIPs plugged on interface {interface}: {vips}'.format(
-                vips=FAKE_IP_IPV4, interface='eth1')
+            'details': f'VIPs plugged on interface eth1: {FAKE_IP_IPV4}'
         }, status=202)
 
     @mock.patch('octavia.amphorae.backends.agent.api_server.plug.Plug.'
@@ -140,8 +139,8 @@ class TestPlug(base.TestCase):
             )
         mock_webob.Response.assert_any_call(json={
             'message': 'OK',
-            'details': 'VIPs plugged on interface {interface}: {vips}'.format(
-                vips=FAKE_IP_IPV6_EXPANDED, interface='eth1')
+            'details': f'VIPs plugged on interface eth1: '
+                       f'{FAKE_IP_IPV6_EXPANDED}'
         }, status=202)
 
     @mock.patch('octavia.amphorae.backends.agent.api_server.plug.Plug.'
@@ -338,8 +337,7 @@ class TestPlug(base.TestCase):
 
         mock_webob.Response.assert_any_call(
             json={'message': 'OK',
-                  'details': 'Updated existing interface {}'.format(
-                      FAKE_INTERFACE)},
+                  'details': f'Updated existing interface {FAKE_INTERFACE}'},
             status=202)
 
     @mock.patch.object(plug, "webob")
@@ -408,8 +406,7 @@ class TestPlug(base.TestCase):
 
         mock_webob.Response.assert_any_call(
             json={'message': 'OK',
-                  'details': 'Updated existing interface {}'.format(
-                      FAKE_INTERFACE)},
+                  'details': f'Updated existing interface {FAKE_INTERFACE}'},
             status=202)
 
     @mock.patch('pyroute2.NetNS', create=True)

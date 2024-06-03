@@ -129,9 +129,8 @@ class Loadbalancer:
             file.write(new_config)
 
         # use haproxy to check the config
-        cmd = "haproxy -c -L {peer} -f {config_file} -f {haproxy_ug}".format(
-            config_file=name, peer=peer_name,
-            haproxy_ug=consts.HAPROXY_USER_GROUP_CFG)
+        cmd = (f"haproxy -c -L {peer_name} -f {name} -f "
+               f"{consts.HAPROXY_USER_GROUP_CFG}")
 
         try:
             subprocess.check_output(cmd.split(), stderr=subprocess.STDOUT)
@@ -282,8 +281,7 @@ class Loadbalancer:
                    else 1)
         saved_exc = None
         for idx in range(retries):
-            cmd = ("/usr/sbin/service haproxy-{lb_id} {action}".format(
-                lb_id=lb_id, action=action))
+            cmd = f"/usr/sbin/service haproxy-{lb_id} {action}"
 
             try:
                 subprocess.check_output(cmd.split(), stderr=subprocess.STDOUT)
@@ -338,12 +336,10 @@ class Loadbalancer:
                       consts.AMP_ACTION_RELOAD]:
             return webob.Response(json={
                 'message': 'OK',
-                'details': 'Listener {lb_id} {action}ed'.format(
-                    lb_id=lb_id, action=action)}, status=202)
+                'details': f'Listener {lb_id} {action}ed'}, status=202)
 
         details = (
-            'Configuration file is valid\n'
-            'haproxy daemon for {} started'.format(lb_id)
+            f'Configuration file is valid\nhaproxy daemon for {lb_id} started'
         )
 
         return webob.Response(json={'message': 'OK', 'details': details},
@@ -394,9 +390,7 @@ class Loadbalancer:
 
         if init_system == consts.INIT_SYSTEMD:
             util.run_systemctl_command(
-                consts.DISABLE, "haproxy-{lb_id}".format(
-                    lb_id=lb_id))
-
+                consts.DISABLE, f"haproxy-{lb_id}")
         elif init_system == consts.INIT_SYSVINIT:
             init_disable_cmd = f"insserv -r {init_path}"
             try:
@@ -475,8 +469,8 @@ class Loadbalancer:
         if not path_exists:
             return webob.Response(json={
                 'message': 'Certificate Not Found',
-                'details': "No certificate with filename: {f}".format(
-                    f=filename)}, status=404)
+                'details': f"No certificate with filename: {filename}"},
+                status=404)
 
         with open(cert_path, encoding='utf-8') as crt_file:
             cert = crt_file.read()
@@ -512,8 +506,8 @@ class Loadbalancer:
             raise exceptions.HTTPException(
                 response=webob.Response(json={
                     'message': 'Loadbalancer Not Found',
-                    'details': "No loadbalancer with UUID: {}".format(
-                        lb_id)}, status=404))
+                    'details': f"No loadbalancer with UUID: {lb_id}"},
+                    status=404))
 
     def _check_ssl_filename_format(self, filename):
         # check if the format is (xxx.)*xxx.pem

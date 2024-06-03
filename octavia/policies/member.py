@@ -17,38 +17,33 @@ from octavia.common import constants
 
 rules = [
     policy.DocumentedRuleDefault(
-        '{rbac_obj}{action}'.format(rbac_obj=constants.RBAC_MEMBER,
-                                    action=constants.RBAC_GET_ALL),
+        f'{constants.RBAC_MEMBER}{constants.RBAC_GET_ALL}',
         constants.RULE_API_READ,
         "List Members of a Pool",
         [{'method': 'GET', 'path': '/v2/lbaas/pools/{pool_id}/members'}]
     ),
     policy.DocumentedRuleDefault(
-        '{rbac_obj}{action}'.format(rbac_obj=constants.RBAC_MEMBER,
-                                    action=constants.RBAC_POST),
+        f'{constants.RBAC_MEMBER}{constants.RBAC_POST}',
         constants.RULE_API_WRITE,
         "Create a Member",
         [{'method': 'POST', 'path': '/v2/lbaas/pools/{pool_id}/members'}]
     ),
     policy.DocumentedRuleDefault(
-        '{rbac_obj}{action}'.format(rbac_obj=constants.RBAC_MEMBER,
-                                    action=constants.RBAC_GET_ONE),
+        f'{constants.RBAC_MEMBER}{constants.RBAC_GET_ONE}',
         constants.RULE_API_READ,
         "Show Member details",
         [{'method': 'GET',
           'path': '/v2/lbaas/pools/{pool_id}/members/{member_id}'}]
     ),
     policy.DocumentedRuleDefault(
-        '{rbac_obj}{action}'.format(rbac_obj=constants.RBAC_MEMBER,
-                                    action=constants.RBAC_PUT),
+        f'{constants.RBAC_MEMBER}{constants.RBAC_PUT}',
         constants.RULE_API_WRITE,
         "Update a Member",
         [{'method': 'PUT',
           'path': '/v2/lbaas/pools/{pool_id}/members/{member_id}'}]
     ),
     policy.DocumentedRuleDefault(
-        '{rbac_obj}{action}'.format(rbac_obj=constants.RBAC_MEMBER,
-                                    action=constants.RBAC_DELETE),
+        f'{constants.RBAC_MEMBER}{constants.RBAC_DELETE}',
         constants.RULE_API_WRITE,
         "Remove a Member",
         [{'method': 'DELETE',

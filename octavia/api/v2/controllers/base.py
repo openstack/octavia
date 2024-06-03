@@ -223,8 +223,7 @@ class BaseController(pecan_rest.RestController):
 
     def _auth_get_all(self, context, project_id):
         # Check authorization to list objects under all projects
-        action = '{rbac_obj}{action}'.format(
-            rbac_obj=self.RBAC_TYPE, action=constants.RBAC_GET_ALL_GLOBAL)
+        action = f'{self.RBAC_TYPE}{constants.RBAC_GET_ALL_GLOBAL}'
         target = {'project_id': project_id}
         if not policy.get_enforcer().authorize(action, target,
                                                context, do_raise=False):
@@ -247,8 +246,7 @@ class BaseController(pecan_rest.RestController):
 
     def _auth_validate_action(self, context, project_id, action):
         # Check that the user is authorized to do an action in this object
-        action = '{rbac_obj}{action}'.format(
-            rbac_obj=self.RBAC_TYPE, action=action)
+        action = f'{self.RBAC_TYPE}{action}'
         target = {'project_id': project_id}
         policy.get_enforcer().authorize(action, target, context)
 

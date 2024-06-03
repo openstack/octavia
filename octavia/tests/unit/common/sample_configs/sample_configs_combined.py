@@ -1262,8 +1262,7 @@ def sample_base_expected_config(frontend=None, logging=None, backend=None,
     if peers is None:
         peers = "\n\n"
     if global_opts is None:
-        global_opts = "    maxconn {maxconn}\n\n".format(
-            maxconn=constants.HAPROXY_DEFAULT_MAXCONN)
+        global_opts = f"    maxconn {constants.HAPROXY_DEFAULT_MAXCONN}\n\n"
     if defaults is None:
         defaults = ("defaults\n"
                     "    log global\n"

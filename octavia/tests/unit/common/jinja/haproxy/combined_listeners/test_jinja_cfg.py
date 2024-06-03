@@ -47,23 +47,21 @@ class TestHaproxyCfg(base.TestCase):
             CONF.haproxy_amphora.base_cert_dir,
             'sample_loadbalancer_id_1/sample_listener_id_1.pem')
         fe = ("frontend sample_listener_id_1\n"
-              "    maxconn {maxconn}\n"
-              "    redirect scheme https if !{{ ssl_fc }}\n"
+              f"    maxconn {constants.HAPROXY_DEFAULT_MAXCONN}\n"
+              "    redirect scheme https if !{ ssl_fc }\n"
               "    http-response set-header Strict-Transport-Security "
               "\"max-age=10000000; includeSubDomains; preload;\"\n"
               "    bind 10.0.0.2:443 "
-              "ssl crt-list {crt_list} "
+              f"ssl crt-list {FAKE_CRT_LIST_FILENAME} "
               "ca-file /var/lib/octavia/certs/sample_loadbalancer_id_1/"
               "client_ca.pem verify required crl-file /var/lib/octavia/"
-              "certs/sample_loadbalancer_id_1/SHA_ID.pem ciphers {ciphers} "
-              "no-sslv3 no-tlsv10 no-tlsv11 alpn {alpn}\n"
+              "certs/sample_loadbalancer_id_1/SHA_ID.pem ciphers "
+              f"{constants.CIPHERS_OWASP_SUITE_B} "
+              "no-sslv3 no-tlsv10 no-tlsv11 alpn "
+              f"{','.join(constants.AMPHORA_SUPPORTED_ALPN_PROTOCOLS)}\n"
               "    mode http\n"
               "    default_backend sample_pool_id_1:sample_listener_id_1\n"
-              "    timeout client 50000\n").format(
-            maxconn=constants.HAPROXY_DEFAULT_MAXCONN,
-            crt_list=FAKE_CRT_LIST_FILENAME,
-            ciphers=constants.CIPHERS_OWASP_SUITE_B,
-            alpn=",".join(constants.AMPHORA_SUPPORTED_ALPN_PROTOCOLS))
+              "    timeout client 50000\n")
         be = ("backend sample_pool_id_1:sample_listener_id_1\n"
               "    mode http\n"
               "    balance roundrobin\n"
@@ -71,7 +69,7 @@ class TestHaproxyCfg(base.TestCase):
               "    timeout check 31s\n"
               "    option httpchk GET /index.html HTTP/1.0\\r\\n\n"
               "    http-check expect rstatus 418\n"
-              "    fullconn {maxconn}\n"
+              f"    fullconn {constants.HAPROXY_DEFAULT_MAXCONN}\n"
               "    option allbackups\n"
               "    timeout connect 5000\n"
               "    timeout server 50000\n"
@@ -80,8 +78,7 @@ class TestHaproxyCfg(base.TestCase):
               "cookie sample_member_id_1\n"
               "    server sample_member_id_2 10.0.0.98:82 "
               "weight 13 check inter 30s fall 3 rise 2 cookie "
-              "sample_member_id_2\n\n").format(
-            maxconn=constants.HAPROXY_DEFAULT_MAXCONN)
+              "sample_member_id_2\n\n")
         tls_tupe = {'cont_id_1':
                     sample_configs_combined.sample_tls_container_tuple(
                         id='tls_container_id',
@@ -106,20 +103,18 @@ class TestHaproxyCfg(base.TestCase):
         FAKE_CRT_LIST_FILENAME = os.path.join(
             CONF.haproxy_amphora.base_cert_dir,
             'sample_loadbalancer_id_1/sample_listener_id_1.pem')
+        alpn = ",".join(constants.AMPHORA_SUPPORTED_ALPN_PROTOCOLS)
         fe = ("frontend sample_listener_id_1\n"
-              "    maxconn {maxconn}\n"
-              "    redirect scheme https if !{{ ssl_fc }}\n"
+              f"    maxconn {constants.HAPROXY_DEFAULT_MAXCONN}\n"
+              "    redirect scheme https if !{ ssl_fc }\n"
               "    http-response set-header Strict-Transport-Security "
               "\"max-age=10000000; includeSubDomains; preload;\"\n"
-              "    bind 10.0.0.2:443 ssl crt-list {crt_list}"
-              "   ciphers {ciphers} no-sslv3 no-tlsv10 no-tlsv11 alpn {alpn}\n"
+              f"    bind 10.0.0.2:443 ssl crt-list {FAKE_CRT_LIST_FILENAME}"
+              f"   ciphers {constants.CIPHERS_OWASP_SUITE_B} no-sslv3 "
+              f"no-tlsv10 no-tlsv11 alpn {alpn}\n"
               "    mode http\n"
               "    default_backend sample_pool_id_1:sample_listener_id_1\n"
-              "    timeout client 50000\n").format(
-            maxconn=constants.HAPROXY_DEFAULT_MAXCONN,
-            crt_list=FAKE_CRT_LIST_FILENAME,
-            ciphers=constants.CIPHERS_OWASP_SUITE_B,
-            alpn=",".join(constants.AMPHORA_SUPPORTED_ALPN_PROTOCOLS))
+              "    timeout client 50000\n")
         be = ("backend sample_pool_id_1:sample_listener_id_1\n"
               "    mode http\n"
               "    balance roundrobin\n"
@@ -127,7 +122,7 @@ class TestHaproxyCfg(base.TestCase):
               "    timeout check 31s\n"
               "    option httpchk GET /index.html HTTP/1.0\\r\\n\n"
               "    http-check expect rstatus 418\n"
-              "    fullconn {maxconn}\n"
+              f"    fullconn {constants.HAPROXY_DEFAULT_MAXCONN}\n"
               "    option allbackups\n"
               "    timeout connect 5000\n"
               "    timeout server 50000\n"
@@ -136,8 +131,7 @@ class TestHaproxyCfg(base.TestCase):
               "cookie sample_member_id_1\n"
               "    server sample_member_id_2 10.0.0.98:82 "
               "weight 13 check inter 30s fall 3 rise 2 "
-              "cookie sample_member_id_2\n\n").format(
-            maxconn=constants.HAPROXY_DEFAULT_MAXCONN)
+              "cookie sample_member_id_2\n\n")
         rendered_obj = self.jinja_cfg.render_loadbalancer_obj(
             sample_configs_combined.sample_amphora_tuple(),
             [sample_configs_combined.sample_listener_tuple(
@@ -159,19 +153,18 @@ class TestHaproxyCfg(base.TestCase):
         FAKE_CRT_LIST_FILENAME = os.path.join(
             CONF.haproxy_amphora.base_cert_dir,
             'sample_loadbalancer_id_1/sample_listener_id_1.pem')
+        alpn = ",".join(constants.AMPHORA_SUPPORTED_ALPN_PROTOCOLS)
         fe = ("frontend sample_listener_id_1\n"
-              "    maxconn {maxconn}\n"
-              "    redirect scheme https if !{{ ssl_fc }}\n"
+              f"    maxconn {constants.HAPROXY_DEFAULT_MAXCONN}\n"
+              "    redirect scheme https if !{ ssl_fc }\n"
               "    http-response set-header Strict-Transport-Security "
               "\"max-age=10000000; includeSubDomains; preload;\"\n"
-              "    bind 10.0.0.2:443 ssl crt-list {crt_list}    "
-              "no-sslv3 no-tlsv10 no-tlsv11 alpn {alpn}\n"
+              "    bind 10.0.0.2:443 ssl crt-list "
+              f"{FAKE_CRT_LIST_FILENAME}    "
+              f"no-sslv3 no-tlsv10 no-tlsv11 alpn {alpn}\n"
               "    mode http\n"
               "    default_backend sample_pool_id_1:sample_listener_id_1\n"
-              "    timeout client 50000\n").format(
-            maxconn=constants.HAPROXY_DEFAULT_MAXCONN,
-            crt_list=FAKE_CRT_LIST_FILENAME,
-            alpn=",".join(constants.AMPHORA_SUPPORTED_ALPN_PROTOCOLS))
+              "    timeout client 50000\n")
         be = ("backend sample_pool_id_1:sample_listener_id_1\n"
               "    mode http\n"
               "    balance roundrobin\n"
@@ -211,24 +204,22 @@ class TestHaproxyCfg(base.TestCase):
         FAKE_CRT_LIST_FILENAME = os.path.join(
             CONF.haproxy_amphora.base_cert_dir,
             'sample_loadbalancer_id_1/sample_listener_id_1.pem')
+        alpn = ",".join(constants.AMPHORA_SUPPORTED_ALPN_PROTOCOLS)
         fe = ("frontend sample_listener_id_1\n"
-              "    maxconn {maxconn}\n"
-              "    redirect scheme https if !{{ ssl_fc }}\n"
+              f"    maxconn {constants.HAPROXY_DEFAULT_MAXCONN}\n"
+              "    redirect scheme https if !{ ssl_fc }\n"
               "    http-response set-header Strict-Transport-Security "
               "\"max-age=10000000; includeSubDomains; preload;\"\n"
               "    bind 10.0.0.2:443 "
-              "ssl crt-list {crt_list} "
+              f"ssl crt-list {FAKE_CRT_LIST_FILENAME} "
               "ca-file /var/lib/octavia/certs/sample_loadbalancer_id_1/"
               "client_ca.pem verify required crl-file /var/lib/octavia/"
-              "certs/sample_loadbalancer_id_1/SHA_ID.pem ciphers {ciphers} "
-              "alpn {alpn}\n"
+              "certs/sample_loadbalancer_id_1/SHA_ID.pem ciphers "
+              f"{constants.CIPHERS_OWASP_SUITE_B} "
+              f"alpn {alpn}\n"
               "    mode http\n"
               "    default_backend sample_pool_id_1:sample_listener_id_1\n"
-              "    timeout client 50000\n").format(
-            maxconn=constants.HAPROXY_DEFAULT_MAXCONN,
-            crt_list=FAKE_CRT_LIST_FILENAME,
-            ciphers=constants.CIPHERS_OWASP_SUITE_B,
-            alpn=",".join(constants.AMPHORA_SUPPORTED_ALPN_PROTOCOLS))
+              "    timeout client 50000\n")
         be = ("backend sample_pool_id_1:sample_listener_id_1\n"
               "    mode http\n"
               "    balance roundrobin\n"
@@ -271,19 +262,18 @@ class TestHaproxyCfg(base.TestCase):
         FAKE_CRT_LIST_FILENAME = os.path.join(
             CONF.haproxy_amphora.base_cert_dir,
             'sample_loadbalancer_id_1/sample_listener_id_1.pem')
+        alpn = ",".join(constants.AMPHORA_SUPPORTED_ALPN_PROTOCOLS)
         fe = ("frontend sample_listener_id_1\n"
-              "    maxconn {maxconn}\n"
-              "    redirect scheme https if !{{ ssl_fc }}\n"
+              f"    maxconn {constants.HAPROXY_DEFAULT_MAXCONN}\n"
+              "    redirect scheme https if !{ ssl_fc }\n"
               "    http-response set-header Strict-Transport-Security "
               "\"max-age=10000000; includeSubDomains; preload;\"\n"
-              "    bind 10.0.0.2:443 ssl crt-list {crt_list}    "
-              "alpn {alpn}\n"
+              "    bind 10.0.0.2:443 ssl crt-list "
+              f"{FAKE_CRT_LIST_FILENAME}    "
+              f"alpn {alpn}\n"
               "    mode http\n"
               "    default_backend sample_pool_id_1:sample_listener_id_1\n"
-              "    timeout client 50000\n").format(
-            maxconn=constants.HAPROXY_DEFAULT_MAXCONN,
-            crt_list=FAKE_CRT_LIST_FILENAME,
-            alpn=",".join(constants.AMPHORA_SUPPORTED_ALPN_PROTOCOLS))
+              "    timeout client 50000\n")
         be = ("backend sample_pool_id_1:sample_listener_id_1\n"
               "    mode http\n"
               "    balance roundrobin\n"
@@ -325,20 +315,19 @@ class TestHaproxyCfg(base.TestCase):
             CONF.haproxy_amphora.base_cert_dir,
             'sample_loadbalancer_id_1/sample_listener_id_1.pem')
         alpn_protocols = ['chip', 'dale']
+        alpn = ",".join(alpn_protocols)
         fe = ("frontend sample_listener_id_1\n"
-              "    maxconn {maxconn}\n"
-              "    redirect scheme https if !{{ ssl_fc }}\n"
+              f"    maxconn {constants.HAPROXY_DEFAULT_MAXCONN}\n"
+              "    redirect scheme https if !{ ssl_fc }\n"
               "    http-response set-header Strict-Transport-Security "
               "\"max-age=10000000; includeSubDomains; preload;\"\n"
-              "    bind 10.0.0.2:443 ssl crt-list {crt_list}   "
-              "ciphers {ciphers} no-sslv3 no-tlsv10 no-tlsv11 alpn {alpn}\n"
+              "    bind 10.0.0.2:443 ssl crt-list "
+              f"{FAKE_CRT_LIST_FILENAME}   "
+              f"ciphers {constants.CIPHERS_OWASP_SUITE_B} "
+              f"no-sslv3 no-tlsv10 no-tlsv11 alpn {alpn}\n"
               "    mode http\n"
               "    default_backend sample_pool_id_1:sample_listener_id_1\n"
-              "    timeout client 50000\n").format(
-            maxconn=constants.HAPROXY_DEFAULT_MAXCONN,
-            crt_list=FAKE_CRT_LIST_FILENAME,
-            ciphers=constants.CIPHERS_OWASP_SUITE_B,
-            alpn=",".join(alpn_protocols))
+              "    timeout client 50000\n")
         be = ("backend sample_pool_id_1:sample_listener_id_1\n"
               "    mode http\n"
               "    balance roundrobin\n"
@@ -380,18 +369,17 @@ class TestHaproxyCfg(base.TestCase):
             CONF.haproxy_amphora.base_cert_dir,
             'sample_loadbalancer_id_1/sample_listener_id_1.pem')
         fe = ("frontend sample_listener_id_1\n"
-              "    maxconn {maxconn}\n"
-              "    redirect scheme https if !{{ ssl_fc }}\n"
+              f"    maxconn {constants.HAPROXY_DEFAULT_MAXCONN}\n"
+              "    redirect scheme https if !{ ssl_fc }\n"
               "    http-response set-header Strict-Transport-Security "
               "\"max-age=10000000; includeSubDomains; preload;\"\n"
-              "    bind 10.0.0.2:443 ssl crt-list {crt_list}   "
-              "ciphers {ciphers} no-sslv3 no-tlsv10 no-tlsv11\n"
+              "    bind 10.0.0.2:443 ssl crt-list "
+              f"{FAKE_CRT_LIST_FILENAME}   "
+              f"ciphers {constants.CIPHERS_OWASP_SUITE_B} no-sslv3 "
+              f"no-tlsv10 no-tlsv11\n"
               "    mode http\n"
               "    default_backend sample_pool_id_1:sample_listener_id_1\n"
-              "    timeout client 50000\n").format(
-            maxconn=constants.HAPROXY_DEFAULT_MAXCONN,
-            crt_list=FAKE_CRT_LIST_FILENAME,
-            ciphers=constants.CIPHERS_OWASP_SUITE_B)
+              "    timeout client 50000\n")
         be = ("backend sample_pool_id_1:sample_listener_id_1\n"
               "    mode http\n"
               "    balance roundrobin\n"
@@ -433,18 +421,17 @@ class TestHaproxyCfg(base.TestCase):
             CONF.haproxy_amphora.base_cert_dir,
             'sample_loadbalancer_id_1/sample_listener_id_1.pem')
         fe = ("frontend sample_listener_id_1\n"
-              "    maxconn {maxconn}\n"
-              "    redirect scheme https if !{{ ssl_fc }}\n"
+              f"    maxconn {constants.HAPROXY_DEFAULT_MAXCONN}\n"
+              "    redirect scheme https if !{ ssl_fc }\n"
               "    http-response set-header Strict-Transport-Security "
               "\"max-age=10000000;\"\n"
-              "    bind 10.0.0.2:443 ssl crt-list {crt_list}   "
-              "ciphers {ciphers} no-sslv3 no-tlsv10 no-tlsv11\n"
+              "    bind 10.0.0.2:443 ssl crt-list "
+              f"{FAKE_CRT_LIST_FILENAME}   "
+              f"ciphers {constants.CIPHERS_OWASP_SUITE_B} "
+              "no-sslv3 no-tlsv10 no-tlsv11\n"
               "    mode http\n"
               "    default_backend sample_pool_id_1:sample_listener_id_1\n"
-              "    timeout client 50000\n").format(
-            maxconn=constants.HAPROXY_DEFAULT_MAXCONN,
-            crt_list=FAKE_CRT_LIST_FILENAME,
-            ciphers=constants.CIPHERS_OWASP_SUITE_B)
+              "    timeout client 50000\n")
         be = ("backend sample_pool_id_1:sample_listener_id_1\n"
               "    mode http\n"
               "    balance roundrobin\n"
@@ -486,22 +473,20 @@ class TestHaproxyCfg(base.TestCase):
         FAKE_CRT_LIST_FILENAME = os.path.join(
             CONF.haproxy_amphora.base_cert_dir,
             'sample_loadbalancer_id_1/sample_listener_id_1.pem')
+        alpn = ",".join(constants.AMPHORA_SUPPORTED_ALPN_PROTOCOLS)
         fe = ("frontend sample_listener_id_1\n"
-              "    maxconn {maxconn}\n"
-              "    redirect scheme https if !{{ ssl_fc }}\n"
+              f"    maxconn {constants.HAPROXY_DEFAULT_MAXCONN}\n"
+              "    redirect scheme https if !{ ssl_fc }\n"
               "    bind 10.0.0.2:443 "
-              "ssl crt-list {crt_list} "
+              f"ssl crt-list {FAKE_CRT_LIST_FILENAME} "
               "ca-file /var/lib/octavia/certs/sample_loadbalancer_id_1/"
               "client_ca.pem verify required crl-file /var/lib/octavia/"
-              "certs/sample_loadbalancer_id_1/SHA_ID.pem ciphers {ciphers} "
-              "no-sslv3 no-tlsv10 no-tlsv11 alpn {alpn}\n"
+              "certs/sample_loadbalancer_id_1/SHA_ID.pem ciphers "
+              f"{constants.CIPHERS_OWASP_SUITE_B} "
+              f"no-sslv3 no-tlsv10 no-tlsv11 alpn {alpn}\n"
               "    mode http\n"
               "    default_backend sample_pool_id_1:sample_listener_id_1\n"
-              "    timeout client 50000\n").format(
-            maxconn=constants.HAPROXY_DEFAULT_MAXCONN,
-            crt_list=FAKE_CRT_LIST_FILENAME,
-            ciphers=constants.CIPHERS_OWASP_SUITE_B,
-            alpn=",".join(constants.AMPHORA_SUPPORTED_ALPN_PROTOCOLS))
+              "    timeout client 50000\n")
         be = ("backend sample_pool_id_1:sample_listener_id_1\n"
               "    mode http\n"
               "    balance roundrobin\n"
@@ -881,7 +866,7 @@ class TestHaproxyCfg(base.TestCase):
               "    timeout check 31s\n"
               "    option external-check\n"
               "    external-check command /var/lib/octavia/ping-wrapper.sh\n"
-              "    fullconn {maxconn}\n"
+              f"    fullconn {constants.HAPROXY_DEFAULT_MAXCONN}\n"
               "    option allbackups\n"
               "    timeout connect 5000\n"
               "    timeout server 50000\n"
@@ -890,10 +875,9 @@ class TestHaproxyCfg(base.TestCase):
               "cookie sample_member_id_1\n"
               "    server sample_member_id_2 10.0.0.98:82 "
               "weight 13 check inter 30s fall 3 rise 2 "
-              "cookie sample_member_id_2\n\n").format(
-            maxconn=constants.HAPROXY_DEFAULT_MAXCONN)
-        go = "    maxconn {maxconn}\n    external-check\n\n".format(
-            maxconn=constants.HAPROXY_DEFAULT_MAXCONN)
+              "cookie sample_member_id_2\n\n")
+        go = (f"    maxconn {constants.HAPROXY_DEFAULT_MAXCONN}\n"
+              f"    external-check\n\n")
         rendered_obj = self.jinja_cfg.render_loadbalancer_obj(
             sample_configs_combined.sample_amphora_tuple(),
             [sample_configs_combined.sample_listener_tuple(
@@ -910,7 +894,7 @@ class TestHaproxyCfg(base.TestCase):
               "    timeout check 31s\n"
               "    option external-check\n"
               "    external-check command /var/lib/octavia/ping-wrapper.sh\n"
-              "    fullconn {maxconn}\n"
+              f"    fullconn {constants.HAPROXY_DEFAULT_MAXCONN}\n"
               "    option allbackups\n"
               "    timeout connect 5000\n"
               "    timeout server 50000\n"
@@ -919,8 +903,7 @@ class TestHaproxyCfg(base.TestCase):
               "cookie sample_member_id_1\n"
               "    server sample_member_id_2 10.0.0.98:82 "
               "weight 13 check inter 30s fall 3 rise 2 "
-              "cookie sample_member_id_2\n\n").format(
-            maxconn=constants.HAPROXY_DEFAULT_MAXCONN)
+              "cookie sample_member_id_2\n\n")
         go = (
             "    server-state-file /var/lib/octavia/sample_loadbalancer_id_1/"
             "servers-state\n"
@@ -938,12 +921,11 @@ class TestHaproxyCfg(base.TestCase):
 
     def test_render_template_no_monitor_https(self):
         fe = ("frontend sample_listener_id_1\n"
-              "    maxconn {maxconn}\n"
+              f"    maxconn {constants.HAPROXY_DEFAULT_MAXCONN}\n"
               "    bind 10.0.0.2:443\n"
               "    mode tcp\n"
               "    default_backend sample_pool_id_1:sample_listener_id_1\n"
-              "    timeout client 50000\n").format(
-            maxconn=constants.HAPROXY_DEFAULT_MAXCONN)
+              "    timeout client 50000\n")
         lg = ("    log-format 12345\\ sample_loadbalancer_id_1\\ %f\\ "
               "%ci\\ %cp\\ %t\\ -\\ -\\ %B\\ %U\\ "
               "%[ssl_c_verify]\\ %{+Q}[ssl_c_s_dn]\\ %b\\ %s\\ %Tt\\ "
@@ -952,15 +934,14 @@ class TestHaproxyCfg(base.TestCase):
               "    mode tcp\n"
               "    balance roundrobin\n"
               "    cookie SRV insert indirect nocache\n"
-              "    fullconn {maxconn}\n"
+              f"    fullconn {constants.HAPROXY_DEFAULT_MAXCONN}\n"
               "    option allbackups\n"
               "    timeout connect 5000\n"
               "    timeout server 50000\n"
               "    server sample_member_id_1 10.0.0.99:82 weight 13 "
               "cookie sample_member_id_1\n"
               "    server sample_member_id_2 10.0.0.98:82 weight 13 "
-              "cookie sample_member_id_2\n\n").format(
-            maxconn=constants.HAPROXY_DEFAULT_MAXCONN)
+              "cookie sample_member_id_2\n\n")
         rendered_obj = self.jinja_cfg.render_loadbalancer_obj(
             sample_configs_combined.sample_amphora_tuple(),
             [sample_configs_combined.sample_listener_tuple(proto='HTTPS',
@@ -977,7 +958,7 @@ class TestHaproxyCfg(base.TestCase):
               "    option httpchk GET /index.html HTTP/1.1\\r\\nHost:\\ "
               "testlab.com\n"
               "    http-check expect rstatus 418\n"
-              "    fullconn {maxconn}\n"
+              f"    fullconn {constants.HAPROXY_DEFAULT_MAXCONN}\n"
               "    option allbackups\n"
               "    timeout connect 5000\n"
               "    timeout server 50000\n"
@@ -986,8 +967,7 @@ class TestHaproxyCfg(base.TestCase):
               "cookie sample_member_id_1\n"
               "    server sample_member_id_2 10.0.0.98:82 "
               "weight 13 check inter 30s fall 3 rise 2 "
-              "cookie sample_member_id_2\n\n").format(
-            maxconn=constants.HAPROXY_DEFAULT_MAXCONN)
+              "cookie sample_member_id_2\n\n")
         rendered_obj = self.jinja_cfg.render_loadbalancer_obj(
             sample_configs_combined.sample_amphora_tuple(),
             [sample_configs_combined.sample_listener_tuple(
@@ -997,12 +977,11 @@ class TestHaproxyCfg(base.TestCase):
 
     def test_render_template_no_persistence_https(self):
         fe = ("frontend sample_listener_id_1\n"
-              "    maxconn {maxconn}\n"
+              f"    maxconn {constants.HAPROXY_DEFAULT_MAXCONN}\n"
               "    bind 10.0.0.2:443\n"
               "    mode tcp\n"
               "    default_backend sample_pool_id_1:sample_listener_id_1\n"
-              "    timeout client 50000\n").format(
-            maxconn=constants.HAPROXY_DEFAULT_MAXCONN)
+              "    timeout client 50000\n")
         lg = ("    log-format 12345\\ sample_loadbalancer_id_1\\ %f\\ "
               "%ci\\ %cp\\ %t\\ -\\ -\\ %B\\ %U\\ "
               "%[ssl_c_verify]\\ %{+Q}[ssl_c_s_dn]\\ %b\\ %s\\ %Tt\\ "
@@ -1010,14 +989,13 @@ class TestHaproxyCfg(base.TestCase):
         be = ("backend sample_pool_id_1:sample_listener_id_1\n"
               "    mode tcp\n"
               "    balance roundrobin\n"
-              "    fullconn {maxconn}\n"
+              f"    fullconn {constants.HAPROXY_DEFAULT_MAXCONN}\n"
               "    option allbackups\n"
               "    timeout connect 5000\n"
               "    timeout server 50000\n"
               "    server sample_member_id_1 10.0.0.99:82 weight 13\n"
               "    server sample_member_id_2 10.0.0.98:82 "
-              "weight 13\n\n").format(
-                  maxconn=constants.HAPROXY_DEFAULT_MAXCONN)
+              "weight 13\n\n")
         rendered_obj = self.jinja_cfg.render_loadbalancer_obj(
             sample_configs_combined.sample_amphora_tuple(),
             [sample_configs_combined.sample_listener_tuple(
@@ -1029,14 +1007,13 @@ class TestHaproxyCfg(base.TestCase):
         be = ("backend sample_pool_id_1:sample_listener_id_1\n"
               "    mode http\n"
               "    balance roundrobin\n"
-              "    fullconn {maxconn}\n"
+              f"    fullconn {constants.HAPROXY_DEFAULT_MAXCONN}\n"
               "    option allbackups\n"
               "    timeout connect 5000\n"
               "    timeout server 50000\n"
               "    server sample_member_id_1 10.0.0.99:82 weight 13\n"
               "    server sample_member_id_2 10.0.0.98:82 "
-              "weight 13\n\n").format(
-                  maxconn=constants.HAPROXY_DEFAULT_MAXCONN)
+              "weight 13\n\n")
         rendered_obj = self.jinja_cfg.render_loadbalancer_obj(
             sample_configs_combined.sample_amphora_tuple(),
             [sample_configs_combined.sample_listener_tuple(
@@ -1053,15 +1030,14 @@ class TestHaproxyCfg(base.TestCase):
               "    timeout check 31s\n"
               "    option httpchk GET /index.html HTTP/1.0\\r\\n\n"
               "    http-check expect rstatus 418\n"
-              "    fullconn {maxconn}\n"
+              f"    fullconn {constants.HAPROXY_DEFAULT_MAXCONN}\n"
               "    option allbackups\n"
               "    timeout connect 5000\n"
               "    timeout server 50000\n"
               "    server sample_member_id_1 10.0.0.99:82 "
               "weight 13 check inter 30s fall 3 rise 2\n"
               "    server sample_member_id_2 10.0.0.98:82 "
-              "weight 13 check inter 30s fall 3 rise 2\n\n").format(
-            maxconn=constants.HAPROXY_DEFAULT_MAXCONN)
+              "weight 13 check inter 30s fall 3 rise 2\n\n")
         rendered_obj = self.jinja_cfg.render_loadbalancer_obj(
             sample_configs_combined.sample_amphora_tuple(),
             [sample_configs_combined.sample_listener_tuple(
@@ -1080,15 +1056,14 @@ class TestHaproxyCfg(base.TestCase):
               "    timeout check 31s\n"
               "    option httpchk GET /index.html HTTP/1.0\\r\\n\n"
               "    http-check expect rstatus 418\n"
-              "    fullconn {maxconn}\n"
+              f"    fullconn {constants.HAPROXY_DEFAULT_MAXCONN}\n"
               "    option allbackups\n"
               "    timeout connect 5000\n"
               "    timeout server 50000\n"
               "    server sample_member_id_1 10.0.0.99:82 "
               "weight 13 check inter 30s fall 3 rise 2\n"
               "    server sample_member_id_2 10.0.0.98:82 "
-              "weight 13 check inter 30s fall 3 rise 2\n\n").format(
-            maxconn=constants.HAPROXY_DEFAULT_MAXCONN)
+              "weight 13 check inter 30s fall 3 rise 2\n\n")
         rendered_obj = self.jinja_cfg.render_loadbalancer_obj(
             sample_configs_combined.sample_amphora_tuple(),
             [sample_configs_combined.sample_listener_tuple(
@@ -1115,21 +1090,19 @@ class TestHaproxyCfg(base.TestCase):
               "%ci\\ %cp\\ %t\\ -\\ -\\ %B\\ %U\\ "
               "%[ssl_c_verify]\\ %{+Q}[ssl_c_s_dn]\\ %b\\ %s\\ %Tt\\ "
               "%tsc\n\n")
-        be = ("backend {pool_id}:{listener_id}\n"
+        be = (f"backend {sample_listener.default_pool.id}:"
+              f"{sample_listener.id}\n"
               "    mode tcp\n"
               "    balance roundrobin\n"
               "    cookie SRV insert indirect nocache\n"
-              "    fullconn {maxconn}\n"
+              f"    fullconn {constants.HAPROXY_DEFAULT_MAXCONN}\n"
               "    option allbackups\n"
               "    timeout connect 5000\n"
               "    timeout server 50000\n"
               "    server sample_member_id_1 10.0.0.99:82 weight 13 "
               "cookie sample_member_id_1\n"
               "    server sample_member_id_2 10.0.0.98:82 weight 13 "
-              "cookie sample_member_id_2\n\n").format(
-            maxconn=constants.HAPROXY_DEFAULT_MAXCONN,
-            pool_id=sample_listener.default_pool.id,
-            listener_id=sample_listener.id)
+              "cookie sample_member_id_2\n\n")
         rendered_obj = self.jinja_cfg.render_loadbalancer_obj(
             sample_amphora,
             [sample_listener])
@@ -1203,7 +1176,7 @@ class TestHaproxyCfg(base.TestCase):
               "    timeout check 31s\n"
               "    option httpchk GET /index.html HTTP/1.0\\r\\n\n"
               "    http-check expect rstatus 418\n"
-              "    fullconn {maxconn}\n"
+              f"    fullconn {constants.HAPROXY_DEFAULT_MAXCONN}\n"
               "    option allbackups\n"
               "    timeout connect 5000\n"
               "    timeout server 50000\n"
@@ -1219,13 +1192,12 @@ class TestHaproxyCfg(base.TestCase):
               "    timeout check 31s\n"
               "    option httpchk GET /healthmon.html HTTP/1.0\\r\\n\n"
               "    http-check expect rstatus 418\n"
-              "    fullconn {maxconn}\n"
+              f"    fullconn {constants.HAPROXY_DEFAULT_MAXCONN}\n"
               "    option allbackups\n"
               "    timeout connect 5000\n"
               "    timeout server 50000\n"
               "    server sample_member_id_3 10.0.0.97:82 weight 13 check "
-              "inter 30s fall 3 rise 2 cookie sample_member_id_3\n\n").format(
-            maxconn=constants.HAPROXY_DEFAULT_MAXCONN)
+              "inter 30s fall 3 rise 2 cookie sample_member_id_3\n\n")
         rendered_obj = self.jinja_cfg.render_loadbalancer_obj(
             sample_configs_combined.sample_amphora_tuple(),
             [sample_configs_combined.sample_listener_tuple(l7=True)])
@@ -1241,7 +1213,7 @@ class TestHaproxyCfg(base.TestCase):
               "    option httpchk GET /index.html HTTP/1.0\\r\\n\n"
               "    http-check expect rstatus 418\n"
               "    option forwardfor\n"
-              "    fullconn {maxconn}\n"
+              f"    fullconn {constants.HAPROXY_DEFAULT_MAXCONN}\n"
               "    option allbackups\n"
               "    timeout connect 5000\n"
               "    timeout server 50000\n"
@@ -1250,8 +1222,7 @@ class TestHaproxyCfg(base.TestCase):
               "cookie sample_member_id_1\n"
               "    server sample_member_id_2 10.0.0.98:82 "
               "weight 13 check inter 30s fall 3 rise 2 "
-              "cookie sample_member_id_2\n\n").format(
-            maxconn=constants.HAPROXY_DEFAULT_MAXCONN)
+              "cookie sample_member_id_2\n\n")
         rendered_obj = self.jinja_cfg.render_loadbalancer_obj(
             sample_configs_combined.sample_amphora_tuple(),
             [sample_configs_combined.sample_listener_tuple(
@@ -1270,7 +1241,7 @@ class TestHaproxyCfg(base.TestCase):
               "    http-check expect rstatus 418\n"
               "    option forwardfor\n"
               "    http-request set-header X-Forwarded-Port %[dst_port]\n"
-              "    fullconn {maxconn}\n"
+              f"    fullconn {constants.HAPROXY_DEFAULT_MAXCONN}\n"
               "    option allbackups\n"
               "    timeout connect 5000\n"
               "    timeout server 50000\n"
@@ -1279,8 +1250,7 @@ class TestHaproxyCfg(base.TestCase):
               "cookie sample_member_id_1\n"
               "    server sample_member_id_2 10.0.0.98:82 "
               "weight 13 check inter 30s fall 3 rise 2 "
-              "cookie sample_member_id_2\n\n").format(
-            maxconn=constants.HAPROXY_DEFAULT_MAXCONN)
+              "cookie sample_member_id_2\n\n")
         rendered_obj = self.jinja_cfg.render_loadbalancer_obj(
             sample_configs_combined.sample_amphora_tuple(),
             [sample_configs_combined.sample_listener_tuple(
@@ -1296,7 +1266,7 @@ class TestHaproxyCfg(base.TestCase):
               "    balance roundrobin\n"
               "    cookie SRV insert indirect nocache\n"
               "    timeout check 31s\n"
-              "    fullconn {maxconn}\n"
+              f"    fullconn {constants.HAPROXY_DEFAULT_MAXCONN}\n"
               "    option allbackups\n"
               "    timeout connect 5000\n"
               "    timeout server 50000\n"
@@ -1305,8 +1275,7 @@ class TestHaproxyCfg(base.TestCase):
               "cookie sample_member_id_1 send-proxy\n"
               "    server sample_member_id_2 10.0.0.98:82 "
               "weight 13 check inter 30s fall 3 rise 2 "
-              "cookie sample_member_id_2 send-proxy\n\n").format(
-            maxconn=constants.HAPROXY_DEFAULT_MAXCONN)
+              "cookie sample_member_id_2 send-proxy\n\n")
         rendered_obj = self.jinja_cfg.render_loadbalancer_obj(
             sample_configs_combined.sample_amphora_tuple(),
             [sample_configs_combined.sample_listener_tuple(be_proto='PROXY')])
@@ -1318,6 +1287,10 @@ class TestHaproxyCfg(base.TestCase):
         feature_compatibility = {constants.POOL_ALPN: True}
         cert_file_path = os.path.join(self.jinja_cfg.base_crt_dir,
                                       'sample_listener_id_1', 'fake path')
+        opts = (f"ssl crt {cert_file_path} verify none sni ssl_fc_sni "
+                f"ciphers {constants.CIPHERS_OWASP_SUITE_B} "
+                f"no-sslv3 no-tlsv10 no-tlsv11")
+        alpn = ",".join(constants.AMPHORA_SUPPORTED_ALPN_PROTOCOLS)
         be = ("backend sample_pool_id_1:sample_listener_id_1\n"
               "    mode http\n"
               "    balance roundrobin\n"
@@ -1325,21 +1298,16 @@ class TestHaproxyCfg(base.TestCase):
               "    timeout check 31s\n"
               "    option httpchk GET /index.html HTTP/1.0\\r\\n\n"
               "    http-check expect rstatus 418\n"
-              "    fullconn {maxconn}\n"
+              f"    fullconn {constants.HAPROXY_DEFAULT_MAXCONN}\n"
               "    option allbackups\n"
               "    timeout connect 5000\n"
               "    timeout server 50000\n"
               "    server sample_member_id_1 10.0.0.99:82 weight 13 "
-              "check check-alpn {alpn} inter 30s fall 3 rise 2 cookie "
-              "sample_member_id_1 {opts} alpn {alpn}\n"
+              f"check check-alpn {alpn} inter 30s fall 3 rise 2 cookie "
+              f"sample_member_id_1 {opts} alpn {alpn}\n"
               "    server sample_member_id_2 10.0.0.98:82 weight 13 "
-              "check check-alpn {alpn} inter 30s fall 3 rise 2 cookie "
-              "sample_member_id_2 {opts} alpn {alpn}\n\n").format(
-            maxconn=constants.HAPROXY_DEFAULT_MAXCONN,
-            opts="ssl crt %s verify none sni ssl_fc_sni" % cert_file_path +
-                 " ciphers " + constants.CIPHERS_OWASP_SUITE_B +
-                 " no-sslv3 no-tlsv10 no-tlsv11",
-            alpn=",".join(constants.AMPHORA_SUPPORTED_ALPN_PROTOCOLS))
+              f"check check-alpn {alpn} inter 30s fall 3 rise 2 cookie "
+              f"sample_member_id_2 {opts} alpn {alpn}\n\n")
         rendered_obj = self.jinja_cfg.render_loadbalancer_obj(
             sample_configs_combined.sample_amphora_tuple(),
             [sample_configs_combined.sample_listener_tuple(
@@ -1358,6 +1326,9 @@ class TestHaproxyCfg(base.TestCase):
         feature_compatibility = {constants.POOL_ALPN: False}
         cert_file_path = os.path.join(self.jinja_cfg.base_crt_dir,
                                       'sample_listener_id_1', 'fake path')
+        opts = (f"ssl crt {cert_file_path} verify none sni ssl_fc_sni "
+                f"ciphers {constants.CIPHERS_OWASP_SUITE_B} "
+                f"no-sslv3 no-tlsv10 no-tlsv11")
         be = ("backend sample_pool_id_1:sample_listener_id_1\n"
               "    mode http\n"
               "    balance roundrobin\n"
@@ -1365,20 +1336,16 @@ class TestHaproxyCfg(base.TestCase):
               "    timeout check 31s\n"
               "    option httpchk GET /index.html HTTP/1.0\\r\\n\n"
               "    http-check expect rstatus 418\n"
-              "    fullconn {maxconn}\n"
+              f"    fullconn {constants.HAPROXY_DEFAULT_MAXCONN}\n"
               "    option allbackups\n"
               "    timeout connect 5000\n"
               "    timeout server 50000\n"
               "    server sample_member_id_1 10.0.0.99:82 weight 13 "
               "check inter 30s fall 3 rise 2 cookie sample_member_id_1 "
-              "{opts}\n"
+              f"{opts}\n"
               "    server sample_member_id_2 10.0.0.98:82 weight 13 "
               "check inter 30s fall 3 rise 2 cookie sample_member_id_2 "
-              "{opts}\n\n").format(
-            maxconn=constants.HAPROXY_DEFAULT_MAXCONN,
-            opts="ssl crt %s verify none sni ssl_fc_sni" % cert_file_path +
-                 " ciphers " + constants.CIPHERS_OWASP_SUITE_B +
-                 " no-sslv3 no-tlsv10 no-tlsv11")
+              f"{opts}\n\n")
         rendered_obj = self.jinja_cfg.render_loadbalancer_obj(
             sample_configs_combined.sample_amphora_tuple(),
             [sample_configs_combined.sample_listener_tuple(
@@ -1397,6 +1364,9 @@ class TestHaproxyCfg(base.TestCase):
         feature_compatibility = {constants.POOL_ALPN: True}
         cert_file_path = os.path.join(self.jinja_cfg.base_crt_dir,
                                       'sample_listener_id_1', 'fake path')
+        opts = (f"ssl crt {cert_file_path} verify none sni ssl_fc_sni "
+                f"ciphers {constants.CIPHERS_OWASP_SUITE_B}")
+        alpn = ",".join(constants.AMPHORA_SUPPORTED_ALPN_PROTOCOLS)
         be = ("backend sample_pool_id_1:sample_listener_id_1\n"
               "    mode http\n"
               "    balance roundrobin\n"
@@ -1404,20 +1374,17 @@ class TestHaproxyCfg(base.TestCase):
               "    timeout check 31s\n"
               "    option httpchk GET /index.html HTTP/1.0\\r\\n\n"
               "    http-check expect rstatus 418\n"
-              "    fullconn {maxconn}\n"
+              f"    fullconn {constants.HAPROXY_DEFAULT_MAXCONN}\n"
               "    option allbackups\n"
               "    timeout connect 5000\n"
               "    timeout server 50000\n"
               "    server sample_member_id_1 10.0.0.99:82 weight 13 "
-              "check check-alpn {alpn} inter 30s fall 3 rise 2 cookie "
-              "sample_member_id_1 {opts} alpn {alpn}\n"
+              f"check check-alpn {alpn} inter 30s fall 3 rise 2 cookie "
+              f"sample_member_id_1 {opts} alpn {alpn}\n"
               "    server sample_member_id_2 10.0.0.98:82 weight 13 "
-              "check check-alpn {alpn} inter 30s fall 3 rise 2 cookie "
-              "sample_member_id_2 {opts} alpn {alpn}\n\n").format(
-            maxconn=constants.HAPROXY_DEFAULT_MAXCONN,
-            opts="ssl crt %s verify none sni ssl_fc_sni" % cert_file_path +
-                 " ciphers " + constants.CIPHERS_OWASP_SUITE_B,
-            alpn=",".join(constants.AMPHORA_SUPPORTED_ALPN_PROTOCOLS))
+              f"check check-alpn {alpn} inter 30s fall 3 rise 2 cookie "
+              f"sample_member_id_2 {opts} alpn {alpn}\n\n"
+              )
         rendered_obj = self.jinja_cfg.render_loadbalancer_obj(
             sample_configs_combined.sample_amphora_tuple(),
             [sample_configs_combined.sample_listener_tuple(
@@ -1437,6 +1404,9 @@ class TestHaproxyCfg(base.TestCase):
         feature_compatibility = {constants.POOL_ALPN: True}
         cert_file_path = os.path.join(self.jinja_cfg.base_crt_dir,
                                       'sample_listener_id_1', 'fake path')
+        opts = (f"ssl crt {cert_file_path} verify none sni ssl_fc_sni "
+                f"no-sslv3 no-tlsv10 no-tlsv11")
+        alpn = ",".join(constants.AMPHORA_SUPPORTED_ALPN_PROTOCOLS)
         be = ("backend sample_pool_id_1:sample_listener_id_1\n"
               "    mode http\n"
               "    balance roundrobin\n"
@@ -1444,20 +1414,16 @@ class TestHaproxyCfg(base.TestCase):
               "    timeout check 31s\n"
               "    option httpchk GET /index.html HTTP/1.0\\r\\n\n"
               "    http-check expect rstatus 418\n"
-              "    fullconn {maxconn}\n"
+              f"    fullconn {constants.HAPROXY_DEFAULT_MAXCONN}\n"
               "    option allbackups\n"
               "    timeout connect 5000\n"
               "    timeout server 50000\n"
               "    server sample_member_id_1 10.0.0.99:82 weight 13 "
-              "check check-alpn {alpn} inter 30s fall 3 rise 2 cookie "
-              "sample_member_id_1 {opts} alpn {alpn}\n"
+              f"check check-alpn {alpn} inter 30s fall 3 rise 2 cookie "
+              f"sample_member_id_1 {opts} alpn {alpn}\n"
               "    server sample_member_id_2 10.0.0.98:82 weight 13 "
-              "check check-alpn {alpn} inter 30s fall 3 rise 2 cookie "
-              "sample_member_id_2 {opts} alpn {alpn}\n\n").format(
-            maxconn=constants.HAPROXY_DEFAULT_MAXCONN,
-            opts="ssl crt %s verify none sni ssl_fc_sni" % cert_file_path +
-                 " no-sslv3 no-tlsv10 no-tlsv11",
-            alpn=",".join(constants.AMPHORA_SUPPORTED_ALPN_PROTOCOLS))
+              f"check check-alpn {alpn} inter 30s fall 3 rise 2 cookie "
+              f"sample_member_id_2 {opts} alpn {alpn}\n\n")
         rendered_obj = self.jinja_cfg.render_loadbalancer_obj(
             sample_configs_combined.sample_amphora_tuple(),
             [sample_configs_combined.sample_listener_tuple(
@@ -1474,6 +1440,7 @@ class TestHaproxyCfg(base.TestCase):
     def test_render_template_pool_cert_no_ciphers_or_versions_or_alpn(self):
         cert_file_path = os.path.join(self.jinja_cfg.base_crt_dir,
                                       'sample_listener_id_1', 'fake path')
+        opts = f"ssl crt {cert_file_path} verify none sni ssl_fc_sni"
         be = ("backend sample_pool_id_1:sample_listener_id_1\n"
               "    mode http\n"
               "    balance roundrobin\n"
@@ -1481,18 +1448,16 @@ class TestHaproxyCfg(base.TestCase):
               "    timeout check 31s\n"
               "    option httpchk GET /index.html HTTP/1.0\\r\\n\n"
               "    http-check expect rstatus 418\n"
-              "    fullconn {maxconn}\n"
+              f"    fullconn {constants.HAPROXY_DEFAULT_MAXCONN}\n"
               "    option allbackups\n"
               "    timeout connect 5000\n"
               "    timeout server 50000\n"
               "    server sample_member_id_1 10.0.0.99:82 weight 13 "
               "check inter 30s fall 3 rise 2 cookie sample_member_id_1 "
-              "{opts}\n"
+              f"{opts}\n"
               "    server sample_member_id_2 10.0.0.98:82 weight 13 "
               "check inter 30s fall 3 rise 2 cookie sample_member_id_2 "
-              "{opts}\n\n").format(
-            maxconn=constants.HAPROXY_DEFAULT_MAXCONN,
-            opts="ssl crt %s verify none sni ssl_fc_sni" % cert_file_path)
+              f"{opts}\n\n")
         rendered_obj = self.jinja_cfg.render_loadbalancer_obj(
             sample_configs_combined.sample_amphora_tuple(),
             [sample_configs_combined.sample_listener_tuple(
@@ -1514,7 +1479,7 @@ class TestHaproxyCfg(base.TestCase):
               "    timeout check 31s\n"
               "    option httpchk GET /index.html HTTP/1.0\\r\\n\n"
               "    http-check expect rstatus 418\n"
-              "    fullconn {maxconn}\n"
+              f"    fullconn {constants.HAPROXY_DEFAULT_MAXCONN}\n"
               "    option allbackups\n"
               "    timeout connect 5000\n"
               "    timeout server 50000\n"
@@ -1522,8 +1487,7 @@ class TestHaproxyCfg(base.TestCase):
               "check inter 30s fall 3 rise 2 cookie sample_member_id_1\n"
               "    server sample_member_id_2 10.0.0.98:82 weight 13 "
               "check inter 30s fall 3 rise 2 cookie sample_member_id_2"
-              "\n\n").format(
-            maxconn=constants.HAPROXY_DEFAULT_MAXCONN)
+              "\n\n")
         rendered_obj = self.jinja_cfg.render_loadbalancer_obj(
             sample_configs_combined.sample_amphora_tuple(),
             [sample_configs_combined.sample_listener_tuple(
@@ -1537,6 +1501,10 @@ class TestHaproxyCfg(base.TestCase):
         pool_client_cert = '/foo/cert.pem'
         pool_ca_cert = '/foo/ca.pem'
         pool_crl = '/foo/crl.pem'
+        opts = (f"ssl crt {pool_client_cert} ca-file {pool_ca_cert} "
+                f"crl-file {pool_crl} verify required sni ssl_fc_sni "
+                f"no-sslv3 no-tlsv10 no-tlsv11")
+        alpn = ",".join(constants.AMPHORA_SUPPORTED_ALPN_PROTOCOLS)
         be = ("backend sample_pool_id_1:sample_listener_id_1\n"
               "    mode http\n"
               "    balance roundrobin\n"
@@ -1544,21 +1512,16 @@ class TestHaproxyCfg(base.TestCase):
               "    timeout check 31s\n"
               "    option httpchk GET /index.html HTTP/1.0\\r\\n\n"
               "    http-check expect rstatus 418\n"
-              "    fullconn {maxconn}\n"
+              f"    fullconn {constants.HAPROXY_DEFAULT_MAXCONN}\n"
               "    option allbackups\n"
               "    timeout connect 5000\n"
               "    timeout server 50000\n"
               "    server sample_member_id_1 10.0.0.99:82 weight 13 "
-              "check check-alpn {alpn} inter 30s fall 3 rise 2 cookie "
-              "sample_member_id_1 {opts} alpn {alpn}\n"
+              f"check check-alpn {alpn} inter 30s fall 3 rise 2 cookie "
+              f"sample_member_id_1 {opts} alpn {alpn}\n"
               "    server sample_member_id_2 10.0.0.98:82 weight 13 "
-              "check check-alpn {alpn} inter 30s fall 3 rise 2 cookie "
-              "sample_member_id_2 {opts} alpn {alpn}\n\n").format(
-            maxconn=constants.HAPROXY_DEFAULT_MAXCONN,
-            opts=(f"ssl crt {pool_client_cert} ca-file {pool_ca_cert} "
-                  f"crl-file {pool_crl} verify required sni ssl_fc_sni "
-                  f"no-sslv3 no-tlsv10 no-tlsv11"),
-            alpn=",".join(constants.AMPHORA_SUPPORTED_ALPN_PROTOCOLS))
+              f"check check-alpn {alpn} inter 30s fall 3 rise 2 cookie "
+              f"sample_member_id_2 {opts} alpn {alpn}\n\n")
         rendered_obj = self.jinja_cfg.render_loadbalancer_obj(
             sample_configs_combined.sample_amphora_tuple(),
             [sample_configs_combined.sample_listener_tuple(
@@ -1837,14 +1800,15 @@ class TestHaproxyCfg(base.TestCase):
             "servers-state\n"
             "    maxconn {maxconn}\n\n").format(
             maxconn=constants.HAPROXY_DEFAULT_MAXCONN)
-        be = ("backend {pool_id}:{listener_id}\n"
+        be = (f"backend {sample_proxy_listener.default_pool.id}:"
+              f"{sample_proxy_listener.id}\n"
               "    mode http\n"
               "    http-reuse safe\n"
               "    balance roundrobin\n"
               "    cookie SRV insert indirect nocache\n"
               "    load-server-state-from-file global\n"
               "    timeout check 31s\n"
-              "    fullconn {maxconn}\n"
+              f"    fullconn {constants.HAPROXY_DEFAULT_MAXCONN}\n"
               "    option allbackups\n"
               "    timeout connect 5000\n"
               "    timeout server 50000\n"
@@ -1853,10 +1817,7 @@ class TestHaproxyCfg(base.TestCase):
               "cookie sample_member_id_1 send-proxy\n"
               "    server sample_member_id_2 10.0.0.98:82 "
               "weight 13 check inter 30s fall 3 rise 2 "
-              "cookie sample_member_id_2 send-proxy\n\n").format(
-            maxconn=constants.HAPROXY_DEFAULT_MAXCONN,
-            pool_id=sample_proxy_listener.default_pool.id,
-            listener_id=sample_proxy_listener.id)
+              "cookie sample_member_id_2 send-proxy\n\n")
         rendered_obj = j_cfg.build_config(
             sample_amphora,
             [sample_proxy_listener],
@@ -1869,12 +1830,13 @@ class TestHaproxyCfg(base.TestCase):
             rendered_obj)
 
         # Without http-reuse and server-state-file
-        be = ("backend {pool_id}:{listener_id}\n"
+        be = (f"backend {sample_proxy_listener.default_pool.id}:"
+              f"{sample_proxy_listener.id}\n"
               "    mode http\n"
               "    balance roundrobin\n"
               "    cookie SRV insert indirect nocache\n"
               "    timeout check 31s\n"
-              "    fullconn {maxconn}\n"
+              f"    fullconn {constants.HAPROXY_DEFAULT_MAXCONN}\n"
               "    option allbackups\n"
               "    timeout connect 5000\n"
               "    timeout server 50000\n"
@@ -1883,10 +1845,7 @@ class TestHaproxyCfg(base.TestCase):
               "cookie sample_member_id_1 send-proxy\n"
               "    server sample_member_id_2 10.0.0.98:82 "
               "weight 13 check inter 30s fall 3 rise 2 "
-              "cookie sample_member_id_2 send-proxy\n\n").format(
-            maxconn=constants.HAPROXY_DEFAULT_MAXCONN,
-            pool_id=sample_proxy_listener.default_pool.id,
-            listener_id=sample_proxy_listener.id)
+              "cookie sample_member_id_2 send-proxy\n\n")
         rendered_obj = j_cfg.build_config(
             sample_amphora,
             [sample_proxy_listener],
@@ -1901,13 +1860,15 @@ class TestHaproxyCfg(base.TestCase):
         j_cfg = jinja_cfg.JinjaTemplater(
             base_amp_path='/var/lib/octavia',
             base_crt_dir='/var/lib/octavia/certs')
+        alpn = ",".join(constants.AMPHORA_SUPPORTED_ALPN_PROTOCOLS)
         fe = ("frontend sample_listener_id_1\n"
-              "    maxconn {maxconn}\n"
-              "    redirect scheme https if !{{ ssl_fc }}\n"
+              f"    maxconn {constants.HAPROXY_DEFAULT_MAXCONN}\n"
+              "    redirect scheme https if !{ ssl_fc }\n"
               "    http-response set-header Strict-Transport-Security "
               "\"max-age=10000000; includeSubDomains; preload;\"\n"
-              "    bind 10.0.0.2:443 ciphers {ciphers} "
-              "no-sslv3 no-tlsv10 no-tlsv11 alpn {alpn}\n"
+              "    bind 10.0.0.2:443 ciphers "
+              f"{constants.CIPHERS_OWASP_SUITE_B} "
+              f"no-sslv3 no-tlsv10 no-tlsv11 alpn {alpn}\n"
               "    mode http\n"
               "        acl sample_l7rule_id_1 path -m beg /api\n"
               "    use_backend sample_pool_id_2:sample_listener_id_1"
@@ -1941,10 +1902,7 @@ class TestHaproxyCfg(base.TestCase):
               "if sample_l7rule_id_7 !sample_l7rule_id_8 !sample_l7rule_id_9 "
               "!sample_l7rule_id_10 sample_l7rule_id_11\n"
               "    default_backend sample_pool_id_1:sample_listener_id_1\n"
-              "    timeout client 50000\n".format(
-                  maxconn=constants.HAPROXY_DEFAULT_MAXCONN,
-                  ciphers=constants.CIPHERS_OWASP_SUITE_B,
-                  alpn=",".join(constants.AMPHORA_SUPPORTED_ALPN_PROTOCOLS)))
+              "    timeout client 50000\n")
         be = ("backend sample_pool_id_1:sample_listener_id_1\n"
               "    mode http\n"
               "    balance roundrobin\n"
@@ -1952,7 +1910,7 @@ class TestHaproxyCfg(base.TestCase):
               "    timeout check 31s\n"
               "    option httpchk GET /index.html HTTP/1.0\\r\\n\n"
               "    http-check expect rstatus 418\n"
-              "    fullconn {maxconn}\n"
+              f"    fullconn {constants.HAPROXY_DEFAULT_MAXCONN}\n"
               "    option allbackups\n"
               "    timeout connect 5000\n"
               "    timeout server 50000\n"
@@ -1967,13 +1925,12 @@ class TestHaproxyCfg(base.TestCase):
               "    timeout check 31s\n"
               "    option httpchk GET /healthmon.html HTTP/1.0\\r\\n\n"
               "    http-check expect rstatus 418\n"
-              "    fullconn {maxconn}\n"
+              f"    fullconn {constants.HAPROXY_DEFAULT_MAXCONN}\n"
               "    option allbackups\n"
               "    timeout connect 5000\n"
               "    timeout server 50000\n"
               "    server sample_member_id_3 10.0.0.97:82 weight 13 check "
-              "inter 30s fall 3 rise 2 cookie sample_member_id_3\n\n".format(
-                  maxconn=constants.HAPROXY_DEFAULT_MAXCONN))
+              "inter 30s fall 3 rise 2 cookie sample_member_id_3\n\n")
         sample_listener = sample_configs_combined.sample_listener_tuple(
             proto=constants.PROTOCOL_TERMINATED_HTTPS, l7=True,
             ssl_type_l7=True)

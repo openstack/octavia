@@ -142,40 +142,34 @@ class PaginationHelper:
 
     def _make_links(self, model_list):
         if CONF.api_settings.api_base_uri:
-            path_url = "{api_base_url}{path}".format(
-                api_base_url=CONF.api_settings.api_base_uri.rstrip('/'),
-                path=request.path)
+            path_url = (f"{CONF.api_settings.api_base_uri.rstrip('/')}"
+                        f"{request.path}")
         else:
             path_url = request.path_url
         links = []
         if model_list:
             prev_attr = [f"limit={self.limit}"]
             if self.params.get('sort'):
-                prev_attr.append("sort={}".format(self.params.get('sort')))
+                prev_attr.append(f"sort={self.params.get('sort')}")
             if self.params.get('sort_key'):
-                prev_attr.append("sort_key={}".format(
-                    self.params.get('sort_key')))
+                prev_attr.append(f"sort_key={self.params.get('sort_key')}")
             next_attr = copy.copy(prev_attr)
             if self.marker:
-                prev_attr.append("marker={}".format(model_list[0].get('id')))
+                prev_attr.append(f"marker={model_list[0].get('id')}")
                 prev_attr.append("page_reverse=True")
                 prev_link = {
                     "rel": "previous",
-                    "href": "{url}?{params}".format(
-                        url=path_url,
-                        params="&".join(prev_attr))
+                    "href": f"{path_url}?{'&'.join(prev_attr)}"
                 }
                 links.append(prev_link)
             # TODO(rm_work) Do we need to know when there are more vs exact?
             # We safely know if we have a full page, but it might include the
             # last element or it might not, it is unclear
             if self.limit is None or len(model_list) >= self.limit:
-                next_attr.append("marker={}".format(model_list[-1].get('id')))
+                next_attr.append(f"marker={model_list[-1].get('id')}")
                 next_link = {
                     "rel": "next",
-                    "href": "{url}?{params}".format(
-                        url=path_url,
-                        params="&".join(next_attr))
+                    "href": f"{path_url}?{'&'.join(next_attr)}"
                 }
                 links.append(next_link)
         links = [types.PageType(**link) for link in links]

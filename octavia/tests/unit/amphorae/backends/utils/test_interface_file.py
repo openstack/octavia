@@ -112,13 +112,13 @@ class TestInterfaceFile(base.TestCase):
             consts.SCRIPTS: {
                 consts.IFACE_UP: [{
                     consts.COMMAND: (
-                        "/usr/local/bin/lvs-masquerade.sh add ipv4 "
-                        "{}".format(netns_interface))
+                        f"/usr/local/bin/lvs-masquerade.sh add ipv4 "
+                        f"{netns_interface}")
                 }],
                 consts.IFACE_DOWN: [{
                     consts.COMMAND: (
                         "/usr/local/bin/lvs-masquerade.sh delete ipv4 "
-                        "{}".format(netns_interface))
+                        f"{netns_interface}")
                 }]
             }
         }
@@ -244,13 +244,13 @@ class TestInterfaceFile(base.TestCase):
             consts.SCRIPTS: {
                 consts.IFACE_UP: [{
                     consts.COMMAND: (
-                        "/usr/local/bin/lvs-masquerade.sh add ipv4 "
-                        "{}".format(netns_interface))
+                        f"/usr/local/bin/lvs-masquerade.sh add ipv4 "
+                        f"{netns_interface}")
                 }],
                 consts.IFACE_DOWN: [{
                     consts.COMMAND: (
                         "/usr/local/bin/lvs-masquerade.sh delete ipv4 "
-                        "{}".format(netns_interface))
+                        f"{netns_interface}")
                 }]
             }
         }
@@ -323,13 +323,13 @@ class TestInterfaceFile(base.TestCase):
             consts.SCRIPTS: {
                 consts.IFACE_UP: [{
                     consts.COMMAND: (
-                        "/usr/local/bin/lvs-masquerade.sh add ipv4 "
-                        "{}".format(netns_interface))
+                        f"/usr/local/bin/lvs-masquerade.sh add ipv4 "
+                        f"{netns_interface}")
                 }],
                 consts.IFACE_DOWN: [{
                     consts.COMMAND: (
-                        "/usr/local/bin/lvs-masquerade.sh delete ipv4 "
-                        "{}".format(netns_interface))
+                        f"/usr/local/bin/lvs-masquerade.sh delete ipv4 "
+                        f"{netns_interface}")
                 }]
             }
         }
@@ -404,13 +404,13 @@ class TestInterfaceFile(base.TestCase):
             consts.SCRIPTS: {
                 consts.IFACE_UP: [{
                     consts.COMMAND: (
-                        "/usr/local/bin/lvs-masquerade.sh add ipv4 "
-                        "{}".format(netns_interface))
+                        f"/usr/local/bin/lvs-masquerade.sh add ipv4 "
+                        f"{netns_interface}")
                 }],
                 consts.IFACE_DOWN: [{
                     consts.COMMAND: (
-                        "/usr/local/bin/lvs-masquerade.sh delete ipv4 "
-                        "{}".format(netns_interface))
+                        f"/usr/local/bin/lvs-masquerade.sh delete ipv4 "
+                        f"{netns_interface}")
                 }]
             }
         }
@@ -516,13 +516,13 @@ class TestInterfaceFile(base.TestCase):
             consts.SCRIPTS: {
                 consts.IFACE_UP: [{
                     consts.COMMAND: (
-                        "/usr/local/bin/lvs-masquerade.sh add ipv6 "
-                        "{}".format(netns_interface))
+                        f"/usr/local/bin/lvs-masquerade.sh add ipv6 "
+                        f"{netns_interface}")
                 }],
                 consts.IFACE_DOWN: [{
                     consts.COMMAND: (
-                        "/usr/local/bin/lvs-masquerade.sh delete ipv6 "
-                        "{}".format(netns_interface))
+                        f"/usr/local/bin/lvs-masquerade.sh delete ipv6 "
+                        f"{netns_interface}")
                 }]
             }
         }
@@ -603,21 +603,21 @@ class TestInterfaceFile(base.TestCase):
             consts.SCRIPTS: {
                 consts.IFACE_UP: [{
                     consts.COMMAND: (
-                        "/usr/local/bin/lvs-masquerade.sh add ipv4 "
-                        "{}".format(netns_interface))
+                        f"/usr/local/bin/lvs-masquerade.sh add ipv4 "
+                        f"{netns_interface}")
                 }, {
                     consts.COMMAND: (
-                        "/usr/local/bin/lvs-masquerade.sh add ipv6 "
-                        "{}".format(netns_interface))
+                        f"/usr/local/bin/lvs-masquerade.sh add ipv6 "
+                        f"{netns_interface}")
                 }],
                 consts.IFACE_DOWN: [{
                     consts.COMMAND: (
-                        "/usr/local/bin/lvs-masquerade.sh delete ipv4 "
-                        "{}".format(netns_interface))
+                        f"/usr/local/bin/lvs-masquerade.sh delete ipv4 "
+                        f"{netns_interface}")
                 }, {
                     consts.COMMAND: (
-                        "/usr/local/bin/lvs-masquerade.sh delete ipv6 "
-                        "{}".format(netns_interface))
+                        f"/usr/local/bin/lvs-masquerade.sh delete ipv6 "
+                        f"{netns_interface}")
                 }]
             }
         }
@@ -654,21 +654,21 @@ class TestInterfaceFile(base.TestCase):
             consts.SCRIPTS: {
                 consts.IFACE_UP: [{
                     consts.COMMAND: (
-                        "/usr/local/bin/lvs-masquerade.sh add ipv4 "
-                        "{}".format(netns_interface))
+                        f"/usr/local/bin/lvs-masquerade.sh add ipv4 "
+                        f"{netns_interface}")
                 }, {
                     consts.COMMAND: (
-                        "/usr/local/bin/lvs-masquerade.sh add ipv6 "
-                        "{}".format(netns_interface))
+                        f"/usr/local/bin/lvs-masquerade.sh add ipv6 "
+                        f"{netns_interface}")
                 }],
                 consts.IFACE_DOWN: [{
                     consts.COMMAND: (
                         "/usr/local/bin/lvs-masquerade.sh delete ipv4 "
-                        "{}".format(netns_interface))
+                        f"{netns_interface}")
                 }, {
                     consts.COMMAND: (
                         "/usr/local/bin/lvs-masquerade.sh delete ipv6 "
-                        "{}".format(netns_interface))
+                        f"{netns_interface}")
                 }]
             }
         }
