@@ -161,7 +161,7 @@ class ListenerFlows(object):
 
         return update_listener_flow
 
-    def _get_firewall_rules_subflow(self, flavor_dict):
+    def _get_firewall_rules_subflow(self, flavor_dict, timeout_dict=None):
         """Creates a subflow that updates the firewall rules in the amphorae.
 
         :returns: The subflow for updating firewall rules in the amphorae.
@@ -173,6 +173,14 @@ class ListenerFlows(object):
             name=sf_name + '-' + constants.GET_AMPHORAE_FROM_LB,
             requires=constants.LOADBALANCER_ID,
             provides=constants.AMPHORAE))
+
+        fw_rules_subflow.add(
+            amphora_driver_tasks.AmphoraeGetConnectivityStatus(
+                name=constants.AMPHORAE_GET_CONNECTIVITY_STATUS,
+                requires=constants.AMPHORAE,
+                inject={constants.TIMEOUT_DICT: timeout_dict,
+                        constants.NEW_AMPHORA_ID: constants.NIL_UUID},
+                provides=constants.AMPHORAE_STATUS))
 
         fw_rules_subflow.add(network_tasks.GetAmphoraeNetworkConfigs(
             name=sf_name + '-' + constants.GET_AMP_NETWORK_CONFIG,
@@ -192,8 +200,10 @@ class ListenerFlows(object):
 
         amp_0_subflow.add(amphora_driver_tasks.SetAmphoraFirewallRules(
             name=sf_name + '-0-' + constants.SET_AMPHORA_FIREWALL_RULES,
-            requires=(constants.AMPHORAE, constants.AMPHORA_FIREWALL_RULES),
-            inject={constants.AMPHORA_INDEX: 0}))
+            requires=(constants.AMPHORAE, constants.AMPHORA_FIREWALL_RULES,
+                      constants.AMPHORAE_STATUS),
+            inject={constants.AMPHORA_INDEX: 0,
+                    constants.TIMEOUT_DICT: timeout_dict}))
 
         update_amps_subflow.add(amp_0_subflow)
 
@@ -212,8 +222,10 @@ class ListenerFlows(object):
             amp_1_subflow.add(amphora_driver_tasks.SetAmphoraFirewallRules(
                 name=sf_name + '-1-' + constants.SET_AMPHORA_FIREWALL_RULES,
                 requires=(constants.AMPHORAE,
-                          constants.AMPHORA_FIREWALL_RULES),
-                inject={constants.AMPHORA_INDEX: 1}))
+                          constants.AMPHORA_FIREWALL_RULES,
+                          constants.AMPHORAE_STATUS),
+                inject={constants.AMPHORA_INDEX: 1,
+                        constants.TIMEOUT_DICT: timeout_dict}))
 
             update_amps_subflow.add(amp_1_subflow)
 
