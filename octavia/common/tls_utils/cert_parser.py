@@ -300,7 +300,7 @@ def get_cert_expiration(certificate_pem):
     try:
         cert = x509.load_pem_x509_certificate(certificate_pem,
                                               backends.default_backend())
-        return cert.not_valid_after
+        return cert.not_valid_after_utc
     except Exception as e:
         LOG.exception('Unreadable Certificate.')
         raise exceptions.UnreadableCert from e

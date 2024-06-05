@@ -246,7 +246,10 @@ class TestTLSParseUtils(base.TestCase):
 
     def test_get_cert_expiration(self):
         exp_date = cert_parser.get_cert_expiration(sample_certs.X509_EXPIRED)
-        self.assertEqual(datetime.datetime(2016, 9, 25, 18, 1, 54), exp_date)
+        self.assertEqual(
+            datetime.datetime(2016, 9, 25, 18, 1, 54,
+                              tzinfo=datetime.timezone.utc),
+            exp_date)
 
         # test the exception
         self.assertRaises(exceptions.UnreadableCert,
