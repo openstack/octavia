@@ -19,6 +19,10 @@ git-man:
   uninstall: True
 perl:
   uninstall: True
+# diskimage-builder installs firewalld in rockylinux, it's not needed as it
+# blocks management and tenant traffic by default and we use security groups
+firewalld:
+  uninstall: True
 
 libffi-dev:
   build-only: True
