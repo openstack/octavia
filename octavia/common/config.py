@@ -317,13 +317,6 @@ health_manager_opts = [
                default=10,
                mutable=True,
                help=_('Sleep time between sending heartbeats.')),
-
-    # Used for updating health
-    cfg.StrOpt('health_update_driver', default='health_db',
-               help=_('Driver for updating amphora health system.'),
-               deprecated_for_removal=True,
-               deprecated_reason=_('This driver interface was removed.'),
-               deprecated_since='Victoria'),
 ]
 
 oslo_messaging_opts = [
@@ -507,9 +500,6 @@ controller_worker_opts = [
                default='distributor_noop_driver',
                help=_('Name of the distributor driver to use')),
     cfg.ListOpt('statistics_drivers', default=['stats_db'],
-                deprecated_name='stats_update_driver',
-                deprecated_group='health_manager',
-                deprecated_since='Victoria',
                 help=_('List of drivers for updating amphora statistics.')),
     cfg.StrOpt('loadbalancer_topology',
                default=constants.TOPOLOGY_SINGLE,
