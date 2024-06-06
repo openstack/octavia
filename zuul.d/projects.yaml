@@ -8,7 +8,6 @@
       - openstack-python3-jobs
       - publish-openstack-docs-pti
       - release-notes-jobs-python3
-      - octavia-tox-tips
     check:
       jobs:
         - openstack-tox-pip-check-reqs:
