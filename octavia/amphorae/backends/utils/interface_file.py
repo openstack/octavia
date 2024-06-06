@@ -13,11 +13,11 @@
 # under the License.
 
 import ipaddress
+import json
 import os
 import stat
 
 from oslo_config import cfg
-import simplejson
 
 from octavia.common import constants as consts
 
@@ -45,11 +45,11 @@ class InterfaceFile:
 
     @classmethod
     def load(cls, fp):
-        return simplejson.load(fp)
+        return json.load(fp)
 
     @classmethod
     def dump(cls, obj):
-        return simplejson.dumps(obj)
+        return json.dumps(obj)
 
     @classmethod
     def from_file(cls, filename):

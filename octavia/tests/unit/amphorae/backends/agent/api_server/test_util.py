@@ -162,7 +162,8 @@ class TestUtil(base.TestCase):
 
         util.run_systemctl_command('test', 'world')
         mock_check_output.assert_called_once_with(
-            ['systemctl', 'test', 'world'], stderr=subprocess.STDOUT)
+            ['systemctl', 'test', 'world'], stderr=subprocess.STDOUT,
+            encoding='utf-8')
 
         mock_check_output.side_effect = subprocess.CalledProcessError(1,
                                                                       'boom')

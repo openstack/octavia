@@ -89,8 +89,9 @@ class BaseOS:
         LOG.debug("Executing: %s", cmd)
         try:
             out = subprocess.check_output(cmd.split(),
-                                          stderr=subprocess.STDOUT)
-            for line in out.decode('utf-8').split('\n'):
+                                          stderr=subprocess.STDOUT,
+                                          encoding='utf-8')
+            for line in out.split('\n'):
                 LOG.debug(line)
         except subprocess.CalledProcessError as e:
             LOG.error('Failed to set up %s due to error: %s %s', interface,

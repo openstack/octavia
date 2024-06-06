@@ -121,7 +121,8 @@ class Keepalived:
         if init_enable_cmd is not None:
             try:
                 subprocess.check_output(init_enable_cmd.split(),
-                                        stderr=subprocess.STDOUT)
+                                        stderr=subprocess.STDOUT,
+                                        encoding='utf-8')
             except subprocess.CalledProcessError as e:
                 LOG.debug('Failed to enable octavia-keepalived service: '
                           '%(err)s %(output)s', {'err': e, 'output': e.output})
@@ -160,7 +161,8 @@ class Keepalived:
         cmd = f"/usr/sbin/service octavia-keepalived {action}"
 
         try:
-            subprocess.check_output(cmd.split(), stderr=subprocess.STDOUT)
+            subprocess.check_output(cmd.split(), stderr=subprocess.STDOUT,
+                                    encoding='utf-8')
         except subprocess.CalledProcessError as e:
             LOG.debug('Failed to %s octavia-keepalived service: %s %s',
                       action, e, e.output)

@@ -277,7 +277,7 @@ class TestInterface(base.TestCase):
              f"/var/lib/dhclient/dhclient-{iface}.leases",
              "-pf",
              f"/run/dhclient-{iface}.pid",
-             iface], stderr=-2)
+             iface], stderr=subprocess.STDOUT)
 
     @mock.patch('subprocess.check_output')
     def test__dhclient_down(self, mock_check_output):
@@ -293,7 +293,7 @@ class TestInterface(base.TestCase):
              f"/var/lib/dhclient/dhclient-{iface}.leases",
              "-pf",
              f"/run/dhclient-{iface}.pid",
-             iface], stderr=-2)
+             iface], stderr=subprocess.STDOUT)
 
     @mock.patch('subprocess.check_output')
     def test__ipv6auto_up(self, mock_check_output):
@@ -304,9 +304,11 @@ class TestInterface(base.TestCase):
 
         mock_check_output.assert_has_calls([
             mock.call(["/sbin/sysctl", "-w",
-                       "net.ipv6.conf.iface2.accept_ra=2"], stderr=-2),
+                       "net.ipv6.conf.iface2.accept_ra=2"],
+                      stderr=subprocess.STDOUT),
             mock.call(["/sbin/sysctl", "-w",
-                       "net.ipv6.conf.iface2.autoconf=1"], stderr=-2)])
+                       "net.ipv6.conf.iface2.autoconf=1"],
+                      stderr=subprocess.STDOUT)])
 
     @mock.patch('subprocess.check_output')
     def test__ipv6auto_down(self, mock_check_output):
@@ -317,9 +319,11 @@ class TestInterface(base.TestCase):
 
         mock_check_output.assert_has_calls([
             mock.call(["/sbin/sysctl", "-w",
-                       "net.ipv6.conf.iface2.accept_ra=0"], stderr=-2),
+                       "net.ipv6.conf.iface2.accept_ra=0"],
+                      stderr=subprocess.STDOUT),
             mock.call(["/sbin/sysctl", "-w",
-                       "net.ipv6.conf.iface2.autoconf=0"], stderr=-2)])
+                       "net.ipv6.conf.iface2.autoconf=0"],
+                      stderr=subprocess.STDOUT)])
 
     @mock.patch('pyroute2.IPRoute.rule')
     @mock.patch('pyroute2.IPRoute.route')
@@ -577,15 +581,16 @@ class TestInterface(base.TestCase):
 
         mock_check_output.assert_has_calls([
             mock.call([consts.NFT_CMD, consts.NFT_ADD, 'table',
-                       consts.NFT_FAMILY, consts.NFT_VIP_TABLE], stderr=-2),
+                       consts.NFT_FAMILY, consts.NFT_VIP_TABLE],
+                      stderr=subprocess.STDOUT),
             mock.call([consts.NFT_CMD, consts.NFT_ADD, 'chain',
                        consts.NFT_FAMILY, consts.NFT_VIP_TABLE,
                        consts.NFT_VIP_CHAIN, '{', 'type', 'filter', 'hook',
                        'ingress', 'device', 'fake-eth1', 'priority',
                        consts.NFT_SRIOV_PRIORITY, ';', 'policy', 'drop', ';',
-                       '}'], stderr=-2),
+                       '}'], stderr=subprocess.STDOUT),
             mock.call([consts.NFT_CMD, '-o', '-f', consts.NFT_VIP_RULES_FILE],
-                      stderr=-2),
+                      stderr=subprocess.STDOUT),
             mock.call(["post-up", "fake-eth1"])
         ])
 
@@ -922,13 +927,13 @@ class TestInterface(base.TestCase):
                        f"/var/lib/dhclient/dhclient-{iface.name}.leases",
                        "-pf",
                        f"/run/dhclient-{iface.name}.pid",
-                       iface.name], stderr=-2),
+                       iface.name], stderr=subprocess.STDOUT),
             mock.call(["/sbin/sysctl", "-w",
                        f"net.ipv6.conf.{iface.name}.accept_ra=2"],
-                      stderr=-2),
+                      stderr=subprocess.STDOUT),
             mock.call(["/sbin/sysctl", "-w",
                        f"net.ipv6.conf.{iface.name}.autoconf=1"],
-                      stderr=-2),
+                      stderr=subprocess.STDOUT),
             mock.call(["post-up", iface.name])
         ])
 
@@ -1338,13 +1343,13 @@ class TestInterface(base.TestCase):
                        f"/var/lib/dhclient/dhclient-{iface.name}.leases",
                        "-pf",
                        f"/run/dhclient-{iface.name}.pid",
-                       iface.name], stderr=-2),
+                       iface.name], stderr=subprocess.STDOUT),
             mock.call(["/sbin/sysctl", "-w",
                        f"net.ipv6.conf.{iface.name}.accept_ra=0"],
-                      stderr=-2),
+                      stderr=subprocess.STDOUT),
             mock.call(["/sbin/sysctl", "-w",
                        f"net.ipv6.conf.{iface.name}.autoconf=0"],
-                      stderr=-2),
+                      stderr=subprocess.STDOUT),
             mock.call(["post-down", iface.name])
         ])
 
