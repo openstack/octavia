@@ -51,7 +51,7 @@ python-dateutil>=2.7.0 # BSD
 
 #for the amphora api
 Flask!=0.11,>=0.10 # BSD
-cryptography>=3.0 # BSD/Apache-2.0
+cryptography>=42.0.0 # BSD/Apache-2.0
 pyroute2>=0.5.14;sys_platform!='win32' # Apache-2.0 (+ dual licensed GPL2)
 gunicorn>=19.9.0 # MIT
 Werkzeug>=0.14.1 # BSD License
