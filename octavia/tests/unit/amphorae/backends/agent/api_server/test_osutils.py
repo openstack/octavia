@@ -227,5 +227,5 @@ class TestOSUtils(base.TestCase):
         mock_port_interface_file.assert_called_once_with(
             name=netns_interface,
             fixed_ips=fixed_ips,
-            mtu=MTU)
+            mtu=MTU, is_sriov=False)
         mock_port_interface_file.return_value.write.assert_called_once()

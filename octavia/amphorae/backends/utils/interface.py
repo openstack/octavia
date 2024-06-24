@@ -172,47 +172,12 @@ class InterfaceController:
         ip_network = ipaddress.ip_network(address, strict=False)
         return ip_network.compressed
 
-    def _setup_nftables_chain(self, interface):
-        # TODO(johnsom) Move this to pyroute2 when the nftables library
-        #               improves.
-
-        # Create the nftable
-        cmd = [consts.NFT_CMD, consts.NFT_ADD, 'table', consts.NFT_FAMILY,
-               consts.NFT_VIP_TABLE]
-        try:
-            subprocess.check_output(cmd, stderr=subprocess.STDOUT)
-        except Exception as e:
-            if hasattr(e, 'output'):
-                LOG.error(e.output)
-            else:
-                LOG.error(e)
-            raise
-
-        # Create the chain with -310 priority to put it in front of the
-        # lvs-masquerade configured chain
-        cmd = [consts.NFT_CMD, consts.NFT_ADD, 'chain', consts.NFT_FAMILY,
-               consts.NFT_VIP_TABLE, consts.NFT_VIP_CHAIN,
-               '{', 'type', 'filter', 'hook', 'ingress', 'device',
-               interface.name, 'priority', consts.NFT_SRIOV_PRIORITY, ';',
-               'policy', 'drop', ';', '}']
-        try:
-            subprocess.check_output(cmd, stderr=subprocess.STDOUT)
-        except Exception as e:
-            if hasattr(e, 'output'):
-                LOG.error(e.output)
-            else:
-                LOG.error(e)
-            raise
-
-        nftable_utils.write_nftable_vip_rules_file(interface.name, [])
-
-        nftable_utils.load_nftables_file()
-
     def up(self, interface):
         LOG.info("Setting interface %s up", interface.name)
 
         if interface.is_sriov:
-            self._setup_nftables_chain(interface)
+            nftable_utils.write_nftable_rules_file(interface.name, [])
+            nftable_utils.load_nftables_file()
 
         with pyroute2.IPRoute() as ipr:
             idx = ipr.link_lookup(ifname=interface.name)[0]

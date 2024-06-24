@@ -28,23 +28,22 @@ import octavia.tests.unit.base as base
 class TestNFTableUtils(base.TestCase):
     @mock.patch('os.open')
     @mock.patch('os.path.isfile')
-    def test_write_nftable_vip_rules_file_exists(self, mock_isfile, mock_open):
+    def test_write_nftable_rules_file_exists(self, mock_isfile, mock_open):
         """Test when a rules file exists and no new rules
 
         When an existing rules file is present and we call
-        write_nftable_vip_rules_file with no rules, the method should not
+        write_nftable_rules_file with no rules, the method should not
         overwrite the existing rules.
         """
         mock_isfile.return_value = True
 
-        nftable_utils.write_nftable_vip_rules_file('fake-eth2', [])
+        nftable_utils.write_nftable_rules_file('fake-eth2', [])
 
         mock_open.assert_not_called()
 
     @mock.patch('os.open')
     @mock.patch('os.path.isfile')
-    def test_write_nftable_vip_rules_file_rules(self, mock_isfile,
-                                                mock_open):
+    def test_write_nftable_rules_file_rules(self, mock_isfile, mock_open):
         """Test when a rules file exists and rules are passed in
 
         This should create a simple rules file with the base chain and rules.
@@ -61,32 +60,40 @@ class TestNFTableUtils(base.TestCase):
 
         mocked_open = mock.mock_open()
         with mock.patch.object(os, 'fdopen', mocked_open):
-            nftable_utils.write_nftable_vip_rules_file(
+            nftable_utils.write_nftable_rules_file(
                 'fake-eth2', [test_rule_1, test_rule_2])
 
         mocked_open.assert_called_once_with('fake-fd', 'w')
         mock_open.assert_called_once_with(
-            consts.NFT_VIP_RULES_FILE,
+            consts.NFT_RULES_FILE,
             (os.O_WRONLY | os.O_CREAT | os.O_TRUNC),
             (stat.S_IRUSR | stat.S_IWUSR))
 
         handle = mocked_open()
         handle.write.assert_has_calls([
-            mock.call(f'table {consts.NFT_FAMILY} {consts.NFT_VIP_TABLE} '
+            mock.call(f'table {consts.NFT_FAMILY} {consts.NFT_TABLE} '
                       '{}\n'),
             mock.call(f'delete table {consts.NFT_FAMILY} '
-                      f'{consts.NFT_VIP_TABLE}\n'),
-            mock.call(f'table {consts.NFT_FAMILY} {consts.NFT_VIP_TABLE} '
+                      f'{consts.NFT_TABLE}\n'),
+            mock.call(f'table {consts.NFT_FAMILY} {consts.NFT_TABLE} '
                       '{\n'),
-            mock.call(f'  chain {consts.NFT_VIP_CHAIN} {{\n'),
-            mock.call('    type filter hook ingress device fake-eth2 '
-                      f'priority {consts.NFT_SRIOV_PRIORITY}; policy drop;\n'),
+            mock.call(f'  chain {consts.NFT_CHAIN} {{\n'),
+            mock.call('    type filter hook input priority filter; '
+                      'policy drop;\n'),
+            mock.call('      ct state vmap { established : accept, related : '
+                      'accept, invalid : drop }\n'),
+            mock.call('      iif lo accept\n'),
+            mock.call('      ip saddr 127.0.0.0/8 drop\n'),
+            mock.call('      ip6 saddr ::1 drop\n'),
             mock.call('      icmp type destination-unreachable accept\n'),
             mock.call('      icmpv6 type { nd-neighbor-solicit, '
                       'nd-router-advert, nd-neighbor-advert, packet-too-big, '
                       'destination-unreachable } accept\n'),
             mock.call('      udp sport 67 udp dport 68 accept\n'),
             mock.call('      udp sport 547 udp dport 546 accept\n'),
+            mock.call('      iifname eth1 goto amphora_vip_chain\n'),
+            mock.call('  }\n'),
+            mock.call('  chain amphora_vip_chain {\n'),
             mock.call('      tcp dport 1234 accept\n'),
             mock.call('      ip saddr 192.0.2.0/24 ip protocol 112 accept\n'),
             mock.call('  }\n'),
@@ -95,8 +102,7 @@ class TestNFTableUtils(base.TestCase):
 
     @mock.patch('os.open')
     @mock.patch('os.path.isfile')
-    def test_write_nftable_vip_rules_file_missing(self, mock_isfile,
-                                                  mock_open):
+    def test_write_nftable_rules_file_missing(self, mock_isfile, mock_open):
         """Test when a rules file does not exist and no new rules
 
         This should create a simple rules file with the base chain.
@@ -106,21 +112,21 @@ class TestNFTableUtils(base.TestCase):
 
         mocked_open = mock.mock_open()
         with mock.patch.object(os, 'fdopen', mocked_open):
-            nftable_utils.write_nftable_vip_rules_file('fake-eth2', [])
+            nftable_utils.write_nftable_rules_file('fake-eth2', [])
 
         mocked_open.assert_called_once_with('fake-fd', 'w')
         mock_open.assert_called_once_with(
-            consts.NFT_VIP_RULES_FILE,
+            consts.NFT_RULES_FILE,
             (os.O_WRONLY | os.O_CREAT | os.O_TRUNC),
             (stat.S_IRUSR | stat.S_IWUSR))
 
         handle = mocked_open()
         handle.write.assert_has_calls([
-            mock.call(f'table {consts.NFT_FAMILY} {consts.NFT_VIP_TABLE} '
+            mock.call(f'table {consts.NFT_FAMILY} {consts.NFT_TABLE} '
                       '{\n'),
-            mock.call(f'  chain {consts.NFT_VIP_CHAIN} {{\n'),
-            mock.call('    type filter hook ingress device fake-eth2 '
-                      f'priority {consts.NFT_SRIOV_PRIORITY}; policy drop;\n'),
+            mock.call(f'  chain {consts.NFT_CHAIN} {{\n'),
+            mock.call('    type filter hook input priority filter; '
+                      'policy drop;\n'),
             mock.call('      icmp type destination-unreachable accept\n'),
             mock.call('      icmpv6 type { nd-neighbor-solicit, '
                       'nd-router-advert, nd-neighbor-advert, packet-too-big, '
@@ -184,7 +190,7 @@ class TestNFTableUtils(base.TestCase):
 
         mock_netns.assert_called_once_with(consts.AMPHORA_NAMESPACE)
         mock_check_output.assert_called_once_with([
-            consts.NFT_CMD, '-o', '-f', consts.NFT_VIP_RULES_FILE],
+            consts.NFT_CMD, '-o', '-f', consts.NFT_RULES_FILE],
             stderr=subprocess.STDOUT)
 
         self.assertRaises(subprocess.CalledProcessError,

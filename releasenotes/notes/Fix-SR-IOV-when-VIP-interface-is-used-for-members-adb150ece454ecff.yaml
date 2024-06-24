@@ -1,0 +1,5 @@
+---
+fixes:
+  - |
+    Fixed a bug in the VIP SR-IOV implementation that would cause load balancer
+    memebers that use the SR-IOV VIP interface to not receive traffic.
