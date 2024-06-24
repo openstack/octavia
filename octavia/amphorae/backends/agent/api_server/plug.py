@@ -152,7 +152,7 @@ class Plug(object):
                     socket.inet_pton(socket.AF_INET6, ip.get('ip_address'))
 
     def plug_network(self, mac_address, fixed_ips, mtu=None,
-                     vip_net_info=None):
+                     vip_net_info=None, is_sriov=False):
         try:
             self._check_ip_addresses(fixed_ips=fixed_ips)
         except socket.error:
@@ -189,7 +189,8 @@ class Plug(object):
                     vips=rendered_vips,
                     mtu=mtu,
                     vrrp_info=vrrp_info,
-                    fixed_ips=fixed_ips)
+                    fixed_ips=fixed_ips,
+                    is_sriov=is_sriov)
                 self._osutils.bring_interface_up(existing_interface, 'vip')
             # Otherwise, we are just plugging a run-of-the-mill network
             else:
@@ -197,7 +198,7 @@ class Plug(object):
                 self._osutils.write_port_interface_file(
                     interface=existing_interface,
                     fixed_ips=fixed_ips,
-                    mtu=mtu)
+                    mtu=mtu, is_sriov=is_sriov)
                 self._osutils.bring_interface_up(existing_interface, 'network')
 
             util.send_member_advertisements(fixed_ips)
@@ -222,7 +223,7 @@ class Plug(object):
         self._osutils.write_port_interface_file(
             interface=netns_interface,
             fixed_ips=fixed_ips,
-            mtu=mtu)
+            mtu=mtu, is_sriov=is_sriov)
 
         # Update the list of interfaces to add to the namespace
         self._update_plugged_interfaces_file(netns_interface, mac_address)
