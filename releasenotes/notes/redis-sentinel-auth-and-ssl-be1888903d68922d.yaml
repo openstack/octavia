@@ -1,0 +1,13 @@
+---
+features:
+  - |
+    The following options, to enable authentication in Redis Sentinel, have
+    been added.
+
+    - ``[task_flow] jobboard_redis_sentinel_username``
+    - ``[task_flow] jobboard_redis_sentinel_password``
+
+  - |
+    The new ``[task_flow] jobboard_redis_sentinel_ssl_options`` option has
+    been added. This option controls SSL settings for connections to Redis
+    Sentinel.
