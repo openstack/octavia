@@ -435,10 +435,6 @@ function octavia_configure {
         iniset $OCTAVIA_CONF oslo_policy policy_file $OCTAVIA_CONF_DIR/policy.yaml
     fi
 
-    # create dhclient.conf file for dhclient
-    sudo mkdir -m755 -p $OCTAVIA_DHCLIENT_DIR
-    sudo cp $OCTAVIA_DIR/etc/dhcp/dhclient.conf $OCTAVIA_DHCLIENT_CONF
-
     if [[ "$OCTAVIA_USE_MOD_WSGI" == "True" ]]; then
         if [[ "$WSGI_MODE" == "uwsgi" ]]; then
             _configure_octavia_apache_uwsgi
@@ -628,15 +624,19 @@ function configure_rsyslog {
 
 function octavia_start {
 
-    if  ! ps aux | grep -q [o]-hm0 && [ $OCTAVIA_NODE != 'api' ] ; then
+    if  [ $OCTAVIA_NODE != 'api' ] ; then
+        # This is probably out of scope here? Load it from config
+        MGMT_PORT_IP=$(iniget $OCTAVIA_CONF health_manager bind_ip)
+
         if [ $SERVICE_IP_VERSION == '6' ] ; then
-                # This is probably out of scope here? Load it from config
-                MGMT_PORT_IP=$(iniget $OCTAVIA_CONF health_manager bind_ip)
-            sudo ip addr add $MGMT_PORT_IP/64 dev o-hm0
-            sudo ip link set o-hm0 up
+            MGMT_SUBNET_ARRAY=(${OCTAVIA_MGMT_SUBNET_IPV6//// })
         else
-            sudo dhclient -v o-hm0 -cf $OCTAVIA_DHCLIENT_CONF
+            MGMT_SUBNET_ARRAY=(${OCTAVIA_MGMT_SUBNET//// })
         fi
+        MGMT_SUBNET_MASK=${MGMT_SUBNET_ARRAY[1]}
+
+        sudo ip addr add $MGMT_PORT_IP/$MGMT_SUBNET_MASK dev o-hm0
+        sudo ip link set o-hm0 up
     fi
 
     if [ $OCTAVIA_NODE == 'main' ]; then
@@ -669,21 +669,31 @@ function octavia_stop {
     stop_process $OCTAVIA_HOUSEKEEPER
     stop_process $OCTAVIA_HEALTHMANAGER
 
+    # TODO(johnsom) Remove this in 2025.2 release so upgrades will stop this
+    # process.
     # Kill dhclient process started for o-hm0 interface
     pids=$(ps aux | awk '/[o]-hm0/ { print $2 }')
     [ ! -z "$pids" ] && sudo kill $pids
+
     if function_exists octavia_delete_network_interface_device ; then
         octavia_delete_network_interface_device o-hm0
-    elif [[ $NEUTRON_AGENT == "openvswitch" || $Q_AGENT == "openvswitch" ]]; then
-        # This elif can go away in the X cycle, needed for grenade old/new logic
-        :  # Do nothing
-    elif [[ $NEUTRON_AGENT == "linuxbridge" || $Q_AGENT == "linuxbridge" ]]; then
+    fi
+
+    # Grenade upgrades need the IP address removed here
+    MGMT_PORT_IP=$(iniget $OCTAVIA_CONF health_manager bind_ip)
+    if [ $SERVICE_IP_VERSION == '6' ] ; then
+        MGMT_SUBNET_ARRAY=(${OCTAVIA_MGMT_SUBNET_IPV6//// })
+    else
+        MGMT_SUBNET_ARRAY=(${OCTAVIA_MGMT_SUBNET//// })
+    fi
+    MGMT_SUBNET_MASK=${MGMT_SUBNET_ARRAY[1]}
+    sudo ip addr del $MGMT_PORT_IP/$MGMT_SUBNET_MASK dev o-hm0
+
+    if [[ $NEUTRON_AGENT == "linuxbridge" || $Q_AGENT == "linuxbridge" ]]; then
         # This elif can go away in the X cycle, needed for grenade old/new logic
         if ip link show o-hm0 ; then
             sudo ip link del o-hm0
         fi
-    else
-        die "Unknown network controller. Please define octavia_delete_network_interface_device"
     fi
 
     if [[ ${OCTAVIA_ENABLE_AMPHORAV2_JOBBOARD} == True ]]; then

@@ -9,10 +9,6 @@ OCTAVIA_BIN_DIR=${OCTAVIA_BIN_DIR:-$(get_python_exec_prefix)}
 OCTAVIA_CONF_DIR=${OCTAVIA_CONF_DIR:-"/etc/octavia"}
 OCTAVIA_SSH_DIR=${OCTAVIA_SSH_DIR:-${OCTAVIA_CONF_DIR}/.ssh}
 OCTAVIA_CERTS_DIR=${OCTAVIA_CERTS_DIR:-${OCTAVIA_CONF_DIR}/certs}
-# This needs to be under /etc/dhcp for apparmor
-# See https://storyboard.openstack.org/#!/story/1673269
-OCTAVIA_DHCLIENT_DIR=${OCTAVIA_DHCLIENT_DIR:-"/etc/dhcp/octavia"}
-OCTAVIA_DHCLIENT_CONF=${OCTAVIA_DHCLIENT_CONF:-${OCTAVIA_DHCLIENT_DIR}/dhclient.conf}
 OCTAVIA_CONF=${OCTAVIA_CONF:-${OCTAVIA_CONF_DIR}/octavia.conf}
 OCTAVIA_AUDIT_MAP=${OCTAVIA_AUDIT_MAP:-${OCTAVIA_CONF_DIR}/octavia_api_audit_map.conf}
 OCTAVIA_RUN_DIR=${OCTAVIA_RUN_DIR:-"/var/run/octavia"}
