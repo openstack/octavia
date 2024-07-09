@@ -14,19 +14,6 @@ function octavia_install {
     else
         setup_develop $OCTAVIA_DIR
     fi
-    if [ $OCTAVIA_NODE == 'main' ] || [ $OCTAVIA_NODE == 'standalone' ] ; then
-        if ! [ "$DISABLE_AMP_IMAGE_BUILD" == 'True' ]; then
-            if [[ ${DISTRO} =~ (rhel|centos) ]]; then
-                install_package qemu-kvm
-                if [[ "$OCTAVIA_AMP_BASE_OS" == "rocky" ]]; then
-                    # DIB requires podman for building rockylinux images.
-                    install_package podman
-                fi
-            else
-                install_package qemu
-            fi
-        fi
-    fi
 }
 
 function octaviaclient_install {
