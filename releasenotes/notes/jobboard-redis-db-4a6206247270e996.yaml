@@ -1,0 +1,5 @@
+---
+features:
+  - |
+    The new ``[task_flow] jobboard_redis_backend_db`` option has been added.
+    This option allows using non default database in redis as backend.

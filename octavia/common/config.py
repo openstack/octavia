@@ -576,6 +576,9 @@ task_flow_opts = [
     cfg.StrOpt('jobboard_backend_namespace', default='octavia_jobboard',
                help='Jobboard name that should be used to store taskflow '
                     'job id and claims for it.'),
+    cfg.IntOpt('jobboard_redis_backend_db',
+               default=0, min=0,
+               help='Database ID in redis server.'),
     cfg.StrOpt('jobboard_redis_sentinel', default=None,
                help='Sentinel name if it is used for Redis.'),
     cfg.StrOpt('jobboard_redis_sentinel_username',
