@@ -136,6 +136,8 @@ api_opts = [
                          lib_consts.ALPN_PROTOCOL_HTTP_1_0],
                 help=_('List of ALPN protocols to use for new TLS-enabled '
                        'pools.')),
+    cfg.BoolOpt('show_deleted', default=False,
+                help=_("Allows to list the deleted instances")),
 ]
 
 # Options only used by the amphora agent

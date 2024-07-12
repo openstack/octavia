@@ -50,7 +50,7 @@ class AmphoraController(base.BaseController):
         """Gets a single amphora's details."""
         context = pecan_request.context.get('octavia_context')
         with context.session.begin():
-            db_amp = self._get_db_amp(context.session, id, show_deleted=False)
+            db_amp = self._get_db_amp(context.session, id, show_deleted=CONF.api_settings.show_deleted)
 
         self._auth_validate_action(context, context.project_id,
                                    constants.RBAC_GET_ONE)
@@ -73,7 +73,7 @@ class AmphoraController(base.BaseController):
 
         with context.session.begin():
             db_amp, links = self.repositories.amphora.get_all_API_list(
-                context.session, show_deleted=False,
+                context.session, show_deleted=CONF.api_settings.show_deleted,
                 pagination_helper=pcontext.get(constants.PAGINATION_HELPER))
         result = self._convert_db_to_type(
             db_amp, [amp_types.AmphoraResponse])
