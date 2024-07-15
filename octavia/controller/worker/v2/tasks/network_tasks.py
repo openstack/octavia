@@ -906,24 +906,29 @@ class DeletePort(BaseNetworkTask):
         """Delete the network port."""
         if port_id is None:
             return
-        if self.execute.retry.statistics.get(constants.ATTEMPT_NUMBER, 1) == 1:
+        # tenacity 8.5.0 moves statistics from the retry object to the function
+        try:
+            retry_statistics = self.execute.statistics
+        except AttributeError:
+            retry_statistics = self.execute.retry.statistics
+
+        if retry_statistics.get(constants.ATTEMPT_NUMBER, 1) == 1:
             LOG.debug("Deleting network port %s", port_id)
         else:
             LOG.warning('Retrying network port %s delete attempt %s of %s.',
                         port_id,
-                        self.execute.retry.statistics[
-                            constants.ATTEMPT_NUMBER],
+                        retry_statistics[constants.ATTEMPT_NUMBER],
                         self.execute.retry.stop.max_attempt_number)
         # Let the Taskflow engine know we are working and alive
         # Don't use get with a default for 'attempt_number', we need to fail
         # if that number is missing.
         self.update_progress(
-            self.execute.retry.statistics[constants.ATTEMPT_NUMBER] /
+            retry_statistics[constants.ATTEMPT_NUMBER] /
             self.execute.retry.stop.max_attempt_number)
         try:
             self.network_driver.delete_port(port_id)
         except Exception:
-            if (self.execute.retry.statistics[constants.ATTEMPT_NUMBER] !=
+            if (retry_statistics[constants.ATTEMPT_NUMBER] !=
                     self.execute.retry.stop.max_attempt_number):
                 LOG.warning('Network port delete for port id: %s failed. '
                             'Retrying.', port_id)

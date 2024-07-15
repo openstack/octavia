@@ -236,26 +236,30 @@ class ComputeDelete(BaseComputeTask):
         amphora_id = amphora.get(constants.ID)
         compute_id = amphora[constants.COMPUTE_ID]
 
-        if self.execute.retry.statistics.get(constants.ATTEMPT_NUMBER, 1) == 1:
+        # tenacity 8.5.0 moves statistics from the retry object to the function
+        try:
+            retry_statistics = self.execute.statistics
+        except AttributeError:
+            retry_statistics = self.execute.retry.statistics
+        if retry_statistics.get(constants.ATTEMPT_NUMBER, 1) == 1:
             LOG.debug('Compute delete execute for amphora with ID %s and '
                       'compute ID: %s', amphora_id, compute_id)
         else:
             LOG.warning('Retrying compute delete of %s attempt %s of %s.',
                         compute_id,
-                        self.execute.retry.statistics[
-                            constants.ATTEMPT_NUMBER],
+                        retry_statistics[constants.ATTEMPT_NUMBER],
                         self.execute.retry.stop.max_attempt_number)
         # Let the Taskflow engine know we are working and alive
         # Don't use get with a default for 'attempt_number', we need to fail
         # if that number is missing.
         self.update_progress(
-            self.execute.retry.statistics[constants.ATTEMPT_NUMBER] /
+            retry_statistics[constants.ATTEMPT_NUMBER] /
             self.execute.retry.stop.max_attempt_number)
 
         try:
             self.compute.delete(compute_id)
         except Exception:
-            if (self.execute.retry.statistics[constants.ATTEMPT_NUMBER] !=
+            if (retry_statistics[constants.ATTEMPT_NUMBER] !=
                     self.execute.retry.stop.max_attempt_number):
                 LOG.warning('Compute delete for amphora id: %s failed. '
                             'Retrying.', amphora_id)
