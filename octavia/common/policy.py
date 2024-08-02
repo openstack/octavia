@@ -137,9 +137,8 @@ class Policy(oslo_policy.Enforcer):
         try:
             result = self.enforce('context_is_admin', credentials, credentials)
         except oslo_policy.InvalidScope as e:
-            # This will happen if the token being used is not system scoped
-            # which is required for the admin roles when scope checking is
-            # enabled.
+            # This will happen if the token being used is system scoped
+            # when scope checking is enabled.
             LOG.warning(str(e))
             return False
         return result

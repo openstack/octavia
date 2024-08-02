@@ -41,20 +41,6 @@ rules = [
 
     # OpenStack wide scoped rules
 
-    # System scoped Administrator
-    policy.RuleDefault(
-        name='system-admin',
-        check_str='role:admin and '
-                  'system_scope:all',
-        scope_types=[constants.RBAC_SCOPE_PROJECT]),
-
-    # System scoped Reader
-    policy.RuleDefault(
-        name='system-reader',
-        check_str='role:reader and '
-                  'system_scope:all',
-        scope_types=[constants.RBAC_SCOPE_PROJECT]),
-
     # Project scoped Member
     policy.RuleDefault(
         name='project-member',
@@ -85,13 +71,10 @@ rules = [
     # role:load-balancer_admin
     #     User is considered an admin for all load-balancer APIs including
     #     resources owned by others.
-    # role:admin and system_scope:all
-    #     User is admin to all service APIs, including Octavia.
 
     policy.RuleDefault(
         name='context_is_admin',
         check_str='role:load-balancer_admin or '
-                  'rule:system-admin or '
                   'role:admin',
         deprecated_rule=deprecated_context_is_admin,
         scope_types=[constants.RBAC_SCOPE_PROJECT]),
@@ -115,8 +98,7 @@ rules = [
 
     policy.RuleDefault(
         name='load-balancer:global_observer',
-        check_str='role:load-balancer_global_observer or '
-                  'rule:system-reader',
+        check_str='role:load-balancer_global_observer',
         scope_types=[constants.RBAC_SCOPE_PROJECT]),
 
     policy.RuleDefault(
@@ -132,7 +114,6 @@ rules = [
         name='load-balancer:admin',
         check_str='is_admin:True or '
                   'role:load-balancer_admin or '
-                  'rule:system-admin or '
                   'role:admin',
         scope_types=[constants.RBAC_SCOPE_PROJECT]),
 

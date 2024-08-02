@@ -164,23 +164,20 @@ class PolicyTestCase(base.TestCase):
     def test_check_is_admin_fail(self):
         self.assertFalse(policy.get_enforcer().check_is_admin(self.context))
 
-    # TODO(johnsom) When oslo.policy changes "enforce_new_defaults" to True
-    #               this test will fail as "system_scope:all" will be required.
-    #               This test and the conditional in common/policy.py can then
-    #               be removed in favor of test_check_is_admin_new_defaults().
     def test_check_is_admin(self):
         self.context = context.RequestContext('admin', project_id='fake',
                                               roles=['AdMiN'])
 
         self.assertTrue(policy.get_enforcer().check_is_admin(self.context))
 
-    def test_check_is_admin_new_defaults(self):
+    def test_check_is_admin_with_system_scope_token(self):
         conf = oslo_fixture.Config(config.cfg.CONF)
         conf.config(group="oslo_policy", enforce_new_defaults=True)
+        conf.config(group="oslo_policy", enforce_scope=True)
         self.context = context.RequestContext('admin', roles=['AdMiN'],
                                               system_scope='all')
 
-        self.assertTrue(policy.get_enforcer().check_is_admin(self.context))
+        self.assertFalse(policy.get_enforcer().check_is_admin(self.context))
 
     def test_get_enforcer(self):
         self.assertTrue(isinstance(policy.get_no_context_enforcer(),
