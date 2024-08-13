@@ -16,7 +16,6 @@ from unittest import mock
 from oslo_utils import uuidutils
 
 from octavia.amphorae.backends.agent.api_server import keepalivedlvs
-from octavia.amphorae.backends.agent.api_server import util
 from octavia.tests.unit import base
 
 
@@ -40,20 +39,3 @@ class KeepalivedLvsTestCase(base.TestCase):
             mock.call(json={'message': 'OK'})
         ]
         m_webob.Response.assert_has_calls(calls)
-
-    @mock.patch('octavia.amphorae.backends.agent.api_server.util.'
-                'get_os_init_system')
-    @mock.patch('octavia.amphorae.backends.agent.api_server.util.'
-                'get_keepalivedlvs_pid')
-    @mock.patch('subprocess.check_output')
-    @mock.patch('os.remove')
-    @mock.patch('os.path.exists')
-    def test_delete_lvs_listener_unsupported_sysinit(self, m_exist, m_remove,
-                                                     m_check_output, mget_pid,
-                                                     m_init_sys):
-        m_exist.return_value = True
-        mget_pid.return_value = '0'
-        self.assertRaises(
-            util.UnknownInitError,
-            self.test_keepalivedlvs.delete_lvs_listener,
-            self.FAKE_ID)

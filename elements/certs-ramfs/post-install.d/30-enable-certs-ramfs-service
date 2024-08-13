@@ -7,10 +7,6 @@ set -eu
 set -o pipefail
 
 case "$DIB_INIT_SYSTEM" in
-    upstart|sysv)
-        # nothing to do
-        exit 0
-        ;;
     systemd)
         systemctl enable certs-ramfs.service
         ;;
