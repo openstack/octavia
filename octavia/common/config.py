@@ -148,14 +148,6 @@ amphora_agent_opts = [
     cfg.StrOpt('agent_server_network_dir',
                help=_("The directory where new network interfaces "
                       "are located")),
-    cfg.StrOpt('agent_server_network_file',
-               help=_("The file where the network interfaces are located. "
-                      "Specifying this will override any value set for "
-                      "agent_server_network_dir."),
-               deprecated_for_removal=True,
-               deprecated_reason=_('New amphora interface management '
-                                   'does not support single interface file.'),
-               deprecated_since='Xena'),
     cfg.IntOpt('agent_request_read_timeout', default=180,
                help=_("The time in seconds to allow a request from the "
                       "controller to run before terminating the socket.")),
