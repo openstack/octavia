@@ -407,11 +407,6 @@ haproxy_amphora_opts = [
                help=_("The client certificate to talk to the agent")),
     cfg.StrOpt('server_ca', default='/etc/octavia/certs/server_ca.pem',
                help=_("The ca which signed the server certificates")),
-    cfg.BoolOpt('use_upstart', default=True,
-                deprecated_for_removal=True,
-                deprecated_reason='This is now automatically discovered '
-                                  ' and configured.',
-                help=_("If False, use sysvinit.")),
     cfg.IntOpt('api_db_commit_retry_attempts', default=15,
                help=_('The number of times the database action will be '
                       'attempted.')),

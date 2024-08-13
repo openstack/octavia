@@ -52,7 +52,6 @@ class AgentJinjaTemplater:
              'haproxy_cmd': CONF.haproxy_amphora.haproxy_cmd,
              'heartbeat_interval': CONF.health_manager.heartbeat_interval,
              'heartbeat_key': CONF.health_manager.heartbeat_key,
-             'use_upstart': CONF.haproxy_amphora.use_upstart,
              'respawn_count': CONF.haproxy_amphora.respawn_count,
              'respawn_interval': CONF.haproxy_amphora.respawn_interval,
              'amphora_udp_driver': CONF.amphora_agent.amphora_udp_driver,
