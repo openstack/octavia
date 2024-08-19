@@ -394,8 +394,8 @@ class ControllerWorker(object):
                  constants.SERVER_GROUP_ID: db_lb.server_group_id,
                  constants.PROJECT_ID: db_lb.project_id}
         if cascade:
-            listeners = flow_utils.get_listeners_on_lb(db_lb)
-            pools = flow_utils.get_pools_on_lb(db_lb)
+            listeners = flow_utils.get_listeners_on_lb(db_lb, True)
+            pools = flow_utils.get_pools_on_lb(db_lb, True)
 
             self.run_flow(
                 flow_utils.get_cascade_delete_load_balancer_flow,

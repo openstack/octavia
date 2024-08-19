@@ -27,7 +27,7 @@ from octavia.controller.worker.v2 import controller_worker
 from octavia.controller.worker.v2.flows import flow_utils
 import octavia.tests.unit.base as base
 
-
+TLS_CERT_ID = uuidutils.generate_uuid()
 AMP_ID = uuidutils.generate_uuid()
 LB_ID = uuidutils.generate_uuid()
 LISTENER_ID = uuidutils.generate_uuid()
@@ -770,6 +770,61 @@ class TestControllerWorker(base.TestCase):
                        constants.PROJECT_ID: _db_load_balancer_mock.project_id,
                        })
          )
+
+    @mock.patch(
+        "octavia.common.tls_utils.cert_parser.load_certificates_data",
+        side_effect=RuntimeError
+    )
+    def test_delete_load_balancer_with_cascade_tls_unavailable(
+            self,
+            mock_load_tls_cert,
+            mock_api_get_session,
+            mock_dyn_log_listener,
+            mock_taskflow_load,
+            mock_pool_repo_get,
+            mock_member_repo_get,
+            mock_l7rule_repo_get,
+            mock_l7policy_repo_get,
+            mock_listener_repo_get,
+            mock_lb_repo_get,
+            mock_health_mon_repo_get,
+            mock_amp_repo_get
+    ):
+        _flow_mock.reset_mock()
+
+        _listener_mock.tls_certificate_id = TLS_CERT_ID
+        _listener_mock.to_dict.return_value[
+            constants.TLS_CERTIFICATE_ID] = TLS_CERT_ID
+
+        cw = controller_worker.ControllerWorker()
+        cw.delete_load_balancer(_load_balancer_mock, cascade=True)
+
+        mock_lb_repo_get.assert_called_once_with(
+            _db_session,
+            id=LB_ID)
+
+        # Check load_certificates_data called and error is raised
+        # Error must be ignored because it is not critical for current flow
+        mock_load_tls_cert.assert_called_once()
+
+        listener_list = [{constants.LISTENER_ID: LISTENER_ID,
+                          constants.LOADBALANCER_ID: LB_ID,
+                          constants.PROJECT_ID: PROJECT_ID,
+                          "default_tls_container_ref": TLS_CERT_ID}]
+
+        (cw.services_controller.run_poster.
+            assert_called_once_with(
+                flow_utils.get_cascade_delete_load_balancer_flow,
+                _load_balancer_mock, listener_list, [],
+                store={constants.LOADBALANCER: _load_balancer_mock,
+                       constants.LOADBALANCER_ID: LB_ID,
+                       constants.SERVER_GROUP_ID:
+                           _db_load_balancer_mock.server_group_id,
+                       constants.PROJECT_ID: _db_load_balancer_mock.project_id,
+                       })
+         )
+
+        _listener_mock.reset_mock()
 
     @mock.patch('octavia.db.repositories.ListenerRepository.get_all',
                 return_value=([_listener_mock], None))
