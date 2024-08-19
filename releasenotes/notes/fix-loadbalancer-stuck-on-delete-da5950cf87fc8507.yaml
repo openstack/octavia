@@ -1,0 +1,5 @@
+---
+fixes:
+  - |
+    Fix load balancer stuck in PENDING_DELETE if TLS storage unavailable or
+    returns error
