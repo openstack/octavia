@@ -100,7 +100,6 @@ Version 14.0 (caracal)
 
 Version 15.0 (Dalmatian)
 ````````````````````````
-
 .. toctree::
    :glob:
    :maxdepth: 1
