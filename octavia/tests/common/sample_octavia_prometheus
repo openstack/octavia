@@ -67,9 +67,9 @@ octavia_loadbalancer_current_frontend_ssl_key_rate 0
 # HELP octavia_loadbalancer_max_frontend_ssl_key_rate Maximum observed frontend SSL Key computation per second.
 # TYPE octavia_loadbalancer_max_frontend_ssl_key_rate gauge
 octavia_loadbalancer_max_frontend_ssl_key_rate 0
-# HELP octavia_loadbalancer_frontent_ssl_reuse SSL session reuse ratio (percent).
-# TYPE octavia_loadbalancer_frontent_ssl_reuse gauge
-octavia_loadbalancer_frontent_ssl_reuse 0
+# HELP octavia_loadbalancer_frontend_ssl_reuse SSL session reuse ratio (percent).
+# TYPE octavia_loadbalancer_frontend_ssl_reuse gauge
+octavia_loadbalancer_frontend_ssl_reuse 0
 # HELP octavia_loadbalancer_current_backend_ssl_key_rate Current backend SSL Key computation per second over last elapsed second.
 # TYPE octavia_loadbalancer_current_backend_ssl_key_rate gauge
 octavia_loadbalancer_current_backend_ssl_key_rate 0
@@ -97,7 +97,7 @@ octavia_loadbalancer_listeners 6
 # HELP octavia_loadbalancer_dropped_logs_total Total number of dropped logs.
 # TYPE octavia_loadbalancer_dropped_logs_total counter
 octavia_loadbalancer_dropped_logs_total 0
-# HELP octavia_listener_status Current status of the listener. 0=OFFLINE, 1=ONLINE, 2=DEGRADED.
+# HELP octavia_listener_status Current status of the listener.
 # TYPE octavia_listener_status gauge
 octavia_listener_status{listener="1a0c13c0-8e69-46c7-a68a-ca4937996d74"} 1
 octavia_listener_status{listener="4919eeb2-b3ed-40c5-8200-057400b83bb7"} 1
@@ -247,7 +247,7 @@ octavia_listener_http_comp_bytes_bypassed_total{listener="0b248d39-eb90-4180-91a
 octavia_listener_http_comp_responses_total{listener="1a0c13c0-8e69-46c7-a68a-ca4937996d74"} 0
 octavia_listener_http_comp_responses_total{listener="4919eeb2-b3ed-40c5-8200-057400b83bb7"} 0
 octavia_listener_http_comp_responses_total{listener="0b248d39-eb90-4180-91aa-5363be7df4db"} 0
-# HELP octavia_pool_status Current status of the pool. 0=OFFLINE, 1=ONLINE.
+# HELP octavia_pool_status Current status of the pool.
 # TYPE octavia_pool_status gauge
 octavia_pool_status{pool="6034884d-ed47-49d5-ade7-8fa2c4501a74:1a0c13c0-8e69-46c7-a68a-ca4937996d74"} 0
 octavia_pool_status{pool="6034884d-ed47-49d5-ade7-8fa2c4501a74:0b248d39-eb90-4180-91aa-5363be7df4db"} 0
@@ -433,7 +433,7 @@ octavia_pool_http_comp_bytes_bypassed_total{pool="6034884d-ed47-49d5-ade7-8fa2c4
 # TYPE octavia_pool_http_comp_responses_total counter
 octavia_pool_http_comp_responses_total{pool="6034884d-ed47-49d5-ade7-8fa2c4501a74:1a0c13c0-8e69-46c7-a68a-ca4937996d74"} 0
 octavia_pool_http_comp_responses_total{pool="6034884d-ed47-49d5-ade7-8fa2c4501a74:0b248d39-eb90-4180-91aa-5363be7df4db"} 0
-# HELP octavia_member_status Current status of the member. 0=ERROR, 1=ONLINE, 2=OFFLINE, 3=DRAIN.
+# HELP octavia_member_status Current status of the member.
 # TYPE octavia_member_status gauge
 octavia_member_status{pool="6034884d-ed47-49d5-ade7-8fa2c4501a74:1a0c13c0-8e69-46c7-a68a-ca4937996d74",member="edf6ca81-b5d5-4d94-a656-f6028d8bbb77"} 0
 octavia_member_status{pool="6034884d-ed47-49d5-ade7-8fa2c4501a74:1a0c13c0-8e69-46c7-a68a-ca4937996d74",member="88ee5795-d594-478b-8591-455acf30164f"} 0
