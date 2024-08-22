@@ -600,8 +600,9 @@ class DriverAgentTest(base.OctaviaDBTestBase):
         self.session.commit()
 
         result = self.driver_lib.get_member(member_dict[lib_consts.ID])
-        self.assertEqual(self.sample_data.provider_member2_dict,
-                         result.to_dict(render_unsets=True))
+        self._compare_member_dicts(
+            self.sample_data.provider_member2_dict,
+            result.to_dict(render_unsets=True))
 
         # Test deleting a member
         status = {
