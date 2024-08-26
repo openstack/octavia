@@ -56,8 +56,6 @@ extensions = [
     'sphinx.ext.autodoc',
     'sphinx.ext.todo',
     'sphinx.ext.viewcode',
-    'sphinxcontrib.actdiag',
-    'sphinxcontrib.nwdiag',
     'sphinx.ext.graphviz',
     'sphinx_feature_classification.support_matrix',
     'openstackdocstheme',
