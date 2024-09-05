@@ -40,29 +40,31 @@ def get_delete_load_balancer_flow(lb):
     return LB_FLOWS.get_delete_load_balancer_flow(lb)
 
 
-def get_listeners_on_lb(db_lb):
+def get_listeners_on_lb(db_lb, for_delete=False):
     """Get a list of the listeners on a load balancer.
 
     :param db_lb: A load balancer database model object.
+    :param for_delete: Skip errors on tls certs loading.
     :returns: A list of provider dict format listeners.
     """
     listener_dicts = []
     for listener in db_lb.listeners:
         prov_listener = provider_utils.db_listener_to_provider_listener(
-            listener)
+            listener, for_delete)
         listener_dicts.append(prov_listener.to_dict())
     return listener_dicts
 
 
-def get_pools_on_lb(db_lb):
+def get_pools_on_lb(db_lb, for_delete=False):
     """Get a list of the pools on a load balancer.
 
     :param db_lb: A load balancer database model object.
+    :param for_delete: Skip errors on tls certs loading.
     :returns: A list of provider dict format pools.
     """
     pool_dicts = []
     for pool in db_lb.pools:
-        prov_pool = provider_utils.db_pool_to_provider_pool(pool)
+        prov_pool = provider_utils.db_pool_to_provider_pool(pool, for_delete)
         pool_dicts.append(prov_pool.to_dict())
     return pool_dicts
 
