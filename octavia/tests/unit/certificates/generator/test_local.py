@@ -158,7 +158,7 @@ class TestLocalGenerator(local_csr.BaseLocalCSRTestCase):
 
     def test_generate_cert_key_pair(self):
         cn = 'testCN'
-        bit_length = 512
+        bit_length = 1024
 
         # Attempt to generate a cert/key pair
         cert_object = self.cert_generator.generate_cert_key_pair(
