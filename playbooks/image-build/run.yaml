@@ -8,51 +8,6 @@
       become: yes
       when:
         - ansible_os_family == 'RedHat'
-    - name: Install apt packages
-      apt:
-        pkg: "{{ item }}"
-        state: "latest"
-        update_cache: yes
-      register: install_packages
-      become: yes
-      until: install_packages is success
-      retries: 5
-      delay: 2
-      with_items:
-        - qemu-utils
-        - uuid-runtime
-        - curl
-        - kpartx
-        - python3-yaml
-        - debootstrap
-        - qemu
-        - bc
-        - python3-venv
-        - python3-setuptools
-      when:
-        - ansible_os_family == 'Debian'
-    - name: Install rpm packages
-      dnf:
-        pkg: "{{ item }}"
-        state: "latest"
-        update_cache: yes
-      register: install_packages
-      become: yes
-      until: install_packages is success
-      retries: 5
-      delay: 2
-      with_items:
-        - qemu-img
-        - uuid
-        - curl
-        - kpartx
-        - python3-pyyaml
-        - qemu-kvm
-        - python3-setuptools
-        - yum
-        - podman
-      when:
-        - ansible_os_family == 'RedHat'
     - name: Install required pip packages
       pip:
         name: "{{  item }}"
@@ -65,7 +20,14 @@
       delay: 2
       become: yes
       with_items:
+        - bindep
         - diskimage-builder
+        - setuptools
+    - name: Install binary dependencies from diskimage-builder
+      include_role:
+        name: bindep
+      vars:
+        bindep_dir: "{{ ansible_user_dir }}/{{ zuul.projects['opendev.org/openstack/diskimage-builder'].src_dir }}"
     - name: Ensure artifacts/images directory exists
       file:
         path: '{{ ansible_user_dir }}/test-images'
