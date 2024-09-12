@@ -454,7 +454,7 @@ class TestInterface(base.TestCase):
     @mock.patch('octavia.amphorae.backends.utils.network_namespace.'
                 'NetworkNamespace')
     @mock.patch('octavia.amphorae.backends.utils.nftable_utils.'
-                'write_nftable_vip_rules_file')
+                'write_nftable_rules_file')
     @mock.patch('pyroute2.IPRoute.rule')
     @mock.patch('pyroute2.IPRoute.route')
     @mock.patch('pyroute2.IPRoute.addr')
@@ -580,16 +580,7 @@ class TestInterface(base.TestCase):
                       family=socket.AF_INET6)])
 
         mock_check_output.assert_has_calls([
-            mock.call([consts.NFT_CMD, consts.NFT_ADD, 'table',
-                       consts.NFT_FAMILY, consts.NFT_VIP_TABLE],
-                      stderr=subprocess.STDOUT),
-            mock.call([consts.NFT_CMD, consts.NFT_ADD, 'chain',
-                       consts.NFT_FAMILY, consts.NFT_VIP_TABLE,
-                       consts.NFT_VIP_CHAIN, '{', 'type', 'filter', 'hook',
-                       'ingress', 'device', 'fake-eth1', 'priority',
-                       consts.NFT_SRIOV_PRIORITY, ';', 'policy', 'drop', ';',
-                       '}'], stderr=subprocess.STDOUT),
-            mock.call([consts.NFT_CMD, '-o', '-f', consts.NFT_VIP_RULES_FILE],
+            mock.call([consts.NFT_CMD, '-o', '-f', consts.NFT_RULES_FILE],
                       stderr=subprocess.STDOUT),
             mock.call(["post-up", "fake-eth1"])
         ])
@@ -1445,56 +1436,3 @@ class TestInterface(base.TestCase):
 
         addr = controller._normalize_ip_network(None)
         self.assertIsNone(addr)
-
-    @mock.patch('octavia.amphorae.backends.utils.nftable_utils.'
-                'load_nftables_file')
-    @mock.patch('octavia.amphorae.backends.utils.nftable_utils.'
-                'write_nftable_vip_rules_file')
-    @mock.patch('subprocess.check_output')
-    def test__setup_nftables_chain(self, mock_check_output, mock_write_rules,
-                                   mock_load_rules):
-
-        controller = interface.InterfaceController()
-
-        mock_check_output.side_effect = [
-            mock.DEFAULT, mock.DEFAULT,
-            subprocess.CalledProcessError(cmd=consts.NFT_CMD, returncode=-1),
-            mock.DEFAULT,
-            subprocess.CalledProcessError(cmd=consts.NFT_CMD, returncode=-1)]
-
-        interface_mock = mock.MagicMock()
-        interface_mock.name = 'fake2'
-
-        # Test succeessful path
-        controller._setup_nftables_chain(interface_mock)
-
-        mock_write_rules.assert_called_once_with('fake2', [])
-        mock_load_rules.assert_called_once_with()
-        mock_check_output.assert_has_calls([
-            mock.call([consts.NFT_CMD, 'add', 'table', consts.NFT_FAMILY,
-                       consts.NFT_VIP_TABLE], stderr=subprocess.STDOUT),
-            mock.call([consts.NFT_CMD, 'add', 'chain', consts.NFT_FAMILY,
-                       consts.NFT_VIP_TABLE, consts.NFT_VIP_CHAIN, '{',
-                       'type', 'filter', 'hook', 'ingress', 'device',
-                       'fake2', 'priority', consts.NFT_SRIOV_PRIORITY, ';',
-                       'policy', 'drop', ';', '}'], stderr=subprocess.STDOUT)])
-
-        # Test first nft call fails
-        mock_write_rules.reset_mock()
-        mock_load_rules.reset_mock()
-        mock_check_output.reset_mock()
-
-        self.assertRaises(subprocess.CalledProcessError,
-                          controller._setup_nftables_chain, interface_mock)
-        mock_check_output.assert_called_once()
-        mock_write_rules.assert_not_called()
-
-        # Test second nft call fails
-        mock_write_rules.reset_mock()
-        mock_load_rules.reset_mock()
-        mock_check_output.reset_mock()
-
-        self.assertRaises(subprocess.CalledProcessError,
-                          controller._setup_nftables_chain, interface_mock)
-        self.assertEqual(2, mock_check_output.call_count)
-        mock_write_rules.assert_not_called()

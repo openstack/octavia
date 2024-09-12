@@ -75,11 +75,13 @@ class BaseOS:
             is_sriov=is_sriov)
         vip_interface.write()
 
-    def write_port_interface_file(self, interface, fixed_ips, mtu):
+    def write_port_interface_file(self, interface, fixed_ips, mtu,
+                                  is_sriov=False):
         port_interface = interface_file.PortInterfaceFile(
             name=interface,
             mtu=mtu,
-            fixed_ips=fixed_ips)
+            fixed_ips=fixed_ips,
+            is_sriov=is_sriov)
         port_interface.write()
 
     @classmethod

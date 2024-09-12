@@ -2899,7 +2899,7 @@ class TestServerTestCase(base.TestCase):
     @mock.patch('octavia.amphorae.backends.utils.nftable_utils.'
                 'load_nftables_file')
     @mock.patch('octavia.amphorae.backends.utils.nftable_utils.'
-                'write_nftable_vip_rules_file')
+                'write_nftable_rules_file')
     @mock.patch('octavia.amphorae.backends.agent.api_server.amphora_info.'
                 'AmphoraInfo.get_interface')
     def test_set_interface_rules(self, mock_get_int, mock_write_rules,

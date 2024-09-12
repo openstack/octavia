@@ -223,7 +223,8 @@ class Server:
         return self._plug.plug_network(port_info['mac_address'],
                                        port_info.get('fixed_ips'),
                                        port_info.get('mtu'),
-                                       port_info.get('vip_net_info'))
+                                       port_info.get('vip_net_info'),
+                                       port_info.get('is_sriov'))
 
     def upload_cert(self):
         return certificate_update.upload_server_cert()
@@ -278,7 +279,7 @@ class Server:
             raise exceptions.BadRequest(
                 description='Invalid rules information') from e
 
-        nftable_utils.write_nftable_vip_rules_file(interface, rules_info)
+        nftable_utils.write_nftable_rules_file(interface, rules_info)
 
         nftable_utils.load_nftables_file()
 

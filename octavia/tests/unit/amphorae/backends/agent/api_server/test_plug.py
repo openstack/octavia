@@ -284,7 +284,7 @@ class TestPlug(base.TestCase):
             self.test_plug.plug_network(FAKE_MAC_ADDRESS, fixed_ips, 1400)
 
         mock_write_port_interface.assert_called_once_with(
-            interface='eth2', fixed_ips=fixed_ips, mtu=mtu)
+            interface='eth2', fixed_ips=fixed_ips, mtu=mtu, is_sriov=False)
         mock_if_up.assert_called_once_with('eth2', 'network')
         mock_send_member_adv.assert_called_once_with(fixed_ips)
 
@@ -331,7 +331,8 @@ class TestPlug(base.TestCase):
             self.test_plug.plug_network(FAKE_MAC_ADDRESS, fixed_ips, 1400)
 
         mock_write_port_interface.assert_called_once_with(
-            interface=FAKE_INTERFACE, fixed_ips=fixed_ips, mtu=mtu)
+            interface=FAKE_INTERFACE, fixed_ips=fixed_ips, mtu=mtu,
+            is_sriov=False)
         mock_if_up.assert_called_once_with(FAKE_INTERFACE, 'network')
         mock_send_member_adv.assert_called_once_with(fixed_ips)
 
@@ -399,7 +400,7 @@ class TestPlug(base.TestCase):
                 'gateway': vip_net_info['gateway'],
                 'host_routes': [],
             },
-            fixed_ips=fixed_ips, mtu=mtu)
+            fixed_ips=fixed_ips, mtu=mtu, is_sriov=False)
 
         mock_if_up.assert_called_once_with(FAKE_INTERFACE, 'vip')
         mock_send_member_adv.assert_called_once_with(fixed_ips)
