@@ -320,7 +320,7 @@ class TestL7Policy(base.BaseAPITest):
                 'is_admin_project': True,
                 'service_project_domain_id': None,
                 'service_project_id': None,
-                'roles': ['load-balancer_global_observer'],
+                'roles': ['admin'],
                 'user_id': None,
                 'is_admin': False,
                 'service_user_domain_id': None,

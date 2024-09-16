@@ -431,6 +431,10 @@ function octavia_configure {
     # Controller side symmetric encryption, not used for PKI
     iniset $OCTAVIA_CONF certificates server_certs_key_passphrase insecure-key-do-not-use-this-key
 
+    if [[ "$OCTAVIA_USE_ADVANCED_RBAC" == "True" ]]; then
+        cp $OCTAVIA_DIR/etc/policy/octavia-advanced-rbac-policy.yaml $OCTAVIA_CONF_DIR/policy.yaml
+        iniset $OCTAVIA_CONF oslo_policy policy_file $OCTAVIA_CONF_DIR/policy.yaml
+    fi
     if [[ "$OCTAVIA_USE_LEGACY_RBAC" == "True" ]]; then
         cp $OCTAVIA_DIR/etc/policy/admin_or_owner-policy.yaml $OCTAVIA_CONF_DIR/policy.yaml
         iniset $OCTAVIA_CONF oslo_policy policy_file $OCTAVIA_CONF_DIR/policy.yaml

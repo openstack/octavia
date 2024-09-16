@@ -298,7 +298,7 @@ class TestQuotas(base.BaseAPITest):
                 'is_admin_project': True,
                 'service_project_domain_id': None,
                 'service_project_id': None,
-                'roles': ['load-balancer_global_observer'],
+                'roles': ['admin'],
                 'user_id': None,
                 'is_admin': False,
                 'service_user_domain_id': None,
@@ -345,7 +345,7 @@ class TestQuotas(base.BaseAPITest):
                 'is_admin_project': True,
                 'service_project_domain_id': None,
                 'service_project_id': None,
-                'roles': ['load-balancer_quota_admin'],
+                'roles': ['admin'],
                 'user_id': None,
                 'is_admin': False,
                 'service_user_domain_id': None,
@@ -485,11 +485,8 @@ class TestQuotas(base.BaseAPITest):
     def test_get_Authorized_observer(self):
         self._test_get_Authorized(['load-balancer_observer', 'reader'])
 
-    def test_get_Authorized_global_observer(self):
-        self._test_get_Authorized(['load-balancer_global_observer'])
-
     def test_get_Authorized_quota_admin(self):
-        self._test_get_Authorized(['load-balancer_quota_admin'])
+        self._test_get_Authorized(['admin'])
 
     def _test_get_Authorized(self, roles):
         project1_id = uuidutils.generate_uuid()
@@ -759,7 +756,7 @@ class TestQuotas(base.BaseAPITest):
                 'is_admin_project': True,
                 'service_project_domain_id': None,
                 'service_project_id': None,
-                'roles': ['load-balancer_quota_admin'],
+                'roles': ['admin'],
                 'user_id': None,
                 'is_admin': False,
                 'service_user_domain_id': None,
@@ -871,7 +868,7 @@ class TestQuotas(base.BaseAPITest):
                 'is_admin_project': True,
                 'service_project_domain_id': None,
                 'service_project_id': None,
-                'roles': ['load-balancer_quota_admin'],
+                'roles': ['admin'],
                 'user_id': None,
                 'is_admin': False,
                 'service_user_domain_id': None,

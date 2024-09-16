@@ -1,0 +1,74 @@
+# This policy YAML file implements the "Advanced RBAC" rules for Octavia that
+# were introduced in the Pike release of the Octavia API.
+#
+# These rules require users to have a load-balancer_* role to be able to access
+# the Octavia v2 API.
+#
+# This is stricter than the "Keystone Default Roles" implemented in the code
+# as part of the "Consistent and Secure Default RBAC" OpenStack community goal.
+
+# The default is to not allow access unless the auth_strategy is 'noauth'.
+# Users must be a member of one of the following roles to have access to
+# the load-balancer API:
+#
+# role:load-balancer_observer
+#     User has access to load-balancer read-only APIs
+# role:load-balancer_global_observer
+#     User has access to load-balancer read-only APIs including resources
+#     owned by others.
+# role:load-balancer_member
+#     User has access to load-balancer read and write APIs
+# role:load-balancer_admin
+#     User is considered an admin for all load-balnacer APIs including
+#     resources owned by others.
+# role:admin
+#     User is admin to all APIs
+
+"context_is_admin": "role:admin or
+                     role:load-balancer_admin"
+
+# API access roles
+
+"load-balancer:owner": "project_id:%(project_id)s"
+
+# Note: 'is_admin:True' is a policy rule that takes into account the
+# auth_strategy == noauth configuration setting.
+# It is equivalent to 'rule:context_is_admin or {auth_strategy == noauth}'
+
+"load-balancer:admin": "is_admin:True or
+                        role:admin or
+                        role:load-balancer_admin"
+
+"load-balancer:observer_and_owner": "role:load-balancer_observer and
+                                     rule:load-balancer:owner"
+
+"load-balancer:global_observer": "role:load-balancer_global_observer"
+
+"load-balancer:member_and_owner": "role:load-balancer_member and
+                                   rule:load-balancer:owner"
+
+# API access methods
+
+"load-balancer:read": "rule:load-balancer:observer_and_owner or
+                       rule:load-balancer:global_observer or
+                       rule:load-balancer:member_and_owner or
+                       rule:load-balancer:admin"
+
+"load-balancer:read-global": "rule:load-balancer:global_observer or
+                              rule:load-balancer:admin"
+
+"load-balancer:write": "rule:load-balancer:member_and_owner or
+                        rule:load-balancer:admin"
+
+"load-balancer:read-quota": "rule:load-balancer:observer_and_owner or
+                             rule:load-balancer:global_observer or
+                             rule:load-balancer:member_and_owner or
+                             role:load-balancer_quota_admin or
+                             rule:load-balancer:admin"
+
+"load-balancer:read-quota-global": "rule:load-balancer:global_observer or
+                                    role:load-balancer_quota_admin or
+                                    rule:load-balancer:admin"
+
+"load-balancer:write-quota": "role:load-balancer_quota_admin or
+                              rule:load-balancer:admin"

@@ -1,0 +1,24 @@
+---
+upgrade:
+  - |
+    When upgrading, the default RBAC rules will switch from Octavia Advanced
+    RBAC to the keystone default roles. This means the load_balancer_* roles
+    will not longer have access to the load balancer API. To continue to use
+    the Octavia Advanced RBAC rules, please use the
+    octavia-advanced-rbac-policy.yaml override file provided.
+critical:
+  - |
+    When upgrading, the default RBAC rules will switch from Octavia Advanced
+    RBAC to the keystone default roles. This means the load_balancer_* roles
+    will not longer have access to the load balancer API. To continue to use
+    the Octavia Advanced RBAC rules, please use the
+    octavia-advanced-rbac-policy.yaml override file provided.
+security:
+  - |
+    When upgrading, the default RBAC rules will switch from Octavia Advanced
+    RBAC to the keystone default roles. This means the load_balancer_* roles
+    will not longer have access to the load balancer API. To continue to use
+    the Octavia Advanced RBAC rules, please use the
+    octavia-advanced-rbac-policy.yaml override file provided. Note: the
+    keystone default roles are less restrictive than the Octavia Advanced RBAC
+    rules and you will no longer have global observer or quota specific roles.
