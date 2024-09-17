@@ -14,9 +14,8 @@
 
 import os
 
-from oslo_config import cfg
 from oslo_config import fixture as oslo_fixture
-from oslo_db.sqlalchemy import session as db_session
+from oslo_db.sqlalchemy import enginefacade
 from oslotest import base as test_base
 
 from octavia.common import config
@@ -71,10 +70,11 @@ class OctaviaDBTestBase(test_base.BaseTestCase):
         # don't use the _FACADE singleton. Some tests will use in-memory
         # sqlite, some will use a file backed sqlite.
         if 'sqlite:///' in self.connection_string:
-            facade = db_session.EngineFacade.from_config(cfg.CONF,
-                                                         sqlite_fk=True)
-            engine = facade.get_engine()
-            session = facade.get_session(expire_on_commit=True)
+            facade = enginefacade.transaction_context()
+            facade.configure(sqlite_fk=True, expire_on_commit=True)
+            engine = facade.writer.get_engine()
+            sessionmaker = facade.writer.get_sessionmaker()
+            session = sessionmaker()
             self.facade = facade
         else:
             engine = db_api.get_engine()
