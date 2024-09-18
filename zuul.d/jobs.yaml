@@ -167,6 +167,7 @@
       not Git master. This job does not publish the image.
     run: playbooks/image-build/run.yaml
     required-projects:
+        - openstack/diskimage-builder
         - openstack/octavia
         - openstack/octavia-lib
     vars:
@@ -179,8 +180,6 @@
     description: |
       Builds an Ubuntu Jammy amphora image using diskimage-builder from Git
       master. This job does not publish the image.
-    required-projects:
-        - openstack/diskimage-builder
     vars:
         amphora_os: ubuntu
         amphora_os_release: jammy
@@ -192,8 +191,6 @@
     description: |
       Builds a CentOS 9 Stream amphora image using diskimage-builder from Git
       master. This job does not publish the image.
-    required-projects:
-        - openstack/diskimage-builder
     vars:
         amphora_os: centos
         amphora_os_release: 9-stream
@@ -205,8 +202,6 @@
     description: |
       Builds a Rocky Linux 9 amphora image using diskimage-builder from Git
       master. This job does not publish the image.
-    required-projects:
-        - openstack/diskimage-builder
     vars:
         amphora_os: rocky
         amphora_os_release: 9
