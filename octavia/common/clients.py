@@ -111,6 +111,7 @@ class NeutronAuth(object):
         client.
         """
         sess = keystone.KeystoneSession('neutron').get_session()
+        kwargs = {}
         neutron_endpoint = CONF.neutron.endpoint_override
         if neutron_endpoint is None:
             endpoint_data = sess.get_endpoint_data(
@@ -119,8 +120,13 @@ class NeutronAuth(object):
                 region_name=CONF.neutron.region_name)
             neutron_endpoint = endpoint_data.catalog_url
 
+        neutron_cafile = getattr(CONF.neutron, "cafile", None)
+        insecure = getattr(CONF.neutron, "insecure", False)
+        kwargs['verify'] = not insecure
+        if neutron_cafile is not None and not insecure:
+            kwargs['verify'] = neutron_cafile
         user_auth = token_endpoint.Token(neutron_endpoint, context.auth_token)
-        user_sess = session.Session(auth=user_auth)
+        user_sess = session.Session(auth=user_auth, **kwargs)
 
         conn = openstack.connection.Connection(
             session=user_sess, oslo_conf=CONF)
