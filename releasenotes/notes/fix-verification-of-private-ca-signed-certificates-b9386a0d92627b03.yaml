@@ -1,0 +1,5 @@
+---
+fixes:
+  - |
+    Fix verification of certificates signed by a private CA when using Neutron
+    endpoints.
