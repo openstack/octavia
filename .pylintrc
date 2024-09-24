@@ -56,7 +56,8 @@ disable=
  keyword-arg-before-vararg,
  useless-object-inheritance,
  arguments-renamed,
- consider-using-enumerate
+ consider-using-enumerate,
+ too-many-positional-arguments
 
 [BASIC]
 # Variable names can be 1 to 31 characters long, with lowercase and underscores
