@@ -10,12 +10,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import copy
 import itertools
-import operator
 
 from keystoneauth1 import loading as ks_loading
-from oslo_config import cfg
 
 import octavia.certificates.common.local
 import octavia.common.config
@@ -43,25 +40,24 @@ def list_opts():
         ('nova', octavia.common.config.nova_opts),
         ('cinder', octavia.common.config.cinder_opts),
         ('glance', octavia.common.config.glance_opts),
-        ('neutron', octavia.common.config.neutron_opts),
+        ('neutron', itertools.chain(
+            octavia.common.config.neutron_opts,
+            get_ksa_opts(True))),
         ('quotas', octavia.common.config.quota_opts),
         ('audit', octavia.common.config.audit_opts),
         ('driver_agent', octavia.common.config.driver_agent_opts),
-        add_auth_opts(),
+        (constants.SERVICE_AUTH, get_ksa_opts()),
     ]
 
 
-def add_auth_opts():
-    opts = ks_loading.register_session_conf_options(
-        cfg.CONF, constants.SERVICE_AUTH)
-    opt_list = copy.deepcopy(opts)
-    opt_list.insert(0, ks_loading.get_auth_common_conf_options()[0])
-    # NOTE(mhickey): There are a lot of auth plugins, we just generate
-    # the config options for a few common ones
-    plugins = ['password', 'v2password', 'v3password']
-    for name in plugins:
-        for plugin_option in ks_loading.get_auth_plugin_conf_options(name):
-            if all(option.name != plugin_option.name for option in opt_list):
-                opt_list.append(plugin_option)
-    opt_list.sort(key=operator.attrgetter('name'))
-    return (constants.SERVICE_AUTH, opt_list)
+def get_ksa_opts(adapter=False):
+    opts = (
+        ks_loading.get_session_conf_options() +
+        ks_loading.get_auth_common_conf_options() +
+        ks_loading.get_auth_plugin_conf_options('password') +
+        ks_loading.get_auth_plugin_conf_options('v2password') +
+        ks_loading.get_auth_plugin_conf_options('v3password')
+    )
+    if adapter:
+        opts += ks_loading.get_adapter_conf_options(include_deprecated=False)
+    return opts
