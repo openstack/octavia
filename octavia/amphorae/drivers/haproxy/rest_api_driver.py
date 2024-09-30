@@ -23,7 +23,6 @@ import warnings
 
 from oslo_context import context as oslo_context
 from oslo_log import log as logging
-from oslo_utils.secretutils import md5
 import requests
 from stevedore import driver as stevedore_driver
 
@@ -450,7 +449,8 @@ class HaproxyAmphoraLoadBalancerDriver(
         if amphora and obj_id:
             for cert in certs:
                 pem = cert_parser.build_pem(cert)
-                md5sum = md5(pem, usedforsecurity=False).hexdigest()  # nosec
+                md5sum = hashlib.md5(
+                    pem, usedforsecurity=False).hexdigest()  # nosec
                 name = f'{cert.id}.pem'
                 cert_filename_list.append(
                     os.path.join(
@@ -461,8 +461,8 @@ class HaproxyAmphoraLoadBalancerDriver(
                 # Build and upload the crt-list file for haproxy
                 crt_list = "\n".join(cert_filename_list)
                 crt_list = f'{crt_list}\n'.encode()
-                md5sum = md5(crt_list,
-                             usedforsecurity=False).hexdigest()  # nosec
+                md5sum = hashlib.md5(
+                    crt_list, usedforsecurity=False).hexdigest()  # nosec
                 name = f'{listener.id}.pem'
                 self._upload_cert(amphora, obj_id, crt_list, md5sum, name)
         return {'tls_cert': tls_cert, 'sni_certs': sni_certs}
@@ -480,7 +480,8 @@ class HaproxyAmphoraLoadBalancerDriver(
             secret = secret.encode('utf-8')
         except AttributeError:
             pass
-        md5sum = md5(secret, usedforsecurity=False).hexdigest()  # nosec
+        md5sum = hashlib.md5(
+            secret, usedforsecurity=False).hexdigest()  # nosec
         id = hashlib.sha1(secret).hexdigest()  # nosec
         name = f'{id}.pem'
 
@@ -519,7 +520,8 @@ class HaproxyAmphoraLoadBalancerDriver(
                 pem = pem.encode('utf-8')
             except AttributeError:
                 pass
-            md5sum = md5(pem, usedforsecurity=False).hexdigest()  # nosec
+            md5sum = hashlib.md5(
+                pem, usedforsecurity=False).hexdigest()  # nosec
             name = f'{tls_cert.id}.pem'
             if amphora and obj_id:
                 self._upload_cert(amphora, obj_id, pem=pem,

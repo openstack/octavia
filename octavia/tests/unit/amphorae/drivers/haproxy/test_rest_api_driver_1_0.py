@@ -17,7 +17,6 @@ from unittest import mock
 
 from oslo_config import cfg
 from oslo_config import fixture as oslo_fixture
-from oslo_utils.secretutils import md5
 from oslo_utils import uuidutils
 import requests
 import requests_mock
@@ -354,7 +353,8 @@ class TestHaproxyAmphoraLoadBalancerDriverTest(base.TestCase):
         mock_oslo.return_value = fake_context
         self.driver.cert_manager.get_secret.reset_mock()
         self.driver.cert_manager.get_secret.return_value = fake_secret
-        ref_md5 = md5(fake_secret, usedforsecurity=False).hexdigest()  # nosec
+        ref_md5 = hashlib.md5(
+            fake_secret, usedforsecurity=False).hexdigest()  # nosec
         ref_id = hashlib.sha1(fake_secret).hexdigest()  # nosec
         ref_name = f'{ref_id}.pem'
 
@@ -418,7 +418,8 @@ class TestHaproxyAmphoraLoadBalancerDriverTest(base.TestCase):
         mock_load_certs.return_value = pool_data
         fake_pem = b'fake pem'
         mock_build_pem.return_value = fake_pem
-        ref_md5 = md5(fake_pem, usedforsecurity=False).hexdigest()  # nosec
+        ref_md5 = hashlib.md5(
+            fake_pem, usedforsecurity=False).hexdigest()  # nosec
         ref_name = f'{pool_cert.id}.pem'
         ref_path = (f'{fake_cert_dir}/{sample_listener.load_balancer.id}/'
                     f'{ref_name}')

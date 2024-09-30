@@ -12,6 +12,7 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
+import hashlib
 import io
 import os
 import re
@@ -24,7 +25,6 @@ import flask
 import jinja2
 from oslo_config import cfg
 from oslo_log import log as logging
-from oslo_utils.secretutils import md5
 import webob
 from werkzeug import exceptions
 
@@ -55,7 +55,7 @@ SYSTEMD_TEMPLATE = JINJA_ENV.get_template(SYSTEMD_CONF)
 class Wrapped:
     def __init__(self, stream_):
         self.stream = stream_
-        self.hash = md5(usedforsecurity=False)  # nosec
+        self.hash = hashlib.md5(usedforsecurity=False)  # nosec
 
     def read(self, line):
         block = self.stream.read(line)
@@ -82,8 +82,8 @@ class Loadbalancer:
             cfg = file.read()
             resp = webob.Response(cfg, content_type='text/plain')
             resp.headers['ETag'] = (
-                md5(octavia_utils.b(cfg),
-                    usedforsecurity=False).hexdigest())  # nosec
+                hashlib.md5(octavia_utils.b(cfg),
+                            usedforsecurity=False).hexdigest())  # nosec
             return resp
 
     def upload_haproxy_config(self, amphora_id, lb_id):
@@ -408,8 +408,8 @@ class Loadbalancer:
 
         with open(cert_path, encoding='utf-8') as crt_file:
             cert = crt_file.read()
-            md5sum = md5(octavia_utils.b(cert),
-                         usedforsecurity=False).hexdigest()  # nosec
+            md5sum = hashlib.md5(octavia_utils.b(cert),
+                                 usedforsecurity=False).hexdigest()  # nosec
             resp = webob.Response(json={'md5sum': md5sum})
             resp.headers['ETag'] = md5sum
             return resp
