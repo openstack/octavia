@@ -16,6 +16,7 @@ from unittest import mock
 
 from oslo_config import cfg
 from oslo_config import fixture as oslo_fixture
+from oslo_utils import timeutils
 from oslo_utils import uuidutils
 
 from octavia.common import constants
@@ -61,7 +62,7 @@ class TestDatabaseCleanup(base.TestCase):
         session.return_value = session
         self.CONF.config(group="house_keeping",
                          amphora_expiry_age=self.FAKE_EXP_AGE)
-        expired_time = datetime.datetime.utcnow() - datetime.timedelta(
+        expired_time = timeutils.utcnow() - datetime.timedelta(
             seconds=self.FAKE_EXP_AGE + 1)
         amphora = self.amp.create(session, id=self.FAKE_UUID_1,
                                   compute_id=self.FAKE_UUID_2,
@@ -109,7 +110,7 @@ class TestDatabaseCleanup(base.TestCase):
         session.return_value = session
         self.CONF.config(group="house_keeping",
                          amphora_expiry_age=self.FAKE_EXP_AGE)
-        expired_time = datetime.datetime.utcnow() - datetime.timedelta(
+        expired_time = timeutils.utcnow() - datetime.timedelta(
             seconds=self.FAKE_EXP_AGE + 1)
         amphora = self.amp.create(session, id=self.FAKE_UUID_1,
                                   compute_id=self.FAKE_UUID_2,

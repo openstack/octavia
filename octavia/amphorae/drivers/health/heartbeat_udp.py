@@ -13,7 +13,6 @@
 #    under the License.
 
 from concurrent import futures
-import datetime
 import socket
 import time
 import timeit
@@ -21,6 +20,7 @@ import timeit
 from oslo_config import cfg
 from oslo_log import log as logging
 from oslo_utils import excutils
+from oslo_utils import timeutils
 import sqlalchemy
 from stevedore import driver as stevedore_driver
 
@@ -417,7 +417,7 @@ class UpdateHealthDb:
             try:
                 self.amphora_health_repo.replace(
                     lock_session, health['id'],
-                    last_update=datetime.datetime.utcnow())
+                    last_update=timeutils.utcnow())
                 lock_session.commit()
             except Exception:
                 with excutils.save_and_reraise_exception():

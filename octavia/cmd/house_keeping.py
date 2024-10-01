@@ -13,7 +13,6 @@
 # under the License.
 #
 
-import datetime
 import signal
 import sys
 import threading
@@ -21,6 +20,7 @@ import threading
 from oslo_config import cfg
 from oslo_log import log as logging
 from oslo_reports import guru_meditation_report as gmr
+from oslo_utils import timeutils
 
 from octavia.common import service
 from octavia.controller.housekeeping import house_keeping
@@ -83,7 +83,7 @@ def main():
 
     gmr.TextGuruMeditation.setup_autorun(version)
 
-    timestamp = str(datetime.datetime.utcnow())
+    timestamp = str(timeutils.utcnow())
     LOG.info("Starting house keeping at %s", timestamp)
 
     threads = []

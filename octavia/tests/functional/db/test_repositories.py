@@ -20,6 +20,7 @@ from unittest import mock
 from oslo_config import cfg
 from oslo_config import fixture as oslo_fixture
 from oslo_db import exception as db_exception
+from oslo_utils import timeutils
 from oslo_utils import uuidutils
 from sqlalchemy.orm import defer
 from sqlalchemy.orm import exc as sa_exception
@@ -3442,7 +3443,7 @@ class LoadBalancerRepositoryTest(BaseRepositoryTest):
 
     def test_get_all_deleted_expiring_load_balancer(self):
         exp_age = datetime.timedelta(seconds=self.FAKE_EXP_AGE)
-        updated_at = datetime.datetime.utcnow() - exp_age
+        updated_at = timeutils.utcnow() - exp_age
         lb1 = self.create_loadbalancer(
             self.FAKE_UUID_1, updated_at=updated_at,
             provisioning_status=constants.DELETED)
@@ -3589,7 +3590,7 @@ class AmphoraRepositoryTest(BaseRepositoryTest):
             'vrrp_ip': self.FAKE_IP,
             'ha_ip': self.FAKE_IP,
             'role': constants.ROLE_MASTER,
-            'cert_expiration': datetime.datetime.utcnow(),
+            'cert_expiration': timeutils.utcnow(),
             'cert_busy': False
         }
         settings.update(overrides)
@@ -3695,7 +3696,7 @@ class AmphoraRepositoryTest(BaseRepositoryTest):
 
     def test_get_all_deleted_expiring_amphora(self):
         exp_age = datetime.timedelta(seconds=self.FAKE_EXP_AGE)
-        updated_at = datetime.datetime.utcnow() - exp_age
+        updated_at = timeutils.utcnow() - exp_age
         amphora1 = self.create_amphora(
             self.FAKE_UUID_1, updated_at=updated_at, status=constants.DELETED)
         amphora2 = self.create_amphora(
@@ -3714,7 +3715,7 @@ class AmphoraRepositoryTest(BaseRepositoryTest):
         amphora = self.create_amphora(self.FAKE_UUID_1)
 
         expired_interval = CONF.house_keeping.cert_expiry_buffer
-        expiration = datetime.datetime.utcnow() + datetime.timedelta(
+        expiration = timeutils.utcnow() + datetime.timedelta(
             seconds=2 * expired_interval)
 
         self.amphora_repo.update(self.session, amphora.id,
@@ -3726,7 +3727,7 @@ class AmphoraRepositoryTest(BaseRepositoryTest):
         # test with expired amphora
         amphora2 = self.create_amphora(self.FAKE_UUID_2)
 
-        expiration = datetime.datetime.utcnow() + datetime.timedelta(
+        expiration = timeutils.utcnow() + datetime.timedelta(
             seconds=1)
         self.amphora_repo.update(self.session, amphora2.id,
                                  cert_expiration=expiration)
@@ -3739,7 +3740,7 @@ class AmphoraRepositoryTest(BaseRepositoryTest):
 
     def test_get_cert_expired_amphora_deleted(self):
         amphora = self.create_amphora(self.FAKE_UUID_3)
-        expiration = datetime.datetime.utcnow() + datetime.timedelta(seconds=1)
+        expiration = timeutils.utcnow() + datetime.timedelta(seconds=1)
         self.amphora_repo.update(self.session, amphora.id,
                                  status=constants.DELETED,
                                  cert_expiration=expiration)
@@ -3875,7 +3876,7 @@ class AmphoraHealthRepositoryTest(BaseRepositoryTest):
             'vrrp_ip': fake_ip,
             'ha_ip': fake_ip,
             'role': constants.ROLE_MASTER,
-            'cert_expiration': datetime.datetime.utcnow(),
+            'cert_expiration': timeutils.utcnow(),
             'cert_busy': False
         }
         settings.update(overrides)
@@ -3883,7 +3884,7 @@ class AmphoraHealthRepositoryTest(BaseRepositoryTest):
         return amphora
 
     def create_amphora_health(self, amphora_id):
-        newdate = datetime.datetime.utcnow() - datetime.timedelta(minutes=10)
+        newdate = timeutils.utcnow() - datetime.timedelta(minutes=10)
 
         amphora_health = self.amphora_health_repo.create(
             self.session, amphora_id=amphora_id,
@@ -3893,7 +3894,7 @@ class AmphoraHealthRepositoryTest(BaseRepositoryTest):
 
     def test_replace(self):
         amphora_id = uuidutils.generate_uuid()
-        now = datetime.datetime.utcnow()
+        now = timeutils.utcnow()
         self.assertIsNone(self.amphora_health_repo.get(
             self.session, amphora_id=amphora_id))
         self.amphora_health_repo.replace(self.session, amphora_id,
@@ -4002,7 +4003,7 @@ class AmphoraHealthRepositoryTest(BaseRepositoryTest):
         # Two "busy", One fully healthy, three in FAILOVER_STOPPED
         amp = self.session.query(db_models.AmphoraHealth).filter_by(
             amphora_id=stale_uuids[2]).first()
-        amp.last_update = datetime.datetime.utcnow()
+        amp.last_update = timeutils.utcnow()
         self.session.flush()
         stale_amphora = self.amphora_health_repo.get_stale_amphora(
             self.session)
@@ -4016,7 +4017,7 @@ class AmphoraHealthRepositoryTest(BaseRepositoryTest):
         # Two are "busy", Two are fully healthy, Two are in FAILOVER_STOPPED
         amp = self.session.query(db_models.AmphoraHealth).filter_by(
             amphora_id=stale_uuids[3]).first()
-        amp.last_update = datetime.datetime.utcnow()
+        amp.last_update = timeutils.utcnow()
         stale_amphora = self.amphora_health_repo.get_stale_amphora(
             self.session)
         self.assertIsNotNone(stale_amphora)
@@ -4026,7 +4027,7 @@ class AmphoraHealthRepositoryTest(BaseRepositoryTest):
         self.assertEqual(2, num_fo_stopped)
 
         # After error recovery all amps should be allocated again
-        now = datetime.datetime.utcnow()
+        now = timeutils.utcnow()
         for amp in self.session.query(db_models.AmphoraHealth).all():
             amp.last_update = now
         stale_amphora = self.amphora_health_repo.get_stale_amphora(
@@ -4040,7 +4041,7 @@ class AmphoraHealthRepositoryTest(BaseRepositoryTest):
     def test_create(self):
         amphora_health = self.create_amphora_health(self.FAKE_UUID_1)
         self.assertEqual(self.FAKE_UUID_1, amphora_health.amphora_id)
-        newcreatedtime = datetime.datetime.utcnow()
+        newcreatedtime = timeutils.utcnow()
         oldcreatetime = amphora_health.last_update
 
         diff = newcreatedtime - oldcreatetime

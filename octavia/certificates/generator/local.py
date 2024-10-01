@@ -23,6 +23,7 @@ from cryptography.hazmat.primitives import serialization
 from cryptography import x509
 from oslo_config import cfg
 from oslo_log import log as logging
+from oslo_utils import timeutils
 
 from octavia.certificates.common import local as local_common
 from octavia.certificates.generator import cert_gen
@@ -120,8 +121,8 @@ class LocalCertGenerator(cert_gen.CertGenerator):
                                             backend=backends.default_backend())
             new_cert = x509.CertificateBuilder()
             new_cert = new_cert.serial_number(cls._new_serial())
-            valid_from_datetime = datetime.datetime.utcnow()
-            valid_to_datetime = (datetime.datetime.utcnow() +
+            valid_from_datetime = timeutils.utcnow()
+            valid_to_datetime = (timeutils.utcnow() +
                                  datetime.timedelta(seconds=validity))
             new_cert = new_cert.not_valid_before(valid_from_datetime)
             new_cert = new_cert.not_valid_after(valid_to_datetime)
