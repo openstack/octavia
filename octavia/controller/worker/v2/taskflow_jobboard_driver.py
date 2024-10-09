@@ -99,6 +99,7 @@ class RedisTaskFlowDriver(JobboardTaskFlowDriver):
             'board': 'redis',
             'host': CONF.task_flow.jobboard_backend_hosts[0],
             'port': CONF.task_flow.jobboard_backend_port,
+            'db': CONF.task_flow.jobboard_redis_backend_db,
             'namespace': CONF.task_flow.jobboard_backend_namespace,
             'sentinel': CONF.task_flow.jobboard_redis_sentinel,
             'sentinel_fallbacks': [
