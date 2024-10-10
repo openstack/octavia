@@ -58,7 +58,7 @@ octavia_install
 upgrade_project octavia $RUN_DIR $BASE_DEVSTACK_BRANCH $TARGET_DEVSTACK_BRANCH
 
 # Migrate the database
-octavia-db-manage upgrade head || die $LINO "DB migration error"
+$OCTAVIA_BIN_DIR/octavia-db-manage upgrade head || die $LINO "DB migration error"
 
 octavia_start
 
