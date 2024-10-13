@@ -24,6 +24,7 @@ from futurist import periodics
 from oslo_config import cfg
 from oslo_log import log as logging
 from oslo_reports import guru_meditation_report as gmr
+from oslo_reports import opts as gmr_opts
 
 from octavia.amphorae.drivers.health import heartbeat_udp
 from octavia.common import service
@@ -90,7 +91,8 @@ def main():
     LOG.debug('Full set of CONF:')
     CONF.log_opt_values(LOG, logging.DEBUG)
 
-    gmr.TextGuruMeditation.setup_autorun(version)
+    gmr_opts.set_defaults(CONF)
+    gmr.TextGuruMeditation.setup_autorun(version, conf=CONF)
 
     processes = []
     exit_event = multiprocessing.Event()

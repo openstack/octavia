@@ -18,6 +18,7 @@ import cotyledon
 from cotyledon import oslo_config_glue
 from oslo_config import cfg
 from oslo_reports import guru_meditation_report as gmr
+from oslo_reports import opts as gmr_opts
 
 from octavia.common import service as octavia_service
 from octavia.controller.queue.v2 import consumer as consumer_v2
@@ -29,7 +30,8 @@ CONF = cfg.CONF
 def main():
     octavia_service.prepare_service(sys.argv)
 
-    gmr.TextGuruMeditation.setup_autorun(version)
+    gmr_opts.set_defaults(CONF)
+    gmr.TextGuruMeditation.setup_autorun(version, conf=CONF)
 
     sm = cotyledon.ServiceManager()
     sm.add(consumer_v2.ConsumerService,

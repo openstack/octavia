@@ -18,25 +18,30 @@ from wsgiref import simple_server
 from oslo_config import cfg
 from oslo_log import log as logging
 from oslo_reports import guru_meditation_report as gmr
+from oslo_reports import opts as gmr_opts
 
 from octavia.api import app as api_app
 from octavia.common import constants
 from octavia import version
 
 
+CONF = cfg.CONF
 LOG = logging.getLogger(__name__)
 
 
 def main():
-    gmr.TextGuruMeditation.setup_autorun(version)
+    # TODO(tkajinam): We should consider adding this to wsgi app too so that
+    # GMR can be used even when api is run by uwsgi/mod_wsgi/etc.
+    gmr_opts.set_defaults(CONF)
+    gmr.TextGuruMeditation.setup_autorun(version, conf=CONF)
 
     app = api_app.setup_app(argv=sys.argv)
 
-    host = cfg.CONF.api_settings.bind_host
-    port = cfg.CONF.api_settings.bind_port
+    host = CONF.api_settings.bind_host
+    port = CONF.api_settings.bind_port
     LOG.info("Starting API server on %(host)s:%(port)s",
              {"host": host, "port": port})
-    if cfg.CONF.api_settings.auth_strategy != constants.KEYSTONE:
+    if CONF.api_settings.auth_strategy != constants.KEYSTONE:
         LOG.warning('Octavia configuration [api_settings] auth_strategy is '
                     'not set to "keystone". This is not a normal '
                     'configuration and you may get "Missing project ID" '

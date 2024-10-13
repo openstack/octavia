@@ -21,6 +21,7 @@ import sys
 import gunicorn.app.base
 from oslo_config import cfg
 from oslo_reports import guru_meditation_report as gmr
+from oslo_reports import opts as gmr_opts
 
 from octavia.amphorae.backends.agent.api_server import server
 from octavia.amphorae.backends.health_daemon import health_daemon
@@ -54,7 +55,8 @@ def main():
     # comment out to improve logging
     service.prepare_service(sys.argv)
 
-    gmr.TextGuruMeditation.setup_autorun(version)
+    gmr_opts.set_defaults(CONF)
+    gmr.TextGuruMeditation.setup_autorun(version, conf=CONF)
 
     health_sender_proc = multiproc.Process(name='HM_sender',
                                            target=health_daemon.run_sender,
