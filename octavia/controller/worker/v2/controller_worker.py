@@ -109,7 +109,11 @@ class ControllerWorker:
             store = kwargs.pop('store', None)
             tf = self.tf_engine.taskflow_load(
                 func(*args, **kwargs), store=store)
-            with tf_logging.DynamicLoggingListener(tf, log=LOG):
+            with tf_logging.DynamicLoggingListener(
+                tf, log=LOG,
+                mask_inputs_keys=base_taskflow.FILTER_KEYS,
+                mask_outputs_keys=base_taskflow.FILTER_KEYS,
+            ):
                 tf.run()
 
     def delete_amphora(self, amphora_id):

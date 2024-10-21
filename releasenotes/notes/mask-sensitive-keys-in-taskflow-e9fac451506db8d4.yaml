@@ -1,0 +1,9 @@
+---
+fixes:
+  - |
+    Fixed `bug #2028546 <https://launchpad.net/bugs/2028546>`__ so sensitive
+    information is now masked in Taskflow logging.
+upgrade:
+  - |
+    Octavia now requires Taskflow >= 6.2.0 to support masking sensitive
+    information from Taskflow logging.
