@@ -536,11 +536,10 @@ class PlugVIPAmphora(BaseNetworkTask):
         """Handle a failure to plumb a vip."""
         if isinstance(result, failure.Failure):
             return
+        lb_id = loadbalancer[constants.LOADBALANCER_ID]
         LOG.warning("Unable to plug VIP for amphora id %s "
                     "load balancer id %s",
-                    amphora.get(constants.ID),
-                    loadbalancer[constants.LOADBALANCER_ID])
-
+                    amphora.get(constants.ID), lb_id)
         try:
             session = db_apis.get_session()
             with session.begin():
@@ -550,15 +549,16 @@ class PlugVIPAmphora(BaseNetworkTask):
                 db_amp.ha_port_id = result[constants.HA_PORT_ID]
                 db_subnet = self.network_driver.get_subnet(
                     subnet[constants.ID])
-                db_lb = self.loadbalancer_repo.get(
-                    session,
-                    id=loadbalancer[constants.LOADBALANCER_ID])
-
+                db_lb = self.loadbalancer_repo.get(session, id=lb_id)
             self.network_driver.unplug_aap_port(db_lb.vip,
                                                 db_amp, db_subnet)
         except Exception as e:
-            LOG.error('Failed to unplug AAP port. Resources may still be in '
-                      'use for VIP: %s due to error: %s', db_lb.vip, str(e))
+            LOG.error(
+                'Failed to unplug AAP port for load balancer: %s. '
+                'Resources may still be in use for VRRP port: %s. '
+                'Due to error: %s',
+                lb_id, result[constants.VRRP_PORT_ID], str(e)
+            )
 
 
 class UnplugVIP(BaseNetworkTask):
