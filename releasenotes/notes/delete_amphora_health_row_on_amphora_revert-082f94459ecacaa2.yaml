@@ -1,0 +1,7 @@
+---
+fixes:
+  - |
+    Remove record in amphora_health table on revert. It's necessary, because
+    record in amphora table for corresponding amphora also deleted.
+    It allows to avoid false positive react of failover threshold due to
+    orphan records in amphora_health table.

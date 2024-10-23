@@ -181,7 +181,9 @@ class TestDatabaseTasks(base.TestCase):
 
     @mock.patch('octavia.db.repositories.AmphoraRepository.create',
                 return_value=_db_amphora_mock)
+    @mock.patch('octavia.db.repositories.AmphoraHealthRepository.delete')
     def test_create_amphora_in_db(self,
+                                  mock_amphora_health_repo_delete,
                                   mock_create,
                                   mock_generate_uuid,
                                   mock_LOG,
@@ -207,23 +209,43 @@ class TestDatabaseTasks(base.TestCase):
 
         # Test the revert
         create_amp_in_db.revert(_tf_failure_mock)
-        self.assertFalse(mock_amphora_repo_delete.called)
+        mock_amphora_repo_delete.assert_not_called()
+        mock_amphora_health_repo_delete.assert_not_called()
 
+        amp_id = 'AMP'
         mock_amphora_repo_delete.reset_mock()
-        create_amp_in_db.revert(result='AMP')
+        mock_amphora_health_repo_delete.reset_mock()
+        create_amp_in_db.revert(result=amp_id)
         self.assertTrue(mock_amphora_repo_delete.called)
+        self.assertTrue(mock_amphora_health_repo_delete.called)
         mock_amphora_repo_delete.assert_called_once_with(
             mock_session,
-            id='AMP')
+            id=amp_id)
+        mock_amphora_health_repo_delete.assert_called_once_with(
+            mock_session,
+            amphora_id=amp_id)
+        mock_LOG.error.assert_not_called()
+        mock_LOG.debug.assert_not_called()
 
         # Test revert with exception
         mock_amphora_repo_delete.reset_mock()
-        mock_amphora_repo_delete.side_effect = Exception('fail')
-        create_amp_in_db.revert(result='AMP')
+        mock_amphora_health_repo_delete.reset_mock()
+        err1_msg, err2_msg = ('fail', 'fail2')
+        mock_amphora_repo_delete.side_effect = Exception(err1_msg)
+        mock_amphora_health_repo_delete.side_effect = Exception(err2_msg)
+        create_amp_in_db.revert(result=amp_id)
         self.assertTrue(mock_amphora_repo_delete.called)
+        self.assertTrue(mock_amphora_health_repo_delete.called)
         mock_amphora_repo_delete.assert_called_once_with(
             mock_session,
-            id='AMP')
+            id=amp_id)
+        mock_amphora_health_repo_delete.assert_called_once_with(
+            mock_session,
+            amphora_id=amp_id)
+        mock_LOG.error.assert_called_once_with(
+            "Failed to delete amphora %(amp)s "
+            "in the database due to: "
+            "%(except)s", {'amp': amp_id, 'except': err1_msg})
 
     @mock.patch('octavia.db.repositories.ListenerRepository.delete')
     def test_delete_listener_in_db(self,
