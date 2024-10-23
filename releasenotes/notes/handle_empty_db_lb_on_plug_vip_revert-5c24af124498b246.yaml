@@ -1,0 +1,7 @@
+---
+fixes:
+  - |
+    Fix error on revert PlugVIPAmphora task, when db_lb is not defined
+    and get_subnet raises NotFound error. It could happen when Amphora
+    creation failed by timeout and before it VIP network was removed.
+    As result revert failed with exception.
