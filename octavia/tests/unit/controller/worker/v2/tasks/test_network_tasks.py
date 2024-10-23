@@ -1568,6 +1568,57 @@ class TestNetworkTasks(base.TestCase):
         mock_driver.unplug_aap_port.assert_called_once_with(
             LB.vip, self.db_amphora_mock, mockSubnet)
 
+    @mock.patch('octavia.db.repositories.AmphoraRepository.get')
+    @mock.patch('octavia.db.repositories.LoadBalancerRepository.get')
+    @mock.patch('octavia.db.api.get_session', return_value=_session_mock)
+    def test_revert_plug_vip_amphora_subnet_not_found(
+            self, mock_session, mock_lb_get, mock_get, mock_get_net_driver):
+        mock_driver = mock.MagicMock()
+        mock_lb_get.return_value = LB
+        mock_get.return_value = self.db_amphora_mock
+        mock_get_net_driver.return_value = mock_driver
+        net = network_tasks.PlugVIPAmphora()
+        amphora = {constants.ID: AMPHORA_ID,
+                   constants.LB_NETWORK_IP: IP_ADDRESS}
+        subnet = {constants.ID: SUBNET_ID}
+        err_msg = 'Subnet not found'
+        mock_driver.get_subnet.side_effect = net_base.SubnetNotFound(err_msg)
+        result = AMPS_DATA[0].to_dict()
+        net.revert(result, self.load_balancer_mock, amphora, subnet)
+        mock_driver.unplug_aap_port.assert_not_called()
+        network_tasks.LOG.error.assert_called_once_with(
+            'Failed to unplug AAP port for load balancer: %s. '
+            'Resources may still be in use for VRRP port: %s. '
+            'Due to error: %s',
+            self.load_balancer_mock[constants.LOADBALANCER_ID],
+            result[constants.VRRP_PORT_ID], err_msg
+        )
+
+    @mock.patch('octavia.db.repositories.AmphoraRepository.get')
+    @mock.patch('octavia.db.repositories.LoadBalancerRepository.get')
+    @mock.patch('octavia.db.api.get_session', return_value=_session_mock)
+    def test_revert_plug_vip_amphora_raise_db_error(
+            self, mock_session, mock_lb_get, mock_get, mock_get_net_driver):
+        mock_driver = mock.MagicMock()
+        mock_lb_get.return_value = LB
+        err_msg = 'Some Error'
+        mock_get.side_effect = Exception(err_msg)
+        net = network_tasks.PlugVIPAmphora()
+        amphora = {constants.ID: AMPHORA_ID,
+                   constants.LB_NETWORK_IP: IP_ADDRESS}
+        subnet = {constants.ID: SUBNET_ID}
+        result = AMPS_DATA[0].to_dict()
+        net.revert(result, self.load_balancer_mock, amphora, subnet)
+        mock_driver.unplug_aap_port.assert_not_called()
+        mock_lb_get.assert_not_called()
+        network_tasks.LOG.error.assert_called_once_with(
+            'Failed to unplug AAP port for load balancer: %s. '
+            'Resources may still be in use for VRRP port: %s. '
+            'Due to error: %s',
+            self.load_balancer_mock[constants.LOADBALANCER_ID],
+            result[constants.VRRP_PORT_ID], err_msg
+        )
+
     @mock.patch('octavia.controller.worker.v2.tasks.network_tasks.DeletePort.'
                 'update_progress')
     def test_delete_port(self, mock_update_progress, mock_get_net_driver):
