@@ -132,13 +132,17 @@ class CreateAmphoraInDB(BaseDatabaseTask):
         LOG.warning("Reverting create amphora in DB for amp id %s ", result)
 
         # Delete the amphora for now. May want to just update status later
-        try:
-            with db_apis.session().begin() as session:
+        with db_apis.session().begin() as session:
+            try:
                 self.amphora_repo.delete(session, id=result)
-        except Exception as e:
-            LOG.error("Failed to delete amphora %(amp)s "
-                      "in the database due to: "
-                      "%(except)s", {'amp': result, 'except': str(e)})
+            except Exception as e:
+                LOG.error("Failed to delete amphora %(amp)s "
+                          "in the database due to: "
+                          "%(except)s", {'amp': result, 'except': str(e)})
+            try:
+                self.amp_health_repo.delete(session, amphora_id=result)
+            except Exception:
+                pass
 
 
 class MarkLBAmphoraeDeletedInDB(BaseDatabaseTask):
