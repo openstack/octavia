@@ -15,6 +15,7 @@ import contextlib
 
 from oslo_config import cfg
 from oslo_log import log
+from oslo_utils import netutils
 from oslo_utils import strutils
 from taskflow.jobs import backends as job_backends
 from taskflow.persistence import backends as persistence_backends
@@ -90,11 +91,6 @@ class RedisTaskFlowDriver(JobboardTaskFlowDriver):
 
     def job_board(self, persistence):
 
-        def _format_server(host, port):
-            if ':' in host:
-                return '[%s]:%d' % (host, port)
-            return '%s:%d' % (host, port)
-
         jobboard_backend_conf = {
             'board': 'redis',
             'host': CONF.task_flow.jobboard_backend_hosts[0],
@@ -103,7 +99,8 @@ class RedisTaskFlowDriver(JobboardTaskFlowDriver):
             'namespace': CONF.task_flow.jobboard_backend_namespace,
             'sentinel': CONF.task_flow.jobboard_redis_sentinel,
             'sentinel_fallbacks': [
-                _format_server(host, CONF.task_flow.jobboard_backend_port)
+                '%s:%d' % (netutils.escape_ipv6(host),
+                           CONF.task_flow.jobboard_backend_port)
                 for host in CONF.task_flow.jobboard_backend_hosts[1:]
             ]
         }
