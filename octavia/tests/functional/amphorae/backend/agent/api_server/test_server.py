@@ -12,6 +12,7 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import hashlib
 import os
 import random
 import socket
@@ -22,7 +23,6 @@ from unittest import mock
 import fixtures
 from oslo_config import fixture as oslo_fixture
 from oslo_serialization import jsonutils
-from oslo_utils.secretutils import md5
 from oslo_utils import uuidutils
 import webob
 
@@ -740,9 +740,10 @@ class TestServerTestCase(base.TestCase):
             rv = self.centos_app.get('/' + api_server.VERSION +
                                      '/loadbalancer/123/certificates/test.pem')
         self.assertEqual(200, rv.status_code)
-        self.assertEqual(dict(md5sum=md5(octavia_utils.b(CONTENT),
-                                         usedforsecurity=False).hexdigest()),
-                         jsonutils.loads(rv.data.decode('utf-8')))
+        self.assertEqual(
+            dict(md5sum=hashlib.md5(octavia_utils.b(CONTENT),
+                                    usedforsecurity=False).hexdigest()),
+            jsonutils.loads(rv.data.decode('utf-8')))
 
     def test_ubuntu_upload_certificate_md5(self):
         self._test_upload_certificate_md5(consts.UBUNTU)
