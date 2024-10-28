@@ -227,22 +227,28 @@ class VIPInterfaceFile(InterfaceFile):
                 fixed_ip.get('host_routes', []))
             self.routes.extend(host_routes)
 
+        if is_sriov:
+            sriov_param = ' sriov'
+        else:
+            sriov_param = ''
+
         for ip_v in ip_versions:
             self.scripts[consts.IFACE_UP].append({
                 consts.COMMAND: (
-                    "/usr/local/bin/lvs-masquerade.sh add {} {}".format(
-                        'ipv6' if ip_v == 6 else 'ipv4', name))
+                    "/usr/local/bin/lvs-masquerade.sh add {} {}{}".format(
+                        'ipv6' if ip_v == 6 else 'ipv4', name, sriov_param))
             })
             self.scripts[consts.IFACE_DOWN].append({
                 consts.COMMAND: (
-                    "/usr/local/bin/lvs-masquerade.sh delete {} {}".format(
-                        'ipv6' if ip_v == 6 else 'ipv4', name))
+                    "/usr/local/bin/lvs-masquerade.sh delete {} {}{}".format(
+                        'ipv6' if ip_v == 6 else 'ipv4', name, sriov_param))
             })
 
 
 class PortInterfaceFile(InterfaceFile):
-    def __init__(self, name, mtu, fixed_ips):
-        super().__init__(name, if_type=consts.BACKEND, mtu=mtu)
+    def __init__(self, name, mtu, fixed_ips, is_sriov=False):
+        super().__init__(name, if_type=consts.BACKEND, mtu=mtu,
+                         is_sriov=is_sriov)
 
         if fixed_ips:
             ip_versions = set()
@@ -271,14 +277,21 @@ class PortInterfaceFile(InterfaceFile):
                 consts.IPV6AUTO: True
             })
 
+        if is_sriov:
+            sriov_param = ' sriov'
+        else:
+            sriov_param = ''
+
         for ip_version in ip_versions:
             self.scripts[consts.IFACE_UP].append({
                 consts.COMMAND: (
-                    "/usr/local/bin/lvs-masquerade.sh add {} {}".format(
-                        'ipv6' if ip_version == 6 else 'ipv4', name))
+                    "/usr/local/bin/lvs-masquerade.sh add {} {}{}".format(
+                        'ipv6' if ip_version == 6 else 'ipv4', name,
+                        sriov_param))
             })
             self.scripts[consts.IFACE_DOWN].append({
                 consts.COMMAND: (
-                    "/usr/local/bin/lvs-masquerade.sh delete {} {}".format(
-                        'ipv6' if ip_version == 6 else 'ipv4', name))
+                    "/usr/local/bin/lvs-masquerade.sh delete {} {}{}".format(
+                        'ipv6' if ip_version == 6 else 'ipv4', name,
+                        sriov_param))
             })

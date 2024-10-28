@@ -19,7 +19,7 @@ set -e
 
 usage() {
     echo
-    echo "Usage: $(basename "$0") [add|delete] [ipv4|ipv6] <interface>"
+    echo "Usage: $(basename "$0") [add|delete] [ipv4|ipv6] <interface> [sriov]"
     echo
     exit 1
 }
@@ -38,10 +38,12 @@ if [ "$1" == "add" ]; then
             nft add rule ip octavia-ipv4 ip-udp-masq oifname "$3" meta l4proto udp masquerade
             nft add chain ip octavia-ipv4 ip-sctp-masq { type nat hook postrouting priority 100\;}
             nft add rule ip octavia-ipv4 ip-sctp-masq oifname "$3" meta l4proto sctp masquerade
-            nft -- add chain ip octavia-ipv4 prerouting { type filter hook prerouting priority -300 \; }
-            nft add rule ip octavia-ipv4 prerouting iifname "$3" meta l4proto tcp notrack
-            nft -- add chain ip octavia-ipv4 output { type filter hook output priority -300 \; }
-            nft add rule ip octavia-ipv4 output oifname "$3" meta l4proto tcp notrack
+            if ! [ "$4" == "sriov" ]; then
+                nft -- add chain ip octavia-ipv4 prerouting { type filter hook prerouting priority -300 \; }
+                nft add rule ip octavia-ipv4 prerouting iifname "$3" meta l4proto tcp notrack
+                nft -- add chain ip octavia-ipv4 output { type filter hook output priority -300 \; }
+                nft add rule ip octavia-ipv4 output oifname "$3" meta l4proto tcp notrack
+            fi
 
         elif [ "$2" == "ipv6" ]; then
             nft add table ip6 octavia-ipv6
@@ -49,10 +51,12 @@ if [ "$1" == "add" ]; then
             nft add rule ip6 octavia-ipv6 ip6-udp-masq oifname "$3" meta l4proto udp masquerade
             nft add chain ip6 octavia-ipv6 ip6-sctp-masq { type nat hook postrouting priority 100\;}
             nft add rule ip6 octavia-ipv6 ip6-sctp-masq oifname "$3" meta l4proto sctp masquerade
-            nft -- add chain ip6 octavia-ipv6 prerouting { type filter hook prerouting priority -300 \; }
-            nft add rule ip6 octavia-ipv6 prerouting iifname "$3" meta l4proto tcp notrack
-            nft -- add chain ip6 octavia-ipv6 output { type filter hook output priority -300 \; }
-            nft add rule ip6 octavia-ipv6 output oifname "$3" meta l4proto tcp notrack
+            if ! [ "$4" == "sriov" ]; then
+                nft -- add chain ip6 octavia-ipv6 prerouting { type filter hook prerouting priority -300 \; }
+                nft add rule ip6 octavia-ipv6 prerouting iifname "$3" meta l4proto tcp notrack
+                nft -- add chain ip6 octavia-ipv6 output { type filter hook output priority -300 \; }
+                nft add rule ip6 octavia-ipv6 output oifname "$3" meta l4proto tcp notrack
+            fi
         else
             usage
         fi
@@ -62,14 +66,18 @@ if [ "$1" == "add" ]; then
             /sbin/iptables -t nat -A POSTROUTING -p udp -o $3 -j MASQUERADE
             /sbin/iptables -t nat -A POSTROUTING -p sctp -o $3 -j MASQUERADE
 
-            /sbin/iptables -t raw -A PREROUTING -p tcp -i $3 -j NOTRACK
-            /sbin/iptables -t raw -A OUTPUT -p tcp -o $3 -j NOTRACK
+            if ! [ "$4" == "sriov" ]; then
+                /sbin/iptables -t raw -A PREROUTING -p tcp -i $3 -j NOTRACK
+                /sbin/iptables -t raw -A OUTPUT -p tcp -o $3 -j NOTRACK
+            fi
         elif [ "$2" == "ipv6" ]; then
             /sbin/ip6tables -t nat -A POSTROUTING -p udp -o $3 -j MASQUERADE
             /sbin/ip6tables -t nat -A POSTROUTING -p sctp -o $3 -j MASQUERADE
 
-            /sbin/ip6tables -t raw -A PREROUTING -p tcp -i $3 -j NOTRACK
-            /sbin/ip6tables -t raw -A OUTPUT -p tcp -o $3 -j NOTRACK
+            if ! [ "$4" == "sriov" ]; then
+                /sbin/ip6tables -t raw -A PREROUTING -p tcp -i $3 -j NOTRACK
+                /sbin/ip6tables -t raw -A OUTPUT -p tcp -o $3 -j NOTRACK
+            fi
         else
             usage
         fi
@@ -83,19 +91,21 @@ elif [ "$1" == "delete" ]; then
             nft delete chain ip octavia-ipv4 ip-udp-masq
             nft flush chain ip octavia-ipv4 ip-sctp-masq
             nft delete chain ip octavia-ipv4 ip-sctp-masq
-            nft flush chain ip octavia-ipv4 prerouting
-            nft delete chain ip octavia-ipv4 prerouting
-            nft flush chain ip octavia-ipv4 output
-            nft delete chain ip octavia-ipv4 output
+            # Don't abort the script if these chains don't exist
+            nft flush chain ip octavia-ipv4 prerouting || true
+            nft delete chain ip octavia-ipv4 prerouting || true
+            nft flush chain ip octavia-ipv4 output || true
+            nft delete chain ip octavia-ipv4 output || true
         elif [ "$2" == "ipv6" ]; then
             nft flush chain ip6 octavia-ipv6 ip6-udp-masq
             nft delete chain ip6 octavia-ipv6 ip6-udp-masq
             nft flush chain ip6 octavia-ipv6 ip6-sctp-masq
             nft delete chain ip6 octavia-ipv6 ip6-sctp-masq
-            nft flush chain ip6 octavia-ipv6 prerouting
-            nft delete chain ip6 octavia-ipv6 prerouting
-            nft flush chain ip6 octavia-ipv6 output
-            nft delete chain ip6 octavia-ipv6 output
+            # Don't abort the script if these chains don't exist
+            nft flush chain ip6 octavia-ipv6 prerouting || true
+            nft delete chain ip6 octavia-ipv6 prerouting || true
+            nft flush chain ip6 octavia-ipv6 output || true
+            nft delete chain ip6 octavia-ipv6 output || true
         else
             usage
         fi
@@ -104,13 +114,15 @@ elif [ "$1" == "delete" ]; then
         if [ "$2" == "ipv4" ]; then
             /sbin/iptables -t nat -D POSTROUTING -p udp -o $3 -j MASQUERADE
             /sbin/iptables -t nat -D POSTROUTING -p sctp -o $3 -j MASQUERADE
-            /sbin/iptables -t raw -D PREROUTING -p tcp -i $3 -j NOTRACK
-            /sbin/iptables -t raw -D OUTPUT -p tcp -o $3 -j NOTRACK
+            # Don't abort the script if these chains don't exist
+            /sbin/iptables -t raw -D PREROUTING -p tcp -i $3 -j NOTRACK || true
+            /sbin/iptables -t raw -D OUTPUT -p tcp -o $3 -j NOTRACK || true
         elif [ "$2" == "ipv6" ]; then
             /sbin/ip6tables -t nat -D POSTROUTING -p udp -o $3 -j MASQUERADE
             /sbin/ip6tables -t nat -D POSTROUTING -p sctp -o $3 -j MASQUERADE
-            /sbin/ip6tables -t raw -D PREROUTING -p tcp -i $3 -j NOTRACK
-            /sbin/ip6tables -t raw -D OUTPUT -p tcp -o $3 -j NOTRACK
+            # Don't abort the script if these chains don't exist
+            /sbin/ip6tables -t raw -D PREROUTING -p tcp -i $3 -j NOTRACK || true
+            /sbin/ip6tables -t raw -D OUTPUT -p tcp -o $3 -j NOTRACK || true
         else
             usage
         fi

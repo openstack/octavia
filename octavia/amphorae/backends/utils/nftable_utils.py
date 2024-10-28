@@ -26,16 +26,26 @@ from octavia.common import utils
 LOG = logging.getLogger(__name__)
 
 
-def write_nftable_vip_rules_file(interface_name, rules):
+def write_nftable_rules_file(interface_name, rules):
     flags = os.O_WRONLY | os.O_CREAT | os.O_TRUNC
     # mode 00600
     mode = stat.S_IRUSR | stat.S_IWUSR
 
     # Create some strings shared on both code paths
-    table_string = f'table {consts.NFT_FAMILY} {consts.NFT_VIP_TABLE} {{\n'
-    chain_string = f'  chain {consts.NFT_VIP_CHAIN} {{\n'
-    hook_string = (f'    type filter hook ingress device {interface_name} '
-                   f'priority {consts.NFT_SRIOV_PRIORITY}; policy drop;\n')
+    table_string = f'table {consts.NFT_FAMILY} {consts.NFT_TABLE} {{\n'
+    chain_string = f'  chain {consts.NFT_CHAIN} {{\n'
+    vip_chain_string = f'  chain {consts.NFT_VIP_CHAIN} {{\n'
+    hook_string = ('    type filter hook input priority filter; '
+                   'policy drop;\n')
+
+    # Conntrack is used to allow flow return traffic
+    conntrack_string = ('      ct state vmap { established : accept, '
+                        'related : accept, invalid : drop }\n')
+
+    # Allow loopback traffic on the loopback interface, no where else
+    loopback_string = '      iif lo accept\n'
+    loopback_addr_string = '      ip saddr 127.0.0.0/8 drop\n'
+    loopback_ipv6_addr_string = '      ip6 saddr ::1 drop\n'
 
     # Allow ICMP destination unreachable for PMTUD
     icmp_string = '      icmp type destination-unreachable accept\n'
@@ -47,38 +57,50 @@ def write_nftable_vip_rules_file(interface_name, rules):
     dhcp_string = '      udp sport 67 udp dport 68 accept\n'
     dhcpv6_string = '      udp sport 547 udp dport 546 accept\n'
 
+    # If the packet came in on the VIP interface, goto the VIP rules chain
+    vip_interface_goto_string = (
+        f'      iifname {consts.NETNS_PRIMARY_INTERFACE} '
+        f'goto {consts.NFT_VIP_CHAIN}\n')
+
     # Check if an existing rules file exists or we be need to create an
     # "drop all" file with no rules except for VRRP. If it exists, we should
     # not overwrite it here as it could be a reboot unless we were passed new
     # rules.
-    if os.path.isfile(consts.NFT_VIP_RULES_FILE):
+    if os.path.isfile(consts.NFT_RULES_FILE):
         if not rules:
             return
         with os.fdopen(
-                os.open(consts.NFT_VIP_RULES_FILE, flags, mode), 'w') as file:
+                os.open(consts.NFT_RULES_FILE, flags, mode), 'w') as file:
             # Clear the existing rules in the kernel
             # Note: The "nft -f" method is atomic, so clearing the rules will
             #       not leave the amphora exposed.
             # Create and delete the table to not get errors if the table does
             # not exist yet.
-            file.write(f'table {consts.NFT_FAMILY} {consts.NFT_VIP_TABLE} '
+            file.write(f'table {consts.NFT_FAMILY} {consts.NFT_TABLE} '
                        '{}\n')
             file.write(f'delete table {consts.NFT_FAMILY} '
-                       f'{consts.NFT_VIP_TABLE}\n')
+                       f'{consts.NFT_TABLE}\n')
             file.write(table_string)
             file.write(chain_string)
             file.write(hook_string)
+            file.write(conntrack_string)
+            file.write(loopback_string)
+            file.write(loopback_addr_string)
+            file.write(loopback_ipv6_addr_string)
             file.write(icmp_string)
             file.write(icmpv6_string)
             file.write(dhcp_string)
             file.write(dhcpv6_string)
+            file.write(vip_interface_goto_string)
+            file.write('  }\n')  # close the chain
+            file.write(vip_chain_string)
             for rule in rules:
                 file.write(f'      {_build_rule_cmd(rule)}\n')
             file.write('  }\n')  # close the chain
             file.write('}\n')  # close the table
     else:  # No existing rules, create the "drop all" base rules
         with os.fdopen(
-                os.open(consts.NFT_VIP_RULES_FILE, flags, mode), 'w') as file:
+                os.open(consts.NFT_RULES_FILE, flags, mode), 'w') as file:
             file.write(table_string)
             file.write(chain_string)
             file.write(hook_string)
@@ -113,7 +135,7 @@ def _build_rule_cmd(rule):
 
 
 def load_nftables_file():
-    cmd = [consts.NFT_CMD, '-o', '-f', consts.NFT_VIP_RULES_FILE]
+    cmd = [consts.NFT_CMD, '-o', '-f', consts.NFT_RULES_FILE]
     try:
         with network_namespace.NetworkNamespace(consts.AMPHORA_NAMESPACE):
             subprocess.check_output(cmd, stderr=subprocess.STDOUT)
