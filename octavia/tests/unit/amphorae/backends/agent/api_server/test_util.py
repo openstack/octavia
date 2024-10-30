@@ -370,13 +370,57 @@ class TestUtil(base.TestCase):
         self.assertEqual([], util.get_haproxy_vip_addresses(LB_ID1))
         mock_cfg_path.assert_called_once_with(LB_ID1)
 
+    @mock.patch('octavia.amphorae.backends.agent.api_server.util.'
+                'keepalived_lvs_cfg_path')
+    def test_get_lvs_vip_addresses(self, mock_cfg_path):
+        FAKE_PATH = 'fake_path'
+        mock_cfg_path.return_value = FAKE_PATH
+        self.useFixture(
+            test_utils.OpenFixture(FAKE_PATH, 'no match')).mock_open()
+
+        # Test with no matching lines in the config file
+        self.assertEqual([], util.get_lvs_vip_addresses(LB_ID1))
+        mock_cfg_path.assert_called_once_with(LB_ID1)
+
+        # Test with 2 matching lines
+        mock_cfg_path.reset_mock()
+        test_data = ('virtual_server_group ipv4-group {\n'
+                     '    203.0.113.43 1\n'
+                     '    203.0.113.44 1\n'
+                     '}\n')
+        self.useFixture(
+            test_utils.OpenFixture(FAKE_PATH, test_data)).mock_open()
+        expected_result = ['203.0.113.43', '203.0.113.44']
+        self.assertEqual(expected_result,
+                         util.get_lvs_vip_addresses(LB_ID1))
+        mock_cfg_path.assert_called_once_with(LB_ID1)
+
+        # Test with 2 groups
+        mock_cfg_path.reset_mock()
+        test_data = ('virtual_server_group ipv4-group {\n'
+                     '    203.0.113.43 1\n'
+                     '}\n'
+                     'virtual_server_group ipv6-group {\n'
+                     '    2d01:27::1 2\n'
+                     '    2d01:27::2 2\n'
+                     '}\n')
+        self.useFixture(
+            test_utils.OpenFixture(FAKE_PATH, test_data)).mock_open()
+        expected_result = ['203.0.113.43', '2d01:27::1', '2d01:27::2']
+        self.assertEqual(expected_result,
+                         util.get_lvs_vip_addresses(LB_ID1))
+        mock_cfg_path.assert_called_once_with(LB_ID1)
+
     @mock.patch('octavia.amphorae.backends.utils.ip_advertisement.'
                 'send_ip_advertisement')
     @mock.patch('octavia.amphorae.backends.utils.network_utils.'
                 'get_interface_name')
     @mock.patch('octavia.amphorae.backends.agent.api_server.util.'
                 'get_haproxy_vip_addresses')
-    def test_send_vip_advertisements(self, mock_get_vip_addrs,
+    @mock.patch('octavia.amphorae.backends.agent.api_server.util.'
+                'get_lvs_vip_addresses')
+    def test_send_vip_advertisements(self, mock_get_lvs_vip_addrs,
+                                     mock_get_vip_addrs,
                                      mock_get_int_name, mock_send_advert):
         mock_get_vip_addrs.side_effect = [[], ['203.0.113.46'],
                                           Exception('boom')]
@@ -385,6 +429,7 @@ class TestUtil(base.TestCase):
         # Test no VIPs
         util.send_vip_advertisements(LB_ID1)
         mock_get_vip_addrs.assert_called_once_with(LB_ID1)
+        mock_get_lvs_vip_addrs.assert_not_called()
         mock_get_int_name.assert_not_called()
         mock_send_advert.assert_not_called()
 
@@ -394,6 +439,7 @@ class TestUtil(base.TestCase):
         mock_send_advert.reset_mock()
         util.send_vip_advertisements(LB_ID1)
         mock_get_vip_addrs.assert_called_once_with(LB_ID1)
+        mock_get_lvs_vip_addrs.assert_not_called()
         mock_get_int_name.assert_called_once_with(
             '203.0.113.46', net_ns=consts.AMPHORA_NAMESPACE)
         mock_send_advert.assert_called_once_with(
@@ -404,6 +450,48 @@ class TestUtil(base.TestCase):
         mock_get_int_name.reset_mock()
         mock_send_advert.reset_mock()
         util.send_vip_advertisements(LB_ID1)
+        mock_get_int_name.assert_not_called()
+        mock_send_advert.assert_not_called()
+
+    @mock.patch('octavia.amphorae.backends.utils.ip_advertisement.'
+                'send_ip_advertisement')
+    @mock.patch('octavia.amphorae.backends.utils.network_utils.'
+                'get_interface_name')
+    @mock.patch('octavia.amphorae.backends.agent.api_server.util.'
+                'get_haproxy_vip_addresses')
+    @mock.patch('octavia.amphorae.backends.agent.api_server.util.'
+                'get_lvs_vip_addresses')
+    def test_send_vip_advertisements_udp(self, mock_get_lvs_vip_addrs,
+                                         mock_get_vip_addrs,
+                                         mock_get_int_name, mock_send_advert):
+        mock_get_lvs_vip_addrs.side_effect = [[], ['203.0.113.46'],
+                                              Exception('boom')]
+        mock_get_int_name.return_value = 'fake0'
+
+        # Test no VIPs
+        util.send_vip_advertisements(listener_id=LISTENER_ID1)
+        mock_get_lvs_vip_addrs.assert_called_once_with(LISTENER_ID1)
+        mock_get_vip_addrs.assert_not_called()
+        mock_get_int_name.assert_not_called()
+        mock_send_advert.assert_not_called()
+
+        # Test with a VIP
+        mock_get_lvs_vip_addrs.reset_mock()
+        mock_get_int_name.reset_mock()
+        mock_send_advert.reset_mock()
+        util.send_vip_advertisements(listener_id=LISTENER_ID1)
+        mock_get_lvs_vip_addrs.assert_called_once_with(LISTENER_ID1)
+        mock_get_vip_addrs.assert_not_called()
+        mock_get_int_name.assert_called_once_with(
+            '203.0.113.46', net_ns=consts.AMPHORA_NAMESPACE)
+        mock_send_advert.assert_called_once_with(
+            'fake0', '203.0.113.46', net_ns=consts.AMPHORA_NAMESPACE)
+
+        # Test with an exception (should not raise)
+        mock_get_lvs_vip_addrs.reset_mock()
+        mock_get_int_name.reset_mock()
+        mock_send_advert.reset_mock()
+        util.send_vip_advertisements(listener_id=LISTENER_ID1)
         mock_get_int_name.assert_not_called()
         mock_send_advert.assert_not_called()
 
