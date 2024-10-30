@@ -347,7 +347,37 @@ def get_haproxy_vip_addresses(lb_id):
     return vips
 
 
-def send_vip_advertisements(lb_id):
+def get_lvs_vip_addresses(listener_id: str) -> list[str]:
+    """Get the VIP addresses for a LVS load balancer.
+
+    :param listener_id: The listener ID to get VIP addresses from.
+    :returns: List of VIP addresses (IPv4 and IPv6)
+    """
+    vips = []
+    # Extract the VIP addresses from keepalived configuration
+    # Format is
+    # virtual_server_group ipv<n>-group {
+    #     vip_address1 port1
+    #     vip_address2 port2
+    # }
+    # it can be repeated in case of dual-stack LBs
+    with open(keepalived_lvs_cfg_path(listener_id), encoding='utf-8') as file:
+        vsg_section = False
+        for line in file:
+            current_line = line.strip()
+            if vsg_section:
+                if current_line.startswith('}'):
+                    vsg_section = False
+                else:
+                    vip_address = current_line.split(' ')[0]
+                    vips.append(vip_address)
+            elif line.startswith('virtual_server_group '):
+                vsg_section = True
+    return vips
+
+
+def send_vip_advertisements(lb_id: tp.Optional[str] = None,
+                            listener_id: tp.Optional[str] = None):
     """Sends address advertisements for each load balancer VIP.
 
     This method will send either GARP (IPv4) or neighbor advertisements (IPv6)
@@ -357,7 +387,10 @@ def send_vip_advertisements(lb_id):
     :returns: None
     """
     try:
-        vips = get_haproxy_vip_addresses(lb_id)
+        if lb_id:
+            vips = get_haproxy_vip_addresses(lb_id)
+        else:
+            vips = get_lvs_vip_addresses(listener_id)
 
         for vip in vips:
             interface = network_utils.get_interface_name(
