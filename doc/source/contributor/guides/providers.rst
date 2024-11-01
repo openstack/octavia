@@ -1770,6 +1770,7 @@ description. For example:
 .. code-block:: python
 
     {"compute_zone": "The compute availability zone to use for this loadbalancer.",
+     "volume_zone": "The volume availability zone to use for this loadbalancer.",
      "management_network": "The management network ID for the loadbalancer.",
      "valid_vip_networks": "List of network IDs that are allowed for VIP use. This overrides/replaces the list of allowed networks configured in `octavia.conf`."}
 

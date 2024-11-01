@@ -145,7 +145,9 @@ class TestNoopProviderDriver(base.TestCase):
                                     "to use for this load balancer."}
         self.ref_availability_zone_metadata = {
             "compute_zone": "The compute availability zone to use for this "
-                            "loadbalancer."}
+                            "loadbalancer.",
+            "volume_zone": "The volume availability zone to use for this "
+                           "loadbalancer."}
 
     def test_create_vip_port(self):
         vip_dict, additional_vip_dicts = self.driver.create_vip_port(

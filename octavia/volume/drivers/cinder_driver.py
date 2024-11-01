@@ -43,20 +43,29 @@ class VolumeManager(volume_base.VolumeBase):
             cacert=CONF.cinder.ca_certificates_file
         )
         self.manager = self._cinder_client.volumes
+        self.availability_zone_manager = self._cinder_client.availability_zones
 
     @retry(reraise=True,
            stop=stop_after_attempt(CONF.cinder.volume_create_max_retries))
-    def create_volume_from_image(self, image_id):
+    def create_volume_from_image(self, image_id, availability_zone=None):
         """Create cinder volume
 
         :param image_id: ID of amphora image
+        :param availability_zone: Availability zone data dict
 
         :return volume id
         """
+
+        if availability_zone:
+            az_name = availability_zone.get(
+                constants.VOLUME_ZONE, CONF.cinder.availability_zone)
+        else:
+            az_name = CONF.cinder.availability_zone
+
         volume = self.manager.create(
             size=CONF.cinder.volume_size,
             volume_type=CONF.cinder.volume_type,
-            availability_zone=CONF.cinder.availability_zone,
+            availability_zone=az_name,
             imageRef=image_id)
         resource_status = self.manager.get(volume.id).status
 
@@ -121,3 +130,24 @@ class VolumeManager(volume_base.VolumeBase):
             LOG.error("Volume %s has no image metadata", volume_id)
             image_id = None
         return image_id
+
+    def validate_availability_zone(self, availability_zone):
+        """Validates that an availability zone exists in cinder.
+
+        :param availability_zone: Name of the availability zone to lookup.
+        :raises: NotFound
+        :returns: None
+        """
+        try:
+            volume_zones = [
+                a.zoneName for a in self.availability_zone_manager.list(
+                    detailed=False)]
+            if availability_zone not in volume_zones:
+                LOG.info('Availability zone %s was not found in cinder. %s',
+                         availability_zone, volume_zones)
+                raise exceptions.InvalidSubresource(
+                    resource='Cinder availability zone', id=availability_zone)
+        except Exception as e:
+            LOG.exception('Cinder reports a failure getting listing '
+                          'availability zones: %s', str(e))
+            raise

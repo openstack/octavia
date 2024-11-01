@@ -18,10 +18,11 @@ import abc
 class VolumeBase(metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
-    def create_volume_from_image(self, image_id):
+    def create_volume_from_image(self, image_id, availability_zone=None):
         """Create volume for instance
 
         :param image_id: ID of amphora image
+        :param availability_zone: Availability zone data dict
 
         :return volume id
         """
@@ -40,4 +41,14 @@ class VolumeBase(metaclass=abc.ABCMeta):
         :param volume_id: ID of amphora volume
 
         :return image id
+        """
+
+    @abc.abstractmethod
+    def validate_availability_zone(self, availability_zone):
+        """Validates that a volume availability zone exists.
+
+        :param availability_zone: Name of the availability zone to lookup.
+        :returns: None
+        :raises: NotFound
+        :raises: NotImplementedError
         """

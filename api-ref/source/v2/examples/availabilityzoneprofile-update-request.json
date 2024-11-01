@@ -3,6 +3,6 @@
         {
             "name": "other_az",
             "provider_name": "amphora",
-            "availability_zone_data": "{\"compute_zone\": \"az2\"}"
+            "availability_zone_data": "{\"compute_zone\": \"az2\", \"volume_zone\": \"az2\"}"
         }
 }

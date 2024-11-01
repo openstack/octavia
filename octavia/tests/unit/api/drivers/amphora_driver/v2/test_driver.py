@@ -853,6 +853,16 @@ class TestAmphoraDriver(base.TestRpc):
             m_driver.validate_availability_zone.return_value = None
             ref_dict = {consts.COMPUTE_ZONE: 'my_compute_zone'}
             self.amp_driver.validate_availability_zone(ref_dict)
+            m_driver.validate_availability_zone.assert_called_once_with(
+                'my_compute_zone')
+
+        # Test volume zone
+        with mock.patch('stevedore.driver.DriverManager.driver') as m_driver:
+            m_driver.validate_availability_zone.return_value = None
+            ref_dict = {consts.VOLUME_ZONE: 'my_volume_zone'}
+            self.amp_driver.validate_availability_zone(ref_dict)
+            m_driver.validate_availability_zone.assert_called_once_with(
+                'my_volume_zone')
 
         with mock.patch('octavia.common.utils.get_network_driver') as m_driver:
             # Test vip networks

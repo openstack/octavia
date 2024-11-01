@@ -259,6 +259,8 @@ class NoopManager:
             self.__class__.__name__)
 
         return {"compute_zone": "The compute availability zone to use for "
+                "this loadbalancer.",
+                "volume_zone": "The volume availability zone to use for "
                 "this loadbalancer."}
 
     def validate_availability_zone(self, availability_zone_metadata):

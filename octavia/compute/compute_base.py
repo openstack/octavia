@@ -42,7 +42,7 @@ class ComputeBase(metaclass=abc.ABCMeta):
                           well or a string
         :param server_group_id: Optional server group id(uuid) which is used
                                 for anti_affinity feature
-        :param availability_zone: Name of the compute availability zone.
+        :param availability_zone: Availability zone data dict
 
         :raises ComputeBuildException: if compute failed to build amphora
         :returns: UUID of amphora

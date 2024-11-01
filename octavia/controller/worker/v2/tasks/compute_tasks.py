@@ -107,13 +107,9 @@ class ComputeCreate(BaseComputeTask):
             amp_image_tag = CONF.controller_worker.amp_image_tag
 
         if availability_zone:
-            amp_availability_zone = availability_zone.get(
-                constants.COMPUTE_ZONE)
             amp_network = availability_zone.get(constants.MANAGEMENT_NETWORK)
             if amp_network:
                 network_ids = [amp_network]
-        else:
-            amp_availability_zone = None
         try:
             if CONF.haproxy_amphora.build_rate_limit != -1:
                 self.rate_limit.add_to_build_request_queue(
@@ -146,7 +142,7 @@ class ComputeCreate(BaseComputeTask):
                 config_drive_files=config_drive_files,
                 user_data=user_data,
                 server_group_id=server_group_id,
-                availability_zone=amp_availability_zone)
+                availability_zone=availability_zone)
 
             LOG.info("Server created with id: %s for amphora id: %s",
                      compute_id, amphora_id)

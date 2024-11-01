@@ -582,6 +582,18 @@ class AmphoraProviderDriver(driver_base.ProviderDriver):
             # when the octavia-lib supports it.
             compute_driver.validate_availability_zone(compute_zone)
 
+        volume_zone = availability_zone_dict.get(consts.VOLUME_ZONE, None)
+        if volume_zone:
+            volume_driver = stevedore_driver.DriverManager(
+                namespace='octavia.volume.drivers',
+                name=CONF.controller_worker.volume_driver,
+                invoke_on_load=True
+            ).driver
+
+            # TODO(johnsom) Fix this to raise a NotFound error
+            # when the octavia-lib supports it.
+            volume_driver.validate_availability_zone(volume_zone)
+
         check_nets = availability_zone_dict.get(
             consts.VALID_VIP_NETWORKS, [])
         management_net = availability_zone_dict.get(

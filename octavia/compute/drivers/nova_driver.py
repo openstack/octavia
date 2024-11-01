@@ -90,8 +90,7 @@ class VirtualMachineManager(compute_base.ComputeBase):
                           well or a string
         :param server_group_id: Optional server group id(uuid) which is used
                                 for anti_affinity feature
-        :param availability_zone: Name of the compute availability zone.
-
+        :param availability_zone: Availability zone data dict
         :raises ComputeBuildException: if nova failed to build virtual machine
         :returns: UUID of amphora
 
@@ -109,7 +108,12 @@ class VirtualMachineManager(compute_base.ComputeBase):
 
             server_group = None if server_group_id is None else {
                 "group": server_group_id}
-            az_name = availability_zone or CONF.nova.availability_zone
+
+            if availability_zone:
+                az_name = availability_zone.get(constants.COMPUTE_ZONE,
+                                                CONF.nova.availability_zone)
+            else:
+                az_name = CONF.nova.availability_zone
 
             image_id = self.image_driver.get_image_id_by_tag(
                 image_tag, image_owner)
@@ -127,7 +131,7 @@ class VirtualMachineManager(compute_base.ComputeBase):
                 LOG.debug('Creating volume for amphora from image %s',
                           image_id)
                 volume_id = self.volume_driver.create_volume_from_image(
-                    image_id)
+                    image_id, availability_zone)
                 LOG.debug('Created boot volume %s for amphora', volume_id)
                 # If use volume based, does not require image ID anymore
                 image_id = None

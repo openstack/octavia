@@ -39,6 +39,10 @@ SUPPORTED_AVAILABILITY_ZONE_SCHEMA = {
             "type": "string",
             "description": "The compute availability zone."
         },
+        consts.VOLUME_ZONE: {
+            "type": "string",
+            "description": "The volume availability zone."
+        },
         consts.MANAGEMENT_NETWORK: {
             "type": "string",
             "description": "The management network ID for the amphora."

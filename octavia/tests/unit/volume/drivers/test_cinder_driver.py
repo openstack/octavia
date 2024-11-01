@@ -16,6 +16,7 @@ from oslo_config import cfg
 from oslo_config import fixture as oslo_fixture
 from oslo_utils import uuidutils
 
+from octavia.common import constants
 from octavia.common import exceptions
 import octavia.tests.unit.base as base
 import octavia.volume.drivers.cinder_driver as cinder_common
@@ -42,6 +43,7 @@ class TestCinderClient(base.TestCase):
 
         self.manager.manager.get.return_value.status = 'available'
         self.manager.manager.create.return_value = self.cinder_response
+        self.manager.availability_zone_manager = mock.MagicMock()
         self.image_id = fake_uuid2
         self.volume_id = fake_uuid3
 
@@ -56,6 +58,36 @@ class TestCinderClient(base.TestCase):
             size=16,
             volume_type=None,
             availability_zone=None,
+            imageRef=self.image_id)
+
+    def test_create_volume_from_image_with_availability_zone(self):
+        self.conf.config(group="controller_worker",
+                         volume_driver='volume_cinder_driver')
+        self.conf.config(group="cinder", volume_create_retry_interval=0)
+        self.conf.config(group="cinder", availability_zone="no_zone")
+
+        az_name = "some_zone"
+        az_data = {constants.VOLUME_ZONE: az_name}
+
+        self.manager.create_volume_from_image(self.image_id, az_data)
+        self.manager.manager.create.assert_called_with(
+            size=16,
+            volume_type=None,
+            availability_zone=az_name,
+            imageRef=self.image_id)
+
+    def test_create_volume_from_image_with_availability_zone_from_conf(self):
+        az_name = "some_az"
+        self.conf.config(group="controller_worker",
+                         volume_driver='volume_cinder_driver')
+        self.conf.config(group="cinder", volume_create_retry_interval=0)
+        self.conf.config(group="cinder", availability_zone=az_name)
+
+        self.manager.create_volume_from_image(self.image_id)
+        self.manager.manager.create.assert_called_with(
+            size=16,
+            volume_type=None,
+            availability_zone=az_name,
             imageRef=self.image_id)
 
     def test_create_volume_from_image_error(self):
@@ -97,3 +129,18 @@ class TestCinderClient(base.TestCase):
         self.assertRaises(exceptions.VolumeGetException,
                           self.manager.get_image_from_volume,
                           self.volume_id)
+
+    def test_validate_availability_zone(self):
+        az_name = "some_az"
+        mock_az = mock.Mock()
+        mock_az.zoneName = az_name
+        self.manager.availability_zone_manager.list.return_value = [mock_az]
+        self.manager.validate_availability_zone(az_name)
+        self.manager.availability_zone_manager.list.assert_called_with(
+            detailed=False)
+
+    def test_validate_availability_zone_with_exception(self):
+        self.manager.availability_zone_manager.list.return_value = []
+        self.assertRaises(exceptions.InvalidSubresource,
+                          self.manager.validate_availability_zone,
+                          "bogus")

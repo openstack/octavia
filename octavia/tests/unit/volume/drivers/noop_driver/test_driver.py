@@ -13,9 +13,9 @@
 from oslo_config import cfg
 from oslo_utils import uuidutils
 
+from octavia.common import constants
 import octavia.tests.unit.base as base
 from octavia.volume.drivers.noop_driver import driver
-
 
 CONF = cfg.CONF
 
@@ -33,7 +33,16 @@ class TestNoopVolumeDriver(base.TestCase):
 
     def test_create_volume_from_image(self):
         self.driver.create_volume_from_image(self.image_id)
-        self.assertEqual((self.image_id, 'create_volume_from_image'),
+        self.assertEqual((self.image_id, None, 'create_volume_from_image'),
+                         self.driver.driver.volumeconfig[(
+                             self.image_id
+                         )])
+
+    def test_create_volume_from_image_with_availability_zone(self):
+        az_name = "some_az"
+        az_data = {constants.VOLUME_ZONE: az_name}
+        self.driver.create_volume_from_image(self.image_id, az_data)
+        self.assertEqual((self.image_id, az_data, 'create_volume_from_image'),
                          self.driver.driver.volumeconfig[(
                              self.image_id
                          )])

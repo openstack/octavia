@@ -1,0 +1,6 @@
+---
+
+features:
+  - |
+    Added volume zone to availability zone profile for amphorae backend for 
+    creating loadbalancer with specific volume availability zone

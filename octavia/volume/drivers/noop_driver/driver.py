@@ -23,10 +23,12 @@ class NoopManager:
         super().__init__()
         self.volumeconfig = {}
 
-    def create_volume_from_image(self, image_id):
-        LOG.debug("Volume %s no-op, image id %s",
-                  self.__class__.__name__, image_id)
-        self.volumeconfig[image_id] = (image_id, 'create_volume_from_image')
+    def create_volume_from_image(self, image_id, availability_zone=None):
+        LOG.debug("Volume %s no-op, image id %s, availability zone %s",
+                  self.__class__.__name__, image_id, availability_zone)
+        self.volumeconfig[image_id] = (image_id,
+                                       availability_zone,
+                                       'create_volume_from_image')
         volume_id = uuidutils.generate_uuid()
         return volume_id
 
@@ -42,14 +44,21 @@ class NoopManager:
         image_id = uuidutils.generate_uuid()
         return image_id
 
+    def validate_availability_zone(self, availability_zone):
+        LOG.debug("Volume %s no-op, validate_availability_zone name %s",
+                  self.__class__.__name__, availability_zone)
+        self.volumeconfig[availability_zone] = (
+            availability_zone, 'validate_availability_zone')
+
 
 class NoopVolumeDriver(driver_base.VolumeBase):
     def __init__(self):
         super().__init__()
         self.driver = NoopManager()
 
-    def create_volume_from_image(self, image_id):
-        volume_id = self.driver.create_volume_from_image(image_id)
+    def create_volume_from_image(self, image_id, availability_zone=None):
+        volume_id = self.driver.create_volume_from_image(
+            image_id, availability_zone)
         return volume_id
 
     def delete_volume(self, volume_id):
@@ -58,3 +67,6 @@ class NoopVolumeDriver(driver_base.VolumeBase):
     def get_image_from_volume(self, volume_id):
         image_id = self.driver.get_image_from_volume(volume_id)
         return image_id
+
+    def validate_availability_zone(self, availability_zone):
+        self.driver.validate_availability_zone(availability_zone)
