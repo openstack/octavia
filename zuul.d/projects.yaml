@@ -35,60 +35,59 @@
 #        - openstack-tox-functional-py312:
 #            irrelevant-files: *tox-irrelevant-files
 #            voting: false
-# TODO(johnsom) Temporarily disable tempest jobs due to RBAC change
-#        - octavia-v2-dsvm-noop-api:
-#            irrelevant-files: &irrelevant-files
-#              - ^.*\.rst$
-#              - ^api-ref/.*$
-#              - ^doc/.*$
-#              - ^octavia/tests/.*$
-#              - ^releasenotes/.*$
-#        - octavia-v2-dsvm-scenario-traffic-ops:
-#            irrelevant-files: *irrelevant-files
-#        - octavia-v2-dsvm-scenario-non-traffic-ops:
-#            irrelevant-files: *irrelevant-files
-#        - octavia-v2-dsvm-scenario-traffic-ops-ubuntu-jammy:
-#            irrelevant-files: *irrelevant-files
-#        - octavia-v2-dsvm-scenario-non-traffic-ops-ubuntu-jammy:
-#            irrelevant-files: *irrelevant-files
-#        - octavia-v2-dsvm-scenario-traffic-ops-jobboard:
-#            irrelevant-files: *irrelevant-files
-#        - octavia-v2-dsvm-scenario-non-traffic-ops-jobboard:
-#            irrelevant-files: *irrelevant-files
-#        - octavia-v2-dsvm-tls-barbican:
-#            irrelevant-files: *irrelevant-files
-#        - octavia-grenade:
-#            irrelevant-files: &grenade-irrelevant-files
-#              - ^.*\.rst$
-#              - ^api-ref/.*$
-#              - ^doc/.*$
-#              - ^octavia/tests/.*$
-#              - ^releasenotes/.*$
-#              - ^setup.cfg$
-#              - ^tools/.*$
-#              - ^(test-|)requirements.txt$
-#              - ^tox.ini$
-#        - octavia-grenade-skip-level:
-#            irrelevant-files: *grenade-irrelevant-files
-#            voting: false
-#        - octavia-v2-dsvm-tls-barbican-fips:
-#            irrelevant-files: *irrelevant-files
-#            voting: false
-#        - octavia-v2-act-stdby-dsvm-scenario:
-#            irrelevant-files: *irrelevant-files
-#            voting: false
-#        - octavia-v2-dsvm-cinder-amphora:
-#            irrelevant-files: *irrelevant-files
-#            voting: false
-#        - octavia-v2-dsvm-scenario-two-node:
-#            irrelevant-files: *irrelevant-files
-#            voting: false
-#        - octavia-v2-dsvm-scenario-ipv6-only:
-#            irrelevant-files: *irrelevant-files
-#            voting: false
-#        - octavia-v2-dsvm-scenario-centos-9-stream:
-#            irrelevant-files: *irrelevant-files
-#            voting: false
+        - octavia-v2-dsvm-noop-api:
+            irrelevant-files: &irrelevant-files
+              - ^.*\.rst$
+              - ^api-ref/.*$
+              - ^doc/.*$
+              - ^octavia/tests/.*$
+              - ^releasenotes/.*$
+        - octavia-v2-dsvm-scenario-traffic-ops:
+            irrelevant-files: *irrelevant-files
+        - octavia-v2-dsvm-scenario-non-traffic-ops:
+            irrelevant-files: *irrelevant-files
+        - octavia-v2-dsvm-scenario-traffic-ops-ubuntu-jammy:
+            irrelevant-files: *irrelevant-files
+        - octavia-v2-dsvm-scenario-non-traffic-ops-ubuntu-jammy:
+            irrelevant-files: *irrelevant-files
+        - octavia-v2-dsvm-scenario-traffic-ops-jobboard:
+            irrelevant-files: *irrelevant-files
+        - octavia-v2-dsvm-scenario-non-traffic-ops-jobboard:
+            irrelevant-files: *irrelevant-files
+        - octavia-v2-dsvm-tls-barbican:
+            irrelevant-files: *irrelevant-files
+        - octavia-grenade:
+            irrelevant-files: &grenade-irrelevant-files
+              - ^.*\.rst$
+              - ^api-ref/.*$
+              - ^doc/.*$
+              - ^octavia/tests/.*$
+              - ^releasenotes/.*$
+              - ^setup.cfg$
+              - ^tools/.*$
+              - ^(test-|)requirements.txt$
+              - ^tox.ini$
+        - octavia-grenade-skip-level:
+            irrelevant-files: *grenade-irrelevant-files
+            voting: false
+        - octavia-v2-dsvm-tls-barbican-fips:
+            irrelevant-files: *irrelevant-files
+            voting: false
+        - octavia-v2-act-stdby-dsvm-scenario:
+            irrelevant-files: *irrelevant-files
+            voting: false
+        - octavia-v2-dsvm-cinder-amphora:
+            irrelevant-files: *irrelevant-files
+            voting: false
+        - octavia-v2-dsvm-scenario-two-node:
+            irrelevant-files: *irrelevant-files
+            voting: false
+        - octavia-v2-dsvm-scenario-ipv6-only:
+            irrelevant-files: *irrelevant-files
+            voting: false
+        - octavia-v2-dsvm-scenario-centos-9-stream:
+            irrelevant-files: *irrelevant-files
+            voting: false
     queue: octavia
     gate:
       fail-fast: true
@@ -109,15 +108,14 @@
               - ^etc/.*$
               - ^octavia/tests/unit/.*$
               - ^releasenotes/.*$
-# TODO(johnsom) Temporarily disable tempest jobs due to RBAC change
-#        - octavia-v2-dsvm-noop-api
-#        - octavia-v2-dsvm-scenario-traffic-ops
-#        - octavia-v2-dsvm-scenario-non-traffic-ops
-#        - octavia-v2-dsvm-scenario-traffic-ops-ubuntu-jammy
-#        - octavia-v2-dsvm-scenario-non-traffic-ops-ubuntu-jammy
-#        - octavia-v2-dsvm-tls-barbican
-#        - octavia-grenade
-#        #- octavia-grenade-skip-level
+        - octavia-v2-dsvm-noop-api
+        - octavia-v2-dsvm-scenario-traffic-ops
+        - octavia-v2-dsvm-scenario-non-traffic-ops
+        - octavia-v2-dsvm-scenario-traffic-ops-ubuntu-jammy
+        - octavia-v2-dsvm-scenario-non-traffic-ops-ubuntu-jammy
+        - octavia-v2-dsvm-tls-barbican
+        - octavia-grenade
+        #- octavia-grenade-skip-level
     periodic:
       jobs:
         - publish-openstack-octavia-amphora-image-noble:
