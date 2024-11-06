@@ -1098,7 +1098,8 @@ class TestAllowedAddressPairsDriver(base.TestCase):
         fake_rules = [
             {'id': 'rule-80', 'port_range_max': 80, 'protocol': 'tcp',
              'remote_ip_prefix': '10.0.101.0/24'},
-            {'id': 'rule-22', 'port_range_max': 22, 'protocol': 'tcp'}
+            {'id': 'rule-22', 'port_range_max': 22, 'protocol': 'tcp'},
+            {'id': 'rule-None', 'port_range_max': 22},
         ]
         list_rules = self.driver.network_proxy.security_group_rules
         list_rules.return_value = fake_rules
