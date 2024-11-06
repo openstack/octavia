@@ -194,12 +194,13 @@ class AllowedAddressPairsDriver(neutron_base.BaseNeutronDriver):
             # Don't remove egress rules and don't confuse other protocols with
             # None ports with the egress rules.  VRRP uses protocol 51 and 112
             if (rule.get('direction') == 'egress' or
-                    rule.get('protocol').upper() not in
+                    rule.get('protocol') is None or
+                    rule['protocol'].upper() not in
                     [constants.PROTOCOL_TCP, constants.PROTOCOL_UDP,
                      lib_consts.PROTOCOL_SCTP]):
                 continue
             old_ports.append((rule.get('port_range_max'),
-                              rule.get('protocol').lower(),
+                              rule['protocol'].lower(),
                               rule.get('remote_ip_prefix')))
 
         add_ports = set(updated_ports) - set(old_ports)
