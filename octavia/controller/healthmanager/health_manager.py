@@ -77,6 +77,11 @@ class HealthManager:
         return False
 
     def health_check(self):
+        """Check for stale amphorae and process them
+
+        ... until either no more stale amphora were found or all executor
+        threads are busy.
+        """
         stats = {
             'failover_attempted': 0,
             'failover_failed': 0,
@@ -127,6 +132,7 @@ class HealthManager:
                     if lock_session:
                         lock_session.rollback()
 
+            # No more stale amps found
             if amp_health is None:
                 break
 
@@ -137,6 +143,7 @@ class HealthManager:
                 functools.partial(update_stats_on_done, stats)
             )
             futs.append(fut)
+            # All threads are/were busy
             if len(futs) == self.threads:
                 break
         if futs:
