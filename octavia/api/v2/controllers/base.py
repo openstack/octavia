@@ -64,9 +64,11 @@ class BaseController(pecan_rest.RestController):
         return converted
 
     @staticmethod
-    def _get_db_obj(session, repo, data_model, id, show_deleted=True):
+    def _get_db_obj(session, repo, data_model, id, show_deleted=True,
+                    limited_graph=False):
         """Gets an object from the database and returns it."""
-        db_obj = repo.get(session, id=id, show_deleted=show_deleted)
+        db_obj = repo.get(session, id=id, show_deleted=show_deleted,
+                          limited_graph=limited_graph)
         if not db_obj:
             LOG.debug('%(name)s %(id)s not found',
                       {'name': data_model._name(), 'id': id})
@@ -92,11 +94,13 @@ class BaseController(pecan_rest.RestController):
         listener_id = db_l7policy.listener_id
         return load_balancer_id, listener_id
 
-    def _get_db_pool(self, session, id, show_deleted=True):
+    def _get_db_pool(self, session, id, show_deleted=True,
+                     limited_graph=False):
         """Get a pool from the database."""
         return self._get_db_obj(session, self.repositories.pool,
                                 data_models.Pool, id,
-                                show_deleted=show_deleted)
+                                show_deleted=show_deleted,
+                                limited_graph=limited_graph)
 
     def _get_db_member(self, session, id, show_deleted=True):
         """Get a member from the database."""

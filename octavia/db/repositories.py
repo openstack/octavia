@@ -115,10 +115,19 @@ class BaseRepository:
         session.query(self.model_class).filter_by(
             id=id).update(model_kwargs)
 
-    def get(self, session, **filters):
+    def get(self, session, limited_graph=False, **filters):
         """Retrieves an entity from the database.
 
         :param session: A Sql Alchemy database session.
+        :param limited_graph: Option controls number of processed nodes
+                              in the graph. Default (with False) behaviour
+                              is recursion iteration through all nodes
+                              in the graph via to_data_model. With True value
+                              recursion will stop at the first child node.
+                              It means, that only limited number of nodes be
+                              converted. This logic could be used for specific
+                              cases, where information about full graph
+                              is unnecessary.
         :param filters: Filters to decide which entity should be retrieved.
         :returns: octavia.common.data_model
         """
@@ -138,16 +147,26 @@ class BaseRepository:
         if not model:
             return None
 
-        return model.to_data_model()
+        recursion_depth = 0 if limited_graph else None
+        return model.to_data_model(recursion_depth=recursion_depth)
 
     def get_all(self, session, pagination_helper=None,
-                query_options=None, **filters):
+                query_options=None, limited_graph=False, **filters):
 
         """Retrieves a list of entities from the database.
 
         :param session: A Sql Alchemy database session.
         :param pagination_helper: Helper to apply pagination and sorting.
         :param query_options: Optional query options to apply.
+        :param limited_graph: Option controls number of processed nodes
+                              in the graph. Default (with False) behaviour
+                              is recursion iteration through all nodes
+                              in the graph via to_data_model. With True value
+                              recursion will stop at the first child node.
+                              It means, that only limited number of nodes be
+                              converted. This logic could be used for specific
+                              cases, where information about full graph
+                              is unnecessary.
         :param filters: Filters to decide which entities should be retrieved.
         :returns: [octavia.common.data_model]
         """
@@ -170,8 +189,11 @@ class BaseRepository:
         else:
             links = None
             model_list = query.all()
-
-        data_model_list = [model.to_data_model() for model in model_list]
+        recursion_depth = 1 if limited_graph else None
+        data_model_list = [
+            model.to_data_model(recursion_depth=recursion_depth)
+            for model in model_list
+        ]
         return data_model_list, links
 
     def exists(self, session, id):
@@ -916,7 +938,8 @@ class PoolRepository(BaseRepository):
 class MemberRepository(BaseRepository):
     model_class = models.Member
 
-    def get_all_API_list(self, session, pagination_helper=None, **filters):
+    def get_all_API_list(self, session, pagination_helper=None,
+                         limited_graph=False, **filters):
         """Get a list of members for the API list call.
 
         This get_all returns a data set that is only one level deep
@@ -925,6 +948,8 @@ class MemberRepository(BaseRepository):
 
         :param session: A Sql Alchemy database session.
         :param pagination_helper: Helper to apply pagination and sorting.
+        :param limited_graph: Option to avoid recursion iteration through all
+                              nodes in the graph via to_data_model
         :param filters: Filters to decide which entities should be retrieved.
         :returns: [octavia.common.data_model]
         """
@@ -938,7 +963,8 @@ class MemberRepository(BaseRepository):
 
         return super().get_all(
             session, pagination_helper=pagination_helper,
-            query_options=query_options, **filters)
+            query_options=query_options, limited_graph=limited_graph,
+            **filters)
 
     def delete_members(self, session, member_ids):
         """Batch deletes members from a pool."""

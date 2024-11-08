@@ -11,6 +11,7 @@
 #    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 #    License for the specific language governing permissions and limitations
 #    under the License.
+from typing import Optional
 
 from wsme import types as wtypes
 
@@ -60,7 +61,8 @@ class OctaviaBase(models.ModelBase):
                     obj.load_balancer_id + obj.subnet_id)
         raise NotImplementedError
 
-    def to_data_model(self, _graph_nodes=None):
+    def to_data_model(
+            self, _graph_nodes=None, recursion_depth: Optional[int] = None):
         """Converts to a data model graph.
 
         In order to make the resulting data model graph usable no matter how
@@ -71,6 +73,13 @@ class OctaviaBase(models.ModelBase):
                              method. Should not be called from the outside.
                              Contains a dictionary of all OctaviaBase type
                              objects in the generated graph
+        :param recursion_depth: Used only for configuring recursion.
+                                This option allows to limit recursion depth.
+                                It could be used when we need only main node
+                                and its first level relationships.
+                                It allows to save time on recursion calls for
+                                huge graphs, when only main object is
+                                necessary.
         """
         _graph_nodes = _graph_nodes or {}
         if not self.__data_model__:
@@ -88,9 +97,16 @@ class OctaviaBase(models.ModelBase):
         dm_self = self.__data_model__(**dm_kwargs)
         dm_key = self._get_unique_key(dm_self)
         _graph_nodes.update({dm_key: dm_self})
+        new_depth = recursion_depth
+        need_recursion = recursion_depth is None or recursion_depth > 0
+        # decrease depth of recursion on new recursion call
+        if new_depth:
+            new_depth -= 1
         for attr_name in attr_names:
             attr = getattr(self, attr_name)
-            if isinstance(attr, OctaviaBase) and attr.__class__:
+            if (need_recursion and
+                    isinstance(attr, OctaviaBase) and
+                    attr.__class__):
                 # If this attr is already in the graph node list, just
                 # reference it there and don't recurse.
                 ukey = self._get_unique_key(attr)
@@ -98,18 +114,22 @@ class OctaviaBase(models.ModelBase):
                     setattr(dm_self, attr_name, _graph_nodes[ukey])
                 else:
                     setattr(dm_self, attr_name, attr.to_data_model(
-                        _graph_nodes=_graph_nodes))
+                        _graph_nodes=_graph_nodes,
+                        recursion_depth=new_depth))
             elif isinstance(attr, (collections.InstrumentedList, list)):
                 setattr(dm_self, attr_name, [])
                 listref = getattr(dm_self, attr_name)
                 for item in attr:
-                    if isinstance(item, OctaviaBase) and item.__class__:
+                    if (need_recursion and
+                            isinstance(item, OctaviaBase) and
+                            item.__class__):
                         ukey = self._get_unique_key(item)
                         if ukey in _graph_nodes.keys():
                             listref.append(_graph_nodes[ukey])
                         else:
                             listref.append(
-                                item.to_data_model(_graph_nodes=_graph_nodes))
+                                item.to_data_model(_graph_nodes=_graph_nodes,
+                                                   recursion_depth=new_depth))
                     elif not isinstance(item, OctaviaBase):
                         listref.append(item)
         return dm_self

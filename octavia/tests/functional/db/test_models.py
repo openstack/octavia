@@ -1049,6 +1049,7 @@ class TestDataModelConversionTest(base.OctaviaDBTestBase, ModelTestMixin):
         # Generate equivalent graphs starting arbitrarily from different
         # nodes within it; Make sure the resulting graphs all contain the
         # same number of nodes.
+        # check the default value for recursion_depth=None
         lb_dm = self.session.query(models.LoadBalancer).filter_by(
             id=self.lb.id).first().to_data_model()
         lb_graph_count = self.count_graph_nodes(lb_dm)
@@ -1062,6 +1063,82 @@ class TestDataModelConversionTest(base.OctaviaDBTestBase, ModelTestMixin):
         self.assertNotEqual(1, lb_graph_count)
         self.assertEqual(lb_graph_count, p_graph_count)
         self.assertEqual(lb_graph_count, mem_graph_count)
+
+    def _get_dms_for_recursion_depth(self, recursion_depth):
+        lb_dm = self.session.query(models.LoadBalancer).filter_by(
+            id=self.lb.id).first().to_data_model(
+            recursion_depth=recursion_depth)
+        p_dm = self.session.query(models.Pool).filter_by(
+            id=self.pool.id).first().to_data_model(
+            recursion_depth=recursion_depth)
+        mem_dm = self.session.query(models.Member).filter_by(
+            id=self.member.id).first().to_data_model(
+            recursion_depth=recursion_depth)
+        return lb_dm, p_dm, mem_dm
+
+    def _get_nodes_count_for_dms(self, lb_dm, p_dm, mem_dm):
+        return (
+            self.count_graph_nodes(lb_dm),
+            self.count_graph_nodes(p_dm),
+            self.count_graph_nodes(mem_dm),
+        )
+
+    def test_graph_completeness_with_recursion_depth_equal_zero(self):
+        lb_dm, p_dm, mem_dm = self._get_dms_for_recursion_depth(
+            recursion_depth=0
+        )
+        lb_graph_count, p_graph_count, mem_graph_count = (
+            self._get_nodes_count_for_dms(lb_dm, p_dm, mem_dm)
+        )
+        self.assertNotEqual(0, lb_graph_count)
+        # recursion_depth equal to 0 means, that only current node will be
+        # handled. there is no recursion
+        self.assertEqual(1, lb_graph_count)
+        self.assertEqual(1, p_graph_count)
+        self.assertEqual(1, mem_graph_count)
+
+    def test_graph_completeness_with_recursion_depth_equal_one(self):
+        lb_dm, p_dm, mem_dm = self._get_dms_for_recursion_depth(
+            recursion_depth=1
+        )
+        lb_graph_count, p_graph_count, mem_graph_count = (
+            self._get_nodes_count_for_dms(lb_dm, p_dm, mem_dm)
+        )
+        self.assertNotEqual(0, lb_graph_count)
+        self.assertNotEqual(1, lb_graph_count)
+        self.assertNotEqual(1, p_graph_count)
+        self.assertNotEqual(1, mem_graph_count)
+        # the nodes count is different for each node type
+        # due to different number of related nodes
+        self.assertEqual(5, lb_graph_count)
+        self.assertEqual(7, p_graph_count)
+        self.assertEqual(2, mem_graph_count)
+
+    def test_graph_completeness_with_recursion_depth_huge(self):
+        lb_dm, p_dm, mem_dm = self._get_dms_for_recursion_depth(
+            recursion_depth=10
+        )
+        lb_graph_count, p_graph_count, mem_graph_count = (
+            self._get_nodes_count_for_dms(lb_dm, p_dm, mem_dm)
+        )
+        # recursion_depth=None is default value, so it's equal to run without
+        # limit on recursion
+        lb_dm_none, p_dm_none, mem_dm_none = self._get_dms_for_recursion_depth(
+            recursion_depth=None
+        )
+        lb_graph_count_none, p_graph_count_none, mem_graph_count_none = (
+            self._get_nodes_count_for_dms(lb_dm_none, p_dm_none, mem_dm_none)
+        )
+        self.assertNotEqual(0, lb_graph_count)
+        self.assertNotEqual(1, lb_graph_count)
+        self.assertEqual(lb_graph_count, p_graph_count)
+        self.assertEqual(lb_graph_count, mem_graph_count)
+
+        # huge recursion_depth is enough to iterate through all nodes in graph
+        self.assertEqual(
+            (lb_graph_count, p_graph_count, mem_graph_count),
+            (lb_graph_count_none, p_graph_count_none, mem_graph_count_none)
+        )
 
     def test_data_model_graph_traversal(self):
         lb_dm = self.session.query(models.LoadBalancer).filter_by(
@@ -1084,6 +1161,51 @@ class TestDataModelConversionTest(base.OctaviaDBTestBase, ModelTestMixin):
                    listeners[0].sni_containers[0].listener.
                    load_balancer.pools[0].members[0].pool.load_balancer.id)
         self.assertEqual(lb_dm.id, m_lb_id)
+
+    def test_data_model_graph_traversal_with_recursion_depth_zero(self):
+        lb_dm, p_dm, mem_dm = self._get_dms_for_recursion_depth(
+            recursion_depth=0
+        )
+        # Traverse is not possible, because resources are not handled
+        # It happens, because there is no recursion
+        self.assertEqual([], lb_dm.listeners)
+        self.assertEqual([], lb_dm.pools)
+        self.assertIsNone(lb_dm.vip)
+        self.assertEqual([], lb_dm.amphorae)
+        # not inner objects for Pool
+        self.assertEqual([], p_dm.listeners)
+        self.assertIsNone(p_dm.load_balancer)
+        self.assertIsNone(p_dm.session_persistence)
+        self.assertIsNone(p_dm.health_monitor)
+        self.assertEqual([], p_dm.members)
+        self.assertEqual([], p_dm.l7policies)
+        # not inner objects for Member
+        self.assertIsNone(mem_dm.pool)
+
+    def test_data_model_graph_traversal_with_recursion_depth_one(self):
+        lb_dm, p_dm, mem_dm = self._get_dms_for_recursion_depth(
+            recursion_depth=1
+        )
+        # one hop resources are available for LB
+        self.assertEqual(1, len(lb_dm.listeners))
+        self.assertEqual(1, len(lb_dm.pools))
+        self.assertIsNotNone(lb_dm.vip)
+        self.assertEqual(1, len(lb_dm.amphorae))
+        # second hop resources are not available for LB
+        self.assertEqual([], lb_dm.pools[0].listeners)
+        # one hop resources are available for Pool
+        self.assertEqual(1, len(p_dm.listeners))
+        self.assertIsNotNone(p_dm.load_balancer)
+        self.assertIsNotNone(p_dm.session_persistence)
+        self.assertIsNotNone(p_dm.health_monitor)
+        self.assertEqual(1, len(p_dm.members))
+        self.assertEqual(1, len(p_dm.l7policies))
+        # second hop resources are not available for Pool
+        self.assertEqual([], p_dm.load_balancer.listeners)
+        # one hop resources are available for Member
+        self.assertIsNotNone(mem_dm.pool)
+        # second hop resources are not available for Member
+        self.assertEqual([], mem_dm.pool.listeners)
 
     def test_update_data_model_listener_default_pool_id(self):
         lb_dm = self.create_load_balancer(
