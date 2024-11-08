@@ -1,0 +1,5 @@
+---
+fixes:
+  - |
+    Fixed potential AttributeError during listener update when security group
+    rule had no protocol defined (ie. it was null).
