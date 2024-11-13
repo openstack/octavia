@@ -1,0 +1,4 @@
+---
+fixes:
+  - |
+    Fixed an issue when failing over load balancers using SR-IOV VIP ports.
