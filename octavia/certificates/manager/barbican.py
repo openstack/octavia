@@ -17,8 +17,9 @@
 """
 Cert manager implementation for Barbican using a single PKCS12 secret
 """
-from OpenSSL import crypto
-
+from cryptography.hazmat.primitives import serialization
+from cryptography.hazmat.primitives.serialization import pkcs12 as c_pkcs12
+from cryptography import x509
 from oslo_config import cfg
 from oslo_log import log as logging
 from oslo_utils import encodeutils
@@ -64,25 +65,29 @@ class BarbicanCertManager(cert_mgr.CertManager):
         connection = self.auth.get_barbican_client(context.project_id)
 
         LOG.info("Storing certificate secret '%s' in Barbican.", name)
-        p12 = crypto.PKCS12()
-        p12.set_friendlyname(encodeutils.to_utf8(name))
-        x509_cert = crypto.load_certificate(crypto.FILETYPE_PEM, certificate)
-        p12.set_certificate(x509_cert)
-        x509_pk = crypto.load_privatekey(crypto.FILETYPE_PEM, private_key)
-        p12.set_privatekey(x509_pk)
-        if intermediates:
-            cert_ints = list(cert_parser.get_intermediates_pems(intermediates))
-            x509_ints = [
-                crypto.load_certificate(crypto.FILETYPE_PEM, ci)
-                for ci in cert_ints]
-            p12.set_ca_certificates(x509_ints)
+
         if private_key_passphrase:
             raise exceptions.CertificateStorageException(
                 "Passphrase protected PKCS12 certificates are not supported.")
 
+        x509_cert = x509.load_pem_x509_certificate(certificate)
+        x509_pk = serialization.load_pem_private_key(private_key, None)
+        cas = None
+        if intermediates:
+            cert_ints = list(cert_parser.get_intermediates_pems(intermediates))
+            cas = [
+                x509.load_pem_x509_certificate(ci)
+                for ci in cert_ints]
+
         try:
             certificate_secret = connection.secrets.create(
-                payload=p12.export(),
+                payload=c_pkcs12.serialize_key_and_certificates(
+                    name=encodeutils.safe_encode(name),
+                    key=x509_pk,
+                    cert=x509_cert,
+                    cas=cas,
+                    encryption_algorithm=serialization.NoEncryption()
+                ),
                 expiration=expiration,
                 name=name
             )

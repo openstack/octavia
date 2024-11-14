@@ -18,7 +18,7 @@ Common classes for pkcs12 based certificate handling
 """
 
 from cryptography.hazmat.primitives import serialization
-from OpenSSL import crypto
+from cryptography.hazmat.primitives.serialization import pkcs12
 
 from octavia.certificates.common import cert
 from octavia.common import exceptions
@@ -28,21 +28,21 @@ class PKCS12Cert(cert.Cert):
     """Representation of a Cert for local storage."""
     def __init__(self, certbag):
         try:
-            p12 = crypto.load_pkcs12(certbag)
-        except crypto.Error as e:
+            p12 = pkcs12.load_pkcs12(certbag, None)
+        except (TypeError, ValueError) as e:
             raise exceptions.UnreadablePKCS12(error=str(e))
-        self.certificate = p12.get_certificate()
-        self.intermediates = p12.get_ca_certificates()
-        self.private_key = p12.get_privatekey()
+        self.certificate = p12.cert
+        self.intermediates = p12.additional_certs
+        self.private_key = p12.key
 
     def get_certificate(self):
-        return self.certificate.to_cryptography().public_bytes(
+        return self.certificate.certificate.public_bytes(
             encoding=serialization.Encoding.PEM).strip()
 
     def get_intermediates(self):
         if self.intermediates:
             int_data = [
-                ic.to_cryptography().public_bytes(
+                ic.certificate.public_bytes(
                     encoding=serialization.Encoding.PEM).strip()
                 for ic in self.intermediates
             ]
@@ -50,7 +50,7 @@ class PKCS12Cert(cert.Cert):
         return None
 
     def get_private_key(self):
-        return self.private_key.to_cryptography_key().private_bytes(
+        return self.private_key.private_bytes(
             encoding=serialization.Encoding.PEM,
             format=serialization.PrivateFormat.TraditionalOpenSSL,
             encryption_algorithm=serialization.NoEncryption()).strip()
