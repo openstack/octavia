@@ -201,6 +201,15 @@ class KeepalivedLvs(lvs_listener_base.LvsListenerApiServerBase):
                             f"{listener_id}"),
                 'details': e.output}, status=500)
 
+        is_vrrp = (CONF.controller_worker.loadbalancer_topology ==
+                   consts.TOPOLOGY_ACTIVE_STANDBY)
+        # TODO(gthiemonge) remove RESTART from the list (same as previous todo
+        # in this function)
+        if not is_vrrp and action in [consts.AMP_ACTION_START,
+                                      consts.AMP_ACTION_RESTART,
+                                      consts.AMP_ACTION_RELOAD]:
+            util.send_vip_advertisements(listener_id=listener_id)
+
         return webob.Response(
             json={'message': 'OK',
                   'details': (f'keepalivedlvs listener {listener_id} '
