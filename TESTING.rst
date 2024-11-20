@@ -28,12 +28,12 @@ To run the full suite of tests maintained within Octavia.
 
 
 To run tests for one or more specific test environments(for example, the most
-common configuration of Python 3.8 and PEP-8), list the environments with the
+common configuration of Python 3 and PEP-8), list the environments with the
 ``-e`` option, separated by spaces:
 
 .. code-block:: bash
 
-    $ tox -e py38,pep8
+    $ tox -e py3,pep8
 
 See ``tox -l`` for the full list of available test environments.
 
