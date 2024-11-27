@@ -59,35 +59,6 @@ class HackingTestCase(base.BaseTestCase):
     def assertLineFails(self, func, *args):
         self.assertIsInstance(next(func(*args)), tuple)
 
-    def test_assert_true_instance(self):
-        self.assertEqual(1, len(list(checks.assert_true_instance(
-            "self.assertTrue(isinstance(e, "
-            "exception.BuildAbortException))"))))
-
-        self.assertEqual(0, len(list(checks.assert_true_instance(
-            "self.assertTrue()"))))
-
-    def test_assert_equal_or_not_none(self):
-        self.assertEqual(1, len(list(checks.assert_equal_or_not_none(
-            "self.assertEqual(A, None)"))))
-
-        self.assertEqual(1, len(list(checks.assert_equal_or_not_none(
-            "self.assertEqual(None, A)"))))
-
-        self.assertEqual(1, len(list(checks.assert_equal_or_not_none(
-            "self.assertNotEqual(A, None)"))))
-
-        self.assertEqual(1, len(list(checks.assert_equal_or_not_none(
-            "self.assertNotEqual(None, A)"))))
-
-        self.assertEqual(0,
-                         len(list(checks.assert_equal_or_not_none(
-                             "self.assertIsNone()"))))
-
-        self.assertEqual(0,
-                         len(list(checks.assert_equal_or_not_none(
-                             "self.assertIsNotNone()"))))
-
     def test_no_mutable_default_args(self):
         self.assertEqual(0, len(list(checks.no_mutable_default_args(
             "def foo (bar):"))))
@@ -95,43 +66,6 @@ class HackingTestCase(base.BaseTestCase):
             "def foo (bar=[]):"))))
         self.assertEqual(1, len(list(checks.no_mutable_default_args(
             "def foo (bar={}):"))))
-
-    def test_assert_equal_in(self):
-        self.assertEqual(1, len(list(checks.assert_equal_in(
-            "self.assertEqual(a in b, True)"))))
-
-        self.assertEqual(1, len(list(checks.assert_equal_in(
-            "self.assertEqual('str' in 'string', True)"))))
-
-        self.assertEqual(0, len(list(checks.assert_equal_in(
-            "self.assertEqual(any(a==1 for a in b), True)"))))
-
-        self.assertEqual(1, len(list(checks.assert_equal_in(
-            "self.assertEqual(True, a in b)"))))
-
-        self.assertEqual(1, len(list(checks.assert_equal_in(
-            "self.assertEqual(True, 'str' in 'string')"))))
-
-        self.assertEqual(0, len(list(checks.assert_equal_in(
-            "self.assertEqual(True, any(a==1 for a in b))"))))
-
-        self.assertEqual(1, len(list(checks.assert_equal_in(
-            "self.assertEqual(a in b, False)"))))
-
-        self.assertEqual(1, len(list(checks.assert_equal_in(
-            "self.assertEqual('str' in 'string', False)"))))
-
-        self.assertEqual(0, len(list(checks.assert_equal_in(
-            "self.assertEqual(any(a==1 for a in b), False)"))))
-
-        self.assertEqual(1, len(list(checks.assert_equal_in(
-            "self.assertEqual(False, a in b)"))))
-
-        self.assertEqual(1, len(list(checks.assert_equal_in(
-            "self.assertEqual(False, 'str' in 'string')"))))
-
-        self.assertEqual(0, len(list(checks.assert_equal_in(
-            "self.assertEqual(False, any(a==1 for a in b))"))))
 
     def test_assert_equal_true_or_false(self):
         self.assertEqual(1, len(list(checks.assert_equal_true_or_false(
