@@ -2803,7 +2803,7 @@ class TestListener(base.BaseAPITest):
         cert = data_models.TLSContainer(certificate='cert')
         mock_cert_data.return_value = {'tls_cert': cert}
         port = 1
-        all_esds = constants.L4_ESD_POLICIES + constants.L7_ESD_POLICIES
+        all_esds = constants.ALL_ESD_POLICIES
         for listener_proto, esds in constants.VALID_LISTENER_ESD_MAP.items():
             invalid_esds = set(all_esds) - set(esds)
             if not invalid_esds:
@@ -2854,7 +2854,7 @@ class TestListener(base.BaseAPITest):
         cert = data_models.TLSContainer(certificate='cert')
         mock_cert_data.return_value = {'tls_cert': cert}
         port = 1
-        all_esds = constants.L4_ESD_POLICIES + constants.L7_ESD_POLICIES
+        all_esds = constants.ALL_ESD_POLICIES
         for listener_proto, esds in constants.VALID_LISTENER_ESD_MAP.items():
             invalid_esds = set(all_esds) - set(esds)
             if not invalid_esds:

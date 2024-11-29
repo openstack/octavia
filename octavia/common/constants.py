@@ -222,18 +222,23 @@ VALID_LISTENER_POOL_PROTOCOL_MAP = {
     lib_consts.PROTOCOL_SCTP: [lib_consts.PROTOCOL_SCTP],
     lib_consts.PROTOCOL_PROMETHEUS: []}
 
-L4_ESD_POLICIES = ['proxy_protocol_2edF_v1_0', 'proxy_protocol_V2_e8f6_v1_0',
-                   'standard_tcp_a3de_v1_0']
+L4_ESD_POLICIES = ['proxy_protocol_2edF_v1_0', 'proxy_protocol_V2_e8f6_v1_0']
+L4_ESD_TCP_POLICIES = ['ccloud_special_fastl4_noaging',
+                       'ccloud_special_tcp_mirror', 'standard_tcp_a3de_v1_0']
+L4_ESD_UDP_POLICIES = ['ccloud_special_udp_stateless']
 L7_ESD_POLICIES = ['x_forward_5b6e_v1_0', 'one_connect_dd5c_v1_0',
                    'no_one_connect_3caB_v1_0', 'http_compression_e4a2_v1_0',
                    'cookie_encryption_b82a_v1_0', 'sso_22b0_v1_0',
-                   'sso_required_f544_v1_0', 'http_redirect_a26c_v1_0']
+                   'sso_required_f544_v1_0', 'http_redirect_a26c_v1_0',
+                   'ccloud_special_xfh_override']
+ALL_ESD_POLICIES = (L4_ESD_POLICIES + L4_ESD_UDP_POLICIES +
+                    L7_ESD_POLICIES + L4_ESD_TCP_POLICIES)
 VALID_LISTENER_ESD_MAP = {
-    PROTOCOL_TCP: L4_ESD_POLICIES,
+    PROTOCOL_TCP: L4_ESD_POLICIES + L4_ESD_TCP_POLICIES,
     PROTOCOL_HTTP: L4_ESD_POLICIES + L7_ESD_POLICIES,
     PROTOCOL_HTTPS: L4_ESD_POLICIES,
     PROTOCOL_TERMINATED_HTTPS: L4_ESD_POLICIES + L7_ESD_POLICIES,
-    PROTOCOL_UDP: [],
+    PROTOCOL_UDP: L4_ESD_UDP_POLICIES,
     lib_consts.PROTOCOL_SCTP: [],
     lib_consts.PROTOCOL_PROMETHEUS: [],
 }

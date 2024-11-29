@@ -126,8 +126,7 @@ class ListenersController(base.BaseController):
 
     def _validate_listener_tags(self, listener_protocol, listener_tags):
         for tag in listener_tags:
-            if tag in constants.L4_ESD_POLICIES or \
-                    tag in constants.L7_ESD_POLICIES:
+            if tag in constants.ALL_ESD_POLICIES:
                 self._validate_esd_policy(listener_protocol, tag)
 
     def _has_tls_container_refs(self, listener_dict):
