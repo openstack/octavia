@@ -33,6 +33,7 @@ from octavia.common import data_models
 from octavia.common import exceptions
 from octavia.common import utils
 from octavia.i18n import _
+from octavia_lib.common import constants as lib_consts
 
 if typing.TYPE_CHECKING:
     from octavia.common import context
@@ -608,3 +609,14 @@ def check_hsts_options_put(listener: _ListenerPUT,
         raise exceptions.ValidationException(
             detail=_('The HSTS feature can only be used for listeners using '
                      'the TERMINATED_HTTPS protocol.'))
+
+
+def check_alpn_protocols_and_listener_protocol_conflicts(alpn,
+                                                         listener_with_tls):
+    if not alpn:
+        return
+
+    if lib_consts.ALPN_PROTOCOL_HTTP_2 in alpn and not listener_with_tls:
+        raise exceptions.ValidationException(
+            detail=_('ALPN protocol "h2" cannot be used with non HTTPs '
+                     'listeners'))

@@ -2597,6 +2597,22 @@ class TestListener(base.BaseAPITest):
 
     # TODO(johnsom) Fix this when there is a noop certificate manager
     @mock.patch('octavia.common.tls_utils.cert_parser.load_certificates_data')
+    def test_create_with_alpn_and_conflict_protocol(self, mock_cert_data):
+        req_dict = {'protocol': constants.PROTOCOL_HTTP,
+                    'protocol_port': 80,
+                    'loadbalancer_id': self.lb_id,
+                    'alpn_protocols': [lib_consts.ALPN_PROTOCOL_HTTP_1_1,
+                                       lib_consts.ALPN_PROTOCOL_HTTP_2]}
+        res = self.post(self.LISTENERS_PATH, self._build_body(req_dict),
+                        status=400)
+        fault = res.json['faultstring']
+        self.assertIn(
+            'Validation failure: ALPN protocol "h2" cannot be used with '
+            'non HTTPs listeners', fault)
+        self.assert_correct_status(lb_id=self.lb_id)
+
+    # TODO(johnsom) Fix this when there is a noop certificate manager
+    @mock.patch('octavia.common.tls_utils.cert_parser.load_certificates_data')
     def test_create_with_alpn_negative(self, mock_cert_data):
         cert1 = data_models.TLSContainer(certificate='cert 1')
         mock_cert_data.return_value = {'tls_cert': cert1}

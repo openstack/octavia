@@ -348,6 +348,8 @@ class ListenersController(base.BaseController):
             validate.check_alpn_protocols(listener_dict['alpn_protocols'])
 
         validate.check_hsts_options(listener_dict)
+        validate.check_alpn_protocols_and_listener_protocol_conflicts(
+            listener_dict.get('alpn_protocols', []), _can_tls_offload)
 
         try:
             db_listener = self.repositories.listener.create(
@@ -594,6 +596,9 @@ class ListenersController(base.BaseController):
         if listener.alpn_protocols is not wtypes.Unset:
             # Validate ALPN protocol list
             validate.check_alpn_protocols(listener.alpn_protocols)
+            # Validate ALPN conflicts with listener protocols
+            validate.check_alpn_protocols_and_listener_protocol_conflicts(
+                listener.alpn_protocols, _can_tls_offload)
 
         validate.check_hsts_options_put(listener, db_listener)
 
