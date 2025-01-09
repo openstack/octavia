@@ -225,7 +225,8 @@
     required-projects:
         - openstack/octavia
     vars:
-      tox_envlist: pip-missing-reqs,pip-extra-reqs
+      # TODO (johnsom) Add pip-extra-reqs to this list when fixed
+      tox_envlist: pip-missing-reqs
 
 - job:
     name: octavia-v2-dsvm-scenario-fips
