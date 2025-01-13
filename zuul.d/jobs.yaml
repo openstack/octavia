@@ -9,14 +9,14 @@
         - openstack/octavia-lib
 
 - job:
-    name: publish-openstack-octavia-amphora-image-jammy
+    name: publish-openstack-octavia-amphora-image-noble
     parent: publish-openstack-octavia-amphora-image
-    nodeset: ubuntu-jammy
+    nodeset: ubuntu-noble
     description: |
-      Publish Ubuntu Jammy (22.04) based amphora image to tarballs.o.o.
+      Publish Ubuntu Noble (22.04) based amphora image to tarballs.o.o.
     vars:
         amphora_os: ubuntu
-        amphora_os_release: jammy
+        amphora_os_release: Noble
 
 - job:
     name: publish-openstack-octavia-amphora-image-centos-9-stream
@@ -31,7 +31,7 @@
 - job:
     name: octavia-grenade
     parent: grenade
-    nodeset: octavia-single-node-ubuntu-jammy
+    nodeset: octavia-single-node-ubuntu-noble
     required-projects: &o-grenade-required-projects
       - opendev.org/openstack/grenade
       - opendev.org/openstack/octavia
@@ -83,7 +83,7 @@
       Grenade job that skips a release, validating that deployers can skip
       specific releases as prescribed by our process.
     parent: grenade-skip-level
-    nodeset: octavia-single-node-ubuntu-jammy
+    nodeset: octavia-single-node-ubuntu-noble
     required-projects: *o-grenade-required-projects
     vars: *o-grenade-vars
 
@@ -172,17 +172,17 @@
         - openstack/octavia-lib
     vars:
         amphora_os: ubuntu
-        amphora_os_release: jammy
+        amphora_os_release: noble
 
 - job:
-    name: octavia-amphora-image-build-live-jammy
+    name: octavia-amphora-image-build-live-noble
     parent: octavia-amphora-image-build
     description: |
-      Builds an Ubuntu Jammy amphora image using diskimage-builder from Git
+      Builds an Ubuntu Noble amphora image using diskimage-builder from Git
       master. This job does not publish the image.
     vars:
         amphora_os: ubuntu
-        amphora_os_release: jammy
+        amphora_os_release: noble
 
 - job:
     name: octavia-amphora-image-build-live-centos-9-stream
@@ -258,3 +258,15 @@
         OCTAVIA_AMP_DISTRIBUTION_RELEASE_ID: 9-stream
         OCTAVIA_AMP_IMAGE_SIZE: 3
         OCTAVIA_AMP_ENABLE_FIPS: True
+
+- job:
+    name: octavia-v2-dsvm-scenario-traffic-ops-ubuntu-jammy
+    parent: octavia-v2-dsvm-scenario-ubuntu-jammy
+    vars:
+      tempest_test_regex: ^octavia_tempest_plugin.tests.scenario.v2.*traffic_ops
+
+- job:
+    name: octavia-v2-dsvm-scenario-non-traffic-ops-ubuntu-jammy
+    parent: octavia-v2-dsvm-scenario-ubuntu-jammy
+    vars:
+      tempest_test_regex: ^octavia_tempest_plugin.tests.scenario.v2.(?!.*traffic_ops)

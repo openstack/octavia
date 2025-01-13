@@ -46,6 +46,10 @@
             irrelevant-files: *irrelevant-files
         - octavia-v2-dsvm-scenario-non-traffic-ops:
             irrelevant-files: *irrelevant-files
+        - octavia-v2-dsvm-scenario-traffic-ops-ubuntu-jammy:
+            irrelevant-files: *irrelevant-files
+        - octavia-v2-dsvm-scenario-non-traffic-ops-ubuntu-jammy:
+            irrelevant-files: *irrelevant-files
         - octavia-v2-dsvm-scenario-traffic-ops-jobboard:
             irrelevant-files: *irrelevant-files
         - octavia-v2-dsvm-scenario-non-traffic-ops-jobboard:
@@ -107,12 +111,14 @@
         - octavia-v2-dsvm-noop-api
         - octavia-v2-dsvm-scenario-traffic-ops
         - octavia-v2-dsvm-scenario-non-traffic-ops
+        - octavia-v2-dsvm-scenario-traffic-ops-ubuntu-jammy
+        - octavia-v2-dsvm-scenario-non-traffic-ops-ubuntu-jammy
         - octavia-v2-dsvm-tls-barbican
         - octavia-grenade
         #- octavia-grenade-skip-level
     periodic:
       jobs:
-        - publish-openstack-octavia-amphora-image-jammy:
+        - publish-openstack-octavia-amphora-image-noble:
             branches:
               regex: ^stable/.*$
               negate: true
