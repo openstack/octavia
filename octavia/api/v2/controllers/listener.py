@@ -587,13 +587,13 @@ class ListenersController(base.BaseController):
                               + CONF.api_settings.tls_cipher_allow_list
                 raise exceptions.ValidationException(detail=detail)
 
-        if listener.tls_versions is not wtypes.Unset:
+        if (listener.tls_versions and listener.tls_versions != wtypes.Unset):
             # Validate TLS version list
             validate.check_tls_version_list(listener.tls_versions)
             # Validate TLS versions against minimum
             validate.check_tls_version_min(listener.tls_versions)
 
-        if listener.alpn_protocols is not wtypes.Unset:
+        if (listener.alpn_protocols and listener.alpn_protocols != wtypes.Unset):
             # Validate ALPN protocol list
             validate.check_alpn_protocols(listener.alpn_protocols)
             # Validate ALPN conflicts with listener protocols
