@@ -32,7 +32,16 @@ class TestNoopNetworkDriver(base.TestCase):
 
     def setUp(self):
         super().setUp()
-        self.driver = driver.NoopNetworkDriver()
+        self.mock_engine = mock.MagicMock()
+        with mock.patch('octavia.network.drivers.noop_driver.driver.'
+                        'create_engine') as mock_create_engine:
+            mock_create_engine.return_value = self.mock_engine
+            with mock.patch('octavia.network.drivers.noop_driver.'
+                            'driver.event'):
+                self.driver = driver.NoopNetworkDriver()
+            mock_create_engine.assert_called_once_with(
+                'sqlite:////tmp/octavia-network-noop.db')
+
         self.port = mock.MagicMock()
         self.port_id = 88
         self.port_name = 'port1'
@@ -123,6 +132,7 @@ class TestNoopNetworkDriver(base.TestCase):
     def test_plug_unplug_and_get_plugged_networks(self):
         amphora = mock.MagicMock()
         amphora.compute_id = uuidutils.generate_uuid()
+
         network = self.driver.plug_network(amphora.compute_id,
                                            self.network_id)
         self.assertEqual(
@@ -134,7 +144,20 @@ class TestNoopNetworkDriver(base.TestCase):
                 fixed_ips=[],
                 port_id=mock.ANY
             ))
+
+        connect_mock = mock.MagicMock()
+        connection_mock = mock.MagicMock()
+        self.mock_engine.connect.return_value = connect_mock
+        connect_mock.__enter__.return_value = connection_mock
+
+        mock_interface = mock.MagicMock()
+        mock_interface.compute_id = amphora.compute_id
+        mock_interface.network_id = self.network_id
+        mock_interface.port_id = '1'
+        connection_mock.execute.side_effect = [[mock_interface], [], []]
+
         networks = self.driver.get_plugged_networks(amphora.compute_id)
+
         self.assertEqual(
             networks,
             [network_models.Interface(

@@ -16,6 +16,12 @@ from collections import namedtuple
 
 from oslo_log import log as logging
 from oslo_utils import uuidutils
+from sqlalchemy import Column
+from sqlalchemy import create_engine
+from sqlalchemy import MetaData
+from sqlalchemy import String
+from sqlalchemy import Table
+from sqlalchemy import update
 
 from octavia.common import constants
 from octavia.common import data_models
@@ -32,6 +38,20 @@ class NoopManager:
     def __init__(self):
         super().__init__()
         self.computeconfig = {}
+
+        # Get a DB engine for the network no-op DB
+        # Required to update the ports when a port is attached to a compute
+        self.engine = create_engine('sqlite:////tmp/octavia-network-noop.db',
+                                    isolation_level='SERIALIZABLE')
+        metadata_obj = MetaData()
+
+        self.interfaces_table = Table(
+            'interfaces',
+            metadata_obj,
+            Column('port_id', String(36)),
+            Column('network_id', String(36)),
+            Column('compute_id', String(36)),
+            Column('vnic_type', String(6)))
 
     def build(self, name="amphora_name", amphora_flavor=None,
               image_tag=None, image_owner=None, key_name=None, sec_groups=None,
@@ -97,12 +117,21 @@ class NoopManager:
         self.computeconfig[(compute_id, network_id, ip_address, port_id)] = (
             compute_id, network_id, ip_address, port_id,
             'attach_network_or_port')
+
+        # Update the port in the network no-op DB
+        with self.engine.connect() as connection:
+            connection.execute(update(self.interfaces_table).where(
+                self.interfaces_table.c.port_id == port_id).values(
+                    compute_id=compute_id))
+            connection.commit()
+
+        # TODO(johnsom) Add vnic_type here
         return network_models.Interface(
             id=uuidutils.generate_uuid(),
             compute_id=compute_id,
             network_id=network_id,
             fixed_ips=[],
-            port_id=uuidutils.generate_uuid()
+            port_id=uuidutils.generate_uuid(),
         )
 
     def detach_port(self, compute_id, port_id):
