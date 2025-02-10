@@ -1,0 +1,7 @@
+---
+fixes:
+  - |
+    Fixed an issue with SINGLE topology load balancer with UDP listeners, the
+    Amphora now sends a Gratuitous ARP packet when a UDP pool is added, it
+    makes the VIP address more quickly reachable after a failover or when
+    reusing a previously allocated IP address.
