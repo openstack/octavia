@@ -508,6 +508,14 @@ class Vip(base_models.BASE):
     octavia_owned = sa.Column(sa.Boolean(), nullable=True)
     vnic_type = sa.Column(sa.String(64), nullable=True)
 
+    sgs = orm.relationship(
+        "VipSecurityGroup", cascade="all,delete-orphan",
+        uselist=True, backref=orm.backref("vip", uselist=False))
+
+    @property
+    def sg_ids(self) -> list[str]:
+        return [sg.sg_id for sg in self.sgs]
+
 
 class AdditionalVip(base_models.BASE):
 
@@ -976,3 +984,19 @@ class ListenerCidr(base_models.BASE):
         sa.ForeignKey("listener.id", name="fk_listener_cidr_listener_id"),
         nullable=False)
     cidr = sa.Column(sa.String(64), nullable=False)
+
+
+class VipSecurityGroup(base_models.BASE):
+
+    __data_model__ = data_models.VipSecurityGroup
+
+    __tablename__ = "vip_security_group"
+    __table_args__ = (
+        sa.PrimaryKeyConstraint('load_balancer_id', 'sg_id'),
+    )
+
+    load_balancer_id = sa.Column(
+        sa.String(36),
+        sa.ForeignKey("vip.load_balancer_id", name="fk_vip_sg_vip_lb_id"),
+        nullable=False)
+    sg_id = sa.Column(sa.String(64), nullable=False)

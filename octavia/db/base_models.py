@@ -59,6 +59,8 @@ class OctaviaBase(models.ModelBase):
         if obj.__class__.__name__ in ['AdditionalVip']:
             return (obj.__class__.__name__ +
                     obj.load_balancer_id + obj.subnet_id)
+        if obj.__class__.__name__ in ['VipSecurityGroup']:
+            return obj.__class__.__name__ + obj.load_balancer_id + obj.sg_id
         raise NotImplementedError
 
     def to_data_model(

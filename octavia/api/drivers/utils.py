@@ -16,6 +16,7 @@ import copy
 
 from octavia_lib.api.drivers import data_models as driver_dm
 from octavia_lib.api.drivers import exceptions as lib_exceptions
+from octavia_lib.common import constants as lib_consts
 from oslo_config import cfg
 from oslo_context import context as oslo_context
 from oslo_log import log as logging
@@ -130,6 +131,7 @@ def lb_dict_to_provider_dict(lb_dict, vip=None, add_vips=None, db_pools=None,
         new_lb_dict['vip_port_id'] = vip.port_id
         new_lb_dict['vip_subnet_id'] = vip.subnet_id
         new_lb_dict['vip_qos_policy_id'] = vip.qos_policy_id
+        new_lb_dict[lib_consts.VIP_SG_IDS] = vip.sg_ids
     if 'flavor_id' in lb_dict and lb_dict['flavor_id']:
         flavor_repo = repositories.FlavorRepository()
         session = db_api.get_session()
@@ -565,6 +567,8 @@ def vip_dict_to_provider_dict(vip_dict):
         new_vip_dict['vip_subnet_id'] = vip_dict['subnet_id']
     if 'qos_policy_id' in vip_dict:
         new_vip_dict['vip_qos_policy_id'] = vip_dict['qos_policy_id']
+    if constants.SG_IDS in vip_dict:
+        new_vip_dict[lib_consts.VIP_SG_IDS] = vip_dict[constants.SG_IDS]
     if constants.OCTAVIA_OWNED in vip_dict:
         new_vip_dict[constants.OCTAVIA_OWNED] = vip_dict[
             constants.OCTAVIA_OWNED]
@@ -596,6 +600,8 @@ def provider_vip_dict_to_vip_obj(vip_dictionary):
         vip_obj.subnet_id = vip_dictionary['vip_subnet_id']
     if 'vip_qos_policy_id' in vip_dictionary:
         vip_obj.qos_policy_id = vip_dictionary['vip_qos_policy_id']
+    if lib_consts.VIP_SG_IDS in vip_dictionary:
+        vip_obj.sg_ids = vip_dictionary[lib_consts.VIP_SG_IDS]
     if constants.OCTAVIA_OWNED in vip_dictionary:
         vip_obj.octavia_owned = vip_dictionary[constants.OCTAVIA_OWNED]
     return vip_obj

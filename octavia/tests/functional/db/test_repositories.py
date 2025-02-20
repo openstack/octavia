@@ -173,7 +173,7 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
                'subnet_id': uuidutils.generate_uuid(),
                'network_id': uuidutils.generate_uuid(),
                'qos_policy_id': None, 'octavia_owned': True,
-               'vnic_type': None}
+               'vnic_type': None, 'sgs': []}
         additional_vips = [{'subnet_id': uuidutils.generate_uuid(),
                             'ip_address': '192.0.2.2'}]
         lb_dm = self.repos.create_load_balancer_and_vip(self.session, lb, vip,
@@ -192,7 +192,107 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
         vip_dm_dict = lb_dm.vip.to_dict()
         vip_dm_dict['load_balancer_id'] = lb_dm.id
         del vip_dm_dict['load_balancer']
+        vip['sg_ids'] = []
         self.assertEqual(vip, vip_dm_dict)
+
+        ret = self.repos.load_balancer.get(self.session, id=lb_dm.id)
+        print(ret.vip.port_id)
+        ret = self.repos.vip.get(self.session, load_balancer_id=lb_dm.id)
+        print(ret.port_id)
+
+    def test_create_load_balancer_and_update_vip(self):
+        lb = {'name': 'test1', 'description': 'desc1', 'enabled': True,
+              'provisioning_status': constants.PENDING_UPDATE,
+              'operating_status': constants.OFFLINE,
+              'topology': constants.TOPOLOGY_ACTIVE_STANDBY,
+              'vrrp_group': None,
+              'provider': 'amphora',
+              'server_group_id': uuidutils.generate_uuid(),
+              'project_id': uuidutils.generate_uuid(),
+              'id': uuidutils.generate_uuid(), 'flavor_id': None,
+              'tags': ['test_tag']}
+        vip = {'ip_address': '192.0.2.1',
+               'port_id': uuidutils.generate_uuid(),
+               'subnet_id': uuidutils.generate_uuid(),
+               'network_id': uuidutils.generate_uuid(),
+               'qos_policy_id': None, 'octavia_owned': True,
+               'vnic_type': None, 'sgs': []}
+        additional_vips = [{'subnet_id': uuidutils.generate_uuid(),
+                            'ip_address': '192.0.2.2'}]
+        lb_dm = self.repos.create_load_balancer_and_vip(self.session, lb, vip,
+                                                        additional_vips)
+        self.session.commit()
+
+        vip_dm_dict = lb_dm.vip.to_dict()
+        self.assertEqual(0, len(vip_dm_dict["sg_ids"]))
+
+        vip_update = {
+            'port_id': uuidutils.generate_uuid(),
+        }
+        self.repos.vip.update(self.session, lb_dm.id, **vip_update)
+        self.session.expire_all()
+        self.session.flush()
+        self.session.commit()
+
+        updated_vip_dm = self.repos.vip.get(self.session,
+                                            load_balancer_id=lb_dm.id)
+        self.assertEqual(vip_update['port_id'], updated_vip_dm.port_id)
+
+    def test_create_load_balancer_and_update_vip_sg_ids(self):
+        lb = {'name': 'test1', 'description': 'desc1', 'enabled': True,
+              'provisioning_status': constants.PENDING_UPDATE,
+              'operating_status': constants.OFFLINE,
+              'topology': constants.TOPOLOGY_ACTIVE_STANDBY,
+              'vrrp_group': None,
+              'provider': 'amphora',
+              'server_group_id': uuidutils.generate_uuid(),
+              'project_id': uuidutils.generate_uuid(),
+              'id': uuidutils.generate_uuid(), 'flavor_id': None,
+              'tags': ['test_tag']}
+        vip = {'ip_address': '192.0.2.1',
+               'port_id': uuidutils.generate_uuid(),
+               'subnet_id': uuidutils.generate_uuid(),
+               'network_id': uuidutils.generate_uuid(),
+               'qos_policy_id': None, 'octavia_owned': True,
+               'vnic_type': None, 'sgs': []}
+        additional_vips = [{'subnet_id': uuidutils.generate_uuid(),
+                            'ip_address': '192.0.2.2'}]
+        lb_dm = self.repos.create_load_balancer_and_vip(self.session, lb, vip,
+                                                        additional_vips)
+        self.session.commit()
+
+        vip_dm_dict = lb_dm.vip.to_dict()
+        self.assertEqual(0, len(vip_dm_dict["sg_ids"]))
+
+        vip_update = {
+            'sg_ids': [uuidutils.generate_uuid(),
+                       uuidutils.generate_uuid()],
+        }
+        self.repos.vip.update(self.session, lb_dm.id, **vip_update)
+        self.session.commit()
+
+        updated_vip_dm = self.repos.vip.get(self.session,
+                                            load_balancer_id=lb_dm.id)
+        self.assertEqual(2, len(vip_update['sg_ids']))
+        self.assertIn(vip_update['sg_ids'][0], updated_vip_dm.sg_ids)
+        self.assertIn(vip_update['sg_ids'][1], updated_vip_dm.sg_ids)
+
+        vip_update['sg_ids'] = [uuidutils.generate_uuid()]
+        self.repos.vip.update(self.session, lb_dm.id, **vip_update)
+        self.session.commit()
+
+        updated_vip_dm = self.repos.vip.get(self.session,
+                                            load_balancer_id=lb_dm.id)
+        self.assertEqual(1, len(vip_update['sg_ids']))
+        self.assertIn(vip_update['sg_ids'][0], updated_vip_dm.sg_ids)
+
+        vip_update['sg_ids'] = []
+        self.repos.vip.update(self.session, lb_dm.id, **vip_update)
+        self.session.commit()
+
+        updated_vip_dm = self.repos.vip.get(self.session,
+                                            load_balancer_id=lb_dm.id)
+        self.assertEqual(0, len(vip_update['sg_ids']))
 
     def test_create_pool_on_listener_without_sp(self):
         pool = {'protocol': constants.PROTOCOL_HTTP, 'name': 'pool1',
@@ -3583,6 +3683,31 @@ class VipRepositoryTest(BaseRepositoryTest):
         new_vip = self.vip_repo.get(self.session,
                                     load_balancer_id=vip.load_balancer_id)
         self.assertEqual(address_change, new_vip.ip_address)
+
+    def test_update_sg_ids(self):
+        sg1_id = uuidutils.generate_uuid()
+        sg2_id = uuidutils.generate_uuid()
+        vip = self.create_vip(self.lb.id)
+        self.vip_repo.update(self.session, vip.load_balancer_id,
+                             sg_ids=[sg1_id, sg2_id])
+        new_vip = self.vip_repo.get(self.session,
+                                    load_balancer_id=vip.load_balancer_id)
+        self.assertIn(sg1_id, new_vip.sg_ids)
+        self.assertIn(sg2_id, new_vip.sg_ids)
+
+        self.vip_repo.update(self.session, vip.load_balancer_id,
+                             sg_ids=[sg1_id])
+        new_vip = self.vip_repo.get(self.session,
+                                    load_balancer_id=vip.load_balancer_id)
+        self.assertIn(sg1_id, new_vip.sg_ids)
+        self.assertNotIn(sg2_id, new_vip.sg_ids)
+
+        self.vip_repo.update(self.session, vip.load_balancer_id,
+                             sg_ids=[])
+        new_vip = self.vip_repo.get(self.session,
+                                    load_balancer_id=vip.load_balancer_id)
+        self.assertNotIn(sg1_id, new_vip.sg_ids)
+        self.assertNotIn(sg2_id, new_vip.sg_ids)
 
     def test_delete(self):
         vip = self.create_vip(self.lb.id)
