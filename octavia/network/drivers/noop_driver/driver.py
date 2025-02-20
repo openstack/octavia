@@ -12,6 +12,8 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
+import typing
+
 from oslo_log import log as logging
 from oslo_utils import uuidutils
 
@@ -19,6 +21,9 @@ from octavia.common import constants
 from octavia.common import data_models
 from octavia.network import base as driver_base
 from octavia.network import data_models as network_models
+
+if typing.TYPE_CHECKING:
+    from octavia.common import context
 
 LOG = logging.getLogger(__name__)
 
@@ -227,6 +232,14 @@ class NoopManager:
         port = network_models.Port(id=port_id)
         _NOOP_MANAGER_VARS['ports'][port_id] = port
         return port
+
+    def get_security_group_by_id(self, sg_id: str,
+                                 context: 'context.RequestContext' = None) -> (
+            'network_models.SecurityGroup'):
+        LOG.debug("Network %s no-op, get_security_group_by_id %s",
+                  self.__class__.__name__, sg_id)
+        self.networkconfigconfig[sg_id] = (sg_id, 'get_security_group_by_id')
+        return network_models.SecurityGroup(id=sg_id)
 
     def get_network_by_name(self, network_name):
         LOG.debug("Network %s no-op, get_network_by_name network_name %s",
@@ -474,6 +487,11 @@ class NoopNetworkDriver(driver_base.AbstractNetworkDriver):
 
     def get_port(self, port_id, context=None):
         return self.driver.get_port(port_id)
+
+    def get_security_group_by_id(self, sg_id: str,
+                                 context: 'context.RequestContext' = None) -> (
+            'network_models.SecurityGroup'):
+        return self.driver.get_security_group_by_id(sg_id, context=context)
 
     def get_qos_policy(self, qos_policy_id):
         return self.driver.get_qos_policy(qos_policy_id)

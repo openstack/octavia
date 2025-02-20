@@ -12,6 +12,8 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import typing
+
 from openstack.connection import Connection
 import openstack.exceptions as os_exceptions
 from openstack.network.v2._proxy import Proxy
@@ -24,6 +26,9 @@ from octavia.i18n import _
 from octavia.network import base
 from octavia.network import data_models as network_models
 from octavia.network.drivers.neutron import utils
+
+if typing.TYPE_CHECKING:
+    from octavia.common import context
 
 LOG = logging.getLogger(__name__)
 DNS_INT_EXT_ALIAS = 'dns-integration'
@@ -251,6 +256,11 @@ class BaseNeutronDriver(base.AbstractNetworkDriver):
 
     def get_port(self, port_id, context=None):
         return self._get_resource('port', port_id, context=context)
+
+    def get_security_group_by_id(self, sg_id: str,
+                                 context: 'context.RequestContext' = None) -> (
+            'network_models.SecurityGroup'):
+        return self._get_resource('security_group', sg_id, context=context)
 
     def get_network_by_name(self, network_name):
         return self._get_resources_by_filters(
