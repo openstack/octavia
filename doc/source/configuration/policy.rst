@@ -191,8 +191,8 @@ configuration file::
     enforce_new_defaults = True
 
 When the new default policies are enabled in the Octavia API, users with the
-load-balancer:observer role will also require the Keystone default role of
-"role:reader". Users with the load-balancer:member role will also require
+load-balancer_observer role will also require the Keystone default role of
+"role:reader". Users with the load-balancer_member role will also require
 the Keystone default role of "role:member".
 
 Sample File Generation
