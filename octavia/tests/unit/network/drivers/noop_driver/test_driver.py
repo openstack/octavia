@@ -104,6 +104,14 @@ class TestNoopNetworkDriver(base.TestCase):
                          self.driver.driver.networkconfigconfig[(
                              self.load_balancer.id, self.vip.ip_address)])
 
+    def test_update_aap_port_sg(self):
+        self.driver.update_aap_port_sg(self.load_balancer, self.amphora1,
+                                       self.vip)
+        self.assertEqual((self.load_balancer, self.vip, self.amphora1,
+                          'update_aap_port_sg'),
+                         self.driver.driver.networkconfigconfig[(
+                             self.amphora1.id, self.vip.ip_address)])
+
     def test_unplug_vip(self):
         self.driver.unplug_vip(self.load_balancer, self.vip)
         self.assertEqual((self.load_balancer, self.vip,

@@ -85,28 +85,28 @@ class TestBaseNeutronNetworkDriver(base.TestCase):
         self.driver.network_proxy.update_port.assert_has_calls([
             mock.call(t_constants.MOCK_PORT_ID, **expected_aap_dict)])
 
-    def test__add_security_group_to_port(self):
-        self.driver._add_security_group_to_port(
-            t_constants.MOCK_SECURITY_GROUP_ID, t_constants.MOCK_PORT_ID)
+    def test__update_security_groups(self):
+        self.driver._update_security_groups(
+            [t_constants.MOCK_SECURITY_GROUP_ID], t_constants.MOCK_PORT_ID)
         expected_sg_dict = {
             'security_groups': [
                 t_constants.MOCK_SECURITY_GROUP_ID]}
         self.driver.network_proxy.update_port.assert_has_calls([
             mock.call(t_constants.MOCK_PORT_ID, **expected_sg_dict)])
 
-    def test__add_security_group_to_port_with_port_not_found(self):
+    def test__update_security_groups_with_port_not_found(self):
         self.driver.network_proxy.update_port.side_effect = (
             os_exceptions.ResourceNotFound)
         self.assertRaises(
             network_base.PortNotFound,
-            self.driver._add_security_group_to_port,
+            self.driver._update_security_groups,
             t_constants.MOCK_SECURITY_GROUP_ID, t_constants.MOCK_PORT_ID)
 
-    def test__add_security_group_to_port_with_other_exception(self):
+    def test__update_security_groups_with_other_exception(self):
         self.driver.network_proxy.update_port.side_effect = IOError
         self.assertRaises(
             network_base.NetworkException,
-            self.driver._add_security_group_to_port,
+            self.driver._update_security_groups,
             t_constants.MOCK_SECURITY_GROUP_ID, t_constants.MOCK_PORT_ID)
 
     def test__get_ports_by_security_group(self):

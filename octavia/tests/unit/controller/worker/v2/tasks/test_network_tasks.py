@@ -1677,7 +1677,8 @@ class TestNetworkTasks(base.TestCase):
         vip_dict = {constants.IP_ADDRESS: VIP_IP_ADDRESS,
                     constants.NETWORK_ID: VIP_NETWORK_ID,
                     constants.QOS_POLICY_ID: VIP_QOS_ID,
-                    constants.SUBNET_ID: VIP_SUBNET_ID}
+                    constants.SUBNET_ID: VIP_SUBNET_ID,
+                    constants.SG_IDS: []}
         port_mock = mock.MagicMock()
         port_mock.id = PORT_ID
         additional_vips = [{constants.IP_ADDRESS: VIP_IP_ADDRESS2}]

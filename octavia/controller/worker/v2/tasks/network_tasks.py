@@ -497,6 +497,20 @@ class UpdateVIPSecurityGroup(BaseNetworkTask):
         return sg_id
 
 
+class UpdateAmphoraSecurityGroup(BaseNetworkTask):
+    """Task to update SGs for an Amphora."""
+
+    def execute(self, loadbalancer_id: str):
+        session = db_apis.get_session()
+        with session.begin():
+            db_lb = self.loadbalancer_repo.get(
+                session, id=loadbalancer_id)
+        for amp in db_lb.amphorae:
+            self.network_driver.update_aap_port_sg(db_lb,
+                                                   amp,
+                                                   db_lb.vip)
+
+
 class GetSubnetFromVIP(BaseNetworkTask):
     """Task to plumb a VIP."""
 
@@ -968,16 +982,21 @@ class CreateVIPBasePort(BaseNetworkTask):
     def execute(self, vip, vip_sg_id, amphora_id, additional_vips):
         port_name = constants.AMP_BASE_PORT_PREFIX + amphora_id
         fixed_ips = [{constants.SUBNET_ID: vip[constants.SUBNET_ID]}]
-        sg_id = []
+        sg_ids = []
+        # NOTE(gthiemonge) clarification:
+        # - vip_sg_id is the ID of the SG created and managed by Octavia.
+        # - vip['sg_ids'] are the IDs of the SGs provided by the user.
         if vip_sg_id:
-            sg_id = [vip_sg_id]
+            sg_ids = [vip_sg_id]
+        if vip["sg_ids"]:
+            sg_ids += vip["sg_ids"]
         secondary_ips = [vip[constants.IP_ADDRESS]]
         for add_vip in additional_vips:
             secondary_ips.append(add_vip[constants.IP_ADDRESS])
         port = self.network_driver.create_port(
             vip[constants.NETWORK_ID], name=port_name, fixed_ips=fixed_ips,
             secondary_ips=secondary_ips,
-            security_group_ids=sg_id,
+            security_group_ids=sg_ids,
             qos_policy_id=vip[constants.QOS_POLICY_ID])
         LOG.info('Created port %s with ID %s for amphora %s',
                  port_name, port.id, amphora_id)

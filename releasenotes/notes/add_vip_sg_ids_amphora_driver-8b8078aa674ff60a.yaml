@@ -1,0 +1,10 @@
+---
+features:
+  - |
+    Add the vip_sg_ids parameter to the Amphora driver, a list of Neutron
+    Security Groups. When set, the Amphora driver applies the Security Groups to
+    the VIP port of the Load Balancer. It also doesn't set any Security Group
+    Rules related to the Listeners on this ports, however it adds Security
+    Groups Rules for VRRP and haproxy peers when needed.
+    This feature does not work with SR-IOV ports as Neutron does not support
+    Security Groups on these ports.

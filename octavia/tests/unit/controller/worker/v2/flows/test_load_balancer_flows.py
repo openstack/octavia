@@ -197,8 +197,9 @@ class TestLoadBalancerFlows(base.TestCase):
 
         self.assertIn(constants.LOADBALANCER, lb_flow.requires)
         self.assertIn(constants.UPDATE_DICT, lb_flow.requires)
+        self.assertIn(constants.VIP_SG_ID, lb_flow.provides)
 
-        self.assertEqual(0, len(lb_flow.provides))
+        self.assertEqual(1, len(lb_flow.provides))
         self.assertEqual(3, len(lb_flow.requires))
 
     @mock.patch('octavia.common.rpc.NOTIFIER',
