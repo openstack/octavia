@@ -11,6 +11,7 @@
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 #    License for the specific language governing permissions and limitations
 #    under the License.
+from unittest import mock
 
 from oslo_utils import uuidutils
 
@@ -28,7 +29,14 @@ class TestNoopComputeDriver(base.TestCase):
 
     def setUp(self):
         super().setUp()
-        self.driver = driver.NoopComputeDriver()
+        self.mock_engine = mock.MagicMock()
+        with mock.patch('octavia.compute.drivers.noop_driver.driver.'
+                        'create_engine') as mock_create_engine:
+            mock_create_engine.return_value = self.mock_engine
+            self.driver = driver.NoopComputeDriver()
+            mock_create_engine.assert_called_once_with(
+                'sqlite:////tmp/octavia-network-noop.db',
+                isolation_level='SERIALIZABLE')
 
         self.name = "amphora_name"
         self.amphora_flavor = "m1.tiny"
@@ -107,7 +115,15 @@ class TestNoopComputeDriver(base.TestCase):
                          self.driver.driver.computeconfig[
                              self.server_group_id])
 
-    def test_attach_network_or_port(self):
+    @mock.patch('octavia.compute.drivers.noop_driver.driver.update')
+    def test_attach_network_or_port(self, mock_update):
+        update_mock = mock.MagicMock()
+        mock_update.return_value = update_mock
+        connect_mock = mock.MagicMock()
+        connection_mock = mock.MagicMock()
+        self.mock_engine.connect.return_value = connect_mock
+        connect_mock.__enter__.return_value = connection_mock
+
         self.driver.attach_network_or_port(self.amphora_id, self.network_id,
                                            self.ip_address, self.port_id)
         self.assertEqual((self.amphora_id, self.network_id, self.ip_address,
@@ -115,6 +131,16 @@ class TestNoopComputeDriver(base.TestCase):
                          self.driver.driver.computeconfig[(
                              self.amphora_id, self.network_id,
                              self.ip_address, self.port_id)])
+
+        self.mock_engine.connect.assert_called_once()
+        interfaces_table = self.driver.driver.interfaces_table
+        connection_mock.assert_has_calls([
+            mock.call.execute(
+                update_mock.where(
+                    interfaces_table.c.port_id == self.port_id).values(
+                        compute_id=self.amphora_id)),
+            mock.call.commit()])
+        connect_mock.__enter__.assert_called_once()
 
     def test_detach_port(self):
         self.driver.detach_port(self.amphora_id, self.port_id)
