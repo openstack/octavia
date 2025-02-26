@@ -176,7 +176,8 @@ class ListenerFlows:
 
         fw_rules_subflow.add(
             amphora_driver_tasks.AmphoraeGetConnectivityStatus(
-                name=constants.AMPHORAE_GET_CONNECTIVITY_STATUS,
+                name=(sf_name + '-' +
+                      constants.AMPHORAE_GET_CONNECTIVITY_STATUS),
                 requires=constants.AMPHORAE,
                 inject={constants.TIMEOUT_DICT: timeout_dict,
                         constants.NEW_AMPHORA_ID: constants.NIL_UUID},

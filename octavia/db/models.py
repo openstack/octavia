@@ -229,6 +229,7 @@ class Member(base_models.BASE, base_models.IdMixin, base_models.ProjectMixin,
         nullable=False)
     enabled = sa.Column(sa.Boolean(), nullable=False)
     pool = orm.relationship("Pool", back_populates="members")
+    vnic_type = sa.Column(sa.String(64), nullable=True)
 
     _tags = orm.relationship(
         'Tags',
@@ -246,7 +247,7 @@ class Member(base_models.BASE, base_models.IdMixin, base_models.ProjectMixin,
                 f"ip_address={self.ip_address!r}, "
                 f"protocol_port={self.protocol_port!r}, "
                 f"operating_status={self.operating_status!r}, "
-                f"weight={self.weight!r})")
+                f"weight={self.weight!r}, vnic_type={self.vnic_type!r})")
 
 
 class HealthMonitor(base_models.BASE, base_models.IdMixin,
@@ -1000,3 +1001,20 @@ class VipSecurityGroup(base_models.BASE):
         sa.ForeignKey("vip.load_balancer_id", name="fk_vip_sg_vip_lb_id"),
         nullable=False)
     sg_id = sa.Column(sa.String(64), nullable=False)
+
+
+class AmphoraMemberPort(base_models.BASE, models.TimestampMixin):
+
+    __data_model__ = data_models.AmphoraMemberPort
+
+    __tablename__ = "amphora_member_port"
+
+    port_id = sa.Column(
+        sa.String(36),
+        primary_key=True)
+    amphora_id = sa.Column(
+        sa.String(36),
+        sa.ForeignKey("amphora.id", name="fk_member_port_amphora_id"),
+        nullable=False)
+    network_id = sa.Column(
+        sa.String(36))

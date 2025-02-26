@@ -1,0 +1,9 @@
+---
+features:
+  - |
+    Octavia Amphora based load balancers now support using SR-IOV virtual
+    functions (VF) on the member ports.
+upgrade:
+  - |
+    You must update the amphora image to support the SR-IOV member port
+    feature.

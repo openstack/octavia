@@ -780,7 +780,8 @@ class TestHaproxyAmphoraLoadBalancerDriverTest(base.TestCase):
         self.driver.clients[API_VERSION].plug_network.assert_called_once_with(
             self.amp, dict(mac_address=FAKE_MAC_ADDRESS,
                            fixed_ips=[],
-                           mtu=FAKE_MTU))
+                           mtu=FAKE_MTU,
+                           is_sriov=False))
 
         self.driver.clients[API_VERSION].plug_network.reset_mock()
 
@@ -792,7 +793,7 @@ class TestHaproxyAmphoraLoadBalancerDriverTest(base.TestCase):
                                            subnet_cidr='198.51.100.0/24',
                                            host_routes=[],
                                            gateway=FAKE_GATEWAY)],
-                           mtu=FAKE_MTU))
+                           mtu=FAKE_MTU, is_sriov=False))
 
         self.driver.clients[API_VERSION].plug_network.reset_mock()
 
@@ -819,7 +820,7 @@ class TestHaproxyAmphoraLoadBalancerDriverTest(base.TestCase):
                                additional_vips=[],
                                mtu=FAKE_MTU,
                                is_sriov=False
-                           )))
+                           ), is_sriov=False))
 
     def test_post_network_plug_with_host_routes(self):
         SUBNET_ID = 'SUBNET_ID'
@@ -859,7 +860,8 @@ class TestHaproxyAmphoraLoadBalancerDriverTest(base.TestCase):
         self.driver.clients[API_VERSION].plug_network.assert_called_once_with(
             self.amp, dict(mac_address=FAKE_MAC_ADDRESS,
                            fixed_ips=expected_fixed_ips,
-                           mtu=FAKE_MTU))
+                           mtu=FAKE_MTU,
+                           is_sriov=False))
 
     def test_get_haproxy_versions(self):
         ref_haproxy_versions = ['1', '6']

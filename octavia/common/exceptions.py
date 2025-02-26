@@ -435,3 +435,8 @@ class AmphoraNetworkConfigException(OctaviaException):
 class ListenerNoChildren(APIException):
     msg = _('Protocol %(protocol)s listeners cannot have child objects.')
     code = 400
+
+
+class MemberSRIOVDisabled(APIException):
+    msg = _('The load balancer flavor does not allow SR-IOV member ports.')
+    code = 400

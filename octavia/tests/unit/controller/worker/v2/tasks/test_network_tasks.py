@@ -334,6 +334,7 @@ class TestNetworkTasks(base.TestCase):
         mock_driver.reset_mock()
         member_mock = mock.MagicMock()
         member_mock.subnet_id = member_private_subnet.id
+        member_mock.vnic_type = constants.VNIC_TYPE_NORMAL
         member2_mock = mock.MagicMock()
         member2_mock.subnet_id = member_private_subnet2.id
         pool_mock.members = [member_mock]
@@ -351,7 +352,8 @@ class TestNetworkTasks(base.TestCase):
                     network_id=3,
                     fixed_ips=[
                         data_models.FixedIP(
-                            subnet_id=member_private_subnet.id)])],
+                            subnet_id=member_private_subnet.id)],
+                    vnic_type=constants.VNIC_TYPE_NORMAL)],
             delete_nics=[],
             add_subnets=[{
                 'subnet_id': member_private_subnet.id,
@@ -431,6 +433,7 @@ class TestNetworkTasks(base.TestCase):
         mock_driver.reset_mock()
         member_mock = mock.MagicMock()
         member_mock.subnet_id = member_private_subnet.id
+        member_mock.vnic_type = constants.VNIC_TYPE_NORMAL
         pool_mock.members = [member_mock]
         az = {
             constants.COMPUTE_ZONE: 'foo'
@@ -451,7 +454,8 @@ class TestNetworkTasks(base.TestCase):
             add_nics=[data_models.Interface(
                 network_id=member_private_net.id,
                 fixed_ips=[data_models.FixedIP(
-                    subnet_id=member_private_subnet.id)])],
+                    subnet_id=member_private_subnet.id)],
+                vnic_type=constants.VNIC_TYPE_NORMAL)],
             delete_nics=[data_models.Interface(network_id='bad_net')],
             add_subnets=[{
                 'subnet_id': member_private_subnet.id,
@@ -611,63 +615,6 @@ class TestNetworkTasks(base.TestCase):
         mock_driver.get_plugged_networks.assert_called_once_with(
             COMPUTE_ID)
 
-    def test_plug_networks(self, mock_get_net_driver):
-        mock_driver = mock.MagicMock()
-        mock_get_net_driver.return_value = mock_driver
-
-        def _interface(network_id):
-            return [data_models.Interface(network_id=network_id)]
-
-        net = network_tasks.PlugNetworks()
-
-        net.execute(self.amphora_mock, None)
-        self.assertFalse(mock_driver.plug_network.called)
-
-        delta = data_models.Delta(amphora_id=self.db_amphora_mock.id,
-                                  compute_id=self.db_amphora_mock.compute_id,
-                                  add_nics=[],
-                                  delete_nics=[]).to_dict(recurse=True)
-        net.execute(self.amphora_mock, delta)
-        self.assertFalse(mock_driver.plug_network.called)
-
-        delta = data_models.Delta(amphora_id=self.db_amphora_mock.id,
-                                  compute_id=self.db_amphora_mock.compute_id,
-                                  add_nics=_interface(1),
-                                  delete_nics=[]).to_dict(recurse=True)
-        net.execute(self.amphora_mock, delta)
-        mock_driver.plug_network.assert_called_once_with(COMPUTE_ID, 1)
-
-        # revert
-        net.revert(self.amphora_mock, None)
-        self.assertFalse(mock_driver.unplug_network.called)
-
-        delta = data_models.Delta(amphora_id=self.db_amphora_mock.id,
-                                  compute_id=self.db_amphora_mock.compute_id,
-                                  add_nics=[],
-                                  delete_nics=[]).to_dict(recurse=True)
-        net.revert(self.amphora_mock, delta)
-        self.assertFalse(mock_driver.unplug_network.called)
-
-        delta = data_models.Delta(amphora_id=self.db_amphora_mock.id,
-                                  compute_id=self.db_amphora_mock.compute_id,
-                                  add_nics=_interface(1),
-                                  delete_nics=[]).to_dict(recurse=True)
-        net.revert(self.amphora_mock, delta)
-        mock_driver.unplug_network.assert_called_once_with(COMPUTE_ID, 1)
-
-        mock_driver.reset_mock()
-        mock_driver.unplug_network.side_effect = net_base.NetworkNotFound
-        net.revert(self.amphora_mock, delta)  # No exception
-        mock_driver.unplug_network.assert_called_once_with(COMPUTE_ID, 1)
-
-        mock_driver.reset_mock()
-        mock_driver.unplug_network.side_effect = TestException('test')
-        self.assertRaises(TestException,
-                          net.revert,
-                          self.amphora_mock,
-                          delta)
-        mock_driver.unplug_network.assert_called_once_with(COMPUTE_ID, 1)
-
     def test_unplug_networks(self, mock_get_net_driver):
         mock_driver = mock.MagicMock()
         mock_get_net_driver.return_value = mock_driver
@@ -755,6 +702,7 @@ class TestNetworkTasks(base.TestCase):
         nic1.fixed_ips = [data_models.FixedIP(
             subnet_id=uuidutils.generate_uuid())]
         nic1.network_id = uuidutils.generate_uuid()
+        nic1.nic_type = constants.VNIC_TYPE_NORMAL
         nic2 = data_models.Interface()
         nic2.fixed_ips = [data_models.FixedIP(
             subnet_id=uuidutils.generate_uuid())]
@@ -779,8 +727,18 @@ class TestNetworkTasks(base.TestCase):
                                   delete_subnets=[]
                                   ).to_dict(recurse=True)
 
-        mock_net_driver.plug_network.return_value = interface1
-        mock_net_driver.get_port.return_value = port1
+        mock_net_driver.plug_port.side_effect = [
+            interface1,
+            exceptions.NotFound(resource='Instance', id='1'),
+            exceptions.NotFound(resource='Boom', id='1'),
+            Exception("boom")]
+        mock_net_driver.create_port.side_effect = [
+            port1,
+            port1,
+            exceptions.NotFound(resource='Network', id='1'),
+            port1,
+            port1]
+
         fixed_port1 = mock.MagicMock()
         fixed_port1.network_id = port1.network_id
         fixed_port1.fixed_ips = [fixed_ip]
@@ -795,19 +753,33 @@ class TestNetworkTasks(base.TestCase):
         result = handle_net_delta_obj.execute(self.amphora_mock,
                                               delta)
 
-        mock_net_driver.plug_network.assert_called_once_with(
-            self.db_amphora_mock.compute_id, nic1.network_id)
-        mock_net_driver.unplug_fixed_ip.assert_called_once_with(
-            port_id=interface1.port_id, subnet_id=fixed_ip2.subnet_id)
-        mock_net_driver.get_port.assert_called_once_with(interface1.port_id)
+        mock_net_driver.plug_port.assert_called_once_with(
+            self.db_amphora_mock, port1)
         mock_net_driver.get_network.assert_called_once_with(port1.network_id)
-        mock_net_driver.get_subnet.assert_called_once_with(fixed_ip.subnet_id)
+        mock_net_driver.get_subnet.assert_has_calls(
+            [mock.call(fixed_ip.subnet_id), mock.call(fixed_ip2.subnet_id)])
 
-        self.assertEqual({self.db_amphora_mock.id: [fixed_port1.to_dict()]},
+        self.assertEqual({self.db_amphora_mock.id: [port1.to_dict()]},
                          result)
 
         mock_net_driver.unplug_network.assert_called_with(
             self.db_amphora_mock.compute_id, nic2.network_id)
+
+        self.assertRaises(net_base.AmphoraNotFound,
+                          handle_net_delta_obj.execute, self.amphora_mock,
+                          delta)
+
+        self.assertRaises(net_base.NetworkNotFound,
+                          handle_net_delta_obj.execute, self.amphora_mock,
+                          delta)
+
+        self.assertRaises(net_base.PlugNetworkException,
+                          handle_net_delta_obj.execute, self.amphora_mock,
+                          delta)
+
+        self.assertRaises(net_base.PlugNetworkException,
+                          handle_net_delta_obj.execute, self.amphora_mock,
+                          delta)
 
         # Revert
         delta2 = data_models.Delta(amphora_id=self.db_amphora_mock.id,
@@ -857,12 +829,13 @@ class TestNetworkTasks(base.TestCase):
                 port_id=port_id,
                 fixed_ips=[
                     data_models.FixedIP(
-                        subnet_id=subnet_id)])
+                        subnet_id=subnet_id)],
+                vnic_type=constants.VNIC_TYPE_NORMAL)
 
         net = network_tasks.HandleNetworkDeltas()
 
         net.execute({}, self.load_balancer_mock)
-        self.assertFalse(mock_driver.plug_network.called)
+        self.assertFalse(mock_driver.create_port.called)
 
         delta = data_models.Delta(amphora_id=self.db_amphora_mock.id,
                                   compute_id=self.db_amphora_mock.compute_id,
@@ -871,7 +844,7 @@ class TestNetworkTasks(base.TestCase):
                                   add_subnets=[],
                                   delete_subnets=[]).to_dict(recurse=True)
         net.execute({self.db_amphora_mock.id: delta}, self.load_balancer_mock)
-        self.assertFalse(mock_driver.plug_network.called)
+        self.assertFalse(mock_driver.create_port.called)
 
         # Adding a subnet on a new network
         port = data_models.Port(
@@ -879,7 +852,7 @@ class TestNetworkTasks(base.TestCase):
             network_id=network1,
             fixed_ips=[
                 data_models.FixedIP(subnet_id=subnet1)])
-        mock_driver.get_port.return_value = port
+        mock_driver.create_port.return_value = port
         mock_driver.plug_fixed_ip.return_value = port
         mock_driver.get_network.return_value = data_models.Network(
             id=network1)
@@ -900,8 +873,8 @@ class TestNetworkTasks(base.TestCase):
                                   delete_subnets=[]).to_dict(recurse=True)
         updated_ports = net.execute({self.db_amphora_mock.id: delta},
                                     self.load_balancer_mock)
-        mock_driver.plug_network.assert_called_once_with(
-            self.db_amphora_mock.compute_id, network1)
+        mock_driver.plug_port.assert_called_once_with(
+            self.db_amphora_mock, port)
         mock_driver.unplug_network.assert_not_called()
 
         self.assertEqual(1, len(updated_ports))
@@ -949,7 +922,6 @@ class TestNetworkTasks(base.TestCase):
                                   delete_subnets=[]).to_dict(recurse=True)
         updated_ports = net.execute({self.db_amphora_mock.id: delta},
                                     self.load_balancer_mock)
-        mock_driver.plug_network.assert_not_called()
         mock_driver.unplug_network.assert_not_called()
         mock_driver.get_port.assert_not_called()
         mock_driver.plug_fixed_ip.assert_called_once_with(port_id=port1,
@@ -989,7 +961,6 @@ class TestNetworkTasks(base.TestCase):
         updated_ports = net.execute({self.db_amphora_mock.id: delta},
                                     self.load_balancer_mock)
         mock_driver.delete_port.assert_not_called()
-        mock_driver.plug_network.assert_not_called()
         mock_driver.plug_fixed_ip.assert_not_called()
         mock_driver.unplug_fixed_ip.assert_called_once_with(
             port_id=port1, subnet_id=subnet1)
@@ -1014,7 +985,6 @@ class TestNetworkTasks(base.TestCase):
         net.execute({self.db_amphora_mock.id: delta},
                     self.load_balancer_mock)
         mock_driver.delete_port.assert_not_called()
-        mock_driver.plug_network.assert_not_called()
         mock_driver.plug_fixed_ip.assert_not_called()
         mock_driver.unplug_fixed_ip.assert_not_called()
 
@@ -1043,7 +1013,6 @@ class TestNetworkTasks(base.TestCase):
         updated_ports = net.execute({self.db_amphora_mock.id: delta},
                                     self.load_balancer_mock)
         mock_driver.delete_port.assert_called_once_with(port1)
-        mock_driver.plug_network.assert_not_called()
         mock_driver.plug_fixed_ip.assert_not_called()
         self.assertEqual(1, len(updated_ports))
         self.assertEqual(0, len(updated_ports[self.db_amphora_mock.id]))

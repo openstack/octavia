@@ -16,7 +16,8 @@
             "protocol_port": 80,
             "id": "957a1ace-1bd2-449b-8455-820b6e4b63f3",
             "operating_status": "NO_MONITOR",
-            "tags": ["test_tag"]
+            "tags": ["test_tag"],
+	    "vnic_type": "normal"
         }
     ]
 }

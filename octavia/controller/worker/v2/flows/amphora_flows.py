@@ -207,6 +207,9 @@ class AmphoraFlows:
             name=constants.DELETE_AMPHORA + '-' + amphora_id,
             inject={constants.AMPHORA: amphora,
                     constants.PASSIVE_FAILURE: True}))
+        delete_amphora_flow.add(network_tasks.DeleteAmphoraMemberPorts(
+            name=constants.DELETE_AMPHORA_MEMBER_PORTS + '-' + amphora_id,
+            inject={constants.AMPHORA_ID: amphora[constants.ID]}))
         delete_amphora_flow.add(database_tasks.DisableAmphoraHealthMonitoring(
             name=constants.DISABLE_AMP_HEALTH_MONITORING + '-' + amphora_id,
             inject={constants.AMPHORA: amphora}))
@@ -219,11 +222,6 @@ class AmphoraFlows:
                       str(amphora[constants.VRRP_PORT_ID])),
                 inject={constants.PORT_ID: amphora[constants.VRRP_PORT_ID],
                         constants.PASSIVE_FAILURE: True}))
-        # TODO(johnsom) What about cleaning up any member ports?
-        # maybe we should get the list of attached ports prior to delete
-        # and call delete on them here. Fix this as part of
-        # https://storyboard.openstack.org/#!/story/2007077
-
         return delete_amphora_flow
 
     def get_vrrp_subflow(self, prefix, timeout_dict=None,

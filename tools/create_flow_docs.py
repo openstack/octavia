@@ -17,6 +17,7 @@
 import argparse
 import importlib
 import os
+from unittest.mock import patch
 
 import graphviz
 from taskflow import engines
@@ -94,11 +95,19 @@ def generate(flow_list, output_directory):
                          {constants.POOL_ID:
                           '08ada7a2-3eff-42c6-bdd8-b6f2ecd73358'}]
                 lb = dmh.generate_load_balancer()
-                if 'v2' in current_tuple[0]:
-                    lb = utils.lb_dict_to_provider_dict(lb.to_dict())
-                    delete_flow = get_flow_method(lb, listeners, pools)
-                else:
-                    delete_flow, store = get_flow_method(lb)
+                with patch('octavia.db.repositories.AmphoraRepository.'
+                           'get_amphorae_ids_on_lb',
+                           return_value=[
+                               'a9aa2b0b-0442-471e-b400-e04847e3ef1f']):
+                    with patch('octavia.db.repositories.'
+                               'AmphoraMemberPortRepository.get_port_ids',
+                               return_value=[
+                                   '6e03e9ad-726a-46ee-90e0-1cad753ba1b0']):
+                        if 'v2' in current_tuple[0]:
+                            lb = utils.lb_dict_to_provider_dict(lb.to_dict())
+                            delete_flow = get_flow_method(lb, listeners, pools)
+                        else:
+                            delete_flow, store = get_flow_method(lb)
                 current_engine = engines.load(delete_flow)
             elif (current_tuple[1] == 'LoadBalancerFlows' and
                     current_tuple[2] == 'get_failover_LB_flow'):

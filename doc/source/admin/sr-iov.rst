@@ -83,8 +83,19 @@ Octavia flavor that will use the compute flavor.
 
 .. code-block:: bash
 
-   $ openstack loadbalancer flavorprofile create --name amphora-sriov-profile --provider amphora --flavor-data '{"compute_flavor": "amphora-sriov-flavor", "sriov_vip": true}'
+   $ openstack loadbalancer flavorprofile create --name amphora-sriov-profile --provider amphora --flavor-data '{"compute_flavor": "amphora-sriov-flavor", "sriov_vip": true, "allow_member_sriov": true}'
    $ openstack loadbalancer flavor create --name SRIOV-public-members --flavorprofile amphora-sriov-profile --description "A load balancer that uses SR-IOV for the 'public' network and 'members' network." --enable
+
+When the `allow_member_sriov` Octavia flavor setting is true, users can request
+Octavia to attach the member ports using SR-IOV VFs. If Octavia is not able to
+successfully attach the member port as an SR-IOV VF, the member will be marked
+as `provisioning_status` of `ERROR` as we could not acquire a networking port
+for the requested member network. If the member network is already attached
+using a non-SR-IOV port, the member will also be marked with
+`provisioning_status` of `ERROR`.
+
+.. note::
+   By default, both `sriov_vip` and `allow_member_sriov` are false.
 
 Building the Amphora Image
 ~~~~~~~~~~~~~~~~~~~~~~~~~~

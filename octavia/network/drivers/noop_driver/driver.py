@@ -198,37 +198,15 @@ class NoopManager:
                                   vip.ip_address)] = (vip, amphora, subnet,
                                                       'unplug_aap_port')
 
-    def plug_network(self, compute_id, network_id):
-        LOG.debug("Network %s no-op, plug_network compute_id %s, network_id "
-                  "%s", self.__class__.__name__, compute_id,
-                  network_id)
-        self.networkconfigconfig[(compute_id, network_id)] = (
-            compute_id, network_id, 'plug_network')
-        interface = network_models.Interface(
-            id=uuidutils.generate_uuid(),
-            compute_id=compute_id,
-            network_id=network_id,
-            fixed_ips=[],
-            port_id=uuidutils.generate_uuid()
-        )
-        _NOOP_MANAGER_VARS['ports'][interface.port_id] = (
-            network_models.Port(
-                id=interface.port_id,
-                network_id=network_id))
-        _NOOP_MANAGER_VARS['interfaces'][(network_id, compute_id)] = (
-            interface)
-        return interface
-
     def unplug_network(self, compute_id, network_id):
         LOG.debug("Network %s no-op, unplug_network compute_id %s, "
                   "network_id %s",
                   self.__class__.__name__, compute_id, network_id)
         self.networkconfigconfig[(compute_id, network_id)] = (
             compute_id, network_id, 'unplug_network')
-        _NOOP_MANAGER_VARS['interfaces'].pop((network_id, compute_id), None)
 
     def get_plugged_networks(self, compute_id):
-        LOG.debug("Network %s no-op, get_plugged_networks amphora_id %s",
+        LOG.debug("Network %s no-op, get_plugged_networks compute_id %s",
                   self.__class__.__name__, compute_id)
         self.networkconfigconfig[compute_id] = (
             compute_id, 'get_plugged_networks')
@@ -253,11 +231,11 @@ class NoopManager:
                         subnet_id=fixed_ip.subnet_id,
                         ip_address=fixed_ip.ip_address))
                 # Add the interface object to the list
-                # TODO(johnsom) Fix this to have the vnic_type
                 interfaces.append(network_models.Interface(
                     compute_id=interface.compute_id,
                     network_id=interface.network_id,
-                    port_id=interface.port_id, fixed_ips=fixed_ips))
+                    port_id=interface.port_id, fixed_ips=fixed_ips,
+                    vnic_type=interface.vnic_type))
         return interfaces
 
     def update_vip(self, loadbalancer, for_delete=False):
@@ -588,9 +566,6 @@ class NoopNetworkDriver(driver_base.AbstractNetworkDriver):
 
     def unplug_vip(self, loadbalancer, vip):
         self.driver.unplug_vip(loadbalancer, vip)
-
-    def plug_network(self, compute_id, network_id):
-        return self.driver.plug_network(compute_id, network_id)
 
     def unplug_network(self, compute_id, network_id):
         self.driver.unplug_network(compute_id, network_id)

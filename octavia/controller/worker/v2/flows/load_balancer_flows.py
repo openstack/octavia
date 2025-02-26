@@ -31,6 +31,7 @@ from octavia.controller.worker.v2.tasks import database_tasks
 from octavia.controller.worker.v2.tasks import lifecycle_tasks
 from octavia.controller.worker.v2.tasks import network_tasks
 from octavia.controller.worker.v2.tasks import notification_tasks
+from octavia.db import api as db_apis
 from octavia.db import repositories as repo
 
 CONF = cfg.CONF
@@ -41,6 +42,8 @@ class LoadBalancerFlows:
 
     def __init__(self):
         self.amp_flows = amphora_flows.AmphoraFlows()
+        self.amphora_repo = repo.AmphoraRepository()
+        self.amphora_member_port_repo = repo.AmphoraMemberPortRepository()
         self.listener_flows = listener_flows.ListenerFlows()
         self.pool_flows = pool_flows.PoolFlows()
         self.member_flows = member_flows.MemberFlows()
@@ -336,6 +339,9 @@ class LoadBalancerFlows:
             pools_delete = self._get_delete_pools_flow(pools)
             delete_LB_flow.add(pools_delete)
             delete_LB_flow.add(listeners_delete)
+            member_ports_delete = self.get_delete_member_ports_subflow(
+                lb[constants.LOADBALANCER_ID])
+            delete_LB_flow.add(member_ports_delete)
         delete_LB_flow.add(network_tasks.UnplugVIP(
             requires=constants.LOADBALANCER))
         delete_LB_flow.add(network_tasks.DeallocateVIP(
@@ -749,3 +755,30 @@ class LoadBalancerFlows:
                                             requires=constants.LOADBALANCER))
 
         return failover_LB_flow
+
+    def get_delete_member_ports_subflow(self, load_balancer_id):
+        """A subflow that will delete all of the member ports on an LB
+
+        :param load_balancer_id: A load balancer ID
+        :returns: A Taskflow flow
+        """
+        port_delete_flow = unordered_flow.Flow('delete_member_ports')
+
+        session = db_apis.get_session()
+        with session.begin():
+            amps = self.amphora_repo.get_amphorae_ids_on_lb(session,
+                                                            load_balancer_id)
+        for amp in amps:
+            with session.begin():
+                ports = self.amphora_member_port_repo.get_port_ids(session,
+                                                                   amp)
+                for port in ports:
+                    port_delete_flow.add(
+                        network_tasks.DeletePort(
+                            name='delete_member_port' + '-' + port,
+                            inject={constants.PORT_ID: port}))
+                    port_delete_flow.add(
+                        database_tasks.DeleteAmpMemberPortInDB(
+                            name='delete_member_port_in_db' + '-' + port,
+                            inject={constants.PORT_ID: port}))
+        return port_delete_flow

@@ -256,6 +256,7 @@ class Repositories:
         self.flavor_profile = FlavorProfileRepository()
         self.availability_zone = AvailabilityZoneRepository()
         self.availability_zone_profile = AvailabilityZoneProfileRepository()
+        self.amphora_member_port = AmphoraMemberPortRepository()
 
     def create_load_balancer_and_vip(self, session, lb_dict, vip_dict,
                                      additional_vip_dicts=None):
@@ -1454,6 +1455,20 @@ class AmphoraRepository(BaseRepository):
         amp.status = consts.PENDING_DELETE
         lock_session.flush()
 
+    def get_amphorae_ids_on_lb(self, session, lb_id):
+        """Returns a list of amphora IDs associated with the load balancer
+
+        :param session: A Sql Alchemy database session.
+        :param lb_id: A load balancer ID.
+        :returns: A list of amphora IDs
+        """
+        return session.scalars(
+            select(
+                self.model_class.id
+            ).where(
+                self.model_class.load_balancer_id == lb_id
+            )).all()
+
 
 class AmphoraBuildReqRepository(BaseRepository):
     model_class = models.AmphoraBuildRequest
@@ -2133,3 +2148,15 @@ class AvailabilityZoneRepository(_GetALLExceptDELETEDIdMixin, BaseRepository):
 class AvailabilityZoneProfileRepository(_GetALLExceptDELETEDIdMixin,
                                         BaseRepository):
     model_class = models.AvailabilityZoneProfile
+
+
+class AmphoraMemberPortRepository(BaseRepository):
+    model_class = models.AmphoraMemberPort
+
+    def get_port_ids(self, session, amphora_id):
+        return session.scalars(
+            select(
+                self.model_class.port_id
+            ).where(
+                self.model_class.amphora_id == amphora_id
+            )).all()

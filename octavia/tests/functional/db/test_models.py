@@ -289,7 +289,8 @@ class MemberModelTest(base.OctaviaDBTestBase, ModelTestMixin):
                          f"project_id={member.project_id!r}, "
                          f"provisioning_status='ACTIVE', "
                          f"ip_address='10.0.0.1', protocol_port=80, "
-                         f"operating_status='ONLINE', weight=None)",
+                         f"operating_status='ONLINE', weight=None, "
+                         f"vnic_type=None)",
                          str(member))
 
         self.assertIsNotNone(member.created_at)

@@ -148,7 +148,8 @@ class SampleDriverDataModels:
             constants.CREATED_AT: self.created_at,
             constants.UPDATED_AT: self.updated_at,
             lib_consts.MONITOR_ADDRESS: '192.0.2.26',
-            lib_consts.MONITOR_PORT: 81}
+            lib_consts.MONITOR_PORT: 81,
+            lib_consts.VNIC_TYPE: lib_consts.VNIC_TYPE_NORMAL}
 
         self.test_member1_dict.update(self._common_test_dict)
 
@@ -157,6 +158,8 @@ class SampleDriverDataModels:
         self.test_member2_dict[constants.IP_ADDRESS] = '192.0.2.17'
         self.test_member2_dict[lib_consts.MONITOR_ADDRESS] = '192.0.2.27'
         self.test_member2_dict[lib_consts.NAME] = 'member2'
+        self.test_member2_dict[
+            lib_consts.VNIC_TYPE] = lib_consts.VNIC_TYPE_DIRECT
 
         self.test_member3_dict = copy.deepcopy(self.test_member1_dict)
         self.test_member3_dict[lib_consts.ID] = self.member3_id
@@ -185,24 +188,28 @@ class SampleDriverDataModels:
         self.db_pool1_members = [self.db_member1, self.db_member2]
         self.db_pool2_members = [self.db_member3, self.db_member4]
 
-        self.provider_member1_dict = {lib_consts.ADDRESS: '192.0.2.16',
-                                      lib_consts.ADMIN_STATE_UP: True,
-                                      lib_consts.MEMBER_ID: self.member1_id,
-                                      lib_consts.MONITOR_ADDRESS: '192.0.2.26',
-                                      lib_consts.MONITOR_PORT: 81,
-                                      lib_consts.NAME: 'member1',
-                                      lib_consts.POOL_ID: self.pool1_id,
-                                      lib_consts.PROJECT_ID: self.project_id,
-                                      lib_consts.PROTOCOL_PORT: 80,
-                                      lib_consts.SUBNET_ID: self.subnet_id,
-                                      lib_consts.WEIGHT: 0,
-                                      lib_consts.BACKUP: False}
+        self.provider_member1_dict = {
+            lib_consts.ADDRESS: '192.0.2.16',
+            lib_consts.ADMIN_STATE_UP: True,
+            lib_consts.MEMBER_ID: self.member1_id,
+            lib_consts.MONITOR_ADDRESS: '192.0.2.26',
+            lib_consts.MONITOR_PORT: 81,
+            lib_consts.NAME: 'member1',
+            lib_consts.POOL_ID: self.pool1_id,
+            lib_consts.PROJECT_ID: self.project_id,
+            lib_consts.PROTOCOL_PORT: 80,
+            lib_consts.SUBNET_ID: self.subnet_id,
+            lib_consts.WEIGHT: 0,
+            lib_consts.BACKUP: False,
+            lib_consts.VNIC_TYPE: lib_consts.VNIC_TYPE_NORMAL}
 
         self.provider_member2_dict = copy.deepcopy(self.provider_member1_dict)
         self.provider_member2_dict[lib_consts.MEMBER_ID] = self.member2_id
         self.provider_member2_dict[lib_consts.ADDRESS] = '192.0.2.17'
         self.provider_member2_dict[lib_consts.MONITOR_ADDRESS] = '192.0.2.27'
         self.provider_member2_dict[lib_consts.NAME] = 'member2'
+        self.provider_member2_dict[
+            lib_consts.VNIC_TYPE] = lib_consts.VNIC_TYPE_DIRECT
 
         self.provider_member3_dict = copy.deepcopy(self.provider_member1_dict)
         self.provider_member3_dict[lib_consts.MEMBER_ID] = self.member3_id

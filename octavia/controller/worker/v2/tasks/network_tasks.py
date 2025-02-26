@@ -17,16 +17,19 @@ import time
 from oslo_config import cfg
 from oslo_log import log as logging
 from oslo_utils import excutils
+from sqlalchemy.orm import exc as sa_exception
 from taskflow import task
 from taskflow.types import failure
 import tenacity
 
 from octavia.common import constants
 from octavia.common import data_models
+from octavia.common import exceptions
 from octavia.common import utils
 from octavia.controller.worker import task_utils
 from octavia.db import api as db_apis
 from octavia.db import repositories as repo
+from octavia.i18n import _
 from octavia.network import base
 from octavia.network import data_models as n_data_models
 
@@ -43,6 +46,7 @@ class BaseNetworkTask(task.Task):
         self.task_utils = task_utils.TaskUtils()
         self.loadbalancer_repo = repo.LoadBalancerRepository()
         self.amphora_repo = repo.AmphoraRepository()
+        self.amphora_member_port_repo = repo.AmphoraMemberPortRepository()
 
     @property
     def network_driver(self):
@@ -78,6 +82,7 @@ class CalculateAmphoraDelta(BaseNetworkTask):
             loadbalancer[constants.VIP_NETWORK_ID]
         }
 
+        net_vnic_type_map = {}
         for pool in db_lb.pools:
             for member in pool.members:
                 if (member.subnet_id and
@@ -85,6 +90,8 @@ class CalculateAmphoraDelta(BaseNetworkTask):
                         constants.PENDING_DELETE):
                     member_network = self.network_driver.get_subnet(
                         member.subnet_id).network_id
+                    net_vnic_type_map[member_network] = getattr(
+                        member, 'vnic_type', constants.VNIC_TYPE_NORMAL)
                     desired_subnet_to_net_map[member.subnet_id] = (
                         member_network)
 
@@ -117,7 +124,8 @@ class CalculateAmphoraDelta(BaseNetworkTask):
                 n_data_models.FixedIP(
                     subnet_id=subnet_id)
                 for subnet_id, net_id in desired_subnet_to_net_map.items()
-                if net_id == add_net_id])
+                if net_id == add_net_id],
+            vnic_type=net_vnic_type_map[add_net_id])
             for add_net_id in add_ids]
 
         # Calculate member Subnet deltas
@@ -215,45 +223,6 @@ class GetPlumbedNetworks(BaseNetworkTask):
             amphora[constants.COMPUTE_ID])
 
 
-class PlugNetworks(BaseNetworkTask):
-    """Task to plug the networks.
-
-    This uses the delta to add all missing networks/nics
-    """
-
-    def execute(self, amphora, delta):
-        """Update the amphora networks for the delta."""
-
-        LOG.debug("Plug or unplug networks for amphora id: %s",
-                  amphora[constants.ID])
-
-        if not delta:
-            LOG.debug("No network deltas for amphora id: %s",
-                      amphora[constants.ID])
-            return
-
-        # add nics
-        for nic in delta[constants.ADD_NICS]:
-            self.network_driver.plug_network(amphora[constants.COMPUTE_ID],
-                                             nic[constants.NETWORK_ID])
-
-    def revert(self, amphora, delta, *args, **kwargs):
-        """Handle a failed network plug by removing all nics added."""
-
-        LOG.warning("Unable to plug networks for amp id %s",
-                    amphora[constants.ID])
-        if not delta:
-            return
-
-        for nic in delta[constants.ADD_NICS]:
-            try:
-                self.network_driver.unplug_network(
-                    amphora[constants.COMPUTE_ID],
-                    nic[constants.NETWORK_ID])
-            except base.NetworkNotFound:
-                pass
-
-
 class UnPlugNetworks(BaseNetworkTask):
     """Task to unplug the networks
 
@@ -316,6 +285,14 @@ class HandleNetworkDelta(BaseNetworkTask):
             fixed_ip.subnet = self.network_driver.get_subnet(
                 fixed_ip.subnet_id)
 
+    def _cleanup_port(self, port_id, compute_id):
+        try:
+            self.network_driver.delete_port(port_id)
+        except Exception:
+            LOG.error(f'Unable to delete port {port_id} after failing to plug '
+                      f'the port into compute {compute_id}. This port '
+                      f'may now be abandoned in neutron.')
+
     def execute(self, amphora, delta):
         """Handle network plugging based off deltas."""
         session = db_apis.get_session()
@@ -324,20 +301,43 @@ class HandleNetworkDelta(BaseNetworkTask):
                                            id=amphora.get(constants.ID))
         updated_ports = {}
         for nic in delta[constants.ADD_NICS]:
+            network_id = nic[constants.NETWORK_ID]
             subnet_id = nic[constants.FIXED_IPS][0][constants.SUBNET_ID]
-            interface = self.network_driver.plug_network(
-                db_amp.compute_id, nic[constants.NETWORK_ID])
-            port = self.network_driver.get_port(interface.port_id)
-            # nova may plugged undesired subnets (it plugs one of the subnets
-            # of the network), we can safely unplug the subnets we don't need,
-            # the desired subnet will be added in the 'ADD_SUBNETS' loop.
-            extra_subnets = [
-                fixed_ip.subnet_id
-                for fixed_ip in port.fixed_ips
-                if fixed_ip.subnet_id != subnet_id]
-            for subnet_id in extra_subnets:
-                port = self.network_driver.unplug_fixed_ip(
-                    port_id=interface.port_id, subnet_id=subnet_id)
+
+            try:
+                port = self.network_driver.create_port(
+                    network_id,
+                    name=f'octavia-lb-member-{amphora.get(constants.ID)}',
+                    vnic_type=nic[constants.VNIC_TYPE])
+            except exceptions.NotFound as e:
+                if 'Network' in str(e):
+                    raise base.NetworkNotFound(str(e))
+                raise base.CreatePortException(str(e))
+            except Exception as e:
+                message = _(f'Error creating a port on network {network_id}. ')
+                LOG.exception(message)
+                raise base.CreatePortException(message) from e
+
+            try:
+                self.network_driver.plug_port(db_amp, port)
+            except exceptions.NotFound as e:
+                self._cleanup_port(port.id, db_amp.compute_id)
+                if 'Instance' in str(e):
+                    raise base.AmphoraNotFound(str(e))
+                raise base.PlugNetworkException(str(e))
+            except Exception as e:
+                self._cleanup_port(port.id, db_amp.compute_id)
+                message = _('Error plugging amphora (compute_id: '
+                            '{compute_id}) into network {network_id}.').format(
+                    compute_id=db_amp.compute_id, network_id=network_id)
+                LOG.exception(message)
+                raise base.PlugNetworkException(message) from e
+            with session.begin():
+                self.amphora_member_port_repo.create(
+                    session, port_id=port.id,
+                    amphora_id=amphora.get(constants.ID),
+                    network_id=network_id)
+
             self._fill_port_info(port)
             updated_ports[port.network_id] = port.to_dict(recurse=True)
 
@@ -395,6 +395,14 @@ class HandleNetworkDelta(BaseNetworkTask):
                 self.network_driver.delete_port(port_id)
             except Exception:
                 LOG.exception("Unable to delete the port")
+            try:
+                with session.begin():
+                    self.amphora_member_port_repo.delete(session,
+                                                         port_id=port_id)
+            except sa_exception.NoResultFound:
+                # Passively fail here for upgrade compatibility
+                LOG.warning("No Amphora member port records found for "
+                            "port_id: %s", port_id)
 
             updated_ports.pop(network_id, None)
         return {amphora[constants.ID]: list(updated_ports.values())}
@@ -967,6 +975,22 @@ class DeletePort(BaseNetworkTask):
                               'The network service has failed. '
                               'Aborting and reverting.', port_id)
                 raise
+
+
+class DeleteAmphoraMemberPorts(BaseNetworkTask):
+    """Task to delete all of the member ports on an Amphora."""
+
+    def execute(self, amphora_id, passive_failure=False):
+        delete_port = DeletePort()
+        session = db_apis.get_session()
+
+        with session.begin():
+            ports = self.amphora_member_port_repo.get_port_ids(
+                session, amphora_id)
+        for port in ports:
+            delete_port.execute(port, passive_failure)
+            with session.begin():
+                self.amphora_member_port_repo.delete(session, port_id=port)
 
 
 class CreateVIPBasePort(BaseNetworkTask):

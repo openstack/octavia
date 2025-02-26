@@ -378,7 +378,7 @@ class Member(BaseDataModel):
                  subnet_id=None, operating_status=None, pool=None,
                  created_at=None, updated_at=None, provisioning_status=None,
                  name=None, monitor_address=None, monitor_port=None,
-                 tags=None):
+                 tags=None, vnic_type=None):
         self.id = id
         self.project_id = project_id
         self.pool_id = pool_id
@@ -397,6 +397,7 @@ class Member(BaseDataModel):
         self.monitor_address = monitor_address
         self.monitor_port = monitor_port
         self.tags = tags
+        self.vnic_type = vnic_type
 
     def delete(self):
         for mem in self.pool.members:
@@ -904,3 +905,14 @@ class VipSecurityGroup(BaseDataModel):
     def __init__(self, load_balancer_id: str = None, sg_id: str = None):
         self.load_balancer_id = load_balancer_id
         self.sg_id = sg_id
+
+
+class AmphoraMemberPort(BaseDataModel):
+
+    def __init__(self, port_id=None, amphora_id=None, network_id=None,
+                 created_at=None, updated_at=None):
+        self.port_id = port_id
+        self.amphora_id = amphora_id
+        self.network_id = network_id
+        self.created_at = created_at
+        self.updated_at = updated_at

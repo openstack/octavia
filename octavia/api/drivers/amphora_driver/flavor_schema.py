@@ -53,5 +53,10 @@ SUPPORTED_FLAVOR_SCHEMA = {
             "description": "When true, the VIP port will be created using an "
                            "SR-IOV VF port."
         },
+        consts.ALLOW_MEMBER_SRIOV: {
+            "type": "boolean",
+            "description": "When true, users can request a member port be "
+                           "SR-IOV enabled at member creation time."
+        }
     }
 }

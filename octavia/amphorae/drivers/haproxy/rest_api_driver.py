@@ -406,7 +406,10 @@ class HaproxyAmphoraLoadBalancerDriver(
             fixed_ips.append(ip)
         port_info = {'mac_address': port.mac_address,
                      'fixed_ips': fixed_ips,
-                     'mtu': port.network.mtu}
+                     'mtu': port.network.mtu,
+                     'is_sriov': False}
+        if port.vnic_type == consts.VNIC_TYPE_DIRECT:
+            port_info['is_sriov'] = True
         if port.id == amphora.vrrp_port_id:
             # We have to special-case sharing the vrrp port and pass through
             # enough extra information to populate the whole VIP port
