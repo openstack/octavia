@@ -21,6 +21,7 @@ Defined here so these can also be used at deeper levels than the API.
 
 import ipaddress
 import re
+import typing
 
 from oslo_config import cfg
 from rfc3986 import uri_reference
@@ -32,6 +33,9 @@ from octavia.common import data_models
 from octavia.common import exceptions
 from octavia.common import utils
 from octavia.i18n import _
+
+if typing.TYPE_CHECKING:
+    from octavia.common import context
 
 CONF = cfg.CONF
 _ListenerPUT = 'octavia.api.v2.types.listener.ListenerPUT'
@@ -380,6 +384,18 @@ def network_exists_optionally_contains_subnet(network_id, subnet_id=None,
             raise exceptions.InvalidSubresource(resource='Subnet',
                                                 id=subnet_id)
     return network
+
+
+def security_group_exists(sg_id: str,
+                          context: 'context.RequestContext' = None):
+    """Raises an exception when a security group does not exist."""
+    network_driver = utils.get_network_driver()
+    try:
+        network_driver.get_security_group_by_id(sg_id,
+                                                context=context)
+    except Exception as e:
+        raise exceptions.InvalidSubresource(
+            resource='Security Group', id=sg_id) from e
 
 
 def network_allowed_by_config(network_id, valid_networks=None):

@@ -1,0 +1,6 @@
+---
+features:
+  - |
+    Add the ``vip_sg_ids`` parameter to the load-balancer POST API. It allows to
+    set a list of user-defined Neutron Security Groups on the VIP port of the
+    Load Balancer.

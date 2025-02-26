@@ -161,6 +161,9 @@ contain the following:
 +-------------------+--------+-----------------------------------------------+
 | vip_subnet_id     | string | The ID of the subnet for the VIP.             |
 +-------------------+--------+-----------------------------------------------+
+| vip_sg_ids        | list   | The list of Neutron Security Group IDs of the |
+|                   |        | VIP port (optional)                           |
++-------------------+--------+-----------------------------------------------+
 
 The driver is expected to validate that the driver supports the request
 and raise an exception if the request cannot be accepted.
@@ -194,6 +197,9 @@ dictionary.
 |vip_qos_policy_id| string | The ID of the qos policy for the VIP.         |
 +-----------------+--------+-----------------------------------------------+
 | vip_subnet_id   | string | The ID of the subnet for the VIP.             |
++-----------------+--------+-----------------------------------------------+
+| vip_sg_ids      | list   | The list of Neutron Security Group IDs of the |
+|                 |        | VIP port (optional)                           |
 +-----------------+--------+-----------------------------------------------+
 
 **Creating a Fully Populated Load Balancer**

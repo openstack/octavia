@@ -26,6 +26,7 @@ class BaseLoadBalancerType(types.BaseType):
                           'vip_network_id': 'vip.network_id',
                           'vip_qos_policy_id': 'vip.qos_policy_id',
                           'vip_vnic_type': 'vip.vnic_type',
+                          'vip_sg_ids': 'vip.sg_ids',
                           'admin_state_up': 'enabled'}
     _child_map = {'vip': {
         'ip_address': 'vip_address',
@@ -33,7 +34,8 @@ class BaseLoadBalancerType(types.BaseType):
         'port_id': 'vip_port_id',
         'network_id': 'vip_network_id',
         'qos_policy_id': 'vip_qos_policy_id',
-        'vnic_type': 'vip_vnic_type'}}
+        'vnic_type': 'vip_vnic_type',
+        'sg_ids': 'vip_sg_ids'}}
 
 
 class AdditionalVipsType(types.BaseType):
@@ -57,6 +59,7 @@ class LoadBalancerResponse(BaseLoadBalancerType):
     vip_port_id = wtypes.wsattr(wtypes.UuidType())
     vip_subnet_id = wtypes.wsattr(wtypes.UuidType())
     vip_network_id = wtypes.wsattr(wtypes.UuidType())
+    vip_sg_ids = wtypes.wsattr([wtypes.UuidType()])
     additional_vips = wtypes.wsattr([AdditionalVipsType])
     listeners = wtypes.wsattr([types.IdOnlyType])
     pools = wtypes.wsattr([types.IdOnlyType])
@@ -78,6 +81,7 @@ class LoadBalancerResponse(BaseLoadBalancerType):
             result.vip_network_id = data_model.vip.network_id
             result.vip_qos_policy_id = data_model.vip.qos_policy_id
             result.vip_vnic_type = data_model.vip.vnic_type
+            result.vip_sg_ids = data_model.vip.sg_ids
         result.additional_vips = [
             AdditionalVipsType.from_data_model(i)
             for i in data_model.additional_vips]
@@ -131,6 +135,7 @@ class LoadBalancerPOST(BaseLoadBalancerType):
     vip_subnet_id = wtypes.wsattr(wtypes.UuidType())
     vip_network_id = wtypes.wsattr(wtypes.UuidType())
     vip_qos_policy_id = wtypes.wsattr(wtypes.UuidType())
+    vip_sg_ids = wtypes.wsattr([wtypes.UuidType()])
     additional_vips = wtypes.wsattr([AdditionalVipsType], default=[])
     project_id = wtypes.wsattr(wtypes.StringType(max_length=36))
     listeners = wtypes.wsattr([listener.ListenerSingleCreate], default=[])
@@ -152,6 +157,7 @@ class LoadBalancerPUT(BaseLoadBalancerType):
     description = wtypes.wsattr(wtypes.StringType(max_length=255))
     vip_qos_policy_id = wtypes.wsattr(wtypes.UuidType())
     admin_state_up = wtypes.wsattr(bool)
+    vip_sg_ids = wtypes.wsattr([wtypes.UuidType()])
     tags = wtypes.wsattr(wtypes.ArrayType(wtypes.StringType(max_length=255)))
 
 

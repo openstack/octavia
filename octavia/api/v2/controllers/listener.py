@@ -157,7 +157,15 @@ class ListenersController(base.BaseController):
                     value=headers,
                     option=f'{listener_protocol} protocol listener.')
 
-    def _validate_cidr_compatible_with_vip(self, vips, allowed_cidrs):
+    def _validate_cidr_compatible_with_vip(self, db_vip: data_models.Vip,
+                                           vips: list[str],
+                                           allowed_cidrs: list[str]):
+        if allowed_cidrs and db_vip.sg_ids:
+            msg = _("Allowed CIDRs are not allowed when using custom VIP "
+                    "Security Groups.")
+            raise exceptions.ValidationException(
+                detail=msg)
+
         for cidr in allowed_cidrs:
             for vip in vips:
                 # Check if CIDR IP version matches VIP IP version
@@ -315,7 +323,8 @@ class ListenersController(base.BaseController):
             lock_session, id=lb_id)
         vip_addresses = [lb_db.vip.ip_address]
         vip_addresses.extend([vip.ip_address for vip in lb_db.additional_vips])
-        self._validate_cidr_compatible_with_vip(vip_addresses, allowed_cidrs)
+        self._validate_cidr_compatible_with_vip(lb_db.vip,
+                                                vip_addresses, allowed_cidrs)
 
         if _can_tls_offload:
             # Validate TLS version list
@@ -542,6 +551,7 @@ class ListenersController(base.BaseController):
                  for vip in db_listener.load_balancer.additional_vips]
             )
             self._validate_cidr_compatible_with_vip(
+                db_listener.load_balancer.vip,
                 vip_addresses, listener.allowed_cidrs)
 
         # Check TLS cipher prohibit list
