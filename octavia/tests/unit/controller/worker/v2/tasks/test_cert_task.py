@@ -14,7 +14,6 @@
 #
 from unittest import mock
 
-from cryptography import fernet
 from oslo_config import cfg
 
 from octavia.certificates.common import local
@@ -29,8 +28,7 @@ class TestCertTasks(base.TestCase):
 
     @mock.patch('stevedore.driver.DriverManager.driver')
     def test_execute(self, mock_driver):
-        key = utils.get_compatible_server_certs_key_passphrase()
-        fer = fernet.Fernet(key)
+        fer = utils.get_server_certs_key_passphrases_fernet()
         dummy_cert = local.LocalCert(
             utils.get_compatible_value('test_cert'),
             utils.get_compatible_value('test_key'))

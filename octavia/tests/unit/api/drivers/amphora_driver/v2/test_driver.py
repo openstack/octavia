@@ -878,7 +878,7 @@ class TestAmphoraDriver(base.TestRpc):
                               self.amp_driver.validate_availability_zone,
                               'bogus')
 
-    @mock.patch('cryptography.fernet.Fernet')
+    @mock.patch('cryptography.fernet.MultiFernet')
     def test_encrypt_listener_dict(self, mock_fernet):
         mock_fern = mock.MagicMock()
         mock_fernet.return_value = mock_fern

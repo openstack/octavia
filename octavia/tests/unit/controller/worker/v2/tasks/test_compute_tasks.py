@@ -14,7 +14,6 @@
 #
 from unittest import mock
 
-from cryptography import fernet
 from oslo_config import cfg
 from oslo_config import fixture as oslo_fixture
 from oslo_utils import uuidutils
@@ -375,8 +374,7 @@ class TestComputeTasks(base.TestCase):
     def test_compute_create_cert(self, mock_driver, mock_ud_conf,
                                  mock_conf, mock_jinja, mock_log_cfg):
         createcompute = compute_tasks.CertComputeCreate()
-        key = utils.get_compatible_server_certs_key_passphrase()
-        fer = fernet.Fernet(key)
+        fer = utils.get_server_certs_key_passphrases_fernet()
         mock_log_cfg.return_value = 'FAKE CFG'
 
         mock_driver.build.return_value = COMPUTE_ID

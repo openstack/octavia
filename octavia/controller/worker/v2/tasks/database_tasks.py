@@ -13,7 +13,6 @@
 # under the License.
 #
 
-from cryptography import fernet
 from octavia_lib.common import constants as lib_consts
 from oslo_config import cfg
 from oslo_db import exception as odb_exceptions
@@ -1047,8 +1046,7 @@ class UpdateAmphoraDBCertExpiration(BaseDatabaseTask):
 
         LOG.debug("Update DB cert expiry date of amphora id: %s", amphora_id)
 
-        key = utils.get_compatible_server_certs_key_passphrase()
-        fer = fernet.Fernet(key)
+        fer = utils.get_server_certs_key_passphrases_fernet()
         cert_expiration = cert_parser.get_cert_expiration(
             fer.decrypt(server_pem.encode("utf-8")))
         LOG.debug("Certificate expiration date is %s ", cert_expiration)

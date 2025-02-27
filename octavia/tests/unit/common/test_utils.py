@@ -13,7 +13,9 @@
 #    under the License.
 from unittest import mock
 
+from cryptography import fernet
 from octavia_lib.common import constants as lib_consts
+from oslo_config import cfg
 from oslo_utils import uuidutils
 
 from octavia.common import constants
@@ -178,3 +180,42 @@ class TestConfig(base.TestCase):
         result = utils.map_protocol_to_nftable_protocol(
             {constants.PROTOCOL: lib_consts.PROTOCOL_PROMETHEUS})
         self.assertEqual({constants.PROTOCOL: lib_consts.PROTOCOL_TCP}, result)
+
+    def test_rotate_server_certs_key_passphrase(self):
+        """Test rotate server_certs_key_passphrase."""
+        # Use one key (default) and encrypt/decrypt it
+        cfg.CONF.set_override(
+            'server_certs_key_passphrase',
+            ['insecure-key-do-not-use-this-key'],
+            group='certificates')
+        fer = utils.get_server_certs_key_passphrases_fernet()
+        data1 = 'some data one'
+        enc1 = fer.encrypt(data1.encode('utf-8'))
+        self.assertEqual(
+            data1, fer.decrypt(enc1).decode('utf-8'))
+
+        # Use two keys, first key is new and used for encrypting
+        # and default key can still be used for decryption
+        cfg.CONF.set_override(
+            'server_certs_key_passphrase',
+            ['insecure-key-do-not-use-this-ke2',
+             'insecure-key-do-not-use-this-key'],
+            group='certificates')
+        fer = utils.get_server_certs_key_passphrases_fernet()
+        data2 = 'some other data'
+        enc2 = fer.encrypt(data2.encode('utf-8'))
+        self.assertEqual(
+            data2, fer.decrypt(enc2).decode('utf-8'))
+        self.assertEqual(
+            data1, fer.decrypt(enc1).decode('utf-8'))
+
+        # Remove first key and we should only be able to
+        # decrypt the newest data
+        cfg.CONF.set_override(
+            'server_certs_key_passphrase',
+            ['insecure-key-do-not-use-this-ke2'],
+            group='certificates')
+        fer = utils.get_server_certs_key_passphrases_fernet()
+        self.assertEqual(
+            data2, fer.decrypt(enc2).decode('utf-8'))
+        self.assertRaises(fernet.InvalidToken, fer.decrypt, enc1)

@@ -12,7 +12,6 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-from cryptography import fernet
 from jsonschema import exceptions as js_exceptions
 from jsonschema import validate
 
@@ -71,8 +70,7 @@ class AmphoraProviderDriver(driver_base.ProviderDriver):
             topic=consts.TOPIC_AMPHORA_V2, version="2.0", fanout=False)
         self.client = rpc.get_client(self.target)
         self.repositories = repositories.Repositories()
-        key = utils.get_compatible_server_certs_key_passphrase()
-        self.fernet = fernet.Fernet(key)
+        self.fernet = utils.get_server_certs_key_passphrases_fernet()
 
     def _validate_pool_algorithm(self, pool):
         if pool.lb_algorithm not in AMPHORA_SUPPORTED_LB_ALGORITHMS:

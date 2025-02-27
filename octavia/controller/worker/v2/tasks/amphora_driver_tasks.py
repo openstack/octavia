@@ -17,7 +17,6 @@ import copy
 from typing import List
 from typing import Optional
 
-from cryptography import fernet
 from oslo_config import cfg
 from oslo_log import log as logging
 from stevedore import driver as stevedore_driver
@@ -458,8 +457,7 @@ class AmphoraCertUpload(BaseAmphoraTask):
     def execute(self, amphora, server_pem):
         """Execute cert_update_amphora routine."""
         LOG.debug("Upload cert in amphora REST driver")
-        key = utils.get_compatible_server_certs_key_passphrase()
-        fer = fernet.Fernet(key)
+        fer = utils.get_server_certs_key_passphrases_fernet()
         session = db_apis.get_session()
         with session.begin():
             db_amp = self.amphora_repo.get(session,
