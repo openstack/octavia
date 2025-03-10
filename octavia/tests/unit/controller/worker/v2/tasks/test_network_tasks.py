@@ -1410,6 +1410,10 @@ class TestNetworkTasks(base.TestCase):
         AMP_ID = uuidutils.generate_uuid()
         mock_driver = mock.MagicMock()
         mock_get_net_driver.return_value = mock_driver
+        amphora_config_mock = mock.MagicMock()
+        mock_driver.get_network_configs.return_value = {
+            "amphora_uuid1": amphora_config_mock
+        }
         mock_amp_get.return_value = 'mock amphora'
         mock_lb_get.return_value = 'mock load balancer'
 
@@ -1421,6 +1425,9 @@ class TestNetworkTasks(base.TestCase):
             'mock load balancer', amphora='mock amphora')
         mock_amp_get.assert_called_once_with(mock_get_session(), id=AMP_ID)
         mock_lb_get.assert_called_once_with(mock_get_session(), id=LB_ID)
+        amphora_config_mock.to_dict.assert_called_once_with(
+            recurse=True, calling_classes=[o_data_models.LoadBalancer]
+        )
 
     @mock.patch('octavia.db.repositories.LoadBalancerRepository.get')
     @mock.patch('octavia.db.api.get_session', return_value=_session_mock)
@@ -1429,10 +1436,17 @@ class TestNetworkTasks(base.TestCase):
         mock_driver = mock.MagicMock()
         mock_lb_get.return_value = LB
         mock_get_net_driver.return_value = mock_driver
+        amphora_config_mock = mock.MagicMock()
+        mock_driver.get_network_configs.return_value = {
+            "amphora_uuid1": amphora_config_mock
+        }
         lb = o_data_models.LoadBalancer()
         net_task = network_tasks.GetAmphoraeNetworkConfigs()
         net_task.execute(self.load_balancer_mock)
         mock_driver.get_network_configs.assert_called_once_with(lb)
+        amphora_config_mock.to_dict.assert_called_once_with(
+            recurse=True, calling_classes=[o_data_models.LoadBalancer]
+        )
 
     @mock.patch('octavia.db.repositories.AmphoraRepository.get')
     @mock.patch('octavia.db.api.get_session', return_value=mock.MagicMock())
