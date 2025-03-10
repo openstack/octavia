@@ -706,7 +706,11 @@ class GetAmphoraNetworkConfigs(BaseNetworkTask):
             db_lb, amphora=db_amp)
         provider_dict = {}
         for amp_id, amp_conf in db_configs.items():
-            provider_dict[amp_id] = amp_conf.to_dict(recurse=True)
+            # Do not serialize loadbalancer class.  It's unused later and
+            # could be ignored for storing in results of task in persistence DB
+            provider_dict[amp_id] = amp_conf.to_dict(
+                recurse=True, calling_classes=[data_models.LoadBalancer]
+            )
         return provider_dict
 
 
@@ -724,7 +728,11 @@ class GetAmphoraNetworkConfigsByID(BaseNetworkTask):
                                                              amphora=amphora)
         provider_dict = {}
         for amp_id, amp_conf in db_configs.items():
-            provider_dict[amp_id] = amp_conf.to_dict(recurse=True)
+            # Do not serialize loadbalancer class.  It's unused later and
+            # could be ignored for storing in results of task in persistence DB
+            provider_dict[amp_id] = amp_conf.to_dict(
+                recurse=True, calling_classes=[data_models.LoadBalancer]
+            )
         return provider_dict
 
 
@@ -740,7 +748,11 @@ class GetAmphoraeNetworkConfigs(BaseNetworkTask):
         db_configs = self.network_driver.get_network_configs(db_lb)
         provider_dict = {}
         for amp_id, amp_conf in db_configs.items():
-            provider_dict[amp_id] = amp_conf.to_dict(recurse=True)
+            # Do not serialize loadbalancer class.  It's unused later and
+            # could be ignored for storing in results of task in persistence DB
+            provider_dict[amp_id] = amp_conf.to_dict(
+                recurse=True, calling_classes=[data_models.LoadBalancer]
+            )
         return provider_dict
 
 
