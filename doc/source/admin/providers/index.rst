@@ -48,7 +48,3 @@ your Octavia API instances.
 .. include:: f5.rst
 
 .. include:: ovn.rst
-
-.. include:: radware.rst
-
-.. include:: vmware-nsx.rst
