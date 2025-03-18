@@ -1,0 +1,6 @@
+---
+features:
+  - |
+    The ``service`` role now has access to list members in
+    a pool, this is needed by Aodh to evaluate unhealthy
+    members in a pool when doing evaluations.

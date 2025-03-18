@@ -169,7 +169,7 @@ class TestMember(base.BaseAPITest):
         objects = response.json.get(self.root_tag_list)
         self.assertEqual(len(objects), 0)
 
-    def test_get_all_authorized(self):
+    def _test_get_all_authorized(self, roles, project_id):
         api_m_1 = self.create_member(
             self.pool_id, '192.0.2.1', 80).get(self.root_tag)
         self.set_lb_status(self.lb_id)
@@ -195,13 +195,13 @@ class TestMember(base.BaseAPITest):
                 'is_admin_project': True,
                 'service_project_domain_id': None,
                 'service_project_id': None,
-                'roles': ['load-balancer_member', 'member'],
+                'roles': roles,
                 'user_id': None,
                 'is_admin': False,
                 'service_user_domain_id': None,
                 'project_domain_id': None,
                 'service_roles': [],
-                'project_id': self.project_id}
+                'project_id': project_id}
             with mock.patch(
                     "oslo_context.context.RequestContext.to_policy_values",
                     return_value=override_credentials):
@@ -215,6 +215,15 @@ class TestMember(base.BaseAPITest):
             m.pop('updated_at')
         for m in [api_m_1, api_m_2]:
             self.assertIn(m, response)
+
+    def test_get_all_authorized(self):
+        self._test_get_all_authorized(
+            roles=['load-balancer_member', 'member'],
+            project_id=self.project_id)
+
+    def test_get_all_authorized_service(self):
+        self._test_get_all_authorized(
+            roles=['service'], project_id='services')
 
     def test_get_all_unscoped_token(self):
         api_m_1 = self.create_member(

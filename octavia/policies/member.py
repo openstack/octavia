@@ -18,7 +18,7 @@ from octavia.common import constants
 rules = [
     policy.DocumentedRuleDefault(
         f'{constants.RBAC_MEMBER}{constants.RBAC_GET_ALL}',
-        constants.RULE_API_READ,
+        constants.RULE_MEMBER_API_READ,
         "List Members of a Pool",
         [{'method': 'GET', 'path': '/v2/lbaas/pools/{pool_id}/members'}]
     ),

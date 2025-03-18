@@ -768,6 +768,10 @@ RULE_API_READ_QUOTA = 'rule:load-balancer:read-quota'
 RULE_API_READ_QUOTA_GLOBAL = 'rule:load-balancer:read-quota-global'
 RULE_API_WRITE_QUOTA = 'rule:load-balancer:write-quota'
 
+# The service user for Aodh needs to be able to list all
+# members of a pool to determine which are healthy.
+RULE_MEMBER_API_READ = f'{RULE_API_READ} or rule:service'
+
 RBAC_LOADBALANCER = f'{LOADBALANCER_API}:loadbalancer:'
 RBAC_LISTENER = f'{LOADBALANCER_API}:listener:'
 RBAC_POOL = f'{LOADBALANCER_API}:pool:'

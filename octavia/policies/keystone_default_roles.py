@@ -52,6 +52,11 @@ rules = [
     # It is equivalent to 'rule:context_is_admin or {auth_strategy == noauth}'
 
     policy.RuleDefault(
+        name='service',
+        check_str='role:service',
+        scope_types=[constants.RBAC_SCOPE_PROJECT]),
+
+    policy.RuleDefault(
         name='load-balancer:global_observer',
         check_str='role:admin',
         deprecated_rule=advanced_rbac.deprecated_global_observer,
