@@ -1,0 +1,6 @@
+---
+fixes:
+  - |
+    Fixed a bug where an API call to create a Load Balancer could return a
+    HTTP 500 Internal Server Error instead of a HTTP 400 Bad Request when it
+    could not get the subnet.

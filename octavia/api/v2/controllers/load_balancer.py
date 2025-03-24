@@ -131,7 +131,12 @@ class LoadBalancersController(base.BaseController):
             network_driver = utils.get_network_driver()
             if load_balancer.vip_address:
                 for subnet_id in network.subnets:
-                    subnet = network_driver.get_subnet(subnet_id)
+                    try:
+                        subnet = network_driver.get_subnet(subnet_id)
+                    except network_base.SubnetNotFound as e:
+                        raise exceptions.ValidationException(detail=_(
+                            "Subnet %s not found") % subnet_id) from e
+
                     if validate.is_ip_member_of_cidr(load_balancer.vip_address,
                                                      subnet.cidr):
                         load_balancer.vip_subnet_id = subnet_id
@@ -168,7 +173,12 @@ class LoadBalancersController(base.BaseController):
                     # Use the first subnet, in case there are no ipv4 subnets
                     if not load_balancer.vip_subnet_id:
                         load_balancer.vip_subnet_id = subnet_id
-                    subnet = network_driver.get_subnet(subnet_id)
+                    try:
+                        subnet = network_driver.get_subnet(subnet_id)
+                    except network_base.SubnetNotFound as e:
+                        raise exceptions.ValidationException(detail=_(
+                            "Subnet %s not found") % subnet_id) from e
+
                     if subnet.ip_version == 4:
                         load_balancer.vip_subnet_id = subnet_id
                         break
@@ -240,7 +250,12 @@ class LoadBalancersController(base.BaseController):
         network_driver = utils.get_network_driver()
         used_subnets = {}
         for subnet_id in subnet_use_counts:
-            used_subnets[subnet_id] = network_driver.get_subnet(subnet_id)
+            try:
+                used_subnets[subnet_id] = network_driver.get_subnet(subnet_id)
+            except network_base.SubnetNotFound as e:
+                raise exceptions.ValidationException(detail=_(
+                    "Subnet %s not found") % subnet_id) from e
+
         all_networks = [subnet.network_id for subnet in used_subnets.values()]
         if len(set(all_networks)) > 1:
             raise exceptions.ValidationException(detail=_(

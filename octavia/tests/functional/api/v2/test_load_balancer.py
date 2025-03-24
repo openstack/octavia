@@ -421,8 +421,9 @@ class TestLoadBalancer(base.BaseAPITest):
                 ".get_subnet") as mock_get_subnet:
             mock_get_network.return_value = network
             mock_get_subnet.side_effect = network_base.SubnetNotFound
-            # FIXME(tobias-urdin): This should not throw a 500 error
-            self.post(self.LBS_PATH, body, status=500)
+            response = self.post(self.LBS_PATH, body, status=400)
+            err_msg = f'Validation failure: Subnet {subnet1.id} not found'
+            self.assertEqual(err_msg, response.json.get('faultstring'))
 
     def test_create_with_vip_network_subnet_fail(self):
         network_id = uuidutils.generate_uuid()
@@ -446,8 +447,9 @@ class TestLoadBalancer(base.BaseAPITest):
                 ".get_subnet") as mock_get_subnet:
             mock_get_network.return_value = network
             mock_get_subnet.side_effect = network_base.SubnetNotFound
-            # FIXME(tobias-urdin): This should not throw a 500 error
-            self.post(self.LBS_PATH, body, status=500)
+            response = self.post(self.LBS_PATH, body, status=400)
+            err_msg = f'Validation failure: Subnet {subnet1.id} not found'
+            self.assertEqual(err_msg, response.json.get('faultstring'))
 
     def test_create_with_vip_network_and_address_ipv6(self):
         ip_address = '2001:DB8::10'
