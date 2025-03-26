@@ -13,10 +13,10 @@
     parent: publish-openstack-octavia-amphora-image
     nodeset: ubuntu-noble
     description: |
-      Publish Ubuntu Noble (22.04) based amphora image to tarballs.o.o.
+      Publish Ubuntu Noble (24.04) based amphora image to tarballs.o.o.
     vars:
         amphora_os: ubuntu
-        amphora_os_release: Noble
+        amphora_os_release: noble
 
 - job:
     name: publish-openstack-octavia-amphora-image-centos-9-stream
