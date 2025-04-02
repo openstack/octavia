@@ -10,19 +10,12 @@ As such, we tend to follow Neutron conventions regarding coding style.
 
 Octavia Specific Commandments
 -----------------------------
-- [O316] Change assertTrue(isinstance(A, B)) by optimal assert like
-  assertIsInstance(A, B).
-- [O318] Change assert(Not)Equal(A, None) or assert(Not)Equal(None, A)
-  by optimal assert like assertIs(Not)None(A).
 - [O319] Validate that debug level logs are not translated.
 - [O321] Validate that jsonutils module is used instead of json
 - [O322] Don't use author tags
 - [O323] Change assertEqual(True, A) or assertEqual(False, A) to the more
   specific assertTrue(A) or assertFalse(A)
 - [O324] Method's default argument shouldn't be mutable
-- [O338] Change assertEqual(A in B, True), assertEqual(True, A in B),
-  assertEqual(A in B, False) or assertEqual(False, A in B) to the more
-  specific assertIn/NotIn(A, B)
 - [O339] LOG.warn() is not allowed. Use LOG.warning()
 - [O340] Don't use xrange()
 - [O341] Don't translate logs.

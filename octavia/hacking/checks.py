@@ -42,24 +42,11 @@ _log_translation_hint = re.compile(
         hints='|'.join(_all_hints),
     ))
 
-assert_trueinst_re = re.compile(
-    r"(.)*assertTrue\(isinstance\((\w|\.|\'|\"|\[|\])+, "
-    r"(\w|\.|\'|\"|\[|\])+\)\)")
-assert_equal_in_end_with_true_or_false_re = re.compile(
-    r"assertEqual\((\w|[][.'\"])+ in (\w|[][.'\", ])+, (True|False)\)")
-assert_equal_in_start_with_true_or_false_re = re.compile(
-    r"assertEqual\((True|False), (\w|[][.'\"])+ in (\w|[][.'\", ])+\)")
 assert_equal_with_true_re = re.compile(
     r"assertEqual\(True,")
 assert_equal_with_false_re = re.compile(
     r"assertEqual\(False,")
 mutable_default_args = re.compile(r"^\s*def .+\((.+=\{\}|.+=\[\])")
-assert_equal_end_with_none_re = re.compile(r"(.)*assertEqual\(.+, None\)")
-assert_equal_start_with_none_re = re.compile(r".*assertEqual\(None, .+\)")
-assert_not_equal_end_with_none_re = re.compile(
-    r"(.)*assertNotEqual\(.+, None\)")
-assert_not_equal_start_with_none_re = re.compile(
-    r"(.)*assertNotEqual\(None, .+\)")
 revert_must_have_kwargs_re = re.compile(
     r'[ ]*def revert\(.+,[ ](?!\*\*kwargs)\w+\):')
 untranslated_exception_re = re.compile(r"raise (?:\w*)\((.*)\)")
@@ -71,35 +58,6 @@ no_logging_re = re.compile(r'(import|from)\s+[(]?logging')
 def _translation_checks_not_enforced(filename):
     # Do not do these validations on tests
     return any(pat in filename for pat in ["/tests/", "rally-jobs/plugins/"])
-
-
-@core.flake8ext
-def assert_true_instance(logical_line):
-    """Check for assertTrue(isinstance(a, b)) sentences
-
-    O316
-    """
-    if assert_trueinst_re.match(logical_line):
-        yield (0, "O316: assertTrue(isinstance(a, b)) sentences not allowed. "
-               "Use assertIsInstance instead.")
-
-
-@core.flake8ext
-def assert_equal_or_not_none(logical_line):
-    """Check for assertEqual(A, None) or assertEqual(None, A) sentences,
-
-    assertNotEqual(A, None) or assertNotEqual(None, A) sentences
-
-    O318
-    """
-    msg = ("O318: assertEqual/assertNotEqual(A, None) or "
-           "assertEqual/assertNotEqual(None, A) sentences not allowed")
-    res = (assert_equal_start_with_none_re.match(logical_line) or
-           assert_equal_end_with_none_re.match(logical_line) or
-           assert_not_equal_start_with_none_re.match(logical_line) or
-           assert_not_equal_end_with_none_re.match(logical_line))
-    if res:
-        yield (0, msg)
 
 
 @core.flake8ext
@@ -120,22 +78,6 @@ def no_mutable_default_args(logical_line):
     msg = "O324: Method's default argument shouldn't be mutable!"
     if mutable_default_args.match(logical_line):
         yield (0, msg)
-
-
-@core.flake8ext
-def assert_equal_in(logical_line):
-    """Check for assertEqual(A in B, True), assertEqual(True, A in B),
-
-    assertEqual(A in B, False) or assertEqual(False, A in B) sentences
-
-    O338
-    """
-    res = (assert_equal_in_start_with_true_or_false_re.search(logical_line) or
-           assert_equal_in_end_with_true_or_false_re.search(logical_line))
-    if res:
-        yield (0, "O338: Use assertIn/NotIn(A, B) rather than "
-               "assertEqual(A in B, True/False) when checking collection "
-               "contents.")
 
 
 @core.flake8ext
