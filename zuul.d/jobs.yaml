@@ -242,3 +242,85 @@
         OCTAVIA_AMP_DISTRIBUTION_RELEASE_ID: 9-stream
         OCTAVIA_AMP_IMAGE_SIZE: 3
         OCTAVIA_AMP_ENABLE_FIPS: True
+
+- job:
+    name: octavia-grenade-stable-2024-2
+    parent: octavia-grenade
+    vars:
+      devstack_local_conf:
+        test-config:
+          "$TEMPEST_CONFIG":
+            load_balancer:
+              RBAC_test_type: advanced
+
+- job:
+    name: octavia-v2-dsvm-tls-barbican-fips-stable-2024-2
+    parent: octavia-v2-dsvm-tls-barbican-fips
+    vars:
+      devstack_local_conf:
+        test-config:
+          "$TEMPEST_CONFIG":
+            load_balancer:
+              RBAC_test_type: advanced
+
+- job:
+    name: octavia-v2-dsvm-cinder-amphora-stable-2024-2
+    parent: octavia-v2-dsvm-cinder-amphora
+    vars:
+      devstack_local_conf:
+        test-config:
+          "$TEMPEST_CONFIG":
+            load_balancer:
+              RBAC_test_type: advanced
+
+- job:
+    name: octavia-v2-dsvm-scenario-two-node-stable-2024-2
+    parent: octavia-v2-dsvm-scenario-two-node
+    override-checkout: stable/2024.2
+    vars:
+      devstack_local_conf:
+        test-config:
+          "$TEMPEST_CONFIG":
+            load_balancer:
+              RBAC_test_type: advanced
+
+- job:
+    name: octavia-v2-dsvm-scenario-ipv6-only-stable-2024-2
+    parent: octavia-v2-dsvm-scenario-ipv6-only
+    override-checkout: stable/2024.2
+    vars:
+      devstack_local_conf:
+        test-config:
+          "$TEMPEST_CONFIG":
+            load_balancer:
+              RBAC_test_type: advanced
+
+- job:
+    name: octavia-v2-dsvm-scenario-centos-9-stream-stable-2024-2
+    parent: octavia-v2-dsvm-scenario-centos-9-stream
+    vars:
+      devstack_local_conf:
+        test-config:
+          "$TEMPEST_CONFIG":
+            load_balancer:
+              RBAC_test_type: advanced
+
+- job:
+    name: octavia-v2-dsvm-scenario-traffic-ops-jobboard-stable-2024-2
+    parent: octavia-v2-dsvm-scenario-traffic-ops-jobboard
+    vars:
+      devstack_local_conf:
+        test-config:
+          "$TEMPEST_CONFIG":
+            load_balancer:
+              RBAC_test_type: advanced
+
+- job:
+    name: octavia-v2-dsvm-scenario-non-traffic-ops-jobboard-stable-2024-2
+    parent: octavia-v2-dsvm-scenario-non-traffic-ops-jobboard
+    vars:
+      devstack_local_conf:
+        test-config:
+          "$TEMPEST_CONFIG":
+            load_balancer:
+              RBAC_test_type: advanced
