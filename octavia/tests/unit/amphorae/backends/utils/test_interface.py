@@ -325,12 +325,12 @@ class TestInterface(base.TestCase):
                        "net.ipv6.conf.iface2.autoconf=0"],
                       stderr=subprocess.STDOUT)])
 
-    @mock.patch('pyroute2.IPRoute.rule')
-    @mock.patch('pyroute2.IPRoute.route')
-    @mock.patch('pyroute2.IPRoute.addr')
-    @mock.patch('pyroute2.IPRoute.link')
-    @mock.patch('pyroute2.IPRoute.get_links')
-    @mock.patch('pyroute2.IPRoute.link_lookup')
+    @mock.patch('pyroute2.IPRoute.rule', create=True)
+    @mock.patch('pyroute2.IPRoute.route', create=True)
+    @mock.patch('pyroute2.IPRoute.addr', create=True)
+    @mock.patch('pyroute2.IPRoute.link', create=True)
+    @mock.patch('pyroute2.IPRoute.get_links', create=True)
+    @mock.patch('pyroute2.IPRoute.link_lookup', create=True)
     @mock.patch('subprocess.check_output')
     def test_up(self, mock_check_output, mock_link_lookup, mock_get_links,
                 mock_link, mock_addr, mock_route, mock_rule):
@@ -455,12 +455,12 @@ class TestInterface(base.TestCase):
                 'NetworkNamespace')
     @mock.patch('octavia.amphorae.backends.utils.nftable_utils.'
                 'write_nftable_rules_file')
-    @mock.patch('pyroute2.IPRoute.rule')
-    @mock.patch('pyroute2.IPRoute.route')
-    @mock.patch('pyroute2.IPRoute.addr')
-    @mock.patch('pyroute2.IPRoute.link')
-    @mock.patch('pyroute2.IPRoute.get_links')
-    @mock.patch('pyroute2.IPRoute.link_lookup')
+    @mock.patch('pyroute2.IPRoute.rule', create=True)
+    @mock.patch('pyroute2.IPRoute.route', create=True)
+    @mock.patch('pyroute2.IPRoute.addr', create=True)
+    @mock.patch('pyroute2.IPRoute.link', create=True)
+    @mock.patch('pyroute2.IPRoute.get_links', create=True)
+    @mock.patch('pyroute2.IPRoute.link_lookup', create=True)
     @mock.patch('subprocess.check_output')
     def test_up_sriov(self, mock_check_output, mock_link_lookup,
                       mock_get_links, mock_link, mock_addr, mock_route,
@@ -587,17 +587,17 @@ class TestInterface(base.TestCase):
 
         mock_nftable.assert_called_once_with('fake-eth1', [])
 
-    @mock.patch('pyroute2.IPRoute.rule')
-    @mock.patch('pyroute2.IPRoute.route')
-    @mock.patch('pyroute2.IPRoute.addr')
-    @mock.patch('pyroute2.IPRoute.link')
-    @mock.patch('pyroute2.IPRoute.get_links')
-    @mock.patch('pyroute2.IPRoute.link_lookup')
-    @mock.patch('pyroute2.IPRoute.get_rules')
+    @mock.patch('pyroute2.IPRoute.rule', create=True)
+    @mock.patch('pyroute2.IPRoute.get_routes', create=True)
+    @mock.patch('pyroute2.IPRoute.addr', create=True)
+    @mock.patch('pyroute2.IPRoute.link', create=True)
+    @mock.patch('pyroute2.IPRoute.get_links', create=True)
+    @mock.patch('pyroute2.IPRoute.link_lookup', create=True)
+    @mock.patch('pyroute2.IPRoute.get_rules', create=True)
     @mock.patch('subprocess.check_output')
     def test_up_backend(self, mock_check_output, mock_get_rules,
                         mock_link_lookup, mock_get_links, mock_link, mock_addr,
-                        mock_route, mock_rule):
+                        mock_get_routes, mock_rule):
         iface = interface_file.InterfaceFile(
             name="eth1",
             if_type="backend",
@@ -649,8 +649,7 @@ class TestInterface(base.TestCase):
                       family=socket.AF_INET),
         ])
 
-        mock_route.assert_called_once_with(
-            'dump', family=mock.ANY, match=mock.ANY)
+        mock_get_routes.assert_called_once_with(oif=idx)
 
         # for 'backend' iface, we don't update the rules
         mock_rule.assert_not_called()
@@ -659,15 +658,15 @@ class TestInterface(base.TestCase):
             mock.call(["post-up", "eth1"])
         ])
 
-    @mock.patch('pyroute2.IPRoute.rule')
-    @mock.patch('pyroute2.IPRoute.route')
-    @mock.patch('pyroute2.IPRoute.addr')
-    @mock.patch('pyroute2.IPRoute.link')
-    @mock.patch('pyroute2.IPRoute.get_links')
-    @mock.patch('pyroute2.IPRoute.get_rules')
-    @mock.patch('pyroute2.IPRoute.get_routes')
-    @mock.patch('pyroute2.IPRoute.get_addr')
-    @mock.patch('pyroute2.IPRoute.link_lookup')
+    @mock.patch('pyroute2.IPRoute.rule', create=True)
+    @mock.patch('pyroute2.IPRoute.route', create=True)
+    @mock.patch('pyroute2.IPRoute.addr', create=True)
+    @mock.patch('pyroute2.IPRoute.link', create=True)
+    @mock.patch('pyroute2.IPRoute.get_links', create=True)
+    @mock.patch('pyroute2.IPRoute.get_rules', create=True)
+    @mock.patch('pyroute2.IPRoute.get_routes', create=True)
+    @mock.patch('pyroute2.IPRoute.get_addr', create=True)
+    @mock.patch('pyroute2.IPRoute.link_lookup', create=True)
     @mock.patch('subprocess.check_output')
     @mock.patch('octavia.amphorae.backends.utils.interface.'
                 'InterfaceController._wait_tentative')
@@ -857,15 +856,15 @@ class TestInterface(base.TestCase):
             mock.call(["post-up", "eth1"])
         ])
 
-    @mock.patch('pyroute2.IPRoute.rule')
-    @mock.patch('pyroute2.IPRoute.route')
-    @mock.patch('pyroute2.IPRoute.addr')
-    @mock.patch('pyroute2.IPRoute.link')
-    @mock.patch('pyroute2.IPRoute.get_links')
-    @mock.patch('pyroute2.IPRoute.get_rules')
-    @mock.patch('pyroute2.IPRoute.get_routes')
-    @mock.patch('pyroute2.IPRoute.get_addr')
-    @mock.patch('pyroute2.IPRoute.link_lookup')
+    @mock.patch('pyroute2.IPRoute.rule', create=True)
+    @mock.patch('pyroute2.IPRoute.route', create=True)
+    @mock.patch('pyroute2.IPRoute.addr', create=True)
+    @mock.patch('pyroute2.IPRoute.link', create=True)
+    @mock.patch('pyroute2.IPRoute.get_links', create=True)
+    @mock.patch('pyroute2.IPRoute.get_rules', create=True)
+    @mock.patch('pyroute2.IPRoute.get_routes', create=True)
+    @mock.patch('pyroute2.IPRoute.get_addr', create=True)
+    @mock.patch('pyroute2.IPRoute.link_lookup', create=True)
     @mock.patch('subprocess.check_output')
     @mock.patch('octavia.amphorae.backends.utils.interface.'
                 'InterfaceController._wait_tentative')
@@ -928,12 +927,12 @@ class TestInterface(base.TestCase):
             mock.call(["post-up", iface.name])
         ])
 
-    @mock.patch('pyroute2.IPRoute.rule')
-    @mock.patch('pyroute2.IPRoute.route')
-    @mock.patch('pyroute2.IPRoute.addr')
-    @mock.patch('pyroute2.IPRoute.link')
-    @mock.patch('pyroute2.IPRoute.get_links')
-    @mock.patch('pyroute2.IPRoute.link_lookup')
+    @mock.patch('pyroute2.IPRoute.rule', create=True)
+    @mock.patch('pyroute2.IPRoute.route', create=True)
+    @mock.patch('pyroute2.IPRoute.addr', create=True)
+    @mock.patch('pyroute2.IPRoute.link', create=True)
+    @mock.patch('pyroute2.IPRoute.get_links', create=True)
+    @mock.patch('pyroute2.IPRoute.link_lookup', create=True)
     @mock.patch('subprocess.check_output')
     def test_down(self, mock_check_output, mock_link_lookup, mock_get_links,
                   mock_link, mock_addr, mock_route, mock_rule):
@@ -1053,13 +1052,13 @@ class TestInterface(base.TestCase):
             mock.call(["post-down", "eth1"])
         ])
 
-    @mock.patch('pyroute2.IPRoute.rule')
-    @mock.patch('pyroute2.IPRoute.route')
-    @mock.patch('pyroute2.IPRoute.addr')
-    @mock.patch('pyroute2.IPRoute.flush_addr')
-    @mock.patch('pyroute2.IPRoute.link')
-    @mock.patch('pyroute2.IPRoute.get_links')
-    @mock.patch('pyroute2.IPRoute.link_lookup')
+    @mock.patch('pyroute2.IPRoute.rule', create=True)
+    @mock.patch('pyroute2.IPRoute.route', create=True)
+    @mock.patch('pyroute2.IPRoute.addr', create=True)
+    @mock.patch('pyroute2.IPRoute.flush_addr', create=True)
+    @mock.patch('pyroute2.IPRoute.link', create=True)
+    @mock.patch('pyroute2.IPRoute.get_links', create=True)
+    @mock.patch('pyroute2.IPRoute.link_lookup', create=True)
     @mock.patch('subprocess.check_output')
     def test_down_with_errors(self, mock_check_output, mock_link_lookup,
                               mock_get_links, mock_link, mock_flush_addr,
@@ -1204,12 +1203,12 @@ class TestInterface(base.TestCase):
             mock.call(["post-down", "eth1"])
         ])
 
-    @mock.patch('pyroute2.IPRoute.rule')
-    @mock.patch('pyroute2.IPRoute.route')
-    @mock.patch('pyroute2.IPRoute.addr')
-    @mock.patch('pyroute2.IPRoute.link')
-    @mock.patch('pyroute2.IPRoute.get_links')
-    @mock.patch('pyroute2.IPRoute.link_lookup')
+    @mock.patch('pyroute2.IPRoute.rule', create=True)
+    @mock.patch('pyroute2.IPRoute.route', create=True)
+    @mock.patch('pyroute2.IPRoute.addr', create=True)
+    @mock.patch('pyroute2.IPRoute.link', create=True)
+    @mock.patch('pyroute2.IPRoute.get_links', create=True)
+    @mock.patch('pyroute2.IPRoute.link_lookup', create=True)
     @mock.patch('subprocess.check_output')
     def test_down_already_down(self, mock_check_output, mock_link_lookup,
                                mock_get_links, mock_link, mock_addr,
@@ -1276,13 +1275,13 @@ class TestInterface(base.TestCase):
         mock_rule.assert_not_called()
         mock_check_output.assert_not_called()
 
-    @mock.patch('pyroute2.IPRoute.rule')
-    @mock.patch('pyroute2.IPRoute.route')
-    @mock.patch('pyroute2.IPRoute.addr')
-    @mock.patch('pyroute2.IPRoute.flush_addr')
-    @mock.patch('pyroute2.IPRoute.link')
-    @mock.patch('pyroute2.IPRoute.get_links')
-    @mock.patch('pyroute2.IPRoute.link_lookup')
+    @mock.patch('pyroute2.IPRoute.rule', create=True)
+    @mock.patch('pyroute2.IPRoute.route', create=True)
+    @mock.patch('pyroute2.IPRoute.addr', create=True)
+    @mock.patch('pyroute2.IPRoute.flush_addr', create=True)
+    @mock.patch('pyroute2.IPRoute.link', create=True)
+    @mock.patch('pyroute2.IPRoute.get_links', create=True)
+    @mock.patch('pyroute2.IPRoute.link_lookup', create=True)
     @mock.patch('subprocess.check_output')
     def test_down_auto(self, mock_check_output, mock_link_lookup,
                        mock_get_links, mock_link, mock_flush_addr,
