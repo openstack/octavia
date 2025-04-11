@@ -186,9 +186,14 @@ class TestAvailabilityZoneCapabilities(base.BaseAPITest):
             provider='bogus'), status=400)
 
     def test_noop_provider(self):
-        ref_capabilities = [{'description': 'The compute availability zone to '
-                                            'use for this loadbalancer.',
-                             'name': constants.COMPUTE_ZONE}]
+        ref_capabilities = [
+            {'description': 'The compute availability zone to '
+                            'use for this loadbalancer.',
+             'name': constants.COMPUTE_ZONE},
+            {'description': 'The volume availability zone to '
+                            'use for this loadbalancer.',
+             'name': constants.VOLUME_ZONE},
+        ]
 
         result = self.get(
             self.AVAILABILITY_ZONE_CAPABILITIES_PATH.format(
@@ -220,9 +225,14 @@ class TestAvailabilityZoneCapabilities(base.BaseAPITest):
             provider='noop_driver'), status=501)
 
     def test_authorized(self):
-        ref_capabilities = [{'description': 'The compute availability zone to '
-                                            'use for this loadbalancer.',
-                             'name': constants.COMPUTE_ZONE}]
+        ref_capabilities = [
+            {'description': 'The compute availability zone to '
+                            'use for this loadbalancer.',
+             'name': constants.COMPUTE_ZONE},
+            {'description': 'The volume availability zone to '
+                            'use for this loadbalancer.',
+             'name': constants.VOLUME_ZONE},
+        ]
         self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
         auth_strategy = self.conf.conf.api_settings.get('auth_strategy')
         self.conf.config(group='api_settings', auth_strategy=constants.TESTING)

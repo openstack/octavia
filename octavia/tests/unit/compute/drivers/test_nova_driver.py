@@ -144,7 +144,7 @@ class TestNovaClient(base.TestCase):
                                         config_drive_files='Files Blah')
 
         self.assertEqual(self.amphora.compute_id, amphora_id)
-        mock_driver.create_volume_from_image.assert_called_with(1)
+        mock_driver.create_volume_from_image.assert_called_with(1, None)
         self.manager.manager.create.assert_called_with(
             name="amphora_name",
             nics=[{'net-id': 1}, {'port-id': 2}],
@@ -161,7 +161,9 @@ class TestNovaClient(base.TestCase):
         )
 
     def test_build_with_availability_zone(self):
-        FAKE_AZ = "my_availability_zone"
+        FAKE_AZ_NAME = "my_availability_zone"
+        self.conf.config(group="nova", availability_zone=FAKE_AZ_NAME)
+        FAKE_AZ = {constants.COMPUTE_ZONE: FAKE_AZ_NAME}
 
         amphora_id = self.manager.build(amphora_flavor=1, image_tag='malt',
                                         key_name=1,
@@ -185,9 +187,49 @@ class TestNovaClient(base.TestCase):
             userdata='Blah',
             config_drive=True,
             scheduler_hints=None,
-            availability_zone=FAKE_AZ,
+            availability_zone=FAKE_AZ_NAME,
             block_device_mapping={}
         )
+
+    @mock.patch('stevedore.driver.DriverManager.driver')
+    def test_build_with_availability_zone_and_volume(self, mock_driver):
+        FAKE_AZ_NAME = "my_availability_zone"
+        self.conf.config(group="controller_worker",
+                         volume_driver='volume_cinder_driver')
+        self.conf.config(group="nova", availability_zone=FAKE_AZ_NAME)
+        self.conf.config(group="cinder", availability_zone=FAKE_AZ_NAME)
+        FAKE_AZ = {constants.COMPUTE_ZONE: FAKE_AZ_NAME,
+                   constants.VOLUME_ZONE: FAKE_AZ_NAME}
+
+        self.manager.volume_driver = mock_driver
+        mock_driver.create_volume_from_image.return_value = 1
+
+        amphora_id = self.manager.build(amphora_flavor=1, image_tag='pilsner',
+                                        key_name=1,
+                                        sec_groups=1,
+                                        network_ids=[1],
+                                        port_ids=[2],
+                                        user_data='Blah',
+                                        config_drive_files='Files Blah',
+                                        availability_zone=FAKE_AZ)
+
+        self.assertEqual(self.amphora.compute_id, amphora_id)
+
+        self.manager.manager.create.assert_called_with(
+            name="amphora_name",
+            nics=[{'net-id': 1}, {'port-id': 2}],
+            image=None,
+            flavor=1,
+            key_name=1,
+            security_groups=1,
+            files='Files Blah',
+            userdata='Blah',
+            config_drive=True,
+            scheduler_hints=None,
+            availability_zone=FAKE_AZ_NAME,
+            block_device_mapping={'vda': '1:::true'}
+        )
+        mock_driver.create_volume_from_image.assert_called_with(1, FAKE_AZ)
 
     def test_build_with_availability_zone_config(self):
         FAKE_AZ = "my_availability_zone"

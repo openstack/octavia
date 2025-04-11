@@ -269,7 +269,7 @@ class TestComputeTasks(base.TestCase):
                                 '/etc/rsyslog.d/10-rsyslog.conf': 'FAKE CFG'},
             user_data='user_data_conf',
             server_group_id=SERVER_GRPOUP_ID,
-            availability_zone=compute_zone)
+            availability_zone=az_dict)
 
         # Make sure it returns the expected compute_id
         self.assertEqual(COMPUTE_ID, compute_id)
