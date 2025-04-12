@@ -1,0 +1,8 @@
+---
+fixes:
+  - |
+    Fixed a bug with the `nopreempt` option in keepalived. The option didn't
+    work properly because the default role of the `MASTER` amphora was set.
+    Removing the default roles from the configuration files fixed that issue.
+    Now after a failover, the newly created amphora doesn't preempt the
+    `MASTER` role from the other amphora.
