@@ -104,6 +104,16 @@ class TestPaginationHelper(base.TestCase):
         self.assertEqual(params, helper.filters)
 
     @mock.patch('octavia.api.common.pagination.request')
+    def test_filter_with_booleans(self, request_mock):
+        params = {'backup': 'True', 'admin_state_up': 'false'}
+        expected_params = {'backup': True, 'enabled': False}
+        helper = pagination.PaginationHelper(params)
+        query_mock = mock.MagicMock()
+
+        helper.apply(query_mock, models.Member)
+        self.assertEqual(expected_params, helper.filters)
+
+    @mock.patch('octavia.api.common.pagination.request')
     def test_filter_mismatched_params(self, request_mock):
         params = {
             'id': 'fake_id',
