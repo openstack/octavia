@@ -1,0 +1,5 @@
+---
+fixes:
+  - |
+    Fixed an issue when filtering resources with a boolean attribute in the GET
+    calls in the Octavia API.
