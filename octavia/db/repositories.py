@@ -365,8 +365,7 @@ class Repositories(object):
                                  provisioning_status=lb_prov_status)
         return success
 
-    def check_quota_met(self, session, lock_session, _class, project_id,
-                        count=1):
+    def check_quota_met(self, session: Session, _class, project_id, count=1):
         """Checks and updates object quotas.
 
         This method makes sure the project has available quota
@@ -374,7 +373,6 @@ class Repositories(object):
         new ussage.
 
         :param session: Context database session
-        :param lock_session: Locking database session (autocommit=False)
         :param _class: Data model object requesting quota
         :param project_id: Project ID requesting quota
         :param count: Number of objects we're going to create (default=1)
@@ -398,7 +396,7 @@ class Repositories(object):
         # Note: You cannot just use the current count as the in-use
         # value as we don't want to lock the whole resource table
         try:
-            quotas = (lock_session.query(models.Quotas)
+            quotas = (session.query(models.Quotas)
                       .filter_by(project_id=project_id)
                       .populate_existing()
                       .with_for_update()

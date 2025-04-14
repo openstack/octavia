@@ -155,7 +155,6 @@ class L7RuleController(base.BaseController):
         try:
             if self.repositories.check_quota_met(
                     context.session,
-                    context.session,
                     data_models.L7Rule,
                     l7rule.project_id):
                 raise exceptions.QuotaException(

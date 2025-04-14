@@ -151,7 +151,6 @@ class L7PolicyController(base.BaseController):
         lock_session.begin()
         try:
             if self.repositories.check_quota_met(
-                    context.session,
                     lock_session,
                     data_models.L7Policy,
                     l7policy.project_id):

@@ -465,7 +465,6 @@ class LoadBalancersController(base.BaseController):
         lock_session.begin()
         try:
             if self.repositories.check_quota_met(
-                    context.session,
                     lock_session,
                     data_models.LoadBalancer,
                     load_balancer.project_id):
@@ -560,7 +559,7 @@ class LoadBalancersController(base.BaseController):
                 lock_session.expire_all()
 
                 db_pools, db_lists = self._graph_create(
-                    context.session, lock_session, db_lb, listeners, pools)
+                    lock_session, db_lb, listeners, pools)
 
             # Prepare the data for the driver data model
             driver_lb_dict = driver_utils.lb_dict_to_provider_dict(
@@ -590,7 +589,7 @@ class LoadBalancersController(base.BaseController):
             db_lb, lb_types.LoadBalancerFullResponse)
         return lb_types.LoadBalancerFullRootResponse(loadbalancer=result)
 
-    def _graph_create(self, session, lock_session, db_lb, listeners, pools):
+    def _graph_create(self, session, db_lb, listeners, pools):
         # Track which pools must have a full specification
         pools_required = set()
         # Look through listeners and find any extra pools, and move them to the
@@ -649,7 +648,7 @@ class LoadBalancersController(base.BaseController):
 
         # Check quotas for pools.
         if pools and self.repositories.check_quota_met(
-                session, lock_session, data_models.Pool, db_lb.project_id,
+                session, data_models.Pool, db_lb.project_id,
                 count=len(pools)):
             raise exceptions.QuotaException(resource=data_models.Pool._name())
 
@@ -668,13 +667,13 @@ class LoadBalancersController(base.BaseController):
             p['load_balancer_id'] = db_lb.id
             p['project_id'] = db_lb.project_id
             new_pool = (pool.PoolsController()._graph_create(
-                session, lock_session, p))
+                session, p))
             new_pools.append(new_pool)
             pool_name_ids[new_pool.name] = new_pool.id
 
         # Now check quotas for listeners
         if listeners and self.repositories.check_quota_met(
-                session, lock_session, data_models.Listener, db_lb.project_id,
+                session, data_models.Listener, db_lb.project_id,
                 count=len(listeners)):
             raise exceptions.QuotaException(
                 resource=data_models.Listener._name())
@@ -694,7 +693,7 @@ class LoadBalancersController(base.BaseController):
             li['load_balancer_id'] = db_lb.id
             li['project_id'] = db_lb.project_id
             new_lists.append(listener.ListenersController()._graph_create(
-                lock_session, li, pool_name_ids=pool_name_ids))
+                session, li, pool_name_ids=pool_name_ids))
 
         return new_pools, new_lists
 
