@@ -1721,7 +1721,11 @@ class TestNetworkTasks(base.TestCase):
         # Test revert
         mock_driver.reset_mock()
 
-        net_task.revert([port_mock], vip_dict, VIP_SG_ID, AMP_ID,
+        # The execute path generates a port dict, so this will be the result
+        # passed into the revert method by Taskflow
+        port_dict = {constants.ID: PORT_ID}
+
+        net_task.revert(port_dict, vip_dict, VIP_SG_ID, AMP_ID,
                         additional_vips)
 
         mock_driver.delete_port.assert_called_once_with(PORT_ID)
@@ -1729,7 +1733,7 @@ class TestNetworkTasks(base.TestCase):
         # Test revert exception
         mock_driver.reset_mock()
 
-        net_task.revert([port_mock], vip_dict, VIP_SG_ID, AMP_ID,
+        net_task.revert(port_dict, vip_dict, VIP_SG_ID, AMP_ID,
                         additional_vips)
 
         mock_driver.delete_port.assert_called_once_with(PORT_ID)
