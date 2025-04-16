@@ -1,0 +1,6 @@
+---
+fixes:
+  - |
+    Ignore serialization loadbalancer class in GetAmphoraNetworkConfigs tasks.
+    It allows to avoid storing full graph in jobboard details. It fixes cases
+    with enabled jobboard for huge LBs with ~2000+ resources in graph.
