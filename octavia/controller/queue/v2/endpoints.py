@@ -15,9 +15,9 @@
 from oslo_config import cfg
 from oslo_log import log as logging
 import oslo_messaging as messaging
+from stevedore import driver as stevedore_driver
 
 from octavia.common import constants
-from octavia.controller.worker.v2 import controller_worker
 
 CONF = cfg.CONF
 
@@ -34,7 +34,11 @@ class Endpoints:
         version='2.0')
 
     def __init__(self):
-        self.worker = controller_worker.ControllerWorker()
+        self.worker = stevedore_driver.DriverManager(
+            namespace='octavia.plugins',
+            name=CONF.octavia_plugins,
+            invoke_on_load=True
+        ).driver
 
     def create_load_balancer(self, context, loadbalancer,
                              flavor=None, availability_zone=None):
