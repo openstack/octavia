@@ -185,7 +185,7 @@ function _configure_octavia_apache_wsgi {
 }
 
 function _configure_octavia_apache_uwsgi {
-    write_uwsgi_config "$OCTAVIA_UWSGI_CONF" "$OCTAVIA_UWSGI_APP" "/$OCTAVIA_SERVICE_TYPE"
+    write_uwsgi_config "$OCTAVIA_UWSGI_CONF" "$OCTAVIA_UWSGI_APP" "/$OCTAVIA_SERVICE_TYPE" "" "octavia-wsgi"
 }
 
 

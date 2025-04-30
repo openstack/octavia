@@ -1,0 +1,29 @@
+---
+features:
+  - |
+    A new module, ``octavia.wsgi``, has been added as a place to gather WSGI
+    ``application`` objects. This is intended to ease deployment by providing
+    a consistent location for these objects. For example, if using uWSGI then
+    instead of:
+
+    .. code-block:: ini
+
+        [uwsgi]
+        wsgi-file = /bin/octavia-wsgi
+
+    You can now use:
+
+    .. code-block:: ini
+
+        [uwsgi]
+        module = octavia.wsgi.api:application
+
+    This also simplifies deployment with other WSGI servers that expect module
+    paths such as gunicorn.
+upgrade:
+  - |
+    The WSGI script ``octavia-wsgi`` has been removed. Deployment tooling
+    should instead reference the Python module path for the wsgi module in
+    Octavia, ``octavia.wsgi.api:application`` if their chosen WSGI server
+    supports this (gunicorn, uWSGI, etc.) or implement a .wsgi script
+    themselves if not (mod_wsgi).

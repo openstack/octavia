@@ -245,21 +245,6 @@
         OCTAVIA_AMP_ENABLE_FIPS: True
 
 - job:
-    name: octavia-v2-dsvm-tls-barbican-fips
-    parent: octavia-v2-dsvm-tls-barbican
-    nodeset: octavia-single-node-centos-9-stream
-    description: |
-      Functional testing for a FIPS enabled Centos 9 system
-    pre-run: playbooks/enable-fips.yaml
-    vars:
-      nslookup_target: 'opendev.org'
-      devstack_localrc:
-        OCTAVIA_AMP_BASE_OS: centos
-        OCTAVIA_AMP_DISTRIBUTION_RELEASE_ID: 9-stream
-        OCTAVIA_AMP_IMAGE_SIZE: 3
-        OCTAVIA_AMP_ENABLE_FIPS: True
-
-- job:
     name: octavia-v2-dsvm-scenario-traffic-ops-ubuntu-jammy
     parent: octavia-v2-dsvm-scenario-ubuntu-jammy
     vars:
