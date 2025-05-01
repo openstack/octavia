@@ -1,0 +1,24 @@
+---
+upgrade:
+  - |
+    The default TLS cipher suite list has been updated to the current
+    'intermediate' recommendations. Load balancers will need to be failed over
+    to use the new default list if the operator and user opted for the Octavia
+    default cipher list.
+security:
+  - |
+    Updated the default TLS cipher suites based on current OWASP/Mozilla.org
+    recommendations for Intermediate compatibility. The new default list is\:
+
+    - TLS_AES_128_GCM_SHA256
+    - TLS_AES_256_GCM_SHA384
+    - TLS_CHACHA20_POLY1305_SHA256
+    - ECDHE-ECDSA-AES128-GCM-SHA256
+    - ECDHE-RSA-AES128-GCM-SHA256
+    - ECDHE-ECDSA-AES256-GCM-SHA384
+    - ECDHE-RSA-AES256-GCM-SHA384
+    - ECDHE-ECDSA-CHACHA20-POLY1305
+    - ECDHE-RSA-CHACHA20-POLY1305
+    - DHE-RSA-AES128-GCM-SHA256
+    - DHE-RSA-AES256-GCM-SHA384
+    - DHE-RSA-CHACHA20-POLY1305
