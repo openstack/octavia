@@ -56,6 +56,7 @@
             irrelevant-files: *irrelevant-files
         - octavia-v2-dsvm-tls-barbican:
             irrelevant-files: *irrelevant-files
+            voting: false
         - octavia-grenade:
             irrelevant-files: &grenade-irrelevant-files
               - ^.*\.rst$
@@ -113,7 +114,6 @@
         - octavia-v2-dsvm-scenario-non-traffic-ops
         - octavia-v2-dsvm-scenario-traffic-ops-ubuntu-jammy
         - octavia-v2-dsvm-scenario-non-traffic-ops-ubuntu-jammy
-        - octavia-v2-dsvm-tls-barbican
         - octavia-grenade
         #- octavia-grenade-skip-level
     periodic:

@@ -1,0 +1,5 @@
+---
+other:
+  - |
+    Added a "octavia-wsgi" script for backward compatibility now that pbr's
+    wsgi_scripts no longer functions with the latest setuptools.
