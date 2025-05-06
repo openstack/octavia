@@ -136,86 +136,26 @@ function build_octavia_worker_image {
     fi
 
     upload_image file://${OCTAVIA_AMP_IMAGE_FILE} $TOKEN
-
-}
-
-function _configure_octavia_apache_wsgi {
-
-    # Make sure mod_wsgi is enabled in apache
-    # This is important for multinode where other services have not yet
-    # enabled it.
-    install_apache_wsgi
-
-    local octavia_apache_conf
-    octavia_apache_conf=$(apache_site_config_for octavia)
-
-    # Use the alternate port if we are running multinode behind haproxy
-    if [ $OCTAVIA_NODE != 'standalone' ] && [ $OCTAVIA_NODE != 'api' ]; then
-        local octavia_api_port=$OCTAVIA_HA_PORT
-    else
-        local octavia_api_port=$OCTAVIA_PORT
-    fi
-    local octavia_ssl=""
-    local octavia_certfile=""
-    local octavia_keyfile=""
-    local venv_path=""
-
-    if is_ssl_enabled_service octavia; then
-        octavia_ssl="SSLEngine On"
-        octavia_certfile="SSLCertificateFile $OCTAVIA_SSL_CERT"
-        octavia_keyfile="SSLCertificateKeyFile $OCTAVIA_SSL_KEY"
-    fi
-
-    if [[ ${USE_VENV} = True ]]; then
-        venv_path="python-path=${PROJECT_VENV["octavia"]}/lib/$(python_version)/site-packages"
-    fi
-
-    sudo cp ${OCTAVIA_DIR}/devstack/files/wsgi/octavia-api.template $octavia_apache_conf
-    sudo sed -e "
-        s|%OCTAVIA_SERVICE_PORT%|$octavia_api_port|g;
-        s|%USER%|$APACHE_USER|g;
-        s|%APACHE_NAME%|$APACHE_NAME|g;
-        s|%SSLENGINE%|$octavia_ssl|g;
-        s|%SSLCERTFILE%|$octavia_certfile|g;
-        s|%SSLKEYFILE%|$octavia_keyfile|g;
-        s|%VIRTUALENV%|$venv_path|g
-        s|%APIWORKERS%|$API_WORKERS|g;
-    " -i $octavia_apache_conf
-
 }
 
 function _configure_octavia_apache_uwsgi {
     write_uwsgi_config "$OCTAVIA_UWSGI_CONF" "$OCTAVIA_UWSGI_APP" "/$OCTAVIA_SERVICE_TYPE" "" "octavia-wsgi"
 }
 
-
 function _cleanup_octavia_apache_wsgi {
-    if [[ "$WSGI_MODE" == "uwsgi" ]]; then
-        remove_uwsgi_config "$OCTAVIA_UWSGI_CONF" "$OCTAVIA_UWSGI_APP"
-        restart_apache_server
-    else
-        sudo rm -f $(apache_site_config_for octavia)
-        restart_apache_server
-    fi
+    remove_uwsgi_config "$OCTAVIA_UWSGI_CONF" "$OCTAVIA_UWSGI_APP"
+    restart_apache_server
 }
 
 function _start_octavia_apache_wsgi {
-    if [[ "$WSGI_MODE" == "uwsgi" ]]; then
-        run_process o-api "$(which uwsgi) --ini $OCTAVIA_UWSGI_CONF"
-        enable_apache_site octavia-wsgi
-    else
-        enable_apache_site octavia
-    fi
+    run_process o-api "$(which uwsgi) --ini $OCTAVIA_UWSGI_CONF"
+    enable_apache_site octavia-wsgi
     restart_apache_server
 }
 
 function _stop_octavia_apache_wsgi {
-    if [[ "$WSGI_MODE" == "uwsgi" ]]; then
-        disable_apache_site octavia-wsgi
-        stop_process o-api
-    else
-        disable_apache_site octavia
-    fi
+    disable_apache_site octavia-wsgi
+    stop_process o-api
     restart_apache_server
 }
 
@@ -230,18 +170,14 @@ function create_octavia_accounts {
     octavia_service=$(get_or_create_service "octavia" \
         $OCTAVIA_SERVICE_TYPE "Octavia Load Balancing Service")
 
-    if [[ "$WSGI_MODE" == "uwsgi" ]] && [[ "$OCTAVIA_NODE" == "main" ]] ; then
+    if [[ "$OCTAVIA_NODE" == "main" ]] ; then
         get_or_create_endpoint $octavia_service \
             "$REGION_NAME" \
             "$OCTAVIA_PROTOCOL://$SERVICE_HOST:$OCTAVIA_PORT/$OCTAVIA_SERVICE_TYPE"
-    elif [[ "$WSGI_MODE" == "uwsgi" ]]; then
-        get_or_create_endpoint $octavia_service \
-            "$REGION_NAME" \
-            "$OCTAVIA_PROTOCOL://$SERVICE_HOST/$OCTAVIA_SERVICE_TYPE"
     else
         get_or_create_endpoint $octavia_service \
             "$REGION_NAME" \
-            "$OCTAVIA_PROTOCOL://$SERVICE_HOST:$OCTAVIA_PORT/"
+            "$OCTAVIA_PROTOCOL://$SERVICE_HOST/$OCTAVIA_SERVICE_TYPE"
     fi
 }
 
@@ -445,11 +381,7 @@ function octavia_configure {
     fi
 
     if [[ "$OCTAVIA_USE_MOD_WSGI" == "True" ]]; then
-        if [[ "$WSGI_MODE" == "uwsgi" ]]; then
-            _configure_octavia_apache_uwsgi
-        else
-            _configure_octavia_apache_wsgi
-        fi
+        _configure_octavia_apache_uwsgi
     fi
 
     if [ $OCTAVIA_NODE == 'main' ]; then
