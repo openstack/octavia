@@ -1,0 +1,13 @@
+---
+features:
+  - |
+    Added support for multiple Fernet keys in the ``[certificates]/server_certs_key_passphrase``
+    configuration option by changing it to a ListOpt. The first key is used for
+    encryption and other keys is used for decryption adding support for rotating
+    the passphrase.
+upgrade:
+  - |
+    The ``[certificates]/server_certs_key_passphrase`` configuration option is
+    now a ListOpt so multiple keys can be specified, the first key is used for
+    encryption and other keys is used for decryption adding support for rotating
+    the passphrase.

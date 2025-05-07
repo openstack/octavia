@@ -15,7 +15,6 @@
 
 import time
 
-from cryptography import fernet
 from oslo_config import cfg
 from oslo_log import log as logging
 from stevedore import driver as stevedore_driver
@@ -186,8 +185,7 @@ class CertComputeCreate(ComputeCreate):
                   encoding='utf-8') as client_ca:
             ca = client_ca.read()
 
-        key = utils.get_compatible_server_certs_key_passphrase()
-        fer = fernet.Fernet(key)
+        fer = utils.get_server_certs_key_passphrases_fernet()
         config_drive_files = {
             '/etc/octavia/certs/server.pem': fer.decrypt(
                 server_pem.encode("utf-8")).decode("utf-8"),

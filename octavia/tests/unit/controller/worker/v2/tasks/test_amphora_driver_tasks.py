@@ -14,7 +14,6 @@
 #
 from unittest import mock
 
-from cryptography import fernet
 from oslo_config import cfg
 from oslo_config import fixture as oslo_fixture
 from oslo_utils import uuidutils
@@ -840,9 +839,8 @@ class TestAmphoraDriverTasks(base.TestCase):
                                  mock_listener_repo_update,
                                  mock_amphora_repo_get,
                                  mock_amphora_repo_update):
-        key = utils.get_compatible_server_certs_key_passphrase()
         mock_amphora_repo_get.return_value = _db_amphora_mock
-        fer = fernet.Fernet(key)
+        fer = utils.get_server_certs_key_passphrases_fernet()
         pem_file_mock = fer.encrypt(
             utils.get_compatible_value('test-pem-file')).decode('utf-8')
         amphora_cert_upload_mock = amphora_driver_tasks.AmphoraCertUpload()

@@ -19,6 +19,7 @@ Common classes for local filesystem certificate handling
 import os
 
 from oslo_config import cfg
+from oslo_config import types as cfg_types
 
 from octavia.certificates.common import cert
 
@@ -37,6 +38,22 @@ TLS_STORAGE_DEFAULT = os.environ.get(
     'OS_OCTAVIA_TLS_STORAGE', '/var/lib/octavia/certificates/'
 )
 
+
+class FernetKeyOpt:
+    regex_pattern = r'^[A-Za-z0-9\-_=]{32}$'
+
+    def __init__(self, value: str):
+        string_type = cfg_types.String(
+            choices=None, regex=self.regex_pattern)
+        self.value = string_type(value)
+
+    def __repr__(self):
+        return self.value.__repr__()
+
+    def __str__(self):
+        return self.value.__str__()
+
+
 certgen_opts = [
     cfg.StrOpt('ca_certificate',
                default=TLS_CERT_DEFAULT,
@@ -51,15 +68,17 @@ certgen_opts = [
                help='Passphrase for the Private Key. Defaults'
                     ' to env[OS_OCTAVIA_CA_KEY_PASS] or None.',
                secret=True),
-    cfg.StrOpt('server_certs_key_passphrase',
-               default=TLS_PASS_AMPS_DEFAULT,
-               help='Passphrase for encrypting Amphora Certificates and '
-                    'Private Keys. Must be 32, base64(url) compatible, '
-                    'characters long. Defaults to env[TLS_PASS_AMPS_DEFAULT] '
-                    'or insecure-key-do-not-use-this-key',
-               regex=r'^[A-Za-z0-9\-_=]{32}$',
-               required=True,
-               secret=True),
+    cfg.ListOpt('server_certs_key_passphrase',
+                default=[TLS_PASS_AMPS_DEFAULT],
+                item_type=FernetKeyOpt,
+                help='List of passphrase for encrypting Amphora Certificates '
+                'and Private Keys, first in list is used for encryption while '
+                'all other keys is used to decrypt previously encrypted data. '
+                'Each key must be 32, base64(url) compatible, characters long.'
+                ' Defaults to env[TLS_PASS_AMPS_DEFAULT] or '
+                'a list with default key insecure-key-do-not-use-this-key',
+                required=True,
+                secret=True),
     cfg.StrOpt('signing_digest',
                default=TLS_DIGEST_DEFAULT,
                help='Certificate signing digest. Defaults'
@@ -80,6 +99,7 @@ certmgr_opts = [
 
 class LocalCert(cert.Cert):
     """Representation of a Cert for local storage."""
+
     def __init__(self, certificate, private_key, intermediates=None,
                  private_key_passphrase=None):
         self.certificate = certificate

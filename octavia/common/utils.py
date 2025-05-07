@@ -25,6 +25,7 @@ import re
 import socket
 import typing
 
+from cryptography import fernet
 from oslo_config import cfg
 from oslo_log import log as logging
 from oslo_utils import excutils
@@ -131,11 +132,24 @@ def get_compatible_value(value):
     return value
 
 
-def get_compatible_server_certs_key_passphrase():
-    key = CONF.certificates.server_certs_key_passphrase
-    if isinstance(key, str):
-        key = key.encode('utf-8')
-    return base64.urlsafe_b64encode(key)
+def _get_compatible_server_certs_key_passphrases():
+    key_opts = CONF.certificates.server_certs_key_passphrase
+    keys = []
+    for key_opt in key_opts:
+        key = str(key_opt)
+        if isinstance(key, str):
+            key = key.encode('utf-8')
+        keys.append(
+            base64.urlsafe_b64encode(key))
+    return keys
+
+
+def get_server_certs_key_passphrases_fernet() -> fernet.MultiFernet:
+    """Get a cryptography.MultiFernet with loaded keys."""
+    keys = [
+        fernet.Fernet(x) for x in
+        _get_compatible_server_certs_key_passphrases()]
+    return fernet.MultiFernet(keys)
 
 
 def subnet_ip_availability(nw_ip_avail, subnet_id, req_num_ips):
@@ -178,6 +192,7 @@ class exception_logger:
               any occurred
 
     """
+
     def __init__(self, logger=None):
         self.logger = logger
 

@@ -16,7 +16,6 @@ import copy
 import random
 from unittest import mock
 
-from cryptography import fernet
 from oslo_db import exception as odb_exceptions
 from oslo_utils import uuidutils
 from sqlalchemy.orm import exc
@@ -1201,8 +1200,7 @@ class TestDatabaseTasks(base.TestCase):
                                         mock_amphora_repo_delete):
 
         update_amp_cert = database_tasks.UpdateAmphoraDBCertExpiration()
-        key = utils.get_compatible_server_certs_key_passphrase()
-        fer = fernet.Fernet(key)
+        fer = utils.get_server_certs_key_passphrases_fernet()
         _pem_mock = fer.encrypt(
             utils.get_compatible_value('test_cert')
         ).decode('utf-8')

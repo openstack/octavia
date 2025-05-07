@@ -13,7 +13,6 @@
 # under the License.
 #
 
-from cryptography import fernet
 from oslo_config import cfg
 from stevedore import driver as stevedore_driver
 from taskflow import task
@@ -45,8 +44,7 @@ class GenerateServerPEMTask(BaseCertTask):
         cert = self.cert_generator.generate_cert_key_pair(
             cn=amphora_id,
             validity=CONF.certificates.cert_validity_time)
-        key = utils.get_compatible_server_certs_key_passphrase()
-        fer = fernet.Fernet(key)
+        fer = utils.get_server_certs_key_passphrases_fernet()
 
         # storing in db requires conversion bytes to string
         # (required for python3)
