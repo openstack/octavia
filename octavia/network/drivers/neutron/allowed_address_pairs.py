@@ -591,6 +591,15 @@ class AllowedAddressPairsDriver(neutron_base.BaseNeutronDriver):
             port[constants.FIXED_IPS] = fixed_ips
         try:
             new_port = self.network_proxy.create_port(**port)
+        except os_exceptions.ConflictException as e:
+            message = _('Error creating neutron port on network '
+                        '{network_id} due to {e}.').format(
+                network_id=load_balancer.vip.network_id, e=repr(e))
+            raise base.VIPInUseException(
+                message,
+                orig_msg=getattr(e, 'details', None),
+                orig_code=getattr(e, constants.STATUS_CODE, None),
+            )
         except Exception as e:
             message = _('Error creating neutron port on network '
                         '{network_id} due to {e}.').format(

@@ -74,6 +74,19 @@ class TestAmphoraDriver(base.TestRpc):
                           self.sample_data.provider_vip_dict,
                           [self.sample_data.provider_additional_vip_dict])
 
+    @mock.patch('octavia.common.utils.get_network_driver')
+    def test_create_vip_port_conflict(self, mock_get_net_driver):
+        mock_net_driver = mock.MagicMock()
+        mock_get_net_driver.return_value = mock_net_driver
+        mock_net_driver.allocate_vip.side_effect = (
+            network_base.VIPInUseException())
+
+        self.assertRaises(exceptions.Conflict,
+                          self.amp_driver.create_vip_port,
+                          self.sample_data.lb_id, self.sample_data.project_id,
+                          self.sample_data.provider_vip_dict,
+                          [self.sample_data.provider_additional_vip_dict])
+
     # Load Balancer
     @mock.patch('oslo_messaging.RPCClient.cast')
     def test_loadbalancer_create(self, mock_cast):

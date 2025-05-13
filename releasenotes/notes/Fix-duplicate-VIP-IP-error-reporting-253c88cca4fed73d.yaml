@@ -1,0 +1,5 @@
+---
+fixes:
+  - |
+    Fixes the error reporting when a user requests a VIP IP address that is
+    already in use.

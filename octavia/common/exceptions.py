@@ -440,3 +440,8 @@ class ListenerNoChildren(APIException):
 class MemberSRIOVDisabled(APIException):
     msg = _('The load balancer flavor does not allow SR-IOV member ports.')
     code = 400
+
+
+class VIPAddressConflict(APIException):
+    msg = _('The VIP IP address is already in use: %(msg)s')
+    code = 409
