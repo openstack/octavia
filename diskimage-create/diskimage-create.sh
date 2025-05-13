@@ -496,6 +496,9 @@ fi
 # Disable SSHD if requested
 if [ "$AMP_DISABLE_SSHD" -eq 1 ]; then
     AMP_element_sequence="$AMP_element_sequence remove-sshd"
+    export DIB_OCTAVIA_AMP_USE_SSH=${DIB_OCTAVIA_AMP_USE_SSH:-False}
+else
+    export DIB_OCTAVIA_AMP_USE_SSH=${DIB_OCTAVIA_AMP_USE_SSH:-True}
 fi
 
 # Enable FIPS if requested

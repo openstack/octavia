@@ -74,6 +74,7 @@ open-vm-tools:
   arch: amd64
 openssh-client:
 openssh-server:
+  when: DIB_OCTAVIA_AMP_USE_SSH = True
 pollinate:
 ppc64-diag:
   arch: ppc64le, ppc64el

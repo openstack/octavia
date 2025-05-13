@@ -1,0 +1,5 @@
+---
+fixes:
+  - |
+    Fixed a bug that caused SSH to not be diabled in amphora images created
+    with the "-n" flag.
