@@ -1,0 +1,6 @@
+---
+fixes:
+  - |
+    Improving assignment of network interfaces in the amphora image to the
+    correct namespace on reboot by ignoring alternative names and relying on
+    the brief output of ip instead of transforming it in the pipe output.
