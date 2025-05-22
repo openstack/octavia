@@ -118,26 +118,23 @@ class TestAvailabilityZones(base.BaseAPITest):
         auth_strategy = self.conf.conf.api_settings.get('auth_strategy')
         self.conf.config(group='api_settings', auth_strategy=constants.TESTING)
         project_id = uuidutils.generate_uuid()
-        with mock.patch.object(octavia.common.context.RequestContext,
-                               'project_id',
-                               project_id):
-            override_credentials = {
-                'service_user_id': None,
-                'user_domain_id': None,
-                'is_admin_project': True,
-                'service_project_domain_id': None,
-                'service_project_id': None,
-                'roles': ['load-balancer_member'],
-                'user_id': None,
-                'is_admin': True,
-                'service_user_domain_id': None,
-                'project_domain_id': None,
-                'service_roles': [],
-                'project_id': project_id}
-            with mock.patch(
-                    "oslo_context.context.RequestContext.to_policy_values",
-                    return_value=override_credentials):
-                response = self.post(self.AZS_PATH, body)
+        override_credentials = {
+            'service_user_id': None,
+            'user_domain_id': None,
+            'is_admin_project': True,
+            'service_project_domain_id': None,
+            'service_project_id': None,
+            'roles': ['load-balancer_member'],
+            'user_id': None,
+            'is_admin': True,
+            'service_user_domain_id': None,
+            'project_domain_id': None,
+            'service_roles': [],
+            'project_id': project_id}
+        with mock.patch(
+                "oslo_context.context.RequestContext.to_policy_values",
+                return_value=override_credentials):
+            response = self.post(self.AZS_PATH, body)
         api_az = response.json.get(self.root_tag)
         self.conf.config(group='api_settings', auth_strategy=auth_strategy)
         self._assert_request_matches_response(az_json, api_az)
@@ -205,9 +202,10 @@ class TestAvailabilityZones(base.BaseAPITest):
         auth_strategy = self.conf.conf.api_settings.get('auth_strategy')
         self.conf.config(group='api_settings', auth_strategy=constants.TESTING)
         project_id = uuidutils.generate_uuid()
-        with mock.patch.object(octavia.common.context.RequestContext,
-                               'project_id',
-                               project_id):
+        test_context = octavia.common.context.RequestContext(
+            project_id=project_id)
+        with mock.patch('oslo_context.context.RequestContext.from_environ',
+                        return_value=test_context):
             override_credentials = {
                 'service_user_id': None,
                 'user_domain_id': None,
@@ -290,26 +288,23 @@ class TestAvailabilityZones(base.BaseAPITest):
         auth_strategy = self.conf.conf.api_settings.get('auth_strategy')
         self.conf.config(group='api_settings', auth_strategy=constants.TESTING)
         project_id = uuidutils.generate_uuid()
-        with mock.patch.object(octavia.common.context.RequestContext,
-                               'project_id',
-                               project_id):
-            override_credentials = {
-                'service_user_id': None,
-                'user_domain_id': None,
-                'is_admin_project': True,
-                'service_project_domain_id': None,
-                'service_project_id': None,
-                'roles': ['load-balancer_member'],
-                'user_id': None,
-                'is_admin': False,
-                'service_user_domain_id': None,
-                'project_domain_id': None,
-                'service_roles': [],
-                'project_id': project_id}
-            with mock.patch(
-                    "oslo_context.context.RequestContext.to_policy_values",
-                    return_value=override_credentials):
-                api_list = response.json.get(self.root_tag_list)
+        override_credentials = {
+            'service_user_id': None,
+            'user_domain_id': None,
+            'is_admin_project': True,
+            'service_project_domain_id': None,
+            'service_project_id': None,
+            'roles': ['load-balancer_member'],
+            'user_id': None,
+            'is_admin': False,
+            'service_user_domain_id': None,
+            'project_domain_id': None,
+            'service_roles': [],
+            'project_id': project_id}
+        with mock.patch(
+                "oslo_context.context.RequestContext.to_policy_values",
+                return_value=override_credentials):
+            api_list = response.json.get(self.root_tag_list)
         self.conf.config(group='api_settings', auth_strategy=auth_strategy)
         self.assertEqual(2, len(api_list))
 
@@ -415,27 +410,24 @@ class TestAvailabilityZones(base.BaseAPITest):
         auth_strategy = self.conf.conf.api_settings.get('auth_strategy')
         self.conf.config(group='api_settings', auth_strategy=constants.TESTING)
         project_id = uuidutils.generate_uuid()
-        with mock.patch.object(octavia.common.context.RequestContext,
-                               'project_id',
-                               project_id):
-            override_credentials = {
-                'service_user_id': None,
-                'user_domain_id': None,
-                'is_admin_project': True,
-                'service_project_domain_id': None,
-                'service_project_id': None,
-                'roles': ['load-balancer_member'],
-                'user_id': None,
-                'is_admin': True,
-                'service_user_domain_id': None,
-                'project_domain_id': None,
-                'service_roles': [],
-                'project_id': project_id}
-            with mock.patch(
-                    "oslo_context.context.RequestContext.to_policy_values",
-                    return_value=override_credentials):
-                self.put(self.AZ_PATH.format(az_name=availability_zone_name),
-                         body)
+        override_credentials = {
+            'service_user_id': None,
+            'user_domain_id': None,
+            'is_admin_project': True,
+            'service_project_domain_id': None,
+            'service_project_id': None,
+            'roles': ['load-balancer_member'],
+            'user_id': None,
+            'is_admin': True,
+            'service_user_domain_id': None,
+            'project_domain_id': None,
+            'service_roles': [],
+            'project_id': project_id}
+        with mock.patch(
+                "oslo_context.context.RequestContext.to_policy_values",
+                return_value=override_credentials):
+            self.put(self.AZ_PATH.format(az_name=availability_zone_name),
+                     body)
         self.conf.config(group='api_settings', auth_strategy=auth_strategy)
 
         updated_az = self.get(self.AZ_PATH.format(
@@ -515,27 +507,24 @@ class TestAvailabilityZones(base.BaseAPITest):
         auth_strategy = self.conf.conf.api_settings.get('auth_strategy')
         self.conf.config(group='api_settings', auth_strategy=constants.TESTING)
         project_id = uuidutils.generate_uuid()
-        with mock.patch.object(octavia.common.context.RequestContext,
-                               'project_id',
-                               project_id):
-            override_credentials = {
-                'service_user_id': None,
-                'user_domain_id': None,
-                'is_admin_project': True,
-                'service_project_domain_id': None,
-                'service_project_id': None,
-                'roles': ['load-balancer_member'],
-                'user_id': None,
-                'is_admin': True,
-                'service_user_domain_id': None,
-                'project_domain_id': None,
-                'service_roles': [],
-                'project_id': project_id}
-            with mock.patch(
-                    "oslo_context.context.RequestContext.to_policy_values",
-                    return_value=override_credentials):
-                self.delete(
-                    self.AZ_PATH.format(az_name=az.get('name')))
+        override_credentials = {
+            'service_user_id': None,
+            'user_domain_id': None,
+            'is_admin_project': True,
+            'service_project_domain_id': None,
+            'service_project_id': None,
+            'roles': ['load-balancer_member'],
+            'user_id': None,
+            'is_admin': True,
+            'service_user_domain_id': None,
+            'project_domain_id': None,
+            'service_roles': [],
+            'project_id': project_id}
+        with mock.patch(
+                "oslo_context.context.RequestContext.to_policy_values",
+                return_value=override_credentials):
+            self.delete(
+                self.AZ_PATH.format(az_name=az.get('name')))
         self.conf.config(group='api_settings', auth_strategy=auth_strategy)
         response = self.get(self.AZ_PATH.format(az_name=az.get('name')),
                             status=404)

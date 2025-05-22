@@ -21,7 +21,6 @@ from oslo_config import fixture as oslo_fixture
 from oslo_utils import uuidutils
 
 from octavia.common import constants
-import octavia.common.context
 from octavia.tests.functional.api.v2 import base
 
 
@@ -102,27 +101,24 @@ class TestFlavorCapabilities(base.BaseAPITest):
         auth_strategy = self.conf.conf.api_settings.get('auth_strategy')
         self.conf.config(group='api_settings', auth_strategy=constants.TESTING)
         project_id = uuidutils.generate_uuid()
-        with mock.patch.object(octavia.common.context.RequestContext,
-                               'project_id',
-                               project_id):
-            override_credentials = {
-                'service_user_id': None,
-                'user_domain_id': None,
-                'is_admin_project': True,
-                'service_project_domain_id': None,
-                'service_project_id': None,
-                'roles': ['load-balancer_member'],
-                'user_id': None,
-                'is_admin': True,
-                'service_user_domain_id': None,
-                'project_domain_id': None,
-                'service_roles': [],
-                'project_id': project_id}
-            with mock.patch(
-                    "oslo_context.context.RequestContext.to_policy_values",
-                    return_value=override_credentials):
-                result = self.get(self.FLAVOR_CAPABILITIES_PATH.format(
-                    provider='noop_driver'))
+        override_credentials = {
+            'service_user_id': None,
+            'user_domain_id': None,
+            'is_admin_project': True,
+            'service_project_domain_id': None,
+            'service_project_id': None,
+            'roles': ['load-balancer_member'],
+            'user_id': None,
+            'is_admin': True,
+            'service_user_domain_id': None,
+            'project_domain_id': None,
+            'service_roles': [],
+            'project_id': project_id}
+        with mock.patch(
+                "oslo_context.context.RequestContext.to_policy_values",
+                return_value=override_credentials):
+            result = self.get(self.FLAVOR_CAPABILITIES_PATH.format(
+                provider='noop_driver'))
         self.conf.config(group='api_settings', auth_strategy=auth_strategy)
         self.assertEqual(ref_capabilities, result.json.get(self.root_tag))
 
@@ -237,28 +233,25 @@ class TestAvailabilityZoneCapabilities(base.BaseAPITest):
         auth_strategy = self.conf.conf.api_settings.get('auth_strategy')
         self.conf.config(group='api_settings', auth_strategy=constants.TESTING)
         project_id = uuidutils.generate_uuid()
-        with mock.patch.object(octavia.common.context.RequestContext,
-                               'project_id',
-                               project_id):
-            override_credentials = {
-                'service_user_id': None,
-                'user_domain_id': None,
-                'is_admin_project': True,
-                'service_project_domain_id': None,
-                'service_project_id': None,
-                'roles': ['load-balancer_member'],
-                'user_id': None,
-                'is_admin': True,
-                'service_user_domain_id': None,
-                'project_domain_id': None,
-                'service_roles': [],
-                'project_id': project_id}
-            with mock.patch(
-                    "oslo_context.context.RequestContext.to_policy_values",
-                    return_value=override_credentials):
-                result = self.get(
-                    self.AVAILABILITY_ZONE_CAPABILITIES_PATH.format(
-                        provider='noop_driver'))
+        override_credentials = {
+            'service_user_id': None,
+            'user_domain_id': None,
+            'is_admin_project': True,
+            'service_project_domain_id': None,
+            'service_project_id': None,
+            'roles': ['load-balancer_member'],
+            'user_id': None,
+            'is_admin': True,
+            'service_user_domain_id': None,
+            'project_domain_id': None,
+            'service_roles': [],
+            'project_id': project_id}
+        with mock.patch(
+                "oslo_context.context.RequestContext.to_policy_values",
+                return_value=override_credentials):
+            result = self.get(
+                self.AVAILABILITY_ZONE_CAPABILITIES_PATH.format(
+                    provider='noop_driver'))
         self.conf.config(group='api_settings', auth_strategy=auth_strategy)
         self.assertEqual(ref_capabilities, result.json.get(self.root_tag))
 

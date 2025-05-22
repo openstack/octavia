@@ -67,28 +67,25 @@ class TestL7Policy(base.BaseAPITest):
         self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
         auth_strategy = self.conf.conf.api_settings.get('auth_strategy')
         self.conf.config(group='api_settings', auth_strategy=constants.TESTING)
-        with mock.patch.object(octavia.common.context.RequestContext,
-                               'project_id',
-                               self.project_id):
-            override_credentials = {
-                'service_user_id': None,
-                'user_domain_id': None,
-                'is_admin_project': True,
-                'service_project_domain_id': None,
-                'service_project_id': None,
-                'roles': ['load-balancer_member', 'member'],
-                'user_id': None,
-                'is_admin': False,
-                'service_user_domain_id': None,
-                'project_domain_id': None,
-                'service_roles': [],
-                'project_id': self.project_id}
-            with mock.patch(
-                    "oslo_context.context.RequestContext.to_policy_values",
-                    return_value=override_credentials):
-                response = self.get(self.L7POLICY_PATH.format(
-                    l7policy_id=api_l7policy.get('id')))
-                response = response.json.get(self.root_tag)
+        override_credentials = {
+            'service_user_id': None,
+            'user_domain_id': None,
+            'is_admin_project': True,
+            'service_project_domain_id': None,
+            'service_project_id': None,
+            'roles': ['load-balancer_member', 'member'],
+            'user_id': None,
+            'is_admin': False,
+            'service_user_domain_id': None,
+            'project_domain_id': None,
+            'service_roles': [],
+            'project_id': self.project_id}
+        with mock.patch(
+                "oslo_context.context.RequestContext.to_policy_values",
+                return_value=override_credentials):
+            response = self.get(self.L7POLICY_PATH.format(
+                l7policy_id=api_l7policy.get('id')))
+            response = response.json.get(self.root_tag)
         self.conf.config(group='api_settings', auth_strategy=auth_strategy)
         self.assertEqual(api_l7policy, response)
 
@@ -100,9 +97,10 @@ class TestL7Policy(base.BaseAPITest):
         self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
         auth_strategy = self.conf.conf.api_settings.get('auth_strategy')
         self.conf.config(group='api_settings', auth_strategy=constants.TESTING)
-        with mock.patch.object(octavia.common.context.RequestContext,
-                               'project_id',
-                               uuidutils.generate_uuid()):
+        test_context = octavia.common.context.RequestContext(
+            project_id=uuidutils.generate_uuid())
+        with mock.patch('oslo_context.context.RequestContext.from_environ',
+                        return_value=test_context):
             response = self.get(self.L7POLICY_PATH.format(
                 l7policy_id=api_l7policy.get('id')), status=403)
         self.conf.config(group='api_settings', auth_strategy=auth_strategy)
@@ -200,9 +198,10 @@ class TestL7Policy(base.BaseAPITest):
         auth_strategy = self.conf.conf.api_settings.get('auth_strategy')
         self.conf.config(group='api_settings',
                          auth_strategy=constants.KEYSTONE)
-        with mock.patch.object(octavia.common.context.RequestContext,
-                               'project_id',
-                               api_l7p_c.get('project_id')):
+        test_context = octavia.common.context.RequestContext(
+            project_id=api_l7p_c.get('project_id'))
+        with mock.patch('oslo_context.context.RequestContext.from_environ',
+                        return_value=test_context):
             override_credentials = {
                 'service_user_id': None,
                 'user_domain_id': None,
@@ -258,9 +257,10 @@ class TestL7Policy(base.BaseAPITest):
         auth_strategy = self.conf.conf.api_settings.get('auth_strategy')
         self.conf.config(group='api_settings',
                          auth_strategy=constants.KEYSTONE)
-        with mock.patch.object(octavia.common.context.RequestContext,
-                               'project_id',
-                               None):
+        test_context = octavia.common.context.RequestContext(
+            project_id=None)
+        with mock.patch('oslo_context.context.RequestContext.from_environ',
+                        return_value=test_context):
             override_credentials = {
                 'service_user_id': None,
                 'user_domain_id': None,
@@ -311,9 +311,10 @@ class TestL7Policy(base.BaseAPITest):
         auth_strategy = self.conf.conf.api_settings.get('auth_strategy')
         self.conf.config(group='api_settings',
                          auth_strategy=constants.KEYSTONE)
-        with mock.patch.object(octavia.common.context.RequestContext,
-                               'project_id',
-                               api_l7p_c.get('project_id')):
+        test_context = octavia.common.context.RequestContext(
+            project_id=api_l7p_c.get('project_id'))
+        with mock.patch('oslo_context.context.RequestContext.from_environ',
+                        return_value=test_context):
             override_credentials = {
                 'service_user_id': None,
                 'user_domain_id': None,
@@ -351,9 +352,10 @@ class TestL7Policy(base.BaseAPITest):
 
         auth_strategy = self.conf.conf.api_settings.get('auth_strategy')
         self.conf.config(group='api_settings', auth_strategy=constants.TESTING)
-        with mock.patch.object(octavia.common.context.RequestContext,
-                               'project_id',
-                               uuidutils.generate_uuid()):
+        test_context = octavia.common.context.RequestContext(
+            project_id=uuidutils.generate_uuid())
+        with mock.patch('oslo_context.context.RequestContext.from_environ',
+                        return_value=test_context):
             policies = self.get(self.L7POLICIES_PATH, status=403).json
 
         self.conf.config(group='api_settings', auth_strategy=auth_strategy)
@@ -676,28 +678,25 @@ class TestL7Policy(base.BaseAPITest):
         auth_strategy = self.conf.conf.api_settings.get('auth_strategy')
         self.conf.config(group='api_settings', auth_strategy=constants.TESTING)
 
-        with mock.patch.object(octavia.common.context.RequestContext,
-                               'project_id',
-                               self.project_id):
-            override_credentials = {
-                'service_user_id': None,
-                'user_domain_id': None,
-                'is_admin_project': True,
-                'service_project_domain_id': None,
-                'service_project_id': None,
-                'roles': ['load-balancer_member', 'member'],
-                'user_id': None,
-                'is_admin': False,
-                'service_user_domain_id': None,
-                'project_domain_id': None,
-                'service_roles': [],
-                'project_id': self.project_id}
-            with mock.patch(
-                    "oslo_context.context.RequestContext.to_policy_values",
-                    return_value=override_credentials):
-                api_l7policy = self.create_l7policy(
-                    self.listener_id,
-                    constants.L7POLICY_ACTION_REJECT).get(self.root_tag)
+        override_credentials = {
+            'service_user_id': None,
+            'user_domain_id': None,
+            'is_admin_project': True,
+            'service_project_domain_id': None,
+            'service_project_id': None,
+            'roles': ['load-balancer_member', 'member'],
+            'user_id': None,
+            'is_admin': False,
+            'service_user_domain_id': None,
+            'project_domain_id': None,
+            'service_roles': [],
+            'project_id': self.project_id}
+        with mock.patch(
+                "oslo_context.context.RequestContext.to_policy_values",
+                return_value=override_credentials):
+            api_l7policy = self.create_l7policy(
+                self.listener_id,
+                constants.L7POLICY_ACTION_REJECT).get(self.root_tag)
 
         self.conf.config(group='api_settings', auth_strategy=auth_strategy)
         self.assertEqual(constants.L7POLICY_ACTION_REJECT,
@@ -719,9 +718,10 @@ class TestL7Policy(base.BaseAPITest):
         auth_strategy = self.conf.conf.api_settings.get('auth_strategy')
         self.conf.config(group='api_settings', auth_strategy=constants.TESTING)
 
-        with mock.patch.object(octavia.common.context.RequestContext,
-                               'project_id',
-                               self.project_id):
+        test_context = octavia.common.context.RequestContext(
+            project_id=self.project_id)
+        with mock.patch('oslo_context.context.RequestContext.from_environ',
+                        return_value=test_context):
             api_l7policy = self.create_l7policy(
                 self.listener_id,
                 constants.L7POLICY_ACTION_REJECT, status=403)
@@ -910,28 +910,25 @@ class TestL7Policy(base.BaseAPITest):
         self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
         auth_strategy = self.conf.conf.api_settings.get('auth_strategy')
         self.conf.config(group='api_settings', auth_strategy=constants.TESTING)
-        with mock.patch.object(octavia.common.context.RequestContext,
-                               'project_id',
-                               self.project_id):
-            override_credentials = {
-                'service_user_id': None,
-                'user_domain_id': None,
-                'is_admin_project': True,
-                'service_project_domain_id': None,
-                'service_project_id': None,
-                'roles': ['load-balancer_member', 'member'],
-                'user_id': None,
-                'is_admin': False,
-                'service_user_domain_id': None,
-                'project_domain_id': None,
-                'service_roles': [],
-                'project_id': self.project_id}
-            with mock.patch(
-                    "oslo_context.context.RequestContext.to_policy_values",
-                    return_value=override_credentials):
-                response = self.put(self.L7POLICY_PATH.format(
-                    l7policy_id=api_l7policy.get('id')),
-                    self._build_body(new_l7policy)).json.get(self.root_tag)
+        override_credentials = {
+            'service_user_id': None,
+            'user_domain_id': None,
+            'is_admin_project': True,
+            'service_project_domain_id': None,
+            'service_project_id': None,
+            'roles': ['load-balancer_member', 'member'],
+            'user_id': None,
+            'is_admin': False,
+            'service_user_domain_id': None,
+            'project_domain_id': None,
+            'service_roles': [],
+            'project_id': self.project_id}
+        with mock.patch(
+                "oslo_context.context.RequestContext.to_policy_values",
+                return_value=override_credentials):
+            response = self.put(self.L7POLICY_PATH.format(
+                l7policy_id=api_l7policy.get('id')),
+                self._build_body(new_l7policy)).json.get(self.root_tag)
 
         self.conf.config(group='api_settings', auth_strategy=auth_strategy)
         self.assertEqual(constants.L7POLICY_ACTION_REDIRECT_TO_URL,
@@ -955,9 +952,10 @@ class TestL7Policy(base.BaseAPITest):
         self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
         auth_strategy = self.conf.conf.api_settings.get('auth_strategy')
         self.conf.config(group='api_settings', auth_strategy=constants.TESTING)
-        with mock.patch.object(octavia.common.context.RequestContext,
-                               'project_id',
-                               self.project_id):
+        test_context = octavia.common.context.RequestContext(
+            project_id=self.project_id)
+        with mock.patch('oslo_context.context.RequestContext.from_environ',
+                        return_value=test_context):
             response = self.put(self.L7POLICY_PATH.format(
                 l7policy_id=api_l7policy.get('id')),
                 self._build_body(new_l7policy), status=403)
@@ -1156,28 +1154,25 @@ class TestL7Policy(base.BaseAPITest):
         self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
         auth_strategy = self.conf.conf.api_settings.get('auth_strategy')
         self.conf.config(group='api_settings', auth_strategy=constants.TESTING)
-        with mock.patch.object(octavia.common.context.RequestContext,
-                               'project_id',
-                               self.project_id):
-            override_credentials = {
-                'service_user_id': None,
-                'user_domain_id': None,
-                'is_admin_project': True,
-                'service_project_domain_id': None,
-                'service_project_id': None,
-                'roles': ['load-balancer_member', 'member'],
-                'user_id': None,
-                'is_admin': False,
-                'service_user_domain_id': None,
-                'project_domain_id': None,
-                'service_roles': [],
-                'project_id': self.project_id}
-            with mock.patch(
-                    "oslo_context.context.RequestContext.to_policy_values",
-                    return_value=override_credentials):
+        override_credentials = {
+            'service_user_id': None,
+            'user_domain_id': None,
+            'is_admin_project': True,
+            'service_project_domain_id': None,
+            'service_project_id': None,
+            'roles': ['load-balancer_member', 'member'],
+            'user_id': None,
+            'is_admin': False,
+            'service_user_domain_id': None,
+            'project_domain_id': None,
+            'service_roles': [],
+            'project_id': self.project_id}
+        with mock.patch(
+                "oslo_context.context.RequestContext.to_policy_values",
+                return_value=override_credentials):
 
-                self.delete(self.L7POLICY_PATH.format(
-                    l7policy_id=api_l7policy.get('id')))
+            self.delete(self.L7POLICY_PATH.format(
+                l7policy_id=api_l7policy.get('id')))
 
         self.conf.config(group='api_settings', auth_strategy=auth_strategy)
         self.assert_correct_status(
@@ -1205,9 +1200,10 @@ class TestL7Policy(base.BaseAPITest):
         self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
         auth_strategy = self.conf.conf.api_settings.get('auth_strategy')
         self.conf.config(group='api_settings', auth_strategy=constants.TESTING)
-        with mock.patch.object(octavia.common.context.RequestContext,
-                               'project_id',
-                               uuidutils.generate_uuid()):
+        test_context = octavia.common.context.RequestContext(
+            project_id=uuidutils.generate_uuid())
+        with mock.patch('oslo_context.context.RequestContext.from_environ',
+                        return_value=test_context):
             self.delete(self.L7POLICY_PATH.format(
                 l7policy_id=api_l7policy.get('id')), status=403)
 

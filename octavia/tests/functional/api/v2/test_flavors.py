@@ -117,26 +117,23 @@ class TestFlavors(base.BaseAPITest):
         auth_strategy = self.conf.conf.api_settings.get('auth_strategy')
         self.conf.config(group='api_settings', auth_strategy=constants.TESTING)
         project_id = uuidutils.generate_uuid()
-        with mock.patch.object(octavia.common.context.RequestContext,
-                               'project_id',
-                               project_id):
-            override_credentials = {
-                'service_user_id': None,
-                'user_domain_id': None,
-                'is_admin_project': True,
-                'service_project_domain_id': None,
-                'service_project_id': None,
-                'roles': ['load-balancer_member'],
-                'user_id': None,
-                'is_admin': True,
-                'service_user_domain_id': None,
-                'project_domain_id': None,
-                'service_roles': [],
-                'project_id': project_id}
-            with mock.patch(
-                    "oslo_context.context.RequestContext.to_policy_values",
-                    return_value=override_credentials):
-                response = self.post(self.FLAVORS_PATH, body)
+        override_credentials = {
+            'service_user_id': None,
+            'user_domain_id': None,
+            'is_admin_project': True,
+            'service_project_domain_id': None,
+            'service_project_id': None,
+            'roles': ['load-balancer_member'],
+            'user_id': None,
+            'is_admin': True,
+            'service_user_domain_id': None,
+            'project_domain_id': None,
+            'service_roles': [],
+            'project_id': project_id}
+        with mock.patch(
+                "oslo_context.context.RequestContext.to_policy_values",
+                return_value=override_credentials):
+            response = self.post(self.FLAVORS_PATH, body)
         api_flavor = response.json.get(self.root_tag)
         self.conf.config(group='api_settings', auth_strategy=auth_strategy)
         self._assert_request_matches_response(flavor_json, api_flavor)
@@ -205,9 +202,10 @@ class TestFlavors(base.BaseAPITest):
         auth_strategy = self.conf.conf.api_settings.get('auth_strategy')
         self.conf.config(group='api_settings', auth_strategy=constants.TESTING)
         project_id = uuidutils.generate_uuid()
-        with mock.patch.object(octavia.common.context.RequestContext,
-                               'project_id',
-                               project_id):
+        test_context = octavia.common.context.RequestContext(
+            project_id=project_id)
+        with mock.patch('oslo_context.context.RequestContext.from_environ',
+                        return_value=test_context):
             override_credentials = {
                 'service_user_id': None,
                 'user_domain_id': None,
@@ -299,9 +297,10 @@ class TestFlavors(base.BaseAPITest):
         auth_strategy = self.conf.conf.api_settings.get('auth_strategy')
         self.conf.config(group='api_settings', auth_strategy=constants.TESTING)
         project_id = uuidutils.generate_uuid()
-        with mock.patch.object(octavia.common.context.RequestContext,
-                               'project_id',
-                               project_id):
+        test_context = octavia.common.context.RequestContext(
+            project_id=project_id)
+        with mock.patch('oslo_context.context.RequestContext.from_environ',
+                        return_value=test_context):
             override_credentials = {
                 'service_user_id': None,
                 'user_domain_id': None,
@@ -429,27 +428,24 @@ class TestFlavors(base.BaseAPITest):
         auth_strategy = self.conf.conf.api_settings.get('auth_strategy')
         self.conf.config(group='api_settings', auth_strategy=constants.TESTING)
         project_id = uuidutils.generate_uuid()
-        with mock.patch.object(octavia.common.context.RequestContext,
-                               'project_id',
-                               project_id):
-            override_credentials = {
-                'service_user_id': None,
-                'user_domain_id': None,
-                'is_admin_project': True,
-                'service_project_domain_id': None,
-                'service_project_id': None,
-                'roles': ['load-balancer_member'],
-                'user_id': None,
-                'is_admin': True,
-                'service_user_domain_id': None,
-                'project_domain_id': None,
-                'service_roles': [],
-                'project_id': project_id}
-            with mock.patch(
-                    "oslo_context.context.RequestContext.to_policy_values",
-                    return_value=override_credentials):
-                response = self.put(self.FLAVOR_PATH.format(
-                    flavor_id=flavor_id), body)
+        override_credentials = {
+            'service_user_id': None,
+            'user_domain_id': None,
+            'is_admin_project': True,
+            'service_project_domain_id': None,
+            'service_project_id': None,
+            'roles': ['load-balancer_member'],
+            'user_id': None,
+            'is_admin': True,
+            'service_user_domain_id': None,
+            'project_domain_id': None,
+            'service_roles': [],
+            'project_id': project_id}
+        with mock.patch(
+                "oslo_context.context.RequestContext.to_policy_values",
+                return_value=override_credentials):
+            response = self.put(self.FLAVOR_PATH.format(
+                flavor_id=flavor_id), body)
         self.conf.config(group='api_settings', auth_strategy=auth_strategy)
 
         updated_flavor = self.get(self.FLAVOR_PATH.format(
@@ -533,27 +529,24 @@ class TestFlavors(base.BaseAPITest):
         auth_strategy = self.conf.conf.api_settings.get('auth_strategy')
         self.conf.config(group='api_settings', auth_strategy=constants.TESTING)
         project_id = uuidutils.generate_uuid()
-        with mock.patch.object(octavia.common.context.RequestContext,
-                               'project_id',
-                               project_id):
-            override_credentials = {
-                'service_user_id': None,
-                'user_domain_id': None,
-                'is_admin_project': True,
-                'service_project_domain_id': None,
-                'service_project_id': None,
-                'roles': ['load-balancer_member'],
-                'user_id': None,
-                'is_admin': True,
-                'service_user_domain_id': None,
-                'project_domain_id': None,
-                'service_roles': [],
-                'project_id': project_id}
-            with mock.patch(
-                    "oslo_context.context.RequestContext.to_policy_values",
-                    return_value=override_credentials):
-                self.delete(
-                    self.FLAVOR_PATH.format(flavor_id=flavor.get('id')))
+        override_credentials = {
+            'service_user_id': None,
+            'user_domain_id': None,
+            'is_admin_project': True,
+            'service_project_domain_id': None,
+            'service_project_id': None,
+            'roles': ['load-balancer_member'],
+            'user_id': None,
+            'is_admin': True,
+            'service_user_domain_id': None,
+            'project_domain_id': None,
+            'service_roles': [],
+            'project_id': project_id}
+        with mock.patch(
+                "oslo_context.context.RequestContext.to_policy_values",
+                return_value=override_credentials):
+            self.delete(
+                self.FLAVOR_PATH.format(flavor_id=flavor.get('id')))
         self.conf.config(group='api_settings', auth_strategy=auth_strategy)
         response = self.get(self.FLAVOR_PATH.format(
             flavor_id=flavor.get('id')), status=404)

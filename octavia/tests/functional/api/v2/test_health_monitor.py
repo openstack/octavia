@@ -128,28 +128,25 @@ class TestHealthMonitor(base.BaseAPITest):
         self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
         auth_strategy = self.conf.conf.api_settings.get('auth_strategy')
         self.conf.config(group='api_settings', auth_strategy=constants.TESTING)
-        with mock.patch.object(octavia.common.context.RequestContext,
-                               'project_id',
-                               self.project_id):
-            override_credentials = {
-                'service_user_id': None,
-                'user_domain_id': None,
-                'is_admin_project': True,
-                'service_project_domain_id': None,
-                'service_project_id': None,
-                'roles': ['load-balancer_member', 'member'],
-                'user_id': None,
-                'is_admin': False,
-                'service_user_domain_id': None,
-                'project_domain_id': None,
-                'service_roles': [],
-                'project_id': self.project_id}
-            with mock.patch(
-                    "oslo_context.context.RequestContext.to_policy_values",
-                    return_value=override_credentials):
+        override_credentials = {
+            'service_user_id': None,
+            'user_domain_id': None,
+            'is_admin_project': True,
+            'service_project_domain_id': None,
+            'service_project_id': None,
+            'roles': ['load-balancer_member', 'member'],
+            'user_id': None,
+            'is_admin': False,
+            'service_user_domain_id': None,
+            'project_domain_id': None,
+            'service_roles': [],
+            'project_id': self.project_id}
+        with mock.patch(
+                "oslo_context.context.RequestContext.to_policy_values",
+                return_value=override_credentials):
 
-                response = self.get(self.HM_PATH.format(
-                    healthmonitor_id=api_hm.get('id'))).json.get(self.root_tag)
+            response = self.get(self.HM_PATH.format(
+                healthmonitor_id=api_hm.get('id'))).json.get(self.root_tag)
         self.conf.config(group='api_settings', auth_strategy=auth_strategy)
 
         response.pop('updated_at')
@@ -168,9 +165,10 @@ class TestHealthMonitor(base.BaseAPITest):
         self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
         auth_strategy = self.conf.conf.api_settings.get('auth_strategy')
         self.conf.config(group='api_settings', auth_strategy=constants.TESTING)
-        with mock.patch.object(octavia.common.context.RequestContext,
-                               'project_id',
-                               uuidutils.generate_uuid()):
+        test_context = octavia.common.context.RequestContext(
+            project_id=uuidutils.generate_uuid())
+        with mock.patch('oslo_context.context.RequestContext.from_environ',
+                        return_value=test_context):
             response = self.get(self.HM_PATH.format(
                 healthmonitor_id=api_hm.get('id')), status=403)
         self.conf.config(group='api_settings', auth_strategy=auth_strategy)
@@ -209,9 +207,10 @@ class TestHealthMonitor(base.BaseAPITest):
 
         auth_strategy = self.conf.conf.api_settings.get('auth_strategy')
         self.conf.config(group='api_settings', auth_strategy=constants.TESTING)
-        with mock.patch.object(octavia.common.context.RequestContext,
-                               'project_id',
-                               uuidutils.generate_uuid()):
+        test_context = octavia.common.context.RequestContext(
+            project_id=uuidutils.generate_uuid())
+        with mock.patch('oslo_context.context.RequestContext.from_environ',
+                        return_value=test_context):
             hms = self.get(self.HMS_PATH, status=403).json
 
         self.conf.config(group='api_settings', auth_strategy=auth_strategy)
@@ -284,9 +283,10 @@ class TestHealthMonitor(base.BaseAPITest):
         auth_strategy = self.conf.conf.api_settings.get('auth_strategy')
         self.conf.config(group='api_settings',
                          auth_strategy=constants.KEYSTONE)
-        with mock.patch.object(octavia.common.context.RequestContext,
-                               'project_id',
-                               hm3['project_id']):
+        test_context = octavia.common.context.RequestContext(
+            project_id=hm3['project_id'])
+        with mock.patch('oslo_context.context.RequestContext.from_environ',
+                        return_value=test_context):
             override_credentials = {
                 'service_user_id': None,
                 'user_domain_id': None,
@@ -340,9 +340,10 @@ class TestHealthMonitor(base.BaseAPITest):
         auth_strategy = self.conf.conf.api_settings.get('auth_strategy')
         self.conf.config(group='api_settings',
                          auth_strategy=constants.KEYSTONE)
-        with mock.patch.object(octavia.common.context.RequestContext,
-                               'project_id',
-                               None):
+        test_context = octavia.common.context.RequestContext(
+            project_id=None)
+        with mock.patch('oslo_context.context.RequestContext.from_environ',
+                        return_value=test_context):
             override_credentials = {
                 'service_user_id': None,
                 'user_domain_id': None,
@@ -397,9 +398,10 @@ class TestHealthMonitor(base.BaseAPITest):
         auth_strategy = self.conf.conf.api_settings.get('auth_strategy')
         self.conf.config(group='api_settings',
                          auth_strategy=constants.KEYSTONE)
-        with mock.patch.object(octavia.common.context.RequestContext,
-                               'project_id',
-                               hm3['project_id']):
+        test_context = octavia.common.context.RequestContext(
+            project_id=hm3['project_id'])
+        with mock.patch('oslo_context.context.RequestContext.from_environ',
+                        return_value=test_context):
             override_credentials = {
                 'service_user_id': None,
                 'user_domain_id': None,
@@ -1249,29 +1251,26 @@ class TestHealthMonitor(base.BaseAPITest):
         auth_strategy = self.conf.conf.api_settings.get('auth_strategy')
         self.conf.config(group='api_settings', auth_strategy=constants.TESTING)
 
-        with mock.patch.object(octavia.common.context.RequestContext,
-                               'project_id',
-                               self.project_id):
-            override_credentials = {
-                'service_user_id': None,
-                'user_domain_id': None,
-                'is_admin_project': True,
-                'service_project_domain_id': None,
-                'service_project_id': None,
-                'roles': ['load-balancer_member', 'member'],
-                'user_id': None,
-                'is_admin': False,
-                'service_user_domain_id': None,
-                'project_domain_id': None,
-                'service_roles': [],
-                'project_id': self.project_id}
-            with mock.patch(
-                    "oslo_context.context.RequestContext.to_policy_values",
-                    return_value=override_credentials):
+        override_credentials = {
+            'service_user_id': None,
+            'user_domain_id': None,
+            'is_admin_project': True,
+            'service_project_domain_id': None,
+            'service_project_id': None,
+            'roles': ['load-balancer_member', 'member'],
+            'user_id': None,
+            'is_admin': False,
+            'service_user_domain_id': None,
+            'project_domain_id': None,
+            'service_roles': [],
+            'project_id': self.project_id}
+        with mock.patch(
+                "oslo_context.context.RequestContext.to_policy_values",
+                return_value=override_credentials):
 
-                api_hm = self.create_health_monitor(
-                    self.pool_id, constants.HEALTH_MONITOR_HTTP,
-                    1, 1, 1, 1).get(self.root_tag)
+            api_hm = self.create_health_monitor(
+                self.pool_id, constants.HEALTH_MONITOR_HTTP,
+                1, 1, 1, 1).get(self.root_tag)
 
         self.conf.config(group='api_settings', auth_strategy=auth_strategy)
         self.assert_correct_status(
@@ -1298,9 +1297,10 @@ class TestHealthMonitor(base.BaseAPITest):
         auth_strategy = self.conf.conf.api_settings.get('auth_strategy')
         self.conf.config(group='api_settings', auth_strategy=constants.TESTING)
 
-        with mock.patch.object(octavia.common.context.RequestContext,
-                               'project_id',
-                               uuidutils.generate_uuid()):
+        test_context = octavia.common.context.RequestContext(
+            project_id=uuidutils.generate_uuid())
+        with mock.patch('oslo_context.context.RequestContext.from_environ',
+                        return_value=test_context):
             api_hm = self.create_health_monitor(
                 self.pool_id, constants.HEALTH_MONITOR_HTTP,
                 1, 1, 1, 1, status=403)
@@ -1705,29 +1705,26 @@ class TestHealthMonitor(base.BaseAPITest):
         self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
         auth_strategy = self.conf.conf.api_settings.get('auth_strategy')
         self.conf.config(group='api_settings', auth_strategy=constants.TESTING)
-        with mock.patch.object(octavia.common.context.RequestContext,
-                               'project_id',
-                               self.project_id):
-            override_credentials = {
-                'service_user_id': None,
-                'user_domain_id': None,
-                'is_admin_project': True,
-                'service_project_domain_id': None,
-                'service_project_id': None,
-                'roles': ['load-balancer_member', 'member'],
-                'user_id': None,
-                'is_admin': False,
-                'service_user_domain_id': None,
-                'project_domain_id': None,
-                'service_roles': [],
-                'project_id': self.project_id}
-            with mock.patch(
-                    "oslo_context.context.RequestContext.to_policy_values",
-                    return_value=override_credentials):
+        override_credentials = {
+            'service_user_id': None,
+            'user_domain_id': None,
+            'is_admin_project': True,
+            'service_project_domain_id': None,
+            'service_project_id': None,
+            'roles': ['load-balancer_member', 'member'],
+            'user_id': None,
+            'is_admin': False,
+            'service_user_domain_id': None,
+            'project_domain_id': None,
+            'service_roles': [],
+            'project_id': self.project_id}
+        with mock.patch(
+                "oslo_context.context.RequestContext.to_policy_values",
+                return_value=override_credentials):
 
-                self.put(
-                    self.HM_PATH.format(healthmonitor_id=api_hm.get('id')),
-                    self._build_body(new_hm))
+            self.put(
+                self.HM_PATH.format(healthmonitor_id=api_hm.get('id')),
+                self._build_body(new_hm))
 
         self.conf.config(group='api_settings', auth_strategy=auth_strategy)
         self.assert_correct_status(
@@ -1747,9 +1744,10 @@ class TestHealthMonitor(base.BaseAPITest):
         self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
         auth_strategy = self.conf.conf.api_settings.get('auth_strategy')
         self.conf.config(group='api_settings', auth_strategy=constants.TESTING)
-        with mock.patch.object(octavia.common.context.RequestContext,
-                               'project_id',
-                               uuidutils.generate_uuid()):
+        test_context = octavia.common.context.RequestContext(
+            project_id=uuidutils.generate_uuid())
+        with mock.patch('oslo_context.context.RequestContext.from_environ',
+                        return_value=test_context):
             response = self.put(
                 self.HM_PATH.format(healthmonitor_id=api_hm.get('id')),
                 self._build_body(new_hm), status=403)
@@ -2055,27 +2053,24 @@ class TestHealthMonitor(base.BaseAPITest):
         self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
         auth_strategy = self.conf.conf.api_settings.get('auth_strategy')
         self.conf.config(group='api_settings', auth_strategy=constants.TESTING)
-        with mock.patch.object(octavia.common.context.RequestContext,
-                               'project_id',
-                               self.project_id):
-            override_credentials = {
-                'service_user_id': None,
-                'user_domain_id': None,
-                'is_admin_project': True,
-                'service_project_domain_id': None,
-                'service_project_id': None,
-                'roles': ['load-balancer_member', 'member'],
-                'user_id': None,
-                'is_admin': False,
-                'service_user_domain_id': None,
-                'project_domain_id': None,
-                'service_roles': [],
-                'project_id': self.project_id}
-            with mock.patch(
-                    "oslo_context.context.RequestContext.to_policy_values",
-                    return_value=override_credentials):
-                self.delete(
-                    self.HM_PATH.format(healthmonitor_id=api_hm.get('id')))
+        override_credentials = {
+            'service_user_id': None,
+            'user_domain_id': None,
+            'is_admin_project': True,
+            'service_project_domain_id': None,
+            'service_project_id': None,
+            'roles': ['load-balancer_member', 'member'],
+            'user_id': None,
+            'is_admin': False,
+            'service_user_domain_id': None,
+            'project_domain_id': None,
+            'service_roles': [],
+            'project_id': self.project_id}
+        with mock.patch(
+                "oslo_context.context.RequestContext.to_policy_values",
+                return_value=override_credentials):
+            self.delete(
+                self.HM_PATH.format(healthmonitor_id=api_hm.get('id')))
         self.conf.config(group='api_settings', auth_strategy=auth_strategy)
         self.assert_correct_status(
             lb_id=self.lb_id, listener_id=self.listener_id,
@@ -2101,9 +2096,10 @@ class TestHealthMonitor(base.BaseAPITest):
         self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
         auth_strategy = self.conf.conf.api_settings.get('auth_strategy')
         self.conf.config(group='api_settings', auth_strategy=constants.TESTING)
-        with mock.patch.object(octavia.common.context.RequestContext,
-                               'project_id',
-                               uuidutils.generate_uuid()):
+        test_context = octavia.common.context.RequestContext(
+            project_id=uuidutils.generate_uuid())
+        with mock.patch('oslo_context.context.RequestContext.from_environ',
+                        return_value=test_context):
             self.delete(
                 self.HM_PATH.format(healthmonitor_id=api_hm.get('id')),
                 status=403)
