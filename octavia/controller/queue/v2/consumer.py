@@ -46,7 +46,6 @@ class ConsumerService(cotyledon.Service):
         self.endpoints = [endpoints.Endpoints()]
         self.message_listener = rpc.get_server(
             target, self.endpoints,
-            executor='threading',
             access_policy=self.access_policy
         )
         self.message_listener.start()
