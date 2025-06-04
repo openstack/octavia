@@ -18,3 +18,4 @@ Note that installation and configuration vary by distribution.
 
    install-ubuntu.rst
    install-amphorav2.rst
+   install-osa.rst
