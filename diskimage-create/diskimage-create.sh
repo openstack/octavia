@@ -23,7 +23,7 @@ usage() {
     echo "            [-a **amd64** | armhf | aarch64 | ppc64le]"
     echo "            [-b **haproxy** ]"
     echo "            [-c **~/.cache/image-create** | <cache directory> ]"
-    echo "            [-d **jammy**/**9-stream**/**9** | <other release id> ]"
+    echo "            [-d **noble**/**9-stream**/**9** | <other release id> ]"
     echo "            [-e]"
     echo "            [-f]"
     echo "            [-g **repository branch** | stable/train | stable/stein | ... ]"
@@ -45,7 +45,7 @@ usage() {
     echo "        '-a' is the architecture type for the image (default: amd64)"
     echo "        '-b' is the backend type (default: haproxy)"
     echo "        '-c' is the path to the cache directory (default: ~/.cache/image-create)"
-    echo "        '-d' distribution release id (default on ubuntu: jammy)"
+    echo "        '-d' distribution release id (default on ubuntu: noble)"
     echo "        '-e' enable complete mandatory access control systems when available (default: permissive)"
     echo "        '-f' disable tmpfs for build"
     echo "        '-g' build the image for a specific OpenStack Git branch (default: current repository branch)"
@@ -242,7 +242,7 @@ AMP_CACHEDIR="$( cd "$AMP_CACHEDIR" && pwd )"
 AMP_BASEOS=${AMP_BASEOS:-"ubuntu-minimal"}
 
 if [ "$AMP_BASEOS" = "ubuntu-minimal" ]; then
-    export DIB_RELEASE=${AMP_DIB_RELEASE:-"jammy"}
+    export DIB_RELEASE=${AMP_DIB_RELEASE:-"noble"}
 elif [ "${AMP_BASEOS}" = "rhel" ]; then
     export DIB_RELEASE=${AMP_DIB_RELEASE:-"9"}
 elif [ "${AMP_BASEOS}" = "centos-minimal" ]; then
@@ -467,6 +467,11 @@ if [ "${AMP_BASEOS}" = "centos-minimal" ] || [ "${AMP_BASEOS}" = "fedora" ] || [
         # If SELinux is enforced, the amphora image requires the amphora-selinux policies
         AMP_element_sequence="$AMP_element_sequence amphora-selinux"
     fi
+fi
+
+# AppArmor systems
+if [ "${AMP_BASEOS}" = "ubuntu-minimal" ] || [ "${AMP_BASEOS}" = "ubuntu" ]; then
+    AMP_element_sequence="$AMP_element_sequence amphora-apparmor"
 fi
 
 # Disable the dnf makecache timer

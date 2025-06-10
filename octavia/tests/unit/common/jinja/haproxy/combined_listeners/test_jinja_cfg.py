@@ -570,7 +570,6 @@ class TestHaproxyCfg(base.TestCase):
                     "    bind 127.0.0.1:9101\n"
                     "    mode http\n"
                     "    no log\n"
-                    "    option http-use-htx\n"
                     "    http-request use-service prometheus-exporter if { "
                     "path /metrics }\n"
                     "    http-request reject\n"

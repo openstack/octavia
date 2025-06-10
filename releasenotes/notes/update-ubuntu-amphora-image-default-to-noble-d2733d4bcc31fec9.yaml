@@ -1,0 +1,5 @@
+---
+upgrade:
+  - |
+    ``diskimage-create.sh`` has been updated to build Ubuntu Noble (24.04)
+    amphora images per default.

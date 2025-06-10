@@ -34,7 +34,6 @@ frontend prometheus-exporter-internal-endpoint
     bind 127.0.0.1:9101
     mode http
     no log
-    option http-use-htx
     http-request use-service prometheus-exporter if { path /metrics }
     http-request reject
     timeout http-request 5s
