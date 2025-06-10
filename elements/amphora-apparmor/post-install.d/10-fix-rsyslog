@@ -1,0 +1,11 @@
+#!/bin/bash
+# This is a workaround to a known kernel bug with apparmor:
+# https://bugs.launchpad.net/ubuntu/+source/linux/+bug/1373070
+#
+# Apparmor cannot handle namespaces correctly and will drop the '/' prefix
+# from a file path, thus causing the process to not have access.
+#
+# The reported workaround is to add flags=(attach_disconnected) to the rsyslog
+# profile.
+
+sed -i 's#profile rsyslogd /usr/sbin/rsyslogd {#profile rsyslogd /usr/sbin/rsyslogd flags=(attach_disconnected) {#g' /etc/apparmor.d/usr.sbin.rsyslogd
