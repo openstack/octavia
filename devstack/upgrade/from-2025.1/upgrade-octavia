@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+
+# Openstack moved from using wsgi scripts to directly calling the wsgi module
+# due to changes in setuptools that stops the pbr wsgi_scripts from working.
+# This script will reconfigure uwsgi on upgrade to point to the module instead
+# of the wsgi script that is no longer present in octavia.
+
+function configure_octavia_upgrade {
+    source $GRENADE_DIR/functions
+
+    iniset $OCTAVIA_UWSGI_CONF uwsgi module $OCTAVIA_UWSGI_APP
+}
