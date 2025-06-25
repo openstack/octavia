@@ -24,7 +24,6 @@ pbr*.egg/
 run_tests.err.log
 run_tests.log
 setuptools*.egg/
-subunit.log
 tempest.log
 .testrepository
 .stestr
