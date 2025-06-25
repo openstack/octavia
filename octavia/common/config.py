@@ -462,12 +462,12 @@ controller_worker_opts = [
                help=_('The timezone to use in the Amphora as represented in '
                       '/usr/share/zoneinfo.')),
     cfg.ListOpt('amp_boot_network_list',
-                default='',
+                default=[],
                 help=_('List of networks to attach to the Amphorae. '
                        'All networks defined in the list will '
                        'be attached to each amphora.')),
     cfg.ListOpt('amp_secgroup_list',
-                default='',
+                default=[],
                 help=_('List of security groups to attach to the Amphora.')),
     cfg.StrOpt('client_ca',
                default='/etc/octavia/certs/ca_01.pem',
@@ -888,7 +888,7 @@ driver_agent_opts = [
                default=60,
                help=_('The time, in seconds, to wait for provider agents '
                       'to shutdown after the exit event has been set.')),
-    cfg.ListOpt('enabled_provider_agents', default='',
+    cfg.ListOpt('enabled_provider_agents', default=[],
                 help=_('List of enabled provider agents. The driver-agent '
                        'will launch these agents at startup.'))
 ]

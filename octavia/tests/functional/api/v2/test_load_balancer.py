@@ -881,7 +881,7 @@ class TestLoadBalancer(base.BaseAPITest):
 
     def test_create_with_allowed_network_id(self):
         network_id = uuidutils.generate_uuid()
-        self.conf.config(group="networking", valid_vip_networks=network_id)
+        self.conf.config(group="networking", valid_vip_networks=[network_id])
         subnet = network_models.Subnet(id=uuidutils.generate_uuid(),
                                        network_id=network_id,
                                        ip_version=4)
@@ -905,7 +905,7 @@ class TestLoadBalancer(base.BaseAPITest):
     def test_create_with_disallowed_network_id(self):
         network_id1 = uuidutils.generate_uuid()
         network_id2 = uuidutils.generate_uuid()
-        self.conf.config(group="networking", valid_vip_networks=network_id1)
+        self.conf.config(group="networking", valid_vip_networks=[network_id1])
         subnet = network_models.Subnet(id=uuidutils.generate_uuid(),
                                        network_id=network_id2,
                                        ip_version=4)

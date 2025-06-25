@@ -357,8 +357,8 @@ class TestValidations(base.TestCase):
         net_id1 = uuidutils.generate_uuid()
         net_id2 = uuidutils.generate_uuid()
         net_id3 = uuidutils.generate_uuid()
-        valid_net_ids = ",".join((net_id1, net_id2))
-        self.conf.config(group="networking", valid_vip_networks=valid_net_ids)
+        self.conf.config(group="networking",
+                         valid_vip_networks=[net_id1, net_id2])
         validate.network_allowed_by_config(net_id1)
         validate.network_allowed_by_config(net_id2)
         self.assertRaises(

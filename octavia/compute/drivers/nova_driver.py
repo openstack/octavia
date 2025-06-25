@@ -232,7 +232,7 @@ class VirtualMachineManager(compute_base.ComputeBase):
                 net_id = interface.net_id
                 # Pick the first fixed_ip if this is a boot network or if
                 # there are no boot networks configured (use default network)
-                if net_id in boot_networks or not boot_networks:
+                if not boot_networks or net_id in boot_networks:
                     lb_network_ip = interface.fixed_ips[0]['ip_address']
                     break
             try:
