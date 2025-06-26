@@ -1,0 +1,5 @@
+---
+fixes:
+  - |
+    Fixes an error message translation in the controller worker to support
+    the i18n translate before adding dynamic values.

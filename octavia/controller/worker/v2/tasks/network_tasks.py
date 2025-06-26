@@ -314,7 +314,8 @@ class HandleNetworkDelta(BaseNetworkTask):
                     raise base.NetworkNotFound(str(e))
                 raise base.CreatePortException(str(e))
             except Exception as e:
-                message = _(f'Error creating a port on network {network_id}. ')
+                message = _('Error creating a port on network {network_id}.'
+                            ).format(network_id=network_id)
                 LOG.exception(message)
                 raise base.CreatePortException(message) from e
 
