@@ -943,6 +943,32 @@ watcher_opts = [
                 help=_('Whether to include the initiator user id for authentication request in the metrics'))
 ]
 
+rate_limit_opts = [
+    cfg.StrOpt('config_file', default="/etc/octavia/ratelimit.yaml",
+               help=_('Path to the rate limiting middleware configuration file')),
+    cfg.StrOpt('service_type', default="loadbalancer",
+               help=_('The service type according to CADF specification')),
+    cfg.StrOpt('rate_limit_by',
+               help=_('Per default rate limits are applied based on '
+                      '`initiator_project_id`. However, this can also be se to '
+                      '`initiator_host_address` or `target_project_id`')),
+    cfg.IntOpt('max_sleep_time_seconds', default=20,
+               help=_('The maximal time a request can be suspended in seconds. '
+                      'Instead of immediately returning a rate limit response, '
+                      'a request can be suspended until the specified maximum '
+                      'duration to fit the configured rate limit. This feature '
+                      'can be disabled by setting the max sleep time to 0 seconds.')),
+    cfg.StrOpt('backend_host', default="127.0.0.1",
+               help=_('Redis backend host for rate limiting middleware')),
+    cfg.PortOpt('backend_port', default=6379,
+                help=_('Redis backend port for rate limiting middleware')),
+    cfg.IntOpt('backend_max_connections', default=100,
+               help=_('Maximum connections for redis connection pool.')),
+    cfg.IntOpt('backend_timeout_seconds', default=2,
+               help=_('Timeout for obtaining a connection to the backend. '
+                      'It should be >= 1 second. Skips rate limit on timeout.')),
+]
+
 # Register the configuration options
 cfg.CONF.register_opts(core_opts)
 cfg.CONF.register_opts(api_opts, group='api_settings')
@@ -968,6 +994,7 @@ cfg.CONF.register_opts(driver_agent_opts, group='driver_agent')
 cfg.CONF.register_opts(local.certgen_opts, group='certificates')
 cfg.CONF.register_opts(local.certmgr_opts, group='certificates')
 cfg.CONF.register_opts(watcher_opts, group='watcher')
+cfg.CONF.register_opts(rate_limit_opts, group='rate_limit')
 
 # Ensure that the control exchange is set correctly
 messaging.set_transport_defaults(control_exchange='octavia')
