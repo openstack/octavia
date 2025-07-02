@@ -700,6 +700,15 @@ class TestAllowedAddressPairsDriver(base.TestCase):
         self.assertRaises(network_base.AllocateVIPException,
                           self.driver.allocate_vip, fake_lb)
 
+    def test_allocate_vip_conflict(self):
+        fake_lb_vip = data_models.Vip(
+            subnet_id=t_constants.MOCK_SUBNET_ID)
+        fake_lb = data_models.LoadBalancer(id='1', vip=fake_lb_vip)
+        create_port = self.driver.network_proxy.create_port
+        create_port.side_effect = os_exceptions.ConflictException
+        self.assertRaises(network_base.VIPInUseException,
+                          self.driver.allocate_vip, fake_lb)
+
     def test_allocate_vip_when_port_creation_fails(self):
         fake_lb_vip = data_models.Vip(
             subnet_id=t_constants.MOCK_SUBNET_ID)

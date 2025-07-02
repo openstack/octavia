@@ -125,6 +125,12 @@ class AmphoraProviderDriver(driver_base.ProviderDriver):
 
         try:
             vip, add_vips = network_driver.allocate_vip(lb_obj)
+        except network_base.VIPInUseException as e:
+            message = str(e)
+            if getattr(e, 'orig_msg', None) is not None:
+                message = e.orig_msg
+            raise exceptions.Conflict(user_fault_string=message,
+                                      operator_fault_string=message)
         except network_base.AllocateVIPException as e:
             message = str(e)
             if getattr(e, 'orig_msg', None) is not None:

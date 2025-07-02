@@ -39,6 +39,12 @@ class TestUtils(base.TestCase):
                             "arg1", foo="arg2")
         mock_driver_method.assert_called_with("arg1", foo="arg2")
 
+        # Test driver raising VIPAddressConflict
+        mock_driver_method.side_effect = lib_exceptions.Conflict
+        self.assertRaises(exceptions.VIPAddressConflict,
+                          utils.call_provider, "provider_name",
+                          mock_driver_method)
+
         # Test driver raising DriverError
         mock_driver_method.side_effect = lib_exceptions.DriverError
         self.assertRaises(exceptions.ProviderDriverError,

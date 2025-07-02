@@ -51,6 +51,10 @@ def call_provider(provider, driver_method, *args, **kwargs):
 
     try:
         return driver_method(*args, **kwargs)
+    except lib_exceptions.Conflict as e:
+        LOG.info("Provider '%s' raised a conflict error: %s",
+                 provider, e.operator_fault_string)
+        raise exceptions.VIPAddressConflict(msg=e.user_fault_string)
     except lib_exceptions.DriverError as e:
         LOG.exception("Provider '%s' raised a driver error: %s",
                       provider, e.operator_fault_string)
