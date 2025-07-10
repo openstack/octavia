@@ -53,7 +53,7 @@ def get_client(target, version_cap=None, serializer=None,
         call_monitor_timeout=call_monitor_timeout)
 
 
-def get_server(target, endpoints, executor='threading',
+def get_server(target, endpoints,
                access_policy=dispatcher.DefaultRPCAccessPolicy,
                serializer=None):
     assert TRANSPORT is not None, _("'TRANSPORT' must not be None")
@@ -61,7 +61,6 @@ def get_server(target, endpoints, executor='threading',
     return messaging.get_rpc_server(TRANSPORT,
                                     target,
                                     endpoints,
-                                    executor=executor,
                                     serializer=serializer,
                                     access_policy=access_policy)
 
