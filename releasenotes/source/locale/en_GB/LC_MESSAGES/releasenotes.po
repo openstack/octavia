@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: octavia\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-09-26 17:18+0000\n"
+"POT-Creation-Date: 2025-07-10 12:52+0000\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
@@ -73,26 +73,11 @@ msgstr "12.0.0"
 msgid "12.0.1"
 msgstr "12.0.1"
 
-msgid "12.0.1-1"
-msgstr "12.0.1-1"
-
 msgid "13.0.0"
 msgstr "13.0.0"
 
-msgid "13.0.0-32"
-msgstr "13.0.0-32"
-
 msgid "14.0.0"
 msgstr "14.0.0"
-
-msgid "14.0.0-10"
-msgstr "14.0.0-10"
-
-msgid "15.0.0.0rc1"
-msgstr "15.0.0.0rc1"
-
-msgid "15.0.0.0rc1-7"
-msgstr "15.0.0.0rc1-7"
 
 msgid "2.0.0"
 msgstr "2.0.0"
@@ -1723,11 +1708,11 @@ msgstr ""
 "upgrade your amphora image."
 
 msgid ""
-"To fix IPv6 VIP addresses, you must run the \"octavia-db-manage upgrade head"
-"\" migration script."
+"To fix IPv6 VIP addresses, you must run the \"octavia-db-manage upgrade "
+"head\" migration script."
 msgstr ""
-"To fix IPv6 VIP addresses, you must run the \"octavia-db-manage upgrade head"
-"\" migration script."
+"To fix IPv6 VIP addresses, you must run the \"octavia-db-manage upgrade "
+"head\" migration script."
 
 msgid "To fix the admin-state-up bug you must upgrade your amphora image."
 msgstr "To fix the admin-state-up bug you must upgrade your Amphora image."
