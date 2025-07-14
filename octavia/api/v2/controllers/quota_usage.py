@@ -33,7 +33,7 @@ class QuotaUsageController(base.BaseController):
         context = pecan.request.context.get('octavia_context')
 
         self._auth_validate_action(context, project_id, constants.RBAC_GET_ONE)
-
-        db_quota_usage = self._get_db_quota_usage(context.session, project_id)
+        with context.session.begin():
+            db_quota_usage = self._get_db_quota_usage(context.session, project_id)
         return self._convert_db_to_type(
             db_quota_usage, quota_types.QuotaUsageResponse)

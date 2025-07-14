@@ -39,8 +39,8 @@ class QuotasController(base.BaseController):
         context = pecan_request.context.get('octavia_context')
 
         self._auth_validate_action(context, project_id, constants.RBAC_GET_ONE)
-
-        db_quotas = self._get_db_quotas(context.session, project_id)
+        with context.session.begin():
+            db_quotas = self._get_db_quotas(context.session, project_id)
         return self._convert_db_to_type(db_quotas, quota_types.QuotaResponse)
 
     @wsme_pecan.wsexpose(quota_types.QuotaAllResponse,
@@ -51,11 +51,11 @@ class QuotasController(base.BaseController):
         context = pcontext.get('octavia_context')
 
         query_filter = self._auth_get_all(context, project_id)
-
-        db_quotas, links = self.repositories.quotas.get_all(
-            context.session,
-            pagination_helper=pcontext.get(constants.PAGINATION_HELPER),
-            **query_filter)
+        with context.session.begin():
+            db_quotas, links = self.repositories.quotas.get_all(
+                context.session,
+                pagination_helper=pcontext.get(constants.PAGINATION_HELPER),
+                **query_filter)
         quotas = quota_types.QuotaAllResponse.from_data_model(db_quotas)
         quotas.quotas_links = links
         return quotas
