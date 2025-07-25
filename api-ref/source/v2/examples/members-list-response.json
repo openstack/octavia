@@ -17,7 +17,7 @@
             "id": "957a1ace-1bd2-449b-8455-820b6e4b63f3",
             "operating_status": "NO_MONITOR",
             "tags": ["test_tag"],
-	    "vnic_type": "normal"
+            "vnic_type": "normal"
         }
     ]
 }
