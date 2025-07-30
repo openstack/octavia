@@ -198,7 +198,7 @@ class TestConfig(base.TestCase):
         # and default key can still be used for decryption
         cfg.CONF.set_override(
             'server_certs_key_passphrase',
-            ['insecure-key-do-not-use-this-ke2',
+            ['another-insecure-key-do-not-use2',
              'insecure-key-do-not-use-this-key'],
             group='certificates')
         fer = utils.get_server_certs_key_passphrases_fernet()
@@ -213,7 +213,7 @@ class TestConfig(base.TestCase):
         # decrypt the newest data
         cfg.CONF.set_override(
             'server_certs_key_passphrase',
-            ['insecure-key-do-not-use-this-ke2'],
+            ['another-insecure-key-do-not-use2'],
             group='certificates')
         fer = utils.get_server_certs_key_passphrases_fernet()
         self.assertEqual(
