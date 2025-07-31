@@ -19,6 +19,7 @@
               - ^etc/.*$
               - ^octavia/tests/.*$
               - ^releasenotes/.*$
+              - ^\.pre-commit-config\.yaml$
         - openstack-tox-functional-py310:
             irrelevant-files: &tox-func-irrelevant-files
               - ^.*\.rst$
@@ -27,6 +28,7 @@
               - ^etc/.*$
               - ^octavia/tests/unit/.*$
               - ^releasenotes/.*$
+              - ^\.pre-commit-config\.yaml$
         - openstack-tox-functional-py311:
             irrelevant-files: *tox-func-irrelevant-files
         # Undefined yet:
@@ -40,6 +42,7 @@
               - ^doc/.*$
               - ^octavia/tests/.*$
               - ^releasenotes/.*$
+              - ^\.pre-commit-config\.yaml$
         - octavia-v2-dsvm-scenario-traffic-ops:
             irrelevant-files: *irrelevant-files
         - octavia-v2-dsvm-scenario-non-traffic-ops:
@@ -67,6 +70,7 @@
               - ^tools/.*$
               - ^(test-|)requirements.txt$
               - ^tox.ini$
+              - ^\.pre-commit-config\.yaml$
         - octavia-grenade-skip-level:
             irrelevant-files: *grenade-irrelevant-files
             voting: false
@@ -94,6 +98,7 @@
               - ^etc/.*$
               - ^octavia/tests/.*$
               - ^releasenotes/.*$
+              - ^\.pre-commit-config\.yaml$
         - openstack-tox-functional-py311:
             irrelevant-files:
               - ^.*\.rst$
@@ -102,6 +107,7 @@
               - ^etc/.*$
               - ^octavia/tests/unit/.*$
               - ^releasenotes/.*$
+              - ^\.pre-commit-config\.yaml$
         - octavia-v2-dsvm-noop-api
         - octavia-v2-dsvm-scenario-traffic-ops
         - octavia-v2-dsvm-scenario-non-traffic-ops
