@@ -18,6 +18,7 @@ from cryptography.hazmat import backends
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives import serialization
 from cryptography import x509
+from oslo_utils import timeutils
 
 import octavia.certificates.generator.local as local_cert_gen
 from octavia.tests.unit.certificates.generator import local_csr
@@ -31,8 +32,8 @@ class TestLocalGenerator(local_csr.BaseLocalCSRTestCase):
         # Setup CA data
 
         ca_cert = x509.CertificateBuilder()
-        valid_from_datetime = datetime.datetime.utcnow()
-        valid_until_datetime = (datetime.datetime.utcnow() +
+        valid_from_datetime = timeutils.utcnow()
+        valid_until_datetime = (timeutils.utcnow() +
                                 datetime.timedelta(
             seconds=2 * 365 * 24 * 60 * 60))
         ca_cert = ca_cert.not_valid_before(valid_from_datetime)
@@ -78,7 +79,7 @@ class TestLocalGenerator(local_csr.BaseLocalCSRTestCase):
             data=signed_cert, backend=backends.default_backend())
 
         # Make sure expiry time is accurate
-        should_expire = (datetime.datetime.utcnow() +
+        should_expire = (timeutils.utcnow() +
                          datetime.timedelta(seconds=2 * 365 * 24 * 60 * 60))
         diff = should_expire - cert.not_valid_after
         self.assertLess(diff, datetime.timedelta(seconds=10))
@@ -123,7 +124,7 @@ class TestLocalGenerator(local_csr.BaseLocalCSRTestCase):
             data=signed_cert, backend=backends.default_backend())
 
         # Make sure expiry time is accurate
-        should_expire = (datetime.datetime.utcnow() +
+        should_expire = (timeutils.utcnow() +
                          datetime.timedelta(seconds=2 * 365 * 24 * 60 * 60))
         diff = should_expire - cert.not_valid_after
         self.assertLess(diff, datetime.timedelta(seconds=10))

@@ -14,6 +14,7 @@
 
 import datetime
 
+from oslo_utils import timeutils
 from oslo_utils import uuidutils
 
 from octavia.common import constants
@@ -157,7 +158,7 @@ class ModelTestMixin:
                   'vrrp_port_id': self.FAKE_UUID_1,
                   'ha_port_id': self.FAKE_UUID_2,
                   'lb_network_ip': self.FAKE_IP,
-                  'cert_expiration': datetime.datetime.utcnow(),
+                  'cert_expiration': timeutils.utcnow(),
                   'cert_busy': False,
                   'cached_zone': self.FAKE_AZ}
         kwargs.update(overrides)

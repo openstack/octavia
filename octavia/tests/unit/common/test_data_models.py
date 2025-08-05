@@ -17,6 +17,7 @@ import datetime
 import json
 import random
 
+from oslo_utils import timeutils
 from oslo_utils import uuidutils
 
 from octavia.common import constants
@@ -33,7 +34,7 @@ class TestDataModels(base.TestCase):
         self.PROJECT_ID = uuidutils.generate_uuid()
         self.SERVER_GROUP_ID = uuidutils.generate_uuid()
         self.CREATED_AT = datetime.datetime.now()
-        self.UPDATED_AT = datetime.datetime.utcnow()
+        self.UPDATED_AT = timeutils.utcnow()
         self.VIP_IP = '192.0.2.10'
         self.VIP_SUBNET_ID = uuidutils.generate_uuid()
         self.VIP_NETWORK_ID = uuidutils.generate_uuid()

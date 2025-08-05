@@ -26,6 +26,7 @@ from oslo_db import api as oslo_db_api
 from oslo_db import exception as db_exception
 from oslo_log import log as logging
 from oslo_serialization import jsonutils
+from oslo_utils import timeutils
 from oslo_utils import uuidutils
 from sqlalchemy.orm import noload
 from sqlalchemy.orm import Session
@@ -215,7 +216,7 @@ class BaseRepository:
         :returns: A list of resource IDs
                 """
 
-        expiry_time = datetime.datetime.utcnow() - exp_age
+        expiry_time = timeutils.utcnow() - exp_age
 
         query = session.query(self.model_class).filter(
             self.model_class.updated_at < expiry_time)
@@ -1335,7 +1336,7 @@ class AmphoraRepository(BaseRepository):
         # get amphorae with certs that will expire within the
         # configured buffer period, so we can rotate their certs ahead of time
         expired_seconds = CONF.house_keeping.cert_expiry_buffer
-        expired_date = datetime.datetime.utcnow() + datetime.timedelta(
+        expired_date = timeutils.utcnow() + datetime.timedelta(
             seconds=expired_seconds)
 
         amp = (session.query(self.model_class)
@@ -1581,7 +1582,7 @@ class AmphoraHealthRepository(BaseRepository):
             exp_age = datetime.timedelta(
                 seconds=CONF.house_keeping.amphora_expiry_age)
 
-        expiry_time = datetime.datetime.utcnow() - exp_age
+        expiry_time = timeutils.utcnow() - exp_age
 
         amphora_model = (
             session.query(models.AmphoraHealth)
@@ -1609,7 +1610,7 @@ class AmphoraHealthRepository(BaseRepository):
         :returns: [octavia.common.data_model]
         """
         timeout = CONF.health_manager.heartbeat_timeout
-        expired_time = datetime.datetime.utcnow() - datetime.timedelta(
+        expired_time = timeutils.utcnow() - datetime.timedelta(
             seconds=timeout)
 
         # Update any amphora that were previously FAILOVER_STOPPED
