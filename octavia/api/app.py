@@ -49,6 +49,11 @@ profiler_initializer = importutils.try_import('osprofiler.initializer')
 profiler_opts = importutils.try_import('osprofiler.opts')
 profiler_web = importutils.try_import('osprofiler.web')
 
+# sapcc/openstack-rate-limit-middleware
+rate_limit_middleware = importutils.try_import('rate_limit.rate_limit')
+rate_limit_errors = importutils.try_import('rate_limit.errors')
+
+
 
 def get_pecan_config():
     """Returns the pecan config."""
@@ -137,6 +142,21 @@ def _wrap_app(app):
         )
         profiler_factory = profiler_web.WsgiMiddleware.factory(None, hmac_keys=CONF.profiler.hmac_keys, enabled=True)
         app = profiler_factory(app)
+
+    # sapcc/openstack-rate-limit-middleware
+    if rate_limit_errors and rate_limit_middleware and CONF.rate_limit.enabled:
+        LOG.info("openstack-rate-limit-middleware activated")
+        try:
+            app = rate_limit_middleware.OpenStackRateLimitMiddleware(
+                app,
+                config=dict(CONF.rate_limit)
+            )
+        except (EnvironmentError, OSError,
+                rate_limit_errors.ConfigError) as e:
+            raise exceptions.InputFileError(
+                file_name=CONF.rate_limit.config_file,
+                reason=e
+            )
 
     if cfg.CONF.api_settings.auth_strategy == constants.KEYSTONE:
         app = keystone.SkippingAuthProtocol(app, {})
