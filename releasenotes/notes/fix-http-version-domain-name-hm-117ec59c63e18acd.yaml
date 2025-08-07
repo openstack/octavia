@@ -1,0 +1,7 @@
+---
+fixes:
+  - |
+    Fixed an issue with HAProxy configuration files when using ``http_version``
+    or ``domain_name`` attributes in ``healthmonitor``. The generated
+    configuration files used deprecated/removed features from HAProxy, the fix
+    updates the HAProxy templates to support recent releases.
