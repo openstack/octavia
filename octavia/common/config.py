@@ -944,6 +944,9 @@ watcher_opts = [
 ]
 
 rate_limit_opts = [
+    cfg.BoolOpt('enabled',
+                default=False,
+                help=_('Enable the openstack-rate-limit-middleware')),
     cfg.StrOpt('config_file', default="/etc/octavia/ratelimit.yaml",
                help=_('Path to the rate limiting middleware configuration file')),
     cfg.StrOpt('service_type', default="loadbalancer",
