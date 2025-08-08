@@ -221,14 +221,14 @@ class JinjaTemplater(object):
                 # because that is what ulimit -n typically returns.
                 max_conn_mem_kb = 32 * loadbalancer.get(
                     "global_connection_limit", 1024)
-                # Use half of the remaining memory for SSL caches
+                # LP #2119987: Use 2/5 of the remaining memory for SSL caches
                 ssl_cache_mem_kb = (mem["free"] + mem["buffers"] +
-                                    mem["cached"] - max_conn_mem_kb) // 2
-                # A cache block uses about 200 bytes of data.
+                                    mem["cached"] - max_conn_mem_kb) * 2 // 5
+                # A cache block uses about 250 bytes of data.
                 # The HAProxy default of ssl_cache (20000) would take up
-                # 4000 KB. We don't want to go below that.
-                if ssl_cache_mem_kb > 4000:
-                    jinja_dict["ssl_cache"] = ssl_cache_mem_kb * 5
+                # 5000 KB. We don't want to go below that.
+                if ssl_cache_mem_kb > 5000:
+                    jinja_dict["ssl_cache"] = ssl_cache_mem_kb * 4
             except (KeyError, TypeError):
                 pass
 

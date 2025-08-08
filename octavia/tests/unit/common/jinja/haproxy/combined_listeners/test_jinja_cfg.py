@@ -1168,6 +1168,42 @@ class TestHaproxyCfg(base.TestCase):
             frontend=fe, logging=lg, backend=be, global_opts=g_opts),
             rendered_obj)
 
+    def test_render_template_tls_cachesize(self):
+        g_opts = (f"    maxconn {constants.HAPROXY_DEFAULT_MAXCONN}\n"
+                  f"    tune.ssl.cachesize 101722232\n\n")
+        fe = ("frontend sample_listener_id_1\n"
+              f"    maxconn {constants.HAPROXY_DEFAULT_MAXCONN}\n"
+              "    redirect scheme https if !{ ssl_fc }\n"
+              "    http-response set-header Strict-Transport-Security "
+              "\"max-age=10000000; includeSubDomains; preload;\"\n"
+              "    bind 10.0.0.2:443 "
+              f"ciphers {constants.CIPHERS_OWASP_SUITE_B} "
+              "no-sslv3 no-tlsv10 no-tlsv11 alpn "
+              f"{','.join(constants.AMPHORA_SUPPORTED_ALPN_PROTOCOLS)}\n"
+              "    mode http\n"
+              "    default_backend sample_pool_id_1:sample_listener_id_1\n"
+              "    timeout client 50000\n")
+        tls_tupe = {'cont_id_1':
+                    sample_configs_combined.sample_tls_container_tuple(
+                        id='tls_container_id',
+                        certificate='imaCert1', private_key='imaPrivateKey1',
+                        primary_cn='FakeCN'),
+                    'cont_id_ca': 'client_ca.pem',
+                    'cont_id_crl': 'SHA_ID.pem'}
+        rendered_obj = self.jinja_cfg.render_loadbalancer_obj(
+            sample_configs_combined.sample_amphora_tuple(),
+            [sample_configs_combined.sample_listener_tuple(
+                proto='TERMINATED_HTTPS')],
+            tls_tupe,
+            # 32GiB total
+            amp_details={"memory": {
+                "free": 32864004,
+                "buffers": 32312392 // 2,
+                "cached": 32312392 // 2,
+            }})
+        self.assertEqual(sample_configs_combined.sample_base_expected_config(
+            frontend=fe, global_opts=g_opts), rendered_obj)
+
     def test_render_template_l7policies(self):
         fe = ("frontend sample_listener_id_1\n"
               "    maxconn {maxconn}\n"
