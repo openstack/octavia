@@ -114,6 +114,33 @@ def _wrap_app(app):
                 reason=e
             )
 
+    # sapcc/openstack-rate-limit-middleware
+    # rate-limit uses variables from watcher, so it should be running after
+    # watcher middleware, it means here it should be earlier
+    if rate_limit_errors and rate_limit_middleware and CONF.rate_limit.enabled:
+        LOG.info("openstack-rate-limit-middleware activated")
+        try:
+            app = rate_limit_middleware.OpenStackRateLimitMiddleware(
+                app,
+                config_file=CONF.rate_limit.config_file,
+                clock_accuracy=CONF.rate_limit.clock_accuracy,
+                service_type=CONF.rate_limit.service_type,
+                rate_limit_by=CONF.rate_limit.rate_limit_by,
+                max_sleep_time_seconds=CONF.rate_limit.max_sleep_time_seconds,
+                log_sleep_time_seconds=CONF.rate_limit.log_sleep_time_seconds,
+                backend_host=CONF.rate_limit.backend_host,
+                backend_port=CONF.rate_limit.backend_port,
+                backend_secret_file=CONF.rate_limit.backend_secret_file,
+                backend_max_connections=CONF.rate_limit.backend_max_connections,
+                backend_timeout_seconds=CONF.rate_limit.backend_timeout_seconds
+            )
+        except (EnvironmentError, OSError,
+                rate_limit_errors.ConfigError) as e:
+            raise exceptions.InputFileError(
+                file_name=CONF.rate_limit.config_file,
+                reason=e
+            )
+
     # sapcc/openstack-watcher-middleware
     if watcher_errors and watcher_middleware and CONF.watcher.enabled:
         LOG.info("Openstack-Watcher-Middleware activated")
@@ -143,20 +170,6 @@ def _wrap_app(app):
         profiler_factory = profiler_web.WsgiMiddleware.factory(None, hmac_keys=CONF.profiler.hmac_keys, enabled=True)
         app = profiler_factory(app)
 
-    # sapcc/openstack-rate-limit-middleware
-    if rate_limit_errors and rate_limit_middleware and CONF.rate_limit.enabled:
-        LOG.info("openstack-rate-limit-middleware activated")
-        try:
-            app = rate_limit_middleware.OpenStackRateLimitMiddleware(
-                app,
-                config=dict(CONF.rate_limit)
-            )
-        except (EnvironmentError, OSError,
-                rate_limit_errors.ConfigError) as e:
-            raise exceptions.InputFileError(
-                file_name=CONF.rate_limit.config_file,
-                reason=e
-            )
 
     if cfg.CONF.api_settings.auth_strategy == constants.KEYSTONE:
         app = keystone.SkippingAuthProtocol(app, {})
