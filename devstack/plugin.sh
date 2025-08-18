@@ -596,7 +596,7 @@ function create_amphora_flavor {
         disk_size=$((disk_size + 1))
     fi
     # Pass even if it exists to avoid race condition on multinode
-    openstack flavor create --id auto --ram 1024 --disk $disk_size --vcpus 1 --private m1.amphora -f value -c id --property hw_rng:allowed=True || true
+    openstack flavor create --ram 1024 --disk $disk_size --vcpus 1 --private m1.amphora -f value -c id --property hw_rng:allowed=True || true
     amp_flavor_id=$(openstack flavor show m1.amphora -f value -c id)
     iniset $OCTAVIA_CONF controller_worker amp_flavor_id $amp_flavor_id
 }
