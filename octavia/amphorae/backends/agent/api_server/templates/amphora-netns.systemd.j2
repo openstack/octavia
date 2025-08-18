@@ -23,6 +23,9 @@ ExecStart=-/sbin/sysctl -w net.netfilter.nf_conntrack_expect_max=488
 ExecStart=-/sbin/ip netns exec {{ amphora_nsname }} sysctl -w net.ipv4.ip_forward=1
 ExecStart=-/sbin/ip netns exec {{ amphora_nsname }} sysctl -w net.ipv4.vs.conntrack=1
 ExecStart=-/sbin/ip netns exec {{ amphora_nsname }} sysctl -w net.ipv6.conf.all.forwarding=1
+# Ensure the connection cache is flushed immediately on real server removal
+ExecStart=-/sbin/ip netns exec {{ amphora_nsname }} sysctl -w net.ipv4.vs.expire_nodest_conn=1
+ExecStart=-/sbin/ip netns exec {{ amphora_nsname }} sysctl -w net.ipv4.vs.expire_quiescent_template=1
 # We need the plugged_interfaces file sorted to join the host interfaces
 ExecStart=-/bin/sh -c '/usr/bin/sort -k 1 /var/lib/octavia/plugged_interfaces > /var/lib/octavia/plugged_interfaces.sorted'
 # Assign the interfaces into the namespace with the appropriate name
