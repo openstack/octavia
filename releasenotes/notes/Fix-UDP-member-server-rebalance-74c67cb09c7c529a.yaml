@@ -1,0 +1,10 @@
+---
+upgrade:
+  - |
+    UDP load balancers will require a failover to fix the UDP rebalance issue
+    once the control plane is updated.
+fixes:
+  - |
+    Fixed an issue where UDP listeners may not rebalance failed member servers
+    in a timely fashion. It may have been up to five minutes for a failed
+    member server to be removed from existing flows.
