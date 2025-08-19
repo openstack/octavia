@@ -20,6 +20,7 @@ import threading
 from oslo_config import cfg
 from oslo_log import log as logging
 from oslo_reports import guru_meditation_report as gmr
+from oslo_reports import opts as gmr_opts
 from oslo_utils import timeutils
 
 from octavia.common import service
@@ -81,7 +82,8 @@ def main():
     LOG.debug('Full set of CONF:')
     CONF.log_opt_values(LOG, logging.DEBUG)
 
-    gmr.TextGuruMeditation.setup_autorun(version)
+    gmr_opts.set_defaults(CONF)
+    gmr.TextGuruMeditation.setup_autorun(version, conf=CONF)
 
     timestamp = str(timeutils.utcnow())
     LOG.info("Starting house keeping at %s", timestamp)
