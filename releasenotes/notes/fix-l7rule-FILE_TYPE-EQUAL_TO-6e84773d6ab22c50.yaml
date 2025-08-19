@@ -1,0 +1,5 @@
+---
+fixes:
+  - |
+    Fixed a bug when using a L7Rule with FILE_TYPE and EQUAL_TO comparison,
+    it never matched due to an issue with the generated HAProxy configuration.
