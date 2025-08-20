@@ -1247,7 +1247,7 @@ def sample_base_expected_config(frontend=None, logging=None, backend=None,
                    "    balance roundrobin\n"
                    "    cookie SRV insert indirect nocache\n"
                    "    timeout check 31s\n"
-                   "    option httpchk GET /index.html HTTP/1.0\\r\\n\n"
+                   "    option httpchk GET /index.html HTTP/1.0\n"
                    "    http-check expect rstatus 418\n"
                    "    fullconn {maxconn}\n"
                    "    option allbackups\n"

@@ -362,15 +362,12 @@ backend {{ pool.id }}:{{ listener.id }}
         {% if (pool.health_monitor.type ==
                constants.HEALTH_MONITOR_HTTP or pool.health_monitor.type ==
                constants.HEALTH_MONITOR_HTTPS) %}
-            {% if (pool.health_monitor.http_version and
-                   pool.health_monitor.http_version == 1.1 and
-                   pool.health_monitor.domain_name) %}
-    option httpchk {{ pool.health_monitor.http_method }} {{ pool.health_monitor.url_path }} HTTP/
-    {{- pool.health_monitor.http_version -}}{{- "\\r\\n" | safe -}}
-    Host:\ {{ pool.health_monitor.domain_name }}
-            {% elif pool.health_monitor.http_version %}
-    option httpchk {{ pool.health_monitor.http_method }} {{ pool.health_monitor.url_path }} HTTP/
-    {{- pool.health_monitor.http_version -}}{{- "\\r\\n" | safe }}
+            {% if pool.health_monitor.http_version %}
+    option httpchk {{ pool.health_monitor.http_method }} {{ pool.health_monitor.url_path }} HTTP/{{ pool.health_monitor.http_version }}
+                {% if (pool.health_monitor.http_version == 1.1 and
+                       pool.health_monitor.domain_name) %}
+    http-check send hdr Host {{ pool.health_monitor.domain_name }}
+                {% endif %}
             {% else %}
     option httpchk {{ pool.health_monitor.http_method }} {{ pool.health_monitor.url_path }}
             {% endif %}
