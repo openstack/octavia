@@ -1,0 +1,6 @@
+---
+fixes:
+  - |
+    Fixed a bug where the Amphora configuration update would only update the
+    Amphora agent configuration, but the health sender would not be updated
+    with the new controller IP list.
