@@ -243,15 +243,3 @@
         OCTAVIA_AMP_DISTRIBUTION_RELEASE_ID: 9-stream
         OCTAVIA_AMP_IMAGE_SIZE: 3
         OCTAVIA_AMP_ENABLE_FIPS: True
-
-- job:
-    name: octavia-v2-dsvm-scenario-traffic-ops-ubuntu-jammy
-    parent: octavia-v2-dsvm-scenario-ubuntu-jammy
-    vars:
-      tempest_test_regex: ^octavia_tempest_plugin.tests.scenario.v2.*traffic_ops
-
-- job:
-    name: octavia-v2-dsvm-scenario-non-traffic-ops-ubuntu-jammy
-    parent: octavia-v2-dsvm-scenario-ubuntu-jammy
-    vars:
-      tempest_test_regex: ^octavia_tempest_plugin.tests.scenario.v2.(?!.*traffic_ops)
