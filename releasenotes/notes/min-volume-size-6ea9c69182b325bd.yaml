@@ -1,0 +1,7 @@
+---
+fixes:
+  - |
+    The ``[cinder] volume_size`` option no longer accepts 0 or a negative value
+    and octavia services may fail to start when these values are used.
+    These were accepted previously but caused an internal error when a volume
+    is actually created.
