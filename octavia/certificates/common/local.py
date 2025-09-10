@@ -19,7 +19,7 @@ Common classes for local filesystem certificate handling
 import os
 
 from oslo_config import cfg
-from oslo_config import types as cfg_types
+from oslo_config import types
 
 from octavia.certificates.common import cert
 
@@ -39,21 +39,6 @@ TLS_STORAGE_DEFAULT = os.environ.get(
 )
 
 
-class FernetKeyOpt:
-    regex_pattern = r'^[A-Za-z0-9\-_=]{32}$'
-
-    def __init__(self, value: str):
-        string_type = cfg_types.String(
-            choices=None, regex=self.regex_pattern)
-        self.value = string_type(value)
-
-    def __repr__(self):
-        return self.value.__repr__()
-
-    def __str__(self):
-        return self.value.__str__()
-
-
 certgen_opts = [
     cfg.StrOpt('ca_certificate',
                default=TLS_CERT_DEFAULT,
@@ -70,7 +55,7 @@ certgen_opts = [
                secret=True),
     cfg.ListOpt('server_certs_key_passphrase',
                 default=[TLS_PASS_AMPS_DEFAULT],
-                item_type=FernetKeyOpt,
+                item_type=types.String(regex=r'^[A-Za-z0-9\-_=]{32}$'),
                 help='List of passphrase for encrypting Amphora Certificates '
                 'and Private Keys, first in list is used for encryption while '
                 'all other keys is used to decrypt previously encrypted data. '
