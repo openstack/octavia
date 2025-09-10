@@ -77,7 +77,7 @@ bind {{ lb_vip_address }}:{{ listener.protocol_port }} {{
 {% endmacro %}
 
 
-{% macro l7rule_compare_type_macro(constants, ctype) %}
+{% macro l7rule_compare_type_macro(constants, ctype, rtype=None) %}
     {% if ctype == constants.L7RULE_COMPARE_TYPE_REGEX %}
         {{- "-m reg" -}}
     {% elif ctype == constants.L7RULE_COMPARE_TYPE_STARTS_WITH %}
@@ -87,7 +87,14 @@ bind {{ lb_vip_address }}:{{ listener.protocol_port }} {{
     {% elif ctype == constants.L7RULE_COMPARE_TYPE_CONTAINS %}
         {{- "-m sub" -}}
     {% elif ctype == constants.L7RULE_COMPARE_TYPE_EQUAL_TO %}
-        {{- "-m str" -}}
+        {# Specific handling for FILE_TYPE with EQUAL_TO, "path_end -m str"
+        # doesn't work with haproxy, "path_end" is enough for this type of
+        # comparison
+        # https://github.com/haproxy/haproxy/issues/2567
+        #}
+        {% if rtype != constants.L7RULE_TYPE_FILE_TYPE %}
+            {{- "-m str" -}}
+        {% endif %}
     {% endif %}
 {% endmacro %}
 
@@ -101,7 +108,7 @@ bind {{ lb_vip_address }}:{{ listener.protocol_port }} {{
             constants, l7rule.compare_type) }} {{ l7rule.value }}
     {% elif l7rule.type == constants.L7RULE_TYPE_FILE_TYPE %}
         acl {{ l7rule.id }} path_end {{ l7rule_compare_type_macro(
-            constants, l7rule.compare_type) }} {{ l7rule.value }}
+            constants, l7rule.compare_type, l7rule.type) }} {{ l7rule.value }}
     {% elif l7rule.type == constants.L7RULE_TYPE_HEADER %}
         acl {{ l7rule.id }} req.hdr({{ l7rule.key }}) {{
             l7rule_compare_type_macro(
