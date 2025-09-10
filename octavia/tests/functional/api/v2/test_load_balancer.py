@@ -672,9 +672,14 @@ class TestLoadBalancer(base.BaseAPITest):
         self.assertEqual(subnet1.id, api_lb.get('vip_subnet_id'))
         self.assertEqual(network.id, api_lb.get('vip_network_id'))
 
+        expected_add_vips = []
+        for add_vip in lb_json['additional_vips']:
+            add_vip.update(port_id=port.id)
+            expected_add_vips.append(add_vip)
+
         self.assertEqual(
             # Sort by ip_address so the list order will be guaranteed
-            sorted(lb_json['additional_vips'], key=lambda x: x['ip_address']),
+            sorted(expected_add_vips, key=lambda x: x['ip_address']),
             sorted(api_lb['additional_vips'], key=lambda x: x['ip_address']))
 
     def test_create_neutron_failure(self):
@@ -2840,6 +2845,9 @@ class TestLoadBalancerGraph(base.BaseAPITest):
         if vip_sg_ids:
             create_lb['vip_sg_ids'] = vip_sg_ids
         if additional_vips:
+            for add_vip in additional_vips:
+                if 'port_id' not in add_vip:
+                    add_vip['port_id'] = create_lb['vip_port_id']
             create_lb.update({'additional_vips': additional_vips})
         expected_lb = {
             'description': '',
