@@ -26,6 +26,7 @@ from pecan import make_app as pecan_make_app
 
 from octavia.api import config as app_config
 from octavia.api.drivers import driver_factory
+from octavia.common import config
 from octavia.common import constants
 from octavia.common import exceptions
 from octavia.common import keystone
@@ -96,12 +97,8 @@ def _wrap_app(app):
     # that any errors thrown by other middleware, such as an auth
     # middleware - are annotated with CORS headers, and thus accessible
     # by the browser.
+    config.set_cors_middleware_defaults()
     app = cors.CORS(app, cfg.CONF)
-    cors.set_defaults(
-        allow_headers=['X-Auth-Token', 'X-Openstack-Request-Id'],
-        allow_methods=['GET', 'PUT', 'POST', 'DELETE'],
-        expose_headers=['X-Auth-Token', 'X-Openstack-Request-Id']
-    )
 
     app = sizelimit.RequestBodySizeLimiter(app, cfg.CONF)
 

@@ -26,6 +26,7 @@ from oslo_config import cfg
 from oslo_db import options as db_options
 from oslo_log import log as logging
 import oslo_messaging as messaging
+from oslo_middleware import cors
 from oslo_policy import opts as policy_opts
 
 from octavia.certificates.common import local
@@ -1068,8 +1069,18 @@ def set_lib_defaults():
     generator.html#modifying-defaults-from-other-namespaces
     """
 
+    set_cors_middleware_defaults()
     # TODO(gmann): Remove setting the default value of config policy_file
     # once oslo_policy change the default value to 'policy.yaml'.
     # https://github.com/openstack/oslo.policy/blob/a626ad12fe5a3abd49d70e3e5b95589d279ab578/oslo_policy/opts.py#L49
     # Update default value of oslo.policy policy_file config option.
     policy_opts.set_defaults(cfg.CONF, 'policy.yaml')
+
+
+def set_cors_middleware_defaults():
+    """Update default configuration options for oslo.middleware."""
+    cors.set_defaults(
+        allow_headers=['X-Auth-Token', 'X-Openstack-Request-Id'],
+        allow_methods=['GET', 'PUT', 'POST', 'DELETE'],
+        expose_headers=['X-Auth-Token', 'X-Openstack-Request-Id']
+    )
