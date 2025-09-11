@@ -1,0 +1,8 @@
+---
+other:
+  - |
+    Removed unused amphora-related code including the get_create_amphora_flow
+    function, MarkAmphoraReadyInDB task class, MARK_AMPHORA_READY_INDB
+    constant, and AMPHORA_READY status constant. Updated amphora deletion
+    logic to only allow deletion when amphora status is ERROR, which is the
+    correct behavior since AMPHORA_ALLOCATED amphorae should not be deletable.

@@ -107,7 +107,7 @@ class TestAmphora(base.BaseAPITest):
             'cert_expiration': None,
             'cert_busy': False,
             'role': constants.ROLE_MASTER,
-            'status': constants.AMPHORA_READY,
+            'status': constants.AMPHORA_ALLOCATED,
             'vrrp_interface': 'eth1',
             'vrrp_id': 1,
             'vrrp_priority': 100,
@@ -135,7 +135,7 @@ class TestAmphora(base.BaseAPITest):
     def test_delete(self, mock_cast):
         self.amp_args = {
             'id': uuidutils.generate_uuid(),
-            'status': constants.AMPHORA_READY,
+            'status': constants.ERROR,
         }
         with self.session.begin():
             amp = self.amphora_repo.create(self.session, **self.amp_args)
@@ -175,7 +175,7 @@ class TestAmphora(base.BaseAPITest):
     def test_delete_authorized(self, mock_cast):
         self.amp_args = {
             'id': uuidutils.generate_uuid(),
-            'status': constants.AMPHORA_READY,
+            'status': constants.ERROR,
         }
         with self.session.begin():
             amp = self.amphora_repo.create(self.session, **self.amp_args)
@@ -216,7 +216,7 @@ class TestAmphora(base.BaseAPITest):
     def test_delete_not_authorized(self, mock_cast):
         self.amp_args = {
             'id': uuidutils.generate_uuid(),
-            'status': constants.AMPHORA_READY,
+            'status': constants.ERROR,
         }
         with self.session.begin():
             amp = self.amphora_repo.create(self.session, **self.amp_args)

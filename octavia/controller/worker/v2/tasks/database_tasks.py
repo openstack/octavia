@@ -944,58 +944,6 @@ class MarkAmphoraPendingUpdateInDB(BaseDatabaseTask):
         self.task_utils.mark_amphora_status_error(amphora.get(constants.ID))
 
 
-class MarkAmphoraReadyInDB(BaseDatabaseTask):
-    """This task will mark an amphora as ready in the database.
-
-    Assume sqlalchemy made sure the DB got
-    retried sufficiently - so just abort
-    """
-
-    def execute(self, amphora):
-        """Mark amphora as ready in DB.
-
-        :param amphora: Amphora to be updated.
-        :returns: None
-        """
-
-        LOG.info("Mark READY in DB for amphora: %(amp)s with compute "
-                 "id %(comp)s",
-                 {"amp": amphora.get(constants.ID),
-                  "comp": amphora[constants.COMPUTE_ID]})
-        with db_apis.session().begin() as session:
-            self.amphora_repo.update(
-                session,
-                amphora.get(constants.ID),
-                status=constants.AMPHORA_READY,
-                compute_id=amphora[constants.COMPUTE_ID],
-                lb_network_ip=amphora[constants.LB_NETWORK_IP])
-
-    def revert(self, amphora, *args, **kwargs):
-        """Mark the amphora as broken and ready to be cleaned up.
-
-        :param amphora: Amphora that was updated.
-        :returns: None
-        """
-
-        LOG.warning("Reverting mark amphora ready in DB for amp "
-                    "id %(amp)s and compute id %(comp)s",
-                    {'amp': amphora.get(constants.ID),
-                     'comp': amphora[constants.COMPUTE_ID]})
-        try:
-            with db_apis.session().begin() as session:
-                self.amphora_repo.update(
-                    session,
-                    amphora.get(constants.ID),
-                    status=constants.ERROR,
-                    compute_id=amphora[constants.COMPUTE_ID],
-                    lb_network_ip=amphora[constants.LB_NETWORK_IP])
-        except Exception as e:
-            LOG.error("Failed to update amphora %(amp)s "
-                      "status to ERROR due to: "
-                      "%(except)s", {'amp': amphora.get(constants.ID),
-                                     'except': str(e)})
-
-
 class UpdateAmphoraComputeId(BaseDatabaseTask):
     """Associate amphora with a compute in DB."""
 

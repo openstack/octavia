@@ -159,8 +159,6 @@ PROVISIONING_STATUS = lib_consts.PROVISIONING_STATUS
 AMPHORA_ALLOCATED = lib_consts.AMPHORA_ALLOCATED
 # Amphora is being built 'BOOTING'
 AMPHORA_BOOTING = lib_consts.AMPHORA_BOOTING
-# Amphora is ready to be allocated to a load balancer 'READY'
-AMPHORA_READY = lib_consts.AMPHORA_READY
 # 'FAILOVER_STOPPED'. Failover threshold level has been reached.
 AMPHORA_FAILOVER_STOPPED = lib_consts.AMPHORA_FAILOVER_STOPPED
 # 'ACTIVE'
@@ -541,7 +539,6 @@ COMPUTE_WAIT = 'octavia-compute-wait'
 UPDATE_AMPHORA_INFO = 'octavia-update-amphora-info'
 AMPHORA_FINALIZE = 'octavia-amphora-finalize'
 MARK_AMPHORA_ALLOCATED_INDB = 'octavia-mark-amphora-allocated-indb'
-MARK_AMPHORA_READY_INDB = 'octavia-mark-amphora-ready-indb'
 MARK_LB_ACTIVE_INDB = 'octavia-mark-lb-active-indb'
 MARK_AMP_MASTER_INDB = 'octavia-mark-amp-master-indb'
 MARK_AMP_BACKUP_INDB = 'octavia-mark-amp-backup-indb'

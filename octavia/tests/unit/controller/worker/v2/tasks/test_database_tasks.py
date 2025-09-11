@@ -938,54 +938,6 @@ class TestDatabaseTasks(base.TestCase):
             id=AMP_ID,
             status=constants.ERROR)
 
-    def test_mark_amphora_ready_in_db(self,
-                                      mock_generate_uuid,
-                                      mock_LOG,
-                                      mock_get_session,
-                                      mock_loadbalancer_repo_update,
-                                      mock_listener_repo_update,
-                                      mock_amphora_repo_update,
-                                      mock_amphora_repo_delete):
-
-        self.amphora['lb_network_ip'] = LB_NET_IP
-
-        mark_amp_ready_in_db = database_tasks.MarkAmphoraReadyInDB()
-        mark_amp_ready_in_db.execute(self.amphora)
-
-        mock_session = mock_get_session().begin().__enter__()
-
-        repo.AmphoraRepository.update.assert_called_once_with(
-            mock_session,
-            AMP_ID,
-            status=constants.AMPHORA_READY,
-            compute_id=COMPUTE_ID,
-            lb_network_ip=LB_NET_IP)
-
-        # Test the revert
-
-        mock_amphora_repo_update.reset_mock()
-        mark_amp_ready_in_db.revert(self.amphora)
-
-        repo.AmphoraRepository.update.assert_called_once_with(
-            mock_session,
-            AMP_ID,
-            status=constants.ERROR,
-            compute_id=COMPUTE_ID,
-            lb_network_ip=LB_NET_IP)
-
-        # Test the revert with exception
-
-        mock_amphora_repo_update.reset_mock()
-        mock_amphora_repo_update.side_effect = Exception('fail')
-        mark_amp_ready_in_db.revert(self.amphora)
-
-        repo.AmphoraRepository.update.assert_called_once_with(
-            mock_session,
-            AMP_ID,
-            status=constants.ERROR,
-            compute_id=COMPUTE_ID,
-            lb_network_ip=LB_NET_IP)
-
     @mock.patch('octavia.db.repositories.AmphoraRepository.get')
     def test_update_amphora_info(self,
                                  mock_amphora_repo_get,

@@ -36,57 +36,6 @@ LOG = logging.getLogger(__name__)
 
 class AmphoraFlows:
 
-    def get_create_amphora_flow(self):
-        """Creates a flow to create an amphora.
-
-        :returns: The flow for creating the amphora
-        """
-        create_amphora_flow = linear_flow.Flow(constants.CREATE_AMPHORA_FLOW)
-        create_amphora_flow.add(database_tasks.CreateAmphoraInDB(
-                                provides=constants.AMPHORA_ID))
-        create_amphora_flow.add(lifecycle_tasks.AmphoraIDToErrorOnRevertTask(
-            requires=constants.AMPHORA_ID))
-        create_amphora_flow.add(cert_task.GenerateServerPEMTask(
-                                provides=constants.SERVER_PEM))
-        create_amphora_flow.add(
-            database_tasks.UpdateAmphoraDBCertExpiration(
-                requires=(constants.AMPHORA_ID, constants.SERVER_PEM)))
-        create_amphora_flow.add(compute_tasks.CertComputeCreate(
-            requires=(constants.AMPHORA_ID, constants.SERVER_PEM,
-                      constants.SERVER_GROUP_ID,
-                      constants.BUILD_TYPE_PRIORITY, constants.FLAVOR),
-            provides=constants.COMPUTE_ID))
-        create_amphora_flow.add(database_tasks.MarkAmphoraBootingInDB(
-            requires=(constants.AMPHORA_ID, constants.COMPUTE_ID)))
-        retry_subflow = linear_flow.Flow(
-            constants.COMPUTE_CREATE_RETRY_SUBFLOW,
-            retry=compute_tasks.ComputeRetry())
-        retry_subflow.add(
-            compute_tasks.ComputeWait(
-                requires=(constants.COMPUTE_ID, constants.AMPHORA_ID),
-                provides=constants.COMPUTE_OBJ))
-        create_amphora_flow.add(retry_subflow)
-        create_amphora_flow.add(database_tasks.UpdateAmphoraInfo(
-            requires=(constants.AMPHORA_ID, constants.COMPUTE_OBJ),
-            provides=constants.AMPHORA))
-        retry_subflow = linear_flow.Flow(
-            constants.CREATE_AMPHORA_RETRY_SUBFLOW,
-            retry=amphora_driver_tasks.AmpRetry())
-        retry_subflow.add(
-            amphora_driver_tasks.AmphoraComputeConnectivityWait(
-                requires=constants.AMPHORA,
-                inject={'raise_retry_exception': True}))
-        create_amphora_flow.add(retry_subflow)
-        create_amphora_flow.add(database_tasks.ReloadAmphora(
-            requires=constants.AMPHORA,
-            provides=constants.AMPHORA))
-        create_amphora_flow.add(amphora_driver_tasks.AmphoraFinalize(
-            requires=constants.AMPHORA))
-        create_amphora_flow.add(database_tasks.MarkAmphoraReadyInDB(
-            requires=constants.AMPHORA))
-
-        return create_amphora_flow
-
     def get_amphora_for_lb_subflow(self, prefix, role):
         """Create a new amphora for lb."""
 
