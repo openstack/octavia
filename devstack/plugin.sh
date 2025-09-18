@@ -380,9 +380,7 @@ function octavia_configure {
         iniset $OCTAVIA_CONF oslo_policy policy_file $OCTAVIA_CONF_DIR/policy.yaml
     fi
 
-    if [[ "$OCTAVIA_USE_MOD_WSGI" == "True" ]]; then
-        _configure_octavia_apache_uwsgi
-    fi
+    _configure_octavia_apache_uwsgi
 
     if [ $OCTAVIA_NODE == 'main' ]; then
         configure_octavia_api_haproxy
@@ -576,7 +574,7 @@ function configure_rsyslog {
 }
 
 function octavia_start {
-
+    # octavia-specific start actions
     if  [ $OCTAVIA_NODE != 'api' ] ; then
         # This is probably out of scope here? Load it from config
         MGMT_PORT_IP=$(iniget $OCTAVIA_CONF health_manager bind_ip)
@@ -596,11 +594,7 @@ function octavia_start {
         run_process $OCTAVIA_API_HAPROXY "/usr/sbin/haproxy -db -V -f ${OCTAVIA_CONF_DIR}/haproxy.cfg"
     fi
 
-    if [[ "$OCTAVIA_USE_MOD_WSGI" == "True" ]]; then
-        _start_octavia_apache_wsgi
-    else
-        run_process $OCTAVIA_API  "$OCTAVIA_API_BINARY $OCTAVIA_API_ARGS"
-    fi
+    _start_octavia_apache_wsgi
 
     run_process $OCTAVIA_DRIVER_AGENT "$OCTAVIA_DRIVER_AGENT_BINARY $OCTAVIA_DRIVER_AGENT_ARGS"
     run_process $OCTAVIA_CONSUMER  "$OCTAVIA_CONSUMER_BINARY $OCTAVIA_CONSUMER_ARGS"
@@ -612,11 +606,8 @@ function octavia_start {
 
 function octavia_stop {
     # octavia-specific stop actions
-    if [[ "$OCTAVIA_USE_MOD_WSGI" == "True" ]]; then
-        _stop_octavia_apache_wsgi
-    else
-        stop_process $OCTAVIA_API
-    fi
+    _stop_octavia_apache_wsgi
+
     stop_process $OCTAVIA_DRIVER_AGENT
     stop_process $OCTAVIA_CONSUMER
     stop_process $OCTAVIA_HOUSEKEEPER
@@ -679,9 +670,8 @@ function octavia_cleanup {
             openstack keypair delete ${OCTAVIA_AMP_SSH_KEY_NAME} || true
         fi
     fi
-    if [[ "$OCTAVIA_USE_MOD_WSGI" == "True" ]]; then
-        _cleanup_octavia_apache_wsgi
-    fi
+
+    _cleanup_octavia_apache_wsgi
 
     sudo rm -rf $OCTAVIA_DIR/bin/dual_ca
     sudo rm -rf $OCTAVIA_DIR/bin/single_ca
