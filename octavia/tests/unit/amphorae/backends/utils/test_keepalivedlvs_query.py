@@ -557,7 +557,7 @@ class LvsQueryTestCase(base.TestCase):
                                                      mock_os_stat):
         mock_os_stat.side_effect = (
             mock.Mock(st_mtime=1234),  # config file
-            mock.Mock(st_mtime=1220),  # pid file
+            mock.Mock(st_mtime=1220),  # last_action file
         )
 
         # test with ipv4 and ipv6
@@ -636,6 +636,29 @@ class LvsQueryTestCase(base.TestCase):
              'members': {self.member_id1_v4: constants.DOWN,
                          self.member_id2_v4: constants.DOWN,
                          self.member_id3_v4: constants.DOWN,
+                         self.member_id4_v4: constants.MAINT}}}
+        self.assertEqual(expected, res)
+
+    @mock.patch('os.stat')
+    @mock.patch('octavia.amphorae.backends.utils.keepalivedlvs_query.'
+                'get_listener_realserver_mapping')
+    def test_get_lvs_listener_pool_status_no_realserver_reload(
+            self, mock_get_mapping, mock_os_stat):
+        # When reloading is detected and there is no realserver result, pool
+        # and member statuses should be RESTARTING instead of DOWN.
+        mock_os_stat.side_effect = (
+            mock.Mock(st_mtime=1234),  # config file
+            mock.Mock(st_mtime=1220),  # last_action file
+        )
+        mock_get_mapping.return_value = {}
+        res = lvs_query.get_lvs_listener_pool_status(self.listener_id_v4)
+        expected = {
+            'lvs':
+            {'uuid': self.pool_id_v4,
+             'status': constants.RESTARTING,
+             'members': {self.member_id1_v4: constants.RESTARTING,
+                         self.member_id2_v4: constants.RESTARTING,
+                         self.member_id3_v4: constants.RESTARTING,
                          self.member_id4_v4: constants.MAINT}}}
         self.assertEqual(expected, res)
 
