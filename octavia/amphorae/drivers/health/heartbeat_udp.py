@@ -575,6 +575,12 @@ class UpdateHealthDb:
         elif pool.get('status') == constants.DOWN:
             pool_status = constants.ERROR
             lb_status = constants.ERROR
+        # RESTARTING means that keepalived reported a DOWN pool but
+        # amphora-agent detected that the keepalived configuration file hasn't
+        # been reloaded yet, so to avoid false-positive, pool_status is not
+        # updated
+        elif pool.get('status') == constants.RESTARTING:
+            pass
         else:
             LOG.warning(('Pool %(pool)s reported status of '
                         '%(status)s'),
