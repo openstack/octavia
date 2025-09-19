@@ -1,0 +1,9 @@
+---
+fixes:
+  - |
+    Fixed a race condition in UDP/SCTP (keepalived-lvs) listeners where
+    amphora-agent could report incorrect member and pool status (DOWN instead
+    of a transitional state) when a heartbeat message was built between
+    writing the new keepalived configuration file and completing the reload.
+    A dedicated timestamp file is now used to detect this window and avoid
+    false-positive error statuses.
