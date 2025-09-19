@@ -245,18 +245,20 @@ def get_lvs_listener_pool_status(listener_id):
         }}
 
     config_path = util.keepalived_lvs_cfg_path(listener_id)
-    pids_pathes = util.keepalived_lvs_pids_path(listener_id)
+    last_action_path = util.keepalived_lvs_last_action_ts_path(listener_id)
 
     config_stat = os.stat(config_path)
-    check_pid_stat = os.stat(pids_pathes[2])
+    try:
+        last_action_stat = os.stat(last_action_path)
+    except FileNotFoundError:
+        # Fallback for listeners started before the timestamp file was
+        # introduced
+        pids_paths = util.keepalived_lvs_pids_path(listener_id)
+        last_action_stat = os.stat(pids_paths[2])
 
     # Indicates that keepalived configuration has been updated but the service
-    # has yet to be restarted.
-    # NOTE: It only works if we are doing a RESTART on configuration change,
-    # Iaa34db6cb1dfed98e96a585c5d105e263c7efa65 forces a RESTART instead of a
-    # RELOAD, we need to be careful if we want to switch back to RELOAD after
-    # updating to a recent keepalived release.
-    restarting = config_stat.st_mtime > check_pid_stat.st_mtime
+    # has yet to be reloaded
+    reloading = config_stat.st_mtime > last_action_stat.st_mtime
 
     with open(util.keepalived_lvs_cfg_path(listener_id),
               encoding='utf-8') as f:
@@ -283,7 +285,7 @@ def get_lvs_listener_pool_status(listener_id):
                 status = constants.MAINT
             elif member_ip_port in down_member_ip_port_set:
                 status = (
-                    constants.RESTARTING if restarting else constants.DOWN)
+                    constants.RESTARTING if reloading else constants.DOWN)
             elif int(realserver_result[member_ip_port]['Weight']) == 0:
                 status = constants.DRAIN
             else:
@@ -293,14 +295,15 @@ def get_lvs_listener_pool_status(listener_id):
                 member_results[member_id] = status
     else:
         if hm_enabled:
-            pool_status = constants.DOWN
+            pool_status = (
+                constants.RESTARTING if reloading else constants.DOWN)
 
         for member in resource_ipport_mapping['Members']:
             if member['ipport'] is None:
                 member_results[member['id']] = constants.MAINT
             elif hm_enabled:
                 member_results[member['id']] = (
-                    constants.RESTARTING if restarting else constants.DOWN)
+                    constants.RESTARTING if reloading else constants.DOWN)
             else:
                 member_results[member['id']] = constants.NO_CHECK
 
