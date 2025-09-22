@@ -12,7 +12,6 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 from octavia_lib.common import constants as lib_constants
-from openstack.network.v2.floating_ip import FloatingIP
 from openstack.network.v2.network import Network
 from openstack.network.v2.network_ip_availability import NetworkIPAvailability
 from openstack.network.v2.port import Port
@@ -170,19 +169,6 @@ MOCK_NETWORK = Network(**{'id': MOCK_NETWORK_ID,
                           'port_security_enabled': False})
 MOCK_FIXED_IP = {'subnet_id': MOCK_SUBNET_ID,
                  'ip_address': MOCK_IP_ADDRESS}
-MOCK_FLOATING_IP_ID = 'floating-ip-1'
-MOCK_FLOATING_IP_DESC = 'TestFloatingIP1'
-MOCK_ROUTER_ID = 'mock-router-1'
-MOCK_FLOATING_IP = FloatingIP(**{'id': MOCK_FLOATING_IP_ID,
-                                 'description': MOCK_FLOATING_IP_DESC,
-                                 'tenant_id': MOCK_PROJECT_ID,
-                                 'status': MOCK_STATUS,
-                                 'port_id': MOCK_PORT_ID,
-                                 'router_id': MOCK_ROUTER_ID,
-                                 'floating_network_id': MOCK_NETWORK_ID,
-                                 'floating_ip_address': MOCK_IP_ADDRESS,
-                                 'fixed_ip_address': MOCK_IP_ADDRESS2,
-                                 'fixed_port_id': MOCK_PORT_ID2})
 
 MOCK_AMP_ID1 = 'amp1-id'
 MOCK_AMP_ID2 = 'amp2-id'

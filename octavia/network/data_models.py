@@ -115,26 +115,6 @@ class FixedIP(data_models.BaseDataModel):
         self.subnet = subnet
 
 
-class FloatingIP(data_models.BaseDataModel):
-    def __init__(self, id=None, description=None, project_id=None,
-                 status=None, router_id=None, port_id=None,
-                 floating_network_id=None, floating_ip_address=None,
-                 fixed_ip_address=None, fixed_port_id=None):
-        self.id = id
-        self.description = description
-        self.project_id = project_id
-        self.status = status
-        self.router_id = router_id
-        self.port_id = port_id
-        self.floating_network_id = floating_network_id
-        self.floating_ip_address = floating_ip_address
-        self.fixed_ip_address = fixed_ip_address
-        self.fixed_port_id = fixed_port_id
-
-        # Need to provide this for compatibility in case it is used as a VIP
-        self.network_id = floating_network_id
-
-
 class AmphoraNetworkConfig(data_models.BaseDataModel):
 
     def __init__(self, amphora=None, vip_subnet=None, vip_port=None,
