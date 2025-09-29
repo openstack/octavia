@@ -760,7 +760,7 @@ cinder_opts = [
     cfg.BoolOpt('insecure',
                 default=False,
                 help=_('Disable certificate validation on SSL connections')),
-    cfg.IntOpt('volume_size', default=16,
+    cfg.IntOpt('volume_size', default=16, min=1,
                help=_('Size of volume, in GB, for Amphora instance')),
     cfg.StrOpt('volume_type', default=None,
                help=_('Type of volume for Amphorae volume root disk')),
