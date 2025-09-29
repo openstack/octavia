@@ -115,10 +115,14 @@ api_opts = [
                       "Usage of these ciphers will be blocked.")),
     cfg.ListOpt('default_listener_tls_versions',
                 default=constants.TLS_VERSIONS_OWASP_SUITE_B,
+                item_type=cfg.types.String(
+                    choices=constants.TLS_ALL_VERSIONS),
                 help=_('List of TLS versions to use for new TLS-enabled '
                        'listeners.')),
     cfg.ListOpt('default_pool_tls_versions',
                 default=constants.TLS_VERSIONS_OWASP_SUITE_B,
+                item_type=cfg.types.String(
+                    choices=constants.TLS_ALL_VERSIONS),
                 help=_('List of TLS versions to use for new TLS-enabled '
                        'pools.')),
     cfg.StrOpt('minimum_tls_version',
@@ -129,12 +133,16 @@ api_opts = [
                 default=[lib_consts.ALPN_PROTOCOL_HTTP_2,
                          lib_consts.ALPN_PROTOCOL_HTTP_1_1,
                          lib_consts.ALPN_PROTOCOL_HTTP_1_0],
+                item_type=cfg.types.String(
+                    choices=constants.SUPPORTED_ALPN_PROTOCOLS),
                 help=_('List of ALPN protocols to use for new TLS-enabled '
                        'listeners.')),
     cfg.ListOpt('default_pool_alpn_protocols',
                 default=[lib_consts.ALPN_PROTOCOL_HTTP_2,
                          lib_consts.ALPN_PROTOCOL_HTTP_1_1,
                          lib_consts.ALPN_PROTOCOL_HTTP_1_0],
+                item_type=cfg.types.String(
+                    choices=constants.SUPPORTED_ALPN_PROTOCOLS),
                 help=_('List of ALPN protocols to use for new TLS-enabled '
                        'pools.')),
 ]
