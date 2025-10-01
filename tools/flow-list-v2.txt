@@ -2,7 +2,6 @@
 # Some flows are used by other flows, so just list the primary flows here
 # Format:
 # module class flow
-octavia.controller.worker.v2.flows.amphora_flows AmphoraFlows get_create_amphora_flow
 octavia.controller.worker.v2.flows.amphora_flows AmphoraFlows get_failover_amphora_flow
 octavia.controller.worker.v2.flows.amphora_flows AmphoraFlows cert_rotate_amphora_flow
 octavia.controller.worker.v2.flows.load_balancer_flows LoadBalancerFlows get_create_load_balancer_flow

@@ -1547,7 +1547,7 @@ class TestControllerWorker(base.TestCase):
         mock_amphora.load_balancer_id = None
         mock_amphora.id = AMP_ID
         mock_amphora.load_balancer_id = LB_ID
-        mock_amphora.status = constants.AMPHORA_READY
+        mock_amphora.status = constants.AMPHORA_ALLOCATED
         mock_amp_repo_get.return_value = mock_amphora
         flavor_dict = {constants.LOADBALANCER_TOPOLOGY:
                        constants.TOPOLOGY_SINGLE}
@@ -1604,7 +1604,7 @@ class TestControllerWorker(base.TestCase):
         mock_amphora.load_balancer_id = None
         mock_amphora.id = AMP_ID
         mock_amphora.load_balancer_id = LB_ID
-        mock_amphora.status = constants.AMPHORA_READY
+        mock_amphora.status = constants.AMPHORA_ALLOCATED
         mock_amp_repo_get.return_value = mock_amphora
         flavor_dict = {constants.LOADBALANCER_TOPOLOGY:
                        constants.TOPOLOGY_ACTIVE_STANDBY}
@@ -1661,7 +1661,7 @@ class TestControllerWorker(base.TestCase):
         mock_amphora.load_balancer_id = None
         mock_amphora.id = AMP_ID
         mock_amphora.load_balancer_id = LB_ID
-        mock_amphora.status = constants.AMPHORA_READY
+        mock_amphora.status = constants.AMPHORA_ALLOCATED
         mock_amp_repo_get.return_value = mock_amphora
         flavor_dict = {constants.LOADBALANCER_TOPOLOGY:
                        constants.TOPOLOGY_ACTIVE_STANDBY}
@@ -1715,7 +1715,7 @@ class TestControllerWorker(base.TestCase):
         mock_amphora.load_balancer_id = None
         mock_amphora.id = AMP_ID
         mock_amphora.load_balancer_id = LB_ID
-        mock_amphora.status = constants.AMPHORA_READY
+        mock_amphora.status = constants.AMPHORA_ALLOCATED
         mock_amp_repo_get.return_value = mock_amphora
         flavor_dict = {constants.LOADBALANCER_TOPOLOGY: mock_lb.topology}
         expected_stored_params = {
@@ -1771,7 +1771,7 @@ class TestControllerWorker(base.TestCase):
         mock_amphora.load_balancer_id = None
         mock_amphora.id = AMP_ID
         mock_amphora.load_balancer_id = LB_ID
-        mock_amphora.status = constants.AMPHORA_READY
+        mock_amphora.status = constants.AMPHORA_ALLOCATED
         mock_amp_repo_get.return_value = mock_amphora
         flavor_dict = {constants.LOADBALANCER_TOPOLOGY:
                        constants.TOPOLOGY_SINGLE, 'taste': 'spicy'}
@@ -1829,7 +1829,7 @@ class TestControllerWorker(base.TestCase):
         mock_amphora.load_balancer_id = None
         mock_amphora.id = AMP_ID
         mock_amphora.load_balancer_id = LB_ID
-        mock_amphora.status = constants.AMPHORA_READY
+        mock_amphora.status = constants.AMPHORA_ALLOCATED
         mock_amp_repo_get.return_value = mock_amphora
         flavor_dict = {constants.LOADBALANCER_TOPOLOGY:
                        constants.TOPOLOGY_SINGLE}
@@ -1887,7 +1887,7 @@ class TestControllerWorker(base.TestCase):
         mock_amphora.load_balancer_id = None
         mock_amphora.id = AMP_ID
         mock_amphora.load_balancer_id = LB_ID
-        mock_amphora.status = constants.AMPHORA_READY
+        mock_amphora.status = constants.AMPHORA_ALLOCATED
         mock_amp_repo_get.return_value = mock_amphora
         flavor_dict = {constants.LOADBALANCER_TOPOLOGY:
                        constants.TOPOLOGY_SINGLE}
@@ -2006,7 +2006,7 @@ class TestControllerWorker(base.TestCase):
         mock_amphora = mock.MagicMock()
         mock_amphora.load_balancer_id = None
         mock_amphora.id = AMP_ID
-        mock_amphora.status = constants.AMPHORA_READY
+        mock_amphora.status = constants.AMPHORA_ALLOCATED
         mock_amp_repo_get.return_value = mock_amphora
         expected_stored_params = {constants.AVAILABILITY_ZONE: {},
                                   constants.BUILD_TYPE_PRIORITY:

@@ -78,10 +78,6 @@ def get_update_load_balancer_flow():
     return LB_FLOWS.get_update_load_balancer_flow()
 
 
-def get_create_amphora_flow():
-    return AMP_FLOWS.get_create_amphora_flow()
-
-
 def get_delete_amphora_flow(amphora, retry_attempts=None, retry_interval=None):
     return AMP_FLOWS.get_delete_amphora_flow(amphora, retry_attempts,
                                              retry_interval)

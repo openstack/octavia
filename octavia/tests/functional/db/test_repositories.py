@@ -3898,7 +3898,7 @@ class AmphoraRepositoryTest(BaseRepositoryTest):
 
         amphora = self.create_amphora(self.FAKE_UUID_1)
         self.amphora_repo.update(self.session, amphora.id,
-                                 status=constants.AMPHORA_READY)
+                                 status='READY')
         new_amphora = self.amphora_repo.allocate_and_associate(self.session,
                                                                self.lb.id)
         self.assertIsNotNone(new_amphora)
@@ -4052,7 +4052,7 @@ class AmphoraRepositoryTest(BaseRepositoryTest):
     def test_and_set_status_for_delete(self):
         # Normal path
         amphora = self.create_amphora(self.FAKE_UUID_1,
-                                      status=constants.AMPHORA_READY)
+                                      status=constants.ERROR)
         self.amphora_repo.test_and_set_status_for_delete(self.session,
                                                          amphora.id)
         new_amphora = self.amphora_repo.get(self.session, id=amphora.id)

@@ -87,7 +87,7 @@ class TestVRRPRestDriver(base.TestCase):
         self.clients[API_VERSION].upload_vrrp_config.reset_mock()
         ready_amphora_mock = mock.MagicMock()
         ready_amphora_mock.id = uuidutils.generate_uuid()
-        ready_amphora_mock.status = constants.AMPHORA_READY
+        ready_amphora_mock.status = constants.ERROR
         ready_amphora_mock.api_version = API_VERSION
 
         self.keepalived_mixin.update_vrrp_conf(
@@ -117,7 +117,7 @@ class TestVRRPRestDriver(base.TestCase):
         self.clients[API_VERSION].start_vrrp.reset_mock()
         ready_amphora_mock = mock.MagicMock()
         ready_amphora_mock.id = uuidutils.generate_uuid()
-        ready_amphora_mock.status = constants.AMPHORA_READY
+        ready_amphora_mock.status = constants.ERROR
         ready_amphora_mock.api_version = API_VERSION
 
         self.keepalived_mixin.start_vrrp_service(ready_amphora_mock)
