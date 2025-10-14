@@ -69,7 +69,6 @@ lsof:
 net-tools:
 netbase:
 netcat-openbsd:
-network-scripts:
 open-vm-tools:
   arch: amd64
 openssh-client:
@@ -80,9 +79,9 @@ ppc64-diag:
   arch: ppc64le, ppc64el
 psmisc:
 rsyslog:
-screen:
 socat:
 tcpdump:
+tmux:
 ubuntu-cloudimage-keyring:
 uuid-runtime:
 vim-tiny:

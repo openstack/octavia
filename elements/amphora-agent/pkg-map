@@ -7,9 +7,7 @@
         "python3-venv": "",
         "python3": "python39",
         "vlan": "",
-        "screen": "",
-        "dkms": "",
-        "network-scripts": ""
+        "dkms": ""
       }
     },
     "centos": {
@@ -19,9 +17,15 @@
         "python3-venv": "",
         "python3": "python39",
         "vlan": "",
-        "screen": "",
-        "dkms": "",
-        "network-scripts": ""
+        "dkms": ""
+      },
+      "10-stream": {
+        "isc-dhcp-client": "",
+        "python3-dev": "platform-python-devel",
+        "python3-venv": "",
+        "python3": "python312",
+        "vlan": "",
+        "dkms": ""
       }
     },
     "rocky": {
@@ -31,9 +35,15 @@
         "python3-venv": "",
         "python3": "python39",
         "vlan": "",
-        "screen": "",
-        "dkms": "",
-        "network-scripts": ""
+        "dkms": ""
+      },
+      "10": {
+        "isc-dhcp-client": "",
+        "python3-dev": "platform-python-devel",
+        "python3-venv": "",
+        "python3": "python312",
+        "vlan": "",
+        "dkms": ""
       }
     }
   },
@@ -55,13 +65,11 @@
       "vim-tiny": "vim-minimal",
       "apt-transport-https": "",
       "pollinate": "",
-      "ifupdown": "",
-      "network-scripts": "network-scripts"
+      "ifupdown": ""
     }
   },
   "default": {
     "amphora-agent": "amphora-agent",
-    "acpid-ppc64le": "acpid",
-    "network-scripts": ""
+    "acpid-ppc64le": "acpid"
   }
 }

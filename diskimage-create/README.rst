@@ -102,7 +102,7 @@ Command syntax:
             [-a **amd64** | armhf | aarch64 | ppc64le ]
             [-b **haproxy** ]
             [-c **~/.cache/image-create** | <cache directory> ]
-            [-d **noble**/**9-stream**/**9** | <other release id> ]
+            [-d **noble**/**10-stream**/**10** | <other release id> ]
             [-e]
             [-f]
             [-g **repository branch** | stable/train | stable/stein | ... ]

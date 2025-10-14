@@ -23,7 +23,7 @@ usage() {
     echo "            [-a **amd64** | armhf | aarch64 | ppc64le]"
     echo "            [-b **haproxy** ]"
     echo "            [-c **~/.cache/image-create** | <cache directory> ]"
-    echo "            [-d **noble**/**9-stream**/**9** | <other release id> ]"
+    echo "            [-d **noble**/**10-stream**/**10** | <other release id> ]"
     echo "            [-e]"
     echo "            [-f]"
     echo "            [-g **repository branch** | stable/train | stable/stein | ... ]"
@@ -244,13 +244,13 @@ AMP_BASEOS=${AMP_BASEOS:-"ubuntu-minimal"}
 if [ "$AMP_BASEOS" = "ubuntu-minimal" ]; then
     export DIB_RELEASE=${AMP_DIB_RELEASE:-"noble"}
 elif [ "${AMP_BASEOS}" = "rhel" ]; then
-    export DIB_RELEASE=${AMP_DIB_RELEASE:-"9"}
+    export DIB_RELEASE=${AMP_DIB_RELEASE:-"10"}
 elif [ "${AMP_BASEOS}" = "centos-minimal" ]; then
-    export DIB_RELEASE=${AMP_DIB_RELEASE:-"9-stream"}
+    export DIB_RELEASE=${AMP_DIB_RELEASE:-"10-stream"}
 elif [ "${AMP_BASEOS}" = "fedora" ]; then
     export DIB_RELEASE=${AMP_DIB_RELEASE:-"28"}
 elif [ "${AMP_BASEOS}" = "rocky-container" ]; then
-    export DIB_RELEASE=${AMP_DIB_RELEASE:-"9"}
+    export DIB_RELEASE=${AMP_DIB_RELEASE:-"10"}
 fi
 
 AMP_OUTPUTFILENAME=${AMP_OUTPUTFILENAME:-"$PWD/amphora-x64-haproxy.qcow2"}
