@@ -551,7 +551,7 @@ function configure_octavia_api_haproxy {
 }
 
 function configure_rsyslog {
-    sudo mkdir -m 775 /var/log/octavia
+    sudo mkdir -pm 775 /var/log/octavia
     sudo chgrp syslog /var/log/octavia
 
     sudo cp ${OCTAVIA_DIR}/devstack/etc/rsyslog/10-octavia-log-offloading.conf /etc/rsyslog.d/
@@ -565,12 +565,12 @@ function configure_rsyslog {
     sudo touch /var/log/octavia/octavia-tenant-traffic.log
     sudo chmod 664 /var/log/octavia/octavia-tenant-traffic.log
     sudo chgrp syslog /var/log/octavia/octavia-tenant-traffic.log
-    sudo ln -s /var/log/octavia/octavia-tenant-traffic.log /var/log/octavia-tenant-traffic.log
+    sudo ln -fs /var/log/octavia/octavia-tenant-traffic.log /var/log/octavia-tenant-traffic.log
 
     sudo touch /var/log/octavia/octavia-amphora.log
     sudo chmod 664 /var/log/octavia/octavia-amphora.log
     sudo chgrp syslog /var/log/octavia/octavia-amphora.log
-    sudo ln -s /var/log/octavia/octavia-amphora.log /var/log/octavia-amphora.log
+    sudo ln -fs /var/log/octavia/octavia-amphora.log /var/log/octavia-amphora.log
 }
 
 function octavia_start {
@@ -685,6 +685,9 @@ function octavia_cleanup {
     sudo rm -f /etc/rsyslog.d/10-octavia-log-offloading.conf
     restart_service rsyslog
 
+    # Remove compatibility symbolic links
+    sudo rm -f /var/log/octavia-tenant-traffic.log
+    sudo rm -f /var/log/octavia-amphora.log
 }
 
 function add_load-balancer_roles {
