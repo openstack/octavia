@@ -1,0 +1,7 @@
+---
+fixes:
+  - |
+    Fix a potential race condition during the cascade deletion of load
+    balancers. When deleting a load balancer with multiple listeners, the
+    security groups of the VIP port may have been updated many times
+    concurrently, creating a race condition.
