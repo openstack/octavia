@@ -56,7 +56,7 @@ def register_app_error_handler(app):
 
 
 class Server:
-    def __init__(self):
+    def __init__(self, hm_queue):
         self.app = flask.Flask(__name__)
         self._osutils = osutils.BaseOS.get_os_util()
         self._keepalived = keepalived.Keepalived()
@@ -64,6 +64,7 @@ class Server:
         self._lvs_listener = keepalivedlvs.KeepalivedLvs()
         self._plug = plug.Plug(self._osutils)
         self._amphora_info = amphora_info.AmphoraInfo(self._osutils)
+        self._hm_queue = hm_queue
 
         register_app_error_handler(self.app)
 
@@ -253,6 +254,8 @@ class Server:
                     b = stream.read(BUFFER)
 
             CONF.mutate_config_files()
+            # Signal to the health manager process to reload it's configuration
+            self._hm_queue.put('reload')
         except Exception as e:
             LOG.error("Unable to update amphora-agent configuration: %s",
                       str(e))
