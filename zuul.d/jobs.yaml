@@ -1,3 +1,9 @@
+- nodeset:
+    name: octavia-centos-10-stream
+    nodes:
+      - name: octavia-centos-10-stream
+        label: centos-10-stream-4GB
+
 - job:
     name: publish-openstack-octavia-amphora-image
     parent: publish-openstack-artifacts
@@ -19,14 +25,14 @@
         amphora_os_release: noble
 
 - job:
-    name: publish-openstack-octavia-amphora-image-centos-9-stream
-    nodeset: centos-9-stream
+    name: publish-openstack-octavia-amphora-image-centos-10-stream
+    nodeset: octavia-centos-10-stream
     parent: publish-openstack-octavia-amphora-image
     description: |
-      Publish CentOS 9 Stream based amphora image to tarballs.o.o.
+      Publish CentOS 10 Stream based amphora image to tarballs.o.o.
     vars:
         amphora_os: centos
-        amphora_os_release: 9-stream
+        amphora_os_release: 10-stream
 
 - job:
     name: octavia-grenade
@@ -185,26 +191,26 @@
         amphora_os_release: noble
 
 - job:
-    name: octavia-amphora-image-build-live-centos-9-stream
+    name: octavia-amphora-image-build-live-centos-10-stream
     parent: octavia-amphora-image-build
-    nodeset: centos-9-stream
+    nodeset: octavia-centos-10-stream
     description: |
-      Builds a CentOS 9 Stream amphora image using diskimage-builder from Git
+      Builds a CentOS 10 Stream amphora image using diskimage-builder from Git
       master. This job does not publish the image.
     vars:
         amphora_os: centos
-        amphora_os_release: 9-stream
+        amphora_os_release: 10-stream
 
 - job:
-    name: octavia-amphora-image-build-live-rocky-9
+    name: octavia-amphora-image-build-live-rocky-10
     parent: octavia-amphora-image-build
-    nodeset: centos-9-stream
+    nodeset: octavia-centos-10-stream
     description: |
-      Builds a Rocky Linux 9 amphora image using diskimage-builder from Git
+      Builds a Rocky Linux 10 amphora image using diskimage-builder from Git
       master. This job does not publish the image.
     vars:
         amphora_os: rocky
-        amphora_os_release: 9
+        amphora_os_release: 10
 
 - job:
     name: octavia-v2-dsvm-scenario-nftables
@@ -231,15 +237,15 @@
 - job:
     name: octavia-v2-dsvm-scenario-fips
     parent: octavia-v2-dsvm-scenario
-    nodeset: octavia-single-node-centos-9-stream
+    nodeset: octavia-single-node-centos-10-stream
     description: |
-      Functional testing for a FIPS enabled Centos 9 system.
+      Functional testing for a FIPS enabled Centos 10 system.
     pre-run: playbooks/enable-fips.yaml
     timeout: 10800
     vars:
       nslookup_target: 'opendev.org'
       devstack_localrc:
         OCTAVIA_AMP_BASE_OS: centos
-        OCTAVIA_AMP_DISTRIBUTION_RELEASE_ID: 9-stream
+        OCTAVIA_AMP_DISTRIBUTION_RELEASE_ID: 10-stream
         OCTAVIA_AMP_IMAGE_SIZE: 3
         OCTAVIA_AMP_ENABLE_FIPS: True

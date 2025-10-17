@@ -80,6 +80,12 @@
         - octavia-v2-dsvm-scenario-ipv6-only:
             irrelevant-files: *irrelevant-files
             voting: false
+        - octavia-v2-dsvm-scenario-centos-10-stream-traffic-ops:
+            irrelevant-files: *irrelevant-files
+            voting: false
+        - octavia-v2-dsvm-scenario-centos-10-stream-non-traffic-ops:
+            irrelevant-files: *irrelevant-files
+            voting: false
     queue: octavia
     gate:
       fail-fast: true
@@ -114,7 +120,7 @@
             branches:
               regex: ^stable/.*$
               negate: true
-        - publish-openstack-octavia-amphora-image-centos-9-stream:
+        - publish-openstack-octavia-amphora-image-centos-10-stream:
             branches:
               regex: ^stable/.*$
               negate: true

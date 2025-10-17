@@ -8,6 +8,24 @@
       become: yes
       when:
         - ansible_os_family == 'RedHat'
+    - name: Install required packages on Red Hat distributions
+      package:
+        name:
+          # Required by ansible pip module on centos
+          - python3-packaging
+          # Required by dib bindep dependencies (gdisk)
+          - epel-release
+        state: present
+      become: yes
+      when:
+        - ansible_os_family == 'RedHat'
+    # Installing epel-release doesn't automatically enable the repository
+    - name: Enable EPEL repo on Red Hat distributions
+      shell: |
+        dnf config-manager --set-enable epel
+      become: yes
+      when:
+        - ansible_os_family == 'RedHat'
     - name: Install required pip packages
       pip:
         name: "{{  item }}"
