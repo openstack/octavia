@@ -292,12 +292,19 @@ class LoadBalancerFlows:
         :param listeners: A list of listener dicts
         :return: The flow for the deletion
         """
-        listeners_delete_flow = unordered_flow.Flow('listeners_delete_flow')
+        delete_listeners_flow = linear_flow.Flow('delete_listeners_flow')
+        delete_listeners_flow.add(network_tasks.UpdateVIPForDelete(
+            name='delete_update_vip',
+            requires=constants.LOADBALANCER_ID))
+
+        delete_internal_flow = unordered_flow.Flow('delete_listeners_flows')
         for listener in listeners:
-            listeners_delete_flow.add(
+            delete_internal_flow.add(
                 self.listener_flows.get_delete_listener_internal_flow(
                     listener, flavor_dict=flavor_dict))
-        return listeners_delete_flow
+
+        delete_listeners_flow.add(delete_internal_flow)
+        return delete_listeners_flow
 
     def get_delete_load_balancer_flow(self, lb):
         """Creates a flow to delete a load balancer.
