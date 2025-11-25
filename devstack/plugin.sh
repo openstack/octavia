@@ -138,27 +138,6 @@ function build_octavia_worker_image {
     upload_image file://${OCTAVIA_AMP_IMAGE_FILE} $TOKEN
 }
 
-function _configure_octavia_apache_uwsgi {
-    write_uwsgi_config "$OCTAVIA_UWSGI_CONF" "$OCTAVIA_UWSGI_APP" "/$OCTAVIA_SERVICE_TYPE" "" "octavia-wsgi"
-}
-
-function _cleanup_octavia_apache_wsgi {
-    remove_uwsgi_config "$OCTAVIA_UWSGI_CONF" "$OCTAVIA_UWSGI_APP"
-    restart_apache_server
-}
-
-function _start_octavia_apache_wsgi {
-    run_process o-api "$(which uwsgi) --ini $OCTAVIA_UWSGI_CONF"
-    enable_apache_site octavia-wsgi
-    restart_apache_server
-}
-
-function _stop_octavia_apache_wsgi {
-    disable_apache_site octavia-wsgi
-    stop_process o-api
-    restart_apache_server
-}
-
 function create_octavia_accounts {
     create_service_user $OCTAVIA
 
@@ -380,7 +359,7 @@ function octavia_configure {
         iniset $OCTAVIA_CONF oslo_policy policy_file $OCTAVIA_CONF_DIR/policy.yaml
     fi
 
-    _configure_octavia_apache_uwsgi
+    write_uwsgi_config "$OCTAVIA_UWSGI_CONF" "$OCTAVIA_UWSGI_APP" "/$OCTAVIA_SERVICE_TYPE" "" "octavia-wsgi"
 
     if [ $OCTAVIA_NODE == 'main' ]; then
         configure_octavia_api_haproxy
@@ -594,7 +573,7 @@ function octavia_start {
         run_process $OCTAVIA_API_HAPROXY "/usr/sbin/haproxy -db -V -f ${OCTAVIA_CONF_DIR}/haproxy.cfg"
     fi
 
-    _start_octavia_apache_wsgi
+    run_process o-api "$(which uwsgi) --ini $OCTAVIA_UWSGI_CONF"
 
     run_process $OCTAVIA_DRIVER_AGENT "$OCTAVIA_DRIVER_AGENT_BINARY $OCTAVIA_DRIVER_AGENT_ARGS"
     run_process $OCTAVIA_CONSUMER  "$OCTAVIA_CONSUMER_BINARY $OCTAVIA_CONSUMER_ARGS"
@@ -606,7 +585,7 @@ function octavia_start {
 
 function octavia_stop {
     # octavia-specific stop actions
-    _stop_octavia_apache_wsgi
+    stop_process o-api
 
     stop_process $OCTAVIA_DRIVER_AGENT
     stop_process $OCTAVIA_CONSUMER
@@ -671,7 +650,7 @@ function octavia_cleanup {
         fi
     fi
 
-    _cleanup_octavia_apache_wsgi
+    remove_uwsgi_config "$OCTAVIA_UWSGI_CONF" "$OCTAVIA_UWSGI_APP"
 
     sudo rm -rf $OCTAVIA_DIR/bin/dual_ca
     sudo rm -rf $OCTAVIA_DIR/bin/single_ca
