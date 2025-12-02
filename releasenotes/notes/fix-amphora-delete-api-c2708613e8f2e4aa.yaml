@@ -1,0 +1,5 @@
+---
+fixes:
+  - |
+    Fixed a bug with the Amphora Delete API call, the call was ignored by the
+    Amphora driver to due misconfiguration of the RPC.
