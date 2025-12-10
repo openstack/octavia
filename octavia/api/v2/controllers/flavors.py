@@ -47,10 +47,11 @@ class FlavorsController(base.BaseController):
                                    constants.RBAC_GET_ONE)
         if id == constants.NIL_UUID:
             raise exceptions.NotFound(resource='Flavor', id=constants.NIL_UUID)
+
         with context.session.begin():
-            db_flavor = self._get_db_flavor(context.session, id)
-        result = self._convert_db_to_type(db_flavor,
-                                          flavor_types.FlavorResponse)
+            flavor = self._get_db_flavor(context.session, id)
+            result = flavor_types.FlavorResponse.from_db_obj(flavor)
+
         if fields is not None:
             result = self._filter_fields([result], fields)[0]
         return flavor_types.FlavorRootResponse(flavor=result)
@@ -63,12 +64,18 @@ class FlavorsController(base.BaseController):
         context = pcontext.get('octavia_context')
         self._auth_validate_action(context, context.project_id,
                                    constants.RBAC_GET_ALL)
+
         with context.session.begin():
-            db_flavors, links = self.repositories.flavor.get_all(
+            flavors, links = self.repositories.flavor.get_all_orm(
                 context.session,
-                pagination_helper=pcontext.get(constants.PAGINATION_HELPER))
-        result = self._convert_db_to_type(
-            db_flavors, [flavor_types.FlavorResponse])
+                pagination_helper=pcontext.get(constants.PAGINATION_HELPER)
+            )
+
+            result = [
+                flavor_types.FlavorResponse.from_db_obj(flavor)
+                for flavor in flavors
+            ]
+
         if fields is not None:
             result = self._filter_fields(result, fields)
         return flavor_types.FlavorsRootResponse(
@@ -99,8 +106,11 @@ class FlavorsController(base.BaseController):
         except Exception:
             with excutils.save_and_reraise_exception():
                 context.session.rollback()
-        result = self._convert_db_to_type(db_flavor,
-                                          flavor_types.FlavorResponse)
+
+        with context.session.begin():
+            db_flavor = self._get_db_flavor(context.session, db_flavor.id)
+            result = flavor_types.FlavorResponse.from_db_obj(db_flavor)
+
         return flavor_types.FlavorRootResponse(flavor=result)
 
     @wsme_pecan.wsexpose(flavor_types.FlavorRootResponse,
@@ -127,10 +137,11 @@ class FlavorsController(base.BaseController):
         # Force SQL alchemy to query the DB, otherwise we get inconsistent
         # results
         context.session.expire_all()
+
         with context.session.begin():
-            db_flavor = self._get_db_flavor(context.session, id)
-        result = self._convert_db_to_type(db_flavor,
-                                          flavor_types.FlavorResponse)
+            flavor = self._get_db_flavor(context.session, id)
+            result = flavor_types.FlavorResponse.from_db_obj(flavor)
+
         return flavor_types.FlavorRootResponse(flavor=result)
 
     @oslo_db_api.wrap_db_retry(max_retries=5, retry_on_deadlock=True)

@@ -12,10 +12,9 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-import copy
 import ipaddress
 
-from dateutil import parser
+from wsme import exc as wsme_exc
 from wsme import types as wtypes
 
 from octavia.common import constants
@@ -136,48 +135,58 @@ class BaseType(wtypes.Base, metaclass=BaseMeta):
         return False
 
     @classmethod
-    def from_data_model(cls, data_model, children=False):
-        """Converts data_model to Octavia WSME type.
+    def from_db_obj(cls, db_obj):
+        """Map DB object to WSME attributes.
 
-        :param data_model: data model to convert from
-        :param children: convert child data models
+        The behaviour can be individually extended by implementing from_db_obj
+        closer to the type.
+
+        :param db_obj: the DB object to process
         """
-        type_dict = data_model.to_dict()
-        # We need to have json convertible data for storing it in persistence
-        # jobboard backend.
-        for k, v in type_dict.items():
-            if ('_at' in k or 'expiration' in k) and v is not None:
-                type_dict[k] = parser.parse(v)
+        result = cls()
 
-        if not hasattr(cls, '_type_to_model_map'):
-            return cls(**type_dict)
+        def try_set_attr(result, attr_name, attr):
+            # This is not as messy as it may seem. Trying to setattr and
+            # discarding InvalidInput exceptions allows from_db_obj to stay as
+            # generic as possible and effectively ignore attributes that need
+            # a developer-defined processing path. This should only affect
+            # development in the event that a new property is added to an API
+            # response type but needs an explicit procesing path (for example
+            # for attributes that are IdOnlyType normally but XFullResponse
+            # when _full_response).
+            try:
+                setattr(result, attr_name, attr)
+            except wsme_exc.InvalidInput:
+                pass
 
-        dm_to_type_map = {value: key
-                          for key, value in cls._type_to_model_map.items()}
+        attr_names = [attr.name for attr in cls._wsme_attributes]
+        for attr_name in attr_names:
+            if hasattr(db_obj, attr_name):
+                attr = getattr(db_obj, attr_name)
 
-        new_dict = copy.deepcopy(type_dict)
-        for key, value in type_dict.items():
-            if isinstance(value, dict):
-                for child_key, child_value in value.items():
-                    if '.'.join([key, child_key]) in dm_to_type_map:
-                        new_dict['_'.join([key, child_key])] = child_value
-            elif key in ['name', 'description'] and value is None:
-                new_dict[key] = ''
-            else:
-                if key in dm_to_type_map:
-                    new_dict[dm_to_type_map[key]] = value
-                    del new_dict[key]
-        return cls(**new_dict)
+                if attr_name in ['name', 'description'] and attr is None:
+                    setattr(result, attr_name, '')
+                else:
+                    try_set_attr(result, attr_name, attr)
+            elif hasattr(cls, '_type_to_db_map'):
+                if (attr_name not in cls._type_to_db_map or
+                   '.' in cls._type_to_db_map[attr_name]):
+                    continue
+
+                attr = getattr(db_obj, cls._type_to_db_map[attr_name])
+                try_set_attr(result, attr_name, attr)
+
+        return result
 
     @classmethod
-    def translate_dict_keys_to_data_model(cls, wsme_dict):
-        """Translate the keys from wsme class type, to data_model."""
-        if not hasattr(cls, '_type_to_model_map'):
+    def translate_dict_keys_to_db_obj(cls, wsme_dict):
+        """Translate the keys from wsme class type, to db_obj."""
+        if not hasattr(cls, '_type_to_db_map'):
             return wsme_dict
         res = {}
         for (k, v) in wsme_dict.items():
-            if k in cls._type_to_model_map:
-                k = cls._type_to_model_map[k]
+            if k in cls._type_to_db_map:
+                k = cls._type_to_db_map[k]
                 if '.' in k:
                     parent, child = k.split('.')
                     if parent not in res:
@@ -188,12 +197,12 @@ class BaseType(wtypes.Base, metaclass=BaseMeta):
         return res
 
     @classmethod
-    def translate_key_to_data_model(cls, key):
-        """Translate the keys from wsme class type, to data_model."""
-        if not hasattr(cls, '_type_to_model_map') or (
-                key not in cls._type_to_model_map):
+    def translate_key_to_db_obj(cls, key):
+        """Translate the keys from wsme class type, to db_obj."""
+        if not hasattr(cls, '_type_to_db_map') or (
+                key not in cls._type_to_db_map):
             return key
-        return cls._type_to_model_map[key]
+        return cls._type_to_db_map[key]
 
     def to_dict(self, render_unsets=False):
         """Converts Octavia WSME type to dictionary.
@@ -239,7 +248,7 @@ class BaseType(wtypes.Base, metaclass=BaseMeta):
                 else:
                     continue
             wsme_dict[attr] = value
-        return self.translate_dict_keys_to_data_model(wsme_dict)
+        return self.translate_dict_keys_to_db_obj(wsme_dict)
 
 
 class IdOnlyType(BaseType):

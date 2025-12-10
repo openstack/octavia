@@ -26,7 +26,7 @@ from octavia.common import constants
 LOG = logging.getLogger(__name__)
 
 
-class BaseDataModel:
+class ToDictMixin:
     def _to_dict(self, value, calling_classes=None, recurse=False):
         calling_classes = calling_classes or []
         # We need to have json convertible data for storing it in
@@ -39,7 +39,7 @@ class BaseDataModel:
             if isinstance(value, list):
                 ret = []
                 for item in value:
-                    if isinstance(item, BaseDataModel):
+                    if isinstance(item, ToDictMixin):
                         if type(self) not in calling_classes:
                             ret.append(
                                 item.to_dict(calling_classes=(
@@ -58,7 +58,7 @@ class BaseDataModel:
                             self._to_dict(item,
                                           calling_classes=calling_classes,
                                           recurse=recurse))
-            elif isinstance(value, BaseDataModel):
+            elif isinstance(value, ToDictMixin):
                 if type(self) not in calling_classes:
                     ret = value.to_dict(
                         calling_classes=calling_classes + [type(self)],
@@ -68,7 +68,7 @@ class BaseDataModel:
             else:
                 ret = value
         else:
-            if isinstance(value, BaseDataModel):
+            if isinstance(value, ToDictMixin):
                 ret = None
             elif isinstance(value, list):
                 ret = []
@@ -92,6 +92,8 @@ class BaseDataModel:
 
         return ret
 
+
+class BaseDataModel(ToDictMixin):
     def __eq__(self, other):
         if isinstance(other, self.__class__):
             return self.to_dict() == other.to_dict()

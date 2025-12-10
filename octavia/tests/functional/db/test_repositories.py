@@ -98,6 +98,38 @@ class BaseRepositoryTest(base.OctaviaDBTestBase):
             self.session, id=self.FAKE_UUID_2)
         self.assertIsInstance(flavor_list, list)
 
+    def test_get_all_orm_return_value(self):
+        pool_list, _ = self.pool_repo.get_all_orm(
+            self.session,
+            project_id=self.FAKE_UUID_2
+        )
+        self.assertIsInstance(pool_list, list)
+        lb_list, _ = self.lb_repo.get_all_orm(
+            self.session,
+            project_id=self.FAKE_UUID_2
+        )
+        self.assertIsInstance(lb_list, list)
+        listener_list, _ = self.listener_repo.get_all_orm(
+            self.session,
+            project_id=self.FAKE_UUID_2
+        )
+        self.assertIsInstance(listener_list, list)
+        member_list, _ = self.member_repo.get_all_orm(
+            self.session,
+            project_id=self.FAKE_UUID_2
+        )
+        self.assertIsInstance(member_list, list)
+        fp_list, _ = self.flavor_profile_repo.get_all_orm(
+            self.session,
+            id=self.FAKE_UUID_2
+        )
+        self.assertIsInstance(fp_list, list)
+        flavor_list, _ = self.flavor_repo.get_all_orm(
+            self.session,
+            id=self.FAKE_UUID_2
+        )
+        self.assertIsInstance(flavor_list, list)
+
 
 class AllRepositoriesTest(base.OctaviaDBTestBase):
 
@@ -2197,30 +2229,13 @@ class PoolRepositoryTest(BaseRepositoryTest):
         self.assertEqual(pool.id, new_pool.id)
         self.assertEqual(pool.project_id, new_pool.project_id)
 
-    def test_get_limited_graph(self):
-        def check_pool_attrs(pool, new_pool, lb, limited_graph):
-            self.assertIsInstance(new_pool, data_models.Pool)
-            self.assertEqual(pool.id, new_pool.id)
-            self.assertEqual(pool.project_id, new_pool.project_id)
-            if limited_graph:
-                self.assertIsNone(new_pool.load_balancer)
-            else:
-                self.assertEqual(lb.id, new_pool.load_balancer.id)
-
+    def test_get_orm(self):
         pool = self.create_pool(pool_id=self.FAKE_UUID_1,
                                 project_id=self.FAKE_UUID_2)
-        # Create LB and attach pool to it.
-        # It means, that in graph pool node get new relationship to LB
-        lb = self.create_loadbalancer(self.FAKE_UUID_5)
-        self.pool_repo.update(self.session, id=pool.id, load_balancer_id=lb.id)
-        self.pool_repo.update(self.session, id=pool.id, load_balancer_id=lb.id)
-
-        new_pool = self.pool_repo.get(self.session, id=pool.id)
-        check_pool_attrs(pool, new_pool, lb, limited_graph=False)
-
-        new_pool2 = self.pool_repo.get(self.session, id=pool.id,
-                                       limited_graph=True)
-        check_pool_attrs(pool, new_pool2, lb, limited_graph=True)
+        new_pool = self.pool_repo.get_orm(self.session, id=pool.id)
+        self.assertIsInstance(new_pool, db_models.Pool)
+        self.assertEqual(pool.id, new_pool.id)
+        self.assertEqual(pool.project_id, new_pool.project_id)
 
     def test_get_all(self):
         pool_one = self.create_pool(pool_id=self.FAKE_UUID_1,
@@ -2235,6 +2250,28 @@ class PoolRepositoryTest(BaseRepositoryTest):
         self.assertEqual(pool_one.project_id, pool_list[0].project_id)
         self.assertEqual(pool_two.id, pool_list[1].id)
         self.assertEqual(pool_two.project_id, pool_list[1].project_id)
+
+    def test_get_all_orm(self):
+        pool_one = self.create_pool(pool_id=self.FAKE_UUID_1,
+                                    project_id=self.FAKE_UUID_2)
+        pool_two = self.create_pool(pool_id=self.FAKE_UUID_3,
+                                    project_id=self.FAKE_UUID_2)
+        pool_list, _ = self.pool_repo.get_all_orm(
+            self.session,
+            project_id=self.FAKE_UUID_2
+        )
+        self.assertIsInstance(pool_list, list)
+        self.assertEqual(2, len(pool_list))
+        self.assertIn(pool_one.id, [pool.id for pool in pool_list])
+        self.assertIn(pool_two.id, [pool.id for pool in pool_list])
+        self.assertIn(
+            pool_one.project_id,
+            [pool.project_id for pool in pool_list]
+        )
+        self.assertIn(
+            pool_two.project_id,
+            [pool.project_id for pool in pool_list]
+        )
 
     def test_create(self):
         pool = self.create_pool(pool_id=self.FAKE_UUID_1,
@@ -2452,31 +2489,14 @@ class MemberRepositoryTest(BaseRepositoryTest):
         self.assertEqual(member.pool_id, new_member.pool_id)
         self.assertEqual(member.ip_address, new_member.ip_address)
 
-    def test_get_limited_graph(self):
-        def check_member_attrs(member, new_member, lb, limited_graph):
-            self.assertIsInstance(new_member, data_models.Member)
-            self.assertEqual(member.id, new_member.id)
-            self.assertEqual(member.pool_id, new_member.pool_id)
-            self.assertEqual(member.ip_address, new_member.ip_address)
-            if limited_graph:
-                self.assertIsNone(new_member.pool)
-            else:
-                self.assertEqual(lb.id, new_member.pool.load_balancer.id)
-
+    def test_get_orm(self):
         member = self.create_member(self.FAKE_UUID_1, self.FAKE_UUID_2,
                                     self.pool.id, "192.0.2.1")
-        # Create LB and attach pool to it.
-        # It means, that in graph pool node get new relationship to LB
-        lb = self.create_loadbalancer(self.FAKE_UUID_5)
-        self.pool_repo.update(self.session, id=self.pool.id,
-                              load_balancer_id=lb.id)
-
-        new_member = self.member_repo.get(self.session, id=member.id)
-        check_member_attrs(member, new_member, lb, limited_graph=False)
-
-        new_member2 = self.member_repo.get(self.session, id=member.id,
-                                           limited_graph=True)
-        check_member_attrs(member, new_member2, lb, limited_graph=True)
+        new_member = self.member_repo.get_orm(self.session, id=member.id)
+        self.assertIsInstance(new_member, db_models.Member)
+        self.assertEqual(member.id, new_member.id)
+        self.assertEqual(member.pool_id, new_member.pool_id)
+        self.assertEqual(member.ip_address, new_member.ip_address)
 
     def _validate_members_response(self, member_one, member_two, member_list):
         self.assertIsInstance(member_list, list)
@@ -2495,6 +2515,18 @@ class MemberRepositoryTest(BaseRepositoryTest):
                                         self.pool.id, "192.0.2.2")
         member_list, _ = self.member_repo.get_all(self.session,
                                                   project_id=self.FAKE_UUID_2)
+        self._validate_members_response(member_one, member_two, member_list)
+
+    def test_get_all_orm(self):
+
+        member_one = self.create_member(self.FAKE_UUID_1, self.FAKE_UUID_2,
+                                        self.pool.id, "192.0.2.1")
+        member_two = self.create_member(self.FAKE_UUID_3, self.FAKE_UUID_2,
+                                        self.pool.id, "192.0.2.2")
+        member_list, _ = self.member_repo.get_all_orm(
+            self.session,
+            project_id=self.FAKE_UUID_2
+        )
         self._validate_members_response(member_one, member_two, member_list)
 
     def test_get_all_with_loadbalancer(self):
@@ -2518,23 +2550,28 @@ class MemberRepositoryTest(BaseRepositoryTest):
         self.assertEqual(lb.id, member_list[0].pool.load_balancer.id)
         self.assertEqual(lb.id, member_list[1].pool.load_balancer.id)
 
-        # get the same list of members with enabled limit graph recursion
-        member_list_limit, _ = self.member_repo.get_all(
+    def test_get_all_orm_with_loadbalancer(self):
+        member_one = self.create_member(self.FAKE_UUID_1, self.FAKE_UUID_2,
+                                        self.pool.id, "192.0.2.1")
+        member_two = self.create_member(self.FAKE_UUID_3, self.FAKE_UUID_2,
+                                        self.pool.id, "192.0.2.2")
+        # Create LB and attach pool to it.
+        # It means, that in graph pool node get new relationship to LB
+        lb = self.create_loadbalancer(self.FAKE_UUID_5)
+        self.pool_repo.update(self.session, id=self.pool.id,
+                              load_balancer_id=lb.id)
+
+        member_list, _ = self.member_repo.get_all_orm(
             self.session,
-            project_id=self.FAKE_UUID_2,
-            limited_graph=True
+            project_id=self.FAKE_UUID_2
         )
-        self._validate_members_response(
-            member_one,
-            member_two,
-            member_list_limit
-        )
-        # With limit on recursion load_balancer node will not be processed.
-        # As result load_balancer node will not be available in response
-        self.assertEqual(self.pool.id, member_list_limit[0].pool.id)
-        self.assertEqual(self.pool.id, member_list_limit[1].pool.id)
-        self.assertIsNone(member_list_limit[0].pool.load_balancer)
-        self.assertIsNone(member_list_limit[1].pool.load_balancer)
+        self._validate_members_response(member_one, member_two, member_list)
+        # Without limit on recursion all nodes will be processed.
+        # As result load_balancer node will be available in response
+        self.assertEqual(self.pool.id, member_list[0].pool.id)
+        self.assertEqual(self.pool.id, member_list[1].pool.id)
+        self.assertEqual(lb.id, member_list[0].pool.load_balancer.id)
+        self.assertEqual(lb.id, member_list[1].pool.load_balancer.id)
 
     def test_create(self):
         member = self.create_member(self.FAKE_UUID_1, self.FAKE_UUID_2,
@@ -2609,6 +2646,19 @@ class SessionPersistenceRepositoryTest(BaseRepositoryTest):
         self.assertIsInstance(new_sp, data_models.SessionPersistence)
         self.assertEqual(sp, new_sp)
 
+    def test_get_orm(self):
+        sp = self.create_session_persistence(self.pool.id)
+        new_sp = self.sp_repo.get_orm(self.session, pool_id=sp.pool_id)
+        self.assertIsInstance(new_sp, db_models.SessionPersistence)
+        self.assertEqual(sp.pool_id, new_sp.pool_id)
+        self.assertEqual(sp.type, new_sp.type)
+        self.assertEqual(sp.cookie_name, new_sp.cookie_name)
+        self.assertEqual(sp.persistence_timeout, new_sp.persistence_timeout)
+        self.assertEqual(
+            sp.persistence_granularity,
+            new_sp.persistence_granularity
+        )
+
     def test_create(self):
         sp = self.create_session_persistence(self.pool.id)
         new_sp = self.sp_repo.get(self.session, pool_id=sp.pool_id)
@@ -2679,6 +2729,15 @@ class TestListenerRepositoryTest(BaseRepositoryTest):
         self.assertEqual(listener.protocol, new_listener.protocol)
         self.assertEqual(listener.protocol_port, new_listener.protocol_port)
 
+    def test_get_orm(self):
+        listener = self.create_listener(self.FAKE_UUID_1, 80)
+        new_listener = self.listener_repo.get_orm(self.session, id=listener.id)
+        self.assertIsInstance(new_listener, db_models.Listener)
+        self.assertEqual(listener.id, new_listener.id)
+        self.assertEqual(listener.name, new_listener.name)
+        self.assertEqual(listener.protocol, new_listener.protocol)
+        self.assertEqual(listener.protocol_port, new_listener.protocol_port)
+
     def test_get_all(self):
         listener_one = self.create_listener(self.FAKE_UUID_1, 80)
         listener_two = self.create_listener(self.FAKE_UUID_3, 88)
@@ -2688,6 +2747,22 @@ class TestListenerRepositoryTest(BaseRepositoryTest):
         self.assertEqual(2, len(listener_list))
         self.assertEqual(listener_one.id, listener_list[0].id)
         self.assertEqual(listener_two.id, listener_list[1].id)
+
+    def test_get_all_orm(self):
+        listener_one = self.create_listener(self.FAKE_UUID_1, 80)
+        listener_two = self.create_listener(self.FAKE_UUID_3, 88)
+        listener_list, _ = self.listener_repo.get_all_orm(
+            self.session, project_id=self.FAKE_UUID_2)
+        self.assertIsInstance(listener_list, list)
+        self.assertEqual(2, len(listener_list))
+        self.assertIn(
+            listener_one.id,
+            [listener.id for listener in listener_list]
+        )
+        self.assertIn(
+            listener_two.id,
+            [listener.id for listener in listener_list]
+        )
 
     def test_create(self):
         listener = self.create_listener(self.FAKE_UUID_1, 80)
@@ -2708,9 +2783,10 @@ class TestListenerRepositoryTest(BaseRepositoryTest):
     def test_create_no_peer_port(self):
         lb = self.create_loadbalancer(uuidutils.generate_uuid())
         listener = self.listener_repo.create(
-            self.session, id=self.FAKE_UUID_1, project_id=self.FAKE_UUID_2,
-            load_balancer_id=lb.id, protocol=constants.PROTOCOL_HTTP,
-            protocol_port=80, provisioning_status=constants.ACTIVE,
+            self.session, id=self.FAKE_UUID_1,
+            project_id=self.FAKE_UUID_2, load_balancer_id=lb.id,
+            protocol=constants.PROTOCOL_HTTP, protocol_port=80,
+            provisioning_status=constants.ACTIVE,
             operating_status=constants.ONLINE, enabled=True)
         self.session.commit()
         new_listener = self.listener_repo.get(self.session, id=listener.id)
@@ -3007,6 +3083,15 @@ class ListenerStatisticsRepositoryTest(BaseRepositoryTest):
         self.assertIsInstance(new_stats, data_models.ListenerStatistics)
         self.assertEqual(stats.listener_id, new_stats.listener_id)
 
+    def test_get_orm(self):
+        stats = self.create_listener_stats(self.listener.id, self.amphora.id)
+        new_stats = self.listener_stats_repo.get_orm(
+            self.session,
+            listener_id=stats.listener_id
+        )
+        self.assertIsInstance(new_stats, db_models.ListenerStatistics)
+        self.assertEqual(stats.listener_id, new_stats.listener_id)
+
     def test_create(self):
         stats = self.create_listener_stats(self.listener.id, self.amphora.id)
         new_stats = self.listener_stats_repo.get(self.session,
@@ -3247,6 +3332,14 @@ class HealthMonitorRepositoryTest(BaseRepositoryTest):
         self.assertEqual(hm.pool_id, new_hm.pool_id)
         self.assertEqual(hm.type, new_hm.type)
 
+    def test_get_orm(self):
+        hm = self.create_health_monitor(self.FAKE_UUID_3, self.pool.id)
+        new_hm = self.hm_repo.get_orm(self.session, id=hm.id)
+        self.assertIsInstance(new_hm, db_models.HealthMonitor)
+        self.assertEqual(hm.id, new_hm.id)
+        self.assertEqual(hm.pool_id, new_hm.pool_id)
+        self.assertEqual(hm.type, new_hm.type)
+
     def test_create(self):
         hm = self.create_health_monitor(self.FAKE_UUID_3, self.pool.id)
         new_hm = self.hm_repo.get(self.session, id=hm.id)
@@ -3303,11 +3396,31 @@ class LoadBalancerRepositoryTest(BaseRepositoryTest):
         self.assertEqual(lb.id, new_lb.id)
         self.assertEqual(lb.project_id, new_lb.project_id)
 
+    def test_get_orm(self):
+        lb = self.create_loadbalancer(self.FAKE_UUID_1)
+        new_lb = self.lb_repo.get_orm(self.session, id=lb.id)
+        self.assertIsInstance(new_lb, db_models.LoadBalancer)
+        self.assertEqual(lb.id, new_lb.id)
+        self.assertEqual(lb.project_id, new_lb.project_id)
+
     def test_get_all(self):
         lb_one = self.create_loadbalancer(self.FAKE_UUID_1)
         lb_two = self.create_loadbalancer(self.FAKE_UUID_3)
         lb_list, _ = self.lb_repo.get_all(self.session,
                                           project_id=self.FAKE_UUID_2)
+        self.assertEqual(2, len(lb_list))
+        self.assertEqual(lb_one.id, lb_list[0].id)
+        self.assertEqual(lb_one.project_id, lb_list[0].project_id)
+        self.assertEqual(lb_two.id, lb_list[1].id)
+        self.assertEqual(lb_two.project_id, lb_list[1].project_id)
+
+    def test_get_all_orm(self):
+        lb_one = self.create_loadbalancer(self.FAKE_UUID_1)
+        lb_two = self.create_loadbalancer(self.FAKE_UUID_3)
+        lb_list, _ = self.lb_repo.get_all_orm(
+            self.session,
+            project_id=self.FAKE_UUID_2
+        )
         self.assertEqual(2, len(lb_list))
         self.assertEqual(lb_one.id, lb_list[0].id)
         self.assertEqual(lb_one.project_id, lb_list[0].project_id)
@@ -3671,6 +3784,21 @@ class VipRepositoryTest(BaseRepositoryTest):
         self.assertIsInstance(new_vip, data_models.Vip)
         self.assertEqual(vip, new_vip)
 
+    def test_get_orm(self):
+        vip = self.create_vip(self.lb.id)
+        new_vip = self.vip_repo.get_orm(
+            self.session,
+            load_balancer_id=vip.load_balancer_id
+        )
+        self.assertIsInstance(new_vip, db_models.Vip)
+        self.assertEqual(vip.load_balancer_id, new_vip.load_balancer_id)
+        self.assertEqual(vip.ip_address, new_vip.ip_address)
+        self.assertEqual(vip.port_id, new_vip.port_id)
+        self.assertEqual(vip.subnet_id, new_vip.network_id)
+        self.assertEqual(vip.qos_policy_id, new_vip.qos_policy_id)
+        self.assertEqual(vip.octavia_owned, new_vip.octavia_owned)
+        self.assertEqual(vip.vnic_type, new_vip.vnic_type)
+
     def test_create(self):
         vip = self.create_vip(self.lb.id)
         self.assertEqual(self.lb.id, vip.load_balancer_id)
@@ -3762,6 +3890,17 @@ class SNIRepositoryTest(BaseRepositoryTest):
         self.assertIsInstance(new_sni, data_models.SNI)
         self.assertEqual(sni, new_sni)
 
+    def test_get_orm(self):
+        sni = self.create_sni(self.listener.id)
+        new_sni = self.sni_repo.get_orm(
+            self.session,
+            listener_id=sni.listener_id
+        )
+        self.assertIsInstance(new_sni, db_models.SNI)
+        self.assertEqual(sni.listener_id, new_sni.listener_id)
+        self.assertEqual(sni.tls_container_id, new_sni.tls_container_id)
+        self.assertEqual(sni.position, new_sni.position)
+
     def test_create(self):
         sni = self.create_sni(self.listener.id)
         new_sni = self.sni_repo.get(self.session, listener_id=sni.listener_id)
@@ -3820,6 +3959,15 @@ class AmphoraRepositoryTest(BaseRepositoryTest):
         amphora = self.create_amphora(self.FAKE_UUID_1)
         new_amphora = self.amphora_repo.get(self.session, id=amphora.id)
         self.assertIsInstance(new_amphora, data_models.Amphora)
+        self.assertEqual(amphora.id, new_amphora.id)
+        self.assertEqual(amphora.load_balancer_id,
+                         new_amphora.load_balancer_id)
+        self.assertEqual(amphora.compute_id, new_amphora.compute_id)
+
+    def test_get_orm(self):
+        amphora = self.create_amphora(self.FAKE_UUID_1)
+        new_amphora = self.amphora_repo.get_orm(self.session, id=amphora.id)
+        self.assertIsInstance(new_amphora, db_models.Amphora)
         self.assertEqual(amphora.id, new_amphora.id)
         self.assertEqual(amphora.load_balancer_id,
                          new_amphora.load_balancer_id)
@@ -4138,6 +4286,21 @@ class AmphoraHealthRepositoryTest(BaseRepositoryTest):
         self.assertIsInstance(new_amphora_health, data_models.AmphoraHealth)
         self.assertEqual(amphora_health, new_amphora_health)
 
+    def test_get_orm(self):
+        amphora_health = self.create_amphora_health(self.amphora.id)
+        new_amphora_health = self.amphora_health_repo.get_orm(
+            self.session, amphora_id=amphora_health.amphora_id)
+        self.assertIsInstance(new_amphora_health, db_models.AmphoraHealth)
+        self.assertEqual(
+            amphora_health.amphora_id,
+            new_amphora_health.amphora_id
+        )
+        self.assertEqual(
+            amphora_health.last_update,
+            new_amphora_health.last_update
+        )
+        self.assertEqual(amphora_health.busy, new_amphora_health.busy)
+
     def test_check_amphora_expired_default_exp_age(self):
         """When exp_age defaults to CONF.house_keeping.amphora_expiry_age."""
         self.create_amphora_health(self.amphora.id)
@@ -4388,6 +4551,45 @@ class L7PolicyRepositoryTest(BaseRepositoryTest):
         self.assertEqual(l7policy, new_l7policy)
         self.assertEqual(1, new_l7policy.position)
 
+    def test_get_orm(self):
+        listener = self.create_listener(uuidutils.generate_uuid(), 80)
+        pool = self.create_pool(uuidutils.generate_uuid())
+        l7policy = self.create_l7policy(uuidutils.generate_uuid(),
+                                        listener.id, 999,
+                                        redirect_pool_id=pool.id)
+        new_l7policy = self.l7policy_repo.get_orm(self.session, id=l7policy.id)
+        self.assertIsInstance(new_l7policy, db_models.L7Policy)
+        self.assertEqual(l7policy.id, new_l7policy.id)
+        self.assertEqual(l7policy.project_id, new_l7policy.project_id)
+        self.assertEqual(l7policy.name, new_l7policy.name)
+        self.assertEqual(l7policy.description, new_l7policy.description)
+        self.assertEqual(l7policy.listener_id, new_l7policy.listener_id)
+        self.assertEqual(l7policy.action, new_l7policy.action)
+        self.assertEqual(
+            l7policy.redirect_pool_id,
+            new_l7policy.redirect_pool_id
+        )
+        self.assertEqual(l7policy.redirect_url, new_l7policy.redirect_url)
+        self.assertEqual(
+            l7policy.redirect_prefix,
+            new_l7policy.redirect_prefix
+        )
+        self.assertEqual(
+            l7policy.redirect_http_code,
+            new_l7policy.redirect_http_code
+        )
+        self.assertEqual(l7policy.position, new_l7policy.position)
+        self.assertEqual(l7policy.enabled, new_l7policy.enabled)
+        self.assertEqual(
+            l7policy.provisioning_status,
+            new_l7policy.provisioning_status
+        )
+        self.assertEqual(
+            l7policy.operating_status,
+            new_l7policy.operating_status
+        )
+        self.assertEqual(1, new_l7policy.position)
+
     def test_get_all(self):
         listener = self.create_listener(uuidutils.generate_uuid(), 80)
         pool = self.create_pool(uuidutils.generate_uuid())
@@ -4417,6 +4619,45 @@ class L7PolicyRepositoryTest(BaseRepositoryTest):
         self.assertEqual(l7policy_a.id, l7policy_list[0].id)
         self.assertEqual(l7policy_b.id, l7policy_list[1].id)
         self.assertEqual(l7policy_c.id, l7policy_list[2].id)
+
+    def test_get_all_orm(self):
+        listener = self.create_listener(uuidutils.generate_uuid(), 80)
+        pool = self.create_pool(uuidutils.generate_uuid())
+        l7policy_a = self.create_l7policy(uuidutils.generate_uuid(),
+                                          listener.id,
+                                          1, redirect_pool_id=pool.id)
+        l7policy_c = self.create_l7policy(uuidutils.generate_uuid(),
+                                          listener.id,
+                                          2, redirect_pool_id=pool.id)
+        l7policy_b = self.create_l7policy(uuidutils.generate_uuid(),
+                                          listener.id,
+                                          2, redirect_pool_id=pool.id)
+        new_l7policy_a = self.l7policy_repo.get_orm(self.session,
+                                                    id=l7policy_a.id)
+        new_l7policy_b = self.l7policy_repo.get_orm(self.session,
+                                                    id=l7policy_b.id)
+        new_l7policy_c = self.l7policy_repo.get_orm(self.session,
+                                                    id=l7policy_c.id)
+
+        self.assertEqual(1, new_l7policy_a.position)
+        self.assertEqual(2, new_l7policy_b.position)
+        self.assertEqual(3, new_l7policy_c.position)
+        l7policy_list, _ = self.l7policy_repo.get_all_orm(
+            self.session, listener_id=listener.id)
+        self.assertIsInstance(l7policy_list, list)
+        self.assertEqual(3, len(l7policy_list))
+        self.assertIn(
+            l7policy_a.id,
+            [l7policy.id for l7policy in l7policy_list]
+        )
+        self.assertIn(
+            l7policy_b.id,
+            [l7policy.id for l7policy in l7policy_list]
+        )
+        self.assertIn(
+            l7policy_c.id,
+            [l7policy.id for l7policy in l7policy_list]
+        )
 
     def test_create(self):
         listener = self.create_listener(uuidutils.generate_uuid(), 80)
@@ -4777,6 +5018,26 @@ class L7RuleRepositoryTest(BaseRepositoryTest):
         self.assertIsInstance(new_l7rule, data_models.L7Rule)
         self.assertEqual(l7rule, new_l7rule)
 
+    def test_get_orm(self):
+        l7rule = self.create_l7rule(uuidutils.generate_uuid(),
+                                    self.l7policy.id)
+        new_l7rule = self.l7rule_repo.get_orm(self.session, id=l7rule.id)
+        self.assertIsInstance(new_l7rule, db_models.L7Rule)
+        self.assertEqual(l7rule.id, new_l7rule.id)
+        self.assertEqual(l7rule.project_id, new_l7rule.project_id)
+        self.assertEqual(l7rule.l7policy_id, new_l7rule.l7policy_id)
+        self.assertEqual(l7rule.type, new_l7rule.type)
+        self.assertEqual(l7rule.compare_type, new_l7rule.compare_type)
+        self.assertEqual(l7rule.key, new_l7rule.key)
+        self.assertEqual(l7rule.value, new_l7rule.value)
+        self.assertEqual(l7rule.invert, new_l7rule.invert)
+        self.assertEqual(l7rule.enabled, new_l7rule.enabled)
+        self.assertEqual(
+            l7rule.provisioning_status,
+            new_l7rule.provisioning_status
+        )
+        self.assertEqual(l7rule.operating_status, new_l7rule.operating_status)
+
     def test_get_all(self):
         l7policy = self.l7policy_repo.create(
             self.session, id=uuidutils.generate_uuid(), name='l7policy_test',
@@ -4791,6 +5052,26 @@ class L7RuleRepositoryTest(BaseRepositoryTest):
         new_l7rule_b = self.l7rule_repo.get(self.session,
                                             id=l7rule_b.id)
         l7rule_list, _ = self.l7rule_repo.get_all(
+            self.session, l7policy_id=l7policy.id)
+        self.assertIsInstance(l7rule_list, list)
+        self.assertEqual(2, len(l7rule_list))
+        self.assertIn(new_l7rule_a.id, [r.id for r in l7rule_list])
+        self.assertIn(new_l7rule_b.id, [r.id for r in l7rule_list])
+
+    def test_get_all_orm(self):
+        l7policy = self.l7policy_repo.create(
+            self.session, id=uuidutils.generate_uuid(), name='l7policy_test',
+            description='l7policy_description', listener_id=self.listener.id,
+            position=1, action=constants.L7POLICY_ACTION_REJECT,
+            operating_status=constants.ONLINE,
+            provisioning_status=constants.ACTIVE, enabled=True)
+        l7rule_a = self.create_l7rule(uuidutils.generate_uuid(), l7policy.id)
+        l7rule_b = self.create_l7rule(uuidutils.generate_uuid(), l7policy.id)
+        new_l7rule_a = self.l7rule_repo.get_orm(self.session,
+                                                id=l7rule_a.id)
+        new_l7rule_b = self.l7rule_repo.get_orm(self.session,
+                                                id=l7rule_b.id)
+        l7rule_list, _ = self.l7rule_repo.get_all_orm(
             self.session, l7policy_id=l7policy.id)
         self.assertIsInstance(l7rule_list, list)
         self.assertEqual(2, len(l7rule_list))
@@ -5153,6 +5434,13 @@ class TestQuotasRepository(BaseRepositoryTest):
         self.assertIsInstance(observed, data_models.Quotas)
         self._compare(expected, observed)
 
+    def test_get_orm(self):
+        expected = self.update_quotas(self.FAKE_UUID_1)
+        observed = self.quota_repo.get_orm(self.session,
+                                           project_id=self.FAKE_UUID_1)
+        self.assertIsInstance(observed, db_models.Quotas)
+        self._compare(expected, observed)
+
     def test_update(self):
         first_expected = self.update_quotas(self.FAKE_UUID_1)
         first_observed = self.quota_repo.get(self.session,
@@ -5204,6 +5492,15 @@ class FlavorProfileRepositoryTest(BaseRepositoryTest):
         self.assertIsInstance(new_fp, data_models.FlavorProfile)
         self.assertEqual(fp, new_fp)
 
+    def test_get_orm(self):
+        fp = self.create_flavor_profile(fp_id=self.FAKE_UUID_1)
+        new_fp = self.flavor_profile_repo.get_orm(self.session, id=fp.id)
+        self.assertIsInstance(new_fp, db_models.FlavorProfile)
+        self.assertEqual(fp.id, new_fp.id)
+        self.assertEqual(fp.name, new_fp.name)
+        self.assertEqual(fp.provider_name, new_fp.provider_name)
+        self.assertEqual(fp.flavor_data, new_fp.flavor_data)
+
     def test_get_all(self):
         fp1 = self.create_flavor_profile(fp_id=self.FAKE_UUID_1)
         fp2 = self.create_flavor_profile(fp_id=self.FAKE_UUID_2)
@@ -5214,6 +5511,19 @@ class FlavorProfileRepositoryTest(BaseRepositoryTest):
         self.assertEqual(2, len(fp_list))
         self.assertEqual(fp1, fp_list[0])
         self.assertEqual(fp2, fp_list[1])
+
+    def test_get_all_orm(self):
+        fp1 = self.create_flavor_profile(fp_id=self.FAKE_UUID_1)
+        fp2 = self.create_flavor_profile(fp_id=self.FAKE_UUID_2)
+        new_fp1 = self.flavor_profile_repo.get_orm(self.session, id=fp1.id)
+        new_fp2 = self.flavor_profile_repo.get_orm(self.session, id=fp2.id)
+        fp_list, _ = self.flavor_profile_repo.get_all_orm(
+            self.session,
+            query_options=defer(db_models.FlavorProfile.name))
+        self.assertIsInstance(fp_list, list)
+        self.assertEqual(2, len(fp_list))
+        self.assertIn(new_fp1, fp_list)
+        self.assertIn(new_fp2, fp_list)
 
     def test_create(self):
         fp = self.create_flavor_profile(fp_id=self.FAKE_UUID_1)
@@ -5256,10 +5566,30 @@ class FlavorRepositoryTest(BaseRepositoryTest):
         self.assertEqual(flavor.id, new_flavor.id)
         self.assertEqual(flavor.name, new_flavor.name)
 
+    def test_get_orm(self):
+        flavor = self.create_flavor(flavor_id=self.FAKE_UUID_2, name='flavor')
+        new_flavor = self.flavor_repo.get_orm(self.session, id=flavor.id)
+        self.assertIsInstance(new_flavor, db_models.Flavor)
+        self.assertEqual(flavor.id, new_flavor.id)
+        self.assertEqual(flavor.name, new_flavor.name)
+
     def test_get_all(self):
         fl1 = self.create_flavor(flavor_id=self.FAKE_UUID_2, name='flavor1')
         fl2 = self.create_flavor(flavor_id=self.FAKE_UUID_3, name='flavor2')
         fl_list, _ = self.flavor_repo.get_all(
+            self.session,
+            query_options=defer(db_models.Flavor.enabled))
+        self.assertIsInstance(fl_list, list)
+        self.assertEqual(2, len(fl_list))
+        self.assertEqual(fl1.id, fl_list[0].id)
+        self.assertEqual(fl1.name, fl_list[0].name)
+        self.assertEqual(fl2.id, fl_list[1].id)
+        self.assertEqual(fl2.name, fl_list[1].name)
+
+    def test_get_all_orm(self):
+        fl1 = self.create_flavor(flavor_id=self.FAKE_UUID_2, name='flavor1')
+        fl2 = self.create_flavor(flavor_id=self.FAKE_UUID_3, name='flavor2')
+        fl_list, _ = self.flavor_repo.get_all_orm(
             self.session,
             query_options=defer(db_models.Flavor.enabled))
         self.assertIsInstance(fl_list, list)

@@ -53,14 +53,20 @@ class PoolsController(base.BaseController):
     def get(self, id, fields=None):
         """Gets a pool's details."""
         context = pecan_request.context.get('octavia_context')
+
         with context.session.begin():
-            db_pool = self._get_db_pool(context.session, id,
-                                        show_deleted=False)
+            pool = self._get_db_pool(context.session, id, show_deleted=False)
 
-        self._auth_validate_action(context, db_pool.project_id,
-                                   constants.RBAC_GET_ONE)
+            if not pool:
+                raise exceptions.NotFound(
+                    resource=data_models.Pool._name(),
+                    id=id)
 
-        result = self._convert_db_to_type(db_pool, pool_types.PoolResponse)
+            self._auth_validate_action(context, pool.project_id,
+                                       constants.RBAC_GET_ONE)
+
+            result = pool_types.PoolResponse.from_db_obj(pool)
+
         if fields is not None:
             result = self._filter_fields([result], fields)[0]
         return pool_types.PoolRootResponse(pool=result)
@@ -75,11 +81,18 @@ class PoolsController(base.BaseController):
         query_filter = self._auth_get_all(context, project_id)
 
         with context.session.begin():
-            db_pools, links = self.repositories.pool.get_all_API_list(
-                context.session, show_deleted=False,
+            pools, links = self.repositories.pool.get_all_API_list(
+                context.session,
+                show_deleted=False,
                 pagination_helper=pcontext.get(constants.PAGINATION_HELPER),
-                **query_filter)
-        result = self._convert_db_to_type(db_pools, [pool_types.PoolResponse])
+                **query_filter
+            )
+
+            result = [
+                pool_types.PoolResponse.from_db_obj(pool)
+                for pool in pools
+            ]
+
         if fields is not None:
             result = self._filter_fields(result, fields)
         return pool_types.PoolsRootResponse(pools=result, pools_links=links)
@@ -159,8 +172,8 @@ class PoolsController(base.BaseController):
     def _is_only_specified_in_request(self, request, **kwargs):
         request_attrs = []
         check_attrs = kwargs['check_exist_attrs']
-        escaped_attrs = ['from_data_model', 'translate_key_to_data_model',
-                         'translate_dict_keys_to_data_model', 'to_dict']
+        escaped_attrs = ['from_db_obj', 'translate_key_to_db_obj',
+                         'translate_dict_keys_to_db_obj', 'to_dict']
 
         for attr in dir(request):
             if attr.startswith('_') or attr in escaped_attrs:
@@ -215,12 +228,14 @@ class PoolsController(base.BaseController):
         pool = pool_.pool
         context = pecan_request.context.get('octavia_context')
         listener = None
-        with context.session.begin():
+
+        context.session.begin()
+        try:
             if pool.loadbalancer_id:
                 pool.project_id, provider = self._get_lb_project_id_provider(
                     context.session, pool.loadbalancer_id)
             elif pool.listener_id:
-                listener = self.repositories.listener.get(
+                listener = self.repositories.listener.get_orm(
                     context.session, id=pool.listener_id)
                 pool.loadbalancer_id = listener.load_balancer_id
                 pool.project_id, provider = self._get_lb_project_id_provider(
@@ -230,35 +245,33 @@ class PoolsController(base.BaseController):
                         "loadbalancer_id, listener_id")
                 raise exceptions.ValidationException(detail=msg)
 
-        self._auth_validate_action(context, pool.project_id,
-                                   constants.RBAC_POST)
+            self._auth_validate_action(context, pool.project_id,
+                                       constants.RBAC_POST)
 
-        if pool.listener_id and listener:
-            if listener.protocol == lib_consts.PROTOCOL_PROMETHEUS:
-                raise exceptions.ListenerNoChildren(
-                    protocol=lib_consts.PROTOCOL_PROMETHEUS)
-            self._validate_protocol(listener.protocol, pool.protocol)
+            if pool.listener_id and listener:
+                if listener.protocol == lib_consts.PROTOCOL_PROMETHEUS:
+                    raise exceptions.ListenerNoChildren(
+                        protocol=lib_consts.PROTOCOL_PROMETHEUS)
+                self._validate_protocol(listener.protocol, pool.protocol)
 
-        if pool.protocol in (constants.PROTOCOL_UDP,
-                             lib_consts.PROTOCOL_SCTP):
-            self._validate_pool_request_for_udp_sctp(pool)
-        else:
-            if (pool.session_persistence and (
-                    pool.session_persistence.persistence_timeout or
-                    pool.session_persistence.persistence_granularity)):
-                raise exceptions.ValidationException(detail=_(
-                    "persistence_timeout and persistence_granularity "
-                    "is only for UDP and SCTP protocol pools."))
+            if pool.protocol in (constants.PROTOCOL_UDP,
+                                 lib_consts.PROTOCOL_SCTP):
+                self._validate_pool_request_for_udp_sctp(pool)
+            else:
+                if (pool.session_persistence and (
+                        pool.session_persistence.persistence_timeout or
+                        pool.session_persistence.persistence_granularity)):
+                    raise exceptions.ValidationException(detail=_(
+                        "persistence_timeout and persistence_granularity "
+                        "is only for UDP and SCTP protocol pools."))
 
-        if pool.session_persistence:
-            sp_dict = pool.session_persistence.to_dict(render_unsets=False)
-            validate.check_session_persistence(sp_dict)
+            if pool.session_persistence:
+                sp_dict = pool.session_persistence.to_dict(render_unsets=False)
+                validate.check_session_persistence(sp_dict)
 
-        # Load the driver early as it also provides validation
-        driver = driver_factory.get_driver(provider)
+            # Load the driver early as it also provides validation
+            driver = driver_factory.get_driver(provider)
 
-        context.session.begin()
-        try:
             if self.repositories.check_quota_met(
                     context.session,
                     data_models.Pool,
@@ -299,8 +312,9 @@ class PoolsController(base.BaseController):
                 context.session.rollback()
 
         with context.session.begin():
-            db_pool = self._get_db_pool(context.session, db_pool.id)
-        result = self._convert_db_to_type(db_pool, pool_types.PoolResponse)
+            pool = self._get_db_pool(context.session, db_pool.id)
+            result = pool_types.PoolResponse.from_db_obj(pool)
+
         return pool_types.PoolRootResponse(pool=result)
 
     def _graph_create(self, session, pool_dict):
@@ -447,25 +461,25 @@ class PoolsController(base.BaseController):
             project_id, provider = self._get_lb_project_id_provider(
                 context.session, db_pool.load_balancer_id)
 
-        self._auth_validate_action(context, project_id, constants.RBAC_PUT)
+            self._auth_validate_action(context, project_id, constants.RBAC_PUT)
 
-        if pool.tls_versions is None:
-            pool.tls_versions = CONF.api_settings.default_pool_tls_versions
-        if pool.tls_ciphers is None:
-            pool.tls_ciphers = CONF.api_settings.default_pool_ciphers
+            if pool.tls_versions is None:
+                pool.tls_versions = CONF.api_settings.default_pool_tls_versions
+            if pool.tls_ciphers is None:
+                pool.tls_ciphers = CONF.api_settings.default_pool_ciphers
 
-        if (pool.session_persistence and
-                not pool.session_persistence.type and
-                db_pool.session_persistence and
-                db_pool.session_persistence.type):
-            pool.session_persistence.type = db_pool.session_persistence.type
+            if (pool.session_persistence and
+                    not pool.session_persistence.type and
+                    db_pool.session_persistence and
+                    db_pool.session_persistence.type):
+                pool.session_persistence.type = (
+                    db_pool.session_persistence.type)
 
-        self._validate_pool_PUT(pool, db_pool)
+            self._validate_pool_PUT(pool, db_pool)
 
-        # Load the driver early as it also provides validation
-        driver = driver_factory.get_driver(provider)
+            # Load the driver early as it also provides validation
+            driver = driver_factory.get_driver(provider)
 
-        with context.session.begin():
             self._test_lb_and_listener_statuses(
                 context.session, lb_id=db_pool.load_balancer_id,
                 listener_ids=self._get_affected_listener_ids(db_pool))
@@ -496,9 +510,11 @@ class PoolsController(base.BaseController):
         # Force SQL alchemy to query the DB, otherwise we get inconsistent
         # results
         context.session.expire_all()
+
         with context.session.begin():
-            db_pool = self._get_db_pool(context.session, id)
-        result = self._convert_db_to_type(db_pool, pool_types.PoolResponse)
+            pool = self._get_db_pool(context.session, id)
+            result = pool_types.PoolResponse.from_db_obj(pool)
+
         return pool_types.PoolRootResponse(pool=result)
 
     @wsme_pecan.wsexpose(None, wtypes.text, status_code=204)
@@ -512,16 +528,19 @@ class PoolsController(base.BaseController):
             project_id, provider = self._get_lb_project_id_provider(
                 context.session, db_pool.load_balancer_id)
 
-        self._auth_validate_action(context, project_id, constants.RBAC_DELETE)
+            self._auth_validate_action(
+                context,
+                project_id,
+                constants.RBAC_DELETE
+            )
 
-        if db_pool.l7policies:
-            raise exceptions.PoolInUseByL7Policy(
-                id=db_pool.id, l7policy_id=db_pool.l7policies[0].id)
+            if db_pool.l7policies:
+                raise exceptions.PoolInUseByL7Policy(
+                    id=db_pool.id, l7policy_id=db_pool.l7policies[0].id)
 
-        # Load the driver early as it also provides validation
-        driver = driver_factory.get_driver(provider)
+            # Load the driver early as it also provides validation
+            driver = driver_factory.get_driver(provider)
 
-        with context.session.begin():
             self._test_lb_and_listener_statuses(
                 context.session, lb_id=db_pool.load_balancer_id,
                 listener_ids=self._get_affected_listener_ids(db_pool))
@@ -547,13 +566,18 @@ class PoolsController(base.BaseController):
         if pool_id and remainder and remainder[0] == 'members':
             remainder = remainder[1:]
             with context.session.begin():
-                db_pool = self.repositories.pool.get(context.session,
-                                                     id=pool_id)
-            if not db_pool:
-                LOG.info("Pool %s not found.", pool_id)
-                raise exceptions.NotFound(resource=data_models.Pool._name(),
-                                          id=pool_id)
-            if remainder:
-                return member.MemberController(pool_id=db_pool.id), remainder
-            return member.MembersController(pool_id=db_pool.id), remainder
+                db_pool = self.repositories.pool.get_orm(context.session,
+                                                         id=pool_id)
+                if not db_pool:
+                    LOG.info("Pool %s not found.", pool_id)
+                    raise exceptions.NotFound(
+                        resource=data_models.Pool._name(),
+                        id=pool_id
+                    )
+                if remainder:
+                    return (
+                        member.MemberController(pool_id=db_pool.id),
+                        remainder
+                    )
+                return member.MembersController(pool_id=db_pool.id), remainder
         return None

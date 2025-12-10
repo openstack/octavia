@@ -14,12 +14,18 @@
 
 from wsme import types as wtypes
 
-from octavia.api.common import types as base
+from octavia.api.common import types
 from octavia.common import constants as consts
 
 
-class QuotaBase(base.BaseType):
-    """Individual quota definitions."""
+class BaseQuotaType(types.BaseType):
+    _type_to_db_map = {'loadbalancer': 'load_balancer',
+                       'healthmonitor': 'health_monitor'}
+    _child_map = {}
+
+
+class QuotaResponse(BaseQuotaType):
+    project_id = wtypes.wsattr(wtypes.StringType())
     loadbalancer = wtypes.wsattr(wtypes.IntegerType(
         minimum=consts.MIN_QUOTA, maximum=consts.MAX_QUOTA))
     # Misspelled version, deprecated in Rocky
@@ -41,70 +47,38 @@ class QuotaBase(base.BaseType):
     l7rule = wtypes.wsattr(wtypes.IntegerType(
         minimum=consts.MIN_QUOTA, maximum=consts.MAX_QUOTA))
 
-    def to_dict(self, render_unsets=False):
-        quota_dict = super().to_dict(render_unsets)
-        if 'loadbalancer' in quota_dict:
-            quota_dict['load_balancer'] = quota_dict.pop('loadbalancer')
-        if 'healthmonitor' in quota_dict:
-            quota_dict['health_monitor'] = quota_dict.pop('healthmonitor')
-        return quota_dict
+
+class QuotaRootResponse(types.BaseType):
+    quota = wtypes.wsattr(QuotaResponse)
 
 
-class QuotaResponse(base.BaseType):
-    """Wrapper object for quotas responses."""
-    quota = wtypes.wsattr(QuotaBase)
-
-    @classmethod
-    def from_data_model(cls, data_model, children=False):
-        quotas = super().from_data_model(
-            data_model, children=children)
-        quotas.quota = QuotaBase.from_data_model(data_model)
-        return quotas
+class QuotasRootResponse(types.BaseType):
+    quotas = wtypes.wsattr([QuotaResponse])
+    quotas_links = wtypes.wsattr([types.PageType])
 
 
-class QuotaAllBase(base.BaseType):
-    """Wrapper object for get all quotas responses."""
-    project_id = wtypes.wsattr(wtypes.StringType())
-    loadbalancer = wtypes.wsattr(wtypes.IntegerType())
-    # Misspelled version, deprecated in Rocky, remove in T
-    load_balancer = wtypes.wsattr(wtypes.IntegerType())
-    listener = wtypes.wsattr(wtypes.IntegerType())
-    member = wtypes.wsattr(wtypes.IntegerType())
-    pool = wtypes.wsattr(wtypes.IntegerType())
-    healthmonitor = wtypes.wsattr(wtypes.IntegerType())
-    # Misspelled version, deprecated in Rocky, remove in T
-    health_monitor = wtypes.wsattr(wtypes.IntegerType())
-    l7policy = wtypes.wsattr(wtypes.IntegerType())
-    l7rule = wtypes.wsattr(wtypes.IntegerType())
-
-    _type_to_model_map = {'loadbalancer': 'load_balancer',
-                          'healthmonitor': 'health_monitor'}
-    _child_map = {}
-
-    @classmethod
-    def from_data_model(cls, data_model, children=False):
-        quotas = super().from_data_model(
-            data_model, children=children)
-        # For backwards compatibility, remove in T
-        quotas.load_balancer = quotas.loadbalancer
-        # For backwards compatibility, remove in T
-        quotas.health_monitor = quotas.healthmonitor
-        return quotas
+class QuotaPUT(BaseQuotaType):
+    loadbalancer = wtypes.wsattr(wtypes.IntegerType(
+        minimum=consts.MIN_QUOTA, maximum=consts.MAX_QUOTA))
+    # Misspelled version, deprecated in Rocky
+    load_balancer = wtypes.wsattr(wtypes.IntegerType(
+        minimum=consts.MIN_QUOTA, maximum=consts.MAX_QUOTA))
+    listener = wtypes.wsattr(wtypes.IntegerType(
+        minimum=consts.MIN_QUOTA, maximum=consts.MAX_QUOTA))
+    member = wtypes.wsattr(wtypes.IntegerType(
+        minimum=consts.MIN_QUOTA, maximum=consts.MAX_QUOTA))
+    pool = wtypes.wsattr(wtypes.IntegerType(
+        minimum=consts.MIN_QUOTA, maximum=consts.MAX_QUOTA))
+    healthmonitor = wtypes.wsattr(wtypes.IntegerType(
+        minimum=consts.MIN_QUOTA, maximum=consts.MAX_QUOTA))
+    # Misspelled version, deprecated in Rocky
+    health_monitor = wtypes.wsattr(wtypes.IntegerType(
+        minimum=consts.MIN_QUOTA, maximum=consts.MAX_QUOTA))
+    l7policy = wtypes.wsattr(wtypes.IntegerType(
+        minimum=consts.MIN_QUOTA, maximum=consts.MAX_QUOTA))
+    l7rule = wtypes.wsattr(wtypes.IntegerType(
+        minimum=consts.MIN_QUOTA, maximum=consts.MAX_QUOTA))
 
 
-class QuotaAllResponse(base.BaseType):
-    quotas = wtypes.wsattr([QuotaAllBase])
-    quotas_links = wtypes.wsattr([base.PageType])
-
-    @classmethod
-    def from_data_model(cls, data_model, children=False):
-        quotalist = QuotaAllResponse()
-        quotalist.quotas = [
-            QuotaAllBase.from_data_model(obj)
-            for obj in data_model]
-        return quotalist
-
-
-class QuotaPUT(base.BaseType):
-    """Overall object for quota PUT request."""
-    quota = wtypes.wsattr(QuotaBase)
+class QuotaRootPUT(types.BaseType):
+    quota = wtypes.wsattr(QuotaPUT)

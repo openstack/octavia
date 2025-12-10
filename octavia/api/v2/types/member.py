@@ -19,8 +19,8 @@ from octavia.common import constants
 
 
 class BaseMemberType(types.BaseType):
-    _type_to_model_map = {'admin_state_up': 'enabled',
-                          'address': 'ip_address'}
+    _type_to_db_map = {'admin_state_up': 'enabled',
+                       'address': 'ip_address'}
     _child_map = {}
 
 
@@ -43,12 +43,6 @@ class MemberResponse(BaseMemberType):
     monitor_port = wtypes.wsattr(wtypes.IntegerType())
     tags = wtypes.wsattr(wtypes.ArrayType(wtypes.StringType()))
     vnic_type = wtypes.wsattr(wtypes.StringType())
-
-    @classmethod
-    def from_data_model(cls, data_model, children=False):
-        member = super().from_data_model(
-            data_model, children=children)
-        return member
 
 
 class MemberFullResponse(MemberResponse):
@@ -144,11 +138,10 @@ class MemberStatusResponse(BaseMemberType):
     protocol_port = wtypes.wsattr(wtypes.IntegerType())
 
     @classmethod
-    def from_data_model(cls, data_model, children=False):
-        member = super().from_data_model(
-            data_model, children=children)
+    def from_db_obj(cls, db_obj):
+        result = super().from_db_obj(db_obj)
 
-        if not member.name:
-            member.name = ""
+        if not result.name:
+            result.name = ""
 
-        return member
+        return result

@@ -42,7 +42,6 @@ from octavia.db import prepare as db_prepare
 from octavia.i18n import _
 from octavia.network import base as network_base
 
-
 CONF = cfg.CONF
 LOG = logging.getLogger(__name__)
 
@@ -58,20 +57,24 @@ class LoadBalancersController(base.BaseController):
     def get_one(self, id, fields=None):
         """Gets a single load balancer's details."""
         context = pecan_request.context.get('octavia_context')
+
         with context.session.begin():
-            load_balancer = self._get_db_lb(context.session, id,
-                                            show_deleted=False)
+            load_balancer = self._get_db_lb(
+                context.session,
+                id,
+                show_deleted=False
+            )
 
-        if not load_balancer:
-            raise exceptions.NotFound(
-                resource=data_models.LoadBalancer._name(),
-                id=id)
+            if not load_balancer:
+                raise exceptions.NotFound(
+                    resource=data_models.LoadBalancer._name(),
+                    id=id)
 
-        self._auth_validate_action(context, load_balancer.project_id,
-                                   constants.RBAC_GET_ONE)
+            self._auth_validate_action(context, load_balancer.project_id,
+                                       constants.RBAC_GET_ONE)
 
-        result = self._convert_db_to_type(
-            load_balancer, lb_types.LoadBalancerResponse)
+            result = lb_types.LoadBalancerResponse.from_db_obj(load_balancer)
+
         if fields is not None:
             result = self._filter_fields([result], fields)[0]
         return lb_types.LoadBalancerRootResponse(loadbalancer=result)
@@ -88,12 +91,20 @@ class LoadBalancersController(base.BaseController):
         with context.session.begin():
             load_balancers, links = (
                 self.repositories.load_balancer.get_all_API_list(
-                    context.session, show_deleted=False,
+                    context.session,
+                    show_deleted=False,
                     pagination_helper=pcontext.get(
-                        constants.PAGINATION_HELPER),
-                    **query_filter))
-        result = self._convert_db_to_type(
-            load_balancers, [lb_types.LoadBalancerResponse])
+                        constants.PAGINATION_HELPER
+                    ),
+                    **query_filter
+                )
+            )
+
+            result = [
+                lb_types.LoadBalancerResponse.from_db_obj(load_balancer)
+                for load_balancer in load_balancers
+            ]
+
         if fields is not None:
             result = self._filter_fields(result, fields)
         return lb_types.LoadBalancersRootResponse(
@@ -104,7 +115,7 @@ class LoadBalancersController(base.BaseController):
         lb_repo = self.repositories.load_balancer
         if not lb_repo.test_and_set_provisioning_status(
                 session, id, lb_status):
-            prov_status = lb_repo.get(session, id=id).provisioning_status
+            prov_status = lb_repo.get_orm(session, id=id).provisioning_status
             LOG.info("Invalid state %(state)s of loadbalancer resource %(id)s",
                      {"state": prov_status, "id": id})
             raise exceptions.LBPendingStateError(
@@ -114,7 +125,7 @@ class LoadBalancersController(base.BaseController):
         lb_repo = self.repositories.load_balancer
         if not lb_repo.set_status_for_failover(session, id,
                                                constants.PENDING_UPDATE):
-            prov_status = lb_repo.get(session, id=id).provisioning_status
+            prov_status = lb_repo.get_orm(session, id=id).provisioning_status
             LOG.info("Invalid state %(state)s of loadbalancer resource %(id)s",
                      {"state": prov_status, "id": id})
             raise exceptions.LBPendingStateError(
@@ -394,21 +405,23 @@ class LoadBalancersController(base.BaseController):
     def _validate_flavor(self, session, load_balancer):
         if not isinstance(load_balancer.flavor_id, wtypes.UnsetType):
             with session.begin():
-                flavor = self.repositories.flavor.get(
+                flavor = self.repositories.flavor.get_orm(
                     session, id=load_balancer.flavor_id)
-            if not flavor:
-                raise exceptions.ValidationException(
-                    detail=_("Invalid flavor_id."))
-            if not flavor.enabled:
-                raise exceptions.DisabledOption(option='flavor',
-                                                value=load_balancer.flavor_id)
+                if not flavor:
+                    raise exceptions.ValidationException(
+                        detail=_("Invalid flavor_id."))
+                if not flavor.enabled:
+                    raise exceptions.DisabledOption(
+                        option='flavor',
+                        value=load_balancer.flavor_id
+                    )
 
     def _validate_and_return_az_dict(self, lock_session, driver, lb_dict):
 
         az_dict = {}
         if 'availability_zone' in lb_dict:
             try:
-                az = self.repositories.availability_zone.get(
+                az = self.repositories.availability_zone.get_orm(
                     lock_session, name=lb_dict['availability_zone'])
                 az_dict = (
                     self.repositories.availability_zone
@@ -434,15 +447,15 @@ class LoadBalancersController(base.BaseController):
     def _validate_availability_zone(self, session, load_balancer):
         if not isinstance(load_balancer.availability_zone, wtypes.UnsetType):
             with session.begin():
-                az = self.repositories.availability_zone.get(
+                az = self.repositories.availability_zone.get_orm(
                     session, name=load_balancer.availability_zone)
-            if not az:
-                raise exceptions.ValidationException(
-                    detail=_("Invalid availability zone."))
-            if not az.enabled:
-                raise exceptions.DisabledOption(
-                    option='availability_zone',
-                    value=load_balancer.availability_zone)
+                if not az:
+                    raise exceptions.ValidationException(
+                        detail=_("Invalid availability zone."))
+                if not az.enabled:
+                    raise exceptions.DisabledOption(
+                        option='availability_zone',
+                        value=load_balancer.availability_zone)
 
     @wsme_pecan.wsexpose(lb_types.LoadBalancerFullRootResponse,
                          body=lb_types.LoadBalancerRootPOST, status_code=201)
@@ -610,10 +623,9 @@ class LoadBalancersController(base.BaseController):
                 lock_session.rollback()
 
         with context.session.begin():
-            db_lb = self._get_db_lb(context.session, db_lb.id)
+            lb = self._get_db_lb(context.session, db_lb.id)
+            result = lb_types.LoadBalancerFullResponse.from_db_obj(lb)
 
-        result = self._convert_db_to_type(
-            db_lb, lb_types.LoadBalancerFullResponse)
         return lb_types.LoadBalancerFullRootResponse(loadbalancer=result)
 
     def _graph_create(self, session, db_lb, listeners, pools):
@@ -734,32 +746,39 @@ class LoadBalancersController(base.BaseController):
         with context.session.begin():
             db_lb = self._get_db_lb(context.session, id, show_deleted=False)
 
-        self._auth_validate_action(context, db_lb.project_id,
-                                   constants.RBAC_PUT)
-        if not isinstance(load_balancer.vip_sg_ids, wtypes.UnsetType):
             self._auth_validate_action(context, db_lb.project_id,
-                                       f"{constants.RBAC_PUT}:vip_sg_ids")
+                                       constants.RBAC_PUT)
+            if not isinstance(load_balancer.vip_sg_ids, wtypes.UnsetType):
+                self._auth_validate_action(context, db_lb.project_id,
+                                           f"{constants.RBAC_PUT}:vip_sg_ids")
 
-        if not isinstance(load_balancer.vip_qos_policy_id, wtypes.UnsetType):
-            network_driver = utils.get_network_driver()
-            validate.qos_extension_enabled(network_driver)
-            if load_balancer.vip_qos_policy_id is not None:
-                if db_lb.vip.qos_policy_id != load_balancer.vip_qos_policy_id:
-                    validate.qos_policy_exists(load_balancer.vip_qos_policy_id)
+            if not isinstance(
+                load_balancer.vip_qos_policy_id,
+                wtypes.UnsetType
+            ):
+                network_driver = utils.get_network_driver()
+                validate.qos_extension_enabled(network_driver)
+                if load_balancer.vip_qos_policy_id is not None:
+                    if (
+                        db_lb.vip.qos_policy_id !=
+                        load_balancer.vip_qos_policy_id
+                    ):
+                        validate.qos_policy_exists(
+                            load_balancer.vip_qos_policy_id
+                        )
 
-        if not isinstance(load_balancer.vip_sg_ids, wtypes.UnsetType):
-            if load_balancer.vip_sg_ids is None:
-                load_balancer.vip_sg_ids = []
-            else:
-                for sg_id in load_balancer.vip_sg_ids:
-                    validate.security_group_exists(sg_id, context=context)
+            if not isinstance(load_balancer.vip_sg_ids, wtypes.UnsetType):
+                if load_balancer.vip_sg_ids is None:
+                    load_balancer.vip_sg_ids = []
+                else:
+                    for sg_id in load_balancer.vip_sg_ids:
+                        validate.security_group_exists(sg_id, context=context)
 
-        self._validate_vnic_type(db_lb.vip.vnic_type, load_balancer)
+            self._validate_vnic_type(db_lb.vip.vnic_type, load_balancer)
 
-        # Load the driver early as it also provides validation
-        driver = driver_factory.get_driver(db_lb.provider)
+            # Load the driver early as it also provides validation
+            driver = driver_factory.get_driver(db_lb.provider)
 
-        with context.session.begin():
             self._test_lb_status(context.session, id)
 
             # Prepare the data for the driver data model
@@ -792,12 +811,10 @@ class LoadBalancersController(base.BaseController):
                 self.repositories.load_balancer.update(context.session, id,
                                                        **db_lb_dict)
 
-        # Force SQL alchemy to query the DB, otherwise we get inconsistent
-        # results
-        context.session.expire_all()
         with context.session.begin():
-            db_lb = self._get_db_lb(context.session, id)
-        result = self._convert_db_to_type(db_lb, lb_types.LoadBalancerResponse)
+            lb = self._get_db_lb(context.session, id)
+            result = lb_types.LoadBalancerResponse.from_db_obj(lb)
+
         return lb_types.LoadBalancerRootResponse(loadbalancer=result)
 
     @wsme_pecan.wsexpose(None, wtypes.text, wtypes.text, status_code=204)
@@ -808,13 +825,12 @@ class LoadBalancersController(base.BaseController):
         with context.session.begin():
             db_lb = self._get_db_lb(context.session, id, show_deleted=False)
 
-        self._auth_validate_action(context, db_lb.project_id,
-                                   constants.RBAC_DELETE)
+            self._auth_validate_action(context, db_lb.project_id,
+                                       constants.RBAC_DELETE)
 
-        # Load the driver early as it also provides validation
-        driver = driver_factory.get_driver(db_lb.provider)
+            # Load the driver early as it also provides validation
+            driver = driver_factory.get_driver(db_lb.provider)
 
-        with context.session.begin():
             if (db_lb.listeners or db_lb.pools) and not cascade:
                 msg = _("Cannot delete Load Balancer %s - "
                         "it has children") % id
@@ -872,20 +888,26 @@ class StatusController(base.BaseController):
     def get(self):
         context = pecan_request.context.get('octavia_context')
         with context.session.begin():
-            load_balancer = self._get_db_lb(context.session, self.id,
-                                            show_deleted=False)
-        if not load_balancer:
-            LOG.info("Load balancer %s not found.", id)
-            raise exceptions.NotFound(
-                resource=data_models.LoadBalancer._name(),
-                id=id)
+            load_balancer = self._get_db_lb(
+                context.session,
+                self.id,
+                show_deleted=False
+            )
 
-        self._auth_validate_action(context, load_balancer.project_id,
-                                   constants.RBAC_GET_STATUS)
+            if not load_balancer:
+                LOG.info("Load balancer %s not found.", id)
+                raise exceptions.NotFound(
+                    resource=data_models.LoadBalancer._name(),
+                    id=id)
 
-        result = self._convert_db_to_type(
-            load_balancer, lb_types.LoadBalancerStatusResponse)
-        result = lb_types.StatusResponse(loadbalancer=result)
+            self._auth_validate_action(context, load_balancer.project_id,
+                                       constants.RBAC_GET_STATUS)
+
+            result = (
+                lb_types.LoadBalancerStatusResponse.from_db_obj(load_balancer)
+            )
+            result = lb_types.StatusResponse(loadbalancer=result)
+
         return lb_types.StatusRootResponse(statuses=result)
 
 
@@ -903,20 +925,21 @@ class StatisticsController(base.BaseController, stats.StatsMixin):
         with context.session.begin():
             load_balancer = self._get_db_lb(context.session, self.id,
                                             show_deleted=False)
-        if not load_balancer:
-            LOG.info("Load balancer %s not found.", id)
-            raise exceptions.NotFound(
-                resource=data_models.LoadBalancer._name(),
-                id=id)
+            if not load_balancer:
+                LOG.info("Load balancer %s not found.", id)
+                raise exceptions.NotFound(
+                    resource=data_models.LoadBalancer._name(),
+                    id=id)
 
-        self._auth_validate_action(context, load_balancer.project_id,
-                                   constants.RBAC_GET_STATS)
+            self._auth_validate_action(context, load_balancer.project_id,
+                                       constants.RBAC_GET_STATS)
 
-        with context.session.begin():
             lb_stats = self.get_loadbalancer_stats(context.session, self.id)
 
-        result = self._convert_db_to_type(
-            lb_stats, lb_types.LoadBalancerStatisticsResponse)
+            result = (
+                lb_types.LoadBalancerStatisticsResponse.from_db_obj(lb_stats)
+            )
+
         return lb_types.StatisticsRootResponse(stats=result)
 
 
@@ -934,13 +957,12 @@ class FailoverController(LoadBalancersController):
             db_lb = self._get_db_lb(context.session, self.lb_id,
                                     show_deleted=False)
 
-        self._auth_validate_action(context, db_lb.project_id,
-                                   constants.RBAC_PUT_FAILOVER)
+            self._auth_validate_action(context, db_lb.project_id,
+                                       constants.RBAC_PUT_FAILOVER)
 
-        # Load the driver early as it also provides validation
-        driver = driver_factory.get_driver(db_lb.provider)
+            # Load the driver early as it also provides validation
+            driver = driver_factory.get_driver(db_lb.provider)
 
-        with context.session.begin():
             self._test_and_set_failover_prov_status(context.session,
                                                     self.lb_id)
             LOG.info("Sending failover request for load balancer %s to the "

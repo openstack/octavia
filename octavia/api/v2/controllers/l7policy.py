@@ -50,15 +50,19 @@ class L7PolicyController(base.BaseController):
     def get(self, id, fields=None):
         """Gets a single l7policy's details."""
         context = pecan_request.context.get('octavia_context')
+
         with context.session.begin():
-            db_l7policy = self._get_db_l7policy(context.session, id,
-                                                show_deleted=False)
+            l7policy = self._get_db_l7policy(
+                context.session,
+                id,
+                show_deleted=False
+            )
 
-        self._auth_validate_action(context, db_l7policy.project_id,
-                                   constants.RBAC_GET_ONE)
+            self._auth_validate_action(context, l7policy.project_id,
+                                       constants.RBAC_GET_ONE)
 
-        result = self._convert_db_to_type(
-            db_l7policy, l7policy_types.L7PolicyResponse)
+            result = l7policy_types.L7PolicyResponse.from_db_obj(l7policy)
+
         if fields is not None:
             result = self._filter_fields([result], fields)[0]
         return l7policy_types.L7PolicyRootResponse(l7policy=result)
@@ -73,12 +77,18 @@ class L7PolicyController(base.BaseController):
         query_filter = self._auth_get_all(context, project_id)
 
         with context.session.begin():
-            db_l7policies, links = self.repositories.l7policy.get_all_API_list(
-                context.session, show_deleted=False,
+            l7policies, links = self.repositories.l7policy.get_all_API_list(
+                context.session,
+                show_deleted=False,
                 pagination_helper=pcontext.get(constants.PAGINATION_HELPER),
-                **query_filter)
-        result = self._convert_db_to_type(
-            db_l7policies, [l7policy_types.L7PolicyResponse])
+                **query_filter
+            )
+
+            result = [
+                l7policy_types.L7PolicyResponse.from_db_obj(l7policy)
+                for l7policy in l7policies
+            ]
+
         if fields is not None:
             result = self._filter_fields(result, fields)
         return l7policy_types.L7PoliciesRootResponse(
@@ -129,23 +139,24 @@ class L7PolicyController(base.BaseController):
             l7policy.project_id, provider = self._get_lb_project_id_provider(
                 context.session, load_balancer_id)
 
-        self._auth_validate_action(context, l7policy.project_id,
-                                   constants.RBAC_POST)
+            self._auth_validate_action(context, l7policy.project_id,
+                                       constants.RBAC_POST)
 
-        # PROMETHEUS listeners cannot have l7policies attached
-        if listener.protocol == lib_consts.PROTOCOL_PROMETHEUS:
-            raise exceptions.ListenerNoChildren(
-                protocol=lib_consts.PROTOCOL_PROMETHEUS)
+            # PROMETHEUS listeners cannot have l7policies attached
+            if listener.protocol == lib_consts.PROTOCOL_PROMETHEUS:
+                raise exceptions.ListenerNoChildren(
+                    protocol=lib_consts.PROTOCOL_PROMETHEUS)
 
-        # Make sure any pool specified by redirect_pool_id exists
-        if l7policy.redirect_pool_id:
-            with context.session.begin():
+            # Make sure any pool specified by redirect_pool_id exists
+            if l7policy.redirect_pool_id:
                 db_pool = self._get_db_pool(
-                    context.session, l7policy.redirect_pool_id)
-            self._validate_protocol(listener.protocol, db_pool.protocol)
+                    context.session,
+                    l7policy.redirect_pool_id
+                )
+                self._validate_protocol(listener.protocol, db_pool.protocol)
 
-        # Load the driver early as it also provides validation
-        driver = driver_factory.get_driver(provider)
+            # Load the driver early as it also provides validation
+            driver = driver_factory.get_driver(provider)
 
         lock_session = context.session
         lock_session.begin()
@@ -183,10 +194,9 @@ class L7PolicyController(base.BaseController):
                 lock_session.rollback()
 
         with context.session.begin():
-            db_l7policy = self._get_db_l7policy(context.session,
-                                                db_l7policy.id)
-        result = self._convert_db_to_type(db_l7policy,
-                                          l7policy_types.L7PolicyResponse)
+            l7policy = self._get_db_l7policy(context.session, db_l7policy.id)
+            result = l7policy_types.L7PolicyResponse.from_db_obj(l7policy)
+
         return l7policy_types.L7PolicyRootResponse(l7policy=result)
 
     def _graph_create(self, lock_session, policy_dict):
@@ -222,30 +232,32 @@ class L7PolicyController(base.BaseController):
             project_id, provider = self._get_lb_project_id_provider(
                 context.session, load_balancer_id)
 
-        self._auth_validate_action(context, project_id, constants.RBAC_PUT)
+            self._auth_validate_action(context, project_id, constants.RBAC_PUT)
 
-        l7policy_dict = validate.sanitize_l7policy_api_args(
-            l7policy.to_dict(render_unsets=False))
-        # Reset renamed attributes
-        for attr, val in l7policy_types.L7PolicyPUT._type_to_model_map.items():
-            if val in l7policy_dict:
-                l7policy_dict[attr] = l7policy_dict.pop(val)
-        sanitized_l7policy = l7policy_types.L7PolicyPUT(**l7policy_dict)
+            l7policy_dict = validate.sanitize_l7policy_api_args(
+                l7policy.to_dict(render_unsets=False))
+            # Reset renamed attributes
+            attr_val = l7policy_types.L7PolicyPUT._type_to_db_map.items()
+            for attr, val in attr_val:
+                if val in l7policy_dict:
+                    l7policy_dict[attr] = l7policy_dict.pop(val)
+            sanitized_l7policy = l7policy_types.L7PolicyPUT(**l7policy_dict)
 
-        with context.session.begin():
             listener = self._get_db_listener(
-                context.session, db_l7policy.listener_id)
-        # Make sure any specified redirect_pool_id exists
-        if l7policy_dict.get('redirect_pool_id'):
-            with context.session.begin():
+                context.session,
+                db_l7policy.listener_id
+            )
+            # Make sure any specified redirect_pool_id exists
+            if l7policy_dict.get('redirect_pool_id'):
                 db_pool = self._get_db_pool(
-                    context.session, l7policy_dict['redirect_pool_id'])
-            self._validate_protocol(listener.protocol, db_pool.protocol)
+                    context.session,
+                    l7policy_dict['redirect_pool_id']
+                )
+                self._validate_protocol(listener.protocol, db_pool.protocol)
 
-        # Load the driver early as it also provides validation
-        driver = driver_factory.get_driver(provider)
+            # Load the driver early as it also provides validation
+            driver = driver_factory.get_driver(provider)
 
-        with context.session.begin():
             lock_session = context.session
 
             self._test_lb_and_listener_statuses(lock_session,
@@ -279,10 +291,11 @@ class L7PolicyController(base.BaseController):
         # Force SQL alchemy to query the DB, otherwise we get inconsistent
         # results
         context.session.expire_all()
+
         with context.session.begin():
-            db_l7policy = self._get_db_l7policy(context.session, id)
-        result = self._convert_db_to_type(db_l7policy,
-                                          l7policy_types.L7PolicyResponse)
+            l7policy = self._get_db_l7policy(context.session, id)
+            result = l7policy_types.L7PolicyResponse.from_db_obj(l7policy)
+
         return l7policy_types.L7PolicyRootResponse(l7policy=result)
 
     @wsme_pecan.wsexpose(None, wtypes.text, status_code=204)
@@ -297,15 +310,18 @@ class L7PolicyController(base.BaseController):
             project_id, provider = self._get_lb_project_id_provider(
                 context.session, load_balancer_id)
 
-        self._auth_validate_action(context, project_id, constants.RBAC_DELETE)
+            self._auth_validate_action(
+                context,
+                project_id,
+                constants.RBAC_DELETE
+            )
 
-        if db_l7policy.provisioning_status == constants.DELETED:
-            return
+            if db_l7policy.provisioning_status == constants.DELETED:
+                return
 
-        # Load the driver early as it also provides validation
-        driver = driver_factory.get_driver(provider)
+            # Load the driver early as it also provides validation
+            driver = driver_factory.get_driver(provider)
 
-        with context.session.begin():
             self._test_lb_and_listener_statuses(context.session,
                                                 lb_id=load_balancer_id,
                                                 listener_ids=[listener_id])
@@ -331,12 +347,12 @@ class L7PolicyController(base.BaseController):
         if l7policy_id and remainder and remainder[0] == 'rules':
             remainder = remainder[1:]
             with context.session.begin():
-                db_l7policy = self.repositories.l7policy.get(
+                db_l7policy = self.repositories.l7policy.get_orm(
                     context.session, id=l7policy_id)
-            if not db_l7policy:
-                LOG.info("L7Policy %s not found.", l7policy_id)
-                raise exceptions.NotFound(
-                    resource='L7Policy', id=l7policy_id)
-            return l7rule.L7RuleController(
-                l7policy_id=db_l7policy.id), remainder
+                if not db_l7policy:
+                    LOG.info("L7Policy %s not found.", l7policy_id)
+                    raise exceptions.NotFound(
+                        resource='L7Policy', id=l7policy_id)
+                return l7rule.L7RuleController(
+                    l7policy_id=db_l7policy.id), remainder
         return None

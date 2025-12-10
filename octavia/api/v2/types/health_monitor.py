@@ -19,9 +19,9 @@ from octavia.common import constants
 
 
 class BaseHealthMonitorType(types.BaseType):
-    _type_to_model_map = {'admin_state_up': 'enabled',
-                          'max_retries': 'rise_threshold',
-                          'max_retries_down': 'fall_threshold'}
+    _type_to_db_map = {'admin_state_up': 'enabled',
+                       'max_retries': 'rise_threshold',
+                       'max_retries_down': 'fall_threshold'}
     _child_map = {}
 
 
@@ -49,16 +49,13 @@ class HealthMonitorResponse(BaseHealthMonitorType):
     domain_name = wtypes.wsattr(wtypes.StringType())
 
     @classmethod
-    def from_data_model(cls, data_model, children=False):
-        healthmonitor = super().from_data_model(
-            data_model, children=children)
+    def from_db_obj(cls, db_obj):
+        result = super().from_db_obj(db_obj)
 
-        if cls._full_response():
-            del healthmonitor.pools
-        else:
-            healthmonitor.pools = [
-                types.IdOnlyType.from_data_model(data_model.pool)]
-        return healthmonitor
+        if not cls._full_response():
+            result.pools = [types.IdOnlyType.from_db_obj(db_obj.pool)]
+
+        return result
 
 
 class HealthMonitorFullResponse(HealthMonitorResponse):

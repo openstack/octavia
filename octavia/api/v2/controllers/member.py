@@ -50,17 +50,21 @@ class MemberController(base.BaseController):
     def get(self, id, fields=None):
         """Gets a single pool member's details."""
         context = pecan_request.context.get('octavia_context')
+
         with context.session.begin():
-            db_member = self._get_db_member(context.session, id,
-                                            show_deleted=False)
+            member = self._get_db_member(
+                context.session,
+                id,
+                show_deleted=False
+            )
 
-        self._auth_validate_action(context, db_member.project_id,
-                                   constants.RBAC_GET_ONE)
+            self._auth_validate_action(context, member.project_id,
+                                       constants.RBAC_GET_ONE)
 
-        self._validate_pool_id(id, db_member.pool_id)
+            self._validate_pool_id(id, member.pool_id)
 
-        result = self._convert_db_to_type(
-            db_member, member_types.MemberResponse)
+            result = member_types.MemberResponse.from_db_obj(member)
+
         if fields is not None:
             result = self._filter_fields([result], fields)[0]
         return member_types.MemberRootResponse(member=result)
@@ -73,19 +77,24 @@ class MemberController(base.BaseController):
         context = pcontext.get('octavia_context')
 
         with context.session.begin():
-            pool = self._get_db_pool(context.session, self.pool_id,
-                                     show_deleted=False, limited_graph=True)
+            pool = self._get_db_pool(
+                context.session,
+                self.pool_id,
+                show_deleted=False
+            )
 
             self._auth_validate_action(context, pool.project_id,
                                        constants.RBAC_GET_ALL)
 
-            db_members, links = self.repositories.member.get_all_API_list(
-                context.session, show_deleted=False,
-                pool_id=self.pool_id,
-                pagination_helper=pcontext.get(constants.PAGINATION_HELPER),
-                limited_graph=True)
-        result = self._convert_db_to_type(
-            db_members, [member_types.MemberResponse])
+            members, links = self.repositories.member.get_all_API_list(
+                context.session, show_deleted=False, pool_id=self.pool_id,
+                pagination_helper=pcontext.get(constants.PAGINATION_HELPER))
+
+            result = [
+                member_types.MemberResponse.from_db_obj(member)
+                for member in members
+            ]
+
         if fields is not None:
             result = self._filter_fields(result, fields)
         return member_types.MembersRootResponse(
@@ -148,8 +157,12 @@ class MemberController(base.BaseController):
         context = pecan_request.context.get('octavia_context')
 
         flavor_dict = {}
-        with context.session.begin():
-            pool = self.repositories.pool.get(context.session, id=self.pool_id)
+        context.session.begin()
+        try:
+            pool = self.repositories.pool.get_orm(
+                context.session,
+                id=self.pool_id
+            )
             member.project_id, provider = self._get_lb_project_id_provider(
                 context.session, pool.load_balancer_id)
             if pool.load_balancer.flavor_id:
@@ -162,21 +175,25 @@ class MemberController(base.BaseController):
                               "found in the database. Assuming no flavor.",
                               pool.load_balancer.flavor_id)
 
-        self._auth_validate_action(context, member.project_id,
-                                   constants.RBAC_POST)
+            self._auth_validate_action(context, member.project_id,
+                                       constants.RBAC_POST)
 
-        validate.ip_not_reserved(member.address)
+            validate.ip_not_reserved(member.address)
 
-        # Validate member subnet
-        if (member.subnet_id and
-                not validate.subnet_exists(member.subnet_id, context=context)):
-            raise exceptions.NotFound(resource='Subnet', id=member.subnet_id)
+            # Validate member subnet
+            if (member.subnet_id and
+                    not validate.subnet_exists(
+                        member.subnet_id,
+                        context=context
+                    )):
+                raise exceptions.NotFound(
+                    resource='Subnet',
+                    id=member.subnet_id
+                )
 
-        # Load the driver early as it also provides validation
-        driver = driver_factory.get_driver(provider)
+            # Load the driver early as it also provides validation
+            driver = driver_factory.get_driver(provider)
 
-        context.session.begin()
-        try:
             if self.repositories.check_quota_met(
                     context.session,
                     data_models.Member,
@@ -223,13 +240,13 @@ class MemberController(base.BaseController):
                 context.session.rollback()
 
         with context.session.begin():
-            db_member = self._get_db_member(context.session, db_member.id)
-        result = self._convert_db_to_type(db_member,
-                                          member_types.MemberResponse)
+            member = self._get_db_member(context.session, db_member.id)
+            result = member_types.MemberResponse.from_db_obj(member)
+
         return member_types.MemberRootResponse(member=result)
 
     def _graph_create(self, lock_session, member_dict):
-        pool = self.repositories.pool.get(lock_session, id=self.pool_id)
+        pool = self.repositories.pool.get_orm(lock_session, id=self.pool_id)
 
         # Validate and store port SR-IOV vnic_type
         request_sriov = member_dict.pop('request_sriov')
@@ -284,21 +301,20 @@ class MemberController(base.BaseController):
         with context.session.begin():
             db_member = self._get_db_member(context.session, id,
                                             show_deleted=False)
-            pool = self.repositories.pool.get(context.session,
-                                              id=db_member.pool_id)
+            pool = self.repositories.pool.get_orm(context.session,
+                                                  id=db_member.pool_id)
             project_id, provider = self._get_lb_project_id_provider(
                 context.session, pool.load_balancer_id)
 
-        self._auth_validate_action(context, project_id, constants.RBAC_PUT)
+            self._auth_validate_action(context, project_id, constants.RBAC_PUT)
 
-        self._validate_pool_id(id, db_member.pool_id)
+            self._validate_pool_id(id, db_member.pool_id)
 
-        self._set_default_on_none(member)
+            self._set_default_on_none(member)
 
-        # Load the driver early as it also provides validation
-        driver = driver_factory.get_driver(provider)
+            # Load the driver early as it also provides validation
+            driver = driver_factory.get_driver(provider)
 
-        with context.session.begin():
             self._test_lb_and_listener_and_pool_statuses(context.session,
                                                          member=db_member)
 
@@ -329,10 +345,11 @@ class MemberController(base.BaseController):
         # Force SQL alchemy to query the DB, otherwise we get inconsistent
         # results
         context.session.expire_all()
+
         with context.session.begin():
-            db_member = self._get_db_member(context.session, id)
-        result = self._convert_db_to_type(db_member,
-                                          member_types.MemberResponse)
+            member = self._get_db_member(context.session, id)
+            result = member_types.MemberResponse.from_db_obj(member)
+
         return member_types.MemberRootResponse(member=result)
 
     @wsme_pecan.wsexpose(None, wtypes.text, status_code=204)
@@ -343,19 +360,22 @@ class MemberController(base.BaseController):
             db_member = self._get_db_member(context.session, id,
                                             show_deleted=False)
 
-            pool = self.repositories.pool.get(context.session,
-                                              id=db_member.pool_id)
+            pool = self.repositories.pool.get_orm(context.session,
+                                                  id=db_member.pool_id)
             project_id, provider = self._get_lb_project_id_provider(
                 context.session, pool.load_balancer_id)
 
-        self._auth_validate_action(context, project_id, constants.RBAC_DELETE)
+            self._auth_validate_action(
+                context,
+                project_id,
+                constants.RBAC_DELETE
+            )
 
-        self._validate_pool_id(id, db_member.pool_id)
+            self._validate_pool_id(id, db_member.pool_id)
 
-        # Load the driver early as it also provides validation
-        driver = driver_factory.get_driver(provider)
+            # Load the driver early as it also provides validation
+            driver = driver_factory.get_driver(provider)
 
-        with context.session.begin():
             self._test_lb_and_listener_and_pool_statuses(context.session,
                                                          member=db_member)
             self.repositories.member.update(
@@ -389,17 +409,20 @@ class MembersController(MemberController):
             project_id, provider = self._get_lb_project_id_provider(
                 context.session, db_pool.load_balancer_id)
 
-        # Check POST+PUT+DELETE since this operation is all of 'CUD'
-        self._auth_validate_action(context, project_id, constants.RBAC_POST)
-        self._auth_validate_action(context, project_id, constants.RBAC_PUT)
-        if not additive_only:
-            self._auth_validate_action(context, project_id,
-                                       constants.RBAC_DELETE)
+            # Check POST+PUT+DELETE since this operation is all of 'CUD'
+            self._auth_validate_action(
+                context,
+                project_id,
+                constants.RBAC_POST
+            )
+            self._auth_validate_action(context, project_id, constants.RBAC_PUT)
+            if not additive_only:
+                self._auth_validate_action(context, project_id,
+                                           constants.RBAC_DELETE)
 
-        # Load the driver early as it also provides validation
-        driver = driver_factory.get_driver(provider)
+            # Load the driver early as it also provides validation
+            driver = driver_factory.get_driver(provider)
 
-        with context.session.begin():
             self._test_lb_and_listener_and_pool_statuses(context.session)
 
             # Reload the pool, the members may have been updated between the

@@ -862,7 +862,7 @@ class Quotas(base_models.BASE):
 
     __tablename__ = "quotas"
 
-    __v2_wsme__ = quotas.QuotaAllBase
+    __v2_wsme__ = quotas.QuotaResponse
 
     project_id = sa.Column(sa.String(36), primary_key=True)
     health_monitor = sa.Column(sa.Integer(), nullable=True)

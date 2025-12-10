@@ -49,14 +49,15 @@ class HealthMonitorController(base.BaseController):
     def get_one(self, id, fields=None):
         """Gets a single healthmonitor's details."""
         context = pecan_request.context.get('octavia_context')
+
         with context.session.begin():
             db_hm = self._get_db_hm(context.session, id, show_deleted=False)
 
-        self._auth_validate_action(context, db_hm.project_id,
-                                   consts.RBAC_GET_ONE)
+            self._auth_validate_action(context, db_hm.project_id,
+                                       consts.RBAC_GET_ONE)
 
-        result = self._convert_db_to_type(
-            db_hm, hm_types.HealthMonitorResponse)
+            result = hm_types.HealthMonitorResponse.from_db_obj(db_hm)
+
         if fields is not None:
             result = self._filter_fields([result], fields)[0]
         return hm_types.HealthMonitorRootResponse(healthmonitor=result)
@@ -71,12 +72,18 @@ class HealthMonitorController(base.BaseController):
         query_filter = self._auth_get_all(context, project_id)
 
         with context.session.begin():
-            db_hm, links = self.repositories.health_monitor.get_all_API_list(
-                context.session, show_deleted=False,
+            db_hms, links = self.repositories.health_monitor.get_all_API_list(
+                context.session,
+                show_deleted=False,
                 pagination_helper=pcontext.get(consts.PAGINATION_HELPER),
-                **query_filter)
-        result = self._convert_db_to_type(
-            db_hm, [hm_types.HealthMonitorResponse])
+                **query_filter
+            )
+
+            result = [
+                hm_types.HealthMonitorResponse.from_db_obj(db_hm)
+                for db_hm in db_hms
+            ]
+
         if fields is not None:
             result = self._filter_fields(result, fields)
         return hm_types.HealthMonitorsRootResponse(
@@ -84,7 +91,7 @@ class HealthMonitorController(base.BaseController):
 
     def _get_affected_listener_ids(self, session, hm):
         """Gets a list of all listeners this request potentially affects."""
-        pool = self.repositories.pool.get(session, id=hm.pool_id)
+        pool = self.repositories.pool.get_orm(session, id=hm.pool_id)
         listener_ids = [li.id for li in pool.listeners]
         return listener_ids
 
@@ -92,7 +99,7 @@ class HealthMonitorController(base.BaseController):
         """Verify load balancer is in a mutable state."""
         # We need to verify that any listeners referencing this pool are also
         # mutable
-        pool = self.repositories.pool.get(session, id=hm.pool_id)
+        pool = self.repositories.pool.get_orm(session, id=hm.pool_id)
         load_balancer_id = pool.load_balancer_id
         # Check the parent is not locked for some reason (ERROR, etc.)
         if pool.provisioning_status not in consts.MUTABLE_STATUSES:
@@ -205,40 +212,41 @@ class HealthMonitorController(base.BaseController):
         context = pecan_request.context.get('octavia_context')
         health_monitor = health_monitor_.healthmonitor
 
-        with context.session.begin():
+        context.session.begin()
+        try:
             pool = self._get_db_pool(context.session, health_monitor.pool_id)
 
             health_monitor.project_id, provider = (
                 self._get_lb_project_id_provider(context.session,
                                                  pool.load_balancer_id))
 
-        self._auth_validate_action(context, health_monitor.project_id,
-                                   consts.RBAC_POST)
+            self._auth_validate_action(context, health_monitor.project_id,
+                                       consts.RBAC_POST)
 
-        if (not CONF.api_settings.allow_ping_health_monitors and
-                health_monitor.type == consts.HEALTH_MONITOR_PING):
-            raise exceptions.DisabledOption(
-                option='type', value=consts.HEALTH_MONITOR_PING)
+            if (not CONF.api_settings.allow_ping_health_monitors and
+                    health_monitor.type == consts.HEALTH_MONITOR_PING):
+                raise exceptions.DisabledOption(
+                    option='type', value=consts.HEALTH_MONITOR_PING)
 
-        if pool.protocol in (lib_consts.PROTOCOL_UDP,
-                             lib_consts.PROTOCOL_SCTP):
-            self._validate_healthmonitor_request_for_udp_sctp(health_monitor,
-                                                              pool.protocol)
-        else:
-            if health_monitor.type in (consts.HEALTH_MONITOR_UDP_CONNECT,
-                                       lib_consts.HEALTH_MONITOR_SCTP):
-                raise exceptions.ValidationException(detail=_(
-                    "The %(type)s type is only supported for pools of type "
-                    "%(protocols)s.") % {
-                        'type': health_monitor.type,
-                        'protocols': '/'.join((consts.PROTOCOL_UDP,
-                                               lib_consts.PROTOCOL_SCTP))})
+            if pool.protocol in (lib_consts.PROTOCOL_UDP,
+                                 lib_consts.PROTOCOL_SCTP):
+                self._validate_healthmonitor_request_for_udp_sctp(
+                    health_monitor,
+                    pool.protocol
+                )
+            else:
+                if health_monitor.type in (consts.HEALTH_MONITOR_UDP_CONNECT,
+                                           lib_consts.HEALTH_MONITOR_SCTP):
+                    raise exceptions.ValidationException(detail=_(
+                        "The %(type)s type is only supported for pools of "
+                        "type %(protocols)s.") % {
+                            'type': health_monitor.type,
+                            'protocols': '/'.join((consts.PROTOCOL_UDP,
+                                                   lib_consts.PROTOCOL_SCTP))})
 
-        # Load the driver early as it also provides validation
-        driver = driver_factory.get_driver(provider)
+            # Load the driver early as it also provides validation
+            driver = driver_factory.get_driver(provider)
 
-        context.session.begin()
-        try:
             if self.repositories.check_quota_met(
                     context.session,
                     data_models.HealthMonitor,
@@ -273,8 +281,8 @@ class HealthMonitorController(base.BaseController):
 
         with context.session.begin():
             db_hm = self._get_db_hm(context.session, db_hm.id)
-        result = self._convert_db_to_type(
-            db_hm, hm_types.HealthMonitorResponse)
+            result = hm_types.HealthMonitorResponse.from_db_obj(db_hm)
+
         return hm_types.HealthMonitorRootResponse(healthmonitor=result)
 
     def _graph_create(self, lock_session, hm_dict):
@@ -356,22 +364,22 @@ class HealthMonitorController(base.BaseController):
             project_id, provider = self._get_lb_project_id_provider(
                 context.session, pool.load_balancer_id)
 
-        self._auth_validate_action(context, project_id, consts.RBAC_PUT)
+            self._auth_validate_action(context, project_id, consts.RBAC_PUT)
 
-        self._validate_update_hm(db_hm, health_monitor)
-        # Validate health monitor update options for UDP/SCTP
-        if pool.protocol in (lib_consts.PROTOCOL_UDP,
-                             lib_consts.PROTOCOL_SCTP):
-            health_monitor.type = db_hm.type
-            self._validate_healthmonitor_request_for_udp_sctp(health_monitor,
-                                                              pool.protocol)
+            self._validate_update_hm(db_hm, health_monitor)
+            # Validate health monitor update options for UDP/SCTP
+            if pool.protocol in (lib_consts.PROTOCOL_UDP,
+                                 lib_consts.PROTOCOL_SCTP):
+                health_monitor.type = db_hm.type
+                self._validate_healthmonitor_request_for_udp_sctp(
+                    health_monitor,
+                    pool.protocol
+                )
 
-        self._set_default_on_none(health_monitor)
+            self._set_default_on_none(health_monitor)
 
-        # Load the driver early as it also provides validation
-        driver = driver_factory.get_driver(provider)
-
-        with context.session.begin():
+            # Load the driver early as it also provides validation
+            driver = driver_factory.get_driver(provider)
 
             self._test_lb_and_listener_and_pool_statuses(context.session,
                                                          db_hm)
@@ -402,10 +410,11 @@ class HealthMonitorController(base.BaseController):
         # Force SQL alchemy to query the DB, otherwise we get inconsistent
         # results
         context.session.expire_all()
+
         with context.session.begin():
             db_hm = self._get_db_hm(context.session, id)
-        result = self._convert_db_to_type(
-            db_hm, hm_types.HealthMonitorResponse)
+            result = hm_types.HealthMonitorResponse.from_db_obj(db_hm)
+
         return hm_types.HealthMonitorRootResponse(healthmonitor=result)
 
     @wsme_pecan.wsexpose(None, wtypes.text, status_code=204)
@@ -419,15 +428,13 @@ class HealthMonitorController(base.BaseController):
             project_id, provider = self._get_lb_project_id_provider(
                 context.session, pool.load_balancer_id)
 
-        self._auth_validate_action(context, project_id, consts.RBAC_DELETE)
+            self._auth_validate_action(context, project_id, consts.RBAC_DELETE)
 
-        if db_hm.provisioning_status == consts.DELETED:
-            return
+            if db_hm.provisioning_status == consts.DELETED:
+                return
 
-        # Load the driver early as it also provides validation
-        driver = driver_factory.get_driver(provider)
-
-        with context.session.begin():
+            # Load the driver early as it also provides validation
+            driver = driver_factory.get_driver(provider)
 
             self._test_lb_and_listener_and_pool_statuses(context.session,
                                                          db_hm)

@@ -22,9 +22,9 @@ from stevedore import driver as stevedore_driver
 from wsme import types as wtypes
 
 from octavia.common import constants
-from octavia.common import data_models
 from octavia.common import exceptions
 from octavia.common import policy
+from octavia.db import models
 from octavia.db import repositories
 from octavia.i18n import _
 
@@ -46,46 +46,25 @@ class BaseController(pecan_rest.RestController):
         self.repositories = repositories.Repositories()
 
     @staticmethod
-    def _convert_db_to_type(db_entity, to_type, children=False):
-        """Converts a data model into an Octavia WSME type
-
-        :param db_entity: data model to convert
-        :param to_type: converts db_entity to this type
-        """
-        if isinstance(to_type, list):
-            to_type = to_type[0]
-
-        def _convert(db_obj):
-            return to_type.from_data_model(db_obj, children=children)
-        if isinstance(db_entity, list):
-            converted = [_convert(db_obj) for db_obj in db_entity]
-        else:
-            converted = _convert(db_entity)
-        return converted
-
-    @staticmethod
-    def _get_db_obj(session, repo, data_model, id, show_deleted=True,
-                    limited_graph=False):
+    def _get_db_obj(session, repo, model, id, show_deleted=True):
         """Gets an object from the database and returns it."""
-        db_obj = repo.get(session, id=id, show_deleted=show_deleted,
-                          limited_graph=limited_graph)
+        db_obj = repo.get_orm(session, id=id, show_deleted=show_deleted)
         if not db_obj:
             LOG.debug('%(name)s %(id)s not found',
-                      {'name': data_model._name(), 'id': id})
-            raise exceptions.NotFound(
-                resource=data_model._name(), id=id)
+                      {'name': model._name(), 'id': id})
+            raise exceptions.NotFound(resource=model._name(), id=id)
         return db_obj
 
     def _get_db_lb(self, session, id, show_deleted=True):
         """Get a load balancer from the database."""
         return self._get_db_obj(session, self.repositories.load_balancer,
-                                data_models.LoadBalancer, id,
+                                models.LoadBalancer, id,
                                 show_deleted=show_deleted)
 
     def _get_db_listener(self, session, id, show_deleted=True):
         """Get a listener from the database."""
         return self._get_db_obj(session, self.repositories.listener,
-                                data_models.Listener, id,
+                                models.Listener, id,
                                 show_deleted=show_deleted)
 
     def _get_listener_and_loadbalancer_id(self, db_l7policy):
@@ -94,95 +73,96 @@ class BaseController(pecan_rest.RestController):
         listener_id = db_l7policy.listener_id
         return load_balancer_id, listener_id
 
-    def _get_db_pool(self, session, id, show_deleted=True,
-                     limited_graph=False):
+    def _get_db_pool(self, session, id, show_deleted=True):
         """Get a pool from the database."""
         return self._get_db_obj(session, self.repositories.pool,
-                                data_models.Pool, id,
-                                show_deleted=show_deleted,
-                                limited_graph=limited_graph)
+                                models.Pool, id,
+                                show_deleted=show_deleted)
 
     def _get_db_member(self, session, id, show_deleted=True):
         """Get a member from the database."""
         return self._get_db_obj(session, self.repositories.member,
-                                data_models.Member, id,
+                                models.Member, id,
                                 show_deleted=show_deleted)
 
     def _get_db_hm(self, session, id, show_deleted=True):
         """Get a health monitor from the database."""
         return self._get_db_obj(session, self.repositories.health_monitor,
-                                data_models.HealthMonitor, id,
+                                models.HealthMonitor, id,
                                 show_deleted=show_deleted)
 
     def _get_db_flavor(self, session, id):
         """Get a flavor from the database."""
         return self._get_db_obj(session, self.repositories.flavor,
-                                data_models.Flavor, id)
+                                models.Flavor, id)
 
     def _get_db_flavor_profile(self, session, id):
         """Get a flavor profile from the database."""
         return self._get_db_obj(session, self.repositories.flavor_profile,
-                                data_models.FlavorProfile, id)
+                                models.FlavorProfile, id)
 
     def _get_db_availability_zone(self, session, name):
         """Get an availability zone from the database."""
-        db_obj = self.repositories.availability_zone.get(session, name=name)
+        db_obj = self.repositories.availability_zone.get_orm(
+            session,
+            name=name
+        )
         if not db_obj:
             LOG.debug('%(obj_name)s %(name)s not found',
-                      {'obj_name': data_models.AvailabilityZone._name(),
+                      {'obj_name': models.AvailabilityZone._name(),
                        'name': name})
             raise exceptions.NotFound(
-                resource=data_models.AvailabilityZone._name(), id=name)
+                resource=models.AvailabilityZone._name(), id=name)
         return db_obj
 
     def _get_db_availability_zone_profile(self, session, id):
         """Get an availability zone profile from the database."""
         return self._get_db_obj(session,
                                 self.repositories.availability_zone_profile,
-                                data_models.AvailabilityZoneProfile, id)
+                                models.AvailabilityZoneProfile, id)
 
     def _get_db_l7policy(self, session, id, show_deleted=True):
         """Get a L7 Policy from the database."""
         return self._get_db_obj(session, self.repositories.l7policy,
-                                data_models.L7Policy, id,
+                                models.L7Policy, id,
                                 show_deleted=show_deleted)
 
     def _get_db_l7rule(self, session, id, show_deleted=True):
         """Get a L7 Rule from the database."""
         return self._get_db_obj(session, self.repositories.l7rule,
-                                data_models.L7Rule, id,
+                                models.L7Rule, id,
                                 show_deleted=show_deleted)
 
     def _get_db_amp(self, session, id, show_deleted=True):
         """Gets an Amphora from the database."""
         return self._get_db_obj(session, self.repositories.amphora,
-                                data_models.Amphora, id,
+                                models.Amphora, id,
                                 show_deleted=show_deleted)
 
     def _get_lb_project_id(self, session, id, show_deleted=True):
         """Get the project_id of the load balancer from the database."""
         lb = self._get_db_obj(session, self.repositories.load_balancer,
-                              data_models.LoadBalancer, id,
+                              models.LoadBalancer, id,
                               show_deleted=show_deleted)
         return lb.project_id
 
     def _get_lb_project_id_provider(self, session, id, show_deleted=True):
         """Get the project_id of the load balancer from the database."""
         lb = self._get_db_obj(session, self.repositories.load_balancer,
-                              data_models.LoadBalancer, id,
+                              models.LoadBalancer, id,
                               show_deleted=show_deleted)
         return lb.project_id, lb.provider
 
     def _get_l7policy_project_id(self, session, id, show_deleted=True):
         """Get the project_id of the load balancer from the database."""
         l7policy = self._get_db_obj(session, self.repositories.l7policy,
-                                    data_models.LoadBalancer, id,
+                                    models.LoadBalancer, id,
                                     show_deleted=show_deleted)
         return l7policy.project_id
 
     def _get_default_quotas(self, project_id):
         """Gets the project's default quotas."""
-        quotas = data_models.Quotas(
+        quotas = models.Quotas(
             project_id=project_id,
             load_balancer=CONF.quotas.default_load_balancer_quota,
             listener=CONF.quotas.default_listener_quota,
@@ -194,12 +174,9 @@ class BaseController(pecan_rest.RestController):
         return quotas
 
     def _get_db_quotas(self, session, project_id):
-        """Gets the project's quotas from the database, or responds with the
-
-        default quotas.
-        """
+        """Gets the project's quotas from the DB or defaults."""
         # At this point project_id should not ever be None or Unset
-        db_quotas = self.repositories.quotas.get(
+        db_quotas = self.repositories.quotas.get_orm(
             session, project_id=project_id)
         if not db_quotas:
             LOG.debug("No custom quotas for project %s. Returning "

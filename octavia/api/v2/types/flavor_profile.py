@@ -18,7 +18,7 @@ from octavia.api.common import types
 
 
 class BaseFlavorProfileType(types.BaseType):
-    _type_to_model_map = {}
+    _type_to_db_map = {}
     _child_map = {}
 
 
@@ -28,12 +28,6 @@ class FlavorProfileResponse(BaseFlavorProfileType):
     name = wtypes.wsattr(wtypes.StringType())
     provider_name = wtypes.wsattr(wtypes.StringType())
     flavor_data = wtypes.wsattr(wtypes.StringType())
-
-    @classmethod
-    def from_data_model(cls, data_model, children=False):
-        flavorprofile = super().from_data_model(
-            data_model, children=children)
-        return flavorprofile
 
 
 class FlavorProfileRootResponse(types.BaseType):

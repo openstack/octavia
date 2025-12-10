@@ -46,12 +46,18 @@ class AvailabilityZonesController(base.BaseController):
         if name == constants.NIL_UUID:
             raise exceptions.NotFound(resource='Availability Zone',
                                       id=constants.NIL_UUID)
+
         with context.session.begin():
-            db_availability_zone = self._get_db_availability_zone(
-                context.session, name)
-        result = self._convert_db_to_type(
-            db_availability_zone,
-            availability_zone_types.AvailabilityZoneResponse)
+            availability_zone = self._get_db_availability_zone(
+                context.session,
+                name
+            )
+
+            result = (
+                availability_zone_types.AvailabilityZoneResponse
+                .from_db_obj(availability_zone)
+            )
+
         if fields is not None:
             result = self._filter_fields([result], fields)[0]
         return availability_zone_types.AvailabilityZoneRootResponse(
@@ -65,15 +71,21 @@ class AvailabilityZonesController(base.BaseController):
         context = pcontext.get('octavia_context')
         self._auth_validate_action(context, context.project_id,
                                    constants.RBAC_GET_ALL)
+
         with context.session.begin():
-            db_availability_zones, links = (
-                self.repositories.availability_zone.get_all(
+            availability_zones, links = (
+                self.repositories.availability_zone.get_all_orm(
                     context.session,
-                    pagination_helper=pcontext.get(
-                        constants.PAGINATION_HELPER)))
-        result = self._convert_db_to_type(
-            db_availability_zones,
-            [availability_zone_types.AvailabilityZoneResponse])
+                    pagination_helper=pcontext.get(constants.PAGINATION_HELPER)
+                )
+            )
+
+            result = [
+                availability_zone_types.AvailabilityZoneResponse
+                .from_db_obj(availability_zone)
+                for availability_zone in availability_zones
+            ]
+
         if fields is not None:
             result = self._filter_fields(result, fields)
         return availability_zone_types.AvailabilityZonesRootResponse(
@@ -93,7 +105,7 @@ class AvailabilityZonesController(base.BaseController):
         try:
             availability_zone_dict = availability_zone.to_dict(
                 render_unsets=True)
-            db_availability_zone = self.repositories.availability_zone.create(
+            availability_zone = self.repositories.availability_zone.create(
                 context.session, **availability_zone_dict)
             context.session.commit()
         except odb_exceptions.DBDuplicateEntry as e:
@@ -103,9 +115,17 @@ class AvailabilityZonesController(base.BaseController):
         except Exception:
             with excutils.save_and_reraise_exception():
                 context.session.rollback()
-        result = self._convert_db_to_type(
-            db_availability_zone,
-            availability_zone_types.AvailabilityZoneResponse)
+
+        with context.session.begin():
+            availability_zone = self._get_db_availability_zone(
+                context.session,
+                availability_zone.name
+            )
+            result = (
+                availability_zone_types.AvailabilityZoneResponse
+                .from_db_obj(availability_zone)
+            )
+
         return availability_zone_types.AvailabilityZoneRootResponse(
             availability_zone=result)
 
@@ -135,12 +155,18 @@ class AvailabilityZonesController(base.BaseController):
         # Force SQL alchemy to query the DB, otherwise we get inconsistent
         # results
         context.session.expire_all()
+
         with context.session.begin():
-            db_availability_zone = self._get_db_availability_zone(
-                context.session, name)
-        result = self._convert_db_to_type(
-            db_availability_zone,
-            availability_zone_types.AvailabilityZoneResponse)
+            availability_zone = self._get_db_availability_zone(
+                context.session,
+                name
+            )
+
+            result = (
+                availability_zone_types.AvailabilityZoneResponse
+                .from_db_obj(availability_zone)
+            )
+
         return availability_zone_types.AvailabilityZoneRootResponse(
             availability_zone=result)
 

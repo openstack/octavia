@@ -26,9 +26,6 @@ class MockNOTIFIER(mock.MagicMock):
             new_callable=MockNOTIFIER)
 @mock.patch('octavia.common.context.RequestContext',
             new_callable=mock.MagicMock)
-@mock.patch('octavia.api.v2.types.load_balancer.LoadBalancerFullResponse.'
-            'from_data_model',
-            new_callable=mock.MagicMock)
 class TestNotificationTasks(base.TestCase):
     def test_update_notification_execute(self, *args):
         noti = notification_tasks.SendUpdateNotification()

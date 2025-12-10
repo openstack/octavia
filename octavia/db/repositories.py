@@ -116,19 +116,10 @@ class BaseRepository:
         session.query(self.model_class).filter_by(
             id=id).update(model_kwargs)
 
-    def get(self, session, limited_graph=False, **filters):
+    def get(self, session, **filters):
         """Retrieves an entity from the database.
 
         :param session: A Sql Alchemy database session.
-        :param limited_graph: Option controls number of processed nodes
-                              in the graph. Default (with False) behaviour
-                              is recursion iteration through all nodes
-                              in the graph via to_data_model. With True value
-                              recursion will stop at the first child node.
-                              It means, that only limited number of nodes be
-                              converted. This logic could be used for specific
-                              cases, where information about full graph
-                              is unnecessary.
         :param filters: Filters to decide which entity should be retrieved.
         :returns: octavia.common.data_model
         """
@@ -148,26 +139,41 @@ class BaseRepository:
         if not model:
             return None
 
-        recursion_depth = 0 if limited_graph else None
-        return model.to_data_model(recursion_depth=recursion_depth)
+        return model.to_data_model()
+
+    def get_orm(self, session, **filters):
+        """Retrieves an entity from the database. ORM-based.
+
+        :param session: A Sql Alchemy database session.
+        :param filters: Filters to decide which entity should be retrieved.
+        :returns: octavia.db.model
+        """
+        deleted = filters.pop('show_deleted', True)
+        query = session.query(self.model_class).filter_by(**filters)
+
+        if not deleted:
+            if hasattr(self.model_class, 'status'):
+                query = query.filter(
+                    self.model_class.status != consts.DELETED)
+            else:
+                query = query.filter(
+                    self.model_class.provisioning_status != consts.DELETED)
+
+        db_obj = query.first()
+
+        if not db_obj:
+            return None
+
+        return db_obj
 
     def get_all(self, session, pagination_helper=None,
-                query_options=None, limited_graph=False, **filters):
+                query_options=None, **filters):
 
         """Retrieves a list of entities from the database.
 
         :param session: A Sql Alchemy database session.
         :param pagination_helper: Helper to apply pagination and sorting.
         :param query_options: Optional query options to apply.
-        :param limited_graph: Option controls number of processed nodes
-                              in the graph. Default (with False) behaviour
-                              is recursion iteration through all nodes
-                              in the graph via to_data_model. With True value
-                              recursion will stop at the first child node.
-                              It means, that only limited number of nodes be
-                              converted. This logic could be used for specific
-                              cases, where information about full graph
-                              is unnecessary.
         :param filters: Filters to decide which entities should be retrieved.
         :returns: [octavia.common.data_model]
         """
@@ -190,12 +196,43 @@ class BaseRepository:
         else:
             links = None
             model_list = query.all()
-        recursion_depth = 1 if limited_graph else None
         data_model_list = [
-            model.to_data_model(recursion_depth=recursion_depth)
+            model.to_data_model()
             for model in model_list
         ]
         return data_model_list, links
+
+    def get_all_orm(self, session, pagination_helper=None,
+                    query_options=None, **filters):
+        """Retrieves a list of entities from the database. ORM-based.
+
+        :param session: A Sql Alchemy database session.
+        :param pagination_helper: Helper to apply pagination and sorting.
+        :param query_options: Optional query options to apply.
+        :param filters: Filters to decide which entities should be retrieved.
+        :returns: [octavia.db.model]
+        """
+        deleted = filters.pop('show_deleted', True)
+        query = session.query(self.model_class).filter_by(**filters)
+        if query_options:
+            query = query.options(query_options)
+
+        if not deleted:
+            if hasattr(self.model_class, 'status'):
+                query = query.filter(
+                    self.model_class.status != consts.DELETED)
+            else:
+                query = query.filter(
+                    self.model_class.provisioning_status != consts.DELETED)
+
+        if pagination_helper:
+            db_obj, links = pagination_helper.apply(
+                query, self.model_class)
+        else:
+            links = None
+            db_obj = query.all()
+
+        return db_obj, links
 
     def exists(self, session, id):
         """Determines whether an entity exists in the database by its id.
@@ -729,14 +766,12 @@ class LoadBalancerRepository(BaseRepository):
     def get_all_API_list(self, session, pagination_helper=None, **filters):
         """Get a list of load balancers for the API list call.
 
-        This get_all returns a data set that is only one level deep
-        in the data graph. This is an optimized query for the API load
-        balancer list method.
+        This is an optimized query for the API loadbalancer list method.
 
         :param session: A Sql Alchemy database session.
         :param pagination_helper: Helper to apply pagination and sorting.
         :param filters: Filters to decide which entities should be retrieved.
-        :returns: [octavia.common.data_model]
+        :returns: [octavia.db.model]
         """
 
         # sub-query load the tables we need
@@ -752,7 +787,7 @@ class LoadBalancerRepository(BaseRepository):
             subqueryload(models.LoadBalancer._tags),
             noload('*'))
 
-        return super().get_all(
+        return super().get_all_orm(
             session, pagination_helper=pagination_helper,
             query_options=query_options, **filters)
 
@@ -863,14 +898,12 @@ class HealthMonitorRepository(BaseRepository):
     def get_all_API_list(self, session, pagination_helper=None, **filters):
         """Get a list of health monitors for the API list call.
 
-        This get_all returns a data set that is only one level deep
-        in the data graph. This is an optimized query for the API health
-        monitor list method.
+        This is an optimized query for the API health monitor list method.
 
         :param session: A Sql Alchemy database session.
         :param pagination_helper: Helper to apply pagination and sorting.
         :param filters: Filters to decide which entities should be retrieved.
-        :returns: [octavia.common.data_model]
+        :returns: [octavia.db.model]
         """
 
         # sub-query load the tables we need
@@ -880,7 +913,7 @@ class HealthMonitorRepository(BaseRepository):
             subqueryload(models.HealthMonitor._tags),
             noload('*'))
 
-        return super().get_all(
+        return super().get_all_orm(
             session, pagination_helper=pagination_helper,
             query_options=query_options, **filters)
 
@@ -922,14 +955,12 @@ class PoolRepository(BaseRepository):
     def get_all_API_list(self, session, pagination_helper=None, **filters):
         """Get a list of pools for the API list call.
 
-        This get_all returns a data set that is only one level deep
-        in the data graph. This is an optimized query for the API pool
-        list method.
+        This is an optimized query for the API pool list method.
 
         :param session: A Sql Alchemy database session.
         :param pagination_helper: Helper to apply pagination and sorting.
         :param filters: Filters to decide which entities should be retrieved.
-        :returns: [octavia.common.data_model]
+        :returns: [octavia.db.model]
         """
 
         # sub-query load the tables we need
@@ -948,7 +979,7 @@ class PoolRepository(BaseRepository):
             subqueryload(models.Pool._tags),
             noload('*'))
 
-        return super().get_all(
+        return super().get_all_orm(
             session, pagination_helper=pagination_helper,
             query_options=query_options, **filters)
 
@@ -966,18 +997,13 @@ class PoolRepository(BaseRepository):
 class MemberRepository(BaseRepository):
     model_class = models.Member
 
-    def get_all_API_list(self, session, pagination_helper=None,
-                         limited_graph=False, **filters):
+    def get_all_API_list(self, session, pagination_helper=None, **filters):
         """Get a list of members for the API list call.
 
-        This get_all returns a data set that is only one level deep
-        in the data graph. This is an optimized query for the API member
-        list method.
+        This is an optimized query for the API member list method.
 
         :param session: A Sql Alchemy database session.
         :param pagination_helper: Helper to apply pagination and sorting.
-        :param limited_graph: Option to avoid recursion iteration through all
-                              nodes in the graph via to_data_model
         :param filters: Filters to decide which entities should be retrieved.
         :returns: [octavia.common.data_model]
         """
@@ -989,10 +1015,9 @@ class MemberRepository(BaseRepository):
             subqueryload(models.Member._tags),
             noload('*'))
 
-        return super().get_all(
+        return super().get_all_orm(
             session, pagination_helper=pagination_helper,
-            query_options=query_options, limited_graph=limited_graph,
-            **filters)
+            query_options=query_options, **filters)
 
     def delete_members(self, session, member_ids):
         """Batch deletes members from a pool."""
@@ -1016,14 +1041,12 @@ class ListenerRepository(BaseRepository):
     def get_all_API_list(self, session, pagination_helper=None, **filters):
         """Get a list of listeners for the API list call.
 
-        This get_all returns a data set that is only one level deep
-        in the data graph. This is an optimized query for the API listener
-        list method.
+        This is an optimized query for the API listener list method.
 
         :param session: A Sql Alchemy database session.
         :param pagination_helper: Helper to apply pagination and sorting.
         :param filters: Filters to decide which entities should be retrieved.
-        :returns: [octavia.common.data_model]
+        :returns: [octavia.db.model]
         """
 
         # sub-query load the tables we need
@@ -1036,7 +1059,7 @@ class ListenerRepository(BaseRepository):
             subqueryload(models.Listener.allowed_cidrs),
             noload('*'))
 
-        return super().get_all(
+        return super().get_all_orm(
             session, pagination_helper=pagination_helper,
             query_options=query_options, **filters)
 
@@ -1233,14 +1256,12 @@ class AmphoraRepository(BaseRepository):
     def get_all_API_list(self, session, pagination_helper=None, **filters):
         """Get a list of amphorae for the API list call.
 
-        This get_all returns a data set that is only one level deep
-        in the data graph. This is an optimized query for the API amphora
-        list method.
+        This is an optimized query for the API amphora list method.
 
         :param session: A Sql Alchemy database session.
         :param pagination_helper: Helper to apply pagination and sorting.
         :param filters: Filters to decide which entities should be retrieved.
-        :returns: [octavia.common.data_model]
+        :returns: [octavia.db.model]
         """
 
         # sub-query load the tables we need
@@ -1249,7 +1270,7 @@ class AmphoraRepository(BaseRepository):
             subqueryload(models.Amphora.load_balancer),
             noload('*'))
 
-        return super().get_all(
+        return super().get_all_orm(
             session, pagination_helper=pagination_helper,
             query_options=query_options, **filters)
 
@@ -1713,14 +1734,12 @@ class L7RuleRepository(BaseRepository):
     def get_all_API_list(self, session, pagination_helper=None, **filters):
         """Get a list of L7 Rules for the API list call.
 
-        This get_all returns a data set that is only one level deep
-        in the data graph. This is an optimized query for the API L7 Rule
-        list method.
+        This is an optimized query for the API L7 Rule list method.
 
         :param session: A Sql Alchemy database session.
         :param pagination_helper: Helper to apply pagination and sorting.
         :param filters: Filters to decide which entities should be retrieved.
-        :returns: [octavia.common.data_model]
+        :returns: [octavia.db.model]
         """
 
         # sub-query load the tables we need
@@ -1730,7 +1749,7 @@ class L7RuleRepository(BaseRepository):
             subqueryload(models.L7Rule._tags),
             noload('*'))
 
-        return super().get_all(
+        return super().get_all_orm(
             session, pagination_helper=pagination_helper,
             query_options=query_options, **filters)
 
@@ -2044,6 +2063,37 @@ class _GetALLExceptDELETEDIdMixin:
 
         data_model_list = [model.to_data_model() for model in model_list]
         return data_model_list, links
+
+    def get_all_orm(self, session, pagination_helper=None,
+                    query_options=None, **filters):
+
+        """Retrieves a list of entities from the database. ORM-based.
+
+        This filters the "DELETED" placeholder from the list.
+
+        :param session: A Sql Alchemy database session.
+        :param pagination_helper: Helper to apply pagination and sorting.
+        :param query_options: Optional query options to apply.
+        :param filters: Filters to decide which entities should be retrieved.
+        :returns: [octavia.common.data_model]
+        """
+        query = session.query(self.model_class).filter_by(**filters)
+        if query_options:
+            query = query.options(query_options)
+
+        if hasattr(self.model_class, 'id'):
+            query = query.filter(self.model_class.id != consts.NIL_UUID)
+        else:
+            query = query.filter(self.model_class.name != consts.NIL_UUID)
+
+        if pagination_helper:
+            db_obj, links = pagination_helper.apply(
+                query, self.model_class)
+        else:
+            links = None
+            db_obj = query.all()
+
+        return db_obj, links
 
 
 class FlavorRepository(_GetALLExceptDELETEDIdMixin, BaseRepository):

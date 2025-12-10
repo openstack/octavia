@@ -255,7 +255,7 @@ class PaginationHelper:
 
             # Translate arguments from API standard to data model's field name
             filter_params = (
-                model.__v2_wsme__.translate_dict_keys_to_data_model(
+                model.__v2_wsme__.translate_dict_keys_to_db_obj(
                     filter_params)
             )
             if 'loadbalancer_id' in filter_params:
@@ -307,7 +307,7 @@ class PaginationHelper:
             for current_sort_key, current_sort_dir in self.sort_keys:
                 # Translate sort_key from API standard to data model's name
                 current_sort_key = (
-                    model.__v2_wsme__.translate_key_to_data_model(
+                    model.__v2_wsme__.translate_key_to_db_obj(
                         current_sort_key))
                 sort_dir_func = {
                     constants.ASC: sqlalchemy.asc,

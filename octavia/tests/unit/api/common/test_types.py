@@ -13,26 +13,36 @@
 from wsme import types as wtypes
 
 from octavia.api.common import types
-from octavia.common import data_models
+from octavia.db import base_models
 from octavia.tests.unit import base
 
 
 class TestTypeRename(types.BaseType):
-    _type_to_model_map = {'renamed': 'original',
-                          'child_one': 'child.one',
-                          'child_two': 'child.two',
-                          'admin_state_up': 'enabled'}
+    _type_to_db_map = {'renamed': 'original',
+                       'child_one': 'child.one',
+                       'child_two': 'child.two',
+                       'admin_state_up': 'enabled'}
     id = wtypes.wsattr(wtypes.StringType())
     renamed = wtypes.wsattr(wtypes.StringType())
     child_one = wtypes.wsattr(wtypes.StringType())
     child_two = wtypes.wsattr(wtypes.StringType())
     admin_state_up = wtypes.wsattr(bool)
 
+    @classmethod
+    def from_db_obj(cls, db_obj):
+        result = super().from_db_obj(db_obj)
+
+        if db_obj.child:
+            result.child_one = db_obj.child.one
+            result.child_two = db_obj.child.two
+
+        return result
+
 
 class TestTypeRenameSubset(types.BaseType):
-    _type_to_model_map = {'renamed': 'original',
-                          'child_one': 'child.one',
-                          'child_two': 'child.two'}
+    _type_to_db_map = {'renamed': 'original',
+                       'child_one': 'child.one',
+                       'child_two': 'child.two'}
     id = wtypes.wsattr(wtypes.StringType())
     renamed = wtypes.wsattr(wtypes.StringType())
 
@@ -42,14 +52,14 @@ class TestTypeTenantProject(types.BaseType):
     project_id = wtypes.wsattr(wtypes.StringType())
 
 
-class ChildTestModel(data_models.BaseDataModel):
+class ChildTestDbObj(base_models.OctaviaBase):
 
     def __init__(self, one=None, two=None):
         self.one = one
         self.two = two
 
 
-class TestModel(data_models.BaseDataModel):
+class TestDbObj(base_models.OctaviaBase):
 
     def __init__(self, id=None, original=None, child=None, enabled=None):
         self.id = id
@@ -57,32 +67,25 @@ class TestModel(data_models.BaseDataModel):
         self.child = child
         self.enabled = enabled
 
-    def to_dict(self):
-        result = super().to_dict()
-        result['child'] = self.child.to_dict()
-        return result
 
-
-class TestTypeDataModelRenames(base.TestCase):
+class TestTypeDbObjRenames(base.TestCase):
 
     def setUp(self):
         super().setUp()
-        child_model = ChildTestModel(one='baby_turtle_one',
-                                     two='baby_turtle_two')
-        self.model = TestModel(id='1234', original='turtles',
-                               child=child_model)
+        child = ChildTestDbObj(one='baby_turtle_one', two='baby_turtle_two')
+        self.db_obj = TestDbObj(id='1234', original='turtles', child=child)
 
-    def test_model_to_type(self):
-        new_type = TestTypeRename.from_data_model(self.model)
-        self.assertEqual(self.model.original, new_type.renamed)
-        self.assertEqual(self.model.child.one, new_type.child_one)
-        self.assertEqual(self.model.child.two, new_type.child_two)
-        self.assertEqual(self.model.id, new_type.id)
+    def test_db_obj_to_type(self):
+        new_type = TestTypeRename.from_db_obj(self.db_obj)
+        self.assertEqual(self.db_obj.original, new_type.renamed)
+        self.assertEqual(self.db_obj.child.one, new_type.child_one)
+        self.assertEqual(self.db_obj.child.two, new_type.child_two)
+        self.assertEqual(self.db_obj.id, new_type.id)
 
-    def test_model_to_type_with_subset_of_fields(self):
-        new_type = TestTypeRenameSubset.from_data_model(self.model)
-        self.assertEqual(self.model.original, new_type.renamed)
-        self.assertEqual(self.model.id, new_type.id)
+    def test_db_obj_to_type_with_subset_of_fields(self):
+        new_type = TestTypeRenameSubset.from_db_obj(self.db_obj)
+        self.assertEqual(self.db_obj.original, new_type.renamed)
+        self.assertEqual(self.db_obj.id, new_type.id)
         self.assertFalse(hasattr(new_type, 'child_one'))
         self.assertFalse(hasattr(new_type, 'child_two'))
 
@@ -98,15 +101,15 @@ class TestTypeDataModelRenames(base.TestCase):
         self.assertEqual(new_type.child_one, child_dict.get('one'))
         self.assertEqual(new_type.child_two, child_dict.get('two'))
 
-    def test_translate_dict_keys_to_data_model(self):
-        new_type = TestTypeRename.from_data_model(self.model)
+    def test_translate_dict_keys_to_db_obj(self):
+        new_type = TestTypeRename.from_db_obj(self.db_obj)
         new_type_vars = {
             k: getattr(new_type, k) for k in dir(new_type) if not (
                 callable(getattr(new_type, k)) or k.startswith('_'))
         }
         self.assertEqual(
-            set(vars(self.model)),
-            set(new_type.translate_dict_keys_to_data_model(new_type_vars)),
+            set(vars(self.db_obj)),
+            set(new_type.translate_dict_keys_to_db_obj(new_type_vars)),
         )
 
     def test_type_to_dict_with_tenant_id(self):
@@ -123,24 +126,16 @@ class TestTypeDataModelRenames(base.TestCase):
         self.assertFalse(rtype_dict['enabled'])
 
 
-class TestToDictModel(data_models.BaseDataModel):
-    def __init__(self, text, parent=None):
+class TestToDictDbObj(base_models.OctaviaBase):
+
+    def __init__(self, text, parent=None, children=None, child=None):
         self.parent = parent
-        self.child = None
-        self.children = None
+        self.child = child
+        self.children = children
         self.text = text
 
-    def set_children(self, children):
-        self.children = children
 
-    def set_child(self, child):
-        self.child = child
-
-    def set_parent(self, parent):
-        self.parent = parent
-
-
-class TestDataModelToDict(base.TestCase):
+class TestDbObjToDict(base.TestCase):
     RECURSED_RESULT = {'parent': None,
                        'text': 'parent_text',
                        'child': {'parent': None,
@@ -164,17 +159,23 @@ class TestDataModelToDict(base.TestCase):
 
     def setUp(self):
         super().setUp()
-        self.model = TestToDictModel('parent_text')
-        self.model.set_child(TestToDictModel('child_text', self.model))
-        self.model.set_children([TestToDictModel('child1_text', self.model),
-                                 TestToDictModel('child2_text', self.model)])
+        self.db_obj = (
+            TestToDictDbObj(
+                'parent_text',
+                children=[
+                    TestToDictDbObj('child1_text'),
+                    TestToDictDbObj('child2_text')
+                ],
+                child=TestToDictDbObj('child_text')
+            )
+        )
 
     def test_to_dict_no_recurse(self):
-        self.assertEqual(self.model.to_dict(),
+        self.assertEqual(self.db_obj.to_dict(),
                          self.NO_RECURSE_RESULT)
 
     def test_to_dict_recurse(self):
-        self.assertEqual(self.model.to_dict(recurse=True),
+        self.assertEqual(self.db_obj.to_dict(recurse=True),
                          self.RECURSED_RESULT)
 
     def test_type_to_dict_with_project_id(self):

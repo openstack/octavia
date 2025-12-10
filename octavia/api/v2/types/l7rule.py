@@ -19,7 +19,7 @@ from octavia.common import constants
 
 
 class BaseL7Type(types.BaseType):
-    _type_to_model_map = {'admin_state_up': 'enabled'}
+    _type_to_db_map = {'admin_state_up': 'enabled'}
     _child_map = {}
 
 
@@ -38,12 +38,6 @@ class L7RuleResponse(BaseL7Type):
     project_id = wtypes.wsattr(wtypes.StringType())
     admin_state_up = wtypes.wsattr(bool)
     tags = wtypes.wsattr(wtypes.ArrayType(wtypes.StringType()))
-
-    @classmethod
-    def from_data_model(cls, data_model, children=False):
-        rule = super().from_data_model(
-            data_model, children=children)
-        return rule
 
 
 class L7RuleFullResponse(L7RuleResponse):
