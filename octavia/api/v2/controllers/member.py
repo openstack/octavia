@@ -379,7 +379,7 @@ class MembersController(MemberController):
 
     @wsme_pecan.wsexpose(None, wtypes.text,
                          body=member_types.MembersRootPUT, status_code=202)
-    def put(self, additive_only=False, members_=None):
+    def put(self, additive_only=False, members_=None, dispatch_driver=True):
         """Updates all members."""
         members = members_.members
         additive_only = strutils.bool_from_string(additive_only)
@@ -518,8 +518,84 @@ class MembersController(MemberController):
                         provisioning_status=constants.PENDING_DELETE)
 
             # Dispatch to the driver
-            LOG.info("Sending Pool %s batch member update to provider %s",
-                     db_pool.id, driver.name)
-            driver_utils.call_provider(
-                driver.name, driver.member_batch_update, db_pool.id,
-                provider_members)
+            if dispatch_driver:
+                LOG.info("Sending Pool %s batch member update to provider %s",
+                         db_pool.id, driver.name)
+                driver_utils.call_provider(
+                    driver.name, driver.member_batch_update, db_pool.id,
+                    provider_members)
+
+
+class AllMembersController(MembersController):
+
+    def __init__(self):
+        super().__init__(None)
+
+    @wsme_pecan.wsexpose(None, wtypes.text,
+                         body=member_types.CrossPoolMembersRootPUT, status_code=202)
+    def put(self, additive_only=False, members_=None):
+        """Updates all members across several pools."""
+        members = members_.members
+        context = pecan_request.context.get('octavia_context')
+        with context.session.begin():
+
+            # get the pools from the DB
+            pool_ids = set(m.pool_id for m in members)
+            # we cannot use self.repositories.pool.get_all, since it doesn't
+            # support filtering by multiple values (id='...' or id='...').
+            pool_model = self.repositories.pool.model_class
+            lb_ids = context.session.query(pool_model.load_balancer_id).filter(
+                pool_model.id.in_(pool_ids),
+                pool_model.provisioning_status != constants.DELETED
+                ).distinct().all()
+
+            # check that at an LB has been found
+            if len(lb_ids) < 1:
+                exc = exceptions.NotFound()
+                exc.msg = "No load balancer found for the provided pools."
+                raise exc
+
+            # check that the pools belong to one single LB and get its ID
+            if len(lb_ids) > 1:
+                raise exceptions.InvalidFilterArgument()
+            # ID is the first element of the first tuple
+            lb_id = lb_ids[0][0]
+
+            # baseline LB data for provider update call
+            db_lb = self._get_db_lb(context.session, lb_id, show_deleted=False)
+            old_provider_lb = (
+                driver_utils.db_loadbalancer_to_provider_loadbalancer(
+                    db_lb, for_delete=True))
+
+        # call MembersController.put for each pool.
+        for pool_id in pool_ids:
+            members_controller = MembersController(pool_id)
+            body = member_types.MembersRootPUT()
+
+            # Each element of the members list is a CrossPoolMemberPUT
+            # instance, which inherits from MemberPOST. The MembersController
+            # expects MemberPOST, so this works fine.
+            body.members = [m for m in members if m.pool_id == pool_id]
+
+            # Use __wrapped__ to bypass the wsexpose decorator and call the
+            # method directly. This also means that we have to pass `self`
+            # explicitly.
+            members_controller.put.__wrapped__(
+                members_controller, additive_only=additive_only,
+                members_=body, dispatch_driver=False)
+
+        # updated LB data for provider update call
+        with context.session.begin():
+            db_lb = self._get_db_lb(context.session, lb_id, show_deleted=False)
+            new_provider_lb = (
+                driver_utils.db_loadbalancer_to_provider_loadbalancer(
+                    db_lb, for_delete=True))
+
+        # Dispatch to the provider
+        _, provider = self._get_lb_project_id_provider(context.session, lb_id)
+        driver = driver_factory.get_driver(provider)
+        LOG.info("Sending cross-pool batch member load balancer update to provider %s",
+                 driver.name)
+        driver_utils.call_provider(
+            driver.name, driver.loadbalancer_update,
+            old_provider_lb, new_provider_lb)

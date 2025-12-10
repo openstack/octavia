@@ -114,6 +114,17 @@ class MembersRootPUT(types.BaseType):
     members = wtypes.wsattr([MemberPOST])
 
 
+# This class needs to inherit from MemberPOST instead of MemberPUT (just like
+# MembersRootPUT is using MemberPOST), in order to allow address/port in the
+# payload for matching the member
+class CrossPoolMemberPUT(MemberPOST):
+    pool_id = wtypes.wsattr(wtypes.UuidType(), mandatory=True)
+
+
+class CrossPoolMembersRootPUT(types.BaseType):
+    members = wtypes.wsattr([CrossPoolMemberPUT])
+
+
 class MemberSingleCreate(BaseMemberType):
     """Defines mandatory and optional attributes of a POST request."""
     name = wtypes.wsattr(wtypes.StringType(max_length=255))

@@ -549,12 +549,19 @@ class PoolsController(base.BaseController):
                                        provider_pool)
 
     @pecan_expose()
-    def _lookup(self, pool_id, *remainder):
+    def _lookup(self, path_segment, *remainder):
         """Overridden pecan _lookup method for custom routing.
 
         Verifies that the pool passed in the url exists, and if so decides
         which controller, if any, should control be passed.
         """
+
+        # cross-pool batch member update
+        if path_segment == 'members':
+            return member.AllMembersController(), remainder
+
+        # normal pool member update
+        pool_id = path_segment
         context = pecan_request.context.get('octavia_context')
         if pool_id and remainder and remainder[0] == 'members':
             remainder = remainder[1:]
