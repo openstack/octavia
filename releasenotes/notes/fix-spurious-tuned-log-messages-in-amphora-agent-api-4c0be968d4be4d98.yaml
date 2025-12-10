@@ -1,0 +1,7 @@
+---
+
+fixes:
+  - |
+    Fixed an issue in the amphora-agent API where it would generate
+    spurious log messages when tuned isn't installed and the profile
+    file doesn't exist

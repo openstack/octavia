@@ -201,6 +201,10 @@ class AmphoraInfo:
         try:
             with open("/etc/tuned/active_profile", encoding="utf-8") as f:
                 return f.read(1024).strip()
+        except FileNotFoundError:
+            # If tuned isn't enable then the file won't exist
+            # Just continue in this case
+            pass
         except OSError as ex:
             LOG.debug("Reading active TuneD profiles failed: %r", ex)
         return ""

@@ -192,6 +192,93 @@ class TestAmphoraInfo(base.TestCase):
         api_server.VERSION = original_version
 
     @mock.patch('octavia.amphorae.backends.agent.api_server.util.'
+                'get_listeners', return_value=[FAKE_LISTENER_ID_1,
+                                               FAKE_LISTENER_ID_2])
+    @mock.patch('octavia.amphorae.backends.agent.api_server.util.'
+                'get_loadbalancers', return_value=[LB_ID_1, LB_ID_2])
+    @mock.patch('octavia.amphorae.backends.agent.api_server.'
+                'amphora_info.AmphoraInfo._get_meminfo')
+    @mock.patch('octavia.amphorae.backends.agent.api_server.'
+                'amphora_info.AmphoraInfo._cpu')
+    @mock.patch('os.statvfs')
+    @mock.patch('octavia.amphorae.backends.agent.api_server.'
+                'amphora_info.AmphoraInfo._get_networks')
+    @mock.patch('octavia.amphorae.backends.agent.api_server.'
+                'amphora_info.AmphoraInfo._load')
+    @mock.patch('octavia.amphorae.backends.agent.api_server.'
+                'amphora_info.AmphoraInfo._get_version_of_installed_package')
+    @mock.patch('octavia.amphorae.backends.agent.api_server.'
+                'amphora_info.AmphoraInfo._count_haproxy_processes')
+    @mock.patch('socket.gethostname', return_value='FAKE_HOST')
+    def test_compile_amphora_details_file_not_found(self, mhostname,
+                                                    m_count, m_pkg_version,
+                                                    m_load, m_get_nets, m_os,
+                                                    m_cpu, mget_mem,
+                                                    mget_loadbalancers,
+                                                    mget_listeners):
+        mget_mem.return_value = {'SwapCached': 0, 'Buffers': 344792,
+                                 'MemTotal': 21692784, 'Cached': 4271856,
+                                 'Slab': 534384, 'MemFree': 12685624,
+                                 'Shmem': 9520}
+        m_cpu.return_value = {'user': '252551', 'softirq': '8336',
+                              'system': '52554', 'total': 7503411}
+        m_pkg_version.side_effect = self._return_version
+        mdisk_info = mock.MagicMock()
+        m_os.return_value = mdisk_info
+        mdisk_info.f_blocks = 34676992
+        mdisk_info.f_bfree = 28398016
+        mdisk_info.f_frsize = 4096
+        mdisk_info.f_bavail = 26630646
+        m_get_nets.return_value = {'eth1': {'network_rx': 996,
+                                            'network_tx': 418},
+                                   'eth2': {'network_rx': 848,
+                                            'network_tx': 578}}
+        m_load.return_value = ['0.09', '0.11', '0.10']
+        m_count.return_value = 5
+        original_version = api_server.VERSION
+        api_server.VERSION = self.API_VERSION
+        expected_dict = {'active': True,
+                         'active_tuned_profiles': '',
+                         'api_version': self.API_VERSION,
+                         'cpu': {'soft_irq': '8336',
+                                 'system': '52554',
+                                 'total': 7503411,
+                                 'user': '252551'},
+                         'cpu_count': os.cpu_count(),
+                         'disk': {'available': 109079126016,
+                                  'used': 25718685696},
+                         'haproxy_count': 5,
+                         'haproxy_version': self.HAPROXY_VERSION,
+                         'hostname': 'FAKE_HOST',
+                         'listeners': sorted([self.FAKE_LISTENER_ID_1,
+                                              self.FAKE_LISTENER_ID_2]),
+                         'load': ['0.09', '0.11', '0.10'],
+                         'memory': {'buffers': 344792,
+                                    'cached': 4271856,
+                                    'free': 12685624,
+                                    'shared': 9520,
+                                    'slab': 534384,
+                                    'swap_used': 0,
+                                    'total': 21692784},
+                         'networks': {'eth1': {'network_rx': 996,
+                                               'network_tx': 418},
+                                      'eth2': {'network_rx': 848,
+                                               'network_tx': 578}},
+                         'packages': {},
+                         'topology': 'SINGLE',
+                         'topology_status': 'OK'}
+        # Do not use OpenFixture for /etc/tuned/active_profile
+        # This will cause FileNotFoundError to be raised and caught
+        with mock.patch('builtins.open',
+                        side_effect=FileNotFoundError) as mock_open:
+            actual = self.amp_info.compile_amphora_details()
+            # Verify that open was called (FileNotFoundError was raised)
+            mock_open.assert_called()
+        self.assertEqual(expected_dict, actual.json)
+        m_count.assert_called_once_with(sorted(mget_loadbalancers()))
+        api_server.VERSION = original_version
+
+    @mock.patch('octavia.amphorae.backends.agent.api_server.util.'
                 'is_lvs_listener_running')
     @mock.patch('octavia.amphorae.backends.agent.api_server.util.'
                 'get_lvs_listeners',
