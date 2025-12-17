@@ -130,6 +130,17 @@
       devstack_localrc:
         OCTAVIA_ENABLE_AMPHORAV2_JOBBOARD: True
 
+- job:
+    name: octavia-v2-dsvm-noop-api-unmaintained-2023-1
+    parent: octavia-v2-dsvm-noop-api
+    nodeset: octavia-single-node-ubuntu-jammy
+    vars:
+      devstack_local_conf:
+        test-config:
+          "$TEMPEST_CONFIG":
+            load_balancer:
+              RBAC_test_type: advanced
+
 - project-template:
     name: octavia-tox-tips
     check:

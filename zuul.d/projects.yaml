@@ -43,7 +43,7 @@
               - ^octavia/tests/unit/.*$
               - ^releasenotes/.*$
             voting: false
-        - octavia-v2-dsvm-noop-api:
+        - octavia-v2-dsvm-noop-api-unmaintained-2023-1:
             irrelevant-files: &irrelevant-files
               - ^.*\.rst$
               - ^api-ref/.*$
@@ -100,7 +100,7 @@
               - ^etc/.*$
               - ^octavia/tests/unit/.*$
               - ^releasenotes/.*$
-        - octavia-v2-dsvm-noop-api
+        - octavia-v2-dsvm-noop-api-unmaintained-2023-1
         - octavia-v2-dsvm-scenario-traffic-ops
         - octavia-v2-dsvm-scenario-non-traffic-ops
         - octavia-v2-dsvm-tls-barbican
