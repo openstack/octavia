@@ -145,25 +145,6 @@
       - openstack/octavia-lib
       - openstack/octavia
 
-# Temporary job until SQLAlchemy 2.0 is no longer blocked by upper-requirements
-# NOTE(stephenfin): We only need functional tests since DB interactions are
-# stubbed out in unit tests
-- job:
-    name: octavia-tox-functional-py39-sqlalchemy-tips
-    parent: openstack-tox-functional-py39
-    description: |
-      Run tox python 3.9 functional against master of sqlalchemy and related projects
-    # The job only tests the latest and shouldn't be run on the stable branches
-    branches:
-       regex: ^stable
-       negate: true
-    required-projects:
-      - name: openstack/oslo.db
-      - name: github.com/sqlalchemy/sqlalchemy
-        override-checkout: main
-      - name: github.com/sqlalchemy/alembic
-        override-checkout: main
-
 - job:
     name: octavia-amphora-image-build
     parent: base
@@ -264,9 +245,9 @@
         OCTAVIA_AMP_ENABLE_FIPS: True
 
 - job:
-    name: octavia-grenade-stable-2024-1
+    name: octavia-grenade-unmaintained-2024-1
     parent: octavia-grenade
-    vars:
+    vars: &advanced_rbac_vars
       devstack_local_conf:
         test-config:
           "$TEMPEST_CONFIG":
@@ -274,75 +255,74 @@
               RBAC_test_type: advanced
 
 - job:
-    name: octavia-v2-dsvm-tls-barbican-fips-stable-2024-1
+    name: octavia-v2-dsvm-tls-barbican-fips-unmaintained-2024-1
     parent: octavia-v2-dsvm-tls-barbican-fips
-    vars:
-      devstack_local_conf:
-        test-config:
-          "$TEMPEST_CONFIG":
-            load_balancer:
-              RBAC_test_type: advanced
+    vars: *advanced_rbac_vars
 
 - job:
-    name: octavia-v2-dsvm-cinder-amphora-stable-2024-1
+    name: octavia-v2-dsvm-cinder-amphora-unmaintained-2024-1
     parent: octavia-v2-dsvm-cinder-amphora
-    vars:
-      devstack_local_conf:
-        test-config:
-          "$TEMPEST_CONFIG":
-            load_balancer:
-              RBAC_test_type: advanced
+    vars: *advanced_rbac_vars
 
 - job:
-    name: octavia-v2-dsvm-scenario-two-node-stable-2024-1
+    name: octavia-v2-dsvm-scenario-two-node-unmaintained-2024-1
     parent: octavia-v2-dsvm-scenario-two-node
     nodeset: octavia-single-node-ubuntu-jammy
-    override-checkout: stable/2024.1
-    vars:
-      devstack_local_conf:
-        test-config:
-          "$TEMPEST_CONFIG":
-            load_balancer:
-              RBAC_test_type: advanced
+    vars: *advanced_rbac_vars
 
 - job:
-    name: octavia-v2-dsvm-scenario-ipv6-only-stable-2024-1
+    name: octavia-v2-dsvm-scenario-ipv6-only-unmaintained-2024-1
     parent: octavia-v2-dsvm-scenario-ipv6-only
     nodeset: octavia-single-node-ubuntu-jammy
-    override-checkout: stable/2024.1
-    vars:
-      devstack_local_conf:
-        test-config:
-          "$TEMPEST_CONFIG":
-            load_balancer:
-              RBAC_test_type: advanced
+    vars: *advanced_rbac_vars
 
 - job:
-    name: octavia-v2-dsvm-scenario-centos-9-stream-stable-2024-1
+    name: octavia-v2-dsvm-scenario-centos-9-stream-unmaintained-2024-1
     parent: octavia-v2-dsvm-scenario-centos-9-stream
-    vars:
-      devstack_local_conf:
-        test-config:
-          "$TEMPEST_CONFIG":
-            load_balancer:
-              RBAC_test_type: advanced
+    vars: *advanced_rbac_vars
 
 - job:
-    name: octavia-v2-dsvm-scenario-traffic-ops-jobboard-stable-2024-1
+    name: octavia-v2-dsvm-scenario-traffic-ops-jobboard-unmaintained-2024-1
     parent: octavia-v2-dsvm-scenario-traffic-ops-jobboard
-    vars:
-      devstack_local_conf:
-        test-config:
-          "$TEMPEST_CONFIG":
-            load_balancer:
-              RBAC_test_type: advanced
+    vars: *advanced_rbac_vars
 
 - job:
-    name: octavia-v2-dsvm-scenario-non-traffic-ops-jobboard-stable-2024-1
+    name: octavia-v2-dsvm-scenario-non-traffic-ops-jobboard-unmaintained-2024-1
     parent: octavia-v2-dsvm-scenario-non-traffic-ops-jobboard
+    vars: *advanced_rbac_vars
+
+- job:
+    name: octavia-v2-dsvm-noop-api-unmaintained-2024-1
+    parent: octavia-v2-dsvm-noop-api
+    nodeset: octavia-single-node-ubuntu-jammy
+    vars: *advanced_rbac_vars
+
+- job:
+    name: octavia-v2-dsvm-scenario-unmaintained-2024-1
+    parent: octavia-v2-dsvm-scenario
+    nodeset: octavia-single-node-ubuntu-jammy
+    vars: *advanced_rbac_vars
+
+- job:
+    name: octavia-v2-dsvm-scenario-traffic-ops-unmaintained-2024-1
+    parent: octavia-v2-dsvm-scenario-unmaintained-2024-1
     vars:
-      devstack_local_conf:
-        test-config:
-          "$TEMPEST_CONFIG":
-            load_balancer:
-              RBAC_test_type: advanced
+      tempest_test_regex: ^octavia_tempest_plugin.tests.scenario.v2.*traffic_ops
+
+- job:
+    name: octavia-v2-dsvm-scenario-non-traffic-ops-unmaintained-2024-1
+    parent: octavia-v2-dsvm-scenario-unmaintained-2024-1
+    vars:
+      tempest_test_regex: ^octavia_tempest_plugin.tests.scenario.v2.(?!.*traffic_ops)
+
+- job:
+    name: octavia-v2-dsvm-tls-barbican-unmaintained-2024-1
+    parent: octavia-v2-dsvm-tls-barbican
+    nodeset: octavia-single-node-ubuntu-jammy
+    vars: *advanced_rbac_vars
+
+- job:
+    name: octavia-v2-act-stdby-dsvm-scenario-unmaintained-2024-1
+    parent: octavia-v2-act-stdby-dsvm-scenario
+    nodeset: octavia-single-node-ubuntu-jammy
+    vars: *advanced_rbac_vars
