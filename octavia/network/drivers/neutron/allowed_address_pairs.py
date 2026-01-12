@@ -160,6 +160,11 @@ class AllowedAddressPairsDriver(neutron_base.BaseNeutronDriver):
         rules = tuple(self.network_proxy.security_group_rules(
             security_group_id=sec_grp_id))
 
+        if CONF.networking.use_remote_group_for_lb_peer_ports:
+            peer_remote_group = sec_grp_id
+        else:
+            peer_remote_group = None
+
         updated_ports = []
         listener_peer_ports = []
         for listener in load_balancer.listeners:
@@ -176,10 +181,13 @@ class AllowedAddressPairsDriver(neutron_base.BaseNeutronDriver):
 
                 if listener.allowed_cidrs:
                     for ac in listener.allowed_cidrs:
-                        port = (listener.protocol_port, protocol, ac.cidr)
+                        port = (listener.protocol_port,
+                                protocol,
+                                ac.cidr,
+                                None)
                         updated_ports.append(port)
                 else:
-                    port = (listener.protocol_port, protocol, None)
+                    port = (listener.protocol_port, protocol, None, None)
                     updated_ports.append(port)
 
             listener_peer_ports.append(listener.peer_port)
@@ -188,11 +196,22 @@ class AllowedAddressPairsDriver(neutron_base.BaseNeutronDriver):
         # haproxy session synchronization, so here the security group rule
         # should be just related with tcp protocol only. To avoid adding
         # duplicate rules, peer_port info should be added if updated_ports
-        # does not have the peer_port entry with allowed_cidr 0.0.0.0/0
+        # does not have the peer_port entry with allowed_cidr 0.0.0.0/0.
+        # We also need to add the security group ID as a remote group to
+        # ensure peer traffic is only accepted from within the Listener
+        # security group
         tcp_lower = constants.PROTOCOL_TCP.lower()
         for peer_port in listener_peer_ports:
-            if (peer_port, tcp_lower, "0.0.0.0/0") not in updated_ports:
-                updated_ports.append((peer_port, tcp_lower, None))
+            # Check if peer_port already has a rule with 0.0.0.0/0 CIDR
+            # (regardless of remote_group_id)
+            has_open_rule = any(
+                port == peer_port and protocol == tcp_lower and
+                cidr == "0.0.0.0/0"
+                for port, protocol, cidr, _ in updated_ports
+            )
+            if not has_open_rule:
+                updated_ports.append((peer_port, tcp_lower, None,
+                                      peer_remote_group))
 
         # Just going to use port_range_max for now because we can assume that
         # port_range_max and min will be the same since this driver is
@@ -209,7 +228,8 @@ class AllowedAddressPairsDriver(neutron_base.BaseNeutronDriver):
                 continue
             old_ports.append((rule.get('port_range_max'),
                               rule['protocol'].lower(),
-                              rule.get('remote_ip_prefix')))
+                              rule.get('remote_ip_prefix'),
+                              rule.get('remote_group_id')))
 
         add_ports = set(updated_ports) - set(old_ports)
         del_ports = set(old_ports) - set(updated_ports)
@@ -219,7 +239,8 @@ class AllowedAddressPairsDriver(neutron_base.BaseNeutronDriver):
                     [constants.PROTOCOL_TCP, constants.PROTOCOL_UDP,
                      lib_consts.PROTOCOL_SCTP] and
                     (rule.get('port_range_max'), rule.get('protocol'),
-                     rule.get('remote_ip_prefix')) in del_ports):
+                     rule.get('remote_ip_prefix'),
+                     rule.get('remote_group_id')) in del_ports):
                 rule_id = rule.get(constants.ID)
                 try:
                     self.network_proxy.delete_security_group_rule(rule_id)
@@ -243,30 +264,72 @@ class AllowedAddressPairsDriver(neutron_base.BaseNeutronDriver):
                         port_max=port_protocol[0],
                         ethertype=ethertype,
                         cidr=cidr,
+                        remote_group_id=port_protocol[3]
                     )
 
         # Currently we are using the VIP network for VRRP
         # so we need to open up the protocols for it
         if load_balancer.topology == constants.TOPOLOGY_ACTIVE_STANDBY:
-            try:
-                self._create_security_group_rule(
-                    sec_grp_id,
-                    constants.VRRP_PROTOCOL_NUM,
-                    direction='ingress',
-                    ethertype=primary_ethertype)
-            except os_exceptions.ConflictException:
-                # It's ok if this rule already exists
-                pass
-            except Exception as e:
-                raise base.PlugVIPException(str(e))
+            self._add_lb_active_standby_security_group_rules(
+                rules, sec_grp_id, primary_ethertype,
+                protocol=constants.VRRP_PROTOCOL_NUM,
+                peer_remote_group=peer_remote_group)
 
+            self._add_lb_active_standby_security_group_rules(
+                rules, sec_grp_id, primary_ethertype,
+                protocol=constants.AUTH_HEADER_PROTOCOL_NUMBER,
+                peer_remote_group=peer_remote_group)
+
+    def _add_lb_active_standby_security_group_rules(
+            self, rules, sec_grp_id, primary_ethertype,
+            protocol=constants.VRRP_PROTOCOL_NUM,
+            peer_remote_group=None):
+        # Helper method to setup security group rules for Active/Standby
+
+        # Check the protocol is allowed for Active/Standby LB
+        if protocol not in [constants.VRRP_PROTOCOL_NUM,
+                            constants.AUTH_HEADER_PROTOCOL_NUMBER]:
+            raise os_exceptions.BadRequestException(
+                f"Invalid protocol number {protocol} for "
+                f"Active/Standby LB")
+
+        # Check if rule without remote group ID needs deletion
+        LOG.debug("Scanning for old protocol %s security group rules to "
+                  "delete", protocol)
+        existing_rule = None
+        for rule in rules:
+            if (rule.get('protocol', '255') == str(protocol) and
+                    rule.get('direction', '') == 'ingress' and
+                    rule.get('remote_group_id') != peer_remote_group):
+                existing_rule = rule.get('id')
+                LOG.warning("Found security rule to delete: %s",
+                            existing_rule)
+                # No need to keep scanning after the first hit
+                break
+
+        # Now set up the VRRP security rule
+        try:
+            self._create_security_group_rule(
+                sec_grp_id,
+                protocol,
+                direction='ingress',
+                ethertype=primary_ethertype,
+                remote_group_id=peer_remote_group)
+        except os_exceptions.ConflictException:
+            # It's ok if this rule already exists
+            pass
+        except Exception as e:
+            raise base.PlugVIPException(str(e))
+
+        # Delete old rule after new one created to prevent traffic break
+        if existing_rule:
             try:
-                self._create_security_group_rule(
-                    sec_grp_id, constants.AUTH_HEADER_PROTOCOL_NUMBER,
-                    direction='ingress', ethertype=primary_ethertype)
-            except os_exceptions.ConflictException:
-                # It's ok if this rule already exists
-                pass
+                self.network_proxy.delete_security_group_rule(
+                    existing_rule, ignore_missing=False)
+                LOG.info("Deleted old rule: %s", existing_rule)
+            except os_exceptions.NotFoundException:
+                LOG.warning("Unable to delete security group rule %s. "
+                            "Please delete it manually.", existing_rule)
             except Exception as e:
                 raise base.PlugVIPException(str(e))
 

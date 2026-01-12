@@ -1,0 +1,21 @@
+---
+
+fixes:
+  - |
+    Fixed Bug 2133752 <https://bugs.launchpad.net/octavia/+bug/2133752>
+    Added remote group to the peer ports with the same security group ID
+    as the LB security group. This should ensure traffic is limited to
+    within the LB. If desired the operator can disable the remote groups
+    by setting ``[networking] use_remote_group_for_lb_peer_ports`` to
+    ``False`` (default: ``True``). Existing Loadbalancers security rules
+    will be updated upon the next Failover/Create/Update action for the
+    LB, or Create/Update/Delete for attached listeners to the LB
+
+upgrade:
+  - |
+    Added ``[networking] use_remote_group_for_lb_peer_ports`` config option
+    (default ``True``). When set to ``False``, ``remote_group_id`` is omitted
+    from peer port and VRRP/authentication header security group rules,
+    restoring the pre-fix open behaviour. Set this to ``False`` only if your
+    Neutron deployment does not support remote security groups. Existing
+    scoped rules are not modified when this option is disabled.

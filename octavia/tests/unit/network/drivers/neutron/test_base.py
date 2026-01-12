@@ -137,7 +137,8 @@ class TestBaseNeutronNetworkDriver(base.TestCase):
             port_min=3,
             port_max=4,
             ethertype=5,
-            cidr="10.0.0.0/24")
+            cidr="10.0.0.0/24",
+            remote_group_id=t_constants.MOCK_SECURITY_GROUP_ID)
         expected_sec_grp_rule_dict = {
             'security_group_id': t_constants.MOCK_SECURITY_GROUP_ID,
             'direction': 1,
@@ -145,7 +146,8 @@ class TestBaseNeutronNetworkDriver(base.TestCase):
             'port_range_min': 3,
             'port_range_max': 4,
             'ethertype': 5,
-            'remote_ip_prefix': '10.0.0.0/24'}
+            'remote_ip_prefix': '10.0.0.0/24',
+            'remote_group_id': t_constants.MOCK_SECURITY_GROUP_ID}
         self.driver.network_proxy.create_security_group_rule.assert_has_calls(
             [mock.call(**expected_sec_grp_rule_dict)])
 

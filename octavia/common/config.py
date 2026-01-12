@@ -274,6 +274,14 @@ networking_opts = [
                        "this True may allow users to access resources on "
                        "subnets they do not normally have access to via "
                        "neutron RBAC policies.")),
+    cfg.BoolOpt('use_remote_group_for_lb_peer_ports', default=True,
+                help=_('When True, security group rules for HAProxy and '
+                       'VRRP are set to the load balancer\'s own '
+                       'security group via remote_group_id. When False, '
+                       'these rules are created without a remote_group_id '
+                       '(open to all). Disable this only if your Neutron '
+                       'deployment does not support remote security '
+                       'groups.')),
 ]
 
 health_manager_opts = [
