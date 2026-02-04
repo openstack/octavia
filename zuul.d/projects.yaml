@@ -34,15 +34,6 @@
               - ^etc/.*$
               - ^octavia/tests/unit/.*$
               - ^releasenotes/.*$
-        - openstack-tox-functional-py310:
-            irrelevant-files:
-              - ^.*\.rst$
-              - ^api-ref/.*$
-              - ^doc/.*$
-              - ^etc/.*$
-              - ^octavia/tests/unit/.*$
-              - ^releasenotes/.*$
-            voting: false
         - octavia-v2-dsvm-noop-api-unmaintained-2024-1:
             irrelevant-files: &irrelevant-files
               - ^.*\.rst$
@@ -71,27 +62,6 @@
               - ^tools/.*$
               - ^(test-|)requirements.txt$
               - ^tox.ini$
-        - octavia-grenade-skip-level:
-            irrelevant-files: *grenade-irrelevant-files
-            voting: false
-        - octavia-v2-dsvm-tls-barbican-fips-unmaintained-2024-1:
-            irrelevant-files: *irrelevant-files
-            voting: false
-        - octavia-v2-act-stdby-dsvm-scenario-unmaintained-2024-1:
-            irrelevant-files: *irrelevant-files
-            voting: false
-        - octavia-v2-dsvm-cinder-amphora-unmaintained-2024-1:
-            irrelevant-files: *irrelevant-files
-            voting: false
-        - octavia-v2-dsvm-scenario-two-node-unmaintained-2024-1:
-            irrelevant-files: *irrelevant-files
-            voting: false
-        - octavia-v2-dsvm-scenario-ipv6-only-unmaintained-2024-1:
-            irrelevant-files: *irrelevant-files
-            voting: false
-        - octavia-v2-dsvm-scenario-centos-9-stream-unmaintained-2024-1:
-            irrelevant-files: *irrelevant-files
-            voting: false
     queue: octavia
     gate:
       fail-fast: true
@@ -117,6 +87,3 @@
         - octavia-v2-dsvm-scenario-non-traffic-ops-unmaintained-2024-1
         - octavia-v2-dsvm-tls-barbican-unmaintained-2024-1
         - octavia-grenade-unmaintained-2024-1
-    experimental:
-      jobs:
-        - octavia-v2-dsvm-scenario-nftables

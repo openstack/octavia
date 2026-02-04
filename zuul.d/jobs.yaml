@@ -1,34 +1,4 @@
 - job:
-    name: publish-openstack-octavia-amphora-image
-    parent: publish-openstack-artifacts
-    run: playbooks/image-build/run.yaml
-    post-run: playbooks/image-build/post.yaml
-    required-projects:
-        - openstack/diskimage-builder
-        - openstack/octavia
-        - openstack/octavia-lib
-
-- job:
-    name: publish-openstack-octavia-amphora-image-jammy
-    parent: publish-openstack-octavia-amphora-image
-    nodeset: ubuntu-jammy
-    description: |
-      Publish Ubuntu Jammy (22.04) based amphora image to tarballs.o.o.
-    vars:
-        amphora_os: ubuntu
-        amphora_os_release: jammy
-
-- job:
-    name: publish-openstack-octavia-amphora-image-centos-9-stream
-    nodeset: centos-9-stream
-    parent: publish-openstack-octavia-amphora-image
-    description: |
-      Publish CentOS 9 Stream based amphora image to tarballs.o.o.
-    vars:
-        amphora_os: centos
-        amphora_os_release: 9-stream
-
-- job:
     name: octavia-grenade
     parent: grenade
     nodeset: octavia-single-node-ubuntu-jammy
@@ -76,23 +46,6 @@
         '/var/log/dib-build/': 'logs'
         '/var/log/octavia-tenant-traffic.log': 'logs'
         '/var/log/octavia-amphora.log': 'logs'
-
-- job:
-    name: octavia-grenade-skip-level
-    description: |
-      Grenade job that skips a release, validating that deployers can skip
-      specific releases as prescribed by our process.
-    parent: grenade-skip-level
-    nodeset: octavia-single-node-ubuntu-jammy
-    required-projects: *o-grenade-required-projects
-    vars: *o-grenade-vars
-
-- job:
-    name: octavia-v2-dsvm-scenario-jobboard
-    parent: octavia-v2-dsvm-scenario
-    vars:
-      devstack_localrc:
-        OCTAVIA_ENABLE_AMPHORAV2_JOBBOARD: True
 
 - job:
     name: octavia-v2-dsvm-scenario-traffic-ops-jobboard
@@ -146,60 +99,6 @@
       - openstack/octavia
 
 - job:
-    name: octavia-amphora-image-build
-    parent: base
-    description: |
-      Builds the amphora image using the released diskimage-builder version,
-      not Git master. This job does not publish the image.
-    run: playbooks/image-build/run.yaml
-    required-projects:
-        - openstack/diskimage-builder
-        - openstack/octavia
-        - openstack/octavia-lib
-    vars:
-        amphora_os: ubuntu
-        amphora_os_release: jammy
-
-- job:
-    name: octavia-amphora-image-build-live-jammy
-    parent: octavia-amphora-image-build
-    description: |
-      Builds an Ubuntu Jammy amphora image using diskimage-builder from Git
-      master. This job does not publish the image.
-    vars:
-        amphora_os: ubuntu
-        amphora_os_release: jammy
-
-- job:
-    name: octavia-amphora-image-build-live-centos-9-stream
-    parent: octavia-amphora-image-build
-    nodeset: centos-9-stream
-    description: |
-      Builds a CentOS 9 Stream amphora image using diskimage-builder from Git
-      master. This job does not publish the image.
-    vars:
-        amphora_os: centos
-        amphora_os_release: 9-stream
-
-- job:
-    name: octavia-amphora-image-build-live-rocky-9
-    parent: octavia-amphora-image-build
-    nodeset: centos-9-stream
-    description: |
-      Builds a Rocky Linux 9 amphora image using diskimage-builder from Git
-      master. This job does not publish the image.
-    vars:
-        amphora_os: rocky
-        amphora_os_release: 9
-
-- job:
-    name: octavia-v2-dsvm-scenario-nftables
-    parent: octavia-v2-dsvm-scenario
-    vars:
-      devstack_localrc:
-        OCTAVIA_AMP_USE_NFTABLES: True
-
-- job:
     name: openstack-tox-pip-check-reqs
     parent: openstack-tox
     description: |
@@ -214,37 +113,6 @@
       tox_envlist: pip-missing-reqs,pip-extra-reqs
 
 - job:
-    name: octavia-v2-dsvm-scenario-fips
-    parent: octavia-v2-dsvm-scenario
-    nodeset: octavia-single-node-centos-9-stream
-    description: |
-      Functional testing for a FIPS enabled Centos 9 system.
-    pre-run: playbooks/enable-fips.yaml
-    timeout: 10800
-    vars:
-      nslookup_target: 'opendev.org'
-      devstack_localrc:
-        OCTAVIA_AMP_BASE_OS: centos
-        OCTAVIA_AMP_DISTRIBUTION_RELEASE_ID: 9-stream
-        OCTAVIA_AMP_IMAGE_SIZE: 3
-        OCTAVIA_AMP_ENABLE_FIPS: True
-
-- job:
-    name: octavia-v2-dsvm-tls-barbican-fips
-    parent: octavia-v2-dsvm-tls-barbican
-    nodeset: octavia-single-node-centos-9-stream
-    description: |
-      Functional testing for a FIPS enabled Centos 9 system
-    pre-run: playbooks/enable-fips.yaml
-    vars:
-      nslookup_target: 'opendev.org'
-      devstack_localrc:
-        OCTAVIA_AMP_BASE_OS: centos
-        OCTAVIA_AMP_DISTRIBUTION_RELEASE_ID: 9-stream
-        OCTAVIA_AMP_IMAGE_SIZE: 3
-        OCTAVIA_AMP_ENABLE_FIPS: True
-
-- job:
     name: octavia-grenade-unmaintained-2024-1
     parent: octavia-grenade
     vars: &advanced_rbac_vars
@@ -253,33 +121,6 @@
           "$TEMPEST_CONFIG":
             load_balancer:
               RBAC_test_type: advanced
-
-- job:
-    name: octavia-v2-dsvm-tls-barbican-fips-unmaintained-2024-1
-    parent: octavia-v2-dsvm-tls-barbican-fips
-    vars: *advanced_rbac_vars
-
-- job:
-    name: octavia-v2-dsvm-cinder-amphora-unmaintained-2024-1
-    parent: octavia-v2-dsvm-cinder-amphora
-    vars: *advanced_rbac_vars
-
-- job:
-    name: octavia-v2-dsvm-scenario-two-node-unmaintained-2024-1
-    parent: octavia-v2-dsvm-scenario-two-node
-    nodeset: octavia-single-node-ubuntu-jammy
-    vars: *advanced_rbac_vars
-
-- job:
-    name: octavia-v2-dsvm-scenario-ipv6-only-unmaintained-2024-1
-    parent: octavia-v2-dsvm-scenario-ipv6-only
-    nodeset: octavia-single-node-ubuntu-jammy
-    vars: *advanced_rbac_vars
-
-- job:
-    name: octavia-v2-dsvm-scenario-centos-9-stream-unmaintained-2024-1
-    parent: octavia-v2-dsvm-scenario-centos-9-stream
-    vars: *advanced_rbac_vars
 
 - job:
     name: octavia-v2-dsvm-scenario-traffic-ops-jobboard-unmaintained-2024-1
@@ -318,11 +159,5 @@
 - job:
     name: octavia-v2-dsvm-tls-barbican-unmaintained-2024-1
     parent: octavia-v2-dsvm-tls-barbican
-    nodeset: octavia-single-node-ubuntu-jammy
-    vars: *advanced_rbac_vars
-
-- job:
-    name: octavia-v2-act-stdby-dsvm-scenario-unmaintained-2024-1
-    parent: octavia-v2-act-stdby-dsvm-scenario
     nodeset: octavia-single-node-ubuntu-jammy
     vars: *advanced_rbac_vars
