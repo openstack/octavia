@@ -32,6 +32,7 @@ from oslo_utils import excutils
 from stevedore import driver as stevedore_driver
 
 from octavia.common import constants
+
 if typing.TYPE_CHECKING:
     from octavia.network import base as network_base
 
