@@ -612,13 +612,6 @@ function octavia_stop {
     MGMT_SUBNET_MASK=${MGMT_SUBNET_ARRAY[1]}
     sudo ip addr del $MGMT_PORT_IP/$MGMT_SUBNET_MASK dev o-hm0
 
-    if [[ $NEUTRON_AGENT == "linuxbridge" || $Q_AGENT == "linuxbridge" ]]; then
-        # This elif can go away in the X cycle, needed for grenade old/new logic
-        if ip link show o-hm0 ; then
-            sudo ip link del o-hm0
-        fi
-    fi
-
     if [[ ${OCTAVIA_ENABLE_AMPHORAV2_JOBBOARD} == True ]]; then
         stop_redis
     fi
