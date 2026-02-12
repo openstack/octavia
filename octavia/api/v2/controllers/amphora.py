@@ -38,10 +38,11 @@ class AmphoraController(base.BaseController):
 
     def __init__(self):
         super().__init__()
-        topic = cfg.CONF.oslo_messaging.topic
+        topic = constants.TOPIC_AMPHORA_V2
+        version = "2.0"
         self.target = messaging.Target(
             namespace=constants.RPC_NAMESPACE_CONTROLLER_AGENT,
-            topic=topic, version="1.0", fanout=False)
+            topic=topic, version=version, fanout=False)
         self.client = rpc.get_client(self.target)
 
     @wsme_pecan.wsexpose(amp_types.AmphoraRootResponse, wtypes.text,

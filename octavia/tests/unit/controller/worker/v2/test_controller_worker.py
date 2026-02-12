@@ -191,7 +191,8 @@ class TestControllerWorker(base.TestCase):
         (cw.services_controller.run_poster.
             assert_called_once_with(
                 flow_utils.get_delete_amphora_flow,
-                store={constants.AMPHORA: _db_amphora_mock.to_dict()}))
+                _db_amphora_mock.to_dict(),
+                store={}))
 
     @mock.patch('octavia.controller.worker.v2.flows.'
                 'health_monitor_flows.HealthMonitorFlows.'

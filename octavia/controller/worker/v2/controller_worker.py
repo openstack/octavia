@@ -124,10 +124,10 @@ class ControllerWorker:
             with session.begin():
                 amphora = self._amphora_repo.get(session,
                                                  id=amphora_id)
-            store = {constants.AMPHORA: amphora.to_dict()}
             self.run_flow(
                 flow_utils.get_delete_amphora_flow,
-                store=store)
+                amphora.to_dict(),
+                store={})
         except Exception as e:
             LOG.error('Failed to delete a amphora %s due to: %s',
                       amphora_id, str(e))
