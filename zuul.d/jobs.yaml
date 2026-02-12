@@ -32,13 +32,13 @@
     name: octavia-grenade
     parent: grenade
     nodeset: octavia-single-node-ubuntu-noble
-    required-projects: &o-grenade-required-projects
+    required-projects:
       - opendev.org/openstack/grenade
       - opendev.org/openstack/octavia
       - opendev.org/openstack/octavia-lib
       - opendev.org/openstack/octavia-tempest-plugin
       - opendev.org/openstack/python-octaviaclient
-    vars: &o-grenade-vars
+    vars:
       grenade_devstack_localrc:
         shared:
           DIB_LOCAL_ELEMENTS: openstack-ci-mirrors
@@ -82,10 +82,12 @@
     description: |
       Grenade job that skips a release, validating that deployers can skip
       specific releases as prescribed by our process.
-    parent: grenade-skip-level
-    nodeset: octavia-single-node-ubuntu-noble
-    required-projects: *o-grenade-required-projects
-    vars: *o-grenade-vars
+    parent: octavia-grenade
+    vars:
+      # Update grenade_from_branch after each x.1 is released
+      grenade_from_branch: stable/2025.1
+      grenade_localrc:
+        NOVA_ENABLE_UPGRADE_WORKAROUND: True
 
 - job:
     name: octavia-v2-dsvm-scenario-jobboard
