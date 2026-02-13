@@ -165,8 +165,6 @@ function install_redis {
         install_package redis
     elif is_ubuntu; then
         install_package redis-server
-    elif is_suse; then
-        install_package redis
     else
         exit_distro_not_supported "redis installation"
     fi
@@ -184,8 +182,6 @@ function uninstall_redis {
         uninstall_package redis
     elif is_ubuntu; then
         uninstall_package redis-server
-    elif is_suse; then
-        uninstall_package redis
     fi
 }
 
