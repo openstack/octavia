@@ -160,9 +160,18 @@ function create_octavia_accounts {
     fi
 }
 
+function redis_name {
+    if [[ "$DISTRO" =~ "rhel10" ]]; then
+        echo valkey
+    else
+        echo redis
+    fi
+}
+
 function install_redis {
+    redis_name=$(redis_name)
     if is_fedora; then
-        install_package redis
+        install_package $redis_name
     elif is_ubuntu; then
         install_package redis-server
     elif is_suse; then
@@ -171,17 +180,19 @@ function install_redis {
         exit_distro_not_supported "redis installation"
     fi
 
-    start_service redis
-    redis-cli del octavia_jobboard:listings
+    start_service $redis_name
+    ${redis_name}-cli del octavia_jobboard:listings
 }
 
 function stop_redis {
-    stop_service redis || true
+    redis_name=$(redis_name)
+    stop_service $redis_name
 }
 
 function uninstall_redis {
+    redis_name=$(redis_name)
     if is_fedora; then
-        uninstall_package redis
+        uninstall_package $redis_name
     elif is_ubuntu; then
         uninstall_package redis-server
     elif is_suse; then
@@ -531,7 +542,15 @@ function configure_octavia_api_haproxy {
 
 function configure_rsyslog {
     sudo mkdir -pm 775 /var/log/octavia
-    sudo chgrp syslog /var/log/octavia
+    if groups syslog > /dev/null 2>&1; then
+        syslog_group=1
+    else
+        syslog_group=0
+    fi
+    # Set group to syslog on distribs that don't use root
+    if [ $syslog_group -eq 1 ]; then
+        sudo chgrp syslog /var/log/octavia
+    fi
 
     sudo cp ${OCTAVIA_DIR}/devstack/etc/rsyslog/10-octavia-log-offloading.conf /etc/rsyslog.d/
     sudo sed -e "
@@ -543,12 +562,16 @@ function configure_rsyslog {
     # Remove in the next "I" cycle
     sudo touch /var/log/octavia/octavia-tenant-traffic.log
     sudo chmod 664 /var/log/octavia/octavia-tenant-traffic.log
-    sudo chgrp syslog /var/log/octavia/octavia-tenant-traffic.log
+    if [ $syslog_group -eq 1 ]; then
+        sudo chgrp syslog /var/log/octavia/octavia-tenant-traffic.log
+    fi
     sudo ln -fs /var/log/octavia/octavia-tenant-traffic.log /var/log/octavia-tenant-traffic.log
 
     sudo touch /var/log/octavia/octavia-amphora.log
     sudo chmod 664 /var/log/octavia/octavia-amphora.log
-    sudo chgrp syslog /var/log/octavia/octavia-amphora.log
+    if [ $syslog_group -eq 1 ]; then
+        sudo chgrp syslog /var/log/octavia/octavia-amphora.log
+    fi
     sudo ln -fs /var/log/octavia/octavia-amphora.log /var/log/octavia-amphora.log
 }
 
