@@ -1,0 +1,5 @@
+---
+fixes:
+  - |
+    Fixes infinite database connection retry loop in Octavia Health Worker.
+    `LP#2129562 <https://bugs.launchpad.net/octavia/+bug/2129562>`__
