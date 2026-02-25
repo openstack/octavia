@@ -25,14 +25,18 @@ class TestAmphoraAgentCMD(base.TestCase):
     @mock.patch('octavia.amphorae.backends.agent.api_server.server.Server')
     @mock.patch('multiprocessing.Process')
     @mock.patch('octavia.common.service.prepare_service')
-    def test_main(self, mock_service, mock_process, mock_server, mock_amp):
+    @mock.patch('multiprocessing.Manager')
+    def test_main(self, mock_manager, mock_service, mock_process, mock_server,
+                  mock_amp):
         mock_health_proc = mock.MagicMock()
         mock_server_instance = mock.MagicMock()
         mock_amp_instance = mock.MagicMock()
+        mock_manager_instance = mock.MagicMock()
 
         mock_process.return_value = mock_health_proc
         mock_server.return_value = mock_server_instance
         mock_amp.return_value = mock_amp_instance
+        mock_manager.return_value = mock_manager_instance
 
         agent.main()
 

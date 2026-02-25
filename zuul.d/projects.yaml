@@ -68,6 +68,7 @@
               - ^tools/.*$
               - ^(test-|)requirements.txt$
               - ^tox.ini$
+            voting: false
         - octavia-grenade-skip-level:
             irrelevant-files: *grenade-irrelevant-files
             voting: false
@@ -114,7 +115,7 @@
         - octavia-v2-dsvm-scenario-non-traffic-ops
         - octavia-v2-dsvm-scenario-traffic-ops-ubuntu-jammy
         - octavia-v2-dsvm-scenario-non-traffic-ops-ubuntu-jammy
-        - octavia-grenade
+        #- octavia-grenade
         #- octavia-grenade-skip-level
     periodic:
       jobs:

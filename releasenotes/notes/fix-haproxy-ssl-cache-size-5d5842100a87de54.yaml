@@ -1,0 +1,5 @@
+---
+fixes:
+  - |
+    Reduce the value of tune.ssl.cachesize for HTTPS termination listeners to
+    prevent OOM during haproxy reload (LP: #2119987).

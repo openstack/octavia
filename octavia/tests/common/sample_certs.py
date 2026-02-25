@@ -15,7 +15,7 @@
 
 import base64
 
-import pkg_resources
+from importlib import resources
 
 
 X509_CERT_CN = 'www.example.com'
@@ -813,8 +813,11 @@ D7BF8MN1oUAOpyYqAjkGddSEuMyNmwtHKZI1dyQ0gBIQdiU9yAG2oTbUIK4msbBV
 uJIQ
 -----END CERTIFICATE-----"""
 
-PKCS12_BUNDLE = pkg_resources.resource_string(
-    'octavia.tests.unit.common.sample_configs', 'sample_pkcs12.p12')
+PKCS12_BUNDLE = (
+    resources.files('octavia.tests.unit.common.sample_configs')
+    .joinpath('sample_pkcs12.p12')
+    .read_bytes()
+)
 
 X509_CA_CERT_CN = 'ca.example.org'
 

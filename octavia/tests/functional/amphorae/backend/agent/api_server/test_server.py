@@ -57,16 +57,17 @@ class TestServerTestCase(base.TestCase):
         self.useFixture(fixtures.MockPatch(
             'oslo_config.cfg.find_config_files',
             return_value=[AMP_AGENT_CONF_PATH]))
+        hm_queue = mock.MagicMock()
         with mock.patch('distro.id', return_value='ubuntu'), mock.patch(
                 'octavia.amphorae.backends.agent.api_server.plug.'
                 'Plug.plug_lo'):
-            self.ubuntu_test_server = server.Server()
+            self.ubuntu_test_server = server.Server(hm_queue)
             self.ubuntu_app = self.ubuntu_test_server.app.test_client()
 
         with mock.patch('distro.id', return_value='centos'), mock.patch(
                 'octavia.amphorae.backends.agent.api_server.plug.'
                 'Plug.plug_lo'):
-            self.centos_test_server = server.Server()
+            self.centos_test_server = server.Server(hm_queue)
             self.centos_app = self.centos_test_server.app.test_client()
 
     def test_ubuntu_haproxy(self):
@@ -2887,10 +2888,11 @@ class TestServerTestCase(base.TestCase):
             self.assertEqual(500, rv.status_code)
 
     def test_version_discovery(self):
+        hm_queue = mock.MagicMock()
         with mock.patch('distro.id', return_value='ubuntu'), mock.patch(
                 'octavia.amphorae.backends.agent.api_server.plug.'
                 'Plug.plug_lo'):
-            self.test_client = server.Server().app.test_client()
+            self.test_client = server.Server(hm_queue).app.test_client()
         expected_dict = {'api_version': api_server.VERSION}
         rv = self.test_client.get('/')
         self.assertEqual(200, rv.status_code)

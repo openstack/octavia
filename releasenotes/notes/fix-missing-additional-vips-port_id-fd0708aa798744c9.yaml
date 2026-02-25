@@ -1,0 +1,5 @@
+---
+fixes:
+  - |
+    Fixed missing `port_id` element when getting the `additional_vips`
+    parameter of a load balancer.

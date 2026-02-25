@@ -1,0 +1,6 @@
+---
+fixes:
+  - |
+    Fix an issue that prevents the Octavia API service to be correctly
+    initialized when it fails to load a provider driver. It will now
+    fail gracefully and remove the driver from the enabled list.

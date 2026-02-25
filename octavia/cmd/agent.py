@@ -30,7 +30,6 @@ from octavia import version
 
 
 CONF = cfg.CONF
-HM_SENDER_CMD_QUEUE = multiproc.Queue()
 
 
 class AmphoraAgent(gunicorn.app.base.BaseApplication):
@@ -56,14 +55,19 @@ def main():
 
     gmr.TextGuruMeditation.setup_autorun(version)
 
+    # Setup a multiprocessing manager and queue to share between the
+    # health manager sender and the workers. This allows us to reload the
+    # configuration into the health manager sender process.
+    hm_queue = multiproc.Manager().Queue()
+
     health_sender_proc = multiproc.Process(name='HM_sender',
                                            target=health_daemon.run_sender,
-                                           args=(HM_SENDER_CMD_QUEUE,))
+                                           args=(hm_queue,))
     health_sender_proc.daemon = True
     health_sender_proc.start()
 
     # Initiate server class
-    server_instance = server.Server()
+    server_instance = server.Server(hm_queue)
 
     bind_ip_port = utils.ip_port_str(CONF.haproxy_amphora.bind_host,
                                      CONF.haproxy_amphora.bind_port)

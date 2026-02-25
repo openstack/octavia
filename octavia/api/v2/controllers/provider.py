@@ -13,7 +13,6 @@
 #    under the License.
 
 from octavia_lib.api.drivers import exceptions as lib_exceptions
-from oslo_config import cfg
 from oslo_log import log as logging
 from pecan import expose as pecan_expose
 from pecan import request as pecan_request
@@ -26,7 +25,6 @@ from octavia.api.v2.types import provider as provider_types
 from octavia.common import constants
 from octavia.common import exceptions
 
-CONF = cfg.CONF
 LOG = logging.getLogger(__name__)
 
 
@@ -46,7 +44,7 @@ class ProviderController(base.BaseController):
         self._auth_validate_action(context, context.project_id,
                                    constants.RBAC_GET_ALL)
 
-        enabled_providers = CONF.api_settings.enabled_provider_drivers
+        enabled_providers = driver_factory.get_providers()
         response_list = [
             provider_types.ProviderResponse(name=key, description=value) for
             key, value in enabled_providers.items()]
