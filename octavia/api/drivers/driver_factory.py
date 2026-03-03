@@ -12,6 +12,8 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import copy
+
 from oslo_config import cfg
 from oslo_log import log as logging
 from stevedore import driver as stevedore_driver
@@ -53,8 +55,13 @@ def get_driver(provider):
 def remove_providers(providers):
     # Presumably these provider drivers failed to load, remove so they do not
     # show up in the available list
+    override = copy.deepcopy(CONF.api_settings.enabled_provider_drivers)
     for provider in providers:
-        CONF.api_settings.enabled_provider_drivers.pop(provider)
+        override.pop(provider)
+    CONF.set_override(
+        "enabled_provider_drivers",
+        override,
+        group="api_settings")
 
 
 def get_providers():
