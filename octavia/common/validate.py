@@ -409,6 +409,16 @@ def network_allowed_by_config(network_id, valid_networks=None):
                 'of this deployment.'))
 
 
+def network_denylist_by_config(network_id):
+    denylist = CONF.networking.denylist_vip_networks
+    if isinstance(denylist, list) and len(denylist) > 0:
+        denylist = map(str.lower, denylist)
+        if network_id.lower() in denylist:
+            raise exceptions.ValidationException(detail=_(
+                'Supplied VIP network_id is not allowed by the configuration '
+                'of this deployment.'))
+
+
 def is_ip_member_of_cidr(address, cidr):
     if ipaddress.ip_address(address) in ipaddress.ip_network(cidr):
         return True

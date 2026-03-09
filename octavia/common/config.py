@@ -257,6 +257,11 @@ networking_opts = [
                 help=_('List of network_ids that are valid for VIP '
                        'creation. If this field is empty, no validation '
                        'is performed.')),
+    cfg.ListOpt('denylist_vip_networks',
+                default=[],
+                help=_('List of network_ids that are explicitely denied '
+                       'for VIP creation. If this field is empty, no '
+                       'denylist is enforced')),
     cfg.ListOpt('reserved_ips',
                 default=['169.254.169.254'],
                 item_type=cfg.types.IPAddress(),

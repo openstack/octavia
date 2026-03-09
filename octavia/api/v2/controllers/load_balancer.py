@@ -513,6 +513,8 @@ class LoadBalancersController(base.BaseController):
                 load_balancer.vip_network_id,
                 valid_networks=az_dict.get(constants.VALID_VIP_NETWORKS))
 
+            validate.network_denylist_by_config(load_balancer.vip_network_id)
+
             # Apply the anticipated vNIC type so the create will return the
             # right vip_vnic_type
             if flavor_dict and flavor_dict.get(constants.SRIOV_VIP, False):

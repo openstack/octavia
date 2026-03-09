@@ -365,6 +365,17 @@ class TestValidations(base.TestCase):
             exceptions.ValidationException,
             validate.network_allowed_by_config, net_id3)
 
+    def test_network_denylist_by_config(self):
+        net_id1 = uuidutils.generate_uuid()
+        net_id2 = uuidutils.generate_uuid()
+        net_id3 = uuidutils.generate_uuid()
+        self.conf.config(group="networking",
+                         denylist_vip_networks=[net_id1, net_id2])
+        validate.network_allowed_by_config(net_id3)
+        self.assertRaises(
+            exceptions.ValidationException,
+            validate.network_denylist_by_config, net_id1)
+
     def test_qos_policy_exists(self):
         qos_policy_id = uuidutils.generate_uuid()
         qos_policy = network_models.QosPolicy(id=qos_policy_id)
