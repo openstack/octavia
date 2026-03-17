@@ -139,12 +139,12 @@ function build_octavia_worker_image {
 }
 
 function create_octavia_accounts {
-    create_service_user octavia
+    create_service_user octavia admin
 
     # Increase the octavia account secgroups quota
     # This is imporant for concurrent tempest testing
-    openstack quota set --secgroups 100 $OCTAVIA_PROJECT_NAME
-    openstack quota set --secgroup-rules 1000 $OCTAVIA_PROJECT_NAME
+    openstack quota set --secgroups 100 $SERVICE_PROJECT_NAME
+    openstack quota set --secgroup-rules 1000 $SERVICE_PROJECT_NAME
 
     octavia_service=$(get_or_create_service "octavia" \
         $OCTAVIA_SERVICE_TYPE "Octavia Load Balancing Service")
@@ -230,25 +230,22 @@ function octavia_configure {
     # Configure keystone auth_token for all users
     configure_keystone_authtoken_middleware $OCTAVIA_CONF octavia
 
-    # Ensure config is set up properly for authentication as admin
     iniset $OCTAVIA_CONF service_auth auth_url $KEYSTONE_SERVICE_URI
     iniset $OCTAVIA_CONF service_auth auth_type password
-    iniset $OCTAVIA_CONF service_auth username $OCTAVIA_USERNAME
-    iniset $OCTAVIA_CONF service_auth password $OCTAVIA_PASSWORD
-    iniset $OCTAVIA_CONF service_auth user_domain_name $OCTAVIA_USER_DOMAIN_NAME
-    iniset $OCTAVIA_CONF service_auth project_name $OCTAVIA_PROJECT_NAME
-    iniset $OCTAVIA_CONF service_auth project_domain_name $OCTAVIA_PROJECT_DOMAIN_NAME
+    iniset $OCTAVIA_CONF service_auth username octavia
+    iniset $OCTAVIA_CONF service_auth password $SERVICE_PASSWORD
+    iniset $OCTAVIA_CONF service_auth user_domain_name $SERVICE_DOMAIN_NAME
+    iniset $OCTAVIA_CONF service_auth project_name $SERVICE_PROJECT_NAME
+    iniset $OCTAVIA_CONF service_auth project_domain_name $SERVICE_DOMAIN_NAME
     iniset $OCTAVIA_CONF service_auth cafile $SSL_BUNDLE_FILE
-    iniset $OCTAVIA_CONF service_auth memcached_servers $SERVICE_HOST:11211
 
-    # neutron
     iniset $OCTAVIA_CONF neutron auth_url $KEYSTONE_SERVICE_URI
     iniset $OCTAVIA_CONF neutron auth_type password
-    iniset $OCTAVIA_CONF neutron username $OCTAVIA_USERNAME
-    iniset $OCTAVIA_CONF neutron password $OCTAVIA_PASSWORD
-    iniset $OCTAVIA_CONF neutron user_domain_name $OCTAVIA_USER_DOMAIN_NAME
-    iniset $OCTAVIA_CONF neutron project_name $OCTAVIA_PROJECT_NAME
-    iniset $OCTAVIA_CONF neutron project_domain_name $OCTAVIA_PROJECT_DOMAIN_NAME
+    iniset $OCTAVIA_CONF neutron username octavia
+    iniset $OCTAVIA_CONF neutron password $SERVICE_PASSWORD
+    iniset $OCTAVIA_CONF neutron user_domain_name $SERVICE_DOMAIN_NAME
+    iniset $OCTAVIA_CONF neutron project_name $SERVICE_PROJECT_NAME
+    iniset $OCTAVIA_CONF neutron project_domain_name $SERVICE_DOMAIN_NAME
     iniset $OCTAVIA_CONF neutron cafile $SSL_BUNDLE_FILE
 
     # Setting other required default options
@@ -464,24 +461,24 @@ function create_mgmt_network_interface {
 
 function build_mgmt_network {
     # Create network and attach a subnet
-    openstack network create lb-mgmt-net
+    openstack network create --project $SERVICE_PROJECT_NAME lb-mgmt-net
     if [ $SERVICE_IP_VERSION == '6' ] ; then
-        openstack subnet create --subnet-range $OCTAVIA_MGMT_SUBNET_IPV6 --allocation-pool start=$OCTAVIA_MGMT_SUBNET_IPV6_START,end=$OCTAVIA_MGMT_SUBNET_IPV6_END --network lb-mgmt-net --ip-version 6 --gateway none --no-dhcp lb-mgmt-subnet
+        openstack subnet create --project $SERVICE_PROJECT_NAME --subnet-range $OCTAVIA_MGMT_SUBNET_IPV6 --allocation-pool start=$OCTAVIA_MGMT_SUBNET_IPV6_START,end=$OCTAVIA_MGMT_SUBNET_IPV6_END --network lb-mgmt-net --ip-version 6 --gateway none --no-dhcp lb-mgmt-subnet
     else
-        openstack subnet create --subnet-range $OCTAVIA_MGMT_SUBNET --allocation-pool start=$OCTAVIA_MGMT_SUBNET_START,end=$OCTAVIA_MGMT_SUBNET_END --network lb-mgmt-net --gateway none --no-dhcp lb-mgmt-subnet
+        openstack subnet create --project $SERVICE_PROJECT_NAME --subnet-range $OCTAVIA_MGMT_SUBNET --allocation-pool start=$OCTAVIA_MGMT_SUBNET_START,end=$OCTAVIA_MGMT_SUBNET_END --network lb-mgmt-net --gateway none --no-dhcp lb-mgmt-subnet
     fi
 
     # Create security group and rules
     # Used for the amphora lb-mgmt-net ports
-    openstack security group create lb-mgmt-sec-grp
+    openstack security group create lb-mgmt-sec-grp --project $SERVICE_PROJECT_NAME
     if [ $SERVICE_IP_VERSION == '6' ] ; then
-        openstack security group rule create --protocol ipv6-icmp --ethertype IPv6 --remote-ip ::/0 lb-mgmt-sec-grp
-        openstack security group rule create --protocol tcp --dst-port 22 --ethertype IPv6 --remote-ip ::/0 lb-mgmt-sec-grp
-        openstack security group rule create --protocol tcp --dst-port 9443 --ethertype IPv6 --remote-ip ::/0 lb-mgmt-sec-grp
+        openstack security group rule create --protocol ipv6-icmp --ethertype IPv6 --remote-ip ::/0 lb-mgmt-sec-grp --project $SERVICE_PROJECT_NAME
+        openstack security group rule create --protocol tcp --dst-port 22 --ethertype IPv6 --remote-ip ::/0 lb-mgmt-sec-grp --project $SERVICE_PROJECT_NAME
+        openstack security group rule create --protocol tcp --dst-port 9443 --ethertype IPv6 --remote-ip ::/0 lb-mgmt-sec-grp --project $SERVICE_PROJECT_NAME
     else
-        openstack security group rule create --protocol icmp lb-mgmt-sec-grp
-        openstack security group rule create --protocol tcp --dst-port 22 lb-mgmt-sec-grp
-        openstack security group rule create --protocol tcp --dst-port 9443 lb-mgmt-sec-grp
+        openstack security group rule create --protocol icmp lb-mgmt-sec-grp --project $SERVICE_PROJECT_NAME
+        openstack security group rule create --protocol tcp --dst-port 22 lb-mgmt-sec-grp --project $SERVICE_PROJECT_NAME
+        openstack security group rule create --protocol tcp --dst-port 9443 lb-mgmt-sec-grp --project $SERVICE_PROJECT_NAME
     fi
 
     # Create security group and rules
@@ -512,7 +509,7 @@ function create_amphora_flavor {
         disk_size=$((disk_size + 1))
     fi
     # Pass even if it exists to avoid race condition on multinode
-    openstack flavor create --ram 1024 --disk $disk_size --vcpus 1 --private m1.amphora -f value -c id --property hw_rng:allowed=True || true
+    openstack flavor create --ram 1024 --disk $disk_size --vcpus 1 --private --project $SERVICE_PROJECT_NAME m1.amphora -f value -c id --property hw_rng:allowed=True || true
     amp_flavor_id=$(openstack flavor show m1.amphora -f value -c id)
     iniset $OCTAVIA_CONF controller_worker amp_flavor_id $amp_flavor_id
 }
@@ -660,7 +657,7 @@ function octavia_cleanup {
     fi
     if [ $OCTAVIA_NODE == 'main' ] || [ $OCTAVIA_NODE == 'standalone' ] ; then
         if [ ${OCTAVIA_AMP_SSH_KEY_NAME}x != x ] ; then
-            openstack keypair delete ${OCTAVIA_AMP_SSH_KEY_NAME} || true
+            openstack keypair delete --user octavia ${OCTAVIA_AMP_SSH_KEY_NAME} || true
         fi
     fi
 
@@ -703,9 +700,13 @@ function octavia_init {
     fi
 
     if [ $OCTAVIA_NODE == 'main' ] || [ $OCTAVIA_NODE == 'standalone' ] ; then
+        create_octavia_accounts
+
+        add_load-balancer_roles
+
         # things that should only happen on the ha main node / or once
-        if ! openstack keypair show ${OCTAVIA_AMP_SSH_KEY_NAME} ; then
-            openstack keypair create --public-key ${OCTAVIA_AMP_SSH_KEY_PATH}.pub ${OCTAVIA_AMP_SSH_KEY_NAME}
+        if ! openstack keypair show --user octavia ${OCTAVIA_AMP_SSH_KEY_NAME} ; then
+            openstack keypair create --user octavia --public-key ${OCTAVIA_AMP_SSH_KEY_PATH}.pub ${OCTAVIA_AMP_SSH_KEY_NAME}
         fi
 
         # Check if an amphora image is already loaded
@@ -741,9 +742,6 @@ function octavia_init {
         OCTAVIA_AMP_NETWORK_ID=$(openstack network show lb-mgmt-net -f value -c id)
         iniset $OCTAVIA_CONF controller_worker amp_boot_network_list ${OCTAVIA_AMP_NETWORK_ID}
 
-        create_octavia_accounts
-
-        add_load-balancer_roles
     elif [ $OCTAVIA_NODE == 'api' ] ; then
         create_octavia_accounts
 
