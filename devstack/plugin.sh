@@ -230,23 +230,9 @@ function octavia_configure {
     # Configure keystone auth_token for all users
     configure_keystone_authtoken_middleware $OCTAVIA_CONF octavia
 
-    iniset $OCTAVIA_CONF service_auth auth_url $KEYSTONE_SERVICE_URI
-    iniset $OCTAVIA_CONF service_auth auth_type password
-    iniset $OCTAVIA_CONF service_auth username octavia
-    iniset $OCTAVIA_CONF service_auth password $SERVICE_PASSWORD
-    iniset $OCTAVIA_CONF service_auth user_domain_name $SERVICE_DOMAIN_NAME
-    iniset $OCTAVIA_CONF service_auth project_name $SERVICE_PROJECT_NAME
-    iniset $OCTAVIA_CONF service_auth project_domain_name $SERVICE_DOMAIN_NAME
-    iniset $OCTAVIA_CONF service_auth cafile $SSL_BUNDLE_FILE
+    configure_keystoneauth $OCTAVIA_CONF octavia service_auth
 
-    iniset $OCTAVIA_CONF neutron auth_url $KEYSTONE_SERVICE_URI
-    iniset $OCTAVIA_CONF neutron auth_type password
-    iniset $OCTAVIA_CONF neutron username octavia
-    iniset $OCTAVIA_CONF neutron password $SERVICE_PASSWORD
-    iniset $OCTAVIA_CONF neutron user_domain_name $SERVICE_DOMAIN_NAME
-    iniset $OCTAVIA_CONF neutron project_name $SERVICE_PROJECT_NAME
-    iniset $OCTAVIA_CONF neutron project_domain_name $SERVICE_DOMAIN_NAME
-    iniset $OCTAVIA_CONF neutron cafile $SSL_BUNDLE_FILE
+    configure_keystoneauth $OCTAVIA_CONF octavia neutron
 
     # Setting other required default options
     iniset $OCTAVIA_CONF controller_worker amphora_driver ${OCTAVIA_AMPHORA_DRIVER}
