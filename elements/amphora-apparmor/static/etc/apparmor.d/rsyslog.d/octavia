@@ -1,0 +1,4 @@
+# Allow rsyslog to create the octavia logging socket
+/run/rsyslog/              w,
+/run/rsyslog/octavia/      w,
+/run/rsyslog/octavia/log   rwk,
