@@ -23,32 +23,69 @@ import octavia.tests.unit.base as base
 
 
 class TestApp(base.TestCase):
-
     def setUp(self):
         super().setUp()
 
     @mock.patch.object(driver_factory, "get_driver")
     def test__init_drivers(self, mock_get_driver):
         self.CONF = self.useFixture(oslo_fixture.Config(cfg.CONF))
-        self.CONF.config(
+        self.CONF.load_raw_values(
             group="api_settings",
-            enabled_provider_drivers="provider1:desc1,provider2:desc2")
+            enabled_provider_drivers="provider1:desc1,provider2:desc2",
+        )
 
         app._init_drivers()
         mock_get_driver.assert_any_call("provider1")
         mock_get_driver.assert_any_call("provider2")
 
+    @staticmethod
+    def _fail_get_driver(provider):
+        if provider == "provider2":
+            raise Exception("Internal error")
+        return True
+
     @mock.patch.object(driver_factory, "get_driver")
     def test__init_drivers_with_error(self, mock_get_driver):
         self.CONF = self.useFixture(oslo_fixture.Config(cfg.CONF))
-        self.CONF.config(
+        self.CONF.load_raw_values(
             group="api_settings",
-            enabled_provider_drivers="provider1:desc1,provider2:desc2")
+            enabled_provider_drivers="provider1:desc1,provider2:desc2",
+        )
 
-        mock_get_driver.side_effect = [True, Exception('Internal Error')]
+        mock_get_driver.side_effect = self._fail_get_driver
 
         app._init_drivers()
         mock_get_driver.assert_any_call("provider1")
         mock_get_driver.assert_any_call("provider2")
         enabled_providers = driver_factory.get_providers()
-        self.assertEqual(enabled_providers, {'provider1': 'desc1'})
+        self.assertEqual(enabled_providers, {"provider1": "desc1"})
+
+    @mock.patch.object(driver_factory, "get_driver")
+    def test__init_drivers_with_error_and_register_opt(self, mock_get_driver):
+        """Ensure removal persists through registering new opts.
+
+        Adding new options to CFG triggers removes cached values of the options
+        and causes lookups to again go to the dict initially parsed from the
+        config files. This ensures that the removal of failed drivers persists
+        even after clearing the cache, e.g., due to registering new options.
+        """
+        self.CONF = self.useFixture(oslo_fixture.Config(cfg.CONF))
+        # NOTE(raineszm): It is important to use load_raw_values here and
+        # not config as the latter calls set_override behind the scenes which
+        # shortcuts the config cache.
+        self.CONF.load_raw_values(
+            group="api_settings",
+            enabled_provider_drivers="provider1:desc1,provider2:desc2",
+        )
+
+        mock_get_driver.side_effect = self._fail_get_driver
+
+        app._init_drivers()
+
+        # Registering a new options clears the cache
+        self.CONF.register_opt(
+            cfg.BoolOpt("is_a_test", default=True), group="api_settings"
+        )
+
+        enabled_providers = driver_factory.get_providers()
+        self.assertEqual(enabled_providers, {"provider1": "desc1"})
