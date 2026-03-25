@@ -397,8 +397,7 @@ class TestLoadBalancer(base.BaseAPITest):
                    'subnet for VIP address specified.')
         self.assertEqual(err_msg, response.json.get('faultstring'))
 
-    def test_create_with_vip_network_and_address_subnet_fail(self):
-        ip_address = '198.51.100.10'
+    def _test_create_with_vip_network_subnet_fail(self, vip_address=None):
         network_id = uuidutils.generate_uuid()
         subnet1 = network_models.Subnet(id=uuidutils.generate_uuid(),
                                         network_id=network_id,
@@ -411,8 +410,9 @@ class TestLoadBalancer(base.BaseAPITest):
         network = network_models.Network(id=network_id,
                                          subnets=[subnet1.id, subnet2.id])
         lb_json = {'vip_network_id': network.id,
-                   'vip_address': ip_address,
                    'project_id': self.project_id}
+        if vip_address is not None:
+            lb_json['vip_address'] = vip_address
         body = self._build_body(lb_json)
         with mock.patch(
                 "octavia.network.drivers.noop_driver.driver.NoopManager"
@@ -426,30 +426,11 @@ class TestLoadBalancer(base.BaseAPITest):
             self.assertEqual(err_msg, response.json.get('faultstring'))
 
     def test_create_with_vip_network_subnet_fail(self):
-        network_id = uuidutils.generate_uuid()
-        subnet1 = network_models.Subnet(id=uuidutils.generate_uuid(),
-                                        network_id=network_id,
-                                        cidr='2001:DB8::/32',
-                                        ip_version=6)
-        subnet2 = network_models.Subnet(id=uuidutils.generate_uuid(),
-                                        network_id=network_id,
-                                        cidr='203.0.113.0/24',
-                                        ip_version=4)
-        network = network_models.Network(id=network_id,
-                                         subnets=[subnet1.id, subnet2.id])
-        lb_json = {'vip_network_id': network.id,
-                   'project_id': self.project_id}
-        body = self._build_body(lb_json)
-        with mock.patch(
-                "octavia.network.drivers.noop_driver.driver.NoopManager"
-                ".get_network") as mock_get_network, mock.patch(
-            "octavia.network.drivers.noop_driver.driver.NoopManager"
-                ".get_subnet") as mock_get_subnet:
-            mock_get_network.return_value = network
-            mock_get_subnet.side_effect = network_base.SubnetNotFound
-            response = self.post(self.LBS_PATH, body, status=400)
-            err_msg = f'Validation failure: Subnet {subnet1.id} not found'
-            self.assertEqual(err_msg, response.json.get('faultstring'))
+        self._test_create_with_vip_network_subnet_fail()
+
+    def test_create_with_vip_network_and_address_subnet_fail(self):
+        self._test_create_with_vip_network_subnet_fail(
+            vip_address='198.51.100.10')
 
     def test_create_with_vip_network_and_address_ipv6(self):
         ip_address = '2001:DB8::10'
@@ -735,6 +716,51 @@ class TestLoadBalancer(base.BaseAPITest):
             # Sort by ip_address so the list order will be guaranteed
             sorted(expected_add_vips, key=lambda x: x['ip_address']),
             sorted(api_lb['additional_vips'], key=lambda x: x['ip_address']))
+
+    def test_create_with_multiple_vips_subnet_fail(self):
+        subnet1 = network_models.Subnet(id=uuidutils.generate_uuid(),
+                                        cidr='10.0.0.0/24',
+                                        ip_version=4,
+                                        network_id=uuidutils.generate_uuid())
+        subnet2 = network_models.Subnet(id=uuidutils.generate_uuid(),
+                                        cidr='fc00::/7',
+                                        ip_version=6,
+                                        network_id=subnet1.network_id)
+        subnet3 = network_models.Subnet(id=uuidutils.generate_uuid(),
+                                        cidr='10.1.0.0/24',
+                                        ip_version=4,
+                                        network_id=subnet1.network_id)
+        network = network_models.Network(id=subnet1.network_id,
+                                         subnets=[subnet1, subnet2, subnet3])
+        port = network_models.Port(id=uuidutils.generate_uuid(),
+                                   network_id=network.id)
+        lb_json = {
+            'name': 'test1', 'description': 'test1_desc',
+            'vip_address': '10.0.0.1', 'vip_subnet_id': subnet1.id,
+            'vip_network_id': network.id, 'vip_port_id': port.id,
+            'project_id': self.project_id,
+            'additional_vips': [
+                {'subnet_id': subnet2.id,
+                 'ip_address': 'fdff:ffff:ffff:ffff:ffff:ffff:ffff:ffff'},
+                {'subnet_id': subnet3.id,
+                 'ip_address': '10.1.0.1'},
+            ],
+
+        }
+        body = self._build_body(lb_json)
+        with mock.patch(
+                "octavia.network.drivers.noop_driver.driver.NoopManager"
+                ".get_network") as mock_get_network, mock.patch(
+            "octavia.network.drivers.noop_driver.driver.NoopManager"
+                ".get_port") as mock_get_port, mock.patch(
+            "octavia.network.drivers.noop_driver.driver.NoopManager"
+                ".get_subnet") as mock_get_subnet:
+            mock_get_network.return_value = network
+            mock_get_port.return_value = port
+            mock_get_subnet.side_effect = network_base.SubnetNotFound
+            response = self.post(self.LBS_PATH, body, status=400)
+            err_msg = f'Subnet {subnet1.id} not found.'
+            self.assertEqual(err_msg, response.json.get('faultstring'))
 
     def test_create_neutron_failure(self):
 
