@@ -1,0 +1,10 @@
+---
+fixes:
+  - |
+    Drivers which fail to initialize are now properly removed from the list of
+    enabled drivers. A previous patch updated octavia-api so that drivers which
+    fail to initialize are skipped instead of causing the whole API process to
+    error out. The intention was to remove these failed drivers from the list of
+    enabled drivers dynamically, but this removal was being overridden by other
+    configuration code. The removal of these failing drivers should now persist
+    until service restart.
