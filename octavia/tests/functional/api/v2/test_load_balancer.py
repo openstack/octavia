@@ -1305,6 +1305,84 @@ class TestLoadBalancer(base.BaseAPITest):
                            "availability zones.")
         self.assertEqual(ref_faultstring, response.json.get('faultstring'))
 
+    def test_create_with_default_availability_zone(self):
+        """Test that default availability zone from config is used."""
+        zone_name = 'default-zone'
+
+        # Create availability zone profile and zone in Octavia
+        azp = self.create_availability_zone_profile(
+            'default_test', 'noop_driver',
+            '{"compute_zone": "%s"}' % zone_name)
+        self.create_availability_zone(zone_name, 'Default zone',
+                                      azp.get('id'), True)
+
+        # Configure default availability zone
+        self.conf.config(group='api_settings',
+                         default_availability_zone=zone_name)
+
+        # Create LB without specifying availability_zone
+        lb_json = {'name': 'test_default_az',
+                   'vip_subnet_id': uuidutils.generate_uuid(),
+                   'project_id': self.project_id}
+        body = self._build_body(lb_json)
+        response = self.post(self.LBS_PATH, body, status=201)
+        api_lb = response.json.get(self.root_tag)
+
+        self.assertEqual(zone_name, api_lb.get('availability_zone'))
+
+    def test_create_no_default_availability_zone(self):
+        """Test that None is used when no default AZ is configured."""
+        self.conf.config(group='api_settings',
+                         default_availability_zone=None)
+
+        lb_json = {'name': 'test_no_default_az',
+                   'vip_subnet_id': uuidutils.generate_uuid(),
+                   'project_id': self.project_id}
+        body = self._build_body(lb_json)
+        response = self.post(self.LBS_PATH, body, status=201)
+        api_lb = response.json.get(self.root_tag)
+
+        self.assertIsNone(api_lb.get('availability_zone'))
+
+    def test_create_default_az_not_in_octavia(self):
+        """Test behavior when default AZ is configured but not in Octavia."""
+        self.conf.config(group='api_settings',
+                         default_availability_zone='missing-zone')
+
+        lb_json = {'name': 'test_missing_default_az',
+                   'vip_subnet_id': uuidutils.generate_uuid(),
+                   'project_id': self.project_id}
+        body = self._build_body(lb_json)
+        response = self.post(self.LBS_PATH, body, status=201)
+        api_lb = response.json.get(self.root_tag)
+
+        self.assertIsNone(api_lb.get('availability_zone'))
+
+    def test_create_default_az_disabled(self):
+        """Test that a disabled default AZ is not applied."""
+        zone_name = 'disabled-zone'
+
+        # Create availability zone profile and a disabled zone in Octavia
+        azp = self.create_availability_zone_profile(
+            'disabled_test', 'noop_driver',
+            '{"compute_zone": "%s"}' % zone_name)
+        self.create_availability_zone(zone_name, 'Disabled zone',
+                                      azp.get('id'), False)
+
+        # Configure default availability zone
+        self.conf.config(group='api_settings',
+                         default_availability_zone=zone_name)
+
+        # Create LB without specifying availability_zone
+        lb_json = {'name': 'test_disabled_default_az',
+                   'vip_subnet_id': uuidutils.generate_uuid(),
+                   'project_id': self.project_id}
+        body = self._build_body(lb_json)
+        response = self.post(self.LBS_PATH, body, status=201)
+        api_lb = response.json.get(self.root_tag)
+
+        self.assertIsNone(api_lb.get('availability_zone'))
+
     def test_matching_providers(self, **optionals):
         fp = self.create_flavor_profile('test1', 'noop_driver',
                                         '{"image": "ubuntu"}')
