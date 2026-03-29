@@ -1,3 +1,2 @@
 bashate
 doc8
-Pygments
