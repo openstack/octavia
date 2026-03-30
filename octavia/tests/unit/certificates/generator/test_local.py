@@ -99,6 +99,18 @@ class TestLocalGenerator(local_csr.BaseLocalCSRTestCase):
         self.assertFalse(cert.extensions.get_extension_for_class(
             x509.BasicConstraints).value.ca)
 
+        # Make sure SubjectKeyIdentifier extension is present
+        ski = cert.extensions.get_extension_for_class(
+            x509.SubjectKeyIdentifier)
+        self.assertIsNotNone(ski.value.digest)
+        self.assertFalse(ski.critical)
+
+        # Make sure AuthorityKeyIdentifier extension is present
+        aki = cert.extensions.get_extension_for_class(
+            x509.AuthorityKeyIdentifier)
+        self.assertIsNotNone(aki.value.key_identifier)
+        self.assertFalse(aki.critical)
+
     def test_sign_cert_passphrase_none(self):
         # Attempt sign a cert
         ca_private_key = self.ca_key.private_bytes(
@@ -143,6 +155,18 @@ class TestLocalGenerator(local_csr.BaseLocalCSRTestCase):
         # Make sure this cert can't sign other certs
         self.assertFalse(cert.extensions.get_extension_for_class(
             x509.BasicConstraints).value.ca)
+
+        # Make sure SubjectKeyIdentifier extension is present
+        ski = cert.extensions.get_extension_for_class(
+            x509.SubjectKeyIdentifier)
+        self.assertIsNotNone(ski.value.digest)
+        self.assertFalse(ski.critical)
+
+        # Make sure AuthorityKeyIdentifier extension is present
+        aki = cert.extensions.get_extension_for_class(
+            x509.AuthorityKeyIdentifier)
+        self.assertIsNotNone(aki.value.key_identifier)
+        self.assertFalse(aki.critical)
 
     def test_sign_cert_invalid_algorithm(self):
         self.assertRaises(
