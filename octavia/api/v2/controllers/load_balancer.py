@@ -153,8 +153,13 @@ class LoadBalancersController(base.BaseController):
                     raise exceptions.ValidationException(detail=_(
                         "Supplied network does not contain a subnet."
                     ))
-                ip_avail = network_driver.get_network_ip_availability(
-                    network)
+                try:
+                    ip_avail = network_driver.get_network_ip_availability(
+                        network)
+                except network_base.NetworkIpAvailabilityNotFound as e:
+                    raise exceptions.ValidationException(detail=_(
+                        "Could not verify IP availability for "
+                        "network %s.") % network.id) from e
                 if (CONF.controller_worker.loadbalancer_topology ==
                         constants.TOPOLOGY_SINGLE):
                     num_req_ips = 2
