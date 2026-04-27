@@ -50,14 +50,15 @@ class AmphoraController(base.BaseController):
     def get_one(self, id, fields=None):
         """Gets a single amphora's details."""
         context = pecan_request.context.get('octavia_context')
+
         with context.session.begin():
-            db_amp = self._get_db_amp(context.session, id, show_deleted=False)
+            amphora = self._get_db_amp(context.session, id, show_deleted=False)
 
-        self._auth_validate_action(context, context.project_id,
-                                   constants.RBAC_GET_ONE)
+            self._auth_validate_action(context, context.project_id,
+                                       constants.RBAC_GET_ONE)
 
-        result = self._convert_db_to_type(
-            db_amp, amp_types.AmphoraResponse)
+            result = amp_types.AmphoraResponse.from_db_obj(amphora)
+
         if fields is not None:
             result = self._filter_fields([result], fields)[0]
         return amp_types.AmphoraRootResponse(amphora=result)
@@ -73,11 +74,17 @@ class AmphoraController(base.BaseController):
                                    constants.RBAC_GET_ALL)
 
         with context.session.begin():
-            db_amp, links = self.repositories.amphora.get_all_API_list(
-                context.session, show_deleted=False,
-                pagination_helper=pcontext.get(constants.PAGINATION_HELPER))
-        result = self._convert_db_to_type(
-            db_amp, [amp_types.AmphoraResponse])
+            db_amps, links = self.repositories.amphora.get_all_API_list(
+                context.session,
+                show_deleted=False,
+                pagination_helper=pcontext.get(constants.PAGINATION_HELPER)
+            )
+
+            result = [
+                amp_types.AmphoraResponse.from_db_obj(db_amp)
+                for db_amp in db_amps
+            ]
+
         if fields is not None:
             result = self._filter_fields(result, fields)
         return amp_types.AmphoraeRootResponse(
@@ -143,11 +150,10 @@ class FailoverController(base.BaseController):
             db_amp = self._get_db_amp(context.session, self.amp_id,
                                       show_deleted=False)
 
-        self._auth_validate_action(
-            context, db_amp.load_balancer.project_id,
-            constants.RBAC_PUT_FAILOVER)
+            self._auth_validate_action(
+                context, db_amp.load_balancer.project_id,
+                constants.RBAC_PUT_FAILOVER)
 
-        with context.session.begin():
             self.repositories.load_balancer.test_and_set_provisioning_status(
                 context.session, db_amp.load_balancer_id,
                 status=constants.PENDING_UPDATE, raise_exception=True)
@@ -187,19 +193,19 @@ class AmphoraUpdateController(base.BaseController):
             db_amp = self._get_db_amp(context.session, self.amp_id,
                                       show_deleted=False)
 
-        self._auth_validate_action(
-            context, db_amp.load_balancer.project_id,
-            constants.RBAC_PUT_CONFIG)
+            self._auth_validate_action(
+                context, db_amp.load_balancer.project_id,
+                constants.RBAC_PUT_CONFIG)
 
-        try:
-            LOG.info("Sending amphora agent update request for amphora %s to "
-                     "the queue.", self.amp_id)
-            payload = {constants.AMPHORA_ID: db_amp.id}
-            self.client.cast({}, 'update_amphora_agent_config', **payload)
-        except Exception:
-            with excutils.save_and_reraise_exception(reraise=True):
-                LOG.error("Unable to send amphora agent update request for "
-                          "amphora %s to the queue.", self.amp_id)
+            try:
+                LOG.info("Sending amphora agent update request for amphora "
+                         "%s to the queue.", self.amp_id)
+                payload = {constants.AMPHORA_ID: db_amp.id}
+                self.client.cast({}, 'update_amphora_agent_config', **payload)
+            except Exception:
+                with excutils.save_and_reraise_exception(reraise=True):
+                    LOG.error("Unable to send amphora agent update request "
+                              "for amphora %s to the queue.", self.amp_id)
 
 
 class AmphoraStatsController(base.BaseController):
@@ -220,11 +226,15 @@ class AmphoraStatsController(base.BaseController):
         with context.session.begin():
             stats = self.repositories.get_amphora_stats(context.session,
                                                         self.amp_id)
-        if not stats:
-            raise exceptions.NotFound(resource='Amphora stats for',
-                                      id=self.amp_id)
+            if not stats:
+                raise exceptions.NotFound(resource='Amphora stats for',
+                                          id=self.amp_id)
 
-        wsme_stats = []
-        for stat in stats:
-            wsme_stats.append(amp_types.AmphoraStatisticsResponse(**stat))
-        return amp_types.StatisticsRootResponse(amphora_stats=wsme_stats)
+            wsme_stats = []
+            for stat in stats:
+                wsme_stats.append(
+                    amp_types.AmphoraStatisticsResponse(**stat)
+                )
+            return (
+                amp_types.StatisticsRootResponse(amphora_stats=wsme_stats)
+            )

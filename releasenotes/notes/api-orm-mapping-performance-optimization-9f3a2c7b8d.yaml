@@ -1,0 +1,8 @@
+---
+features:
+  - |
+    Introduced an ORM-based API data mapping path that bypasses the
+    data_model layer for API responses, mapping directly from database
+    models to API models which significantly improves performance.
+    The Quotas API controller and related types have been realigned
+    to support new alternative processing path.

@@ -15,19 +15,19 @@
 from wsme import types as wtypes
 
 from octavia.api.common import types
-from octavia.api.v2.types import listener
-from octavia.api.v2.types import pool
+from octavia.api.v2.types import listener as listener_types
+from octavia.api.v2.types import pool as pool_types
 
 
 class BaseLoadBalancerType(types.BaseType):
-    _type_to_model_map = {'vip_address': 'vip.ip_address',
-                          'vip_subnet_id': 'vip.subnet_id',
-                          'vip_port_id': 'vip.port_id',
-                          'vip_network_id': 'vip.network_id',
-                          'vip_qos_policy_id': 'vip.qos_policy_id',
-                          'vip_vnic_type': 'vip.vnic_type',
-                          'vip_sg_ids': 'vip.sg_ids',
-                          'admin_state_up': 'enabled'}
+    _type_to_db_map = {'vip_address': 'vip.ip_address',
+                       'vip_subnet_id': 'vip.subnet_id',
+                       'vip_port_id': 'vip.port_id',
+                       'vip_network_id': 'vip.network_id',
+                       'vip_qos_policy_id': 'vip.qos_policy_id',
+                       'vip_vnic_type': 'vip.vnic_type',
+                       'vip_sg_ids': 'vip.sg_ids',
+                       'admin_state_up': 'enabled'}
     _child_map = {'vip': {
         'ip_address': 'vip_address',
         'subnet_id': 'vip_subnet_id',
@@ -72,33 +72,44 @@ class LoadBalancerResponse(BaseLoadBalancerType):
     vip_vnic_type = wtypes.wsattr(wtypes.StringType())
 
     @classmethod
-    def from_data_model(cls, data_model, children=False):
-        result = super().from_data_model(
-            data_model, children=children)
-        if data_model.vip:
-            result.vip_subnet_id = data_model.vip.subnet_id
-            result.vip_port_id = data_model.vip.port_id
-            result.vip_address = data_model.vip.ip_address
-            result.vip_network_id = data_model.vip.network_id
-            result.vip_qos_policy_id = data_model.vip.qos_policy_id
-            result.vip_vnic_type = data_model.vip.vnic_type
-            result.vip_sg_ids = data_model.vip.sg_ids
+    def from_db_obj(cls, db_obj):
+        result = super().from_db_obj(db_obj)
+
+        if db_obj.vip:
+            result.vip_address = db_obj.vip.ip_address
+            result.vip_port_id = db_obj.vip.port_id
+            result.vip_subnet_id = db_obj.vip.subnet_id
+            result.vip_network_id = db_obj.vip.network_id
+            result.vip_sg_ids = db_obj.vip.sg_ids
+            result.vip_qos_policy_id = db_obj.vip.qos_policy_id
+            result.vip_vnic_type = db_obj.vip.vnic_type
+
         result.additional_vips = [
-            AdditionalVipsType.from_data_model(i)
-            for i in data_model.additional_vips]
-        if cls._full_response():
-            listener_model = listener.ListenerFullResponse
-            pool_model = pool.PoolFullResponse
-        else:
-            listener_model = types.IdOnlyType
-            pool_model = types.IdOnlyType
-        result.listeners = [
-            listener_model.from_data_model(i) for i in data_model.listeners]
-        result.pools = [
-            pool_model.from_data_model(i) for i in data_model.pools]
+            AdditionalVipsType.from_db_obj(additional_vip)
+            for additional_vip in db_obj.additional_vips
+        ]
 
         if not result.provider:
             result.provider = "octavia"
+
+        if cls._full_response():
+            result.listeners = [
+                listener_types.ListenerFullResponse.from_db_obj(listener)
+                for listener in db_obj.listeners
+            ]
+            result.pools = [
+                pool_types.PoolFullResponse.from_db_obj(pool)
+                for pool in db_obj.pools
+            ]
+        else:
+            result.listeners = [
+                types.IdOnlyType.from_db_obj(listener)
+                for listener in db_obj.listeners
+            ]
+            result.pools = [
+                types.IdOnlyType.from_db_obj(pool)
+                for pool in db_obj.pools
+            ]
 
         return result
 
@@ -108,8 +119,8 @@ class LoadBalancerFullResponse(LoadBalancerResponse):
     def _full_response(cls):
         return True
 
-    listeners = wtypes.wsattr([listener.ListenerFullResponse])
-    pools = wtypes.wsattr([pool.PoolFullResponse])
+    listeners = wtypes.wsattr([listener_types.ListenerFullResponse])
+    pools = wtypes.wsattr([pool_types.PoolFullResponse])
 
 
 class LoadBalancerRootResponse(types.BaseType):
@@ -139,8 +150,9 @@ class LoadBalancerPOST(BaseLoadBalancerType):
     vip_sg_ids = wtypes.wsattr([wtypes.UuidType()])
     additional_vips = wtypes.wsattr([AdditionalVipsType], default=[])
     project_id = wtypes.wsattr(wtypes.StringType(max_length=36))
-    listeners = wtypes.wsattr([listener.ListenerSingleCreate], default=[])
-    pools = wtypes.wsattr([pool.PoolSingleCreate], default=[])
+    listeners = wtypes.wsattr(
+        [listener_types.ListenerSingleCreate], default=[])
+    pools = wtypes.wsattr([pool_types.PoolSingleCreate], default=[])
     provider = wtypes.wsattr(wtypes.StringType(max_length=64))
     tags = wtypes.wsattr(wtypes.ArrayType(wtypes.StringType(max_length=255)))
     flavor_id = wtypes.wsattr(wtypes.UuidType())
@@ -172,15 +184,17 @@ class LoadBalancerStatusResponse(BaseLoadBalancerType):
     name = wtypes.wsattr(wtypes.StringType())
     operating_status = wtypes.wsattr(wtypes.StringType())
     provisioning_status = wtypes.wsattr(wtypes.StringType())
-    listeners = wtypes.wsattr([listener.ListenerStatusResponse])
+    listeners = wtypes.wsattr([listener_types.ListenerStatusResponse])
 
     @classmethod
-    def from_data_model(cls, data_model, children=False):
-        result = super().from_data_model(
-            data_model, children=children)
-        listener_model = listener.ListenerStatusResponse
+    def from_db_obj(cls, db_obj):
+        result = super().from_db_obj(db_obj)
+
         result.listeners = [
-            listener_model.from_data_model(i) for i in data_model.listeners]
+            listener_types.ListenerStatusResponse.from_db_obj(listener)
+            for listener in db_obj.listeners
+        ]
+
         if not result.name:
             result.name = ""
 
@@ -202,12 +216,6 @@ class LoadBalancerStatisticsResponse(BaseLoadBalancerType):
     active_connections = wtypes.wsattr(wtypes.IntegerType())
     total_connections = wtypes.wsattr(wtypes.IntegerType())
     request_errors = wtypes.wsattr(wtypes.IntegerType())
-
-    @classmethod
-    def from_data_model(cls, data_model, children=False):
-        result = super().from_data_model(
-            data_model, children=children)
-        return result
 
 
 class StatisticsRootResponse(types.BaseType):

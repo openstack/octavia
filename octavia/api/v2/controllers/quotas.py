@@ -33,17 +33,20 @@ class QuotasController(base.BaseController):
     def __init__(self):
         super().__init__()
 
-    @wsme_pecan.wsexpose(quota_types.QuotaResponse, wtypes.text)
+    @wsme_pecan.wsexpose(quota_types.QuotaRootResponse, wtypes.text)
     def get(self, project_id):
         """Get a single project's quota details."""
         context = pecan_request.context.get('octavia_context')
 
         self._auth_validate_action(context, project_id, constants.RBAC_GET_ONE)
 
-        db_quotas = self._get_db_quotas(context.session, project_id)
-        return self._convert_db_to_type(db_quotas, quota_types.QuotaResponse)
+        with context.session.begin():
+            quotas = self._get_db_quotas(context.session, project_id)
+            result = quota_types.QuotaResponse.from_db_obj(quotas)
 
-    @wsme_pecan.wsexpose(quota_types.QuotaAllResponse,
+        return quota_types.QuotaRootResponse(quota=result)
+
+    @wsme_pecan.wsexpose(quota_types.QuotasRootResponse,
                          ignore_extra_args=True)
     def get_all(self, project_id=None):
         """List all non-default quotas."""
@@ -52,16 +55,25 @@ class QuotasController(base.BaseController):
 
         query_filter = self._auth_get_all(context, project_id)
 
-        db_quotas, links = self.repositories.quotas.get_all(
-            context.session,
-            pagination_helper=pcontext.get(constants.PAGINATION_HELPER),
-            **query_filter)
-        quotas = quota_types.QuotaAllResponse.from_data_model(db_quotas)
-        quotas.quotas_links = links
-        return quotas
+        with context.session.begin():
+            quotas, links = self.repositories.quotas.get_all_orm(
+                context.session,
+                pagination_helper=pcontext.get(constants.PAGINATION_HELPER),
+                **query_filter
+            )
 
-    @wsme_pecan.wsexpose(quota_types.QuotaResponse, wtypes.text,
-                         body=quota_types.QuotaPUT, status_code=202)
+            result = [
+                quota_types.QuotaResponse.from_db_obj(quota)
+                for quota in quotas
+            ]
+
+        return quota_types.QuotasRootResponse(
+            quotas=result,
+            quotas_links=links
+        )
+
+    @wsme_pecan.wsexpose(quota_types.QuotaRootResponse, wtypes.text,
+                         body=quota_types.QuotaRootPUT, status_code=202)
     def put(self, project_id, quotas):
         """Update any or all quotas for a project."""
         context = pecan_request.context.get('octavia_context')
@@ -73,10 +85,17 @@ class QuotasController(base.BaseController):
 
         quotas_dict = quotas.to_dict()
         with context.session.begin():
-            self.repositories.quotas.update(context.session, project_id,
-                                            **quotas_dict)
-        db_quotas = self._get_db_quotas(context.session, project_id)
-        return self._convert_db_to_type(db_quotas, quota_types.QuotaResponse)
+            self.repositories.quotas.update(
+                context.session,
+                project_id,
+                **quotas_dict
+            )
+
+        with context.session.begin():
+            quotas = self._get_db_quotas(context.session, project_id)
+            result = quota_types.QuotaResponse.from_db_obj(quotas)
+
+        return quota_types.QuotaRootResponse(quota=result)
 
     @wsme_pecan.wsexpose(None, wtypes.text, status_code=202)
     def delete(self, project_id):
@@ -90,8 +109,12 @@ class QuotasController(base.BaseController):
 
         with context.session.begin():
             self.repositories.quotas.delete(context.session, project_id)
-        db_quotas = self._get_db_quotas(context.session, project_id)
-        return self._convert_db_to_type(db_quotas, quota_types.QuotaResponse)
+
+        with context.session.begin():
+            quotas = self._get_db_quotas(context.session, project_id)
+            result = quota_types.QuotaResponse.from_db_obj(quotas)
+
+        return quota_types.QuotaRootResponse(quota=result)
 
     @pecan_expose()
     def _lookup(self, project_id, *remainder):
@@ -108,7 +131,7 @@ class QuotasDefaultController(base.BaseController):
         super().__init__()
         self.project_id = project_id
 
-    @wsme_pecan.wsexpose(quota_types.QuotaResponse, wtypes.text)
+    @wsme_pecan.wsexpose(quota_types.QuotaRootResponse, wtypes.text)
     def get(self):
         """Get a project's default quota details."""
         context = pecan_request.context.get('octavia_context')
@@ -120,4 +143,6 @@ class QuotasDefaultController(base.BaseController):
                                    constants.RBAC_GET_DEFAULTS)
 
         quotas = self._get_default_quotas(self.project_id)
-        return self._convert_db_to_type(quotas, quota_types.QuotaResponse)
+
+        result = quota_types.QuotaResponse.from_db_obj(quotas)
+        return quota_types.QuotaRootResponse(quota=result)

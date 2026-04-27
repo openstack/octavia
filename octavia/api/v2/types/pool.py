@@ -16,8 +16,8 @@ from octavia_lib.common import constants as lib_constants
 from wsme import types as wtypes
 
 from octavia.api.common import types
-from octavia.api.v2.types import health_monitor
-from octavia.api.v2.types import member
+from octavia.api.v2.types import health_monitor as health_monitor_types
+from octavia.api.v2.types import member as member_types
 from octavia.common import constants
 
 
@@ -57,12 +57,12 @@ class SessionPersistencePUT(types.BaseType):
 
 
 class BasePoolType(types.BaseType):
-    _type_to_model_map = {'admin_state_up': 'enabled',
-                          'healthmonitor': 'health_monitor',
-                          'healthmonitor_id': 'health_monitor.id',
-                          'tls_container_ref': 'tls_certificate_id',
-                          'ca_tls_container_ref': 'ca_tls_certificate_id',
-                          'crl_container_ref': 'crl_container_id'}
+    _type_to_db_map = {'admin_state_up': 'enabled',
+                       'healthmonitor': 'health_monitor',
+                       'healthmonitor_id': 'health_monitor.id',
+                       'tls_container_ref': 'tls_certificate_id',
+                       'ca_tls_container_ref': 'ca_tls_certificate_id',
+                       'crl_container_ref': 'crl_container_id'}
 
     _child_map = {'health_monitor': {'id': 'healthmonitor_id'}}
 
@@ -95,39 +95,48 @@ class PoolResponse(BasePoolType):
     alpn_protocols = wtypes.wsattr(wtypes.ArrayType(types.AlpnProtocolType()))
 
     @classmethod
-    def from_data_model(cls, data_model, children=False):
-        pool = super().from_data_model(
-            data_model, children=children)
-        if data_model.session_persistence:
-            pool.session_persistence = (
-                SessionPersistenceResponse.from_data_model(
-                    data_model.session_persistence))
+    def from_db_obj(cls, db_obj):
+        result = super().from_db_obj(db_obj)
+
+        result.listeners = [
+            types.IdOnlyType.from_db_obj(listener)
+            for listener in db_obj.listeners
+        ]
+
+        if db_obj.session_persistence:
+            result.session_persistence = (
+                SessionPersistenceResponse
+                .from_db_obj(db_obj.session_persistence)
+            )
 
         if cls._full_response():
-            del pool.loadbalancers
-            member_model = member.MemberFullResponse
-            if data_model.health_monitor:
-                pool.healthmonitor = (
-                    health_monitor.HealthMonitorFullResponse
-                    .from_data_model(data_model.health_monitor))
+            if db_obj.health_monitor:
+                result.healthmonitor = (
+                    health_monitor_types.HealthMonitorFullResponse
+                    .from_db_obj(db_obj.health_monitor)
+                )
+
+            result.members = [
+                member_types.MemberFullResponse.from_db_obj(member)
+                for member in db_obj.members
+            ]
         else:
-            if data_model.load_balancer:
-                pool.loadbalancers = [
-                    types.IdOnlyType.from_data_model(data_model.load_balancer)]
+            if db_obj.load_balancer:
+                result.loadbalancers = [
+                    types.IdOnlyType.from_db_obj(db_obj.load_balancer)
+                ]
             else:
-                pool.loadbalancers = []
-            member_model = types.IdOnlyType
-            if data_model.health_monitor:
-                pool.healthmonitor_id = data_model.health_monitor.id
-        pool.listeners = [
-            types.IdOnlyType.from_data_model(i) for i in data_model.listeners]
-        pool.members = [
-            member_model.from_data_model(i) for i in data_model.members]
+                result.loadbalancers = []
 
-        pool.tls_versions = data_model.tls_versions
-        pool.alpn_protocols = data_model.alpn_protocols
+            if db_obj.health_monitor:
+                result.healthmonitor_id = db_obj.health_monitor.id
 
-        return pool
+            result.members = [
+                types.IdOnlyType.from_db_obj(member)
+                for member in db_obj.members
+            ]
+
+        return result
 
 
 class PoolFullResponse(PoolResponse):
@@ -135,8 +144,9 @@ class PoolFullResponse(PoolResponse):
     def _full_response(cls):
         return True
 
-    members = wtypes.wsattr([member.MemberFullResponse])
-    healthmonitor = wtypes.wsattr(health_monitor.HealthMonitorFullResponse)
+    members = wtypes.wsattr([member_types.MemberFullResponse])
+    healthmonitor = wtypes.wsattr(
+        health_monitor_types.HealthMonitorFullResponse)
 
 
 class PoolRootResponse(types.BaseType):
@@ -164,8 +174,9 @@ class PoolPOST(BasePoolType):
     session_persistence = wtypes.wsattr(SessionPersistencePOST)
     # TODO(johnsom) Remove after deprecation (R series)
     project_id = wtypes.wsattr(wtypes.StringType(max_length=36))
-    healthmonitor = wtypes.wsattr(health_monitor.HealthMonitorSingleCreate)
-    members = wtypes.wsattr([member.MemberSingleCreate])
+    healthmonitor = wtypes.wsattr(
+        health_monitor_types.HealthMonitorSingleCreate)
+    members = wtypes.wsattr([member_types.MemberSingleCreate])
     tags = wtypes.wsattr(wtypes.ArrayType(wtypes.StringType(max_length=255)))
     tls_container_ref = wtypes.wsattr(
         wtypes.StringType(max_length=255))
@@ -215,8 +226,9 @@ class PoolSingleCreate(BasePoolType):
     lb_algorithm = wtypes.wsattr(
         wtypes.Enum(str, *constants.SUPPORTED_LB_ALGORITHMS))
     session_persistence = wtypes.wsattr(SessionPersistencePOST)
-    healthmonitor = wtypes.wsattr(health_monitor.HealthMonitorSingleCreate)
-    members = wtypes.wsattr([member.MemberSingleCreate])
+    healthmonitor = wtypes.wsattr(
+        health_monitor_types.HealthMonitorSingleCreate)
+    members = wtypes.wsattr([member_types.MemberSingleCreate])
     tags = wtypes.wsattr(wtypes.ArrayType(wtypes.StringType(max_length=255)))
     tls_container_ref = wtypes.wsattr(wtypes.StringType(max_length=255))
     ca_tls_container_ref = wtypes.wsattr(wtypes.StringType(max_length=255))
@@ -235,20 +247,22 @@ class PoolStatusResponse(BasePoolType):
     provisioning_status = wtypes.wsattr(wtypes.StringType())
     operating_status = wtypes.wsattr(wtypes.StringType())
     health_monitor = wtypes.wsattr(
-        health_monitor.HealthMonitorStatusResponse)
-    members = wtypes.wsattr([member.MemberStatusResponse])
+        health_monitor_types.HealthMonitorStatusResponse)
+    members = wtypes.wsattr([member_types.MemberStatusResponse])
 
     @classmethod
-    def from_data_model(cls, data_model, children=False):
-        pool = super().from_data_model(
-            data_model, children=children)
+    def from_db_obj(cls, db_obj):
+        result = super().from_db_obj(db_obj)
 
-        member_model = member.MemberStatusResponse
-        if data_model.health_monitor:
-            pool.health_monitor = (
-                health_monitor.HealthMonitorStatusResponse.from_data_model(
-                    data_model.health_monitor))
-        pool.members = [
-            member_model.from_data_model(i) for i in data_model.members]
+        if db_obj.health_monitor:
+            result.health_monitor = (
+                health_monitor_types.HealthMonitorStatusResponse
+                .from_db_obj(db_obj.health_monitor)
+            )
 
-        return pool
+        result.members = [
+            member_types.MemberStatusResponse.from_db_obj(member)
+            for member in db_obj.members
+        ]
+
+        return result

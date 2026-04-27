@@ -22,7 +22,7 @@ from octavia.api.v2.types import health_monitor as health_monitor_type
 from octavia.api.v2.types import member as member_type
 from octavia.api.v2.types import pool as pool_type
 from octavia.common import constants
-from octavia.common import data_models
+from octavia.db import models
 from octavia.tests.unit.api.common import base
 
 
@@ -236,37 +236,37 @@ class TestPoolResponse(base.BaseTypesTest):
 
     def test_pool_response_with_health_monitor(self):
         health_monitor_id = uuidutils.generate_uuid()
-        health_monitor_model = data_models.HealthMonitor(id=health_monitor_id)
-        pool_model = data_models.Pool(health_monitor=health_monitor_model)
-        pool = self._type.from_data_model(data_model=pool_model)
+        health_monitor = models.HealthMonitor(id=health_monitor_id)
+        pool = models.Pool(health_monitor=health_monitor)
+        pool = self._type.from_db_obj(pool)
         self.assertEqual(pool.healthmonitor_id, health_monitor_id)
 
     def test_pool_response_with_members(self):
         member_id = uuidutils.generate_uuid()
-        members = [data_models.Member(id=member_id)]
-        pool_model = data_models.Pool(members=members)
-        pool = self._type.from_data_model(data_model=pool_model)
+        members = [models.Member(id=member_id)]
+        pool = models.Pool(members=members)
+        pool = self._type.from_db_obj(pool)
         self.assertIsInstance(pool.members[0], types.IdOnlyType)
         self.assertEqual(pool.members[0].id, member_id)
 
     def test_pool_response_with_load_balancer(self):
         load_balancer_id = uuidutils.generate_uuid()
-        load_balancer = data_models.LoadBalancer(id=load_balancer_id)
-        pool_model = data_models.Pool(load_balancer=load_balancer)
-        pool = self._type.from_data_model(data_model=pool_model)
+        load_balancer = models.LoadBalancer(id=load_balancer_id)
+        pool = models.Pool(load_balancer=load_balancer)
+        pool = self._type.from_db_obj(pool)
         self.assertIsInstance(pool.loadbalancers[0], types.IdOnlyType)
         self.assertEqual(pool.loadbalancers[0].id, load_balancer_id)
 
     def test_pool_response_with_session_persistence(self):
-        session_persistence = data_models.SessionPersistence(
+        session_persistence = models.SessionPersistence(
             cookie_name="test"
         )
-        pool_model = data_models.Pool(session_persistence=session_persistence)
-        pool = self._type.from_data_model(data_model=pool_model)
+        pool = models.Pool(session_persistence=session_persistence)
+        pool = self._type.from_db_obj(pool)
         self.assertEqual(pool.session_persistence.cookie_name, "test")
 
     def test_pool_response_without_children(self):
-        pool = self._type.from_data_model(data_model=data_models.Pool())
+        pool = self._type.from_db_obj(models.Pool())
         self.assertEqual(len(pool.loadbalancers), 0)
         self.assertIsNone(pool.session_persistence)
         self.assertEqual(len(pool.members), 0)
@@ -279,19 +279,19 @@ class TestPoolFullResponse(base.BaseTypesTest):
     _type = pool_type.PoolFullResponse
 
     def test_pool_full_response_with_health_monitor(self):
-        health_monitor_model = data_models.HealthMonitor()
-        pool_model = data_models.Pool(health_monitor=health_monitor_model)
-        pool = self._type.from_data_model(data_model=pool_model)
+        health_monitor = models.HealthMonitor()
+        pool = models.Pool(health_monitor=health_monitor)
+        pool = self._type.from_db_obj(pool)
         self.assertIsInstance(
             pool.healthmonitor, health_monitor_type.HealthMonitorFullResponse
         )
 
     def test_pool_full_response_with_members(self):
-        members = [data_models.Member()]
-        pool_model = data_models.Pool(members=members)
-        pool = self._type.from_data_model(data_model=pool_model)
+        members = [models.Member()]
+        pool = models.Pool(members=members)
+        pool = self._type.from_db_obj(pool)
         self.assertIsInstance(pool.members[0], member_type.MemberFullResponse)
 
     def test_pool_full_response_without_children(self):
-        pool = self._type.from_data_model(data_model=data_models.Pool())
+        pool = self._type.from_db_obj(models.Pool())
         self.assertIsNone(pool.healthmonitor)

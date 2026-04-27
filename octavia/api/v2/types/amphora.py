@@ -18,7 +18,7 @@ from octavia.api.common import types
 
 
 class BaseAmphoraType(types.BaseType):
-    _type_to_model_map = {'loadbalancer_id': 'load_balancer_id'}
+    _type_to_db_map = {'loadbalancer_id': 'load_balancer_id'}
     _child_map = {}
 
 
@@ -44,13 +44,6 @@ class AmphoraResponse(BaseAmphoraType):
     updated_at = wtypes.wsattr(wtypes.datetime.datetime)
     image_id = wtypes.wsattr(wtypes.UuidType())
     compute_flavor = wtypes.wsattr(wtypes.StringType())
-
-    @classmethod
-    def from_data_model(cls, data_model, children=False):
-        amphorae = super().from_data_model(
-            data_model, children=children)
-
-        return amphorae
 
 
 class AmphoraRootResponse(types.BaseType):

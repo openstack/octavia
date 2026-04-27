@@ -27,61 +27,61 @@ class TestQuotaPut(base.BaseTypesTest):
     _type = quota_type.QuotaPUT
 
     def test_quota(self):
-        body = {'quota': {'loadbalancer': 5}}
+        body = {'loadbalancer': 5}
         quota = wsme_json.fromjson(self._type, body)
-        self.assertEqual(wsme_types.Unset, quota.quota.listener)
-        self.assertEqual(wsme_types.Unset, quota.quota.pool)
-        self.assertEqual(wsme_types.Unset, quota.quota.member)
-        self.assertEqual(wsme_types.Unset, quota.quota.healthmonitor)
-        self.assertEqual(wsme_types.Unset, quota.quota.l7policy)
-        self.assertEqual(wsme_types.Unset, quota.quota.l7rule)
+        self.assertEqual(wsme_types.Unset, quota.listener)
+        self.assertEqual(wsme_types.Unset, quota.pool)
+        self.assertEqual(wsme_types.Unset, quota.member)
+        self.assertEqual(wsme_types.Unset, quota.healthmonitor)
+        self.assertEqual(wsme_types.Unset, quota.l7policy)
+        self.assertEqual(wsme_types.Unset, quota.l7rule)
 
     def test_invalid_quota(self):
-        body = {'quota': {'loadbalancer': constants.MAX_QUOTA + 1}}
+        body = {'loadbalancer': constants.MAX_QUOTA + 1}
         self.assertRaises(exc.InvalidInput, wsme_json.fromjson,
                           self._type, body)
-        body = {'quota': {'loadbalancer': constants.MIN_QUOTA - 1}}
-        self.assertRaises(exc.InvalidInput, wsme_json.fromjson,
-                          self._type, body)
-
-        body = {'quota': {'listener': constants.MAX_QUOTA + 1}}
-        self.assertRaises(exc.InvalidInput, wsme_json.fromjson,
-                          self._type, body)
-        body = {'quota': {'listener': constants.MIN_QUOTA - 1}}
+        body = {'loadbalancer': constants.MIN_QUOTA - 1}
         self.assertRaises(exc.InvalidInput, wsme_json.fromjson,
                           self._type, body)
 
-        body = {'quota': {'pool': constants.MAX_QUOTA + 1}}
+        body = {'listener': constants.MAX_QUOTA + 1}
         self.assertRaises(exc.InvalidInput, wsme_json.fromjson,
                           self._type, body)
-        body = {'quota': {'pool': constants.MIN_QUOTA - 1}}
-        self.assertRaises(exc.InvalidInput, wsme_json.fromjson,
-                          self._type, body)
-
-        body = {'quota': {'member': constants.MAX_QUOTA + 1}}
-        self.assertRaises(exc.InvalidInput, wsme_json.fromjson,
-                          self._type, body)
-        body = {'quota': {'member': constants.MIN_QUOTA - 1}}
+        body = {'listener': constants.MIN_QUOTA - 1}
         self.assertRaises(exc.InvalidInput, wsme_json.fromjson,
                           self._type, body)
 
-        body = {'quota': {'healthmonitor': constants.MAX_QUOTA + 1}}
+        body = {'pool': constants.MAX_QUOTA + 1}
         self.assertRaises(exc.InvalidInput, wsme_json.fromjson,
                           self._type, body)
-        body = {'quota': {'healthmonitor': constants.MIN_QUOTA - 1}}
-        self.assertRaises(exc.InvalidInput, wsme_json.fromjson,
-                          self._type, body)
-
-        body = {'quota': {'l7policy': constants.MAX_QUOTA + 1}}
-        self.assertRaises(exc.InvalidInput, wsme_json.fromjson,
-                          self._type, body)
-        body = {'quota': {'l7policy': constants.MIN_QUOTA - 1}}
+        body = {'pool': constants.MIN_QUOTA - 1}
         self.assertRaises(exc.InvalidInput, wsme_json.fromjson,
                           self._type, body)
 
-        body = {'quota': {'l7rule': constants.MAX_QUOTA + 1}}
+        body = {'member': constants.MAX_QUOTA + 1}
         self.assertRaises(exc.InvalidInput, wsme_json.fromjson,
                           self._type, body)
-        body = {'quota': {'l7rule': constants.MIN_QUOTA - 1}}
+        body = {'member': constants.MIN_QUOTA - 1}
+        self.assertRaises(exc.InvalidInput, wsme_json.fromjson,
+                          self._type, body)
+
+        body = {'healthmonitor': constants.MAX_QUOTA + 1}
+        self.assertRaises(exc.InvalidInput, wsme_json.fromjson,
+                          self._type, body)
+        body = {'healthmonitor': constants.MIN_QUOTA - 1}
+        self.assertRaises(exc.InvalidInput, wsme_json.fromjson,
+                          self._type, body)
+
+        body = {'l7policy': constants.MAX_QUOTA + 1}
+        self.assertRaises(exc.InvalidInput, wsme_json.fromjson,
+                          self._type, body)
+        body = {'l7policy': constants.MIN_QUOTA - 1}
+        self.assertRaises(exc.InvalidInput, wsme_json.fromjson,
+                          self._type, body)
+
+        body = {'l7rule': constants.MAX_QUOTA + 1}
+        self.assertRaises(exc.InvalidInput, wsme_json.fromjson,
+                          self._type, body)
+        body = {'l7rule': constants.MIN_QUOTA - 1}
         self.assertRaises(exc.InvalidInput, wsme_json.fromjson,
                           self._type, body)

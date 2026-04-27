@@ -16,13 +16,13 @@ from octavia_lib.common import constants as lib_constants
 from wsme import types as wtypes
 
 from octavia.api.common import types
-from octavia.api.v2.types import l7policy
-from octavia.api.v2.types import pool
+from octavia.api.v2.types import l7policy as l7policy_types
+from octavia.api.v2.types import pool as pool_types
 from octavia.common import constants
 
 
 class BaseListenerType(types.BaseType):
-    _type_to_model_map = {
+    _type_to_db_map = {
         'admin_state_up': 'enabled',
         'default_tls_container_ref': 'tls_certificate_id',
         'sni_container_refs': 'sni_containers',
@@ -68,32 +68,35 @@ class ListenerResponse(BaseListenerType):
     hsts_preload = wtypes.wsattr(bool)
 
     @classmethod
-    def from_data_model(cls, data_model, children=False):
-        listener = super().from_data_model(
-            data_model, children=children)
+    def from_db_obj(cls, db_obj):
+        result = super().from_db_obj(db_obj)
 
-        listener.sni_container_refs = [
-            sni_c.tls_container_id for sni_c in data_model.sni_containers]
-        listener.allowed_cidrs = [
-            c.cidr for c in data_model.allowed_cidrs] or None
+        result.sni_container_refs = [
+            sni_container.tls_container_id
+            for sni_container in db_obj.sni_containers
+        ]
+        result.allowed_cidrs = [
+            allowed_cidr.cidr
+            for allowed_cidr in db_obj.allowed_cidrs
+        ] or None
+
+        result.insert_headers = db_obj.insert_headers or {}
+
         if cls._full_response():
-            del listener.loadbalancers
-            l7policy_type = l7policy.L7PolicyFullResponse
+            result.l7policies = [
+                l7policy_types.L7PolicyFullResponse.from_db_obj(l7policy)
+                for l7policy in db_obj.l7policies
+            ]
         else:
-            listener.loadbalancers = [
-                types.IdOnlyType.from_data_model(data_model.load_balancer)]
-            l7policy_type = types.IdOnlyType
+            result.l7policies = [
+                types.IdOnlyType.from_db_obj(l7policy)
+                for l7policy in db_obj.l7policies
+            ]
+            result.loadbalancers = [
+                types.IdOnlyType.from_db_obj(db_obj.load_balancer)
+            ]
 
-        listener.l7policies = [
-            l7policy_type.from_data_model(i) for i in data_model.l7policies]
-
-        listener.tls_versions = data_model.tls_versions
-        listener.alpn_protocols = data_model.alpn_protocols
-        listener.hsts_max_age = data_model.hsts_max_age
-        listener.hsts_include_subdomains = data_model.hsts_include_subdomains
-        listener.hsts_preload = data_model.hsts_preload
-
-        return listener
+        return result
 
 
 class ListenerFullResponse(ListenerResponse):
@@ -101,7 +104,7 @@ class ListenerFullResponse(ListenerResponse):
     def _full_response(cls):
         return True
 
-    l7policies = wtypes.wsattr([l7policy.L7PolicyFullResponse])
+    l7policies = wtypes.wsattr([l7policy_types.L7PolicyFullResponse])
 
 
 class ListenerRootResponse(types.BaseType):
@@ -133,8 +136,9 @@ class ListenerPOST(BaseListenerType):
     # TODO(johnsom) Remove after deprecation (R series)
     project_id = wtypes.wsattr(wtypes.StringType(max_length=36))
     default_pool_id = wtypes.wsattr(wtypes.UuidType())
-    default_pool = wtypes.wsattr(pool.PoolSingleCreate)
-    l7policies = wtypes.wsattr([l7policy.L7PolicySingleCreate], default=[])
+    default_pool = wtypes.wsattr(pool_types.PoolSingleCreate)
+    l7policies = wtypes.wsattr(
+        [l7policy_types.L7PolicySingleCreate], default=[])
     insert_headers = wtypes.wsattr(
         wtypes.DictType(str, wtypes.StringType(max_length=255)))
     loadbalancer_id = wtypes.wsattr(wtypes.UuidType(), mandatory=True)
@@ -232,8 +236,9 @@ class ListenerSingleCreate(BaseListenerType):
         wtypes.StringType(max_length=255))
     sni_container_refs = [wtypes.StringType(max_length=255)]
     default_pool_id = wtypes.wsattr(wtypes.UuidType())
-    default_pool = wtypes.wsattr(pool.PoolSingleCreate)
-    l7policies = wtypes.wsattr([l7policy.L7PolicySingleCreate], default=[])
+    default_pool = wtypes.wsattr(pool_types.PoolSingleCreate)
+    l7policies = wtypes.wsattr(
+        [l7policy_types.L7PolicySingleCreate], default=[])
     insert_headers = wtypes.wsattr(
         wtypes.DictType(str, wtypes.StringType(max_length=255)))
     timeout_client_data = wtypes.wsattr(
@@ -270,21 +275,21 @@ class ListenerStatusResponse(BaseListenerType):
     name = wtypes.wsattr(wtypes.StringType())
     operating_status = wtypes.wsattr(wtypes.StringType())
     provisioning_status = wtypes.wsattr(wtypes.StringType())
-    pools = wtypes.wsattr([pool.PoolStatusResponse])
+    pools = wtypes.wsattr([pool_types.PoolStatusResponse])
 
     @classmethod
-    def from_data_model(cls, data_model, children=False):
-        listener = super().from_data_model(
-            data_model, children=children)
+    def from_db_obj(cls, db_obj):
+        result = super().from_db_obj(db_obj)
 
-        pool_model = pool.PoolStatusResponse
-        listener.pools = [
-            pool_model.from_data_model(i) for i in data_model.pools]
+        result.pools = [
+            pool_types.PoolStatusResponse.from_db_obj(pool)
+            for pool in db_obj.pools
+        ]
 
-        if not listener.name:
-            listener.name = ""
+        if not result.name:
+            result.name = ""
 
-        return listener
+        return result
 
 
 class ListenerStatisticsResponse(BaseListenerType):
@@ -294,12 +299,6 @@ class ListenerStatisticsResponse(BaseListenerType):
     active_connections = wtypes.wsattr(wtypes.IntegerType())
     total_connections = wtypes.wsattr(wtypes.IntegerType())
     request_errors = wtypes.wsattr(wtypes.IntegerType())
-
-    @classmethod
-    def from_data_model(cls, data_model, children=False):
-        result = super().from_data_model(
-            data_model, children=children)
-        return result
 
 
 class StatisticsRootResponse(types.BaseType):

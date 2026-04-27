@@ -15,13 +15,13 @@
 from wsme import types as wtypes
 
 from octavia.api.common import types
-from octavia.api.v2.types import l7rule
-from octavia.api.v2.types import pool
+from octavia.api.v2.types import l7rule as l7rule_types
+from octavia.api.v2.types import pool as pool_types
 from octavia.common import constants
 
 
 class BaseL7PolicyType(types.BaseType):
-    _type_to_model_map = {'admin_state_up': 'enabled'}
+    _type_to_db_map = {'admin_state_up': 'enabled'}
     _child_map = {}
 
 
@@ -47,17 +47,21 @@ class L7PolicyResponse(BaseL7PolicyType):
     redirect_http_code = wtypes.wsattr(wtypes.IntegerType())
 
     @classmethod
-    def from_data_model(cls, data_model, children=False):
-        policy = super().from_data_model(
-            data_model, children=children)
+    def from_db_obj(cls, db_obj):
+        result = super().from_db_obj(db_obj)
 
         if cls._full_response():
-            rule_model = l7rule.L7RuleFullResponse
+            result.rules = [
+                l7rule_types.L7RuleFullResponse.from_db_obj(l7rule)
+                for l7rule in db_obj.l7rules
+            ]
         else:
-            rule_model = types.IdOnlyType
-        policy.rules = [
-            rule_model.from_data_model(i) for i in data_model.l7rules]
-        return policy
+            result.rules = [
+                types.IdOnlyType.from_db_obj(l7rule)
+                for l7rule in db_obj.l7rules
+            ]
+
+        return result
 
 
 class L7PolicyFullResponse(L7PolicyResponse):
@@ -65,7 +69,7 @@ class L7PolicyFullResponse(L7PolicyResponse):
     def _full_response(cls):
         return True
 
-    rules = wtypes.wsattr([l7rule.L7RuleFullResponse])
+    rules = wtypes.wsattr([l7rule_types.L7RuleFullResponse])
 
 
 class L7PolicyRootResponse(types.BaseType):
@@ -95,7 +99,7 @@ class L7PolicyPOST(BaseL7PolicyType):
         maximum=constants.MAX_POLICY_POSITION),
         default=constants.MAX_POLICY_POSITION)
     listener_id = wtypes.wsattr(wtypes.UuidType(), mandatory=True)
-    rules = wtypes.wsattr([l7rule.L7RuleSingleCreate])
+    rules = wtypes.wsattr([l7rule_types.L7RuleSingleCreate])
     tags = wtypes.wsattr(wtypes.ArrayType(wtypes.StringType(max_length=255)))
     redirect_http_code = wtypes.wsattr(
         wtypes.Enum(int, *constants.SUPPORTED_L7POLICY_REDIRECT_HTTP_CODES))
@@ -135,14 +139,14 @@ class L7PolicySingleCreate(BaseL7PolicyType):
     action = wtypes.wsattr(
         wtypes.Enum(str, *constants.SUPPORTED_L7POLICY_ACTIONS),
         mandatory=True)
-    redirect_pool = wtypes.wsattr(pool.PoolSingleCreate)
+    redirect_pool = wtypes.wsattr(pool_types.PoolSingleCreate)
     redirect_url = wtypes.wsattr(types.URLType())
     redirect_prefix = wtypes.wsattr(types.URLType())
     position = wtypes.wsattr(wtypes.IntegerType(
         minimum=constants.MIN_POLICY_POSITION,
         maximum=constants.MAX_POLICY_POSITION),
         default=constants.MAX_POLICY_POSITION)
-    rules = wtypes.wsattr([l7rule.L7RuleSingleCreate])
+    rules = wtypes.wsattr([l7rule_types.L7RuleSingleCreate])
     tags = wtypes.wsattr(wtypes.ArrayType(wtypes.StringType(max_length=255)))
     redirect_http_code = wtypes.wsattr(
         wtypes.Enum(int, *constants.SUPPORTED_L7POLICY_REDIRECT_HTTP_CODES))

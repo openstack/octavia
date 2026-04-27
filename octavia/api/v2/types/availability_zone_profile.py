@@ -18,7 +18,7 @@ from octavia.api.common import types
 
 
 class BaseAvailabilityZoneProfileType(types.BaseType):
-    _type_to_model_map = {}
+    _type_to_db_map = {}
     _child_map = {}
 
 
@@ -28,12 +28,6 @@ class AvailabilityZoneProfileResponse(BaseAvailabilityZoneProfileType):
     name = wtypes.wsattr(wtypes.StringType())
     provider_name = wtypes.wsattr(wtypes.StringType())
     availability_zone_data = wtypes.wsattr(wtypes.StringType())
-
-    @classmethod
-    def from_data_model(cls, data_model, children=False):
-        availability_zone_profile = super().from_data_model(
-            data_model, children=children)
-        return availability_zone_profile
 
 
 class AvailabilityZoneProfileRootResponse(types.BaseType):
