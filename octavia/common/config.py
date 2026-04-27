@@ -545,7 +545,7 @@ task_flow_opts = [
                        'an inconsistent state and should only be used for '
                        'debugging purposes.')),
     cfg.StrOpt('persistence_connection',
-               default='sqlite://',
+               default='sqlite://', secret=True,
                help='Persistence database, which will be used to store tasks '
                     'states. Database connection url with db name'),
     cfg.BoolOpt('jobboard_enabled', default=False,
