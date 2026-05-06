@@ -1,0 +1,5 @@
+---
+fixes:
+  - |
+    Fixed an issue in plugin.sh for Devstack where unstack.sh would fail if the
+    o-hm0 network wasn't set up

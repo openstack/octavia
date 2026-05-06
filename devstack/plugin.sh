@@ -629,7 +629,9 @@ function octavia_stop {
         MGMT_SUBNET_ARRAY=(${OCTAVIA_MGMT_SUBNET//// })
     fi
     MGMT_SUBNET_MASK=${MGMT_SUBNET_ARRAY[1]}
-    sudo ip addr del $MGMT_PORT_IP/$MGMT_SUBNET_MASK dev o-hm0
+    if ip link show o-hm0 &> /dev/null && [ -n "$MGMT_PORT_IP" ]; then
+        sudo ip addr del $MGMT_PORT_IP/$MGMT_SUBNET_MASK dev o-hm0
+    fi
 
     if [[ ${OCTAVIA_ENABLE_AMPHORAV2_JOBBOARD} == True ]]; then
         stop_redis
