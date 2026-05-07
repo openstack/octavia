@@ -159,6 +159,16 @@ class LocalCertGenerator(cert_gen.CertGenerator):
                 ]),
                 critical=True
             )
+            new_cert = new_cert.add_extension(
+                x509.SubjectKeyIdentifier.from_public_key(
+                    lo_req.public_key()),
+                critical=False
+            )
+            new_cert = new_cert.add_extension(
+                x509.AuthorityKeyIdentifier.from_issuer_public_key(
+                    lo_cert.public_key()),
+                critical=False
+            )
             signed_cert = new_cert.sign(private_key=lo_key,
                                         algorithm=algorithm,
                                         backend=backends.default_backend())
