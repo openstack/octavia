@@ -25,7 +25,6 @@ run_tests.err.log
 run_tests.log
 setuptools*.egg/
 tempest.log
-.testrepository
 .stestr
 .tox/
 .venv/
