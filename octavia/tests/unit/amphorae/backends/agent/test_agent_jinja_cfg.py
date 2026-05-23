@@ -35,8 +35,6 @@ class AgentJinjaTestCase(base.TestCase):
                          agent_server_cert='/etc/octavia/certs/server.pem')
         self.conf.config(group="amphora_agent",
                          agent_server_network_dir='/etc/network/interfaces.d/')
-        self.conf.config(group='amphora_agent',
-                         amphora_udp_driver='keepalived_lvs'),
         self.conf.config(group="haproxy_amphora",
                          base_cert_dir='/var/lib/octavia/certs')
         self.conf.config(group="haproxy_amphora", base_path='/var/lib/octavia')
@@ -80,7 +78,6 @@ class AgentJinjaTestCase(base.TestCase):
                            '/etc/network/interfaces.d/\n'
                            'agent_request_read_timeout = 180\n'
                            'amphora_id = ' + AMP_ID + '\n'
-                           'amphora_udp_driver = keepalived_lvs\n'
                            'agent_tls_protocol = TLSv1.2\n\n'
                            '[controller_worker]\n'
                            'loadbalancer_topology = ' +
@@ -118,7 +115,6 @@ class AgentJinjaTestCase(base.TestCase):
                            '/etc/network/interfaces.d/\n'
                            'agent_request_read_timeout = 180\n'
                            'amphora_id = ' + AMP_ID + '\n'
-                           'amphora_udp_driver = keepalived_lvs\n'
                            'agent_tls_protocol = TLSv1.2\n\n'
                            '[controller_worker]\n'
                            'loadbalancer_topology = ' +
@@ -129,8 +125,6 @@ class AgentJinjaTestCase(base.TestCase):
 
     def test_build_agent_config_with_new_udp_driver(self):
         ajc = agent_jinja_cfg.AgentJinjaTemplater()
-        self.conf.config(group="amphora_agent",
-                         amphora_udp_driver='new_udp_driver')
         self.conf.config(group="amphora_agent",
                          administrative_log_facility=1)
         self.conf.config(group="amphora_agent", user_log_facility=0)
@@ -159,7 +153,6 @@ class AgentJinjaTestCase(base.TestCase):
                            '/etc/network/interfaces.d/\n'
                            'agent_request_read_timeout = 180\n'
                            'amphora_id = ' + AMP_ID + '\n'
-                           'amphora_udp_driver = new_udp_driver\n'
                            'agent_tls_protocol = TLSv1.2\n\n'
                            '[controller_worker]\n'
                            'loadbalancer_topology = ' +

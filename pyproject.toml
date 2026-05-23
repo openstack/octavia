@@ -58,9 +58,6 @@ prometheus-proxy = "octavia.cmd.prometheus_proxy:main"
 amphora_noop_driver = "octavia.amphorae.drivers.noop_driver.driver:NoopAmphoraLoadBalancerDriver"
 amphora_haproxy_rest_driver = "octavia.amphorae.drivers.haproxy.rest_api_driver:HaproxyAmphoraLoadBalancerDriver"
 
-[project.entry-points."octavia.amphora.udp_api_server"]
-keepalived_lvs = "octavia.amphorae.backends.agent.api_server.keepalivedlvs:KeepalivedLvs"
-
 [project.entry-points."octavia.api.drivers"]
 noop_driver = "octavia.api.drivers.noop_driver.driver:NoopProviderDriver"
 noop_driver-alt = "octavia.api.drivers.noop_driver.driver:NoopProviderDriver"

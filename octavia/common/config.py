@@ -209,13 +209,6 @@ amphora_agent_opts = [
 
     # Do not specify in octavia.conf, loaded at runtime
     cfg.StrOpt('amphora_id', help=_("The amphora ID.")),
-    cfg.StrOpt('amphora_udp_driver',
-               default='keepalived_lvs',
-               help='The UDP API backend for amphora agent.',
-               deprecated_for_removal=True,
-               deprecated_reason=_('amphora-agent will not support any other '
-                                   'backend than keepalived_lvs.'),
-               deprecated_since='Wallaby'),
 ]
 
 compute_opts = [

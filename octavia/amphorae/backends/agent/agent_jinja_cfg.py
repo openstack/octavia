@@ -52,7 +52,6 @@ class AgentJinjaTemplater:
              'haproxy_cmd': CONF.haproxy_amphora.haproxy_cmd,
              'heartbeat_interval': CONF.health_manager.heartbeat_interval,
              'heartbeat_key': CONF.health_manager.heartbeat_key,
-             'amphora_udp_driver': CONF.amphora_agent.amphora_udp_driver,
              'agent_tls_protocol': CONF.amphora_agent.agent_tls_protocol,
              'topology': topology,
              'administrative_log_facility':
