@@ -1,6 +1,6 @@
 ---
 upgrade:
-  - Added option 'sync_provisioning_status' to enable synchronizing provisioning status 
+  - Added option 'sync_provisioning_status' to enable synchronizing provisioning status
     of loadbalancers with the neutron-lbaas database. Enabling this option will queue one
     additional message per amphora every heartbeat interval.
 fixes:

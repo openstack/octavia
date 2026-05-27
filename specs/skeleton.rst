@@ -78,5 +78,3 @@ Documentation Impact
 
 References
 ==========
-
-

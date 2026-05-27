@@ -160,4 +160,3 @@ description of these terms.
         topologies, the VIP address might be assigned to an upstream networking
         device which routes packets to amphorae, which then load balance
         requests to back-end members.
-

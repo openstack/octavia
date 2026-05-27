@@ -116,4 +116,3 @@ To run the entire suite of scenario tests:
     The first time running the Tempest scenario tests export the
     Tempest configuration directory
     (i.e. TEMPEST_CONFIG_DIR=/opt/stack/tempest/etc)
-

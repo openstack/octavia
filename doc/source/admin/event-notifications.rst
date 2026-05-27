@@ -112,4 +112,3 @@ the following setting in your Octavia configuration file:
 
     [controller_worker]
     event_notifications = False
-

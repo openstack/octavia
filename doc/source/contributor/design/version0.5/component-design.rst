@@ -514,4 +514,3 @@ that member ip_addresses are reachable through standard neutron routing, and
 therefore connections to them can be initiated from the amphora's default
 gateway. No new virtual interfaces need to be plumbed for this type of
 connectivity to members.
-
