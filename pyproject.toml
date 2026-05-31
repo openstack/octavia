@@ -99,9 +99,6 @@ image_glance_driver = "octavia.image.drivers.glance_driver:ImageManager"
 network_noop_driver = "octavia.network.drivers.noop_driver.driver:NoopNetworkDriver"
 allowed_address_pairs_driver = "octavia.network.drivers.neutron.allowed_address_pairs:AllowedAddressPairsDriver"
 
-[project.entry-points."octavia.plugins"]
-hot_plug_plugin = "octavia.controller.worker.v2.controller_worker:ControllerWorker"
-
 [project.entry-points."octavia.statistics.drivers"]
 stats_logger = "octavia.statistics.drivers.logger:StatsLogger"
 stats_db = "octavia.statistics.drivers.update_db:StatsUpdateDb"

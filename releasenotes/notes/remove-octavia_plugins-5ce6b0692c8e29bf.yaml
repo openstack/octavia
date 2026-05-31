@@ -1,0 +1,5 @@
+---
+upgrade:
+  - |
+    The ``[DEFAULT] octavia_plugins`` option has been removed. This option
+    has been unused.
