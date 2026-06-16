@@ -70,7 +70,9 @@ class ControllerWorker:
         self._l7rule_repo = repo.L7RuleRepository()
         self._flavor_repo = repo.FlavorRepository()
         self._az_repo = repo.AvailabilityZoneRepository()
-
+        # self.jobboard_driver defaults to None so shutdown() can safely
+        # check it regardless of whether jobboard_enabled is True or False.
+        self.jobboard_driver = None
         if CONF.task_flow.jobboard_enabled:
             persistence = tsk_driver.MysqlPersistenceDriver()
 
@@ -1298,3 +1300,7 @@ class ControllerWorker:
             store=store)
         LOG.info("Finished amphora agent configuration update, amphora's id "
                  "was: %s", amphora_id)
+
+    def shutdown(self):
+        if self.jobboard_driver:
+            self.jobboard_driver.shutdown()
