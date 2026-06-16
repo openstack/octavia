@@ -12,6 +12,7 @@
 
 import abc
 import contextlib
+import threading
 
 from oslo_config import cfg
 from oslo_log import log
@@ -32,6 +33,13 @@ class JobboardTaskFlowDriver(metaclass=abc.ABCMeta):
 
         :param persistence: taskflow persistence backend instance
         :return: taskflow jobboard backend instance
+        """
+
+    def shutdown(self):
+        """Release any long-lived resources held by the driver.
+
+        Subclasses with cleanup needs (e.g. persistent client
+        connections) should override. Default is a no-op.
         """
 
 
@@ -66,22 +74,54 @@ class MysqlPersistenceDriver:
 class ZookeeperTaskFlowDriver(JobboardTaskFlowDriver):
 
     def __init__(self, persistence_driver):
+        # Lazy import: kazoo is only required when this driver is selected
+        # pylint: disable=import-outside-toplevel
+        from taskflow.utils import kazoo_utils
+        # pylint: enable=import-outside-toplevel
+        self._kazoo_utils = kazoo_utils
         self.persistence_driver = persistence_driver
-
-    def job_board(self, persistence):
-        job_backends_hosts = ','.join(
+        self._hosts_str = ','.join(
             [f'{host}:{CONF.task_flow.jobboard_backend_port}'
              for host in CONF.task_flow.jobboard_backend_hosts])
+        self._client = None
+        self._client_lock = threading.Lock()
+
+    def _ensure_client(self):
+        # NOTE: The lock is intentionally held for the duration of
+        # client.start() so that concurrent job_board() callers block
+        # rather than racing to create multiple clients. The connection
+        # delay (~seconds) is acceptable at first use.
+        with self._client_lock:
+            if self._client is None:
+                conf = {'hosts': self._hosts_str}
+                conf.update(CONF.task_flow.jobboard_zookeeper_ssl_options)
+                client = self._kazoo_utils.make_client(conf)
+                try:
+                    client.start()
+                except Exception:
+                    self._kazoo_utils.finalize_client(client)
+                    raise
+                self._client = client
+            return self._client
+
+    def job_board(self, persistence):
         jobboard_backend_conf = {
             'board': 'zookeeper',
-            'hosts': job_backends_hosts,
             'path': '/' + CONF.task_flow.jobboard_backend_namespace,
         }
-        jobboard_backend_conf.update(
-            CONF.task_flow.jobboard_zookeeper_ssl_options)
-        return job_backends.backend(CONF.task_flow.jobboard_backend_namespace,
-                                    jobboard_backend_conf,
-                                    persistence=persistence)
+        return job_backends.backend(
+            CONF.task_flow.jobboard_backend_namespace,
+            jobboard_backend_conf,
+            persistence=persistence,
+            client=self._ensure_client(),
+        )
+
+    def shutdown(self):
+        with self._client_lock:
+            if self._client is not None:
+                LOG.debug("Finalizing shared KazooClient")
+                self._kazoo_utils.finalize_client(self._client)
+                self._client = None
 
 
 class RedisTaskFlowDriver(JobboardTaskFlowDriver):
