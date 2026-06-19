@@ -25,13 +25,13 @@ repos:
     - id: flake8
       name: flake8
       additional_dependencies:
-        - hacking>=6.1.0,<6.2.0
+        - hacking>=8.1.0,<8.2.0
       language: python
       entry: flake8
       files: '^.*\.py$'
       exclude: '^(doc|releasenotes|tools)/.*$'
 - repo: https://github.com/asottile/pyupgrade
-  rev: v3.13.0
+  rev: v3.21.2
   hooks:
     - id: pyupgrade
       args: [--py38-plus]
