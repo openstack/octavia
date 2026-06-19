@@ -12,6 +12,7 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import multiprocessing
 import sys
 
 import cotyledon
@@ -32,8 +33,11 @@ def main():
 
     gmr_opts.set_defaults(CONF)
     gmr.TextGuruMeditation.setup_autorun(version, conf=CONF)
-
-    sm = cotyledon.ServiceManager()
+    # TODO((alaf01): remove mp_context="fork" once
+    # https://review.opendev.org/c/openstack/oslo.config/+/981848
+    # is merged (support for "forkserver" pickling)
+    sm = cotyledon.ServiceManager(
+        mp_context=multiprocessing.get_context("fork"))
     sm.add(consumer_v2.ConsumerService,
            workers=CONF.controller_worker.workers, args=(CONF,))
     oslo_config_glue.setup(sm, CONF, reload_method="mutate")
