@@ -1,0 +1,11 @@
+---
+fixes:
+  - |
+    Fixed a crash in octavia-worker under Python 3.14. Python 3.14 changed
+    the default multiprocessing start method from ``fork`` to ``forkserver``
+    on Linux. The ``forkserver`` method requires pickling all arguments passed
+    to child processes, which fails for ``oslo_config.ConfigOpts`` due to an
+    unpicklable lambda inside ``_ConfigFileOpt.__init__``.
+    ``cotyledon.ServiceManager`` is now created with an explicit ``fork``
+    context to preserve the previous behaviour.
+    (see https://bugs.launchpad.net/octavia/+bug/2156391)
