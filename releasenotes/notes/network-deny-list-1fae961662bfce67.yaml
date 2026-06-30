@@ -1,0 +1,7 @@
+---
+features:
+  - |
+    There is now a new ``denylist_vip_networks`` option making it possible to
+    forbid some networks to be used as VIP network. This is useful if a
+    deployment has a shared internal network for public IPs, to avoid wasting
+    public IPv4 IPs.
