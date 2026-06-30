@@ -69,8 +69,22 @@ class KeepalivedAmphoraDriverMixin(driver_base.VRRPDriverMixin):
             lambda amp: amp.status == constants.AMPHORA_ALLOCATED,
                 loadbalancer.amphorae):
 
-            self._populate_amphora_api_version(amp)
-            self.clients[amp.api_version].stop_vrrp(amp)
+            self.stop_vrrp_service_on_amphora(amp)
+
+    def stop_vrrp_service_on_amphora(self, amphora, timeout_dict=None):
+        """Stop the VRRP service on a single amphora.
+
+        :param amphora: amphora object
+        :param timeout_dict: Dictionary of timeout values for calls to the
+                             amphora. May contain: req_conn_timeout,
+                             req_read_timeout, conn_max_retries,
+                             conn_retry_interval
+        """
+        LOG.info("Stop amphora %s VRRP Service.", amphora.id)
+
+        self._populate_amphora_api_version(amphora,
+                                           timeout_dict=timeout_dict)
+        self.clients[amphora.api_version].stop_vrrp(amphora)
 
     def start_vrrp_service(self, amphora, timeout_dict=None):
         """Start the VRRP services on an amphorae.

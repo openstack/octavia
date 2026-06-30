@@ -96,10 +96,23 @@ class TestVRRPRestDriver(base.TestCase):
         mock_templater.assert_not_called()
         self.clients[API_VERSION].upload_vrrp_config.assert_not_called()
 
-    def test_stop_vrrp_service(self):
+    @mock.patch.object(vrrp_rest_driver.KeepalivedAmphoraDriverMixin,
+                       'stop_vrrp_service_on_amphora')
+    def test_stop_vrrp_service(self, mock_stop_on_amphora):
 
         self.keepalived_mixin.stop_vrrp_service(self.lb_mock)
 
+        mock_stop_on_amphora.assert_called_once_with(self.amphora_mock)
+
+    def test_stop_vrrp_service_on_amphora(self):
+        timeout_dict = mock.Mock()
+
+        self.keepalived_mixin.stop_vrrp_service_on_amphora(
+            self.amphora_mock, timeout_dict=timeout_dict)
+
+        populate_mock = self.keepalived_mixin._populate_amphora_api_version
+        populate_mock.assert_called_once_with(self.amphora_mock,
+                                              timeout_dict=timeout_dict)
         self.clients[API_VERSION].stop_vrrp.assert_called_once_with(
             self.amphora_mock)
 

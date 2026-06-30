@@ -210,6 +210,9 @@ class NoopAmphoraLoadBalancerDriver(
     def stop_vrrp_service(self, loadbalancer):
         pass
 
+    def stop_vrrp_service_on_amphora(self, amphora, timeout_dict=None):
+        pass
+
     def start_vrrp_service(self, amphora, timeout_dict=None):
         pass
 

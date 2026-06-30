@@ -293,6 +293,17 @@ class VRRPDriverMixin(metaclass=abc.ABCMeta):
         """
 
     @abc.abstractmethod
+    def stop_vrrp_service_on_amphora(self, amphora, timeout_dict=None):
+        """Stop the VRRP service on a single amphora.
+
+        :param amphora: The amphora object to stop the service on.
+        :param timeout_dict: Dictionary of timeout values for calls to the
+                             amphora. May contain: req_conn_timeout,
+                             req_read_timeout, conn_max_retries,
+                             conn_retry_interval
+        """
+
+    @abc.abstractmethod
     def start_vrrp_service(self, amphora, timeout_dict=None):
         """Start the VRRP services on the amphora
 
