@@ -173,7 +173,6 @@ class PolicyTestCase(base.TestCase):
     def test_check_is_admin_with_system_scope_token(self):
         conf = oslo_fixture.Config(config.cfg.CONF)
         conf.config(group="oslo_policy", enforce_new_defaults=True)
-        conf.config(group="oslo_policy", enforce_scope=True)
         self.context = context.RequestContext('admin', roles=['AdMiN'],
                                               system_scope='all')
 
