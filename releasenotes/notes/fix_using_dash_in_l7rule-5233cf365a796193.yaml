@@ -1,0 +1,6 @@
+---
+fixes:
+  - |
+    Fix using dash symbol on start/end of value for l7rule.
+    Previously it broke haproxy config. Now templates uses leading "--" to path
+    any value.
