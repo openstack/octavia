@@ -31,15 +31,7 @@ class TestLocalGenerator(local_csr.BaseLocalCSRTestCase):
 
         # Setup CA data
 
-        ca_cert = x509.CertificateBuilder()
-        valid_from_datetime = timeutils.utcnow()
-        valid_until_datetime = (timeutils.utcnow() +
-                                datetime.timedelta(
-            seconds=2 * 365 * 24 * 60 * 60))
-        ca_cert = ca_cert.not_valid_before(valid_from_datetime)
-        ca_cert = ca_cert.not_valid_after(valid_until_datetime)
-        ca_cert = ca_cert.serial_number(1)
-        subject_name = x509.Name([
+        self.ca_subject_name = x509.Name([
             x509.NameAttribute(x509.oid.NameOID.COUNTRY_NAME, "US"),
             x509.NameAttribute(x509.oid.NameOID.STATE_OR_PROVINCE_NAME,
                                "Oregon"),
@@ -48,17 +40,31 @@ class TestLocalGenerator(local_csr.BaseLocalCSRTestCase):
                                "Springfield Nuclear Power Plant"),
             x509.NameAttribute(x509.oid.NameOID.COMMON_NAME, "maggie1"),
         ])
-        ca_cert = ca_cert.subject_name(subject_name)
-        ca_cert = ca_cert.issuer_name(subject_name)
+        self.ca_certificate = self._create_ca_certificate()
+
+        self.cert_generator = local_cert_gen.LocalCertGenerator
+
+    def _create_ca_certificate(self, subject_key_identifier=None):
+        valid_from_datetime = timeutils.utcnow()
+        valid_until_datetime = (timeutils.utcnow() +
+                                datetime.timedelta(
+            seconds=2 * 365 * 24 * 60 * 60))
+        ca_cert = x509.CertificateBuilder()
+        ca_cert = ca_cert.not_valid_before(valid_from_datetime)
+        ca_cert = ca_cert.not_valid_after(valid_until_datetime)
+        ca_cert = ca_cert.serial_number(1)
+        ca_cert = ca_cert.subject_name(self.ca_subject_name)
+        ca_cert = ca_cert.issuer_name(self.ca_subject_name)
         ca_cert = ca_cert.public_key(self.ca_key.public_key())
+        if subject_key_identifier:
+            ca_cert = ca_cert.add_extension(
+                subject_key_identifier, critical=False)
         signed_cert = ca_cert.sign(private_key=self.ca_key,
                                    algorithm=hashes.SHA256(),
                                    backend=backends.default_backend())
 
-        self.ca_certificate = signed_cert.public_bytes(
+        return signed_cert.public_bytes(
             encoding=serialization.Encoding.PEM)
-
-        self.cert_generator = local_cert_gen.LocalCertGenerator
 
     def test_sign_cert(self):
         # Attempt sign a cert
@@ -109,7 +115,33 @@ class TestLocalGenerator(local_csr.BaseLocalCSRTestCase):
         # Make sure AuthorityKeyIdentifier extension is present
         aki = cert.extensions.get_extension_for_class(
             x509.AuthorityKeyIdentifier)
-        self.assertIsNotNone(aki.value.key_identifier)
+        expected_aki = x509.SubjectKeyIdentifier.from_public_key(
+            self.ca_key.public_key()).digest
+        self.assertEqual(expected_aki, aki.value.key_identifier)
+        self.assertFalse(aki.critical)
+
+    def test_sign_cert_uses_ca_subject_key_identifier(self):
+        issuer_ski = x509.SubjectKeyIdentifier(b'\x01' * 20)
+        ca_certificate = self._create_ca_certificate(issuer_ski)
+
+        signed_cert = self.cert_generator.sign_cert(
+            csr=self.certificate_signing_request,
+            validity=2 * 365 * 24 * 60 * 60,
+            ca_cert=ca_certificate,
+            ca_key=self.ca_private_key,
+            ca_key_pass=self.ca_private_key_passphrase,
+            ca_digest=self.signing_digest
+        )
+
+        cert = x509.load_pem_x509_certificate(
+            data=signed_cert, backend=backends.default_backend())
+        aki = cert.extensions.get_extension_for_class(
+            x509.AuthorityKeyIdentifier)
+        derived_ski = x509.SubjectKeyIdentifier.from_public_key(
+            self.ca_key.public_key())
+
+        self.assertEqual(issuer_ski.digest, aki.value.key_identifier)
+        self.assertNotEqual(derived_ski.digest, aki.value.key_identifier)
         self.assertFalse(aki.critical)
 
     def test_sign_cert_passphrase_none(self):
