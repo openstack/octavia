@@ -106,7 +106,7 @@ class TestDriverAgentCMD(base.TestCase):
             'octavia-driver-agent - test_proc_name')
         mock_function.assert_called_once_with(mock_exit_event)
 
-    @mock.patch('octavia.cmd.driver_agent.multiprocessing')
+    @mock.patch('octavia.cmd.driver_agent.multiproc')
     @mock.patch('stevedore.enabled.EnabledExtensionManager')
     def test_start_provider_agents(self, mock_stevedore, mock_multiprocessing):
         mock_extension = mock.MagicMock()
@@ -128,7 +128,7 @@ class TestDriverAgentCMD(base.TestCase):
         mock_ext_proc.start.assert_called_once_with()
 
     @mock.patch('os.kill')
-    @mock.patch('octavia.cmd.driver_agent.multiprocessing')
+    @mock.patch('octavia.cmd.driver_agent.multiproc')
     @mock.patch('oslo_reports.guru_meditation_report.TextGuruMeditation.'
                 'setup_autorun')
     @mock.patch('octavia.common.service.prepare_service')
