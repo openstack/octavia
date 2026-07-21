@@ -99,7 +99,7 @@ Command syntax:
 .. code-block::
 
     $ diskimage-create.sh
-            [-a **amd64** | armhf | aarch64 | ppc64le ]
+            [-a amd64 | armhf | aarch64 | ppc64le ]
             [-b **haproxy** ]
             [-c **~/.cache/image-create** | <cache directory> ]
             [-d **noble**/**9-stream**/**9** | <other release id> ]
@@ -122,7 +122,7 @@ Command syntax:
             [-x]
             [-y]
 
-        '-a' is the architecture type for the image (default: amd64)
+        '-a' is the architecture type for the image (default: architecture of the system which executes this script)"
         '-b' is the backend type (default: haproxy)
         '-c' is the path to the cache directory (default: ~/.cache/image-create)
         '-d' distribution release id (default on ubuntu: noble)

@@ -20,7 +20,7 @@ set -e
 usage() {
     echo
     echo "Usage: $(basename "$0")"
-    echo "            [-a **amd64** | armhf | aarch64 | ppc64le]"
+    echo "            [-a amd64 | armhf | aarch64 | ppc64le]"
     echo "            [-b **haproxy** ]"
     echo "            [-c **~/.cache/image-create** | <cache directory> ]"
     echo "            [-d **noble**/**9-stream**/**9** | <other release id> ]"
@@ -42,7 +42,7 @@ usage() {
     echo "            [-w <working directory> ]"
     echo "            [-x]"
     echo
-    echo "        '-a' is the architecture type for the image (default: amd64)"
+    echo "        '-a' is the architecture type for the image (default: architecture of the system which executes this script)"
     echo "        '-b' is the backend type (default: haproxy)"
     echo "        '-c' is the path to the cache directory (default: ~/.cache/image-create)"
     echo "        '-d' distribution release id (default on ubuntu: noble)"
@@ -230,8 +230,6 @@ if [ "$1" ]; then
 fi
 
 # Set the Octavia Amphora defaults if they aren't already set
-AMP_ARCH=${AMP_ARCH:-"amd64"}
-
 AMP_BACKEND=${AMP_BACKEND:-"haproxy-octavia"}
 
 AMP_CACHEDIR=${AMP_CACHEDIR:-"$HOME/.cache/image-create"}
@@ -529,11 +527,16 @@ if [ -n "$dib_enable_tracing" ]; then
     dib_trace_arg="-x"
 fi
 
+dib_arch_arg=()
+if [ -n "$AMP_ARCH" ]; then
+    dib_arch_arg=(-a "$AMP_ARCH")
+fi
+
 if [ "$USE_PYTHON3" = "False" ]; then
     export DIB_PYTHON_VERSION=2
 fi
 
-disk-image-create "$AMP_LOGFILE" "$dib_trace_arg" -a "$AMP_ARCH" -o "$AMP_OUTPUTFILENAME" -t \
+disk-image-create "$AMP_LOGFILE" "$dib_trace_arg" "${dib_arch_arg[@]}" -o "$AMP_OUTPUTFILENAME" -t \
 "$AMP_IMAGETYPE" --image-size "$AMP_IMAGESIZE" --image-cache "$AMP_CACHEDIR" "$AMP_DISABLE_TMP_FS" \
 "$AMP_element_sequence"
 

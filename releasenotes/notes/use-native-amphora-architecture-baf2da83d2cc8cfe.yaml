@@ -1,0 +1,5 @@
+---
+features:
+  - |
+    Amphora images are built on a native platform where the script is executed
+    instead of hard-coded ``amd64``.
