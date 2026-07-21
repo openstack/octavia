@@ -20,7 +20,7 @@ set -e
 usage() {
     echo
     echo "Usage: $(basename "$0")"
-    echo "            [-a amd64 | armhf | aarch64 | ppc64le]"
+    echo "            [-a amd64 | armhf | arm64 | aarch64 | ppc64le]"
     echo "            [-b **haproxy** ]"
     echo "            [-c **~/.cache/image-create** | <cache directory> ]"
     echo "            [-d **noble**/**9-stream**/**9** | <other release id> ]"
@@ -100,6 +100,7 @@ while getopts "a:b:c:d:efg:hi:k:l:mno:pt:r:s:vw:xy" opt; do
             AMP_ARCH=$OPTARG
             if [ "$AMP_ARCH" != "amd64" ] && \
                 [ "$AMP_ARCH" != "ppc64le" ] && \
+                [ "$AMP_ARCH" != "arm64" ] && \
                 [ "$AMP_ARCH" != "aarch64" ] && \
                 [ "$AMP_ARCH" != "armhf" ]; then
                 echo "Error: Unsupported architecture $AMP_ARCH specified"

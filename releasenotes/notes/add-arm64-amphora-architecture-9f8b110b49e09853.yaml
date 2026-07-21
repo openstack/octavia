@@ -1,0 +1,5 @@
+---
+fixes:
+  - |
+    Fixes an issue where amphora image builds based on Ubuntu were impossible on
+    ARM64 architecture.
