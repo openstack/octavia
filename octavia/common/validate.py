@@ -350,11 +350,12 @@ def subnet_exists(subnet_id, context=None):
     return subnet
 
 
-def qos_policy_exists(qos_policy_id):
+def qos_policy_exists(qos_policy_id, context=None):
     network_driver = utils.get_network_driver()
     qos_extension_enabled(network_driver)
     try:
-        qos_policy = network_driver.get_qos_policy(qos_policy_id)
+        qos_policy = network_driver.get_qos_policy(qos_policy_id,
+                                                   context=context)
     except Exception as e:
         raise exceptions.InvalidSubresource(
             resource='qos_policy', id=qos_policy_id) from e
