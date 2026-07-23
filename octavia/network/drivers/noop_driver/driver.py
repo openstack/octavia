@@ -431,7 +431,7 @@ class NoopManager:
 
         return amp_configs
 
-    def get_qos_policy(self, qos_policy_id):
+    def get_qos_policy(self, qos_policy_id, context=None):
         LOG.debug("Qos Policy %s no-op, get_qos_policy qos_policy_id %s",
                   self.__class__.__name__, qos_policy_id)
         self.networkconfigconfig[qos_policy_id] = (qos_policy_id,
@@ -590,8 +590,8 @@ class NoopNetworkDriver(driver_base.AbstractNetworkDriver):
             'network_models.SecurityGroup'):
         return self.driver.get_security_group_by_id(sg_id, context=context)
 
-    def get_qos_policy(self, qos_policy_id):
-        return self.driver.get_qos_policy(qos_policy_id)
+    def get_qos_policy(self, qos_policy_id, context=None):
+        return self.driver.get_qos_policy(qos_policy_id, context=context)
 
     def get_network_by_name(self, network_name):
         return self.driver.get_network_by_name(network_name)

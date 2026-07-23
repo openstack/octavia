@@ -281,8 +281,8 @@ class BaseNeutronDriver(base.AbstractNetworkDriver):
             'port', unique_item=True,
             network_id=network_id, device_id=device_id)
 
-    def get_qos_policy(self, qos_policy_id):
-        return self._get_resource('qos_policy', qos_policy_id)
+    def get_qos_policy(self, qos_policy_id, context=None):
+        return self._get_resource('qos_policy', qos_policy_id, context=context)
 
     def qos_enabled(self):
         return self._qos_enabled
