@@ -1,0 +1,8 @@
+---
+security:
+  - |
+    Fixed QoS policy validation to use the user's request context when
+    checking if a QoS policy exists. Previously, the validation used
+    service credentials instead of the user's context, which could allow
+    a user to assign a QoS policy belonging to another tenant to their
+    load balancer.

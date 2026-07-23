@@ -295,7 +295,7 @@ class LoadBalancersController(base.BaseController):
             load_balancer.vip_network_id = subnet.network_id
         if load_balancer.vip_qos_policy_id:
             validate.qos_policy_exists(
-                qos_policy_id=load_balancer.vip_qos_policy_id)
+                qos_policy_id=load_balancer.vip_qos_policy_id, context=context)
 
         # Even though we've just validated the subnet or else retrieved its ID
         # directly from the port, we might still be missing the network.
@@ -745,7 +745,8 @@ class LoadBalancersController(base.BaseController):
             validate.qos_extension_enabled(network_driver)
             if load_balancer.vip_qos_policy_id is not None:
                 if db_lb.vip.qos_policy_id != load_balancer.vip_qos_policy_id:
-                    validate.qos_policy_exists(load_balancer.vip_qos_policy_id)
+                    validate.qos_policy_exists(load_balancer.vip_qos_policy_id,
+                                               context=context)
 
         if not isinstance(load_balancer.vip_sg_ids, wtypes.UnsetType):
             if load_balancer.vip_sg_ids is None:
