@@ -1,0 +1,9 @@
+fixes:
+  - |
+    Fixed continuous ZooKeeper session churn in
+    ``ZookeeperTaskFlowDriver`` where a new ``KazooClient`` was
+    created and immediately closed on every ``_extend_jobs()``
+    cycle (~every 8 seconds), causing
+    ``kazoo.exceptions.ConnectionLoss`` errors in the Octavia
+    worker log during load balancer operations
+    (bug `#2144800 <https://bugs.launchpad.net/octavia/+bug/2144800>`_).
