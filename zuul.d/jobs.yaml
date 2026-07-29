@@ -91,7 +91,7 @@
     parent: octavia-grenade
     vars:
       # Update grenade_from_branch after each x.1 is released
-      grenade_from_branch: stable/2025.1
+      grenade_from_branch: stable/2026.1
       grenade_localrc:
         NOVA_ENABLE_UPGRADE_WORKAROUND: True
 
