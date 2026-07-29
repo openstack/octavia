@@ -1,0 +1,6 @@
+---
+fixes:
+  - |
+    Fixes an issue where amphora image builds based on Ubuntu were impossible on
+    ARM64 architecture.
+    `LP#2161068 <https://bugs.launchpad.net/octavia/+bug/2161068>`__
