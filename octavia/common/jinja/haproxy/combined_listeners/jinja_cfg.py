@@ -18,12 +18,16 @@ from typing import Optional
 
 import jinja2
 from octavia_lib.common import constants as lib_consts
+from oslo_log import log as logging
 from oslo_utils import versionutils
 
 from octavia.common.config import cfg
 from octavia.common import constants
 from octavia.common import utils as octavia_utils
+from octavia.common import validate
 from octavia.db import models
+
+LOG = logging.getLogger(__name__)
 
 PROTOCOL_MAP = {
     constants.PROTOCOL_TCP: 'tcp',
@@ -362,7 +366,13 @@ class JinjaTemplater:
                                  constants.PROTOCOL_PROMETHEUS):
             tls_enabled = True
             if listener.tls_ciphers is not None:
-                ret_value['tls_ciphers'] = listener.tls_ciphers
+                if not validate.VALID_CIPHER_RE.match(listener.tls_ciphers):
+                    LOG.warning("Listener %s has invalid tls_ciphers in DB, "
+                                "falling back to default", listener.id)
+                    ret_value['tls_ciphers'] = (
+                        cfg.CONF.api_settings.default_listener_ciphers)
+                else:
+                    ret_value['tls_ciphers'] = listener.tls_ciphers
             if listener.tls_versions is not None:
                 ret_value['tls_versions'] = listener.tls_versions
             if listener.alpn_protocols is not None:
@@ -447,7 +457,13 @@ class JinjaTemplater:
             ret_value['client_cert'] = pool_tls_certs.get('client_cert')
         if pool.tls_enabled is True:
             if pool.tls_ciphers is not None:
-                ret_value['tls_ciphers'] = pool.tls_ciphers
+                if not validate.VALID_CIPHER_RE.match(pool.tls_ciphers):
+                    LOG.warning("Pool %s has invalid tls_ciphers in DB, "
+                                "falling back to default", pool.id)
+                    ret_value['tls_ciphers'] = (
+                        cfg.CONF.api_settings.default_pool_ciphers)
+                else:
+                    ret_value['tls_ciphers'] = pool.tls_ciphers
             if pool.tls_versions is not None:
                 ret_value['tls_versions'] = pool.tls_versions
             if (pool.alpn_protocols is not None and

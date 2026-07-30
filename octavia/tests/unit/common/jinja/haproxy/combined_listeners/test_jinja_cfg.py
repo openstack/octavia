@@ -2086,3 +2086,40 @@ class TestHaproxyCfg(base.TestCase):
             mock_amp, mock_listeners, tls_certs=mock_tls_certs,
             socket_path=mock_socket_path, amp_details=None,
             feature_compatibility=expected_fc)
+
+    def test_transform_listener_tls_ciphers_injection_fallback(self):
+        tainted = 'ECDHE-RSA-AES128-GCM-SHA256\ncheck'
+        in_listener = sample_configs_combined.sample_listener_tuple(
+            proto='TERMINATED_HTTPS', tls=True,
+            tls_ciphers=tainted)
+        ret = self.jinja_cfg._transform_listener(
+            in_listener, None, {}, in_listener.load_balancer)
+        # Should fall back to default, not use the tainted value
+        self.assertEqual(
+            cfg.CONF.api_settings.default_listener_ciphers,
+            ret['tls_ciphers'])
+
+    def test_transform_listener_tls_ciphers_valid(self):
+        valid = 'ECDHE-RSA-AES128-GCM-SHA256:AES256-SHA'
+        in_listener = sample_configs_combined.sample_listener_tuple(
+            proto='TERMINATED_HTTPS', tls=True,
+            tls_ciphers=valid)
+        ret = self.jinja_cfg._transform_listener(
+            in_listener, None, {}, in_listener.load_balancer)
+        self.assertEqual(valid, ret['tls_ciphers'])
+
+    def test_transform_pool_tls_ciphers_injection_fallback(self):
+        tainted = 'AES128-SHA\ncheck'
+        in_pool = sample_configs_combined.sample_pool_tuple(
+            tls_enabled=True, tls_ciphers=tainted)
+        ret = self.jinja_cfg._transform_pool(in_pool, {}, False)
+        self.assertEqual(
+            cfg.CONF.api_settings.default_pool_ciphers,
+            ret['tls_ciphers'])
+
+    def test_transform_pool_tls_ciphers_valid(self):
+        valid = 'ECDHE-RSA-AES128-GCM-SHA256:AES256-SHA'
+        in_pool = sample_configs_combined.sample_pool_tuple(
+            tls_enabled=True, tls_ciphers=valid)
+        ret = self.jinja_cfg._transform_pool(in_pool, {}, False)
+        self.assertEqual(valid, ret['tls_ciphers'])
