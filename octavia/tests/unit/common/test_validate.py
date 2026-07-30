@@ -45,6 +45,31 @@ class TestValidations(base.TestCase):
         self.assertRaises(exceptions.InvalidURL, validate.url,
                           'ssh://www.example.com/')
 
+    def test_validate_url_newline_injection(self):
+        self.assertRaises(
+            exceptions.InvalidURL, validate.url,
+            'https://example.com/path\ncheck')
+
+    def test_validate_url_crlf_injection(self):
+        self.assertRaises(
+            exceptions.InvalidURL, validate.url,
+            'https://example.com/path\r\ncheck')
+
+    def test_validate_url_space(self):
+        self.assertRaises(
+            exceptions.InvalidURL, validate.url,
+            'https://example.com/path if check')
+
+    def test_validate_url_tab(self):
+        self.assertRaises(
+            exceptions.InvalidURL, validate.url,
+            'https://example.com/path\tcheck')
+
+    def test_validate_url_null(self):
+        self.assertRaises(
+            exceptions.InvalidURL, validate.url,
+            'https://example.com/path\x00check')
+
     def test_validate_url_path(self):
         self.assertTrue(validate.url_path('/foo'))
         self.assertTrue(validate.url_path('/foo%0Abar'))
