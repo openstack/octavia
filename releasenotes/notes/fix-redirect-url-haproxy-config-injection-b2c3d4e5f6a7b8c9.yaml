@@ -1,0 +1,12 @@
+---
+security:
+  - |
+    Fixed a HAProxy configuration injection vulnerability via the
+    ``redirect_url`` and ``redirect_prefix`` fields on L7 policies.
+    The ``rfc3986`` URL validator encodes control characters before
+    validation, so newlines and spaces passed structural checks but
+    were stored raw and written directly into the HAProxy configuration.
+    The URL validator now rejects URLs containing control characters
+    (U+0000-U+001F, U+007F-U+009F) and spaces before passing them to
+    ``rfc3986``. Existing invalid values in the database are detected
+    at config generation time and cleared.
