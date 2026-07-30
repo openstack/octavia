@@ -1,0 +1,11 @@
+---
+security:
+  - |
+    Fixed a HAProxy configuration injection vulnerability via the
+    ``tls_ciphers`` field on listeners and pools. The field was not validated
+    for control characters, allowing an attacker to inject arbitrary HAProxy
+    configuration directives by embedding newlines in the cipher string. The
+    API now rejects cipher strings containing characters outside the set
+    allowed by OpenSSL (alphanumeric, ``-``, ``+``, ``!``, ``:``, ``@``, ``=``,
+    ``_``, ``.``). Existing invalid values in the database are detected at
+    config generation time and replaced with the configured defaults.

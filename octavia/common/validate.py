@@ -459,7 +459,20 @@ def ip_not_reserved(ip_address):
                                        option='member address')
 
 
+VALID_CIPHER_RE = re.compile(r'^[A-Za-z0-9\-+!:@=_.]+\Z')
+
+
+def check_cipher_string(cipherstring):
+    """Validate that a cipher string contains only safe characters."""
+    if not VALID_CIPHER_RE.match(cipherstring):
+        raise exceptions.ValidationException(detail=_(
+            'Invalid characters in cipher string. '
+            'Only alphanumeric, -, +, !, :, @, =, _, and . '
+            'are allowed.'))
+
+
 def check_cipher_prohibit_list(cipherstring):
+    check_cipher_string(cipherstring)
     ciphers = cipherstring.split(':')
     prohibit_list = CONF.api_settings.tls_cipher_prohibit_list.split(':')
     rejected = []

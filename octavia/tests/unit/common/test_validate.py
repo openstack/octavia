@@ -472,6 +472,41 @@ class TestValidations(base.TestCase):
                           validate.ip_not_reserved,
                           '2001:0DB8::5')
 
+    def test_check_cipher_string_valid(self):
+        # Valid cipher strings should not raise
+        validate.check_cipher_string(
+            'ECDHE-RSA-AES128-GCM-SHA256:ECDHE-RSA-AES256-GCM-SHA384')
+        validate.check_cipher_string('!aNULL:!MD5:@STRENGTH')
+        validate.check_cipher_string('TLS_AES_256_GCM_SHA384')
+
+    def test_check_cipher_string_newline_injection(self):
+        self.assertRaises(
+            exceptions.ValidationException,
+            validate.check_cipher_string,
+            'ECDHE-RSA-AES128-GCM-SHA256\ncheck')
+
+    def test_check_cipher_string_space_injection(self):
+        self.assertRaises(
+            exceptions.ValidationException,
+            validate.check_cipher_string,
+            'ECDHE-RSA-AES128-GCM-SHA256 #')
+
+    def test_check_cipher_string_trailing_newline(self):
+        self.assertRaises(
+            exceptions.ValidationException,
+            validate.check_cipher_string,
+            'foo\n')
+
+    def test_check_cipher_string_control_chars(self):
+        self.assertRaises(
+            exceptions.ValidationException,
+            validate.check_cipher_string,
+            'AES128\r\ncheck')
+        self.assertRaises(
+            exceptions.ValidationException,
+            validate.check_cipher_string,
+            'AES128\tcheck')
+
     def test_check_default_ciphers_prohibit_list_conflict(self):
         self.conf.config(group='api_settings',
                          tls_cipher_prohibit_list='PSK-AES128-CBC-SHA')
