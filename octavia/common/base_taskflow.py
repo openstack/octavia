@@ -52,11 +52,15 @@ def retryMaskFilter(record):
 LOG.logger.addFilter(retryMaskFilter)
 
 
+FILTER_KEYS = (
+    'certificate', 'private_key', 'passphrase', 'server_pem', 'intermediates')
+
+
 def _details_filter(obj):
     if isinstance(obj, dict):
         ret = {}
         for key in obj:
-            if (key in ('certificate', 'private_key', 'passphrase') and
+            if (key in FILTER_KEYS and
                     isinstance(obj[key], str)):
                 ret[key] = '***'
             elif key == 'intermediates' and isinstance(obj[key], list):
@@ -137,7 +141,9 @@ class DynamicLoggingConductor(impl_blocking.BlockingConductor):
     def _listeners_from_job(self, job, engine):
         listeners = super()._listeners_from_job(
             job, engine)
-        listeners.append(logging.DynamicLoggingListener(engine, log=LOG))
+        listeners.append(logging.DynamicLoggingListener(
+            engine, log=LOG, mask_inputs_keys=FILTER_KEYS,
+            mask_outputs_keys=FILTER_KEYS))
 
         return listeners
 
