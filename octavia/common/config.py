@@ -126,7 +126,7 @@ api_opts = [
                        'pools.')),
     cfg.StrOpt('minimum_tls_version',
                default=None,
-               choices=constants.TLS_ALL_VERSIONS + [None],
+               choices=constants.TLS_ALL_VERSIONS,
                help=_('Minimum allowed TLS version for listeners and pools.')),
     cfg.ListOpt('default_listener_alpn_protocols',
                 default=[lib_consts.ALPN_PROTOCOL_HTTP_2,
