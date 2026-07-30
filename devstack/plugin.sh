@@ -77,9 +77,6 @@ function build_octavia_worker_image {
     export DIB_REPOLOCATION_amphora_agent=$OCTAVIA_DIR
     export DIB_REPOREF_amphora_agent=$(git --git-dir="$OCTAVIA_DIR/.git" log -1 --pretty="format:%H")
 
-    TOKEN=$(openstack token issue -f value -c id)
-    die_if_not_set $LINENO TOKEN "Keystone failed to get token."
-
     octavia_dib_tracing_arg=
     if [ "$OCTAVIA_DIB_TRACING" != "0" ]; then
         octavia_dib_tracing_arg="-x"
@@ -135,7 +132,7 @@ function build_octavia_worker_image {
         exit 1
     fi
 
-    upload_image file://${OCTAVIA_AMP_IMAGE_FILE} $TOKEN
+    upload_image file://${OCTAVIA_AMP_IMAGE_FILE}
 }
 
 function create_octavia_accounts {
