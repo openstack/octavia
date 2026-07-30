@@ -30,6 +30,11 @@ from octavia.api.drivers.driver_agent import driver_listener
 from octavia.common import service
 from octavia import version
 
+# Python 3.14 changed the default multiprocessing start method on Linux from
+# "fork" to "forkserver", so the child processes no longer inherit the parsed
+# configuration from the parent process.
+multiproc = multiprocessing.get_context("fork")
+
 CONF = cfg.CONF
 LOG = logging.getLogger(__name__)
 PROVIDER_AGENT_PROCESSES = []
@@ -82,7 +87,7 @@ def _start_provider_agents(exit_event):
         namespace='octavia.driver_agent.provider_agents',
         check_func=_check_if_provider_agent_enabled)
     for ext in extensions:
-        ext_process = multiprocessing.Process(
+        ext_process = multiproc.Process(
             name=ext.name, target=_process_wrapper,
             args=(exit_event, 'provider_agent', ext.plugin),
             kwargs={'agent_name': ext.name})
@@ -101,9 +106,9 @@ def main():
     gmr.TextGuruMeditation.setup_autorun(version, conf=CONF)
 
     processes = []
-    exit_event = multiprocessing.Event()
+    exit_event = multiproc.Event()
 
-    status_listener_proc = multiprocessing.Process(
+    status_listener_proc = multiproc.Process(
         name='status_listener', target=_process_wrapper,
         args=(exit_event, 'status_listener', driver_listener.status_listener))
     processes.append(status_listener_proc)
@@ -111,7 +116,7 @@ def main():
     LOG.info("Driver agent status listener process starts:")
     status_listener_proc.start()
 
-    stats_listener_proc = multiprocessing.Process(
+    stats_listener_proc = multiproc.Process(
         name='stats_listener', target=_process_wrapper,
         args=(exit_event, 'stats_listener', driver_listener.stats_listener))
     processes.append(stats_listener_proc)
@@ -119,7 +124,7 @@ def main():
     LOG.info("Driver agent statistics listener process starts:")
     stats_listener_proc.start()
 
-    get_listener_proc = multiprocessing.Process(
+    get_listener_proc = multiproc.Process(
         name='get_listener', target=_process_wrapper,
         args=(exit_event, 'get_listener', driver_listener.get_listener))
     processes.append(get_listener_proc)

@@ -1,0 +1,11 @@
+---
+fixes:
+  - |
+    Fixed the octavia-health-manager, octavia-driver-agent and amphora-agent
+    daemons under Python 3.14. Python 3.14 changed the default multiprocessing
+    start method from ``fork`` to ``forkserver`` on Linux. With ``forkserver``
+    the child processes no longer inherit the parsed configuration from the
+    parent process and fell back to the default SQLite database instead of the
+    configured one. These daemons now spawn their child processes with an
+    explicit ``fork`` start method, like it was done before Python 3.14.
+    (see https://bugs.launchpad.net/octavia/+bug/2156391)
