@@ -13,8 +13,6 @@
 #    under the License.
 from unittest import mock
 
-from oslo_config import cfg
-from oslo_config import fixture as oslo_fixture
 from oslo_utils import uuidutils
 
 from octavia.common import constants
@@ -26,9 +24,6 @@ class TestEndpoints(base.TestCase):
 
     def setUp(self):
         super().setUp()
-
-        conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
-        conf.config(octavia_plugins='hot_plug_plugin')
 
         self.worker_patcher = mock.patch('octavia.controller.worker.v2.'
                                          'controller_worker.ControllerWorker')
