@@ -391,16 +391,6 @@ haproxy_amphora_opts = [
                       'required if using IPv6 link local addresses.')),
     cfg.StrOpt('haproxy_cmd', default='/usr/sbin/haproxy',
                help=_("The full path to haproxy")),
-    cfg.IntOpt('respawn_count', default=2,
-               deprecated_for_removal=True,
-               deprecated_reason='upstart support has been removed and this '
-                                 'option is no longer used.',
-               help=_("The respawn count for haproxy's upstart script")),
-    cfg.IntOpt('respawn_interval', default=2,
-               deprecated_for_removal=True,
-               deprecated_reason='upstart support has been removed and this '
-                                 'option is no longer used.',
-               help=_("The respawn interval for haproxy's upstart script")),
     cfg.FloatOpt('rest_request_conn_timeout', default=10,
                  help=_("The time in seconds to wait for a REST API "
                         "to connect.")),
