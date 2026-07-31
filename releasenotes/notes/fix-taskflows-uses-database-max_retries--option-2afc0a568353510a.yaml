@@ -1,0 +1,5 @@
+---
+fixes:
+  - |
+    Taskflow's persistence driver now uses ``[database].max_retries``
+    configuration option for database connections.
