@@ -1,0 +1,4 @@
+---
+features:
+  - |
+    Amphora image architecture now defaults to the architecture of the system it is built on instead of ``amd64``.
