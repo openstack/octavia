@@ -251,3 +251,9 @@
         OCTAVIA_AMP_DISTRIBUTION_RELEASE_ID: 10-stream
         OCTAVIA_AMP_IMAGE_SIZE: 3
         OCTAVIA_AMP_ENABLE_FIPS: True
+
+- job:
+    name: octavia-v2-dsvm-scenario-fips-traffic-ops
+    parent: octavia-v2-dsvm-scenario-fips
+    vars:
+      tempest_test_regex: ^octavia_tempest_plugin.tests.scenario.v2.*traffic_ops
