@@ -60,3 +60,22 @@ class TestConsumer(base.TestRpc):
         cons.terminate()
         mock_rpc_server_rv.stop.assert_called_once_with()
         mock_rpc_server_rv.wait.assert_called_once_with()
+
+    def test_terminate_calls_worker_shutdown(self):
+        consumer_svc = consumer.ConsumerService(0, self.conf)
+        mock_worker = mock.Mock()
+        mock_endpoint = mock.Mock()
+        mock_endpoint.worker = mock_worker
+        consumer_svc.endpoints = [mock_endpoint]
+        consumer_svc.message_listener = mock.Mock()
+        consumer_svc.terminate()
+        mock_worker.shutdown.assert_called_once()
+
+    def test_terminate_safe_without_worker_shutdown(self):
+        """If worker has no shutdown(), terminate() must not raise."""
+        consumer_svc = consumer.ConsumerService(0, self.conf)
+        mock_endpoint = mock.Mock(spec=["worker"])
+        mock_endpoint.worker = mock.Mock(spec=["executor"])
+        consumer_svc.endpoints = [mock_endpoint]
+        consumer_svc.message_listener = mock.Mock()
+        consumer_svc.terminate()

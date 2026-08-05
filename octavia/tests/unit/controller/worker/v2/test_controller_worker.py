@@ -2511,3 +2511,40 @@ class TestControllerWorker(base.TestCase):
                                  store={constants.AMPHORA:
                                         _db_amphora_mock.to_dict(),
                                         constants.FLAVOR: {}}))
+
+    def test_shutdown_delegates_to_jobboard_driver(self,
+                                                   mock_get_session,
+                                                   mock_logging_listener,
+                                                   mock_taskflow_ctrl,
+                                                   mock_pool_get,
+                                                   mock_member_get,
+                                                   mock_l7rule_get,
+                                                   mock_l7policy_get,
+                                                   mock_listener_get,
+                                                   mock_lb_get,
+                                                   mock_hm_get,
+                                                   mock_amp_get):
+        mock_driver = mock.Mock()
+        worker = controller_worker.ControllerWorker()
+        worker.jobboard_driver = mock_driver
+
+        worker.shutdown()
+
+        mock_driver.shutdown.assert_called_once()
+
+    def test_shutdown_safe_without_jobboard_driver(self,
+                                                   mock_get_session,
+                                                   mock_logging_listener,
+                                                   mock_taskflow_ctrl,
+                                                   mock_pool_get,
+                                                   mock_member_get,
+                                                   mock_l7rule_get,
+                                                   mock_l7policy_get,
+                                                   mock_listener_get,
+                                                   mock_lb_get,
+                                                   mock_hm_get,
+                                                   mock_amp_get):
+        worker = controller_worker.ControllerWorker()
+        worker.jobboard_driver = None
+        # Must not raise
+        worker.shutdown()
