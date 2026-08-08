@@ -58,17 +58,24 @@ class AmpRetry(retry.Times):
     def on_failure(self, history, *args, **kwargs):
         last_errors = history[-1][1]
         max_retry_attempt = CONF.haproxy_amphora.connection_max_retries
+        if len(history) > max_retry_attempt:
+            return retry.REVERT_ALL
+        if not last_errors:
+            # No outcome recorded for this attempt; retry within budget.
+            LOG.warning('%s: no outcome recorded for attempt %d of %d; '
+                        'retrying instead of reverting.', self.name,
+                        len(history), max_retry_attempt)
+            return retry.RETRY
         for task_name, ex_info in last_errors.items():
-            if len(history) <= max_retry_attempt:
-                # When taskflow persistence is enabled and flow/task state is
-                # saved in the backend. If flow(task) is restored(restart of
-                # worker,etc) we are getting ex_info as None - we need to RETRY
-                # task to check its real state.
-                if ex_info is None or ex_info._exc_info is None:
-                    return retry.RETRY
-                excp = ex_info._exc_info[1]
-                if isinstance(excp, driver_except.AmpConnectionRetry):
-                    return retry.RETRY
+            # When taskflow persistence is enabled and flow/task state is
+            # saved in the backend. If flow(task) is restored(restart of
+            # worker,etc) we are getting ex_info as None - we need to RETRY
+            # task to check its real state.
+            if ex_info is None or ex_info._exc_info is None:
+                return retry.RETRY
+            excp = ex_info._exc_info[1]
+            if isinstance(excp, driver_except.AmpConnectionRetry):
+                return retry.RETRY
 
         return retry.REVERT_ALL
 
