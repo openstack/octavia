@@ -1,0 +1,8 @@
+---
+fixes:
+  - |
+    `octavia-db-manage` now configures logging after the configuration file
+    has been parsed. It previously set logging up at import time, when
+    `[DEFAULT] log_config_append` was still unset, so the database migration
+    commands ignored the configured logging setup and always emitted plain
+    text.
