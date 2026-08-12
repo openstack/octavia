@@ -165,9 +165,22 @@ class LocalCertGenerator(cert_gen.CertGenerator):
                     lo_req.public_key()),
                 critical=False
             )
+            # Prefer the issuer certificate's stored SKI because its
+            # derivation may differ from the public-key derivation. Fall back
+            # only when the issuer certificate has no SKI extension.
+            try:
+                issuer_ski = lo_cert.extensions.get_extension_for_class(
+                    x509.SubjectKeyIdentifier).value
+                authority_key_identifier = x509.AuthorityKeyIdentifier(
+                    key_identifier=issuer_ski.digest,
+                    authority_cert_issuer=None,
+                    authority_cert_serial_number=None)
+            except x509.ExtensionNotFound:
+                authority_key_identifier = (
+                    x509.AuthorityKeyIdentifier.from_issuer_public_key(
+                        lo_cert.public_key()))
             new_cert = new_cert.add_extension(
-                x509.AuthorityKeyIdentifier.from_issuer_public_key(
-                    lo_cert.public_key()),
+                authority_key_identifier,
                 critical=False
             )
             signed_cert = new_cert.sign(private_key=lo_key,
