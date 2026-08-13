@@ -180,8 +180,8 @@ filters are supported by the Octavia API:
 - ``not-tags-any`` - Return the list of entities that do not have at least
   one of the given tags.
 
-When supplying a list of tags, the tags should be provided in a comma separated
-list.
+When supplying a list of tags, the tags can be provided as a comma separated
+list or as multiple key-value pairs.
 
 For example, if you would like to get the list of load balancers with both the
 "red" and "blue" tags you would request:
