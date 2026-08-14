@@ -181,15 +181,20 @@ function install_redis {
 
 function stop_redis {
     redis_name=$(redis_name)
+    if is_fedora; then
+        is_package_installed $redis_name || return 0
+    elif is_ubuntu; then
+        is_package_installed redis-server || return 0
+    fi
     stop_service $redis_name
 }
 
 function uninstall_redis {
     redis_name=$(redis_name)
     if is_fedora; then
-        uninstall_package $redis_name
+        is_package_installed $redis_name && uninstall_package $redis_name
     elif is_ubuntu; then
-        uninstall_package redis-server
+        is_package_installed redis-server && uninstall_package redis-server
     fi
 }
 
