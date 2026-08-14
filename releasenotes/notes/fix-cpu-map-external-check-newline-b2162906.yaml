@@ -1,0 +1,7 @@
+---
+fixes:
+  - |
+    Fixed HAProxy config generation when both cpu-map (multi vCPU amphora)
+    and external-check (PING health monitor) are enabled. A missing newline
+    in the Jinja2 template caused ``external-check`` to be appended to the
+    ``cpu-map`` line, resulting in a fatal HAProxy configuration error.
