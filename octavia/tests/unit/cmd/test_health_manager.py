@@ -55,13 +55,14 @@ class TestHealthManagerCMD(base.TestCase):
         health_manager.hm_health_check(mock_event)
         mock_health.assert_called_once_with(mock_event)
 
-    @mock.patch('multiprocessing.Process')
+    @mock.patch('octavia.cmd.health_manager.multiproc')
     @mock.patch('octavia.common.service.prepare_service')
-    def test_main(self, mock_service, mock_process):
+    def test_main(self, mock_service, mock_multiprocessing):
         mock_listener_proc = mock.MagicMock()
         mock_health_proc = mock.MagicMock()
 
-        mock_process.side_effect = [mock_listener_proc, mock_health_proc]
+        mock_multiprocessing.Process.side_effect = [
+            mock_listener_proc, mock_health_proc]
 
         health_manager.main()
 
@@ -71,9 +72,9 @@ class TestHealthManagerCMD(base.TestCase):
         mock_health_proc.join.assert_called_once_with()
 
     @mock.patch('os.kill')
-    @mock.patch('multiprocessing.Process')
+    @mock.patch('octavia.cmd.health_manager.multiproc')
     @mock.patch('octavia.common.service.prepare_service')
-    def test_main_keyboard_interrupt(self, mock_service, mock_process,
+    def test_main_keyboard_interrupt(self, mock_service, mock_multiprocessing,
                                      mock_kill):
         mock_listener_proc = mock.MagicMock()
         mock_health_proc = mock.MagicMock()
@@ -81,7 +82,8 @@ class TestHealthManagerCMD(base.TestCase):
         mock_join.side_effect = [KeyboardInterrupt, None]
         mock_listener_proc.join = mock_join
 
-        mock_process.side_effect = [mock_listener_proc, mock_health_proc]
+        mock_multiprocessing.Process.side_effect = [
+            mock_listener_proc, mock_health_proc]
 
         health_manager.main()
 

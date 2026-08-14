@@ -14,7 +14,7 @@
 
 # make sure PYTHONPATH includes the home directory if you didn't install
 
-import multiprocessing as multiproc
+import multiprocessing
 import ssl
 import sys
 
@@ -29,6 +29,10 @@ from octavia.common import service
 from octavia.common import utils
 from octavia import version
 
+# Python 3.14 changed the default multiprocessing start method on Linux from
+# "fork" to "forkserver", so the child processes no longer inherit the parsed
+# configuration from the parent process.
+multiproc = multiprocessing.get_context("fork")
 
 CONF = cfg.CONF
 

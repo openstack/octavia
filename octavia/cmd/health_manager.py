@@ -31,6 +31,10 @@ from octavia.common import service
 from octavia.controller.healthmanager import health_manager
 from octavia import version
 
+# Python 3.14 changed the default multiprocessing start method on Linux from
+# "fork" to "forkserver", so the child processes no longer inherit the parsed
+# configuration from the parent process.
+multiproc = multiprocessing.get_context("fork")
 
 CONF = cfg.CONF
 LOG = logging.getLogger(__name__)
@@ -95,15 +99,15 @@ def main():
     gmr.TextGuruMeditation.setup_autorun(version, conf=CONF)
 
     processes = []
-    exit_event = multiprocessing.Event()
+    exit_event = multiproc.Event()
 
-    hm_listener_proc = multiprocessing.Process(name='HM_listener',
-                                               target=hm_listener,
-                                               args=(exit_event,))
+    hm_listener_proc = multiproc.Process(name='HM_listener',
+                                         target=hm_listener,
+                                         args=(exit_event,))
     processes.append(hm_listener_proc)
-    hm_health_check_proc = multiprocessing.Process(name='HM_health_check',
-                                                   target=hm_health_check,
-                                                   args=(exit_event,))
+    hm_health_check_proc = multiproc.Process(name='HM_health_check',
+                                             target=hm_health_check,
+                                             args=(exit_event,))
     processes.append(hm_health_check_proc)
 
     LOG.info("Health Manager listener process starts:")
