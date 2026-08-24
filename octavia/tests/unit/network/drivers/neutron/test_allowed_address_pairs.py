@@ -1111,7 +1111,8 @@ class TestAllowedAddressPairsDriver(base.TestCase):
             'port_range_min': 1024,
             'port_range_max': 1024,
             'ethertype': 'IPv4',
-            'remote_ip_prefix': None
+            'remote_ip_prefix': None,
+            'remote_group_id': 'secgrp-1'
         }
         expected_create_rule_udp_peer = {
             'security_group_id': 'secgrp-1',
@@ -1120,7 +1121,8 @@ class TestAllowedAddressPairsDriver(base.TestCase):
             'port_range_min': 1026,
             'port_range_max': 1026,
             'ethertype': 'IPv4',
-            'remote_ip_prefix': None
+            'remote_ip_prefix': None,
+            'remote_group_id': 'secgrp-1'
         }
         expected_create_rule_2 = {
             'security_group_id': 'secgrp-1',
@@ -1129,7 +1131,8 @@ class TestAllowedAddressPairsDriver(base.TestCase):
             'port_range_min': 1025,
             'port_range_max': 1025,
             'ethertype': 'IPv4',
-            'remote_ip_prefix': None
+            'remote_ip_prefix': None,
+            'remote_group_id': 'secgrp-1'
         }
         expected_create_rule_3 = {
             'security_group_id': 'secgrp-1',
@@ -1138,7 +1141,8 @@ class TestAllowedAddressPairsDriver(base.TestCase):
             'port_range_min': 443,
             'port_range_max': 443,
             'ethertype': 'IPv4',
-            'remote_ip_prefix': '10.0.102.0/24'
+            'remote_ip_prefix': '10.0.102.0/24',
+            'remote_group_id': None
         }
         expected_create_rule_4 = {
             'security_group_id': 'secgrp-1',
@@ -1147,7 +1151,8 @@ class TestAllowedAddressPairsDriver(base.TestCase):
             'port_range_min': 443,
             'port_range_max': 443,
             'ethertype': 'IPv4',
-            'remote_ip_prefix': '10.0.103.0/24'
+            'remote_ip_prefix': '10.0.103.0/24',
+            'remote_group_id': None
         }
         expected_create_rule_5 = {
             'security_group_id': 'secgrp-1',
@@ -1156,7 +1161,8 @@ class TestAllowedAddressPairsDriver(base.TestCase):
             'port_range_min': 443,
             'port_range_max': 443,
             'ethertype': 'IPv6',
-            'remote_ip_prefix': '2001:0DB8::/32'
+            'remote_ip_prefix': '2001:0DB8::/32',
+            'remote_group_id': None
         }
         expected_create_rule_udp_1 = {
             'security_group_id': 'secgrp-1',
@@ -1165,7 +1171,8 @@ class TestAllowedAddressPairsDriver(base.TestCase):
             'port_range_min': 50,
             'port_range_max': 50,
             'ethertype': 'IPv4',
-            'remote_ip_prefix': None
+            'remote_ip_prefix': None,
+            'remote_group_id': None
         }
         expected_create_rule_udp_2 = {
             'security_group_id': 'secgrp-1',
@@ -1174,7 +1181,8 @@ class TestAllowedAddressPairsDriver(base.TestCase):
             'port_range_min': 50,
             'port_range_max': 50,
             'ethertype': 'IPv6',
-            'remote_ip_prefix': None
+            'remote_ip_prefix': None,
+            'remote_group_id': None
         }
 
         create_rule.assert_has_calls([mock.call(**expected_create_rule_1),
@@ -1298,6 +1306,719 @@ class TestAllowedAddressPairsDriver(base.TestCase):
         list_sec_grps.return_value = None
         self.driver.update_vip(lb, for_delete=True)
         update_rules.assert_not_called()
+
+    # ========================================================================
+    # ACTIVE_STANDBY Topology Tests
+    # ========================================================================
+
+    def test_update_vip_active_standby_creates_vrrp_and_auth_rules(self):
+        """Test VRRP and Auth Header rules created for Active/Standby"""
+        listeners = []
+        vip = data_models.Vip(ip_address='10.0.0.2')
+        lb = data_models.LoadBalancer(
+            id='1',
+            listeners=listeners,
+            vip=vip,
+            topology=constants.TOPOLOGY_ACTIVE_STANDBY
+        )
+
+        list_sec_grps = self.driver.network_proxy.find_security_group
+        list_sec_grps.return_value = {'id': 'secgrp-1'}
+
+        # No existing rules
+        fake_rules = []
+        list_rules = self.driver.network_proxy.security_group_rules
+        list_rules.return_value = fake_rules
+
+        create_rule = self.driver.network_proxy.create_security_group_rule
+
+        self.driver.update_vip(lb)
+
+        # Verify VRRP rule was created with remote_group_id
+        expected_vrrp_rule = {
+            'security_group_id': 'secgrp-1',
+            'direction': 'ingress',
+            'protocol': constants.VRRP_PROTOCOL_NUM,
+            'port_range_min': None,
+            'port_range_max': None,
+            'ethertype': 'IPv4',
+            'remote_ip_prefix': None,
+            'remote_group_id': 'secgrp-1'
+        }
+
+        # Verify Auth Header rule was created with remote_group_id
+        expected_auth_rule = {
+            'security_group_id': 'secgrp-1',
+            'direction': 'ingress',
+            'protocol': constants.AUTH_HEADER_PROTOCOL_NUMBER,
+            'port_range_min': None,
+            'port_range_max': None,
+            'ethertype': 'IPv4',
+            'remote_ip_prefix': None,
+            'remote_group_id': 'secgrp-1'
+        }
+
+        create_rule.assert_any_call(**expected_vrrp_rule)
+        create_rule.assert_any_call(**expected_auth_rule)
+
+    def test_update_vip_single_topology_no_vrrp_rules(self):
+        """Test that VRRP/Auth rules are NOT created for Single topology"""
+        listeners = []
+        vip = data_models.Vip(ip_address='10.0.0.2')
+        lb = data_models.LoadBalancer(
+            id='1',
+            listeners=listeners,
+            vip=vip,
+            topology=constants.TOPOLOGY_SINGLE
+        )
+
+        list_sec_grps = self.driver.network_proxy.find_security_group
+        list_sec_grps.return_value = {'id': 'secgrp-1'}
+
+        fake_rules = []
+        list_rules = self.driver.network_proxy.security_group_rules
+        list_rules.return_value = fake_rules
+
+        create_rule = self.driver.network_proxy.create_security_group_rule
+
+        self.driver.update_vip(lb)
+
+        # Verify VRRP and Auth Header rules were NOT created
+        for call_args in create_rule.call_args_list:
+            rule = call_args[1] if call_args[1] else call_args[0][0]
+            self.assertNotEqual(rule.get('protocol'),
+                                constants.VRRP_PROTOCOL_NUM)
+            self.assertNotEqual(rule.get('protocol'),
+                                constants.AUTH_HEADER_PROTOCOL_NUMBER)
+
+    def test_update_vip_active_standby_ipv6(self):
+        """Test VRRP/Auth rules with IPv6 primary ethertype"""
+        listeners = []
+        vip = data_models.Vip(ip_address='2001:db8::1')
+        lb = data_models.LoadBalancer(
+            id='1',
+            listeners=listeners,
+            vip=vip,
+            topology=constants.TOPOLOGY_ACTIVE_STANDBY
+        )
+
+        list_sec_grps = self.driver.network_proxy.find_security_group
+        list_sec_grps.return_value = {'id': 'secgrp-1'}
+
+        fake_rules = []
+        list_rules = self.driver.network_proxy.security_group_rules
+        list_rules.return_value = fake_rules
+
+        create_rule = self.driver.network_proxy.create_security_group_rule
+
+        self.driver.update_vip(lb)
+
+        # Verify rules were created with IPv6 ethertype
+        vrrp_call_found = False
+        auth_call_found = False
+        for call_args in create_rule.call_args_list:
+            rule = call_args[1] if call_args[1] else call_args[0][0]
+            if rule.get('protocol') == constants.VRRP_PROTOCOL_NUM:
+                self.assertEqual(rule.get('ethertype'), 'IPv6')
+                vrrp_call_found = True
+            if rule.get('protocol') == constants.AUTH_HEADER_PROTOCOL_NUMBER:
+                self.assertEqual(rule.get('ethertype'), 'IPv6')
+                auth_call_found = True
+
+        self.assertTrue(vrrp_call_found,
+                        "VRRP rule should be created with IPv6")
+        self.assertTrue(auth_call_found,
+                        "Auth Header rule should be created with IPv6")
+
+    # ========================================================================
+    # Migration Logic Tests
+    # ========================================================================
+
+    def test_update_vip_migrates_old_vrrp_rule(self):
+        """Test that old VRRP rule without remote_group_id is deleted"""
+        listeners = []
+        vip = data_models.Vip(ip_address='10.0.0.2')
+        lb = data_models.LoadBalancer(
+            id='1',
+            listeners=listeners,
+            vip=vip,
+            topology=constants.TOPOLOGY_ACTIVE_STANDBY
+        )
+
+        list_sec_grps = self.driver.network_proxy.find_security_group
+        list_sec_grps.return_value = {'id': 'secgrp-1'}
+
+        # Existing old VRRP rule WITHOUT remote_group_id
+        fake_rules = [
+            {
+                'id': 'old-vrrp-rule',
+                'protocol': str(constants.VRRP_PROTOCOL_NUM),
+                'direction': 'ingress',
+                'remote_group_id': None
+            }
+        ]
+        list_rules = self.driver.network_proxy.security_group_rules
+        list_rules.return_value = fake_rules
+
+        create_rule = self.driver.network_proxy.create_security_group_rule
+        delete_rule = self.driver.network_proxy.delete_security_group_rule
+
+        self.driver.update_vip(lb)
+
+        # Verify old rule was deleted
+        delete_rule.assert_any_call('old-vrrp-rule', ignore_missing=False)
+
+        # Verify new rule with remote_group_id was created
+        vrrp_created = False
+        for call_args in create_rule.call_args_list:
+            rule = call_args[1] if call_args[1] else call_args[0][0]
+            if rule.get('protocol') == constants.VRRP_PROTOCOL_NUM:
+                self.assertEqual(rule.get('remote_group_id'), 'secgrp-1')
+                vrrp_created = True
+        self.assertTrue(vrrp_created)
+
+    def test_update_vip_migrates_old_auth_header_rule(self):
+        """Test that old Auth Header rule without remote_group_id is deleted"""
+        listeners = []
+        vip = data_models.Vip(ip_address='10.0.0.2')
+        lb = data_models.LoadBalancer(
+            id='1',
+            listeners=listeners,
+            vip=vip,
+            topology=constants.TOPOLOGY_ACTIVE_STANDBY
+        )
+
+        list_sec_grps = self.driver.network_proxy.find_security_group
+        list_sec_grps.return_value = {'id': 'secgrp-1'}
+
+        # Existing old Auth Header rule WITHOUT remote_group_id
+        fake_rules = [
+            {
+                'id': 'old-auth-rule',
+                'protocol': str(constants.AUTH_HEADER_PROTOCOL_NUMBER),
+                'direction': 'ingress',
+                'remote_group_id': None
+            }
+        ]
+        list_rules = self.driver.network_proxy.security_group_rules
+        list_rules.return_value = fake_rules
+
+        delete_rule = self.driver.network_proxy.delete_security_group_rule
+
+        self.driver.update_vip(lb)
+
+        # Verify old rule was deleted
+        delete_rule.assert_any_call('old-auth-rule', ignore_missing=False)
+
+    def test_update_vip_keeps_new_vrrp_rule_with_remote_group_id(self):
+        """Test that new VRRP rule with remote_group_id is NOT deleted"""
+        listeners = []
+        vip = data_models.Vip(ip_address='10.0.0.2')
+        lb = data_models.LoadBalancer(
+            id='1',
+            listeners=listeners,
+            vip=vip,
+            topology=constants.TOPOLOGY_ACTIVE_STANDBY
+        )
+
+        list_sec_grps = self.driver.network_proxy.find_security_group
+        list_sec_grps.return_value = {'id': 'secgrp-1'}
+
+        # Existing new VRRP rule WITH remote_group_id (already migrated)
+        fake_rules = [
+            {
+                'id': 'new-vrrp-rule',
+                'protocol': str(constants.VRRP_PROTOCOL_NUM),
+                'direction': 'ingress',
+                'remote_group_id': 'secgrp-1'
+            }
+        ]
+        list_rules = self.driver.network_proxy.security_group_rules
+        list_rules.return_value = fake_rules
+
+        create_rule = self.driver.network_proxy.create_security_group_rule
+        delete_rule = self.driver.network_proxy.delete_security_group_rule
+
+        # Mock ConflictException since rule already exists
+        create_rule.side_effect = os_exceptions.ConflictException
+
+        self.driver.update_vip(lb)
+
+        # Verify the new rule was NOT deleted
+        self.assertEqual(delete_rule.call_count, 0)
+
+    def test_update_vip_migration_multiple_old_rules(self):
+        """Test migration when both old VRRP and Auth rules exist"""
+        listeners = []
+        vip = data_models.Vip(ip_address='10.0.0.2')
+        lb = data_models.LoadBalancer(
+            id='1',
+            listeners=listeners,
+            vip=vip,
+            topology=constants.TOPOLOGY_ACTIVE_STANDBY
+        )
+
+        list_sec_grps = self.driver.network_proxy.find_security_group
+        list_sec_grps.return_value = {'id': 'secgrp-1'}
+
+        # Both old rules present
+        fake_rules = [
+            {
+                'id': 'old-vrrp-rule',
+                'protocol': str(constants.VRRP_PROTOCOL_NUM),
+                'direction': 'ingress',
+                'remote_group_id': None
+            },
+            {
+                'id': 'old-auth-rule',
+                'protocol': str(constants.AUTH_HEADER_PROTOCOL_NUMBER),
+                'direction': 'ingress',
+                'remote_group_id': None
+            }
+        ]
+        list_rules = self.driver.network_proxy.security_group_rules
+        list_rules.return_value = fake_rules
+
+        delete_rule = self.driver.network_proxy.delete_security_group_rule
+
+        self.driver.update_vip(lb)
+
+        # Verify both old rules were deleted
+        delete_rule.assert_any_call('old-vrrp-rule', ignore_missing=False)
+        delete_rule.assert_any_call('old-auth-rule', ignore_missing=False)
+
+    # ========================================================================
+    # Error Handling Tests
+    # ========================================================================
+
+    def test_update_vip_active_standby_handles_rule_already_exists(self):
+        """Test ConflictException is handled gracefully when rule exists"""
+        listeners = []
+        vip = data_models.Vip(ip_address='10.0.0.2')
+        lb = data_models.LoadBalancer(
+            id='1',
+            listeners=listeners,
+            vip=vip,
+            topology=constants.TOPOLOGY_ACTIVE_STANDBY
+        )
+
+        list_sec_grps = self.driver.network_proxy.find_security_group
+        list_sec_grps.return_value = {'id': 'secgrp-1'}
+
+        fake_rules = []
+        list_rules = self.driver.network_proxy.security_group_rules
+        list_rules.return_value = fake_rules
+
+        create_rule = self.driver.network_proxy.create_security_group_rule
+        # Simulate rule already exists
+        create_rule.side_effect = os_exceptions.ConflictException
+
+        # Should not raise exception - ConflictException should be handled
+        exception_raised = False
+        try:
+            self.driver.update_vip(lb)
+        except os_exceptions.ConflictException:
+            exception_raised = True
+
+        self.assertFalse(exception_raised,
+                         "ConflictException should be handled gracefully")
+
+    def test_update_vip_active_standby_handles_rule_not_found_on_delete(self):
+        """Test NotFoundException handled when deleting deleted rule"""
+        listeners = []
+        vip = data_models.Vip(ip_address='10.0.0.2')
+        lb = data_models.LoadBalancer(
+            id='1',
+            listeners=listeners,
+            vip=vip,
+            topology=constants.TOPOLOGY_ACTIVE_STANDBY
+        )
+
+        list_sec_grps = self.driver.network_proxy.find_security_group
+        list_sec_grps.return_value = {'id': 'secgrp-1'}
+
+        # Old rule exists
+        fake_rules = [
+            {
+                'id': 'old-vrrp-rule',
+                'protocol': str(constants.VRRP_PROTOCOL_NUM),
+                'direction': 'ingress',
+                'remote_group_id': None
+            }
+        ]
+        list_rules = self.driver.network_proxy.security_group_rules
+        list_rules.return_value = fake_rules
+
+        delete_rule = self.driver.network_proxy.delete_security_group_rule
+        # Simulate rule was already deleted
+        delete_rule.side_effect = os_exceptions.NotFoundException
+
+        # Should not raise exception, just log warning
+        exception_raised = False
+        try:
+            self.driver.update_vip(lb)
+        except os_exceptions.NotFoundException:
+            exception_raised = True
+
+        self.assertFalse(exception_raised,
+                         "NotFoundException on delete should be handled")
+
+    def test_update_vip_active_standby_raises_on_create_rule_error(self):
+        """Test that non-Conflict exceptions during rule creation raise"""
+        listeners = []
+        vip = data_models.Vip(ip_address='10.0.0.2')
+        lb = data_models.LoadBalancer(
+            id='1',
+            listeners=listeners,
+            vip=vip,
+            topology=constants.TOPOLOGY_ACTIVE_STANDBY
+        )
+
+        list_sec_grps = self.driver.network_proxy.find_security_group
+        list_sec_grps.return_value = {'id': 'secgrp-1'}
+
+        fake_rules = []
+        list_rules = self.driver.network_proxy.security_group_rules
+        list_rules.return_value = fake_rules
+
+        create_rule = self.driver.network_proxy.create_security_group_rule
+        # Simulate some other error
+        create_rule.side_effect = Exception("Network error")
+
+        # Should raise PlugVIPException
+        self.assertRaises(
+            network_base.PlugVIPException,
+            self.driver.update_vip,
+            lb
+        )
+
+    def test_update_vip_active_standby_raises_on_delete_rule_error(self):
+        """Test that non-NotFound exceptions during rule deletion raise"""
+        listeners = []
+        vip = data_models.Vip(ip_address='10.0.0.2')
+        lb = data_models.LoadBalancer(
+            id='1',
+            listeners=listeners,
+            vip=vip,
+            topology=constants.TOPOLOGY_ACTIVE_STANDBY
+        )
+
+        list_sec_grps = self.driver.network_proxy.find_security_group
+        list_sec_grps.return_value = {'id': 'secgrp-1'}
+
+        fake_rules = [
+            {
+                'id': 'old-vrrp-rule',
+                'protocol': str(constants.VRRP_PROTOCOL_NUM),
+                'direction': 'ingress',
+                'remote_group_id': None
+            }
+        ]
+        list_rules = self.driver.network_proxy.security_group_rules
+        list_rules.return_value = fake_rules
+
+        delete_rule = self.driver.network_proxy.delete_security_group_rule
+        # Simulate some other error
+        delete_rule.side_effect = Exception("Permission denied")
+
+        # Should raise PlugVIPException
+        self.assertRaises(
+            network_base.PlugVIPException,
+            self.driver.update_vip,
+            lb
+        )
+
+    # ========================================================================
+    # Helper Method Tests
+    # ========================================================================
+
+    def test_add_lb_active_standby_security_group_rules_vrrp(self):
+        """Test helper method creates VRRP rule correctly"""
+        sec_grp_id = 'secgrp-1'
+        primary_ethertype = 'IPv4'
+        rules = []
+
+        create_rule = self.driver.network_proxy.create_security_group_rule
+
+        self.driver._add_lb_active_standby_security_group_rules(
+            rules, sec_grp_id, primary_ethertype,
+            protocol=constants.VRRP_PROTOCOL_NUM,
+            peer_remote_group=sec_grp_id
+        )
+
+        expected_rule = {
+            'security_group_id': 'secgrp-1',
+            'direction': 'ingress',
+            'protocol': constants.VRRP_PROTOCOL_NUM,
+            'port_range_min': None,
+            'port_range_max': None,
+            'ethertype': 'IPv4',
+            'remote_ip_prefix': None,
+            'remote_group_id': 'secgrp-1'
+        }
+
+        create_rule.assert_called_once_with(**expected_rule)
+
+    def test_add_lb_active_standby_security_group_rules_auth_header(self):
+        """Test helper method creates Auth Header rule correctly"""
+        sec_grp_id = 'secgrp-1'
+        primary_ethertype = 'IPv4'
+        rules = []
+
+        create_rule = self.driver.network_proxy.create_security_group_rule
+
+        self.driver._add_lb_active_standby_security_group_rules(
+            rules, sec_grp_id, primary_ethertype,
+            protocol=constants.AUTH_HEADER_PROTOCOL_NUMBER,
+            peer_remote_group=sec_grp_id
+        )
+
+        expected_rule = {
+            'security_group_id': 'secgrp-1',
+            'direction': 'ingress',
+            'protocol': constants.AUTH_HEADER_PROTOCOL_NUMBER,
+            'port_range_min': None,
+            'port_range_max': None,
+            'ethertype': 'IPv4',
+            'remote_ip_prefix': None,
+            'remote_group_id': 'secgrp-1'
+        }
+
+        create_rule.assert_called_once_with(**expected_rule)
+
+    def test_add_lb_active_standby_security_group_rules_invalid_protocol(self):
+        """Test helper method raises exception for invalid protocol"""
+        sec_grp_id = 'secgrp-1'
+        primary_ethertype = 'IPv4'
+        rules = []
+
+        # Should raise exception for invalid protocol (e.g., TCP)
+        self.assertRaises(
+            os_exceptions.BadRequestException,
+            self.driver._add_lb_active_standby_security_group_rules,
+            rules, sec_grp_id, primary_ethertype,
+            protocol=6  # TCP protocol number - not allowed
+        )
+
+    def test_add_lb_active_standby_security_group_rules_deletes_old(self):
+        """Test helper method deletes old rule when found"""
+        sec_grp_id = 'secgrp-1'
+        primary_ethertype = 'IPv4'
+        rules = [
+            {
+                'id': 'old-vrrp-rule',
+                'protocol': str(constants.VRRP_PROTOCOL_NUM),
+                'direction': 'ingress',
+                'remote_group_id': None
+            }
+        ]
+
+        delete_rule = self.driver.network_proxy.delete_security_group_rule
+
+        self.driver._add_lb_active_standby_security_group_rules(
+            rules, sec_grp_id, primary_ethertype,
+            protocol=constants.VRRP_PROTOCOL_NUM,
+            peer_remote_group=sec_grp_id
+        )
+
+        # Verify old rule was deleted
+        delete_rule.assert_called_once_with('old-vrrp-rule',
+                                            ignore_missing=False)
+
+    # ========================================================================
+    # Peer Port Remote Group ID Tests
+    # ========================================================================
+
+    def test_update_vip_peer_ports_have_remote_group_id(self):
+        """Test that peer ports get remote_group_id set correctly"""
+        listeners = [
+            data_models.Listener(
+                protocol_port=80,
+                peer_port=1024,
+                protocol=constants.PROTOCOL_TCP
+            )
+        ]
+        vip = data_models.Vip(ip_address='10.0.0.2')
+        lb = data_models.LoadBalancer(id='1', listeners=listeners, vip=vip)
+
+        list_sec_grps = self.driver.network_proxy.find_security_group
+        list_sec_grps.return_value = {'id': 'secgrp-1'}
+
+        fake_rules = []
+        list_rules = self.driver.network_proxy.security_group_rules
+        list_rules.return_value = fake_rules
+
+        create_rule = self.driver.network_proxy.create_security_group_rule
+
+        self.driver.update_vip(lb)
+
+        # Find the peer port rule
+        peer_port_rule_found = False
+        for call_args in create_rule.call_args_list:
+            rule = call_args[1] if call_args[1] else call_args[0][0]
+            if rule.get('port_range_max') == 1024:
+                # Peer port should have remote_group_id
+                self.assertEqual(rule.get('remote_group_id'), 'secgrp-1')
+                peer_port_rule_found = True
+
+        self.assertTrue(peer_port_rule_found,
+                        "Peer port rule should be created")
+
+    def test_update_vip_listener_with_allowed_cidr_no_remote_group_id(self):
+        """Test listener ports with allowed_cidrs don't get remote_group_id"""
+        lc_1 = data_models.ListenerCidr('l1', '10.0.101.0/24')
+        listeners = [
+            data_models.Listener(
+                protocol_port=80,
+                peer_port=1024,
+                protocol=constants.PROTOCOL_TCP,
+                allowed_cidrs=[lc_1]
+            )
+        ]
+        vip = data_models.Vip(ip_address='10.0.0.2')
+        lb = data_models.LoadBalancer(id='1', listeners=listeners, vip=vip)
+
+        list_sec_grps = self.driver.network_proxy.find_security_group
+        list_sec_grps.return_value = {'id': 'secgrp-1'}
+
+        fake_rules = []
+        list_rules = self.driver.network_proxy.security_group_rules
+        list_rules.return_value = fake_rules
+
+        create_rule = self.driver.network_proxy.create_security_group_rule
+
+        self.driver.update_vip(lb)
+
+        # Find the listener port rule with CIDR
+        listener_rule_found = False
+        for call_args in create_rule.call_args_list:
+            rule = call_args[1] if call_args[1] else call_args[0][0]
+            if (rule.get('port_range_max') == 80 and
+                    rule.get('remote_ip_prefix') == '10.0.101.0/24'):
+                # Listener with CIDR should NOT have remote_group_id
+                self.assertIsNone(rule.get('remote_group_id'))
+                listener_rule_found = True
+
+        self.assertTrue(listener_rule_found,
+                        "Listener rule with CIDR should be created")
+
+    def test_update_vip_peer_ports_remote_group_disabled(self):
+        """Peer port rule has remote_group_id=None when config disabled"""
+        conf = oslo_fixture.Config(cfg.CONF)
+        conf.config(group='networking',
+                    use_remote_group_for_lb_peer_ports=False)
+        listeners = [
+            data_models.Listener(
+                protocol_port=80,
+                peer_port=1024,
+                protocol=constants.PROTOCOL_TCP
+            )
+        ]
+        vip = data_models.Vip(ip_address='10.0.0.2')
+        lb = data_models.LoadBalancer(id='1', listeners=listeners, vip=vip)
+
+        self.driver.network_proxy.find_security_group.return_value = {
+            'id': 'secgrp-1'}
+        self.driver.network_proxy.security_group_rules.return_value = []
+        create_rule = self.driver.network_proxy.create_security_group_rule
+
+        self.driver.update_vip(lb)
+
+        peer_port_rule_found = False
+        for call_args in create_rule.call_args_list:
+            rule = call_args[1] if call_args[1] else call_args[0][0]
+            if rule.get('port_range_max') == 1024:
+                self.assertIsNone(rule.get('remote_group_id'))
+                peer_port_rule_found = True
+
+        self.assertTrue(peer_port_rule_found,
+                        "Peer port rule should be created")
+
+    def test_update_vip_active_standby_vrrp_remote_group_disabled(self):
+        """VRRP rule has remote_group_id=None when config disabled"""
+        conf = oslo_fixture.Config(cfg.CONF)
+        conf.config(group='networking',
+                    use_remote_group_for_lb_peer_ports=False)
+        vip = data_models.Vip(ip_address='10.0.0.2')
+        lb = data_models.LoadBalancer(
+            id='1', listeners=[], vip=vip,
+            topology=constants.TOPOLOGY_ACTIVE_STANDBY)
+
+        self.driver.network_proxy.find_security_group.return_value = {
+            'id': 'secgrp-1'}
+        self.driver.network_proxy.security_group_rules.return_value = []
+        create_rule = self.driver.network_proxy.create_security_group_rule
+
+        self.driver.update_vip(lb)
+
+        vrrp_rule_found = False
+        for call_args in create_rule.call_args_list:
+            rule = call_args[1] if call_args[1] else call_args[0][0]
+            if rule.get('protocol') == constants.VRRP_PROTOCOL_NUM:
+                self.assertIsNone(rule.get('remote_group_id'))
+                vrrp_rule_found = True
+
+        self.assertTrue(vrrp_rule_found, "VRRP rule should be created")
+
+    def test_update_vip_active_standby_auth_remote_group_disabled(self):
+        """Auth Header rule has remote_group_id=None when config disabled"""
+        conf = oslo_fixture.Config(cfg.CONF)
+        conf.config(group='networking',
+                    use_remote_group_for_lb_peer_ports=False)
+        vip = data_models.Vip(ip_address='10.0.0.2')
+        lb = data_models.LoadBalancer(
+            id='1', listeners=[], vip=vip,
+            topology=constants.TOPOLOGY_ACTIVE_STANDBY)
+
+        self.driver.network_proxy.find_security_group.return_value = {
+            'id': 'secgrp-1'}
+        self.driver.network_proxy.security_group_rules.return_value = []
+        create_rule = self.driver.network_proxy.create_security_group_rule
+
+        self.driver.update_vip(lb)
+
+        auth_rule_found = False
+        for call_args in create_rule.call_args_list:
+            rule = call_args[1] if call_args[1] else call_args[0][0]
+            if rule.get('protocol') == constants.AUTH_HEADER_PROTOCOL_NUMBER:
+                self.assertIsNone(rule.get('remote_group_id'))
+                auth_rule_found = True
+
+        self.assertTrue(auth_rule_found, "Auth Header rule should be created")
+
+    def test_update_vip_migration_skipped_when_remote_group_disabled(self):
+        """Old rules lacking remote_group_id are not deleted when disabled"""
+        conf = oslo_fixture.Config(cfg.CONF)
+        conf.config(group='networking',
+                    use_remote_group_for_lb_peer_ports=False)
+        vip = data_models.Vip(ip_address='10.0.0.2')
+        lb = data_models.LoadBalancer(
+            id='1', listeners=[], vip=vip,
+            topology=constants.TOPOLOGY_ACTIVE_STANDBY)
+
+        self.driver.network_proxy.find_security_group.return_value = {
+            'id': 'secgrp-1'}
+        fake_rules = [
+            {
+                'id': 'old-vrrp-rule',
+                'protocol': str(constants.VRRP_PROTOCOL_NUM),
+                'direction': 'ingress',
+                'remote_group_id': None,
+            },
+            {
+                'id': 'old-auth-rule',
+                'protocol': str(constants.AUTH_HEADER_PROTOCOL_NUMBER),
+                'direction': 'ingress',
+                'remote_group_id': None,
+            },
+        ]
+        self.driver.network_proxy.security_group_rules.return_value = (
+            fake_rules)
+        delete_rule = self.driver.network_proxy.delete_security_group_rule
+
+        self.driver.update_vip(lb)
+
+        delete_rule.assert_not_called()
 
     def test_failover_preparation(self):
         original_dns_integration_state = self.driver.dns_integration_enabled
