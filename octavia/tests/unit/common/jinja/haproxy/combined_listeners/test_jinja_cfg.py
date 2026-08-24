@@ -918,6 +918,37 @@ class TestHaproxyCfg(base.TestCase):
         self.assertEqual(sample_configs_combined.sample_base_expected_config(
             backend=be, global_opts=go), rendered_obj)
 
+    def test_render_template_ping_monitor_http_with_cpu_count(self):
+        be = ("backend sample_pool_id_1:sample_listener_id_1\n"
+              "    mode http\n"
+              "    balance roundrobin\n"
+              "    cookie SRV insert indirect nocache\n"
+              "    timeout check 31s\n"
+              "    option external-check\n"
+              "    external-check command /var/lib/octavia/ping-wrapper.sh\n"
+              f"    fullconn {constants.HAPROXY_DEFAULT_MAXCONN}\n"
+              "    option allbackups\n"
+              "    timeout connect 5000\n"
+              "    timeout server 50000\n"
+              "    server sample_member_id_1 10.0.0.99:82 "
+              "weight 13 check inter 30s fall 3 rise 2 "
+              "cookie sample_member_id_1\n"
+              "    server sample_member_id_2 10.0.0.98:82 "
+              "weight 13 check inter 30s fall 3 rise 2 "
+              "cookie sample_member_id_2\n\n")
+        go = ("    maxconn 50000\n"
+              "    nbthread 6\n"
+              "    cpu-map auto:1/1-6 1-6\n"
+              "    external-check\n\n")
+        rendered_obj = self.jinja_cfg.render_loadbalancer_obj(
+            sample_configs_combined.sample_amphora_tuple(),
+            [sample_configs_combined.sample_listener_tuple(
+                proto='HTTP', monitor_proto='PING')],
+            amp_details={"cpu_count": 7,
+                         "active_tuned_profiles": "virtual-guest amphora"})
+        self.assertEqual(sample_configs_combined.sample_base_expected_config(
+            backend=be, global_opts=go), rendered_obj)
+
     def test_render_template_no_monitor_https(self):
         fe = ("frontend sample_listener_id_1\n"
               f"    maxconn {constants.HAPROXY_DEFAULT_MAXCONN}\n"
@@ -1792,7 +1823,8 @@ class TestHaproxyCfg(base.TestCase):
                     "    option http-keep-alive\n\n\n")
         global_opts = ("    maxconn 50000\n"
                        "    nbthread 6\n"
-                       "    cpu-map auto:1/1-6 1-6\n")
+                       "    cpu-map auto:1/1-6 1-6\n"
+                       "\n")
         self.assertEqual(
             sample_configs_combined.sample_base_expected_config(
                 defaults=defaults, logging="\n", global_opts=global_opts),
