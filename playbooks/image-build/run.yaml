@@ -50,6 +50,31 @@
       file:
         path: '{{ ansible_user_dir }}/test-images'
         state: directory
+    - name: Detect CI mirror configuration
+      shell: |
+        if [ -e /etc/ci/mirror_info.sh ]; then
+          . /etc/ci/mirror_info.sh
+          echo "NODEPOOL_UBUNTU_MIRROR=${NODEPOOL_UBUNTU_MIRROR:-}"
+          echo "NODEPOOL_PYPI_MIRROR=${NODEPOOL_PYPI_MIRROR:-}"
+          echo "NODEPOOL_WHEEL_MIRROR=${NODEPOOL_WHEEL_MIRROR:-}"
+        fi
+      args:
+        executable: /bin/bash
+      register: mirror_info
+      tags:
+        - skip_ansible_lint
+    - name: Set distribution mirror fact for Ubuntu
+      set_fact:
+        dib_distribution_mirror: "{{ mirror_info.stdout | regex_search('NODEPOOL_UBUNTU_MIRROR=(.+)', '\\1') | first }}"
+      when:
+        - mirror_info.stdout is search('NODEPOOL_UBUNTU_MIRROR=.+')
+        - amphora_os == 'ubuntu'
+    - name: Set pypi mirror facts
+      set_fact:
+        dib_pypi_mirror: "{{ mirror_info.stdout | regex_search('NODEPOOL_PYPI_MIRROR=(.+)', '\\1') | first }}"
+        dib_wheel_mirror: "{{ mirror_info.stdout | regex_search('NODEPOOL_WHEEL_MIRROR=(.+)', '\\1') | first }}"
+      when:
+        - mirror_info.stdout is search('NODEPOOL_PYPI_MIRROR=.+')
     - name: Build an amphora image for publishing
       shell: >-
         . /var/tmp/venv/bin/activate && \
@@ -59,5 +84,27 @@
               -s {{ amphora_image_size | default(2) }}
       args:
         chdir: "{{ ansible_user_dir }}/src/opendev.org/openstack/octavia/diskimage-create"
+      # CI mirrors are unsigned (GPG is also disabled on the host by
+      # configure-mirrors' 99unauthenticated apt config), so we pass
+      # --no-check-gpg to debootstrap and include allow-insecure-apt
+      # to let apt-get update work inside the chroot.
+      environment: >-
+        {{
+          {}
+          | combine(dib_distribution_mirror is defined
+                    | ternary({'DIB_DISTRIBUTION_MIRROR': dib_distribution_mirror,
+                               'DIB_DEBOOTSTRAP_EXTRA_ARGS': '--no-check-gpg'}, {}))
+          | combine(dib_pypi_mirror is defined
+                    | ternary({'DIB_PYPI_MIRROR_URL': dib_pypi_mirror,
+                               'DIB_PYPI_MIRROR_URL_1': dib_wheel_mirror | default(''),
+                               'DIB_PIP_RETRIES': '0'}, {}))
+          | combine({'DIB_LOCAL_ELEMENTS':
+                     ((dib_distribution_mirror is defined) | ternary('allow-insecure-apt', ''))
+                     ~ ' '
+                     ~ ((dib_pypi_mirror is defined) | ternary('pypi', ''))
+                     | trim}
+                    if (dib_distribution_mirror is defined or dib_pypi_mirror is defined)
+                    else {})
+        }}
       tags:
         - skip_ansible_lint

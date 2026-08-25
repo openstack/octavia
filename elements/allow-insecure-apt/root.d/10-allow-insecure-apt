@@ -1,0 +1,11 @@
+#!/bin/bash
+# Allow unsigned repositories inside the image build chroot.
+# CI mirrors are unsigned; this must run before
+# ubuntu-minimal's 75-ubuntu-minimal-baseinstall calls apt-get update.
+
+set -eu
+set -o pipefail
+
+sudo mkdir -p $TARGET_ROOT/etc/apt/apt.conf.d
+echo 'APT::Get::AllowUnauthenticated "true";' | sudo tee $TARGET_ROOT/etc/apt/apt.conf.d/95allow-unauthenticated > /dev/null
+echo 'Acquire::AllowInsecureRepositories "true";' | sudo tee -a $TARGET_ROOT/etc/apt/apt.conf.d/95allow-unauthenticated > /dev/null
