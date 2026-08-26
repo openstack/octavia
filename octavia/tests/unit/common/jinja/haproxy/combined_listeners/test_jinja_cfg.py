@@ -1770,6 +1770,30 @@ class TestHaproxyCfg(base.TestCase):
         ret = self.jinja_cfg._transform_l7policy(in_l7policy, {}, False)
         self.assertEqual(sample_configs_combined.RET_L7POLICY_6, ret)
 
+    def test_transform_l7policy_redirect_url_injection(self):
+        in_l7policy = sample_configs_combined.sample_l7policy_tuple(
+            'sample_l7policy_id_2', sample_policy=2)
+        # Replace redirect_url with a tainted value
+        in_l7policy = in_l7policy._replace(
+            redirect_url='https://example.com/\ncheck')
+        ret = self.jinja_cfg._transform_l7policy(in_l7policy, {}, False)
+        self.assertIsNone(ret['redirect_url'])
+
+    def test_transform_l7policy_redirect_prefix_injection(self):
+        in_l7policy = sample_configs_combined.sample_l7policy_tuple(
+            'sample_l7policy_id_2', sample_policy=2)
+        in_l7policy = in_l7policy._replace(
+            redirect_prefix='https://example.com/\ncheck',
+            redirect_url=None)
+        ret = self.jinja_cfg._transform_l7policy(in_l7policy, {}, False)
+        self.assertIsNone(ret['redirect_prefix'])
+
+    def test_transform_l7policy_redirect_url_valid(self):
+        in_l7policy = sample_configs_combined.sample_l7policy_tuple(
+            'sample_l7policy_id_2', sample_policy=2)
+        ret = self.jinja_cfg._transform_l7policy(in_l7policy, {}, False)
+        self.assertEqual('http://www.example.com', ret['redirect_url'])
+
     def test_escape_haproxy_config_string(self):
         self.assertEqual(self.jinja_cfg._escape_haproxy_config_string(
             'string_with_none'), 'string_with_none')
