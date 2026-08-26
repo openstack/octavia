@@ -1027,6 +1027,44 @@ class TestAmphoraDriverTasks(base.TestCase):
                                         '1234')
         mock_amphora_repo_update.assert_not_called()
 
+        # Test ERROR amphora - should stop VRRP to prevent split-brain
+        mock_driver.update_vrrp_conf.reset_mock()
+        mock_driver.stop_vrrp_service_on_amphora.reset_mock()
+        error_db_amp = mock.MagicMock()
+        error_db_amp.id = AMP_ID
+        error_db_amp.status = constants.ERROR
+        mock_amphora_repo_get.return_value = error_db_amp
+        amphorae_status = {
+            _amphora_mock[constants.ID]: {
+                constants.UNREACHABLE: False
+            }
+        }
+
+        amphora_vrrp_update_obj2 = (
+            amphora_driver_tasks.AmphoraIndexVRRPUpdate())
+        amphora_vrrp_update_obj2.execute(LB_ID, amphorae_network_config,
+                                         0, [_amphora_mock], amphorae_status,
+                                         'fakeint0',
+                                         _amphora_mock[constants.ID],
+                                         timeout_dict=self.timeout_dict)
+        mock_driver.stop_vrrp_service_on_amphora.assert_called_once_with(
+            error_db_amp, self.timeout_dict)
+        mock_driver.update_vrrp_conf.assert_not_called()
+
+        # Test ERROR amphora when stop_vrrp fails - should not propagate
+        mock_driver.stop_vrrp_service_on_amphora.reset_mock()
+        mock_driver.stop_vrrp_service_on_amphora.side_effect = Exception(
+            'unreachable')
+
+        amphora_vrrp_update_obj2.execute(LB_ID, amphorae_network_config,
+                                         0, [_amphora_mock], amphorae_status,
+                                         'fakeint0',
+                                         _amphora_mock[constants.ID],
+                                         timeout_dict=self.timeout_dict)
+        mock_driver.stop_vrrp_service_on_amphora.assert_called_once_with(
+            error_db_amp, self.timeout_dict)
+        mock_driver.update_vrrp_conf.assert_not_called()
+
     def test_amphora_vrrp_start(self,
                                 mock_driver,
                                 mock_generate_uuid,

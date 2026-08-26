@@ -1,0 +1,9 @@
+---
+fixes:
+  - |
+    Fixed a VRRP split-brain issue during amphora failover in ACTIVE_STANDBY
+    topology (LP#2121370). When an amphora in ERROR status was being replaced
+    by failover, both the old ERROR amphora and the new replacement could
+    become VRRP MASTER simultaneously. The VRRP configuration update now
+    detects ERROR amphorae and stops their VRRP service to prevent this
+    condition.

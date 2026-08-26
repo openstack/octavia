@@ -596,6 +596,23 @@ class AmphoraIndexVRRPUpdate(BaseAmphoraTask):
                                                id=amphora_id)
                 loadbalancer = self.loadbalancer_repo.get(session,
                                                           id=loadbalancer_id)
+
+            # If the amphora is in ERROR status, stop its VRRP service to
+            # prevent split-brain (LP#2121370). During failover, the old
+            # ERROR amphora may still be running VRRP as MASTER while the
+            # new replacement also becomes MASTER.
+            if db_amp.status == constants.ERROR:
+                LOG.warning(
+                    "Amphora %s is in ERROR status, stopping VRRP "
+                    "service to prevent split-brain.", amphora_id)
+                try:
+                    self.amphora_driver.stop_vrrp_service_on_amphora(
+                        db_amp, timeout_dict)
+                except Exception:
+                    LOG.debug("Could not stop VRRP on ERROR amphora %s "
+                              "(may be unreachable)", amphora_id)
+                return
+
             db_amp.vrrp_interface = amp_vrrp_int
             self.amphora_driver.update_vrrp_conf(
                 loadbalancer, amphorae_network_config, db_amp, timeout_dict)
