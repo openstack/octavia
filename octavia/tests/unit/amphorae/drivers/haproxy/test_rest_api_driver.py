@@ -11,12 +11,37 @@
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations
 # under the License.
+import ssl
 from unittest import mock
 
 from octavia.amphorae.driver_exceptions import exceptions as driver_except
 from octavia.amphorae.drivers.haproxy import exceptions as exc
 from octavia.amphorae.drivers.haproxy import rest_api_driver
 import octavia.tests.unit.base as base
+
+
+class TestCustomHostNameCheckingAdapter(base.TestCase):
+
+    def setUp(self):
+        super().setUp()
+        self.adapter = rest_api_driver.CustomHostNameCheckingAdapter()
+
+    def test_init_poolmanager_uses_ssl_minimum_version(self):
+        # Ensure that ssl_minimum_version (not deprecated ssl_version) is used
+        # when initialising the pool manager.
+        with mock.patch(
+            'octavia.amphorae.drivers.haproxy.rest_api_driver.CONF'
+        ) as mock_conf, mock.patch.object(
+            rest_api_driver.requests.adapters.HTTPAdapter,
+            'init_poolmanager'
+        ) as mock_http_init:
+            mock_conf.amphora_agent.agent_tls_protocol = 'TLSv1.2'
+            self.adapter.init_poolmanager(10, 10)
+            call_kwargs = mock_http_init.call_args[1]
+            self.assertNotIn('ssl_version', call_kwargs)
+            self.assertIn('ssl_minimum_version', call_kwargs)
+            self.assertEqual(ssl.TLSVersion.TLSv1_2,
+                             call_kwargs['ssl_minimum_version'])
 
 
 class TestHAProxyAmphoraDriver(base.TestCase):
