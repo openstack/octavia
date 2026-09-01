@@ -875,6 +875,11 @@ class TestNetworkTasks(base.TestCase):
                                     self.load_balancer_mock)
         mock_driver.plug_port.assert_called_once_with(
             self.db_amphora_mock, port)
+        mock_driver.create_port.assert_called_once_with(
+            network1,
+            name=f'octavia-lb-member-{AMPHORA_ID}',
+            fixed_ips=[{constants.SUBNET_ID: subnet1}],
+            vnic_type=constants.VNIC_TYPE_NORMAL)
         mock_driver.unplug_network.assert_not_called()
 
         self.assertEqual(1, len(updated_ports))
