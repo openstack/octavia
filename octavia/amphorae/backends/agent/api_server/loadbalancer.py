@@ -260,7 +260,7 @@ class Loadbalancer:
                         continue
                     # haproxy probably crashed and was restarted, log it and
                     # continue
-                    LOG.warning("An error occured with haproxy while it "
+                    LOG.warning("An error occurred with haproxy while it "
                                 "was reloaded, check the haproxy logs for "
                                 "more details.")
                     break

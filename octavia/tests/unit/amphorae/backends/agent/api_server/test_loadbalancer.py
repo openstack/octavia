@@ -234,7 +234,7 @@ class ListenerTestCase(base.TestCase):
         self.assertEqual(202, result.status_code)
 
         LOG_last_call = mock_LOG.mock_calls[-1]
-        self.assertIn('An error occured with haproxy', LOG_last_call[1][0])
+        self.assertIn('An error occurred with haproxy', LOG_last_call[1][0])
 
         # haproxy error on reload - retry limit
         print("--")
