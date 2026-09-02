@@ -1,0 +1,6 @@
+---
+fixes:
+  - |
+    Fixed leaks of memory and socket descriptors in the Octavia API service
+    that could cause "Too many open files" or
+    "filedescriptor out of range in select()" errors.
