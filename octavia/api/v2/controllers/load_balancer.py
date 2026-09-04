@@ -341,6 +341,24 @@ class LoadBalancersController(base.BaseController):
                 e.msg = e.orig_msg
             raise e
 
+    @staticmethod
+    def _delete_created_vip_ports(port_ids):
+        """Delete the VIP ports that were created for a failed load balancer.
+
+        These ports live in neutron, outside of the API transaction, so a
+        rollback does not remove them.
+        """
+        network_driver = utils.get_network_driver()
+        for port_id in port_ids:
+            try:
+                network_driver.delete_port(port_id)
+                LOG.info('Deleted VIP port %s of the failed load balancer '
+                         'creation.', port_id)
+            except Exception:
+                LOG.exception('Could not delete VIP port %s of the failed '
+                              'load balancer creation, it may need to be '
+                              'deleted manually.', port_id)
+
     def _get_provider(self, session, load_balancer):
         """Decide on the provider for this load balancer."""
 
@@ -485,6 +503,7 @@ class LoadBalancersController(base.BaseController):
 
         lock_session = context.session
         lock_session.begin()
+        created_port_ids = []
         try:
             if self.repositories.check_quota_met(
                     lock_session,
@@ -539,6 +558,13 @@ class LoadBalancersController(base.BaseController):
             # Do the same with the availability_zone dict
             lb_dict['availability_zone'] = az_dict
 
+            # Ports supplied by the user must not be deleted by Octavia,
+            # record them before the provider call replaces vip_dict.
+            user_port_ids = {vip_dict.get(constants.PORT_ID)}
+            user_port_ids.update(add_vip.get(constants.PORT_ID)
+                                 for add_vip in additional_vip_dicts)
+            user_port_ids.discard(None)
+
             # See if the provider driver wants to manage the VIP port
             # This will still be called if the user provided a port to
             # allow drivers to collect any required information about the
@@ -571,6 +597,11 @@ class LoadBalancersController(base.BaseController):
             # Check if the driver claims octavia owns the VIP port.
             if vip.octavia_owned:
                 octavia_owned = True
+
+            created_port_ids = [
+                port_id
+                for port_id in [vip.port_id] + [av.port_id for av in add_vips]
+                if port_id and port_id not in user_port_ids]
 
             self.repositories.vip.update(
                 lock_session, db_lb.id, ip_address=vip.ip_address,
@@ -609,10 +640,12 @@ class LoadBalancersController(base.BaseController):
             lock_session.commit()
         except odb_exceptions.DBDuplicateEntry as e:
             lock_session.rollback()
+            self._delete_created_vip_ports(created_port_ids)
             raise exceptions.IDAlreadyExists() from e
         except Exception:
             with excutils.save_and_reraise_exception():
                 lock_session.rollback()
+                self._delete_created_vip_ports(created_port_ids)
 
         with context.session.begin():
             db_lb = self._get_db_lb(context.session, db_lb.id)
