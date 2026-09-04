@@ -96,8 +96,7 @@
                                'DIB_DEBOOTSTRAP_EXTRA_ARGS': '--no-check-gpg'}, {}))
           | combine(dib_pypi_mirror is defined
                     | ternary({'DIB_PYPI_MIRROR_URL': dib_pypi_mirror,
-                               'DIB_PYPI_MIRROR_URL_1': dib_wheel_mirror | default(''),
-                               'DIB_PIP_RETRIES': '0'}, {}))
+                               'DIB_PYPI_MIRROR_URL_1': dib_wheel_mirror | default('')}, {}))
           | combine({'DIB_LOCAL_ELEMENTS':
                      ((dib_distribution_mirror is defined) | ternary('allow-insecure-apt', ''))
                      ~ ' '

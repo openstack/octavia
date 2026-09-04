@@ -112,7 +112,6 @@ function build_octavia_worker_image {
         fi
         export DIB_PYPI_MIRROR_URL=$NODEPOOL_PYPI_MIRROR
         export DIB_PYPI_MIRROR_URL_1=$NODEPOOL_WHEEL_MIRROR
-        export DIB_PIP_RETRIES=0
         export DIB_NO_PYPI_PIP=1
     fi
 
