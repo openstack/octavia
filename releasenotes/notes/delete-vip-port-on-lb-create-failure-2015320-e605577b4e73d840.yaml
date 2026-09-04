@@ -1,0 +1,12 @@
+---
+fixes:
+  - |
+    `Bug #2015320 <https://bugs.launchpad.net/octavia/+bug/2015320>`_
+    Fixed a leak of Neutron VIP ports when the creation of a
+    fully-populated load balancer failed. The VIP port is created before
+    the listeners and pools of the graph are validated and counted against
+    the project quota, and a failure in any of those steps rolled back the
+    database transaction without removing the port that had already been
+    created. Repeated attempts, for instance by a client that retries the
+    same request, could exhaust the addresses of the VIP subnet. Ports
+    supplied by the user with ``vip_port_id`` are never deleted.
