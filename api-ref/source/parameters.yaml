@@ -277,7 +277,7 @@ api_version_status:
   type: string
 availability-zone-capabilities:
   description: |
-    The provider availability zone capabilities dictonary object.
+    The provider availability zone capabilities dictionary object.
   in: body
   required: true
   type: object
@@ -584,7 +584,7 @@ flavor:
   type: object
 flavor-capabilities:
   description: |
-    The provider flavor capabilities dictonary object.
+    The provider flavor capabilities dictionary object.
   in: body
   required: true
   type: object
