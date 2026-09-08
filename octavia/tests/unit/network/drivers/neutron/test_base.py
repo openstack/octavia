@@ -217,7 +217,7 @@ class TestBaseNeutronNetworkDriver(base.TestCase):
 
     @mock.patch("octavia.common.clients.NeutronAuth.get_user_neutron_client")
     def test_get_user_network(self, neutron_client_mock):
-        show_network = neutron_client_mock.return_value.get_network
+        show_network = neutron_client_mock.return_value.network.get_network
         show_network.return_value = Network(**{
             'id': t_constants.MOCK_NETWORK_ID,
             'subnets': [t_constants.MOCK_SUBNET_ID]})
@@ -247,7 +247,7 @@ class TestBaseNeutronNetworkDriver(base.TestCase):
 
     @mock.patch("octavia.common.clients.NeutronAuth.get_user_neutron_client")
     def test_get_user_subnet(self, neutron_client_mock):
-        show_subnet = neutron_client_mock.return_value.get_subnet
+        show_subnet = neutron_client_mock.return_value.network.get_subnet
         show_subnet.return_value = Subnet(**{
             'id': t_constants.MOCK_SUBNET_ID,
             'gateway_ip': t_constants.MOCK_IP_ADDRESS,
@@ -288,7 +288,7 @@ class TestBaseNeutronNetworkDriver(base.TestCase):
 
     @mock.patch("octavia.common.clients.NeutronAuth.get_user_neutron_client")
     def test_get_user_port(self, neutron_client_mock):
-        show_port = neutron_client_mock.return_value.get_port
+        show_port = neutron_client_mock.return_value.network.get_port
         show_port.return_value = Port(**{
             'id': t_constants.MOCK_PORT_ID,
             'mac_address': t_constants.MOCK_MAC_ADDR,

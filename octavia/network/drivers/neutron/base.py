@@ -190,9 +190,10 @@ class BaseNeutronDriver(base.AbstractNetworkDriver):
 
     def _get_resource(self, resource_type, resource_id, context=None):
         network = self.network_proxy
+        conn = None
         if context and not CONF.networking.allow_invisible_resource_usage:
-            network = clients.NeutronAuth.get_user_neutron_client(
-                context)
+            conn = clients.NeutronAuth.get_user_neutron_client(context)
+            network = conn.network
 
         try:
             resource = getattr(
@@ -212,6 +213,9 @@ class BaseNeutronDriver(base.AbstractNetworkDriver):
                 resource_type=resource_type, resource_id=resource_id)
             LOG.exception(message)
             raise base.NetworkException(message) from e
+        finally:
+            if conn is not None:
+                conn.close()
 
     def _get_resources_by_filters(self, resource_type, unique_item=False,
                                   **filters):

@@ -109,6 +109,8 @@ class NeutronAuth:
         which can't be used to initialize a keystone session.
         We directly use the token and endpoint_url to initialize neutron
         client.
+        The returned Connection must be closed explicitly after use to
+        avoid leaking sockets.
         """
         sess = keystone.KeystoneSession('neutron').get_session()
         kwargs = {}
@@ -130,7 +132,7 @@ class NeutronAuth:
 
         conn = openstack.connection.Connection(
             session=user_sess, oslo_conf=CONF)
-        return conn.network
+        return conn
 
 
 class GlanceAuth:
