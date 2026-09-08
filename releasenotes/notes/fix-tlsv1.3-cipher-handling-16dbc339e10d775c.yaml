@@ -1,0 +1,10 @@
+---
+fixes:
+  - |
+    Fixed handling of cipher suites for TLSv1.3 in the generated
+    HAProxy configuration in Amphorae. HAProxy uses a specific bind option
+    *ciphersuites* for TLSv1.3. The new configuration option
+    `api_settings.tls1_3_supported_ciphers` allows to adjust the list of ciphers
+    that are only supported in TLS version 1.3 and later. Octavia will make sure
+    the ciphers that are in this list will get moved to the *ciphersuites*
+    option of the generated HAProxy configuration file if used.
