@@ -1,0 +1,7 @@
+---
+fixes:
+  - |
+    Fixed the use of the deprecated ``ssl_version`` parameter in the amphora
+    REST API driver and the amphora agent. The ``ssl_minimum_version``
+    parameter is now used instead, removing the FutureWarning log spam from
+    urllib3.

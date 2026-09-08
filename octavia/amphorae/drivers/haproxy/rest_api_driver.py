@@ -630,7 +630,7 @@ class CustomHostNameCheckingAdapter(requests.adapters.HTTPAdapter):
 
     def init_poolmanager(self, *pool_args, **pool_kwargs):
         proto = CONF.amphora_agent.agent_tls_protocol.replace('.', '_')
-        pool_kwargs['ssl_version'] = getattr(ssl, f"PROTOCOL_{proto}")
+        pool_kwargs['ssl_minimum_version'] = getattr(ssl.TLSVersion, proto)
         return super().init_poolmanager(*pool_args, **pool_kwargs)
 
 
