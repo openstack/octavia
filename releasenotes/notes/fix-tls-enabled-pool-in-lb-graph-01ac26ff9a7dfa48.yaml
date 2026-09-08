@@ -1,0 +1,7 @@
+---
+fixes:
+  - |
+    Fixed an error when creating a TLS-enabled pool with the fully populated
+    load balancer API, the ``tls_ciphers``, ``tls_versions`` and
+    ``alpn_protocols`` parameters are now optional, as they already are in the
+    pool API.
