@@ -302,12 +302,14 @@ class HandleNetworkDelta(BaseNetworkTask):
         updated_ports = {}
         for nic in delta[constants.ADD_NICS]:
             network_id = nic[constants.NETWORK_ID]
-            subnet_id = nic[constants.FIXED_IPS][0][constants.SUBNET_ID]
+            fixed_ips = [{constants.SUBNET_ID: fixed_ip[constants.SUBNET_ID]}
+                         for fixed_ip in nic[constants.FIXED_IPS]]
 
             try:
                 port = self.network_driver.create_port(
                     network_id,
                     name=f'octavia-lb-member-{amphora.get(constants.ID)}',
+                    fixed_ips=fixed_ips,
                     vnic_type=nic[constants.VNIC_TYPE])
             except exceptions.NotFound as e:
                 if 'Network' in str(e):

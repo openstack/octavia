@@ -1,0 +1,8 @@
+---
+fixes:
+  - |
+    Fixed the amphora member port being created without a fixed IP request.
+    When a member network had more than one subnet, the port could get an
+    address from a subnet other than the member subnet, leaving an extra
+    fixed IP on the port. The member subnet is now passed to the port
+    creation request.
