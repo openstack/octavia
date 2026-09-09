@@ -59,8 +59,9 @@
               - ^(test-|)requirements.txt$
               - ^tox.ini$
               - ^\.pre-commit-config\.yaml$
-        - octavia-grenade-skip-level:
-            irrelevant-files: *grenade-irrelevant-files
+        # TODO(gthiemon) uncomment when we start the next x.1 cycle
+        #- octavia-grenade-skip-level:
+        #    irrelevant-files: *grenade-irrelevant-files
         - octavia-v2-act-stdby-dsvm-scenario:
             irrelevant-files: *irrelevant-files
             voting: false
@@ -106,7 +107,8 @@
         - octavia-v2-dsvm-scenario-non-traffic-ops
         - octavia-v2-dsvm-tls-barbican
         - octavia-grenade
-        - octavia-grenade-skip-level
+        # TODO(gthiemon) uncomment when we start the next x.1 cycle
+        #- octavia-grenade-skip-level
     periodic:
       jobs:
         - publish-openstack-octavia-amphora-image-noble:
