@@ -63,6 +63,55 @@ class TestDriverListener(base.TestCase):
         mock_recv_socket.recv_into.assert_called_once_with(mock_mv_buffer[0:],
                                                            15)
 
+    def test_recv_peer_disconnects_in_the_size(self):
+        mock_recv_socket = mock.MagicMock()
+        mock_recv_socket.recv.side_effect = [b'1', b'']
+
+        self.assertRaises(ConnectionError,
+                          driver_listener._recv, mock_recv_socket)
+        mock_recv_socket.recv_into.assert_not_called()
+
+    def test_recv_peer_disconnects_before_the_size(self):
+        mock_recv_socket = mock.MagicMock()
+        mock_recv_socket.recv.side_effect = [b'']
+
+        self.assertRaises(ConnectionError,
+                          driver_listener._recv, mock_recv_socket)
+        mock_recv_socket.recv.assert_called_once_with(1)
+        mock_recv_socket.recv_into.assert_not_called()
+
+    def test_recv_peer_disconnects_in_the_payload(self):
+        mock_recv_socket = mock.MagicMock()
+        mock_recv_socket.recv.side_effect = [b'2', b'\n']
+        mock_recv_socket.recv_into.side_effect = [0]
+
+        self.assertRaises(ConnectionError,
+                          driver_listener._recv, mock_recv_socket)
+
+    def test_recv_peer_disconnects_after_partial_payload(self):
+        mock_recv_socket = mock.MagicMock()
+        mock_recv_socket.recv.side_effect = [b'2', b'\n']
+        mock_recv_socket.recv_into.side_effect = [1, 0]
+
+        self.assertRaises(ConnectionError,
+                          driver_listener._recv, mock_recv_socket)
+        self.assertEqual(2, mock_recv_socket.recv_into.call_count)
+
+    def test_recv_fragmented_payload(self):
+        mock_recv_socket = mock.MagicMock()
+        mock_recv_socket.recv.side_effect = [b'2', b'\n']
+        fragments = iter((b'{', b'}'))
+
+        def recv_into(buffer, size):
+            fragment = next(fragments)
+            buffer[:len(fragment)] = fragment
+            return len(fragment)
+
+        mock_recv_socket.recv_into.side_effect = recv_into
+
+        self.assertEqual({}, driver_listener._recv(mock_recv_socket))
+        self.assertEqual(2, mock_recv_socket.recv_into.call_count)
+
     @mock.patch('octavia.api.drivers.driver_agent.driver_updater.'
                 'DriverUpdater')
     @mock.patch('octavia.api.drivers.driver_agent.driver_listener._recv')

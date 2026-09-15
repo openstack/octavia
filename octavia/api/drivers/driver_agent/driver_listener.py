@@ -24,6 +24,7 @@ from oslo_serialization import jsonutils
 
 from octavia.api.drivers.driver_agent import driver_get
 from octavia.api.drivers.driver_agent import driver_updater
+from octavia.i18n import _
 
 
 CONF = cfg.CONF
@@ -34,6 +35,10 @@ def _recv(recv_socket):
     size_str = b''
     char = recv_socket.recv(1)
     while char != b'\n':
+        # EOF is not an exception: stop instead of polling a closed socket.
+        if not char:
+            raise ConnectionError(_('The peer closed the connection while '
+                                    'sending the message size.'))
         size_str += char
         char = recv_socket.recv(1)
     payload_size = int(size_str)
@@ -42,6 +47,9 @@ def _recv(recv_socket):
     while payload_size - next_offset > 0:
         recv_size = recv_socket.recv_into(mv_buffer[next_offset:],
                                           payload_size - next_offset)
+        if not recv_size:
+            raise ConnectionError(_('The peer closed the connection while '
+                                    'sending the message payload.'))
         next_offset += recv_size
     return jsonutils.loads(mv_buffer.tobytes())
 

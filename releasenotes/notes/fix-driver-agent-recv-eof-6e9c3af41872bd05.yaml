@@ -1,0 +1,8 @@
+---
+fixes:
+  - |
+    Fixed driver-agent request handlers spinning indefinitely when a client
+    disconnects before sending a complete message. Incomplete message headers
+    and payloads are now rejected, allowing the handler process to exit
+    instead of consuming CPU and occupying a worker slot. This affects the
+    status, statistics and get listeners.
