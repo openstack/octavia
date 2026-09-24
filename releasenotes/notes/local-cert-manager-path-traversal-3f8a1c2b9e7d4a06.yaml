@@ -1,0 +1,16 @@
+---
+security:
+  - |
+    Hardened the ``local_cert_manager`` (``LocalCertManager``) against path
+    traversal. Certificate and secret references are now validated to be plain
+    filenames before being used to build filesystem paths, preventing a
+    reference such as ``../../etc/passwd`` or an absolute path from reading or
+    deleting files outside of the configured ``[certificates] storage_path``.
+    Note that ``LocalCertManager`` is a development/testing backend only and is
+    not used by the default (Barbican) configuration, so production deployments
+    were not affected.
+fixes:
+  - |
+    ``LocalCertManager`` now logs a warning when instantiated, stating that it
+    is intended for development and testing purposes only and must not be used
+    in production.
