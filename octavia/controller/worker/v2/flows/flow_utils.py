@@ -22,7 +22,11 @@ from octavia.controller.worker.v2.flows import member_flows
 from octavia.controller.worker.v2.flows import pool_flows
 
 
-LB_FLOWS = load_balancer_flows.LoadBalancerFlows()
+# LoadBalancerFlows constructs its distributor driver in __init__.  The
+# worker imports this module before oslo.config has parsed octavia.conf, so a
+# module-level instance permanently captured the default Noop distributor.
+# Instantiate lazily after service startup has loaded the configuration.
+LB_FLOWS = None
 AMP_FLOWS = amphora_flows.AmphoraFlows()
 HM_FLOWS = health_monitor_flows.HealthMonitorFlows()
 L7_POLICY_FLOWS = l7policy_flows.L7PolicyFlows()
@@ -32,13 +36,20 @@ M_FLOWS = member_flows.MemberFlows()
 P_FLOWS = pool_flows.PoolFlows()
 
 
+def _get_lb_flows():
+    global LB_FLOWS
+    if LB_FLOWS is None:
+        LB_FLOWS = load_balancer_flows.LoadBalancerFlows()
+    return LB_FLOWS
+
+
 def get_create_load_balancer_flow(topology, listeners=None, flavor_dict=None):
-    return LB_FLOWS.get_create_load_balancer_flow(
+    return _get_lb_flows().get_create_load_balancer_flow(
         topology, listeners=listeners, flavor_dict=flavor_dict)
 
 
 def get_delete_load_balancer_flow(lb):
-    return LB_FLOWS.get_delete_load_balancer_flow(lb)
+    return _get_lb_flows().get_delete_load_balancer_flow(lb)
 
 
 def get_listeners_on_lb(db_lb, for_delete=False):
@@ -71,12 +82,12 @@ def get_pools_on_lb(db_lb, for_delete=False):
 
 
 def get_cascade_delete_load_balancer_flow(lb, listeners=(), pools=()):
-    return LB_FLOWS.get_cascade_delete_load_balancer_flow(lb, listeners,
-                                                          pools)
+    return _get_lb_flows().get_cascade_delete_load_balancer_flow(
+        lb, listeners, pools)
 
 
 def get_update_load_balancer_flow():
-    return LB_FLOWS.get_update_load_balancer_flow()
+    return _get_lb_flows().get_update_load_balancer_flow()
 
 
 def get_create_amphora_flow():
@@ -89,7 +100,7 @@ def get_delete_amphora_flow(amphora, retry_attempts=None, retry_interval=None):
 
 
 def get_failover_LB_flow(amps, lb):
-    return LB_FLOWS.get_failover_LB_flow(amps, lb)
+    return _get_lb_flows().get_failover_LB_flow(amps, lb)
 
 
 def get_failover_amphora_flow(amphora_dict, lb_amp_count, flavor_dict=None):

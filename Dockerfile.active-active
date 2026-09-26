@@ -1,0 +1,8 @@
+FROM localhost/2024.1-ubuntu_jammy:latest
+
+COPY . /opt/octavia-active-active
+
+# The base image already contains the stock Octavia distribution at the same
+# PBR version.  Force replacement so the active/active modules and entry
+# points are actually installed instead of being reported as satisfied.
+RUN PBR_VERSION=2024.1.0 python3 -m pip install --no-cache-dir --no-deps --force-reinstall /opt/octavia-active-active
