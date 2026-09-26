@@ -9,5 +9,18 @@ python3 -m pip install --no-cache-dir /opt/distributor-agent
 install -d -m 0750 /etc/octavia/certs /var/lib/octavia/distributor
 install -m 0644 /opt/distributor-agent/elements/distributor-agent/octavia-distributor-agent.service \
     /etc/systemd/system/octavia-distributor-agent.service
-install -m 0644 /opt/distributor-agent/elements/distributor-agent/octavia-distributor-network.service \
-    /etc/systemd/system/octavia-distributor-network.service
+cat > /etc/systemd/system/octavia-distributor-network.service <<'EOF'
+[Unit]
+Description=Configure Octavia distributor interfaces
+Before=network-online.target
+Wants=network-online.target
+After=local-fs.target
+
+[Service]
+Type=oneshot
+ExecStart=/bin/sh -c 'for path in /sys/class/net/*; do iface=${path##*/}; [ "$iface" = lo ] && continue; ip link set "$iface" up; dhclient -1 -timeout 10 "$iface" || true; done'
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target
+EOF
