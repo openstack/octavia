@@ -25,6 +25,16 @@ class DistributorFlows:
             invoke_on_load=True).driver
 
     def get_create_distributor_flow(self):
+        """Create and attach the distributor before amphora VIP AAPs.
+
+        OVN treats a port as a virtual logical switch port when another
+        port on the same switch already advertises the VIP address.  A
+        virtual port cannot subsequently be bound to Nova.  The active/
+        active topology therefore attaches the real LB VIP port to the
+        distributor before the amphora front-end ports receive their VIP
+        allowed-address-pairs.  Amphora registration is deliberately a
+        separate post-amphora step.
+        """
         flow = linear_flow.Flow(constants.CREATE_DISTRIBUTOR_FLOW)
         flow.add(distributor_tasks.GenerateDistributorId(
             provides=constants.DISTRIBUTOR_ID))
@@ -58,7 +68,6 @@ class DistributorFlows:
         flow.add(distributor_tasks.WaitForDistributorAgent(
             self.driver, requires=constants.DISTRIBUTOR_ID))
         flow.add(self.driver.get_add_vip_subflow())
-        flow.add(self.driver.get_register_amphorae_subflow())
         return flow
 
     def get_delete_distributor_flow(self):
@@ -82,6 +91,9 @@ class DistributorFlows:
 
     def get_register_amphorae_flow(self):
         flow = linear_flow.Flow(constants.REGISTER_AMPHORAE_FLOW)
+        flow.add(database_tasks.GetAmphoraeFromLoadbalancer(
+            requires=constants.LOADBALANCER_ID,
+            provides=constants.AMPHORAE))
         flow.add(self.driver.get_register_amphorae_subflow())
         return flow
 

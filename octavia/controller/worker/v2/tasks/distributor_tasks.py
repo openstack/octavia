@@ -22,7 +22,27 @@ class BaseDistributorTask(task.Task):
         super().__init__(**kwargs)
         self.distributor_repo = repo.DistributorRepository()
         self.loadbalancer_repo = repo.LoadBalancerRepository()
+        self.amphora_repo = repo.AmphoraRepository()
         self.task_utils = task_utils.TaskUtils()
+
+    def _resolve_amphora(self, session, amphora):
+        """Return an ORM amphora for workflow dictionaries or ORM objects.
+
+        Active/active network subflows pass serialized amphora dictionaries
+        after their database task.  The distributor driver still needs the
+        ORM object's ``vrrp_port_id`` and ``id`` attributes.
+        """
+        if isinstance(amphora, dict):
+            amphora_id = amphora.get(constants.ID)
+            if amphora_id:
+                return self.amphora_repo.get(session, id=amphora_id)
+        return amphora
+
+    @staticmethod
+    def _amphora_value(amphora, key, default=None):
+        if isinstance(amphora, dict):
+            return amphora.get(key, default)
+        return getattr(amphora, key, default)
 
 
 class CreateDistributorInDB(BaseDistributorTask):
@@ -180,9 +200,12 @@ class DistributorRegisterAmphorae(BaseDistributorTask):
             lb = self.loadbalancer_repo.get(
                 session, id=loadbalancer[constants.LOADBALANCER_ID])
         for amphora in amphorae:
-            if (amphora.get(constants.STATUS) != constants.AMPHORA_ALLOCATED or
-                    amphora.get(constants.ROLE) != constants.ROLE_IN_CLUSTER):
+            if (self._amphora_value(amphora, constants.STATUS) !=
+                    constants.AMPHORA_ALLOCATED or
+                    self._amphora_value(amphora, constants.ROLE) !=
+                    constants.ROLE_IN_CLUSTER):
                 continue
+            amphora = self._resolve_amphora(session, amphora)
             self.driver.register_amphora(
                 distributor, lb, amphora, constants.TOPOLOGY_ACTIVE_ACTIVE,
                 CONF.controller_worker.active_active_desired_amphorae)
@@ -216,6 +239,7 @@ class DistributorUnregisterAmphorae(BaseDistributorTask):
             lb = self.loadbalancer_repo.get(
                 session, id=loadbalancer[constants.LOADBALANCER_ID])
         for amphora in amphorae:
+            amphora = self._resolve_amphora(session, amphora)
             self.driver.unregister_amphora(
                 distributor, lb, amphora, constants.TOPOLOGY_ACTIVE_ACTIVE,
                 CONF.controller_worker.active_active_desired_amphorae)
@@ -233,6 +257,7 @@ class DistributorUnregisterAmphora(BaseDistributorTask):
                                                     id=distributor_id)
             lb = self.loadbalancer_repo.get(
                 session, id=loadbalancer[constants.LOADBALANCER_ID])
+            amphora = self._resolve_amphora(session, amphora)
         self.driver.unregister_amphora(
             distributor, lb, amphora, constants.TOPOLOGY_ACTIVE_ACTIVE,
             CONF.controller_worker.active_active_desired_amphorae)

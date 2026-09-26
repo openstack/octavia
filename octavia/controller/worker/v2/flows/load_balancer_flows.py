@@ -95,6 +95,12 @@ class LoadBalancerFlows(object):
                     not CONF.distributor.client_cert or
                     not CONF.distributor.client_ca):
                 raise exceptions.InvalidTopology(topology=topology)
+            # Attach the real VIP port to the distributor before the
+            # amphora front-end ports advertise that VIP as an allowed
+            # address pair.  OVN otherwise marks the VIP port virtual and
+            # rejects the subsequent Nova bind.
+            lb_create_flow.add(
+                self.distributor_flows.get_create_distributor_flow())
             lb_create_flow.add(*self._create_active_active_topology(
                 flavor_dict=flavor_dict))
         elif topology == constants.TOPOLOGY_ACTIVE_STANDBY:
@@ -336,11 +342,7 @@ class LoadBalancerFlows(object):
             post_create_LB_flow.add(vrrp_subflow)
         elif topology == constants.TOPOLOGY_ACTIVE_ACTIVE:
             post_create_LB_flow.add(
-                database_tasks.GetAmphoraeFromLoadbalancer(
-                    requires=constants.LOADBALANCER_ID,
-                    provides=constants.AMPHORAE))
-            post_create_LB_flow.add(
-                self.distributor_flows.get_create_distributor_flow())
+                self.distributor_flows.get_register_amphorae_flow())
 
         post_create_LB_flow.add(database_tasks.UpdateLoadbalancerInDB(
             requires=[constants.LOADBALANCER, constants.UPDATE_DICT]))
