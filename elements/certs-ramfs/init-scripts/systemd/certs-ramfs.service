@@ -8,7 +8,7 @@ Type=oneshot
 ExecStart=/usr/local/bin/certfs-ramfs
 ExecStop=/bin/sh -c 'certs_path=$$(awk "/base_cert_dir / {printf \\$$3}" /etc/octavia/amphora-agent.conf); umount "$${certs_path}"; cryptsetup luksClose /dev/mapper/certfs-ramfs;'
 RemainAfterExit=yes
-TimeoutSec=0
+TimeoutSec=30
 
 [Install]
 WantedBy=amphora-agent.service

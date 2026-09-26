@@ -1,20 +1,5 @@
 #!/bin/bash
 
-cryptsetup_args="--type=luks1"
-
-# Only 1 block ram device is needed
-modprobe brd rd_nr=1
-
-passphrase=$(head /dev/urandom | tr -dc "a-zA-Z0-9" | fold -w 32 | head -n 1)
 certs_path=$(awk "/base_cert_dir / {printf \$3}" /etc/octavia/amphora-agent.conf)
 mkdir -p "${certs_path}"
-
-if timeout 15s sh -c 'printf "%s" "$1" | cryptsetup --batch-mode --key-file=- "$2" luksFormat /dev/ram0 -' sh "${passphrase}" "${cryptsetup_args}" && \
-   timeout 15s sh -c 'printf "%s" "$1" | cryptsetup --batch-mode --key-file=- "$2" luksOpen /dev/ram0 certfs-ramfs -' sh "${passphrase}" "${cryptsetup_args}"; then
-    mkfs.ext2 /dev/mapper/certfs-ramfs
-    mount /dev/mapper/certfs-ramfs "${certs_path}"
-else
-    logger -t certfs-ramfs 'cryptsetup did not complete; using a bounded tmpfs fallback'
-    cryptsetup luksClose certfs-ramfs 2>/dev/null || true
-    mount -t tmpfs -o size=16M certfs-ramfs "${certs_path}"
-fi
+mount -t tmpfs -o size=16M certfs-ramfs "${certs_path}"
