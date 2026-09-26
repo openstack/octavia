@@ -1026,7 +1026,8 @@ class CreateDistributorFrontendPort(BaseNetworkTask):
         # the VM lifecycle; it is not a host/Linux MTU change.
         self.network_driver.network_proxy.update_port(
             port.id, admin_state_up=True, port_security_enabled=False,
-            allowed_address_pairs=[], security_groups=[])
+            allowed_address_pairs=[], security_groups=[], device_id='',
+            device_owner='')
         port = self.network_driver.get_port(port.id)
         return port.to_dict(recurse=True)
 
