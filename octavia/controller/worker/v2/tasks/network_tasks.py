@@ -1010,21 +1010,27 @@ class CreateDistributorFrontendPort(BaseNetworkTask):
     """Create the distributor's VIP-facing port.
 
     The VIP remains allocated on the normal Octavia VIP port.  The
-    distributor port receives the VIP as an allowed address pair so Neutron
-    anti-spoofing permits the distributor agent to own ARP for it.
+    distributor is a one-legged direct-return datapath, so its frontend port
+    must accept client source addresses and is created with Neutron port
+    security disabled.  The distributor agent owns ARP and rewrites the
+    Ethernet destination toward an amphora.
     """
 
     def execute(self, loadbalancer, vip, distributor_id):
-        secondary_ips = [vip[constants.IP_ADDRESS]]
-        for additional_vip in loadbalancer.get(constants.ADDITIONAL_VIPS,
-                                                ()):
-            secondary_ips.append(additional_vip[constants.IP_ADDRESS])
         port = self.network_driver.create_port(
             vip[constants.NETWORK_ID],
             name='octavia-distributor-' + distributor_id,
             fixed_ips=[{constants.SUBNET_ID: vip[constants.SUBNET_ID]}],
-            secondary_ips=secondary_ips,
             admin_state_up=True)
+        # The Octavia network-driver interface predates the Neutron
+        # ``port_security_enabled`` argument.  Create without allowed
+        # address pairs, then apply the Neutron-native setting before Nova
+        # receives the port.  This is declarative per distributor port and
+        # survives the VM lifecycle; it is not a host/Linux MTU change.
+        self.network_driver.network_proxy.update_port(
+            port.id, port_security_enabled=False,
+            allowed_address_pairs=[], security_groups=[])
+        port = self.network_driver.get_port(port.id)
         return port.to_dict(recurse=True)
 
     def revert(self, result, *args, **kwargs):

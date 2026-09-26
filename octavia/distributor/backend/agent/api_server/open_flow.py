@@ -121,7 +121,6 @@ def _rebuild(vip_state):
     bridge = vip_state['bridge']
     vip = vip_state['vip']
     group = vip_state['group_id']
-    frontend_port = vip_state['frontend_port']
     _delete_group(bridge, group)
     _run(['ovs-ofctl', 'del-flows', bridge,
           'ip,nw_dst={0}'.format(vip)], check=False)
@@ -130,15 +129,16 @@ def _rebuild(vip_state):
     for mac in sorted(vip_state['amphora_macs']):
         buckets.append(
             'bucket=set_field:{amphora}->eth_dst,'
-            'set_field:{frontend}->eth_src,output:{port}'.format(
+            'set_field:{frontend}->eth_src,output:in_port'.format(
                 amphora=mac,
-                frontend=vip_state['frontend_mac'],
-                port=frontend_port))
+                frontend=vip_state['frontend_mac']))
 
     if not buckets:
         return
     _run(['ovs-ofctl', 'add-group', bridge,
-          'group_id={0},type=select,{1}'.format(group, ','.join(buckets))])
+          'group_id={0},type=select,selection_method=dp_hash,'
+          'selection_method_param=4294967296,{1}'.format(
+              group, ','.join(buckets))])
     _run(['ovs-ofctl', 'add-flow', bridge,
           'priority=200,ip,nw_dst={0},actions=group:{1}'.format(vip, group)])
 
@@ -148,11 +148,11 @@ def post_plug_vip(interface, vip_ip, mac_address, subnet_cidr, gateway,
     # The distributor owns ARP for the VIP.  The OpenFlow rule handles the
     # subsequent IP packet and sends it to a selected amphora.
     bridge = _ensure_frontend_bridge(interface, bridge=bridge)
-    # Make the bridge answer ARP with the Neutron port MAC.  This keeps the
-    # VIP advertisement and the OpenFlow source-MAC rewrite consistent with
-    # the allowed-address-pairs/port-security policy.
-    _run(['ip', 'link', 'set', 'dev', bridge, 'address', mac_address],
-         check=False)
+    # Make the bridge answer ARP with the Neutron port MAC.  OVS internal
+    # interfaces do not reliably accept this through ``ip link set``; the
+    # Bridge hwaddr is the persistent OVS setting used by the datapath.
+    _run(['ovs-vsctl', 'set', 'Bridge', bridge,
+          'other-config:hwaddr={0}'.format(mac_address)])
     _run(['ip', 'addr', 'add', '{0}/32'.format(vip_ip), 'dev', bridge],
          check=False)
     _run(['ip', 'link', 'set', 'dev', bridge, 'up'], check=False)
