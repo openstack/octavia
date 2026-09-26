@@ -107,10 +107,16 @@ class ControllerWorker(object):
             self.services_controller.run_poster(func, *args, **kwargs)
         else:
             store = kwargs.pop('store', None)
+            LOG.debug('Starting direct TaskFlow load for %s',
+                      getattr(func, '__name__', repr(func)))
             tf = self.tf_engine.taskflow_load(
                 func(*args, **kwargs), store=store)
+            LOG.debug('Starting direct TaskFlow execution for %s',
+                      getattr(func, '__name__', repr(func)))
             with tf_logging.DynamicLoggingListener(tf, log=LOG):
                 tf.run()
+            LOG.debug('Completed direct TaskFlow execution for %s',
+                      getattr(func, '__name__', repr(func)))
 
     def delete_amphora(self, amphora_id):
         """Deletes an existing Amphora.
