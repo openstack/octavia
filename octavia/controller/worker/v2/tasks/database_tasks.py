@@ -33,6 +33,7 @@ from octavia.common.tls_utils import cert_parser
 from octavia.common import utils
 from octavia.controller.worker import task_utils as task_utilities
 from octavia.db import api as db_apis
+from octavia.db import models
 from octavia.db import repositories as repo
 
 CONF = cfg.CONF
@@ -102,7 +103,8 @@ class CreateAmphoraInDB(BaseDatabaseTask):
                 id=uuidutils.generate_uuid(),
                 load_balancer_id=loadbalancer_id,
                 status=constants.PENDING_CREATE,
-                cert_busy=False)
+                cert_busy=False,
+                service_type=constants.AMPHORA_TYPE_LOADBALANCER)
         if loadbalancer_id:
             LOG.info("Created Amphora %s in DB for load balancer %s",
                      amphora.id, loadbalancer_id)
@@ -720,6 +722,51 @@ class MarkAmphoraStandAloneInDB(_MarkAmphoraRoleAndPriorityInDB):
         :returns: None
         """
         self._revert(result, amphora[constants.ID], *args, **kwargs)
+
+
+class MarkAmphoraInClusterInDB(_MarkAmphoraRoleAndPriorityInDB):
+    """Mark an amphora as an active member of an active-active cluster."""
+
+    def execute(self, amphora):
+        self._execute(amphora[constants.ID], constants.ROLE_IN_CLUSTER,
+                      None)
+
+    def revert(self, result, amphora, *args, **kwargs):
+        self._revert(result, amphora[constants.ID], *args, **kwargs)
+
+
+class MarkAmphoraInClusterStandbyInDB(_MarkAmphoraRoleAndPriorityInDB):
+    """Mark an amphora as the spare for an active-active cluster."""
+
+    def execute(self, amphora):
+        self._execute(amphora[constants.ID],
+                      constants.ROLE_IN_CLUSTER_STANDBY, None)
+
+    def revert(self, result, amphora, *args, **kwargs):
+        self._revert(result, amphora[constants.ID], *args, **kwargs)
+
+
+class PromoteAmphoraInClusterStandbyInDB(BaseDatabaseTask):
+    """Promote the allocated cluster standby to an active member."""
+
+    def execute(self, loadbalancer, promote_standby=True):
+        if not promote_standby:
+            return None
+        load_balancer_id = loadbalancer[constants.LOADBALANCER_ID]
+        with db_apis.session().begin() as session:
+            standby = (session.query(models.Amphora)
+                       .filter_by(load_balancer_id=load_balancer_id,
+                                  role=constants.ROLE_IN_CLUSTER_STANDBY,
+                                  status=constants.AMPHORA_ALLOCATED)
+                       .order_by(models.Amphora.id)
+                       .first())
+            if standby is None:
+                LOG.warning('No active-active standby is available for LB %s',
+                            load_balancer_id)
+                return None
+            self.amphora_repo.update(
+                session, standby.id, role=constants.ROLE_IN_CLUSTER)
+            return standby.id
 
 
 class MarkAmphoraAllocatedInDB(BaseDatabaseTask):

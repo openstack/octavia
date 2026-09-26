@@ -1,0 +1,15 @@
+[Unit]
+Description=Octavia active-active distributor agent
+After=network-online.target openvswitch-switch.service
+Wants=network-online.target
+Requires=openvswitch-switch.service
+
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/octavia-distributor-agent --config-file /etc/octavia/distributor-agent.conf
+Restart=on-failure
+RestartSec=5s
+User=root
+
+[Install]
+WantedBy=multi-user.target

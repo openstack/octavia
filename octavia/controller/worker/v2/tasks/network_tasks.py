@@ -1006,6 +1006,37 @@ class CreateVIPBasePort(BaseNetworkTask):
                       result, amphora_id, str(e), port_name)
 
 
+class CreateDistributorFrontendPort(BaseNetworkTask):
+    """Create the distributor's VIP-facing port.
+
+    The VIP remains allocated on the normal Octavia VIP port.  The
+    distributor port receives the VIP as an allowed address pair so Neutron
+    anti-spoofing permits the distributor agent to own ARP for it.
+    """
+
+    def execute(self, loadbalancer, vip, distributor_id):
+        secondary_ips = [vip[constants.IP_ADDRESS]]
+        for additional_vip in loadbalancer.get(constants.ADDITIONAL_VIPS,
+                                                ()):
+            secondary_ips.append(additional_vip[constants.IP_ADDRESS])
+        port = self.network_driver.create_port(
+            vip[constants.NETWORK_ID],
+            name='octavia-distributor-' + distributor_id,
+            fixed_ips=[{constants.SUBNET_ID: vip[constants.SUBNET_ID]}],
+            secondary_ips=secondary_ips,
+            admin_state_up=True)
+        return port.to_dict(recurse=True)
+
+    def revert(self, result, *args, **kwargs):
+        if isinstance(result, failure.Failure):
+            return
+        try:
+            self.network_driver.delete_port(result[constants.ID])
+        except Exception:
+            LOG.exception('Failed to delete distributor frontend port %s',
+                          result.get(constants.ID))
+
+
 class AdminDownPort(BaseNetworkTask):
 
     def execute(self, port_id):

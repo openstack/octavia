@@ -37,7 +37,9 @@ SUPPORTED_FLAVOR_SCHEMA = {
             "type": "string",
             "description": "The load balancer topology. One of: "
                            "SINGLE - One amphora per load balancer. "
-                           "ACTIVE_STANDBY - Two amphora per load balancer.",
+                           "ACTIVE_STANDBY - Two amphora per load balancer. "
+                           "ACTIVE_ACTIVE - N active amphorae plus one "
+                           "standby behind a distributor.",
             "enum": list(consts.SUPPORTED_LB_TOPOLOGIES)
         },
         consts.COMPUTE_FLAVOR: {

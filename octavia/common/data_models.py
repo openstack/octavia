@@ -117,7 +117,7 @@ class BaseDataModel(object):
         # objects.
         if obj.__class__.__name__ in ['Member', 'Pool', 'LoadBalancer',
                                       'Listener', 'Amphora', 'L7Policy',
-                                      'L7Rule']:
+                                      'L7Rule', 'Distributor']:
             return obj.__class__.__name__ + obj.id
         if obj.__class__.__name__ in ['SessionPersistence', 'HealthMonitor']:
             return obj.__class__.__name__ + obj.pool_id
@@ -503,7 +503,8 @@ class LoadBalancer(BaseDataModel):
                  pools=None, vrrp_group=None, server_group_id=None,
                  created_at=None, updated_at=None, provider=None, tags=None,
                  flavor_id=None, availability_zone=None,
-                 additional_vips=None):
+                 additional_vips=None, distributor_id=None,
+                 distributor=None):
 
         self.id = id
         self.project_id = project_id
@@ -526,6 +527,8 @@ class LoadBalancer(BaseDataModel):
         self.flavor_id = flavor_id
         self.availability_zone = availability_zone
         self.additional_vips = additional_vips or []
+        self.distributor_id = distributor_id
+        self.distributor = distributor
 
     def update(self, update_dict):
         for key, value in update_dict.items():
@@ -620,7 +623,9 @@ class Amphora(BaseDataModel):
                  load_balancer=None, role=None, cert_expiration=None,
                  cert_busy=False, vrrp_interface=None, vrrp_id=None,
                  vrrp_priority=None, cached_zone=None, created_at=None,
-                 updated_at=None, image_id=None, compute_flavor=None):
+                 updated_at=None, image_id=None, compute_flavor=None,
+                 service_type=None, distributor_id=None,
+                 distributor=None):
         self.id = id
         self.load_balancer_id = load_balancer_id
         self.compute_id = compute_id
@@ -642,12 +647,34 @@ class Amphora(BaseDataModel):
         self.updated_at = updated_at
         self.image_id = image_id
         self.compute_flavor = compute_flavor
+        self.service_type = service_type
+        self.distributor_id = distributor_id
+        self.distributor = distributor
+
+
+class Distributor(BaseDataModel):
+
+    def __init__(self, id=None, distributor_driver=None, compute_id=None,
+                 topology=None,
+                 provisioning_status=None, operating_status=None,
+                 lb_network_ip=None, frontend_port_id=None,
+                 frontend_mac=None):
+        self.id = id
+        self.distributor_driver = distributor_driver
+        self.compute_id = compute_id
+        self.topology = topology
+        self.provisioning_status = provisioning_status
+        self.operating_status = operating_status
+        self.lb_network_ip = lb_network_ip
+        self.frontend_port_id = frontend_port_id
+        self.frontend_mac = frontend_mac
 
     def delete(self):
-        for amphora in self.load_balancer.amphorae:
-            if amphora.id == self.id:
-                self.load_balancer.amphorae.remove(amphora)
-                break
+        for load_balancer in getattr(self, 'load_balancers', []):
+            if getattr(load_balancer, 'distributor_id', None) == self.id:
+                load_balancer.distributor = None
+                load_balancer.distributor_id = None
+                return
 
 
 class AmphoraHealth(BaseDataModel):

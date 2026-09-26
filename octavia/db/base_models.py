@@ -36,7 +36,8 @@ class OctaviaBase(models.ModelBase):
         if obj.__class__.__name__ in ['Member', 'Pool', 'LoadBalancer',
                                       'Listener', 'Amphora', 'L7Policy',
                                       'L7Rule', 'Flavor', 'FlavorProfile',
-                                      'AvailabilityZoneProfile']:
+                                      'AvailabilityZoneProfile',
+                                      'Distributor']:
             return obj.__class__.__name__ + obj.id
         if obj.__class__.__name__ in ['SessionPersistence', 'HealthMonitor']:
             return obj.__class__.__name__ + obj.pool_id

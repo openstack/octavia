@@ -1,0 +1,11 @@
+#!/bin/bash
+
+set -eu
+set -o pipefail
+
+python3 -m pip install --no-cache-dir -r /opt/distributor-agent/requirements.txt
+python3 -m pip install --no-cache-dir /opt/distributor-agent
+
+install -d -m 0750 /etc/octavia/certs /var/lib/octavia/distributor
+install -m 0644 /opt/distributor-agent/elements/distributor-agent/octavia-distributor-agent.service \
+    /etc/systemd/system/octavia-distributor-agent.service

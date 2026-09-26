@@ -22,12 +22,14 @@ from octavia.common import constants
 from octavia.common import exceptions
 from octavia.common import utils
 from octavia.controller.worker.v2.flows import amphora_flows
+from octavia.controller.worker.v2.flows import distributor_flows
 from octavia.controller.worker.v2.flows import listener_flows
 from octavia.controller.worker.v2.flows import member_flows
 from octavia.controller.worker.v2.flows import pool_flows
 from octavia.controller.worker.v2.tasks import amphora_driver_tasks
 from octavia.controller.worker.v2.tasks import compute_tasks
 from octavia.controller.worker.v2.tasks import database_tasks
+from octavia.controller.worker.v2.tasks import distributor_tasks
 from octavia.controller.worker.v2.tasks import lifecycle_tasks
 from octavia.controller.worker.v2.tasks import network_tasks
 from octavia.controller.worker.v2.tasks import notification_tasks
@@ -44,6 +46,7 @@ class LoadBalancerFlows(object):
         self.listener_flows = listener_flows.ListenerFlows()
         self.pool_flows = pool_flows.PoolFlows()
         self.member_flows = member_flows.MemberFlows()
+        self.distributor_flows = distributor_flows.DistributorFlows()
         self.lb_repo = repo.LoadBalancerRepository()
 
     def get_create_load_balancer_flow(self, topology, listeners=None,
@@ -80,7 +83,21 @@ class LoadBalancerFlows(object):
             requires=constants.LOADBALANCER,
             provides=constants.SUBNET))
 
-        if topology == constants.TOPOLOGY_ACTIVE_STANDBY:
+        if topology == constants.TOPOLOGY_ACTIVE_ACTIVE:
+            if (not CONF.controller_worker.active_active_enabled or
+                    CONF.controller_worker.distributor_driver ==
+                    'distributor_noop_driver' or
+                    not CONF.controller_worker.distributor_image_tag or
+                    not CONF.controller_worker.distributor_flavor_id or
+                    not any((
+                        CONF.controller_worker.distributor_boot_network_list,
+                             CONF.controller_worker.amp_boot_network_list)) or
+                    not CONF.distributor.client_cert or
+                    not CONF.distributor.client_ca):
+                raise exceptions.InvalidTopology(topology=topology)
+            lb_create_flow.add(*self._create_active_active_topology(
+                flavor_dict=flavor_dict))
+        elif topology == constants.TOPOLOGY_ACTIVE_STANDBY:
             lb_create_flow.add(*self._create_active_standby_topology(
                 flavor_dict=flavor_dict))
         elif topology == constants.TOPOLOGY_SINGLE:
@@ -177,7 +194,36 @@ class LoadBalancerFlows(object):
 
         return flows + [amps_flow]
 
-    def _get_amp_net_subflow(self, sf_name, flavor_dict=None):
+    def _create_active_active_topology(self, flavor_dict=None):
+        amps_flow = unordered_flow.Flow(
+            constants.CREATE_LOADBALANCER_FLOW + '-active-active')
+        for index in range(
+                CONF.controller_worker.active_active_desired_amphorae):
+            prefix = constants.ROLE_IN_CLUSTER + '-' + str(index)
+            amp_flow = linear_flow.Flow(prefix + '-' +
+                                        constants.AMP_PLUG_NET_SUBFLOW)
+            amp_flow.add(self.amp_flows.get_amphora_for_lb_subflow(
+                prefix=prefix, role=constants.ROLE_IN_CLUSTER))
+            amp_flow.add(*self._get_amp_net_subflow(
+                prefix + '-' + constants.AMP_PLUG_NET_SUBFLOW,
+                flavor_dict=flavor_dict,
+                topology=constants.TOPOLOGY_ACTIVE_ACTIVE))
+            amps_flow.add(amp_flow)
+        standby_flow = linear_flow.Flow(
+            constants.ROLE_IN_CLUSTER_STANDBY + '-' +
+            constants.AMP_PLUG_NET_SUBFLOW)
+        standby_flow.add(self.amp_flows.get_amphora_for_lb_subflow(
+            prefix=constants.ROLE_IN_CLUSTER_STANDBY,
+            role=constants.ROLE_IN_CLUSTER_STANDBY))
+        standby_flow.add(*self._get_amp_net_subflow(
+            constants.ROLE_IN_CLUSTER_STANDBY + '-' +
+            constants.AMP_PLUG_NET_SUBFLOW,
+            flavor_dict=flavor_dict,
+            topology=constants.TOPOLOGY_ACTIVE_ACTIVE))
+        amps_flow.add(standby_flow)
+        return [amps_flow]
+
+    def _get_amp_net_subflow(self, sf_name, flavor_dict=None, topology=None):
         flows = []
         # If we have an SRIOV VIP, we need to setup a firewall in the amp
         if flavor_dict and flavor_dict.get(constants.SRIOV_VIP, False):
@@ -219,6 +265,13 @@ class LoadBalancerFlows(object):
                     constants.AMPHORA_NETWORK_CONFIG},
             requires=(constants.LOADBALANCER,
                       constants.AMPHORAE_NETWORK_CONFIG)))
+        if topology == constants.TOPOLOGY_ACTIVE_ACTIVE:
+            flows.append(amphora_driver_tasks.AmphoraPostARPDisable(
+                name=sf_name + '-disable-arp',
+                rebind={constants.AMPHORAE_NETWORK_CONFIG:
+                        constants.AMPHORA_NETWORK_CONFIG},
+                requires=(constants.AMPHORA,
+                          constants.AMPHORAE_NETWORK_CONFIG)))
         return flows
 
     def _create_listeners_flow(self, flavor_dict=None):
@@ -281,6 +334,13 @@ class LoadBalancerFlows(object):
             vrrp_subflow = self.amp_flows.get_vrrp_subflow(
                 prefix, flavor_dict=flavor_dict)
             post_create_LB_flow.add(vrrp_subflow)
+        elif topology == constants.TOPOLOGY_ACTIVE_ACTIVE:
+            post_create_LB_flow.add(
+                database_tasks.GetAmphoraeFromLoadbalancer(
+                    requires=constants.LOADBALANCER_ID,
+                    provides=constants.AMPHORAE))
+            post_create_LB_flow.add(
+                self.distributor_flows.get_create_distributor_flow())
 
         post_create_LB_flow.add(database_tasks.UpdateLoadbalancerInDB(
             requires=[constants.LOADBALANCER, constants.UPDATE_DICT]))
@@ -343,6 +403,11 @@ class LoadBalancerFlows(object):
             pools_delete = self._get_delete_pools_flow(pools)
             delete_LB_flow.add(pools_delete)
             delete_LB_flow.add(listeners_delete)
+        lb_topology = lb.get(constants.FLAVOR, {}).get(
+            constants.LOADBALANCER_TOPOLOGY, lb.get(constants.TOPOLOGY))
+        if lb_topology == constants.TOPOLOGY_ACTIVE_ACTIVE:
+            delete_LB_flow.add(
+                self.distributor_flows.get_delete_distributor_flow())
         delete_LB_flow.add(network_tasks.UnplugVIP(
             requires=constants.LOADBALANCER))
         delete_LB_flow.add(network_tasks.DeallocateVIP(
@@ -458,6 +523,15 @@ class LoadBalancerFlows(object):
                 requires=constants.AMPHORA,
                 inject={constants.AMPHORA: failed_amp}))
 
+            if lb_topology == constants.TOPOLOGY_ACTIVE_ACTIVE:
+                failover_LB_flow.add(
+                    distributor_tasks.GetDistributorIDFromLoadbalancer(
+                        requires=constants.LOADBALANCER,
+                        provides=constants.DISTRIBUTOR_ID))
+                failover_LB_flow.add(
+                    self.distributor_flows.get_unregister_amphora_flow(
+                        failed_amp))
+
         # Check that the VIP port exists and is ok
         failover_LB_flow.add(
             network_tasks.AllocateVIPforFailover(
@@ -483,6 +557,10 @@ class LoadBalancerFlows(object):
         new_amp_role = constants.ROLE_STANDALONE
         if lb_topology == constants.TOPOLOGY_ACTIVE_STANDBY:
             new_amp_role = constants.ROLE_BACKUP
+        elif lb_topology == constants.TOPOLOGY_ACTIVE_ACTIVE:
+            # Replace the failed member with a fresh standby.  The existing
+            # standby is promoted below, preserving the N+1 cluster size.
+            new_amp_role = constants.ROLE_IN_CLUSTER_STANDBY
 
         # Get a replacement amphora and plug all of the networking.
         #
@@ -533,6 +611,27 @@ class LoadBalancerFlows(object):
             name=constants.AMP_LISTENER_UPDATE,
             requires=(constants.LOADBALANCER, constants.AMPHORA),
             inject={constants.TIMEOUT_DICT: timeout_dict}))
+
+        if lb_topology == constants.TOPOLOGY_ACTIVE_ACTIVE:
+            failover_LB_flow.add(
+                database_tasks.PromoteAmphoraInClusterStandbyInDB(
+                    requires=constants.LOADBALANCER,
+                    inject={'promote_standby': bool(
+                        failed_amp and failed_amp.get(constants.ROLE) ==
+                        constants.ROLE_IN_CLUSTER)}))
+            failover_LB_flow.add(amphora_driver_tasks.AmphoraPostARPDisable(
+                name='active-active-disable-arp',
+                requires=(constants.AMPHORA,
+                          constants.AMPHORAE_NETWORK_CONFIG)))
+            failover_LB_flow.add(database_tasks.GetAmphoraeFromLoadbalancer(
+                requires=constants.LOADBALANCER_ID,
+                provides=constants.AMPHORAE))
+            failover_LB_flow.add(
+                distributor_tasks.GetDistributorIDFromLoadbalancer(
+                    requires=constants.LOADBALANCER,
+                    provides=constants.DISTRIBUTOR_ID))
+            failover_LB_flow.add(
+                self.distributor_flows.get_register_amphorae_flow())
 
         # Bring up the new "backup" amphora VIP now to reduce the outage
         # on the final failover. This dropped the outage from 8-9 seconds
@@ -654,7 +753,13 @@ class LoadBalancerFlows(object):
         #       that we don't bother attempting to update dead amphorae.
         delete_extra_amps_flow = unordered_flow.Flow(
             constants.DELETE_EXTRA_AMPHORAE_FLOW)
-        for amp in amps:
+        # The active-active path replaces one failed member at a time and
+        # keeps the remaining active members plus the N+1 spare. The legacy
+        # bulk flow treats every unpopped amphora as excess, which would
+        # destroy healthy cluster members.
+        extra_amps = (() if lb_topology == constants.TOPOLOGY_ACTIVE_ACTIVE
+                      else amps)
+        for amp in extra_amps:
             LOG.debug('Found extraneous amphora %s on load balancer %s. '
                       'Deleting.', amp.get(constants.ID), lb.get(id))
             delete_extra_amps_flow.add(

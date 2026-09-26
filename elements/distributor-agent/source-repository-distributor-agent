@@ -1,0 +1,3 @@
+# Override DIB_REPOLOCATION_distributor_agent and DIB_REPOREF_distributor_agent
+# for a development checkout containing the active-active implementation.
+distributor-agent git /opt/distributor-agent https://opendev.org/openstack/octavia stable/2024.1

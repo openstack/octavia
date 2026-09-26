@@ -230,6 +230,7 @@ class Repositories(object):
         self.amp_build_slots = AmphoraBuildSlotsRepository()
         self.amp_build_req = AmphoraBuildReqRepository()
         self.quotas = QuotasRepository()
+        self.distributor = DistributorRepository()
         self.flavor = FlavorRepository()
         self.flavor_profile = FlavorProfileRepository()
         self.availability_zone = AvailabilityZoneRepository()
@@ -2081,3 +2082,7 @@ class AvailabilityZoneRepository(_GetALLExceptDELETEDIdMixin, BaseRepository):
 class AvailabilityZoneProfileRepository(_GetALLExceptDELETEDIdMixin,
                                         BaseRepository):
     model_class = models.AvailabilityZoneProfile
+
+
+class DistributorRepository(BaseRepository):
+    model_class = models.Distributor

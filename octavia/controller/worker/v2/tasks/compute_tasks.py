@@ -203,6 +203,80 @@ class CertComputeCreate(ComputeCreate):
             availability_zone=availability_zone)
 
 
+class DistributorComputeCreate(BaseComputeTask):
+    """Create a dedicated active-active distributor VM."""
+
+    def execute(self, distributor_id, server_pem, distributor_port):
+        if not CONF.controller_worker.distributor_image_tag:
+            raise exceptions.ComputeBuildException(
+                fault='distributor_image_tag is not configured')
+        if not CONF.controller_worker.distributor_flavor_id:
+            raise exceptions.ComputeBuildException(
+                fault='distributor_flavor_id is not configured')
+        networks = list(CONF.controller_worker.distributor_boot_network_list)
+        if not networks:
+            networks = list(CONF.controller_worker.amp_boot_network_list)
+        if not networks:
+            raise exceptions.ComputeBuildException(
+                fault='no distributor management network configured')
+
+        ca_path = CONF.controller_worker.client_ca
+        with open(ca_path, 'r', encoding='utf-8') as client_ca:
+            ca = client_ca.read()
+        key = utils.get_compatible_server_certs_key_passphrase()
+        fer = fernet.Fernet(key)
+        config_drive_files = {
+            '/etc/octavia/certs/server.pem': fer.decrypt(
+                server_pem.encode('utf-8')).decode('utf-8'),
+            '/etc/octavia/certs/client_ca.pem': ca,
+            '/etc/octavia/distributor-agent.conf': (
+                '[DEFAULT]\n'
+                '[distributor]\n'
+                'bind_host = 0.0.0.0\n'
+                'bind_port = {port}\n'
+                'agent_server_cert = /etc/octavia/certs/server.pem\n'
+                'agent_server_ca = /etc/octavia/certs/client_ca.pem\n'
+                'frontend_interface = auto\n').format(
+                    port=CONF.distributor.bind_port),
+        }
+        return self.compute.build(
+            name='distributor-' + distributor_id,
+            amphora_flavor=CONF.controller_worker.distributor_flavor_id,
+            image_tag=CONF.controller_worker.distributor_image_tag,
+            image_owner=CONF.controller_worker.distributor_image_owner_id,
+            key_name=CONF.controller_worker.amp_ssh_key_name,
+            sec_groups=CONF.controller_worker.distributor_secgroup_list,
+            network_ids=networks,
+            port_ids=[distributor_port[constants.ID]],
+            config_drive_files=config_drive_files)
+
+    def revert(self, result, *args, **kwargs):
+        if isinstance(result, failure.Failure):
+            return
+        try:
+            self.compute.delete(result)
+        except Exception:
+            LOG.exception('Failed to delete distributor compute %s', result)
+
+
+class DistributorComputeWait(BaseComputeTask):
+    """Wait until the distributor VM has a management address."""
+
+    def execute(self, compute_id):
+        networks = list(CONF.controller_worker.distributor_boot_network_list)
+        if not networks:
+            networks = list(CONF.controller_worker.amp_boot_network_list)
+        distributor, fault = self.compute.get_amphora(
+            compute_id, networks[0] if networks else None)
+        if distributor.status == constants.ACTIVE:
+            if not distributor.lb_network_ip:
+                raise exceptions.ComputeWaitTimeoutException(id=compute_id)
+            return distributor.to_dict()
+        if distributor.status == constants.ERROR:
+            raise exceptions.ComputeBuildException(fault=fault)
+        raise exceptions.ComputeWaitTimeoutException(id=compute_id)
+
+
 class DeleteAmphoraeOnLoadBalancer(BaseComputeTask):
     """Delete the amphorae on a load balancer.
 

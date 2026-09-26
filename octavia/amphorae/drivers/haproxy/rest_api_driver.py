@@ -425,6 +425,16 @@ class HaproxyAmphoraLoadBalancerDriver(
                         'skipping post_network_plug',
                         {'mac': port.mac_address})
 
+    def post_disable_arp(self, amphora, amphora_mac):
+        self._populate_amphora_api_version(amphora)
+        self.clients[amphora.api_version].disable_arp(
+            amphora, {'mac_address': amphora_mac})
+
+    def post_enable_arp(self, amphora, amphora_mac):
+        self._populate_amphora_api_version(amphora)
+        self.clients[amphora.api_version].enable_arp(
+            amphora, {'mac_address': amphora_mac})
+
     def _process_tls_certificates(self, listener, amphora=None, obj_id=None):
         """Processes TLS data from the listener.
 
@@ -857,6 +867,14 @@ class AmphoraAPIClient1_0(AmphoraAPIClientBase):
         r = self.post(amp,
                       'plug/vip/{vip}'.format(vip=vip),
                       json=net_info)
+        return exc.check_exception(r)
+
+    def enable_arp(self, amp, net_info):
+        r = self.post(amp, 'arp/enable', json=net_info)
+        return exc.check_exception(r)
+
+    def disable_arp(self, amp, net_info):
+        r = self.post(amp, 'arp/disable', json=net_info)
         return exc.check_exception(r)
 
     def upload_vrrp_config(self, amp, config):

@@ -444,6 +444,25 @@ haproxy_amphora_opts = [
                       'the listener API.')),
 ]
 
+distributor_opts = [
+    # REST server
+    cfg.IPOpt('bind_host', default='0.0.0.0',
+              help=_('Address to bind the distributor agent to')),
+    cfg.PortOpt('bind_port', default=9442,
+                help=_("The port to bind to")),
+    cfg.StrOpt('agent_server_cert', default=None,
+               help=_('Distributor agent server certificate')),
+    cfg.StrOpt('agent_server_ca', default=None,
+               help=_('CA used to authenticate distributor clients')),
+    cfg.StrOpt('client_cert', default=None,
+               help=_('Client certificate used for distributor mTLS')),
+    cfg.StrOpt('client_ca', default=None,
+               help=_('CA bundle used to authenticate the distributor')),
+    cfg.StrOpt('frontend_interface', default='auto',
+               help=_('Distributor interface carrying load balancer VIPs; '
+                      'use auto to resolve it from the port MAC')),
+]
+
 controller_worker_opts = [
     cfg.IntOpt('workers',
                default=1, min=1,
@@ -506,6 +525,32 @@ controller_worker_opts = [
     cfg.StrOpt('distributor_driver',
                default='distributor_noop_driver',
                help=_('Name of the distributor driver to use')),
+    cfg.IntOpt('active_active_desired_amphorae',
+               default=2,
+               min=2,
+               help=_('Desired number of active amphorae in an active-active '
+                      'cluster. The topology flow must provide a real '
+                      'distributor before this is enabled.')),
+    cfg.BoolOpt('active_active_enabled',
+                default=False,
+                help=_('Enable active-active load balancer flows only after '
+                       'a non-noop distributor is deployed.')),
+    cfg.IPOpt('ovs_distributor_address',
+              default=None,
+              help=_('Management address of the OVS distributor agent.')),
+    cfg.StrOpt('ovs_distributor_mac',
+               default=None,
+               help=_('Frontend MAC address of the OVS distributor.')),
+    cfg.StrOpt('distributor_image_tag', default=None,
+               help=_('Image tag for the active-active distributor agent.')),
+    cfg.StrOpt('distributor_image_owner_id', default='',
+               help=_('Restrict distributor image selection to this owner.')),
+    cfg.StrOpt('distributor_flavor_id', default=None,
+               help=_('Nova flavor ID for the active-active distributor.')),
+    cfg.ListOpt('distributor_boot_network_list', default=[],
+                help=_('Management networks attached to the distributor.')),
+    cfg.ListOpt('distributor_secgroup_list', default=[],
+                help=_('Security groups attached to the distributor.')),
     cfg.ListOpt('statistics_drivers', default=['stats_db'],
                 deprecated_name='stats_update_driver',
                 deprecated_group='health_manager',
@@ -517,7 +562,8 @@ controller_worker_opts = [
                mutable=True,
                help=_('Load balancer topology configuration. '
                       'SINGLE - One amphora per load balancer. '
-                      'ACTIVE_STANDBY - Two amphora per load balancer.')),
+                      'ACTIVE_STANDBY - Two amphora per load balancer. '
+                      'ACTIVE_ACTIVE - N amphorae behind a distributor.')),
     cfg.BoolOpt('user_data_config_drive', default=False,
                 deprecated_for_removal=True,
                 deprecated_reason=_('User_data nova option is not used and is '
@@ -889,6 +935,7 @@ cfg.CONF.register_opts(core_opts)
 cfg.CONF.register_opts(api_opts, group='api_settings')
 cfg.CONF.register_opts(amphora_agent_opts, group='amphora_agent')
 cfg.CONF.register_opts(compute_opts, group='compute')
+cfg.CONF.register_opts(distributor_opts, group='distributor')
 cfg.CONF.register_opts(networking_opts, group='networking')
 cfg.CONF.register_opts(oslo_messaging_opts, group='oslo_messaging')
 cfg.CONF.register_opts(haproxy_amphora_opts, group='haproxy_amphora')

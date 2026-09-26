@@ -185,6 +185,12 @@ class AmphoraLoadBalancerDriver(object, metaclass=abc.ABCMeta):
         the vip, such as bring up interfaces.
         """
 
+    def post_disable_arp(self, amphora, amphora_mac):
+        """Prevent an active-active amphora from answering VIP ARP."""
+
+    def post_enable_arp(self, amphora, amphora_mac):
+        """Restore normal VIP ARP behavior on an amphora."""
+
     def post_network_plug(self, amphora, port, amphora_network_config):
         """Called after amphora added to network
 
