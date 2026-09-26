@@ -1007,28 +1007,25 @@ class CreateVIPBasePort(BaseNetworkTask):
 
 
 class CreateDistributorFrontendPort(BaseNetworkTask):
-    """Create the distributor's VIP-facing port.
+    """Attach the load balancer's VIP port to the distributor.
 
-    The VIP remains allocated on the normal Octavia VIP port.  The
-    distributor is a one-legged direct-return datapath, so its frontend port
-    must accept client source addresses and is created with Neutron port
-    security disabled.  The distributor agent owns ARP and rewrites the
-    Ethernet destination toward an amphora.
+    The active-active blueprint makes the Distributor the owner of the VIP
+    L2 path.  Reusing the Octavia VIP port is important with OVN: routers and
+    floating-IP NAT already resolve the VIP to this port's Neutron MAC.  A
+    second, unrelated frontend port would receive the first flooded packet
+    but could lose subsequent stateful traffic at the OVN boundary.
     """
 
     def execute(self, loadbalancer, vip, distributor_id):
-        port = self.network_driver.create_port(
-            vip[constants.NETWORK_ID],
-            name='octavia-distributor-' + distributor_id,
-            fixed_ips=[{constants.SUBNET_ID: vip[constants.SUBNET_ID]}],
-            admin_state_up=True)
+        del loadbalancer, distributor_id
+        port = self.network_driver.get_port(vip[constants.PORT_ID])
         # The Octavia network-driver interface predates the Neutron
         # ``port_security_enabled`` argument.  Create without allowed
         # address pairs, then apply the Neutron-native setting before Nova
-        # receives the port.  This is declarative per distributor port and
-        # survives the VM lifecycle; it is not a host/Linux MTU change.
+        # receives the port.  This is declarative per VIP port and survives
+        # the VM lifecycle; it is not a host/Linux MTU change.
         self.network_driver.network_proxy.update_port(
-            port.id, port_security_enabled=False,
+            port.id, admin_state_up=True, port_security_enabled=False,
             allowed_address_pairs=[], security_groups=[])
         port = self.network_driver.get_port(port.id)
         return port.to_dict(recurse=True)
@@ -1036,11 +1033,19 @@ class CreateDistributorFrontendPort(BaseNetworkTask):
     def revert(self, result, *args, **kwargs):
         if isinstance(result, failure.Failure):
             return
-        try:
-            self.network_driver.delete_port(result[constants.ID])
-        except Exception:
-            LOG.exception('Failed to delete distributor frontend port %s',
-                          result.get(constants.ID))
+        # The distributor now reuses the LB VIP port.  Its lifecycle is
+        # owned by the normal Octavia UnplugVIP/DeallocateVIP tasks, which
+        # run after the distributor flow.  Do not delete it here.
+        LOG.debug('Leaving reused VIP port %s for normal LB cleanup',
+                  result.get(constants.ID))
+
+
+class ReleaseDistributorFrontendPort(BaseNetworkTask):
+    """Release the distributor's reference without deleting the VIP port."""
+
+    def execute(self, distributor_id):
+        LOG.debug('Distributor %s uses the LB VIP port; no separate port '
+                  'cleanup is required', distributor_id)
 
 
 class AdminDownPort(BaseNetworkTask):

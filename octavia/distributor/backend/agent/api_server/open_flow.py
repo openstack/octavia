@@ -117,13 +117,19 @@ def _delete_group(bridge, group):
          check=False)
 
 
+def _set_bridge_hwaddr(bridge, mac_address):
+    """Make the OVS bridge use the Neutron frontend MAC for ARP replies."""
+    _run(['ovs-vsctl', 'set', 'Bridge', bridge,
+          'other-config:hwaddr={0}'.format(mac_address)])
+
+
 def _rebuild(vip_state):
     bridge = vip_state['bridge']
     vip = vip_state['vip']
     group = vip_state['group_id']
     _delete_group(bridge, group)
-    _run(['ovs-ofctl', 'del-flows', bridge,
-          'ip,nw_dst={0}'.format(vip)], check=False)
+    for match in ('ip,nw_dst={0}'.format(vip), 'ip,nw_src={0}'.format(vip)):
+        _run(['ovs-ofctl', 'del-flows', bridge, match], check=False)
 
     buckets = []
     for mac in sorted(vip_state['amphora_macs']):
@@ -141,6 +147,14 @@ def _rebuild(vip_state):
               group, ','.join(buckets))])
     _run(['ovs-ofctl', 'add-flow', bridge,
           'priority=200,ip,nw_dst={0},actions=group:{1}'.format(vip, group)])
+    # The distributor is intentionally one-legged: the client and the
+    # amphorae are reached through the same frontend interface.  Return
+    # packets therefore also need an explicit hairpin rule; OVS NORMAL will
+    # otherwise learn the client MAC on the ingress port and suppress the
+    # output because the destination is on that same port.
+    _run(['ovs-ofctl', 'add-flow', bridge,
+          'priority=210,ip,nw_src={0},actions=set_field:{1}->eth_src,'
+          'output:in_port'.format(vip, vip_state['frontend_mac'])])
 
 
 def post_plug_vip(interface, vip_ip, mac_address, subnet_cidr, gateway,
@@ -151,8 +165,7 @@ def post_plug_vip(interface, vip_ip, mac_address, subnet_cidr, gateway,
     # Make the bridge answer ARP with the Neutron port MAC.  OVS internal
     # interfaces do not reliably accept this through ``ip link set``; the
     # Bridge hwaddr is the persistent OVS setting used by the datapath.
-    _run(['ovs-vsctl', 'set', 'Bridge', bridge,
-          'other-config:hwaddr={0}'.format(mac_address)])
+    _set_bridge_hwaddr(bridge, mac_address)
     _run(['ip', 'addr', 'add', '{0}/32'.format(vip_ip), 'dev', bridge],
          check=False)
     _run(['ip', 'link', 'set', 'dev', bridge, 'up'], check=False)
@@ -221,8 +234,10 @@ def pre_uplug_vip(interface, vip, mac_address):
     vip_state = state['vips'].pop(vip, None)
     if vip_state:
         _delete_group(vip_state['bridge'], vip_state['group_id'])
-        _run(['ovs-ofctl', 'del-flows', vip_state['bridge'],
-              'ip,nw_dst={0}'.format(vip)], check=False)
+        for match in ('ip,nw_dst={0}'.format(vip),
+                      'ip,nw_src={0}'.format(vip)):
+            _run(['ovs-ofctl', 'del-flows', vip_state['bridge'], match],
+                 check=False)
         _run(['ip', 'addr', 'del', '{0}/32'.format(vip), 'dev',
               vip_state.get('ip_device', vip_state.get('bridge', interface))],
              check=False)
@@ -246,8 +261,7 @@ def load_state(interface, slot_to_mac):
             vip_interface, bridge=vip_state.get('bridge'))
         vip_state['ip_device'] = vip_state['bridge']
         vip_state['frontend_port'] = _port_for_interface(vip_interface)
-        _run(['ip', 'link', 'set', 'dev', vip_state['bridge'], 'address',
-              vip_state['frontend_mac']], check=False)
+        _set_bridge_hwaddr(vip_state['bridge'], vip_state['frontend_mac'])
         vip_state['amphora_macs'] = list(slot_to_mac.values())
         _rebuild(vip_state)
     _save_state(state)
@@ -263,8 +277,7 @@ def restore_state():
         vip_state['bridge'] = bridge
         vip_state['ip_device'] = bridge
         vip_state['frontend_port'] = _port_for_interface(interface)
-        _run(['ip', 'link', 'set', 'dev', bridge, 'address',
-              vip_state['frontend_mac']], check=False)
+        _set_bridge_hwaddr(bridge, vip_state['frontend_mac'])
         _run(['ip', 'addr', 'add', '{0}/32'.format(vip_state['vip']),
               'dev', bridge], check=False)
         _run(['ip', 'link', 'set', 'dev', bridge, 'up'], check=False)

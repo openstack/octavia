@@ -74,10 +74,8 @@ class DistributorFlows:
         flow.add(self.driver.get_delete_distributor_subflow())
         flow.add(distributor_tasks.DeleteDistributorCompute(
             requires=constants.DISTRIBUTOR_ID))
-        flow.add(distributor_tasks.GetDistributorFrontendPortID(
-            requires=constants.DISTRIBUTOR_ID,
-            provides=constants.PORT_ID))
-        flow.add(network_tasks.DeletePort(requires=constants.PORT_ID))
+        flow.add(network_tasks.ReleaseDistributorFrontendPort(
+            requires=constants.DISTRIBUTOR_ID))
         flow.add(distributor_tasks.MarkDistributorDeletedInDB(
             requires=constants.DISTRIBUTOR_ID))
         return flow
