@@ -126,6 +126,8 @@ class OVSDistributorDriver(driver_base.DistributorDriver):
             amphora.vrrp_port_id).mac_address
         extras = {'subnet_cidr': subnet.cidr,
                   'gateway': subnet.gateway_ip,
+                  'mac_address': distributor.frontend_mac,
+                  'interface': CONF.distributor.frontend_interface,
                   'lb_id': load_balancer.id,
                   'amphora_id': amphora.id,
                   'amphora_mac': amphora_mac,
@@ -146,6 +148,8 @@ class OVSDistributorDriver(driver_base.DistributorDriver):
         subnet = self.network_driver.get_subnet(load_balancer.vip.subnet_id)
         extras = {'subnet_cidr': subnet.cidr,
                   'gateway': subnet.gateway_ip,
+                  'mac_address': distributor.frontend_mac,
+                  'interface': CONF.distributor.frontend_interface,
                   'lb_id': load_balancer.id,
                   'amphora_id': amphora.id,
                   'cluster_alg_type': cluster_alg_type,
