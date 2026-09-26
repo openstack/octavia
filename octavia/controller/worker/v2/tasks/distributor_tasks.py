@@ -28,7 +28,8 @@ class BaseDistributorTask(task.Task):
 class CreateDistributorInDB(BaseDistributorTask):
     def execute(self, distributor_id, loadbalancer, distributor_compute,
                 distributor_port):
-        with db_api.get_session().begin() as session:
+        session = db_api.get_session()
+        with session.begin():
             distributor = self.distributor_repo.create(
                 session,
                 id=distributor_id,
@@ -45,7 +46,8 @@ class CreateDistributorInDB(BaseDistributorTask):
 
     def revert(self, result, distributor_id, *args, **kwargs):
         try:
-            with db_api.get_session().begin() as session:
+            session = db_api.get_session()
+            with session.begin():
                 self.distributor_repo.delete(session, id=distributor_id)
         except Exception:
             LOG.exception('Failed to revert distributor DB row %s',
@@ -61,7 +63,8 @@ class DeleteDistributorCompute(BaseDistributorTask):
             invoke_on_load=True).driver
 
     def execute(self, distributor_id):
-        with db_api.get_session().begin() as session:
+        session = db_api.get_session()
+        with session.begin():
             distributor = self.distributor_repo.get(session,
                                                     id=distributor_id)
         if distributor and distributor.compute_id:
@@ -70,7 +73,8 @@ class DeleteDistributorCompute(BaseDistributorTask):
 
 class GetDistributorFrontendPortID(BaseDistributorTask):
     def execute(self, distributor_id):
-        with db_api.get_session().begin() as session:
+        session = db_api.get_session()
+        with session.begin():
             distributor = self.distributor_repo.get(session,
                                                     id=distributor_id)
         return distributor.frontend_port_id if distributor else None
@@ -78,14 +82,16 @@ class GetDistributorFrontendPortID(BaseDistributorTask):
 
 class AssociateDistributorInDB(BaseDistributorTask):
     def execute(self, distributor_id, loadbalancer):
-        with db_api.get_session().begin() as session:
+        session = db_api.get_session()
+        with session.begin():
             self.loadbalancer_repo.update(
                 session, loadbalancer[constants.LOADBALANCER_ID],
                 distributor_id=distributor_id)
 
     def revert(self, result, distributor_id, loadbalancer, *args, **kwargs):
         try:
-            with db_api.get_session().begin() as session:
+            session = db_api.get_session()
+            with session.begin():
                 self.loadbalancer_repo.update(
                     session, loadbalancer[constants.LOADBALANCER_ID],
                     distributor_id=None)
@@ -131,7 +137,8 @@ class GetDistributorIDFromLoadbalancer(BaseDistributorTask):
 
 class MarkDistributorDeletedInDB(BaseDistributorTask):
     def execute(self, distributor_id):
-        with db_api.get_session().begin() as session:
+        session = db_api.get_session()
+        with session.begin():
             self.distributor_repo.update(
                 session, distributor_id,
                 provisioning_status=constants.DELETED)
