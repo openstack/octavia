@@ -2,7 +2,6 @@
 Description=Octavia active-active distributor agent
 After=network-online.target openvswitch-switch.service
 Wants=network-online.target
-Requires=openvswitch-switch.service
 
 [Service]
 Type=simple
