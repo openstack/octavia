@@ -42,11 +42,21 @@ class OVSDistributorDriver(driver_base.DistributorDriver):
     def __init__(self):
         super(OVSDistributorDriver, self).__init__()
         self.client = DistributorAPIClient()
-        self.network_driver = stevedore_driver.DriverManager(
-            namespace='octavia.network.drivers',
-            name=CONF.controller_worker.network_driver,
-            invoke_on_load=True
-        ).driver
+        # Do not construct a second Neutron driver while the worker is
+        # building every load-balancer flow.  The create path only needs the
+        # REST client; Neutron is needed later, when the VIP/amphora state is
+        # actually sent to the distributor.  Eager construction can block
+        # the worker before TaskFlow starts on a busy single-node lab.
+        self._network_driver = None
+
+    @property
+    def network_driver(self):
+        if self._network_driver is None:
+            self._network_driver = stevedore_driver.DriverManager(
+                namespace='octavia.network.drivers',
+                name=CONF.controller_worker.network_driver,
+                invoke_on_load=True).driver
+        return self._network_driver
 
     def get_info(self, distributor):
         return self.client.get_info(distributor)
