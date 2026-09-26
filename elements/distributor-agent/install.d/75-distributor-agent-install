@@ -24,3 +24,12 @@ RemainAfterExit=yes
 [Install]
 WantedBy=multi-user.target
 EOF
+install -d -m 0755 /etc/systemd/network
+cat > /etc/systemd/network/10-octavia-distributor-dhcp.network <<'EOF'
+[Match]
+Name=en*
+
+[Network]
+DHCP=yes
+IPv6AcceptRA=no
+EOF
