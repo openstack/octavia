@@ -1,5 +1,39 @@
 #!/bin/bash
 
+set -eu
+
+# Nova supplies the amphora configuration and certificates as config-drive
+# files.  cloud-init's OpenStack datasource exposes the metadata but does not
+# materialize these files on this Jammy base image, so bootstrap them before
+# the certificate tmpfs and amphora-agent dependencies are started.
+if [ ! -s /etc/octavia/amphora-agent.conf ]; then
+    mkdir -p /etc/octavia/certs /mnt/configdrive
+    for attempt in $(seq 1 30); do
+        for dev in /dev/sr0 /dev/hda /dev/hdc /dev/disk/by-label/config-2; do
+            if mount -t iso9660 -o ro "$dev" /mnt/configdrive 2>/dev/null; then
+                if [ -s /mnt/configdrive/openstack/content/0000 ] &&
+                   [ -s /mnt/configdrive/openstack/content/0001 ] &&
+                   [ -s /mnt/configdrive/openstack/content/0002 ]; then
+                    install -m 0644 /mnt/configdrive/openstack/content/0000 \
+                        /etc/octavia/amphora-agent.conf
+                    install -m 0644 /mnt/configdrive/openstack/content/0001 \
+                        /etc/octavia/certs/client_ca.pem
+                    install -m 0644 /mnt/configdrive/openstack/content/0002 \
+                        /etc/octavia/certs/server.pem
+                    if [ -s /mnt/configdrive/openstack/content/0003 ]; then
+                        install -m 0644 /mnt/configdrive/openstack/content/0003 \
+                            /etc/rsyslog.d/10-rsyslog.conf
+                    fi
+                    umount /mnt/configdrive
+                    break 2
+                fi
+                umount /mnt/configdrive
+            fi
+        done
+        sleep 1
+    done
+fi
+
 certs_path=$(awk "/base_cert_dir / {printf \$3}" /etc/octavia/amphora-agent.conf)
 mkdir -p "${certs_path}"
 mount -t tmpfs -o size=16M certfs-ramfs "${certs_path}"
