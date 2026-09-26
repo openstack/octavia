@@ -178,7 +178,7 @@ def _rebuild(vip_state):
 
 
 def post_plug_vip(interface, vip_ip, mac_address, subnet_cidr, gateway,
-                  cluster_min_size, bridge=None):
+                  cluster_min_size, gateway_mac=None, bridge=None):
     # The distributor owns ARP for the VIP.  The OpenFlow rule handles the
     # subsequent IP packet and sends it to a selected amphora.
     bridge = _ensure_frontend_bridge(interface, bridge=bridge)
@@ -189,7 +189,7 @@ def post_plug_vip(interface, vip_ip, mac_address, subnet_cidr, gateway,
     _run(['ip', 'addr', 'add', '{0}/32'.format(vip_ip), 'dev', bridge],
          check=False)
     _run(['ip', 'link', 'set', 'dev', bridge, 'up'], check=False)
-    gateway_mac = _gateway_mac(gateway, bridge)
+    gateway_mac = gateway_mac or _gateway_mac(gateway, bridge)
     state = _load_state()
     state['vips'][vip_ip] = {
         'vip': vip_ip,

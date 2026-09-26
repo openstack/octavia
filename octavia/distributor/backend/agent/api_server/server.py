@@ -58,6 +58,7 @@ class Server:
             interface, vip, data['mac_address'],
             data['subnet_cidr'], data['gateway'],
             data.get('cluster_min_size', 2),
+            gateway_mac=data.get('gateway_mac'),
             bridge=open_flow.bridge_name(data['lb_id']))
         return flask.jsonify(result), 202
 

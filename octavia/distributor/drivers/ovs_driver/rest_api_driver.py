@@ -102,6 +102,7 @@ class OVSDistributorDriver(driver_base.DistributorDriver):
         subnet = self.network_driver.get_subnet(load_balancer.vip.subnet_id)
         extras = {'subnet_cidr': subnet.cidr,
                   'gateway': subnet.gateway_ip,
+                  'gateway_mac': self._get_gateway_mac(subnet),
                   'mac_address': distributor_mac,
                   'interface': CONF.distributor.frontend_interface,
                   'lb_id': load_balancer.id,
@@ -116,6 +117,21 @@ class OVSDistributorDriver(driver_base.DistributorDriver):
         except Exception as e:
             LOG.debug("post_vip_plug failed: %s", e)
             raise
+
+    def _get_gateway_mac(self, subnet):
+        """Return the Neutron router interface MAC for the VIP subnet."""
+        for port in self.network_driver.network_proxy.ports(
+                network_id=subnet.network_id):
+            if port.get('device_owner') != 'network:router_interface':
+                continue
+            fixed_ips = port.get('fixed_ips', [])
+            if any(ip.get('subnet_id') == subnet.id and
+                   ip.get('ip_address') == subnet.gateway_ip
+                   for ip in fixed_ips):
+                return port.get('mac_address')
+        LOG.warning('Could not find router interface MAC for subnet %s',
+                    subnet.id)
+        return None
 
     def pre_vip_unplug(self, distributor, load_balancer):
         extras = {'lb_id': load_balancer.id}
