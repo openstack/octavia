@@ -1,7 +1,7 @@
 [Unit]
 Description=Octavia active-active distributor agent
-After=network-online.target openvswitch-switch.service
-Wants=network-online.target
+After=network-online.target openvswitch-switch.service cloud-init-final.service
+Wants=network-online.target cloud-init-final.service
 Requires=openvswitch-switch.service
 
 [Service]
