@@ -342,10 +342,6 @@ class LoadBalancerFlows(object):
             post_create_LB_flow.add(vrrp_subflow)
         elif topology == constants.TOPOLOGY_ACTIVE_ACTIVE:
             post_create_LB_flow.add(
-                database_tasks.GetAmphoraeFromLoadbalancer(
-                    requires=constants.LOADBALANCER_ID,
-                    provides=constants.AMPHORAE))
-            post_create_LB_flow.add(
                 self.distributor_flows.get_register_amphorae_flow())
 
         post_create_LB_flow.add(database_tasks.UpdateLoadbalancerInDB(
