@@ -25,12 +25,12 @@ class DistributorFlows:
             invoke_on_load=True).driver
 
     def get_create_distributor_flow(self):
-        """Create a dedicated distributor frontend and register the cluster.
+        """Create and bind the distributor to the real LB VIP port.
 
-        The Octavia VIP port stays unbound so OVN can represent it as a
-        virtual logical switch port.  The dedicated distributor frontend is
-        an additional virtual parent, alongside the active-active amphora
-        frontend ports.
+        OVN's floating-IP NAT resolves the VIP to the Octavia VIP logical
+        port.  Binding that port to the distributor gives the NAT path a
+        concrete Nova interface; active amphora VIP address-pairs are added
+        only afterward by the active-active amphora flow.
         """
         flow = linear_flow.Flow(constants.CREATE_DISTRIBUTOR_FLOW)
         flow.add(distributor_tasks.GenerateDistributorId(
@@ -65,7 +65,6 @@ class DistributorFlows:
         flow.add(distributor_tasks.WaitForDistributorAgent(
             self.driver, requires=constants.DISTRIBUTOR_ID))
         flow.add(self.driver.get_add_vip_subflow())
-        flow.add(self.driver.get_register_amphorae_subflow())
         return flow
 
     def get_delete_distributor_flow(self):
@@ -81,10 +80,8 @@ class DistributorFlows:
         flow.add(self.driver.get_delete_distributor_subflow())
         flow.add(distributor_tasks.DeleteDistributorCompute(
             requires=constants.DISTRIBUTOR_ID))
-        flow.add(distributor_tasks.GetDistributorFrontendPortID(
-            requires=constants.DISTRIBUTOR_ID,
-            provides=constants.PORT_ID))
-        flow.add(network_tasks.DeletePort(requires=constants.PORT_ID))
+        flow.add(network_tasks.ReleaseDistributorFrontendPort(
+            requires=constants.DISTRIBUTOR_ID))
         flow.add(distributor_tasks.MarkDistributorDeletedInDB(
             requires=constants.DISTRIBUTOR_ID))
         return flow

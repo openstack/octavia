@@ -1007,38 +1007,36 @@ class CreateVIPBasePort(BaseNetworkTask):
 
 
 class CreateDistributorFrontendPort(BaseNetworkTask):
-    """Create the distributor's VIP-facing port.
+    """Reuse the LB VIP port as the distributor's frontend port.
 
-    The Octavia VIP port must remain unbound so OVN can represent it as a
-    virtual logical switch port.  The distributor receives a separate
-    frontend port that advertises the VIP as an allowed address pair; OVN
-    then records the distributor and amphora frontend ports as virtual
-    parents of the VIP.
+    This task runs before active amphora network configuration.  Clear the
+    provisional Octavia ownership and bind the VIP port as the distributor's
+    frontend NIC, so floating-IP NAT has a bound destination.
     """
 
     def execute(self, loadbalancer, vip, distributor_id):
-        port = self.network_driver.create_port(
-            vip[constants.NETWORK_ID],
-            name='octavia-distributor-' + distributor_id,
-            fixed_ips=[{constants.SUBNET_ID: vip[constants.SUBNET_ID]}],
-            admin_state_up=True)
-        # A/A uses multiple virtual parents for one VIP. Neutron security
-        # groups/AAP validation cannot represent that unbounded parent set;
-        # the distributor and amphora agents provide the trusted dataplane.
+        del loadbalancer, distributor_id
+        port = self.network_driver.get_port(vip[constants.PORT_ID])
         self.network_driver.network_proxy.update_port(
-            port.id, port_security_enabled=False, security_groups=[],
-            allowed_address_pairs=[])
+            port.id, admin_state_up=True, port_security_enabled=False,
+            security_groups=[], allowed_address_pairs=[], device_id='',
+            device_owner='')
         port = self.network_driver.get_port(port.id)
         return port.to_dict(recurse=True)
 
     def revert(self, result, *args, **kwargs):
         if isinstance(result, failure.Failure):
             return
-        try:
-            self.network_driver.delete_port(result[constants.ID])
-        except Exception:
-            LOG.exception('Failed to delete distributor frontend port %s',
-                          result.get(constants.ID))
+        LOG.debug('Leaving reused VIP port %s for normal LB cleanup',
+                  result.get(constants.ID))
+
+
+class ReleaseDistributorFrontendPort(BaseNetworkTask):
+    """Release the distributor reference without deleting the VIP port."""
+
+    def execute(self, distributor_id):
+        LOG.debug('Distributor %s reused the LB VIP port; normal Octavia '
+                  'VIP cleanup owns its lifecycle', distributor_id)
 
 
 class AdminDownPort(BaseNetworkTask):
