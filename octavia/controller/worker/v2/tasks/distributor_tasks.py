@@ -12,6 +12,7 @@ from octavia.common import constants
 from octavia.controller.worker import task_utils
 from octavia.db import api as db_api
 from octavia.db import repositories as repo
+from octavia.amphorae.driver_exceptions import exceptions as driver_except
 
 LOG = logging.getLogger(__name__)
 CONF = cfg.CONF
@@ -219,9 +220,17 @@ class DistributorRegisterAmphorae(BaseDistributorTask):
                 invoke_on_load=True).driver
             subnet = self.driver.network_driver.get_subnet(
                 lb.vip.subnet_id)
-            amp_driver.set_gateway_mac(
-                amphora, lb.vip.ip_address, subnet.gateway_ip,
-                distributor.frontend_mac)
+            try:
+                amp_driver.set_gateway_mac(
+                    amphora, lb.vip.ip_address, subnet.gateway_ip,
+                    distributor.frontend_mac)
+            except driver_except.AmpDriverNotImplementedError:
+                # Older amphora agents do not expose gateway pinning.  The
+                # distributor still owns the VIP forwarding path, so this
+                # optional optimization must not fail registration.
+                LOG.warning('Amphora %s does not support gateway pinning; '
+                            'continuing distributor registration.',
+                            amphora.id)
 
 
 class DistributorRemoveVIP(BaseDistributorTask):
