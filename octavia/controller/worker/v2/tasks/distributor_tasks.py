@@ -209,6 +209,19 @@ class DistributorRegisterAmphorae(BaseDistributorTask):
             self.driver.register_amphora(
                 distributor, lb, amphora, constants.TOPOLOGY_ACTIVE_ACTIVE,
                 CONF.controller_worker.active_active_desired_amphorae)
+            # OVN rejects the subsequent client ACK when an amphora returns
+            # directly to the router. Pin its gateway neighbor to the
+            # distributor frontend so the return path is hairpinned through
+            # the same logical port as the request.
+            amp_driver = stevedore_driver.DriverManager(
+                namespace='octavia.amphora.drivers',
+                name=CONF.controller_worker.amphora_driver,
+                invoke_on_load=True).driver
+            subnet = self.driver.network_driver.get_subnet(
+                lb.vip.subnet_id)
+            amp_driver.set_gateway_mac(
+                amphora, lb.vip.ip_address, subnet.gateway_ip,
+                distributor.frontend_mac)
 
 
 class DistributorRemoveVIP(BaseDistributorTask):

@@ -420,14 +420,19 @@ class AllowedAddressPairsDriver(neutron_base.BaseNeutronDriver):
         if not interface:
             interface = self._plug_amphora_vip(amphora, subnet)
 
-        aap_address_list = [vip.ip_address]
-        for add_vip in load_balancer.additional_vips:
-            aap_address_list.append(add_vip.ip_address)
-        self._add_vip_address_pairs(interface.port_id, aap_address_list)
+        if load_balancer.topology == constants.TOPOLOGY_ACTIVE_ACTIVE:
+            self.network_proxy.update_port(
+                interface.port_id, port_security_enabled=False,
+                security_groups=[], allowed_address_pairs=[])
+        else:
+            aap_address_list = [vip.ip_address]
+            for add_vip in load_balancer.additional_vips:
+                aap_address_list.append(add_vip.ip_address)
+            self._add_vip_address_pairs(interface.port_id, aap_address_list)
 
-        if self.sec_grp_enabled:
-            self._add_vip_security_group_to_port(load_balancer.id,
-                                                 interface.port_id)
+            if self.sec_grp_enabled:
+                self._add_vip_security_group_to_port(load_balancer.id,
+                                                     interface.port_id)
         vrrp_ip = None
         for fixed_ip in interface.fixed_ips:
             is_correct_subnet = fixed_ip.subnet_id == subnet.id
@@ -572,6 +577,11 @@ class AllowedAddressPairsDriver(neutron_base.BaseNeutronDriver):
                 orig_code=getattr(e, constants.STATUS_CODE, None),
             )
         new_port = utils.convert_port_to_model(new_port)
+        if load_balancer.topology == constants.TOPOLOGY_ACTIVE_ACTIVE:
+            self.network_proxy.update_port(
+                new_port.id, port_security_enabled=False,
+                security_groups=[], allowed_address_pairs=[])
+            new_port = self.get_port(new_port.id)
         return self._port_to_vip(new_port, load_balancer, octavia_owned=True)
 
     def unplug_aap_port(self, vip, amphora, subnet):

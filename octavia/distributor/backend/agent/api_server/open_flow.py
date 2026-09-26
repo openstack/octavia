@@ -11,6 +11,7 @@ so a distributor-agent restart can reconstruct the OpenFlow group.
 import hashlib
 import json
 import os
+import re
 import subprocess
 import tempfile
 
@@ -112,6 +113,23 @@ def _port_for_interface(interface):
                        interface)
 
 
+def _gateway_mac(gateway, bridge):
+    """Resolve and return the tenant router MAC on the frontend bridge."""
+    if not gateway:
+        return None
+    mac_re = re.compile(r'\b([0-9a-fA-F]{2}(?::[0-9a-fA-F]{2}){5})\b')
+    for _ in range(3):
+        result = _run(['ip', 'neigh', 'show', 'to', gateway, 'dev', bridge],
+                      check=False)
+        match = mac_re.search(result.stdout)
+        if match:
+            return match.group(1).lower()
+        # Trigger a bounded ARP lookup before retrying the neighbor query.
+        _run(['ping', '-c', '1', '-W', '1', '-I', bridge, gateway],
+             check=False)
+    return None
+
+
 def _delete_group(bridge, group):
     _run(['ovs-ofctl', 'del-groups', bridge, 'group_id={0}'.format(group)],
          check=False)
@@ -147,14 +165,16 @@ def _rebuild(vip_state):
               group, ','.join(buckets))])
     _run(['ovs-ofctl', 'add-flow', bridge,
           'priority=200,ip,nw_dst={0},actions=group:{1}'.format(vip, group)])
-    # The distributor is intentionally one-legged: the client and the
-    # amphorae are reached through the same frontend interface.  Return
-    # packets therefore also need an explicit hairpin rule; OVS NORMAL will
-    # otherwise learn the client MAC on the ingress port and suppress the
-    # output because the destination is on that same port.
-    _run(['ovs-ofctl', 'add-flow', bridge,
-          'priority=210,ip,nw_src={0},actions=set_field:{1}->eth_src,'
-          'output:in_port'.format(vip, vip_state['frontend_mac'])])
+    # In OVN, letting the amphora return directly to the router makes the
+    # following client ACK appear as conntrack-invalid.  Hairpin the reverse
+    # packet through the same distributor logical port so both directions use
+    # the same OVN conntrack path.
+    gateway_mac = vip_state.get('gateway_mac')
+    if gateway_mac:
+        _run(['ovs-ofctl', 'add-flow', bridge,
+              'priority=210,ip,nw_src={0},actions='
+              'set_field:{1}->eth_dst,set_field:{2}->eth_src,IN_PORT'.format(
+                  vip, gateway_mac, vip_state['frontend_mac'])])
 
 
 def post_plug_vip(interface, vip_ip, mac_address, subnet_cidr, gateway,
@@ -169,6 +189,7 @@ def post_plug_vip(interface, vip_ip, mac_address, subnet_cidr, gateway,
     _run(['ip', 'addr', 'add', '{0}/32'.format(vip_ip), 'dev', bridge],
          check=False)
     _run(['ip', 'link', 'set', 'dev', bridge, 'up'], check=False)
+    gateway_mac = _gateway_mac(gateway, bridge)
     state = _load_state()
     state['vips'][vip_ip] = {
         'vip': vip_ip,
@@ -179,6 +200,7 @@ def post_plug_vip(interface, vip_ip, mac_address, subnet_cidr, gateway,
         'frontend_mac': mac_address,
         'subnet_cidr': subnet_cidr,
         'gateway': gateway,
+        'gateway_mac': gateway_mac,
         'cluster_min_size': cluster_min_size,
         'group_id': _group_id(vip_ip),
         'amphora_macs': [],
@@ -201,6 +223,9 @@ def register_amphora(vip, mac, interface, subnet_cidr, gateway,
         vip_state['ip_device'] = vip_state['bridge']
         vip_state['frontend_port'] = _port_for_interface(
             vip_state['interface'])
+    if not vip_state.get('gateway_mac'):
+        vip_state['gateway_mac'] = _gateway_mac(
+            vip_state.get('gateway'), vip_state['bridge'])
     if amphora_mac not in vip_state['amphora_macs']:
         vip_state['amphora_macs'].append(amphora_mac)
     _rebuild(vip_state)
@@ -262,6 +287,9 @@ def load_state(interface, slot_to_mac):
         vip_state['ip_device'] = vip_state['bridge']
         vip_state['frontend_port'] = _port_for_interface(vip_interface)
         _set_bridge_hwaddr(vip_state['bridge'], vip_state['frontend_mac'])
+        if not vip_state.get('gateway_mac'):
+            vip_state['gateway_mac'] = _gateway_mac(
+                vip_state.get('gateway'), vip_state['bridge'])
         vip_state['amphora_macs'] = list(slot_to_mac.values())
         _rebuild(vip_state)
     _save_state(state)
@@ -278,6 +306,9 @@ def restore_state():
         vip_state['ip_device'] = bridge
         vip_state['frontend_port'] = _port_for_interface(interface)
         _set_bridge_hwaddr(bridge, vip_state['frontend_mac'])
+        if not vip_state.get('gateway_mac'):
+            vip_state['gateway_mac'] = _gateway_mac(
+                vip_state.get('gateway'), bridge)
         _run(['ip', 'addr', 'add', '{0}/32'.format(vip_state['vip']),
               'dev', bridge], check=False)
         _run(['ip', 'link', 'set', 'dev', bridge, 'up'], check=False)

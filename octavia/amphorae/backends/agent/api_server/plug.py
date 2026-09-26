@@ -16,6 +16,7 @@
 import ipaddress
 import itertools
 import os
+import subprocess
 import socket
 import stat
 
@@ -26,6 +27,8 @@ import webob
 from werkzeug import exceptions
 
 from octavia.amphorae.backends.agent.api_server import util
+from octavia.amphorae.backends.utils import interface_file
+from octavia.amphorae.backends.utils import network_utils
 from octavia.common import constants as consts
 
 
@@ -142,6 +145,55 @@ class Plug(object):
         return webob.Response(json={
             'message': "OK",
             'details': vip_message}, status=202)
+
+    def set_gateway_mac(self, vip_ip, gateway, gateway_mac):
+        """Pin the active/active VIP gateway to the distributor frontend.
+
+        The interface JSON is replayed by amphora-interface after a reboot,
+        so the neighbor entry is durable instead of being a one-time repair.
+        """
+        try:
+            ipaddress.ip_address(vip_ip)
+            ipaddress.ip_address(gateway)
+            mac = gateway_mac.lower()
+            if len(mac.split(':')) != 6:
+                raise ValueError('invalid gateway MAC')
+            if any(len(part) != 2 or int(part, 16) < 0
+                   for part in mac.split(':')):
+                raise ValueError('invalid gateway MAC')
+        except (TypeError, ValueError) as exc:
+            return webob.Response(json={'message': str(exc)}, status=400)
+
+        try:
+            interface = network_utils.get_interface_name(
+                vip_ip, net_ns=consts.AMPHORA_NAMESPACE)
+            path = os.path.join(interface_file.InterfaceFile.get_directory(),
+                                '{}.json'.format(interface))
+            iface = interface_file.InterfaceFile.from_file(path)
+            command = ('ip neigh replace {gateway} lladdr {mac} '
+                       'nud permanent dev {interface}').format(
+                           gateway=gateway, mac=mac, interface=interface)
+            scripts = iface.scripts.setdefault(consts.IFACE_UP, [])
+            if not any(item.get(consts.COMMAND) == command
+                       for item in scripts):
+                scripts.append({consts.COMMAND: command})
+                iface.write()
+
+            subprocess.run([
+                'ip', 'netns', 'exec', consts.AMPHORA_NAMESPACE,
+                'ip', 'neigh', 'replace', gateway, 'lladdr', mac,
+                'nud', 'permanent', 'dev', interface],
+                check=True, capture_output=True, text=True)
+        except (OSError, subprocess.CalledProcessError) as exc:
+            LOG.exception('Unable to pin gateway %s to %s on %s',
+                          gateway, mac, interface if 'interface' in locals()
+                          else vip_ip)
+            return webob.Response(json={'message': str(exc)}, status=500)
+        except Exception as exc:
+            LOG.exception('Unable to persist gateway neighbor on %s', vip_ip)
+            return webob.Response(json={'message': str(exc)}, status=500)
+
+        return webob.Response(json={'message': 'OK'}, status=202)
 
     def _check_ip_addresses(self, fixed_ips):
         if fixed_ips:

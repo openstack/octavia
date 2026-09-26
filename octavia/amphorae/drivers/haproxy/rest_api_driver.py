@@ -626,6 +626,19 @@ class HaproxyAmphoraLoadBalancerDriver(
                       'API.', amphora.id)
             raise driver_except.AmpDriverNotImplementedError() from e
 
+    def set_gateway_mac(self, amphora: db_models.Amphora, vip_ip,
+                        gateway, gateway_mac, timeout_dict=None):
+        """Persist the active/active distributor neighbor on an amphora."""
+        self._populate_amphora_api_version(amphora, timeout_dict)
+        try:
+            self.clients[amphora.api_version].set_gateway_mac(
+                amphora, vip_ip, gateway, gateway_mac,
+                timeout_dict=timeout_dict)
+        except exc.NotFound as e:
+            LOG.debug('Amphora %s does not support gateway pinning.',
+                      amphora.id)
+            raise driver_except.AmpDriverNotImplementedError() from e
+
 
 # Check a custom hostname
 class CustomHostNameCheckingAdapter(requests.adapters.HTTPAdapter):
@@ -907,4 +920,10 @@ class AmphoraAPIClient1_0(AmphoraAPIClientBase):
     def set_interface_rules(self, amp, ip_address, rules, timeout_dict=None):
         r = self.put(amp, f'interface/{ip_address}/rules', timeout_dict,
                      json=rules)
+        return exc.check_exception(r)
+
+    def set_gateway_mac(self, amp, vip_ip, gateway, gateway_mac,
+                        timeout_dict=None):
+        r = self.put(amp, f'interface/{vip_ip}/gateway', timeout_dict,
+                     json={'gateway': gateway, 'gateway_mac': gateway_mac})
         return exc.check_exception(r)

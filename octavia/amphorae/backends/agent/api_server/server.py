@@ -150,6 +150,10 @@ class Server(object):
         self.app.add_url_rule(rule=PATH_PREFIX + '/interface/<ip_addr>/rules',
                               view_func=self.set_interface_rules,
                               methods=['PUT'])
+        self.app.add_url_rule(rule=PATH_PREFIX +
+                              '/interface/<ip_addr>/gateway',
+                              view_func=self.set_interface_gateway,
+                              methods=['PUT'])
 
     def upload_haproxy_config(self, amphora_id, lb_id):
         return self._loadbalancer.upload_haproxy_config(amphora_id, lb_id)
@@ -307,3 +311,16 @@ class Server(object):
         nftable_utils.load_nftables_file()
 
         return webob.Response(json={'message': 'OK'}, status=200)
+
+    def set_interface_gateway(self, ip_addr):
+        try:
+            gateway_info = flask.request.get_json()
+            assert isinstance(gateway_info, dict)
+            assert gateway_info.get('gateway')
+            assert gateway_info.get('gateway_mac')
+        except Exception as exc:
+            raise exceptions.BadRequest(
+                description='Invalid gateway information') from exc
+
+        return self._plug.set_gateway_mac(
+            ip_addr, gateway_info['gateway'], gateway_info['gateway_mac'])

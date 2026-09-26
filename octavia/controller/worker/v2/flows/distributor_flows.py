@@ -25,15 +25,12 @@ class DistributorFlows:
             invoke_on_load=True).driver
 
     def get_create_distributor_flow(self):
-        """Create and attach the distributor before amphora VIP AAPs.
+        """Create a dedicated distributor frontend and register the cluster.
 
-        OVN treats a port as a virtual logical switch port when another
-        port on the same switch already advertises the VIP address.  A
-        virtual port cannot subsequently be bound to Nova.  The active/
-        active topology therefore attaches the real LB VIP port to the
-        distributor before the amphora front-end ports receive their VIP
-        allowed-address-pairs.  Amphora registration is deliberately a
-        separate post-amphora step.
+        The Octavia VIP port stays unbound so OVN can represent it as a
+        virtual logical switch port.  The dedicated distributor frontend is
+        an additional virtual parent, alongside the active-active amphora
+        frontend ports.
         """
         flow = linear_flow.Flow(constants.CREATE_DISTRIBUTOR_FLOW)
         flow.add(distributor_tasks.GenerateDistributorId(
@@ -68,6 +65,7 @@ class DistributorFlows:
         flow.add(distributor_tasks.WaitForDistributorAgent(
             self.driver, requires=constants.DISTRIBUTOR_ID))
         flow.add(self.driver.get_add_vip_subflow())
+        flow.add(self.driver.get_register_amphorae_subflow())
         return flow
 
     def get_delete_distributor_flow(self):
@@ -83,8 +81,10 @@ class DistributorFlows:
         flow.add(self.driver.get_delete_distributor_subflow())
         flow.add(distributor_tasks.DeleteDistributorCompute(
             requires=constants.DISTRIBUTOR_ID))
-        flow.add(network_tasks.ReleaseDistributorFrontendPort(
-            requires=constants.DISTRIBUTOR_ID))
+        flow.add(distributor_tasks.GetDistributorFrontendPortID(
+            requires=constants.DISTRIBUTOR_ID,
+            provides=constants.PORT_ID))
+        flow.add(network_tasks.DeletePort(requires=constants.PORT_ID))
         flow.add(distributor_tasks.MarkDistributorDeletedInDB(
             requires=constants.DISTRIBUTOR_ID))
         return flow
