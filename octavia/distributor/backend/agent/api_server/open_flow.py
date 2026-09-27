@@ -314,3 +314,50 @@ def restore_state():
         _run(['ip', 'link', 'set', 'dev', bridge, 'up'], check=False)
         _rebuild(vip_state)
     _save_state(state)
+
+
+def _runtime_needs_restore(vip_state):
+    """Return whether the OVS runtime lost this VIP's programmed state."""
+    bridge = vip_state.get('bridge')
+    if not bridge:
+        return True
+    result = _run(['ovs-vsctl', 'br-exists', bridge], check=False)
+    if getattr(result, 'returncode', 0) != 0:
+        return True
+
+    # A VIP with no active members intentionally has no select group.  Its
+    # bridge still needs to exist, but there is no group to restore yet.
+    amphora_macs = vip_state.get('amphora_macs', [])
+    if not amphora_macs:
+        return False
+    result = _run(['ovs-ofctl', 'dump-groups', bridge], check=False)
+    marker = 'group_id={0}'.format(vip_state.get('group_id'))
+    if marker not in result.stdout:
+        return True
+
+    # The group can survive while the VIP match flows are missing.  Check
+    # both directions because OVS runtime recreation can lose either rule
+    # independently of the persisted distributor state.
+    result = _run(['ovs-ofctl', 'dump-flows', bridge], check=False)
+    vip = vip_state.get('vip')
+    group = vip_state.get('group_id')
+    forward = 'nw_dst={0}'.format(vip)
+    reverse = 'nw_src={0}'.format(vip)
+    if forward not in result.stdout or 'actions=group:{0}'.format(group) \
+            not in result.stdout:
+        return True
+    return reverse not in result.stdout
+
+
+def reconcile_state():
+    """Restore state lost when the host-side OVS runtime is recreated.
+
+    The distributor VM and its JSON state survive an OVS pod restart, but the
+    OVS bridge, group, and flows do not.  Reconciliation is deliberately
+    conditional so a healthy datapath is not torn down and rebuilt every
+    interval.
+    """
+    state = _load_state()
+    if any(_runtime_needs_restore(vip_state)
+           for vip_state in state.get('vips', {}).values()):
+        restore_state()

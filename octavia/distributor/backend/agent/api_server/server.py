@@ -3,14 +3,43 @@
 
 """HTTP API for the OVS distributor agent."""
 
+import threading
+import time
+
 import flask
 from oslo_config import cfg
+from oslo_log import log as logging
 from werkzeug import exceptions
 
 from octavia.distributor.backend.agent.api_server import open_flow
 
 CONF = cfg.CONF
 CONF.import_group('distributor', 'octavia.common.config')
+LOG = logging.getLogger(__name__)
+
+_reconciler_started = False
+
+
+def start_reconciler(interval=5):
+    """Start the bounded background repair loop for OVS runtime loss."""
+    global _reconciler_started
+    if _reconciler_started:
+        return
+    _reconciler_started = True
+
+    def reconcile():
+        while True:
+            try:
+                open_flow.reconcile_state()
+            except Exception:
+                # OVS may still be starting or temporarily unavailable.  The
+                # next interval retries without taking down the REST agent.
+                LOG.warning('Distributor state reconciliation deferred',
+                            exc_info=True)
+            time.sleep(interval)
+
+    threading.Thread(target=reconcile, name='ovs-state-reconciler',
+                     daemon=True).start()
 
 
 class Server:

@@ -42,3 +42,50 @@ class TestOpenFlow(base.TestCase):
                       group_commands[0][-1])
         self.assertTrue(any(command[:2] == ['ovs-ofctl', 'add-flow']
                             for command in commands))
+
+    def test_runtime_needs_restore_when_bridge_is_missing(self):
+        state = {
+            'bridge': 'br-aa-test',
+            'group_id': 1234,
+            'amphora_macs': ['bb:bb:bb:bb:bb:bb'],
+        }
+        result = mock.Mock(returncode=2, stdout='')
+        with mock.patch.object(open_flow, '_run', return_value=result):
+            self.assertTrue(open_flow._runtime_needs_restore(state))
+
+    def test_runtime_needs_restore_when_group_is_missing(self):
+        state = {
+            'bridge': 'br-aa-test',
+            'group_id': 1234,
+            'amphora_macs': ['bb:bb:bb:bb:bb:bb'],
+        }
+        bridge = mock.Mock(returncode=0, stdout='')
+        groups = mock.Mock(returncode=0, stdout='NXST_GROUP_DESC reply')
+        with mock.patch.object(open_flow, '_run', side_effect=[bridge, groups]):
+            self.assertTrue(open_flow._runtime_needs_restore(state))
+
+    def test_runtime_does_not_require_group_without_active_amphora(self):
+        state = {
+            'bridge': 'br-aa-test',
+            'group_id': 1234,
+            'amphora_macs': [],
+        }
+        bridge = mock.Mock(returncode=0, stdout='')
+        with mock.patch.object(open_flow, '_run', return_value=bridge):
+            self.assertFalse(open_flow._runtime_needs_restore(state))
+
+    def test_runtime_needs_restore_when_vip_flow_is_missing(self):
+        state = {
+            'bridge': 'br-aa-test',
+            'group_id': 1234,
+            'vip': '10.0.0.10',
+            'amphora_macs': ['bb:bb:bb:bb:bb:bb'],
+        }
+        bridge = mock.Mock(returncode=0, stdout='')
+        groups = mock.Mock(returncode=0, stdout='group_id=1234')
+        flows = mock.Mock(
+            returncode=0,
+            stdout='nw_dst=10.0.0.10 actions=group:1234')
+        with mock.patch.object(open_flow, '_run',
+                               side_effect=[bridge, groups, flows]):
+            self.assertTrue(open_flow._runtime_needs_restore(state))

@@ -34,6 +34,14 @@ class DistributorAgent(gunicorn.app.base.BaseApplication):
         return self.application
 
 
+def _post_fork(gunicorn_server, worker):
+    # The agent uses gunicorn preload_app=True.  Start the reconciler after
+    # the worker fork so the thread belongs to the serving worker rather than
+    # disappearing with the preloaded master process.
+    del gunicorn_server, worker
+    server.start_reconciler()
+
+
 def main():
     service.prepare_service(sys.argv)
     if not CONF.distributor.agent_server_cert:
@@ -51,6 +59,7 @@ def main():
         'ca_certs': CONF.distributor.agent_server_ca,
         'cert_reqs': ssl.CERT_REQUIRED,
         'preload_app': True,
+        'post_fork': _post_fork,
         'accesslog': '-',
         'errorlog': '-',
         'loglevel': 'info',
