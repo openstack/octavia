@@ -28,7 +28,7 @@ from oslo_log import log as logging
 from oslo_serialization import jsonutils
 from oslo_utils import timeutils
 from oslo_utils import uuidutils
-from sqlalchemy.orm import noload
+from sqlalchemy.orm import raiseload
 from sqlalchemy.orm import Session
 from sqlalchemy.orm import subqueryload
 from sqlalchemy import select
@@ -262,7 +262,7 @@ class BaseRepository:
         else:
             query = query.filter_by(provisioning_status=consts.DELETED)
         # Do not load any relationship
-        query = query.options(noload('*'))
+        query = query.options(raiseload('*'))
         model_list = query.all()
 
         id_list = [model.id for model in model_list]
@@ -785,7 +785,7 @@ class LoadBalancerRepository(BaseRepository):
             subqueryload(models.LoadBalancer.pools),
             subqueryload(models.LoadBalancer.listeners),
             subqueryload(models.LoadBalancer._tags),
-            noload('*'))
+            raiseload('*'))
 
         return super().get_all_orm(
             session, pagination_helper=pagination_helper,
@@ -911,7 +911,7 @@ class HealthMonitorRepository(BaseRepository):
         query_options = (
             subqueryload(models.HealthMonitor.pool),
             subqueryload(models.HealthMonitor._tags),
-            noload('*'))
+            raiseload('*'))
 
         return super().get_all_orm(
             session, pagination_helper=pagination_helper,
@@ -977,7 +977,7 @@ class PoolRepository(BaseRepository):
             subqueryload(models.Pool.members),
             subqueryload(models.Pool.session_persistence),
             subqueryload(models.Pool._tags),
-            noload('*'))
+            raiseload('*'))
 
         return super().get_all_orm(
             session, pagination_helper=pagination_helper,
@@ -1013,7 +1013,7 @@ class MemberRepository(BaseRepository):
         query_options = (
             subqueryload(models.Member.pool),
             subqueryload(models.Member._tags),
-            noload('*'))
+            raiseload('*'))
 
         return super().get_all_orm(
             session, pagination_helper=pagination_helper,
@@ -1057,7 +1057,7 @@ class ListenerRepository(BaseRepository):
             subqueryload(models.Listener.sni_containers),
             subqueryload(models.Listener._tags),
             subqueryload(models.Listener.allowed_cidrs),
-            noload('*'))
+            raiseload('*'))
 
         return super().get_all_orm(
             session, pagination_helper=pagination_helper,
@@ -1268,7 +1268,7 @@ class AmphoraRepository(BaseRepository):
         # no-load (blank) the tables we don't need
         query_options = (
             subqueryload(models.Amphora.load_balancer),
-            noload('*'))
+            raiseload('*'))
 
         return super().get_all_orm(
             session, pagination_helper=pagination_helper,
@@ -1747,7 +1747,7 @@ class L7RuleRepository(BaseRepository):
         query_options = (
             subqueryload(models.L7Rule.l7policy),
             subqueryload(models.L7Rule._tags),
-            noload('*'))
+            raiseload('*'))
 
         return super().get_all_orm(
             session, pagination_helper=pagination_helper,
@@ -1836,30 +1836,16 @@ class L7PolicyRepository(BaseRepository):
         return data_model_list, links
 
     def get_all_API_list(self, session, pagination_helper=None, **filters):
-        deleted = filters.pop('show_deleted', True)
-        query = session.query(self.model_class).filter_by(
-            **filters)
-
-        query = query.options(
+        query_options = (
             subqueryload(models.L7Policy.l7rules),
             subqueryload(models.L7Policy.listener),
             subqueryload(models.L7Policy.redirect_pool),
             subqueryload(models.L7Policy._tags),
-            noload('*'))
+            raiseload('*'))
 
-        if not deleted:
-            query = query.filter(
-                self.model_class.provisioning_status != consts.DELETED)
-
-        if pagination_helper:
-            model_list, links = pagination_helper.apply(
-                query, self.model_class)
-        else:
-            links = None
-            model_list = query.order_by(self.model_class.position).all()
-
-        data_model_list = [model.to_data_model() for model in model_list]
-        return data_model_list, links
+        return super().get_all_orm(
+            session, pagination_helper=pagination_helper,
+            query_options=query_options, **filters)
 
     def update(self, session, id, **model_kwargs):
         l7policy_db = session.query(self.model_class).filter_by(
