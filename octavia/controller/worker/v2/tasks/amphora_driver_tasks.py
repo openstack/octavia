@@ -452,6 +452,25 @@ class AmphoraePostVIPPlug(BaseAmphoraTask):
                                       amphorae_network_config)
 
 
+class AmphoraPostARPDisable(BaseAmphoraTask):
+    """Make an active-active amphora silent for VIP ARP requests."""
+
+    def execute(self, amphora, amphorae_network_config):
+        amp_id = amphora[constants.ID]
+        port = amphorae_network_config[amp_id][constants.VRRP_PORT]
+        mac_address = port[constants.MAC_ADDRESS]
+        session = db_apis.get_session()
+        with session.begin():
+            db_amp = self.amphora_repo.get(session, id=amp_id)
+        self.amphora_driver.post_disable_arp(db_amp, mac_address)
+
+    def revert(self, result, amphora, *args, **kwargs):
+        if isinstance(result, failure.Failure):
+            return
+        LOG.warning('Reverting active-active ARP suppression on amphora %s',
+                    amphora[constants.ID])
+
+
 class AmphoraCertUpload(BaseAmphoraTask):
     """Upload a certificate to the amphora."""
 

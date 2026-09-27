@@ -1,0 +1,13 @@
+FROM localhost/2024.1-ubuntu_jammy:latest
+
+COPY . /opt/octavia-active-active
+
+# The base image already contains the stock Octavia distribution at the same
+# PBR version.  Force replacement so the active/active modules and entry
+# points are actually installed instead of being reported as satisfied.
+RUN PBR_VERSION=2024.1.0 python3 -m pip install --no-cache-dir --no-deps --force-reinstall /opt/octavia-active-active
+
+# The upstream packaging metadata does not include Alembic migration modules
+# added by this lab worktree.  Install the follow-up migration explicitly so
+# octavia-db-manage can advance an existing d5 database to the repaired head.
+COPY octavia/db/migration/alembic_migrations/versions/e8c1f2a3b4d5_seed_active_active_standby_role.py /var/lib/openstack/lib/python3.10/site-packages/octavia/db/migration/alembic_migrations/versions/

@@ -107,10 +107,20 @@ class ControllerWorker(object):
             self.services_controller.run_poster(func, *args, **kwargs)
         else:
             store = kwargs.pop('store', None)
-            tf = self.tf_engine.taskflow_load(
-                func(*args, **kwargs), store=store)
+            LOG.debug('Starting direct TaskFlow load for %s',
+                      getattr(func, '__name__', repr(func)))
+            LOG.debug('Building direct TaskFlow for %s',
+                      getattr(func, '__name__', repr(func)))
+            flow = func(*args, **kwargs)
+            LOG.debug('Built direct TaskFlow for %s',
+                      getattr(func, '__name__', repr(func)))
+            tf = self.tf_engine.taskflow_load(flow, store=store)
+            LOG.debug('Starting direct TaskFlow execution for %s',
+                      getattr(func, '__name__', repr(func)))
             with tf_logging.DynamicLoggingListener(tf, log=LOG):
                 tf.run()
+            LOG.debug('Completed direct TaskFlow execution for %s',
+                      getattr(func, '__name__', repr(func)))
 
     def delete_amphora(self, amphora_id):
         """Deletes an existing Amphora.
@@ -1022,6 +1032,10 @@ class ControllerWorker(object):
             if loadbalancer:
                 if loadbalancer.topology == constants.TOPOLOGY_ACTIVE_STANDBY:
                     lb_amp_count = 2
+                elif loadbalancer.topology == constants.TOPOLOGY_ACTIVE_ACTIVE:
+                    lb_amp_count = (
+                        CONF.controller_worker.active_active_desired_amphorae
+                        + 1)
                 elif loadbalancer.topology == constants.TOPOLOGY_SINGLE:
                     lb_amp_count = 1
 
@@ -1151,6 +1165,20 @@ class ControllerWorker(object):
                 amps.append(selected_amp.to_dict())
             return amps
 
+        if load_balancer.topology == constants.TOPOLOGY_ACTIVE_ACTIVE:
+            # Fail an active member before the spare.  The active-active
+            # worker flow promotes the spare and creates a replacement spare.
+            active = []
+            standby = []
+            for amp in load_balancer.amphorae:
+                if amp.status == constants.DELETED:
+                    continue
+                if amp.role == constants.ROLE_IN_CLUSTER_STANDBY:
+                    standby.append(amp.to_dict())
+                else:
+                    active.append(amp.to_dict())
+            return active + standby
+
         LOG.error('Unknown load balancer topology found: %s, aborting '
                   'failover.', load_balancer.topology)
         raise exceptions.InvalidTopology(topology=load_balancer.topology)
@@ -1189,6 +1217,13 @@ class ControllerWorker(object):
                     LOG.warning('%d amphorae found on load balancer %s where '
                                 'two should exist. Repairing.', len(amps),
                                 load_balancer_id)
+            elif lb.topology == constants.TOPOLOGY_ACTIVE_ACTIVE:
+                expected = (
+                    CONF.controller_worker.active_active_desired_amphorae + 1)
+                if len(amps) != expected:
+                    LOG.warning('%d amphorae found on load balancer %s where '
+                                '%d should exist. Repairing.', len(amps),
+                                load_balancer_id, expected)
             else:
                 LOG.error('Unknown load balancer topology found: %s, aborting '
                           'failover!', lb.topology)

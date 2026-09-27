@@ -425,6 +425,16 @@ class HaproxyAmphoraLoadBalancerDriver(
                         'skipping post_network_plug',
                         {'mac': port.mac_address})
 
+    def post_disable_arp(self, amphora, amphora_mac):
+        self._populate_amphora_api_version(amphora)
+        self.clients[amphora.api_version].disable_arp(
+            amphora, {'mac_address': amphora_mac})
+
+    def post_enable_arp(self, amphora, amphora_mac):
+        self._populate_amphora_api_version(amphora)
+        self.clients[amphora.api_version].enable_arp(
+            amphora, {'mac_address': amphora_mac})
+
     def _process_tls_certificates(self, listener, amphora=None, obj_id=None):
         """Processes TLS data from the listener.
 
@@ -614,6 +624,19 @@ class HaproxyAmphoraLoadBalancerDriver(
         except exc.NotFound as e:
             LOG.debug('Amphora %s does not support the set_interface_rules '
                       'API.', amphora.id)
+            raise driver_except.AmpDriverNotImplementedError() from e
+
+    def set_gateway_mac(self, amphora: db_models.Amphora, vip_ip,
+                        gateway, gateway_mac, timeout_dict=None):
+        """Persist the active/active distributor neighbor on an amphora."""
+        self._populate_amphora_api_version(amphora, timeout_dict)
+        try:
+            self.clients[amphora.api_version].set_gateway_mac(
+                amphora, vip_ip, gateway, gateway_mac,
+                timeout_dict=timeout_dict)
+        except exc.NotFound as e:
+            LOG.debug('Amphora %s does not support gateway pinning.',
+                      amphora.id)
             raise driver_except.AmpDriverNotImplementedError() from e
 
 
@@ -859,6 +882,14 @@ class AmphoraAPIClient1_0(AmphoraAPIClientBase):
                       json=net_info)
         return exc.check_exception(r)
 
+    def enable_arp(self, amp, net_info):
+        r = self.post(amp, 'arp/enable', json=net_info)
+        return exc.check_exception(r)
+
+    def disable_arp(self, amp, net_info):
+        r = self.post(amp, 'arp/disable', json=net_info)
+        return exc.check_exception(r)
+
     def upload_vrrp_config(self, amp, config):
         r = self.put(amp, 'vrrp/upload', data=config)
         return exc.check_exception(r)
@@ -889,4 +920,10 @@ class AmphoraAPIClient1_0(AmphoraAPIClientBase):
     def set_interface_rules(self, amp, ip_address, rules, timeout_dict=None):
         r = self.put(amp, f'interface/{ip_address}/rules', timeout_dict,
                      json=rules)
+        return exc.check_exception(r)
+
+    def set_gateway_mac(self, amp, vip_ip, gateway, gateway_mac,
+                        timeout_dict=None):
+        r = self.put(amp, f'interface/{vip_ip}/gateway', timeout_dict,
+                     json={'gateway': gateway, 'gateway_mac': gateway_mac})
         return exc.check_exception(r)

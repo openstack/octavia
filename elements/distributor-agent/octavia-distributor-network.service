@@ -1,0 +1,13 @@
+[Unit]
+Description=Configure Octavia distributor interfaces
+Before=network-online.target
+Wants=network-online.target
+After=local-fs.target
+
+[Service]
+Type=oneshot
+ExecStart=/bin/sh -c 'for path in /sys/class/net/*; do iface=${path##*/}; [ "$iface" = lo ] && continue; ip link set "$iface" up; dhclient -1 -timeout 10 "$iface" || true; done'
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target

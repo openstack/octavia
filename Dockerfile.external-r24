@@ -1,0 +1,7 @@
+FROM localhost/octavia-aa:2024.1-r23
+
+COPY . /opt/octavia-active-active
+
+RUN PBR_VERSION=2024.1.0 python3 -m pip install --no-cache-dir --no-deps --force-reinstall /opt/octavia-active-active
+
+COPY octavia/db/migration/alembic_migrations/versions/e8c1f2a3b4d5_seed_active_active_standby_role.py /var/lib/openstack/lib/python3.10/site-packages/octavia/db/migration/alembic_migrations/versions/

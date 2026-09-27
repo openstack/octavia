@@ -24,6 +24,7 @@ from werkzeug import exceptions
 
 from octavia.amphorae.backends.agent import api_server
 from octavia.amphorae.backends.agent.api_server import amphora_info
+from octavia.amphorae.backends.agent.api_server import arp
 from octavia.amphorae.backends.agent.api_server import certificate_update
 from octavia.amphorae.backends.agent.api_server import keepalived
 from octavia.amphorae.backends.agent.api_server import keepalivedlvs
@@ -140,8 +141,18 @@ class Server(object):
         self.app.add_url_rule(rule=PATH_PREFIX + '/interface/<ip_addr>',
                               view_func=self.get_interface,
                               methods=['GET'])
+        self.app.add_url_rule(rule=PATH_PREFIX + '/arp/disable',
+                              view_func=self.disable_arp,
+                              methods=['POST'])
+        self.app.add_url_rule(rule=PATH_PREFIX + '/arp/enable',
+                              view_func=self.enable_arp,
+                              methods=['POST'])
         self.app.add_url_rule(rule=PATH_PREFIX + '/interface/<ip_addr>/rules',
                               view_func=self.set_interface_rules,
+                              methods=['PUT'])
+        self.app.add_url_rule(rule=PATH_PREFIX +
+                              '/interface/<ip_addr>/gateway',
+                              view_func=self.set_interface_gateway,
                               methods=['PUT'])
 
     def upload_haproxy_config(self, amphora_id, lb_id):
@@ -238,6 +249,22 @@ class Server(object):
     def get_interface(self, ip_addr):
         return self._amphora_info.get_interface(ip_addr)
 
+    def disable_arp(self):
+        return self._set_arp_behavior(8)
+
+    def enable_arp(self):
+        return self._set_arp_behavior(0)
+
+    def _set_arp_behavior(self, value):
+        try:
+            net_info = flask.request.get_json()
+            assert isinstance(net_info, dict)
+            assert net_info.get('mac_address')
+        except Exception as exc:
+            raise exceptions.BadRequest(
+                description='Needs mac_address information') from exc
+        return arp.enable_or_disable(value, net_info['mac_address'])
+
     def upload_config(self):
         try:
             stream = flask.request.stream
@@ -284,3 +311,16 @@ class Server(object):
         nftable_utils.load_nftables_file()
 
         return webob.Response(json={'message': 'OK'}, status=200)
+
+    def set_interface_gateway(self, ip_addr):
+        try:
+            gateway_info = flask.request.get_json()
+            assert isinstance(gateway_info, dict)
+            assert gateway_info.get('gateway')
+            assert gateway_info.get('gateway_mac')
+        except Exception as exc:
+            raise exceptions.BadRequest(
+                description='Invalid gateway information') from exc
+
+        return self._plug.set_gateway_mac(
+            ip_addr, gateway_info['gateway'], gateway_info['gateway_mac'])

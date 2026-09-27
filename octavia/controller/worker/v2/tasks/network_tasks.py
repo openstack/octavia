@@ -1006,6 +1006,42 @@ class CreateVIPBasePort(BaseNetworkTask):
                       result, amphora_id, str(e), port_name)
 
 
+class CreateDistributorFrontendPort(BaseNetworkTask):
+    """Reuse the LB VIP port as the distributor's frontend port.
+
+    This task runs before active amphora network configuration.  Clear the
+    provisional Octavia ownership and bind the VIP port as the distributor's
+    frontend NIC, so floating-IP NAT has a bound destination.
+    """
+
+    def execute(self, loadbalancer, vip, distributor_id):
+        del loadbalancer, distributor_id
+        port = self.network_driver.get_port(vip[constants.PORT_ID])
+        attrs = dict(admin_state_up=True, port_security_enabled=False,
+                     security_groups=[], allowed_address_pairs=[],
+                     device_id='', device_owner='')
+        if CONF.controller_worker.external_distributor_enabled:
+            attrs['binding_host_id'] = (
+                CONF.controller_worker.external_distributor_host_id)
+        self.network_driver.network_proxy.update_port(port.id, **attrs)
+        port = self.network_driver.get_port(port.id)
+        return port.to_dict(recurse=True)
+
+    def revert(self, result, *args, **kwargs):
+        if isinstance(result, failure.Failure):
+            return
+        LOG.debug('Leaving reused VIP port %s for normal LB cleanup',
+                  result.get(constants.ID))
+
+
+class ReleaseDistributorFrontendPort(BaseNetworkTask):
+    """Release the distributor reference without deleting the VIP port."""
+
+    def execute(self, distributor_id):
+        LOG.debug('Distributor %s reused the LB VIP port; normal Octavia '
+                  'VIP cleanup owns its lifecycle', distributor_id)
+
+
 class AdminDownPort(BaseNetworkTask):
 
     def execute(self, port_id):

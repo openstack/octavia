@@ -122,7 +122,8 @@ class LoadBalancersController(base.BaseController):
 
     @staticmethod
     def _validate_network_and_fill_or_validate_subnet(load_balancer,
-                                                      context=None):
+                                                      context=None,
+                                                      topology=None):
         network = validate.network_exists_optionally_contains_subnet(
             network_id=load_balancer.vip_network_id,
             subnet_id=load_balancer.vip_subnet_id,
@@ -150,12 +151,18 @@ class LoadBalancersController(base.BaseController):
                     ))
                 ip_avail = network_driver.get_network_ip_availability(
                     network)
-                if (CONF.controller_worker.loadbalancer_topology ==
+                topology = topology or CONF.controller_worker.loadbalancer_topology
+                if (topology ==
                         constants.TOPOLOGY_SINGLE):
                     num_req_ips = 2
-                if (CONF.controller_worker.loadbalancer_topology ==
+                if (topology ==
                         constants.TOPOLOGY_ACTIVE_STANDBY):
                     num_req_ips = 3
+                if (topology ==
+                        constants.TOPOLOGY_ACTIVE_ACTIVE):
+                    num_req_ips = (
+                        CONF.controller_worker.active_active_desired_amphorae
+                        + 2)
                 subnets = [subnet_id for subnet_id in network.subnets if
                            utils.subnet_ip_availability(ip_avail, subnet_id,
                                                         num_req_ips)]
@@ -250,7 +257,8 @@ class LoadBalancersController(base.BaseController):
         for vip in load_balancer.additional_vips:
             vip.network_id = used_subnets[vip.subnet_id].network_id
 
-    def _validate_vip_request_object(self, load_balancer, context=None):
+    def _validate_vip_request_object(self, load_balancer, context=None,
+                                     topology=None):
         allowed_network_objects = []
         if CONF.networking.allow_vip_port_id:
             allowed_network_objects.append('vip_port_id')
@@ -287,7 +295,8 @@ class LoadBalancersController(base.BaseController):
         # If no port id, validate the network id (and subnet if provided)
         elif load_balancer.vip_network_id:
             self._validate_network_and_fill_or_validate_subnet(load_balancer,
-                                                               context=context)
+                                                               context=context,
+                                                               topology=topology)
         # Validate just the subnet id
         elif load_balancer.vip_subnet_id:
             subnet = validate.subnet_exists(
@@ -450,7 +459,26 @@ class LoadBalancersController(base.BaseController):
         self._auth_validate_action(context, load_balancer.project_id,
                                    constants.RBAC_POST)
 
-        self._validate_vip_request_object(load_balancer, context=context)
+        # Flavor metadata is applied later when the DB load balancer dict is
+        # built, but VIP subnet selection must already reserve enough
+        # addresses for the selected topology.  Resolve the topology here so
+        # an ACTIVE_ACTIVE flavor gets the N+2 capacity check even when the
+        # global default remains ACTIVE_STANDBY or SINGLE.
+        topology = CONF.controller_worker.loadbalancer_topology
+        if not isinstance(load_balancer.flavor_id, wtypes.UnsetType):
+            try:
+                with context.session.begin():
+                    flavor_metadata = (
+                        self.repositories.flavor.get_flavor_metadata_dict(
+                            context.session, load_balancer.flavor_id))
+            except sa_exception.NoResultFound as e:
+                raise exceptions.ValidationException(
+                    detail=_("Invalid flavor_id.")) from e
+            topology = flavor_metadata.get(constants.LOADBALANCER_TOPOLOGY,
+                                           topology)
+
+        self._validate_vip_request_object(load_balancer, context=context,
+                                          topology=topology)
 
         self._validate_flavor(context.session, load_balancer)
 

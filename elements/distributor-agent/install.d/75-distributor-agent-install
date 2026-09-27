@@ -1,0 +1,49 @@
+#!/bin/bash
+
+set -eu
+set -o pipefail
+
+python3 -m pip install --no-cache-dir -r /opt/distributor-agent/requirements.txt
+python3 -m pip install --no-cache-dir /opt/distributor-agent
+
+install -d -m 0750 /etc/octavia/certs /var/lib/octavia/distributor
+cat > /etc/systemd/system/octavia-distributor-agent.service <<'EOF'
+[Unit]
+Description=Octavia active-active distributor agent
+After=local-fs.target
+
+[Service]
+Type=simple
+ExecStartPre=/bin/sh -c 'exec >>/var/log/octavia-distributor-agent.log 2>&1; echo "bootstrap start $(date -Is)"; if [ ! -s /etc/octavia/distributor-agent.conf ]; then mkdir -p /etc/octavia/certs /mnt/configdrive; for attempt in $(seq 1 30); do for dev in /dev/sr0 /dev/hda /dev/hdc /dev/disk/by-label/config-2; do echo "attempt=$attempt device=$dev"; if mount -t iso9660 -o ro "$dev" /mnt/configdrive; then echo "mounted $dev"; if [ -s /mnt/configdrive/openstack/content/0002 ]; then cp /mnt/configdrive/openstack/content/0000 /etc/octavia/certs/client_ca.pem && cp /mnt/configdrive/openstack/content/0001 /etc/octavia/certs/server.pem && cp /mnt/configdrive/openstack/content/0002 /etc/octavia/distributor-agent.conf; umount /mnt/configdrive; echo "bootstrap complete"; exit 0; fi; umount /mnt/configdrive; fi; done; sleep 2; done; echo "config-drive not available after 60 seconds"; exit 1; fi'
+ExecStart=/bin/sh -c 'exec >>/var/log/octavia-distributor-agent.log 2>&1; echo "agent start $(date -Is)"; exec /usr/local/bin/octavia-distributor-agent --config-file /etc/octavia/distributor-agent.conf'
+Restart=on-failure
+RestartSec=5s
+User=root
+
+[Install]
+WantedBy=basic.target
+EOF
+cat > /etc/systemd/system/octavia-distributor-network.service <<'EOF'
+[Unit]
+Description=Configure Octavia distributor interfaces
+Before=network-online.target
+Wants=network-online.target
+After=local-fs.target
+
+[Service]
+Type=oneshot
+ExecStart=/bin/sh -c 'for path in /sys/class/net/*; do iface=${path##*/}; [ "$iface" = lo ] && continue; ip link set "$iface" up; dhclient -1 -timeout 10 "$iface" || true; done'
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target
+EOF
+install -d -m 0755 /etc/systemd/network
+cat > /etc/systemd/network/10-octavia-distributor-dhcp.network <<'EOF'
+[Match]
+Name=en*
+
+[Network]
+DHCP=yes
+IPv6AcceptRA=no
+EOF

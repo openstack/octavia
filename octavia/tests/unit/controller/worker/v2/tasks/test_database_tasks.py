@@ -206,7 +206,8 @@ class TestDatabaseTasks(base.TestCase):
             id=AMP_ID,
             load_balancer_id=None,
             status=constants.PENDING_CREATE,
-            cert_busy=False)
+            cert_busy=False,
+            service_type=constants.AMPHORA_TYPE_LOADBALANCER)
 
         self.assertEqual(_db_amphora_mock.id, amp_id)
 

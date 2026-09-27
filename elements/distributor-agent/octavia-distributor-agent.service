@@ -1,0 +1,14 @@
+[Unit]
+Description=Octavia active-active distributor agent
+After=local-fs.target
+
+[Service]
+Type=simple
+ExecStartPre=/bin/sh -c 'exec >>/var/log/octavia-distributor-agent.log 2>&1; echo "bootstrap start $(date -Is)"; if [ ! -s /etc/octavia/distributor-agent.conf ]; then mkdir -p /etc/octavia/certs /mnt/configdrive; for attempt in $(seq 1 30); do for dev in /dev/sr0 /dev/hda /dev/hdc /dev/disk/by-label/config-2; do echo "attempt=$attempt device=$dev"; if mount -t iso9660 -o ro "$dev" /mnt/configdrive; then echo "mounted $dev"; if [ -s /mnt/configdrive/openstack/content/0002 ]; then cp /mnt/configdrive/openstack/content/0000 /etc/octavia/certs/client_ca.pem && cp /mnt/configdrive/openstack/content/0001 /etc/octavia/certs/server.pem && cp /mnt/configdrive/openstack/content/0002 /etc/octavia/distributor-agent.conf; umount /mnt/configdrive; echo "bootstrap complete"; exit 0; fi; umount /mnt/configdrive; fi; done; sleep 2; done; echo "config-drive not available after 60 seconds"; exit 1; fi'
+ExecStart=/bin/sh -c 'exec >>/var/log/octavia-distributor-agent.log 2>&1; echo "agent start $(date -Is)"; exec /usr/local/bin/octavia-distributor-agent --config-file /etc/octavia/distributor-agent.conf'
+Restart=on-failure
+RestartSec=5s
+User=root
+
+[Install]
+WantedBy=basic.target

@@ -156,7 +156,8 @@ def db_loadbalancer_to_provider_loadbalancer(db_loadbalancer,
         db_pools=db_loadbalancer.pools,
         db_listeners=db_loadbalancer.listeners, for_delete=for_delete)
     for unsupported_field in ['server_group_id', 'amphorae',
-                              'vrrp_group', 'topology', 'vip']:
+                              'vrrp_group', 'topology', 'vip',
+                              'distributor_id', 'distributor']:
         if unsupported_field in new_loadbalancer_dict:
             del new_loadbalancer_dict[unsupported_field]
     provider_loadbalancer = driver_dm.LoadBalancer.from_dict(

@@ -1,16 +1,39 @@
 #!/bin/bash
 
-cryptsetup_args="--type=luks1"
+set -eu
 
-# Only 1 block ram device is needed
-modprobe brd rd_nr=1
+# Nova supplies the amphora configuration and certificates as config-drive
+# files.  cloud-init's OpenStack datasource exposes the metadata but does not
+# materialize these files on this Jammy base image, so bootstrap them before
+# the certificate tmpfs and amphora-agent dependencies are started.
+if [ ! -s /etc/octavia/amphora-agent.conf ]; then
+    mkdir -p /etc/octavia/certs /mnt/configdrive
+    for attempt in $(seq 1 30); do
+        for dev in /dev/sr0 /dev/hda /dev/hdc /dev/disk/by-label/config-2; do
+            if mount -t iso9660 -o ro "$dev" /mnt/configdrive 2>/dev/null; then
+                if [ -s /mnt/configdrive/openstack/content/0000 ] &&
+                   [ -s /mnt/configdrive/openstack/content/0001 ] &&
+                   [ -s /mnt/configdrive/openstack/content/0002 ]; then
+                    install -m 0644 /mnt/configdrive/openstack/content/0000 \
+                        /etc/octavia/amphora-agent.conf
+                    install -m 0644 /mnt/configdrive/openstack/content/0001 \
+                        /etc/octavia/certs/client_ca.pem
+                    install -m 0644 /mnt/configdrive/openstack/content/0002 \
+                        /etc/octavia/certs/server.pem
+                    if [ -s /mnt/configdrive/openstack/content/0003 ]; then
+                        install -m 0644 /mnt/configdrive/openstack/content/0003 \
+                            /etc/rsyslog.d/10-rsyslog.conf
+                    fi
+                    umount /mnt/configdrive
+                    break 2
+                fi
+                umount /mnt/configdrive
+            fi
+        done
+        sleep 1
+    done
+fi
 
-passphrase=$(head /dev/urandom | tr -dc "a-zA-Z0-9" | fold -w 32 | head -n 1)
 certs_path=$(awk "/base_cert_dir / {printf \$3}" /etc/octavia/amphora-agent.conf)
 mkdir -p "${certs_path}"
-
-echo -n "${passphrase}" | cryptsetup $cryptsetup_args luksFormat /dev/ram0 -
-echo -n "${passphrase}" | cryptsetup $cryptsetup_args luksOpen /dev/ram0 certfs-ramfs -
-
-mkfs.ext2 /dev/mapper/certfs-ramfs
-mount /dev/mapper/certfs-ramfs "${certs_path}"
+mount -t tmpfs -o size=16M certfs-ramfs "${certs_path}"

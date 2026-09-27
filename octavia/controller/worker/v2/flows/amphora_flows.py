@@ -25,6 +25,8 @@ from octavia.controller.worker.v2.tasks import amphora_driver_tasks
 from octavia.controller.worker.v2.tasks import cert_task
 from octavia.controller.worker.v2.tasks import compute_tasks
 from octavia.controller.worker.v2.tasks import database_tasks
+from octavia.controller.worker.v2.tasks import distributor_tasks
+from octavia.controller.worker.v2.flows import distributor_flows
 from octavia.controller.worker.v2.tasks import lifecycle_tasks
 from octavia.controller.worker.v2.tasks import network_tasks
 from octavia.controller.worker.v2.tasks import retry_tasks
@@ -35,6 +37,9 @@ LOG = logging.getLogger(__name__)
 
 
 class AmphoraFlows(object):
+
+    def __init__(self):
+        self.distributor_flows = distributor_flows.DistributorFlows()
 
     def get_create_amphora_flow(self):
         """Creates a flow to create an amphora.
@@ -144,6 +149,16 @@ class AmphoraFlows(object):
             create_amp_for_lb_subflow.add(
                 database_tasks.MarkAmphoraStandAloneInDB(
                     name=sf_name + '-' + constants.MARK_AMP_STANDALONE_INDB,
+                    requires=constants.AMPHORA))
+        elif role == constants.ROLE_IN_CLUSTER:
+            create_amp_for_lb_subflow.add(
+                database_tasks.MarkAmphoraInClusterInDB(
+                    name=sf_name + '-mark-amp-in-cluster',
+                    requires=constants.AMPHORA))
+        elif role == constants.ROLE_IN_CLUSTER_STANDBY:
+            create_amp_for_lb_subflow.add(
+                database_tasks.MarkAmphoraInClusterStandbyInDB(
+                    name=sf_name + '-mark-amp-in-cluster-standby',
                     requires=constants.AMPHORA))
 
         return create_amp_for_lb_subflow
@@ -475,6 +490,15 @@ class AmphoraFlows(object):
             requires=(constants.AMPHORA, constants.LOADBALANCER,
                       constants.AMPHORAE_NETWORK_CONFIG)))
 
+        if (flavor_dict and flavor_dict.get(
+                constants.LOADBALANCER_TOPOLOGY) ==
+                constants.TOPOLOGY_ACTIVE_ACTIVE):
+            amp_for_failover_flow.add(
+                amphora_driver_tasks.AmphoraPostARPDisable(
+                    name=prefix + '-disable-arp',
+                    requires=(constants.AMPHORA,
+                              constants.AMPHORAE_NETWORK_CONFIG)))
+
         if flavor_dict and flavor_dict.get(constants.SRIOV_VIP, False):
             amp_for_failover_flow.add(
                 shim_tasks.AmphoraToAmphoraeWithVRRPIP(
@@ -574,6 +598,23 @@ class AmphoraFlows(object):
             requires=constants.AMPHORA,
             inject={constants.AMPHORA: failed_amphora}))
 
+        active_active = (flavor_dict and flavor_dict.get(
+            constants.LOADBALANCER_TOPOLOGY) ==
+            constants.TOPOLOGY_ACTIVE_ACTIVE)
+        replacement_role = constants.ROLE_IN_CLUSTER_STANDBY
+        if not active_active:
+            replacement_role = failed_amphora[constants.ROLE]
+
+        if active_active and failed_amphora.get(constants.ROLE) == \
+                constants.ROLE_IN_CLUSTER:
+            failover_amp_flow.add(
+                distributor_tasks.GetDistributorIDFromLoadbalancer(
+                    requires=constants.LOADBALANCER,
+                    provides=constants.DISTRIBUTOR_ID))
+            failover_amp_flow.add(
+                self.distributor_flows.get_unregister_amphora_flow(
+                    failed_amphora))
+
         failover_amp_flow.add(network_tasks.GetVIPSecurityGroupID(
             requires=constants.LOADBALANCER_ID,
             provides=constants.VIP_SG_ID))
@@ -594,7 +635,7 @@ class AmphoraFlows(object):
             #               delete amphora API is available.
             failover_amp_flow.add(self.get_amphora_for_lb_failover_subflow(
                 prefix=constants.FAILOVER_LOADBALANCER_FLOW,
-                role=failed_amphora[constants.ROLE],
+                role=replacement_role,
                 failed_amp_vrrp_port_id=failed_amphora.get(
                     constants.VRRP_PORT_ID),
                 is_vrrp_ipv6=is_vrrp_ipv6, flavor_dict=flavor_dict))
@@ -641,6 +682,20 @@ class AmphoraFlows(object):
                 rebind={constants.NEW_AMPHORA_ID: constants.AMPHORA_ID},
                 inject={constants.TIMEOUT_DICT: timeout_dict},
                 provides=constants.AMPHORAE_STATUS))
+
+        if active_active:
+            failover_amp_flow.add(
+                database_tasks.PromoteAmphoraInClusterStandbyInDB(
+                    requires=constants.LOADBALANCER,
+                    inject={'promote_standby':
+                            failed_amphora.get(constants.ROLE) ==
+                            constants.ROLE_IN_CLUSTER}))
+            failover_amp_flow.add(
+                distributor_tasks.GetDistributorIDFromLoadbalancer(
+                    requires=constants.LOADBALANCER,
+                    provides=constants.DISTRIBUTOR_ID))
+            failover_amp_flow.add(
+                self.distributor_flows.get_register_amphorae_flow())
 
         # Listeners update needs to be run on all amphora to update
         # their peer configurations. So parallelize this with an

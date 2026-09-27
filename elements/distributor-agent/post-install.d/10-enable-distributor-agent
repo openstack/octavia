@@ -1,0 +1,5 @@
+#!/bin/bash
+
+set -eu
+systemctl enable octavia-distributor-agent.service
+systemctl enable octavia-distributor-network.service
