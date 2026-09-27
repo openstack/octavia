@@ -43,17 +43,20 @@ class DistributorFlows:
         flow.add(cert_task.GenerateServerPEMTask(
             rebind={'amphora_id': constants.DISTRIBUTOR_ID},
             provides=constants.DISTRIBUTOR_SERVER_PEM))
-        flow.add(compute_tasks.DistributorComputeCreate(
-            rebind={'distributor_id': constants.DISTRIBUTOR_ID,
-                    'server_pem': constants.DISTRIBUTOR_SERVER_PEM,
-                    'distributor_port': constants.DISTRIBUTOR_PORT},
-            provides=constants.DISTRIBUTOR_COMPUTE_ID))
-        wait_flow = linear_flow.Flow(
-            'wait-for-distributor', retry=compute_tasks.ComputeRetry())
-        wait_flow.add(compute_tasks.DistributorComputeWait(
-            rebind={'compute_id': constants.DISTRIBUTOR_COMPUTE_ID},
-            provides=constants.DISTRIBUTOR_COMPUTE))
-        flow.add(wait_flow)
+        if CONF.controller_worker.external_distributor_enabled:
+            flow.add(compute_tasks.ExternalDistributorCompute())
+        else:
+            flow.add(compute_tasks.DistributorComputeCreate(
+                rebind={'distributor_id': constants.DISTRIBUTOR_ID,
+                        'server_pem': constants.DISTRIBUTOR_SERVER_PEM,
+                        'distributor_port': constants.DISTRIBUTOR_PORT},
+                provides=constants.DISTRIBUTOR_COMPUTE_ID))
+            wait_flow = linear_flow.Flow(
+                'wait-for-distributor', retry=compute_tasks.ComputeRetry())
+            wait_flow.add(compute_tasks.DistributorComputeWait(
+                rebind={'compute_id': constants.DISTRIBUTOR_COMPUTE_ID},
+                provides=constants.DISTRIBUTOR_COMPUTE))
+            flow.add(wait_flow)
         flow.add(distributor_tasks.CreateDistributorInDB(
             requires=(constants.DISTRIBUTOR_ID,
                       constants.LOADBALANCER,

@@ -259,6 +259,25 @@ class DistributorComputeCreate(BaseComputeTask):
             LOG.exception('Failed to delete distributor compute %s', result)
 
 
+class ExternalDistributorCompute(task.Task):
+    """Return the pre-existing external distributor identity."""
+
+    default_provides = constants.DISTRIBUTOR_COMPUTE
+
+    def execute(self):
+        if not CONF.controller_worker.external_distributor_id:
+            raise exceptions.ComputeBuildException(
+                fault='external_distributor_id is not configured')
+        if not CONF.controller_worker.external_distributor_address:
+            raise exceptions.ComputeBuildException(
+                fault='external_distributor_address is not configured')
+        return {
+            constants.COMPUTE_ID:
+                CONF.controller_worker.external_distributor_id,
+            constants.LB_NETWORK_IP:
+                str(CONF.controller_worker.external_distributor_address)}
+
+
 class DistributorComputeWait(BaseComputeTask):
     """Wait until the distributor VM has a management address."""
 

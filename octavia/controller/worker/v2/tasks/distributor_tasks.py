@@ -88,6 +88,10 @@ class DeleteDistributorCompute(BaseDistributorTask):
         with session.begin():
             distributor = self.distributor_repo.get(session,
                                                     id=distributor_id)
+        if (CONF.controller_worker.external_distributor_enabled and
+                distributor and distributor.compute_id ==
+                CONF.controller_worker.external_distributor_id):
+            return
         if distributor and distributor.compute_id:
             self.compute.delete(distributor.compute_id)
 
@@ -167,6 +171,11 @@ class MarkDistributorDeletedInDB(BaseDistributorTask):
 
 class GenerateDistributorId(task.Task):
     def execute(self):
+        if CONF.controller_worker.external_distributor_enabled:
+            # The standalone distributor has one stable certificate identity;
+            # use that identity for every DB row instead of generating a
+            # per-load-balancer UUID that the external agent cannot present.
+            return CONF.controller_worker.external_distributor_id
         return uuidutils.generate_uuid()
 
 

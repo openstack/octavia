@@ -1017,10 +1017,13 @@ class CreateDistributorFrontendPort(BaseNetworkTask):
     def execute(self, loadbalancer, vip, distributor_id):
         del loadbalancer, distributor_id
         port = self.network_driver.get_port(vip[constants.PORT_ID])
-        self.network_driver.network_proxy.update_port(
-            port.id, admin_state_up=True, port_security_enabled=False,
-            security_groups=[], allowed_address_pairs=[], device_id='',
-            device_owner='')
+        attrs = dict(admin_state_up=True, port_security_enabled=False,
+                     security_groups=[], allowed_address_pairs=[],
+                     device_id='', device_owner='')
+        if CONF.controller_worker.external_distributor_enabled:
+            attrs['binding_host_id'] = (
+                CONF.controller_worker.external_distributor_host_id)
+        self.network_driver.network_proxy.update_port(port.id, **attrs)
         port = self.network_driver.get_port(port.id)
         return port.to_dict(recurse=True)
 

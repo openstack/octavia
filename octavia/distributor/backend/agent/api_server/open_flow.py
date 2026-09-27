@@ -20,6 +20,7 @@ STATE_PATH = os.environ.get(
     'OCTAVIA_DISTRIBUTOR_STATE',
     '/var/lib/octavia/distributor/state.json')
 DEFAULT_BRIDGE = os.environ.get('OCTAVIA_DISTRIBUTOR_BRIDGE', 'br-int')
+EXTERNAL_VIF = os.environ.get('OCTAVIA_DISTRIBUTOR_EXTERNAL_VIF', '') == '1'
 
 
 def _run(command, check=True):
@@ -71,6 +72,16 @@ def bridge_name(load_balancer_id):
 
 
 def _ensure_frontend_bridge(interface, bridge=None):
+    if EXTERNAL_VIF:
+        # Keep the OVN logical port on br-int. The external VIF plugger
+        # connects its OVN-side patch endpoint to this bridge; moving the
+        # OVN VIF itself would make OVN unbind it.
+        # The OVN-facing patch endpoint is on a shared bridge on the
+        # external chassis. Keep the Linux bridge name <= 15 bytes because
+        # OVS cannot create an internal interface with a longer name.
+        bridge = DEFAULT_BRIDGE
+        _run(['ovs-vsctl', '--may-exist', 'add-br', bridge], check=False)
+        return bridge
     bridge = bridge or _bridge_for(interface)
     _run(['ovs-vsctl', '--may-exist', 'add-br', bridge], check=False)
     _run(['ovs-vsctl', '--may-exist', 'add-port', bridge, interface],
@@ -82,6 +93,16 @@ def interface_for_mac(mac_address, fallback='auto'):
     """Resolve a dynamically named Nova/Neutron interface by MAC."""
     if fallback and fallback != 'auto':
         return fallback
+    if EXTERNAL_VIF:
+        result = _run([
+            'ovs-vsctl', '--format=csv', '--data=bare', '--no-heading',
+            '--columns=name', 'find', 'Interface',
+            'external_ids:external-distributor-mac="{0}"'.format(
+                mac_address)], check=False)
+        for line in result.stdout.splitlines():
+            name = line.strip().strip('"')
+            if name:
+                return name
     result = _run(['ip', '-o', 'link', 'show'], check=False)
     wanted = mac_address.lower()
     for line in result.stdout.splitlines():

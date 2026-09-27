@@ -84,14 +84,20 @@ class LoadBalancerFlows(object):
             provides=constants.SUBNET))
 
         if topology == constants.TOPOLOGY_ACTIVE_ACTIVE:
+            external = CONF.controller_worker.external_distributor_enabled
+            vm_missing = (
+                not CONF.controller_worker.distributor_image_tag or
+                not CONF.controller_worker.distributor_flavor_id or
+                not any((CONF.controller_worker.distributor_boot_network_list,
+                         CONF.controller_worker.amp_boot_network_list)))
+            external_missing = (
+                not CONF.controller_worker.external_distributor_id or
+                not CONF.controller_worker.external_distributor_address or
+                not CONF.controller_worker.external_distributor_host_id)
             if (not CONF.controller_worker.active_active_enabled or
                     CONF.controller_worker.distributor_driver ==
                     'distributor_noop_driver' or
-                    not CONF.controller_worker.distributor_image_tag or
-                    not CONF.controller_worker.distributor_flavor_id or
-                    not any((
-                        CONF.controller_worker.distributor_boot_network_list,
-                             CONF.controller_worker.amp_boot_network_list)) or
+                    (vm_missing if not external else external_missing) or
                     not CONF.distributor.client_cert or
                     not CONF.distributor.client_ca):
                 raise exceptions.InvalidTopology(topology=topology)
