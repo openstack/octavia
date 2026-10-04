@@ -126,9 +126,12 @@ def run_sender(cmd_queue):
             sender.dosend(message)
         except OSError as e:
             if e.errno == errno.ENOENT:
-                # Missing PID file, skip health heartbeat.
-                LOG.error('Missing keepalived PID file %s, skipping health '
-                          'heartbeat.', keepalived_pid_path)
+                # Missing PID file: this is a normal transient state,
+                # for example when the VIP plug flow wrote the
+                # keepalived configuration but did not start
+                # keepalived yet. Skip health heartbeat.
+                LOG.warning('Missing keepalived PID file %s, skipping '
+                            'health heartbeat.', keepalived_pid_path)
             elif e.errno == errno.ESRCH:
                 # Keepalived is not running, skip health heartbeat.
                 LOG.error('Keepalived is configured but not running, '

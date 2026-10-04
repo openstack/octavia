@@ -240,8 +240,11 @@ class TestHealthDaemon(base.TestCase):
         with mock.patch('octavia.amphorae.backends.health_daemon.'
                         'health_daemon.open', mock.mock_open()) as mock_open:
             mock_open.side_effect = FileNotFoundError
-            test_queue.put('shutdown')
-            health_daemon.run_sender(test_queue)
+            with mock.patch.object(health_daemon, 'LOG') as mock_log:
+                test_queue.put('shutdown')
+                health_daemon.run_sender(test_queue)
+                mock_log.warning.assert_called_once()
+                mock_log.error.assert_not_called()
             mock_build_msg.assert_not_called()
             dosend_mock.assert_not_called()
 
@@ -277,8 +280,10 @@ class TestHealthDaemon(base.TestCase):
                         'health_daemon.open',
                         mock.mock_open(read_data='999999')) as mock_open:
             mock_kill.side_effect = ProccessNotFoundError
-            test_queue.put('shutdown')
-            health_daemon.run_sender(test_queue)
+            with mock.patch.object(health_daemon, 'LOG') as mock_log:
+                test_queue.put('shutdown')
+                health_daemon.run_sender(test_queue)
+                mock_log.error.assert_called_once()
             mock_build_msg.assert_not_called()
             dosend_mock.assert_not_called()
 
