@@ -3094,12 +3094,14 @@ class TestLoadBalancerGraph(base.BaseAPITest):
     def _get_pool_bodies(self, name='pool1', create_members=None,
                          expected_members=None, create_hm=None,
                          expected_hm=None, protocol=constants.PROTOCOL_HTTP,
-                         session_persistence=True):
+                         session_persistence=True, tls_enabled=False):
         create_pool = {
             'name': name,
             'protocol': protocol,
             'lb_algorithm': constants.LB_ALGORITHM_ROUND_ROBIN,
         }
+        if tls_enabled:
+            create_pool['tls_enabled'] = True
         if session_persistence:
             create_pool['session_persistence'] = {
                 'type': constants.SESSION_PERSISTENCE_SOURCE_IP,
@@ -3447,6 +3449,29 @@ class TestLoadBalancerGraph(base.BaseAPITest):
         response = self.post(self.LBS_PATH, body)
         api_lb = response.json.get(self.root_tag)
         self._assert_graphs_equal(expected_lb, api_lb)
+
+    def test_with_one_listener_one_tls_enabled_pool(self):
+        create_pool, expected_pool = self._get_pool_bodies(tls_enabled=True)
+        create_listener, expected_listener = self._get_listener_bodies(
+            create_default_pool_name=create_pool['name'])
+        create_lb, expected_lb = self._get_lb_bodies(
+            create_listeners=[create_listener],
+            expected_listeners=[expected_listener],
+            create_pools=[create_pool])
+        body = self._build_body(create_lb)
+        response = self.post(self.LBS_PATH, body)
+        api_lb = response.json.get(self.root_tag)
+        self._assert_graphs_equal(expected_lb, api_lb)
+        api_pool = api_lb['pools'][0]
+        self.assertTrue(api_pool['tls_enabled'])
+        self.assertEqual(constants.CIPHERS_OWASP_SUITE_B,
+                         api_pool['tls_ciphers'])
+        self.assertEqual(constants.TLS_VERSIONS_OWASP_SUITE_B,
+                         api_pool['tls_versions'])
+        self.assertEqual([lib_consts.ALPN_PROTOCOL_HTTP_2,
+                          lib_consts.ALPN_PROTOCOL_HTTP_1_1,
+                          lib_consts.ALPN_PROTOCOL_HTTP_1_0],
+                         api_pool['alpn_protocols'])
 
     def test_with_many_listeners_one_pool(self):
         create_pool1, expected_pool1 = self._get_pool_bodies()
