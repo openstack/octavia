@@ -15,7 +15,7 @@ import datetime
 import os
 import sys
 
-from pydotplus import graphviz
+import pydot
 import sadisplay
 
 import octavia.db.models as models
@@ -36,7 +36,7 @@ desc = sadisplay.describe(
     show_properties=True,
     show_indexes=True,
 )
-graph = graphviz.graph_from_dot_data(sadisplay.dot(desc).encode('utf-8'))
+graph = pydot.graph_from_dot_data(sadisplay.dot(desc))[0]
 graph.write('contributor/devref/erd.svg', format='svg')
 
 # If extensions (or modules to document with autodoc) are in another directory,
