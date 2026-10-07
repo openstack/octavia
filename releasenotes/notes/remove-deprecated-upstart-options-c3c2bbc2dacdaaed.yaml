@@ -1,0 +1,7 @@
+---
+upgrade:
+  - |
+    The following options of the ``haproxy_amphora`` section have been removed.
+
+    - ``respawn_count``
+    - ``respawn_interval``
