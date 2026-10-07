@@ -86,7 +86,9 @@ class DriverAgentTest(base.OctaviaDBTestBase):
 
         self.exit_event = multiprocessing.Event()
 
-        self.status_listener_proc = multiprocessing.Process(
+        mp_context = multiprocessing.get_context('fork')
+
+        self.status_listener_proc = mp_context.Process(
             name='status_listener', target=driver_listener.status_listener,
             args=(self.exit_event,))
         # TODO(johnsom) Remove once https://bugs.python.org/issue6721
@@ -95,7 +97,7 @@ class DriverAgentTest(base.OctaviaDBTestBase):
 
         self.status_listener_proc.start()
 
-        self.stats_listener_proc = multiprocessing.Process(
+        self.stats_listener_proc = mp_context.Process(
             name='stats_listener', target=driver_listener.stats_listener,
             args=(self.exit_event,))
         # TODO(johnsom) Remove once https://bugs.python.org/issue6721
@@ -104,7 +106,7 @@ class DriverAgentTest(base.OctaviaDBTestBase):
 
         self.stats_listener_proc.start()
 
-        self.get_listener_proc = multiprocessing.Process(
+        self.get_listener_proc = mp_context.Process(
             name='get_listener', target=driver_listener.get_listener,
             args=(self.exit_event,))
         # TODO(johnsom) Remove once https://bugs.python.org/issue6721
