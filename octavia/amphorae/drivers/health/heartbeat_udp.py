@@ -549,7 +549,7 @@ class UpdateHealthDb:
                         constants.LOADBALANCER, db_lb['id'], lb_status,
                         db_lb[constants.OPERATING_STATUS])
         except sqlalchemy.orm.exc.NoResultFound:
-            LOG.error("Load balancer %s is not in DB", db_lb.id)
+            LOG.error("Load balancer %s is not in DB", db_lb['id'])
 
     def _process_pool_status(
             self, session, pool_id, db_pool_dict, pools, lb_status,
