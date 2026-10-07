@@ -92,6 +92,10 @@ class CreatePortException(NetworkException):
     pass
 
 
+class NetworkIpAvailabilityNotFound(NetworkException):
+    pass
+
+
 class AbstractNetworkDriver(metaclass=abc.ABCMeta):
     """This class defines the methods for a fully functional network driver.
 

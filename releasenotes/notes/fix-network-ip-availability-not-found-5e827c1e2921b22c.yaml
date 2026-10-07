@@ -1,0 +1,7 @@
+---
+fixes:
+  - |
+    Fixed an issue where creating a load balancer with vip_network_id would
+    crash with an HTTP 500 error when the Octavia service user does not have
+    access to the Neutron network-ip-availability API. The API will now return
+    an HTTP 400 with a descriptive error message.

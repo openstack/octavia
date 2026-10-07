@@ -337,6 +337,30 @@ class TestLoadBalancer(base.BaseAPITest):
                    'not contain enough available IPs.')
         self.assertEqual(err_msg, response.json.get('faultstring'))
 
+    def test_create_with_vip_network_ip_availability_not_found(self):
+        network_id = uuidutils.generate_uuid()
+        subnet1 = network_models.Subnet(id=uuidutils.generate_uuid(),
+                                        network_id=network_id,
+                                        ip_version=4)
+        network = network_models.Network(id=network_id,
+                                         subnets=[subnet1.id])
+        lb_json = {'vip_network_id': network.id,
+                   'project_id': self.project_id}
+        body = self._build_body(lb_json)
+        with mock.patch(
+            "octavia.network.drivers.noop_driver.driver.NoopManager"
+            ".get_network") as mock_get_network, mock.patch(
+            "octavia.network.drivers.noop_driver.driver.NoopManager"
+            ".get_network_ip_availability") as (
+                mock_get_network_ip_availability):
+            mock_get_network.return_value = network
+            mock_get_network_ip_availability.side_effect = (
+                network_base.NetworkIpAvailabilityNotFound)
+            response = self.post(self.LBS_PATH, body, status=400)
+        err_msg = ('Validation failure: Could not verify IP '
+                   'availability for network %s.' % network_id)
+        self.assertEqual(err_msg, response.json.get('faultstring'))
+
     def test_create_with_vip_network_and_address(self):
         ip_address = '198.51.100.10'
         network_id = uuidutils.generate_uuid()
