@@ -39,7 +39,6 @@ agent_server_network_dir = {{ agent_server_network_dir }}
 {% endif -%}
 agent_request_read_timeout = {{ agent_request_read_timeout }}
 amphora_id = {{ amphora_id }}
-amphora_udp_driver = {{ amphora_udp_driver }}
 agent_tls_protocol = {{ agent_tls_protocol }}
 
 [controller_worker]
