@@ -140,6 +140,32 @@ class TestLocalManager(base.TestCase):
         # Delete the cert
         self._delete_cert(cert_id)
 
+    def test_init_warns_not_for_production(self):
+        with mock.patch.object(local_cert_mgr, 'LOG') as mock_log:
+            local_cert_mgr.LocalCertManager()
+        mock_log.warning.assert_called_once()
+
+    def test_get_cert_rejects_path_traversal(self):
+        for bad_ref in ('../../etc/passwd', '/etc/passwd', 'foo/bar',
+                        '..', '.', ''):
+            self.assertRaises(
+                exceptions.CertificateStorageException,
+                local_cert_mgr.LocalCertManager.get_cert, None, bad_ref)
+
+    def test_delete_cert_rejects_path_traversal(self):
+        for bad_ref in ('../../etc/passwd', '/etc/passwd', 'foo/bar',
+                        '..', '.', ''):
+            self.assertRaises(
+                exceptions.CertificateStorageException,
+                local_cert_mgr.LocalCertManager.delete_cert, None, bad_ref)
+
+    def test_get_secret_rejects_path_traversal(self):
+        for bad_ref in ('../../etc/passwd', '/etc/passwd', 'foo/bar',
+                        '..', '.', ''):
+            self.assertRaises(
+                exceptions.CertificateRetrievalException,
+                local_cert_mgr.LocalCertManager.get_secret, None, bad_ref)
+
     def test_get_secret(self):
         fd_mock = mock.mock_open()
         open_mock = mock.Mock()

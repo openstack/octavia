@@ -29,7 +29,47 @@ LOG = logging.getLogger(__name__)
 
 
 class LocalCertManager(cert_mgr.CertManager):
-    """Cert Manager Interface that stores data locally."""
+    """Cert Manager Interface that stores data locally.
+
+    .. warning::
+
+        This cert manager is intended for development and testing purposes
+        only. It enforces no access control (see ``set_acls``) and stores
+        certificate material unencrypted on the local filesystem. It must
+        not be used in production; use the Barbican or Castellan cert
+        manager instead.
+    """
+
+    def __init__(self):
+        super().__init__()
+        LOG.warning(
+            "The LocalCertManager is intended for development and testing "
+            "purposes only. It enforces no access control and stores "
+            "certificate material unencrypted on the local filesystem. Do "
+            "not use it in production; use the barbican_cert_manager or "
+            "castellan_cert_manager instead.")
+
+    @staticmethod
+    def _get_filename_base(ref):
+        """Validate a reference and build the base path for its files.
+
+        The reference is used to build filenames on disk, so it must be a
+        simple name without any path separators or parent-directory
+        components. This guards against path traversal: without it, a
+        reference such as ``../../etc/passwd`` or an absolute path (which
+        ``os.path.join`` would honor by discarding the storage path) could
+        read or delete files outside of the configured storage directory.
+
+        :param ref: the certificate or secret reference
+        :returns: the base path (without extension) for the reference
+        :raises CertificateStorageException: if the reference is not a plain
+                                             filename
+        """
+        if not ref or ref in ('.', '..') or ref != os.path.basename(ref):
+            LOG.error("Invalid certificate reference: %s", ref)
+            raise exceptions.CertificateStorageException(
+                msg="Invalid certificate reference.")
+        return os.path.join(CONF.certificates.storage_path, ref)
 
     @staticmethod
     def store_cert(context, certificate, private_key, intermediates=None,
@@ -49,7 +89,7 @@ class LocalCertManager(cert_mgr.CertManager):
         :raises CertificateStorageException: if certificate storage fails
         """
         cert_ref = str(uuid.uuid4())
-        filename_base = os.path.join(CONF.certificates.storage_path, cert_ref)
+        filename_base = LocalCertManager._get_filename_base(cert_ref)
         if isinstance(certificate, bytes):
             certificate = certificate.decode('utf-8')
         if isinstance(private_key, bytes):
@@ -104,7 +144,7 @@ class LocalCertManager(cert_mgr.CertManager):
         """
         LOG.info("Loading certificate %s from the local filesystem.", cert_ref)
 
-        filename_base = os.path.join(CONF.certificates.storage_path, cert_ref)
+        filename_base = LocalCertManager._get_filename_base(cert_ref)
 
         filename_certificate = f"{filename_base}.crt"
         filename_private_key = f"{filename_base}.key"
@@ -157,7 +197,7 @@ class LocalCertManager(cert_mgr.CertManager):
         LOG.info("Deleting certificate %s from the local filesystem.",
                  cert_ref)
 
-        filename_base = os.path.join(CONF.certificates.storage_path, cert_ref)
+        filename_base = LocalCertManager._get_filename_base(cert_ref)
 
         filename_certificate = f"{filename_base}.crt"
         filename_private_key = f"{filename_base}.key"
@@ -193,8 +233,11 @@ class LocalCertManager(cert_mgr.CertManager):
         """
         LOG.info("Loading secret %s from the local filesystem.", secret_ref)
 
-        filename_base = os.path.join(CONF.certificates.storage_path,
-                                     secret_ref)
+        try:
+            filename_base = LocalCertManager._get_filename_base(secret_ref)
+        except exceptions.CertificateStorageException as e:
+            raise exceptions.CertificateRetrievalException(
+                ref=secret_ref) from e
 
         filename_secret = f"{filename_base}.crt"
 
