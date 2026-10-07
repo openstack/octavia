@@ -20,7 +20,7 @@
               - ^octavia/tests/.*$
               - ^releasenotes/.*$
               - ^\.pre-commit-config\.yaml$
-        - openstack-tox-functional-py313:
+        - openstack-tox-functional-py314:
             irrelevant-files: &tox-func-irrelevant-files
               - ^.*\.rst$
               - ^api-ref/.*$
@@ -93,7 +93,7 @@
               - ^octavia/tests/.*$
               - ^releasenotes/.*$
               - ^\.pre-commit-config\.yaml$
-        - openstack-tox-functional-py313:
+        - openstack-tox-functional-py314:
             irrelevant-files:
               - ^.*\.rst$
               - ^api-ref/.*$
