@@ -1,0 +1,5 @@
+---
+fixes:
+  - |
+    Fixed a bug in the revert function of the AllocateVIP task, an unrelated
+    error message appeared when Octavia failed to create a load balancer.
