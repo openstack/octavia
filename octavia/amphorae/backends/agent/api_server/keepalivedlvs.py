@@ -210,6 +210,22 @@ class KeepalivedLvs(lvs_listener_base.LvsListenerApiServerBase):
                                       consts.AMP_ACTION_RELOAD]:
             util.send_vip_advertisements(listener_id=listener_id)
 
+        # Write an empty file to set the timestamp of the last action
+        # It's useful when computing the status of the members
+        # Basically amphora-agent computes the delta between the members
+        # present in the configuration file and the members in ipvsadm.
+        # But it can happen that the heartbeat message is built after the
+        # configuration file is updated and before reloading keepalived, in
+        # this situation, we can have incorrect status reported to the
+        # health-manager (member in the config but not in ipvs)
+        ts_file = util.keepalived_lvs_last_action_ts_path(listener_id)
+        try:
+            with open(ts_file, "w", encoding="utf-8"):
+                pass
+        except Exception as e:
+            LOG.error("Cannot update timestamp after reloading listener: %s",
+                      e)
+
         return webob.Response(
             json={'message': 'OK',
                   'details': (f'keepalivedlvs listener {listener_id} '
