@@ -288,4 +288,3 @@ Response
 --------
 
 There is no body content for the response of a successful DELETE request.
-

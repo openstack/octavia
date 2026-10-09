@@ -8,6 +8,6 @@ features:
     minimum and reduce latency.
 upgrade:
   - |
-    In order for the full dynticks optimization to become effective a new 
-    amphora image needs to be built with the new optional CPU pinning 
+    In order for the full dynticks optimization to become effective a new
+    amphora image needs to be built with the new optional CPU pinning
     feature enabled.

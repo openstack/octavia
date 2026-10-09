@@ -30,7 +30,7 @@ down_revision = '3097e55493ae'
 
 def upgrade():
     op.add_column(
-        u'member',
-        sa.Column(u'vnic_type', sa.String(64), nullable=False,
+        'member',
+        sa.Column('vnic_type', sa.String(64), nullable=False,
                   server_default=constants.VNIC_TYPE_NORMAL)
     )

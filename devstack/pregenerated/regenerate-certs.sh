@@ -18,4 +18,3 @@ openssl x509 -enddate -noout -in certs/ca_01.pem
 echo ""
 echo Client cert expiration time:
 openssl x509 -enddate -noout -in certs/client.pem
-
