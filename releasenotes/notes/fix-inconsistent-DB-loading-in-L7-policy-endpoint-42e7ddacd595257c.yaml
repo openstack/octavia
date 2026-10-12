@@ -1,0 +1,8 @@
+---
+fixes:
+  - |
+    Fixed an issue where some of the get_all_API_list calls were using inconsistent
+    DB queries. This was likely due to ordering requirements in the response 
+    which are no longer relevant since pagination works. Updated to use the get_all_orm
+    call to be consistent with other endpoints
+
