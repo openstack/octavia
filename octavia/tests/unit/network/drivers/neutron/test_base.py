@@ -569,6 +569,16 @@ class TestBaseNeutronNetworkDriver(base.TestCase):
         self.assertEqual(t_constants.MOCK_SUBNET_IP_AVAILABILITY,
                          ip_avail.subnet_ip_availability)
 
+    def test_get_network_ip_availability_not_found(self):
+        show_network_ip_availability = (
+            self.driver.network_proxy.get_network_ip_availability)
+        show_network_ip_availability.side_effect = (
+            os_exceptions.ResourceNotFound)
+        self.assertRaises(
+            network_base.NetworkIpAvailabilityNotFound,
+            self.driver.get_network_ip_availability,
+            network_models.Network(t_constants.MOCK_NETWORK_ID))
+
     def test_plug_fixed_ip(self):
         show_port = self.driver.network_proxy.get_port
         show_port.return_value = Port(**{
