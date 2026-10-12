@@ -33,7 +33,6 @@ options.set_defaults(CONF, max_pool_size=10, max_overflow=20,
                      pool_timeout=10)
 log.set_defaults()
 log.register_options(CONF)
-log.setup(CONF, 'octavia-db-manage')
 
 
 def do_alembic_command(config, cmd, *args, **kwargs):
@@ -153,4 +152,5 @@ def main():
     config.octavia_config = CONF
 
     CONF(project='octavia')
+    log.setup(CONF, 'octavia-db-manage')
     CONF.command.func(config, CONF.command.name)
