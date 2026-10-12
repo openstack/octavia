@@ -18,6 +18,7 @@
               - ^doc/.*$
               - ^etc/.*$
               - ^octavia/tests/.*$
+              - ^\.pre-commit-config\.yaml$
               - ^releasenotes/.*$
               - ^\.pre-commit-config\.yaml$
         - openstack-tox-functional-py314:
@@ -27,6 +28,7 @@
               - ^doc/.*$
               - ^etc/.*$
               - ^octavia/tests/unit/.*$
+              - ^\.pre-commit-config\.yaml$
               - ^releasenotes/.*$
               - ^\.pre-commit-config\.yaml$
         - octavia-v2-dsvm-noop-api:
@@ -35,6 +37,7 @@
               - ^api-ref/.*$
               - ^doc/.*$
               - ^octavia/tests/.*$
+              - ^\.pre-commit-config\.yaml$
               - ^releasenotes/.*$
               - ^\.pre-commit-config\.yaml$
         - octavia-v2-dsvm-scenario-traffic-ops:
@@ -53,6 +56,7 @@
               - ^api-ref/.*$
               - ^doc/.*$
               - ^octavia/tests/.*$
+              - ^\.pre-commit-config\.yaml$
               - ^releasenotes/.*$
               - ^setup.cfg$
               - ^tools/.*$
@@ -91,6 +95,7 @@
               - ^doc/.*$
               - ^etc/.*$
               - ^octavia/tests/.*$
+              - ^\.pre-commit-config\.yaml$
               - ^releasenotes/.*$
               - ^\.pre-commit-config\.yaml$
         - openstack-tox-functional-py314:
@@ -100,6 +105,7 @@
               - ^doc/.*$
               - ^etc/.*$
               - ^octavia/tests/unit/.*$
+              - ^\.pre-commit-config\.yaml$
               - ^releasenotes/.*$
               - ^\.pre-commit-config\.yaml$
         - octavia-v2-dsvm-noop-api
