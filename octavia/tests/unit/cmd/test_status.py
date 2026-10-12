@@ -37,7 +37,12 @@ class TestUpgradeChecks(base.TestCase):
         self.assertEqual(
             Code.SUCCESS, check_result.code)
 
-    def test__check_persistence_sqlite(self):
+    @mock.patch('octavia.controller.worker.v2.taskflow_jobboard_driver.'
+                'MysqlPersistenceDriver')
+    def test__check_persistence_sqlite(self, mysql_driver):
+        pers_mock = mock.MagicMock()
+        pers_mock.engine.dialect.name = 'sqlite'
+        mysql_driver().get_persistence().__enter__.return_value = pers_mock
         check_result = self.cmd._check_persistence()
         self.assertEqual(
             Code.WARNING, check_result.code)
@@ -99,13 +104,18 @@ class TestUpgradeChecks(base.TestCase):
             Code.SUCCESS, check_result.code)
 
     @mock.patch('octavia.controller.worker.v2.taskflow_jobboard_driver.'
+                'MysqlPersistenceDriver')
+    @mock.patch('octavia.controller.worker.v2.taskflow_jobboard_driver.'
                 'RedisTaskFlowDriver')
-    def test__check_amphorav2_warning(self, redis_driver):
+    def test__check_amphorav2_warning(self, redis_driver, mysql_driver):
         self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
         self.conf.config(group='api_settings',
                          default_provider_driver=constants.AMPHORA,
                          enabled_provider_drivers={constants.AMPHORAV2:
                                                    "Test"})
+        pers_mock = mock.MagicMock()
+        pers_mock.engine.dialect.name = 'sqlite'
+        mysql_driver().get_persistence().__enter__.return_value = pers_mock
         check_result = self.cmd._check_amphorav2()
         self.assertEqual(
             Code.WARNING, check_result.code)

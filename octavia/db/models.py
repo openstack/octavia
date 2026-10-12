@@ -22,7 +22,6 @@ from sqlalchemy import orm
 from sqlalchemy.orm import Mapped
 from sqlalchemy.orm import validates
 from sqlalchemy.sql import func
-from sqlalchemy_utils import ScalarListType
 
 from octavia.api.v2.types import amphora
 from octavia.api.v2.types import availability_zone_profile
@@ -40,6 +39,7 @@ from octavia.api.v2.types import quotas
 from octavia.common import constants
 from octavia.common import data_models
 from octavia.db import base_models
+from octavia.db import types as db_types
 from octavia.i18n import _
 
 
@@ -372,8 +372,8 @@ class Pool(base_models.BASE, base_models.IdMixin, base_models.ProjectMixin,
     crl_container_id = sa.Column(sa.String(255), nullable=True)
     tls_enabled = sa.Column(sa.Boolean, default=False, nullable=False)
     tls_ciphers = sa.Column(sa.String(2048), nullable=True)
-    tls_versions = sa.Column(ScalarListType(), nullable=True)
-    alpn_protocols = sa.Column(ScalarListType(), nullable=True)
+    tls_versions = sa.Column(db_types.ScalarListType(), nullable=True)
+    alpn_protocols = sa.Column(db_types.ScalarListType(), nullable=True)
 
     # This property should be a unique list of any listeners that reference
     # this pool as its default_pool and any listeners referenced by enabled
@@ -611,8 +611,8 @@ class Listener(base_models.BASE, base_models.IdMixin,
         nullable=False, default=constants.CLIENT_AUTH_NONE)
     client_crl_container_id = sa.Column(sa.String(255), nullable=True)
     tls_ciphers = sa.Column(sa.String(2048), nullable=True)
-    tls_versions = sa.Column(ScalarListType(), nullable=True)
-    alpn_protocols = sa.Column(ScalarListType(), nullable=True)
+    tls_versions = sa.Column(db_types.ScalarListType(), nullable=True)
+    alpn_protocols = sa.Column(db_types.ScalarListType(), nullable=True)
     hsts_max_age = sa.Column(sa.Integer, nullable=True)
     hsts_include_subdomains = sa.Column(sa.Boolean, nullable=True)
     hsts_preload = sa.Column(sa.Boolean, nullable=True)
