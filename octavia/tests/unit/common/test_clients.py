@@ -9,14 +9,19 @@
 #    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 #    License for the specific language governing permissions and limitations
 #    under the License.
+import re
 from unittest import mock
 
 import cinderclient.v3
 import glanceclient.v2
 import novaclient.v2
+from openstack import exceptions as os_exceptions
 from oslo_config import cfg
+from oslo_config import fixture as oslo_fixture
+from requests_mock.contrib import fixture as rm_fixture
 
 from octavia.common import clients
+from octavia.common import context
 from octavia.common import keystone
 from octavia.tests.unit import base
 
@@ -135,3 +140,76 @@ class TestCinderAuth(base.TestCase):
             region="test-region", service_name="cinderEndpoint1",
             endpoint="test-endpoint", endpoint_type='publicURL', insecure=True)
         self.assertIs(bc1, bc2)
+
+
+class TestUserNeutronClient(base.TestCase):
+
+    def setUp(self):
+        super().setUp()
+        self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
+        self.conf.config(group='neutron', valid_interfaces=['internal'])
+        self.service_catalog = [{
+            'type': 'network',
+            'endpoints': [{'region': 'RegionOne',
+                           'internalURL': 'http://user-neutron',
+                           'publicURL': 'http://public-neutron'}]}]
+        self.requests_mock = self.useFixture(rm_fixture.Fixture())
+        self.requests_mock.get(
+            'http://override-neutron',
+            json={'versions': [{
+                'id': 'v2.0', 'status': 'CURRENT',
+                'links': [{'rel': 'self',
+                           'href': 'http://override-neutron/v2.0/'}]}]})
+        self.requests_mock.get(re.compile('/v2.0/subnets/subnet-id$'),
+                               json={'subnet': {'id': 'subnet-id'}})
+
+    def _get_subnet(self):
+        user_context = mock.Mock(auth_token='user-token',
+                                 service_catalog=self.service_catalog)
+        user_context.get_auth_plugin.return_value = (
+            context._ContextAuthPlugin('user-token', self.service_catalog))
+        conn = clients.NeutronAuth.get_user_neutron_client(user_context)
+        self.addCleanup(conn.close)
+        return conn.network.get_subnet('subnet-id')
+
+    def test_endpoint_from_user_catalog(self):
+        self._get_subnet()
+
+        request = self.requests_mock.last_request
+        self.assertEqual('http://user-neutron/v2.0/subnets/subnet-id',
+                         request.url)
+        self.assertEqual('user-token', request.headers['X-Auth-Token'])
+
+    def test_endpoint_override(self):
+        self.conf.config(group='neutron',
+                         endpoint_override='http://override-neutron')
+
+        self._get_subnet()
+
+        self.assertEqual('http://override-neutron/v2.0/subnets/subnet-id',
+                         self.requests_mock.last_request.url)
+
+    def test_no_endpoint_in_user_catalog(self):
+        self.service_catalog = [{
+            'type': 'compute',
+            'endpoints': [{'region': 'RegionOne',
+                           'internalURL': 'http://user-nova'}]}]
+
+        self.assertRaises(os_exceptions.SDKException, self._get_subnet)
+        self.assertFalse(self.requests_mock.called)
+
+    @mock.patch('octavia.common.keystone.KeystoneSession')
+    def test_no_user_catalog(self, mock_ks):
+        self.service_catalog = []
+        get_endpoint_data = (
+            mock_ks.return_value.get_session.return_value.get_endpoint_data)
+        get_endpoint_data.return_value.catalog_url = 'http://service-neutron'
+
+        self._get_subnet()
+
+        get_endpoint_data.assert_called_once_with(
+            service_type='network', interface=['internal'], region_name=None)
+        request = self.requests_mock.last_request
+        self.assertEqual('http://service-neutron/v2.0/subnets/subnet-id',
+                         request.url)
+        self.assertEqual('user-token', request.headers['X-Auth-Token'])

@@ -11,6 +11,9 @@
 #    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 #    License for the specific language governing permissions and limitations
 #    under the License.
+from oslo_config import cfg
+from oslo_log import log as logging
+from oslo_serialization import jsonutils
 from pecan import hooks
 from webob import acceptparse
 from webob import exc
@@ -20,6 +23,9 @@ from octavia.api.common import utils
 from octavia.common import constants
 from octavia.common import context
 from octavia.i18n import _
+
+CONF = cfg.CONF
+LOG = logging.getLogger(__name__)
 
 _HEALTHCHECK_PATHS = ['/healthcheck', '/load-balancer/healthcheck']
 
@@ -59,8 +65,22 @@ class ContextHook(hooks.PecanHook):
     """Configures a request context and attaches it to the request."""
 
     def on_route(self, state):
+        environ = state.request.environ
+        service_catalog = []
+        catalog_header = environ.get('HTTP_X_SERVICE_CATALOG')
+        # keystonemiddleware replaces a client-sent catalog, except on the
+        # paths it skips, where the catalog is unused.
+        if (catalog_header is not None and
+                CONF.api_settings.auth_strategy == constants.KEYSTONE):
+            try:
+                parsed_catalog = jsonutils.loads(catalog_header)
+                if not isinstance(parsed_catalog, list):
+                    raise ValueError
+                service_catalog = parsed_catalog
+            except (ValueError, RecursionError):
+                LOG.warning('Ignoring an invalid X-Service-Catalog header.')
         context_obj = context.RequestContext.from_environ(
-            state.request.environ)
+            environ, service_catalog=service_catalog)
         state.request.context['octavia_context'] = context_obj
 
 
