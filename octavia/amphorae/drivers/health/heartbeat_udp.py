@@ -18,6 +18,7 @@ import time
 import timeit
 
 from oslo_config import cfg
+from oslo_db import exception as db_exc
 from oslo_log import log as logging
 from oslo_utils import excutils
 from oslo_utils import timeutils
@@ -419,6 +420,9 @@ class UpdateHealthDb:
                     lock_session, health['id'],
                     last_update=timeutils.utcnow())
                 lock_session.commit()
+            except db_exc.DBDeadlock:
+                LOG.debug('Database reports deadlock. Skipping.')
+                lock_session.rollback()
             except Exception:
                 with excutils.save_and_reraise_exception():
                     lock_session.rollback()

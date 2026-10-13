@@ -20,6 +20,7 @@ from unittest import mock
 
 from oslo_config import cfg
 from oslo_config import fixture as oslo_fixture
+from oslo_db import exception as db_exc
 from oslo_utils import uuidutils
 import sqlalchemy
 
@@ -502,6 +503,32 @@ class TestUpdateHealthDb(base.TestCase):
         }
 
         self.session_mock.commit.side_effect = TestException('boom')
+
+        lb_ref = self._make_fake_lb_health_dict()
+
+        self.amphora_repo.get_lb_for_health_update.return_value = lb_ref
+
+        self.hm.update_health(health, '192.0.2.1')
+        self.assertTrue(self.amphora_health_repo.replace.called)
+        self.session_mock.rollback.assert_called_once()
+
+    def test_update_health_replace_deadlock(self):
+
+        health = {
+            "id": self.FAKE_UUID_1,
+            "ver": 1,
+            "listeners": {
+                "listener-id-1": {"status": constants.OPEN, "pools": {
+                    "pool-id-1": {"status": constants.UP,
+                                  "members": {"member-id-1": constants.UP}
+                                  }
+                }
+                }
+            },
+            "recv_time": time.time()
+        }
+
+        self.session_mock.commit.side_effect = db_exc.DBDeadlock()
 
         lb_ref = self._make_fake_lb_health_dict()
 
