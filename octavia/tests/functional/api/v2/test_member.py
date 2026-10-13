@@ -12,12 +12,19 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import re
 from unittest import mock
 
+import fixtures
+from keystoneauth1 import fixture as ks_fixture
+from keystoneauth1 import identity as ks_identity
+from keystoneauth1 import session as ks_session
 from octavia_lib.api.drivers import data_models as driver_dm
 from oslo_config import cfg
 from oslo_config import fixture as oslo_fixture
+from oslo_serialization import jsonutils
 from oslo_utils import uuidutils
+from requests_mock.contrib import fixture as rm_fixture
 from sqlalchemy.orm import exc as sa_exception
 
 from octavia.api.drivers import utils as driver_utils
@@ -1580,3 +1587,80 @@ class TestMember(base.BaseAPITest):
         self.set_lb_status(self.lb_id, status=constants.DELETED)
         self.delete(self.member_path.format(
             member_id=member.get('id')), status=404)
+
+
+class TestMemberUserNeutron(base.BaseAPITest):
+    """Subnet visibility check of a member, against a real neutron driver.
+
+    The service identity's catalog and the user's catalog point to different
+    neutron endpoints, as when the service identity lives in another realm.
+    """
+
+    root_tag = 'member'
+
+    def setUp(self):
+        super().setUp()
+        lb = self.create_load_balancer(uuidutils.generate_uuid())
+        lb_id = lb['loadbalancer']['id']
+        self.set_lb_status(lb_id)
+        pool = self.create_pool(lb_id, constants.PROTOCOL_HTTP,
+                                constants.LB_ALGORITHM_ROUND_ROBIN)
+        self.set_lb_status(lb_id)
+        self.members_path = self.MEMBERS_PATH.format(
+            pool_id=pool['pool']['id'])
+
+        self.conf.config(group='controller_worker',
+                         network_driver='allowed_address_pairs_driver')
+        self.conf.config(group='neutron', valid_interfaces=['internal'])
+        self.useFixture(fixtures.MockPatch(
+            'octavia.common.clients.NeutronAuth.get_neutron_client'))
+
+        service_token = ks_fixture.V3Token()
+        service_token.add_service('network').add_standard_endpoints(
+            internal='http://service-neutron')
+        self.requests_mock = self.useFixture(rm_fixture.Fixture())
+        self.requests_mock.post(
+            'http://keystone/v3/auth/tokens', json=service_token,
+            headers={'X-Subject-Token': 'service-token'})
+        service_session = ks_session.Session(auth=ks_identity.V3Password(
+            auth_url='http://keystone/v3', username='octavia',
+            password='secret', user_domain_id='default',
+            project_name='service', project_domain_id='default'))
+        self.useFixture(fixtures.MockPatch(
+            'octavia.common.keystone.KeystoneSession.get_session',
+            return_value=service_session))
+
+        self.subnet_id = uuidutils.generate_uuid()
+        self.service_neutron = self.requests_mock.get(
+            re.compile('^http://service-neutron/'), status_code=401)
+        self.user_neutron = self.requests_mock.get(
+            f'http://user-neutron/v2.0/subnets/{self.subnet_id}',
+            json={'subnet': {'id': self.subnet_id,
+                             'network_id': uuidutils.generate_uuid(),
+                             'cidr': '192.0.2.0/24',
+                             'ip_version': 4}})
+        self.headers = {
+            'X-Auth-Token': 'user-token',
+            'X-Service-Catalog': jsonutils.dumps([{
+                'type': 'network',
+                'name': 'neutron',
+                'endpoints': [{'region': 'RegionOne',
+                               'internalURL': 'http://user-neutron'}]}])}
+
+    def test_create_with_subnet_id_uses_user_catalog(self):
+        body = self._build_body({'address': '192.0.2.1',
+                                 'protocol_port': 80,
+                                 'subnet_id': self.subnet_id})
+
+        # FIXME: the user token is sent to the neutron of the service
+        # identity's catalog, which rejects it, and the subnet looks missing.
+        # https://bugs.launchpad.net/octavia/+bug/2170577
+        response = self.post(self.members_path, body, headers=self.headers,
+                             status=400)
+
+        self.assertIn(f'Subnet {self.subnet_id} not found',
+                      response.json['faultstring'])
+        self.assertEqual(
+            'user-token',
+            self.service_neutron.last_request.headers['X-Auth-Token'])
+        self.assertFalse(self.user_neutron.called)
