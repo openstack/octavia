@@ -15,11 +15,6 @@ import datetime
 import os
 import sys
 
-import pydot
-import sadisplay
-
-import octavia.db.models as models
-
 sys.path.insert(0, os.path.abspath('../..'))
 sys.path.insert(0, os.path.abspath('.'))
 
@@ -28,16 +23,6 @@ from tools import create_flow_docs
 # Generate our flow diagrams
 create_flow_docs.generate(
     'tools/flow-list-v2.txt', 'doc/source/contributor/devref/flow_diagrams_v2')
-
-# Generate entity relationship diagram
-desc = sadisplay.describe(
-    [getattr(models, attr) for attr in dir(models)],
-    show_methods=True,
-    show_properties=True,
-    show_indexes=True,
-)
-graph = pydot.graph_from_dot_data(sadisplay.dot(desc))[0]
-graph.write('contributor/devref/erd.svg', format='svg')
 
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
