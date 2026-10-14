@@ -43,7 +43,7 @@ class CastellanCertManager(cert_mgr.CertManager):
                    private_key_passphrase=None, expiration=None,
                    name="PKCS12 Certificate Bundle"):
         if private_key_passphrase:
-            raise exceptions.CertificateStorageException(
+            raise exceptions.CertificateStorageException(  # noqa: O342
                 "Passphrases protected PKCS12 certificates are not supported.")
 
         p12_data = opaque_data.OpaqueData(

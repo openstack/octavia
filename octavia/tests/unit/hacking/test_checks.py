@@ -106,7 +106,12 @@ class HackingTestCase(base.BaseTestCase):
         f = checks.check_raised_localized_exceptions
         self.assertLineFails(f, "     raise KeyError('Error text')", '')
         self.assertLineFails(f, ' raise KeyError("Error text")', '')
+        self.assertLineFails(f, ' raise exceptions.Error("Error text")', '')
+        self.assertLineFails(
+            f, ' raise webob.exc.HTTPBadRequest("Error text")', '')
         self.assertLinePasses(f, ' raise KeyError(_("Error text"))', '')
+        self.assertLinePasses(
+            f, ' raise exceptions.Error(_("Error text"))', '')
         self.assertLinePasses(f, ' raise KeyError(_ERR("Error text"))', '')
         self.assertLinePasses(f, " raise KeyError(translated_msg)", '')
         self.assertLinePasses(f, '# raise KeyError("Not translated")', '')

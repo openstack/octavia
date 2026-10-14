@@ -51,7 +51,7 @@ class AllowedAddressPairsDriver(neutron_base.BaseNeutronDriver):
 
     def _check_aap_loaded(self):
         if not self._check_extension_enabled(AAP_EXT_ALIAS):
-            raise base.NetworkException(
+            raise base.NetworkException(  # noqa: O342
                 'The {alias} extension is not enabled in neutron.  This '
                 'driver cannot be used with the {alias} extension '
                 'disabled.'.format(alias=AAP_EXT_ALIAS))
@@ -590,7 +590,7 @@ class AllowedAddressPairsDriver(neutron_base.BaseNeutronDriver):
                 if load_balancer.vip.octavia_owned:
                     self.delete_port(load_balancer.vip.port_id)
                 else:
-                    raise base.AllocateVIPException(
+                    raise base.AllocateVIPException(  # noqa: O342
                         'VIP port {} is broken, but is owned by project {} '
                         'so will not be recreated. Aborting VIP allocation.'
                         .format(port.id, port.project_id))
