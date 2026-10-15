@@ -249,21 +249,20 @@ class TaskFlowServiceController:
     def _extend_jobs(self, conductor, expiration_time):
         conductor_name = conductor._name
 
-        with self.driver.persistence_driver.get_persistence() as persistence:
-            with self.driver.job_board(persistence) as board:
-                for job in board.iterjobs():
-                    try:
-                        owner = board.find_owner(job)
-                    except TypeError:
-                        # taskflow throws an exception if a job is not owned
-                        # (probably a bug in taskflow)
-                        continue
-                    # Only extend expiry for jobs that are owner by our
-                    # conductor (from the same process)
-                    if owner == conductor_name:
-                        if job.expires_in() < expiration_time / 2:
-                            LOG.debug("Extend expiry for job %s", job.name)
-                            job.extend_expiry(expiration_time)
+        board = conductor._jobboard
+        for job in board.iterjobs():
+            try:
+                owner = board.find_owner(job)
+            except TypeError:
+                # taskflow throws an exception if a job is not owned
+                # (probably a bug in taskflow)
+                continue
+            # Only extend expiry for jobs that are owner by our
+            # conductor (from the same process)
+            if owner == conductor_name:
+                if job.expires_in() < expiration_time / 2:
+                    LOG.debug("Extend expiry for job %s", job.name)
+                    job.extend_expiry(expiration_time)
 
     def _waiter(self, conductor):
         expiration_time = CONF.task_flow.jobboard_expiration_time

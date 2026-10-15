@@ -162,10 +162,10 @@ class TestTaskFlowServiceController(base.TestCase):
         job2.expires_in.return_value = 10
         job3 = mock.MagicMock()
         job3.expires_in.return_value = 30
-        self.jobboard_mock.__enter__().iterjobs.return_value = [
+        conductor._jobboard.iterjobs.return_value = [
             job1, job2, job3]
 
-        self.jobboard_mock.__enter__().find_owner.side_effect = [
+        conductor._jobboard.find_owner.side_effect = [
             'mycontroller',
             TypeError('no owner'),
             'mycontroller']
@@ -175,6 +175,7 @@ class TestTaskFlowServiceController(base.TestCase):
         job1.extend_expiry.assert_called_once_with(30)
         job2.extend_expiry.assert_not_called()
         job3.extend_expiry.assert_not_called()
+        self.driver_mock.job_board.assert_not_called()
 
 
 class TestJobDetailsFilter(base.TestCase):
