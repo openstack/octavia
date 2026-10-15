@@ -1,0 +1,14 @@
+---
+
+fixes:
+  - |
+    Octavia worker after losing the session with ZooKeeper could not take
+    jobs and the LB stayed in the pending state.
+    Reusing the kazoo client caused a thread leak as each time the jobboard
+    was called new listeners were added to the client, and taskflow does not
+    remove them for the clients it does not own.
+    The fix reverts the changes that added reusing of the client for
+    ZooKeeper. The jobboard is accessible in the conductor, and there is no
+    need to create a new client or reuse it. The jobboard is now reused from
+    the conductor
+    (bug `#2170749 <https://bugs.launchpad.net/octavia/+bug/2170749>`_).
