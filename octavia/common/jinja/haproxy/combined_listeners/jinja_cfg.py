@@ -14,7 +14,7 @@
 
 import os
 import re
-from typing import Optional
+import typing as tp
 
 import jinja2
 from octavia_lib.common import constants as lib_consts
@@ -89,6 +89,8 @@ class JinjaTemplater:
         self.log_http = log_http
         self.log_server = log_server
         self.connection_logging = connection_logging
+        self.tlsv1_3_ciphers: tp.Set[str] = set(
+            CONF.api_settings.tls1_3_supported_ciphers.split(":"))
 
     def build_config(self, host_amphora, listeners, tls_certs,
                      haproxy_versions, amp_details, socket_path=None):
@@ -161,7 +163,7 @@ class JinjaTemplater:
     def render_loadbalancer_obj(self, host_amphora, listeners,
                                 tls_certs=None, socket_path=None,
                                 feature_compatibility=None,
-                                amp_details: Optional[dict] = None):
+                                amp_details: tp.Optional[dict] = None):
         """Renders a templated configuration from a load balancer object
 
         :param host_amphora: The Amphora this configuration is hosted on
@@ -369,12 +371,24 @@ class JinjaTemplater:
                 if not validate.VALID_CIPHER_RE.match(listener.tls_ciphers):
                     LOG.warning("Listener %s has invalid tls_ciphers in DB, "
                                 "falling back to default", listener.id)
-                    ret_value['tls_ciphers'] = (
+                    tls_ciphers = (
                         cfg.CONF.api_settings.default_listener_ciphers)
                 else:
-                    ret_value['tls_ciphers'] = listener.tls_ciphers
+                    tls_ciphers = listener.tls_ciphers
+                ciphers_config_set = set(tls_ciphers.split(":"))
+                # sorted in order to make the result deterministic
+                ret_value['tls_ciphers'] = ":".join(
+                    sorted(ciphers_config_set - self.tlsv1_3_ciphers))
+                ret_value['tlsv1_3_ciphers'] = ":".join(
+                    sorted(ciphers_config_set & self.tlsv1_3_ciphers))
             if listener.tls_versions is not None:
                 ret_value['tls_versions'] = listener.tls_versions
+                if not any(v in constants.TLS_1_3_AND_NEWER_VERSIONS for v
+                           in listener.tls_versions):
+                    del ret_value['tlsv1_3_ciphers']
+                if not any(v in constants.TLS_PRE_1_3_VERSIONS for v in
+                           listener.tls_versions):
+                    del ret_value['tls_ciphers']
             if listener.alpn_protocols is not None:
                 ret_value['alpn_protocols'] = ",".join(listener.alpn_protocols)
             if listener.hsts_max_age is not None:
@@ -460,12 +474,24 @@ class JinjaTemplater:
                 if not validate.VALID_CIPHER_RE.match(pool.tls_ciphers):
                     LOG.warning("Pool %s has invalid tls_ciphers in DB, "
                                 "falling back to default", pool.id)
-                    ret_value['tls_ciphers'] = (
+                    tls_ciphers = (
                         cfg.CONF.api_settings.default_pool_ciphers)
                 else:
-                    ret_value['tls_ciphers'] = pool.tls_ciphers
+                    tls_ciphers = pool.tls_ciphers
+                ciphers_config_set = set(tls_ciphers.split(":"))
+                # sorted in order to make the result deterministic
+                ret_value['tls_ciphers'] = ":".join(
+                    sorted(ciphers_config_set - self.tlsv1_3_ciphers))
+                ret_value['tlsv1_3_ciphers'] = ":".join(
+                    sorted(ciphers_config_set & self.tlsv1_3_ciphers))
             if pool.tls_versions is not None:
                 ret_value['tls_versions'] = pool.tls_versions
+                if not any(v in constants.TLS_1_3_AND_NEWER_VERSIONS for v
+                           in pool.tls_versions):
+                    del ret_value['tlsv1_3_ciphers']
+                if not any(v in constants.TLS_PRE_1_3_VERSIONS for v in
+                           pool.tls_versions):
+                    del ret_value['tls_ciphers']
             if (pool.alpn_protocols is not None and
                     feature_compatibility.get(constants.POOL_ALPN, False)):
                 ret_value['alpn_protocols'] = ",".join(pool.alpn_protocols)
