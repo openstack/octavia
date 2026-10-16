@@ -93,7 +93,7 @@ def main():
         'syslog': True,
         'syslog_facility': (
             f'local{CONF.amphora_agent.administrative_log_facility}'),
-        'syslog_addr': 'unix://run/rsyslog/octavia/log#dgram',
+        'syslog_addr': 'unix:///run/rsyslog/octavia/log#dgram',
 
     }
     AmphoraAgent(server_instance.app, options).run()
