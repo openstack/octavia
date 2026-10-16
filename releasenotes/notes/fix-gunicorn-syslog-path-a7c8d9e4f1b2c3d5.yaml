@@ -1,0 +1,7 @@
+---
+fixes:
+  - |
+    Fixed the gunicorn syslog socket path in the amphora agent to use an
+    absolute path (unix:///run/rsyslog/octavia/log#dgram). Previously, the
+    relative path caused logging failures when the amphora agent was run
+    with a non-root working directory.
