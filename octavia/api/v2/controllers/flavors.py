@@ -154,10 +154,10 @@ class FlavorsController(base.BaseController):
                                    constants.RBAC_DELETE)
         if flavor_id == constants.NIL_UUID:
             raise exceptions.NotFound(resource='Flavor', id=constants.NIL_UUID)
+        # The repository locks the flavor row. SERIALIZABLE did the same
+        # here, and Percona XtraDB Cluster refuses it in its strict mode.
         serial_session = db_api.get_session()
         serial_session.begin()
-        serial_session.connection(
-            execution_options={'isolation_level': 'SERIALIZABLE'})
         try:
             self.repositories.flavor.delete(serial_session, id=flavor_id)
             serial_session.commit()

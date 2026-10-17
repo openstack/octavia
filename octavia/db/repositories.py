@@ -2102,23 +2102,26 @@ class FlavorRepository(_GetALLExceptDELETEDIdMixin, BaseRepository):
                 .filter(models.Flavor.flavor_profile_id ==
                         models.FlavorProfile.id).one()[0])
 
-    def delete(self, serial_session, **filters):
+    def delete(self, session, **filters):
         """Sets DELETED LBs flavor_id to NIL_UUID, then removes the flavor
 
-        :param serial_session: A Sql Alchemy database transaction session.
+        The flavor row is locked first, so a load balancer being created
+        with it waits, and the foreign key refuses whichever commits second.
+
+        :param session: A Sql Alchemy database transaction session.
         :param filters: Filters to decide which entity should be deleted.
         :returns: None
         :raises: odb_exceptions.DBReferenceError
         :raises: sqlalchemy.orm.exc.NoResultFound
         """
-        (serial_session.query(models.LoadBalancer).
+        flavor = (session.query(self.model_class).
+                  filter_by(**filters).with_for_update().one())
+        (session.query(models.LoadBalancer).
          filter(models.LoadBalancer.flavor_id == filters['id']).
          filter(models.LoadBalancer.provisioning_status == consts.DELETED).
          update({models.LoadBalancer.flavor_id: consts.NIL_UUID},
                 synchronize_session=False))
-        flavor = (serial_session.query(self.model_class).
-                  filter_by(**filters).one())
-        serial_session.delete(flavor)
+        session.delete(flavor)
 
 
 class FlavorProfileRepository(_GetALLExceptDELETEDIdMixin, BaseRepository):
@@ -2160,26 +2163,27 @@ class AvailabilityZoneRepository(_GetALLExceptDELETEDIdMixin, BaseRepository):
         session.query(self.model_class).filter_by(
             name=name).update(model_kwargs)
 
-    def delete(self, serial_session, **filters):
+    def delete(self, session, **filters):
         """Special delete method for availability_zone.
 
         Sets DELETED LBs availability_zone to NIL_UUID, then removes the
-        availability_zone.
+        availability_zone. Its row is locked first, as a flavor's is.
 
-        :param serial_session: A Sql Alchemy database transaction session.
+        :param session: A Sql Alchemy database transaction session.
         :param filters: Filters to decide which entity should be deleted.
         :returns: None
         :raises: odb_exceptions.DBReferenceError
         :raises: sqlalchemy.orm.exc.NoResultFound
         """
-        (serial_session.query(models.LoadBalancer).
+        availability_zone = (
+            session.query(self.model_class).filter_by(**filters)
+            .with_for_update().one())
+        (session.query(models.LoadBalancer).
          filter(models.LoadBalancer.availability_zone == filters[consts.NAME]).
          filter(models.LoadBalancer.provisioning_status == consts.DELETED).
          update({models.LoadBalancer.availability_zone: consts.NIL_UUID},
                 synchronize_session=False))
-        availability_zone = (
-            serial_session.query(self.model_class).filter_by(**filters).one())
-        serial_session.delete(availability_zone)
+        session.delete(availability_zone)
 
 
 class AvailabilityZoneProfileRepository(_GetALLExceptDELETEDIdMixin,

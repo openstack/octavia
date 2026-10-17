@@ -18,10 +18,13 @@ from oslo_utils import uuidutils
 
 from oslo_config import cfg
 from oslo_config import fixture as oslo_fixture
+from sqlalchemy import orm
 
 from octavia.common import constants
 import octavia.common.context
 from octavia.common import exceptions
+from octavia.db import api as db_api
+from octavia.db import models as db_models
 from octavia.tests.functional.api.v2 import base
 
 
@@ -587,6 +590,44 @@ class TestFlavors(base.BaseAPITest):
         response = self.get(self.FLAVOR_PATH.format(
             flavor_id=flavor.get('id'))).json.get(self.root_tag)
         self.assertEqual('name1', response.get('name'))
+
+    def _create_deleted_lb(self, flavor_id):
+        lb = self.create_load_balancer(
+            uuidutils.generate_uuid(), name='lb1',
+            project_id=uuidutils.generate_uuid(), flavor_id=flavor_id,
+            admin_state_up=False).get('loadbalancer')
+        self.set_lb_status(lb.get('id'), status=constants.DELETED)
+        return lb.get('id')
+
+    def test_delete_used_only_by_deleted_lbs(self):
+        flavor = self.create_flavor('name1', 'description', self.fp.get('id'),
+                                    True)
+        lb_id = self._create_deleted_lb(flavor.get('id'))
+        self.delete(self.FLAVOR_PATH.format(flavor_id=flavor.get('id')))
+        self.get(self.FLAVOR_PATH.format(flavor_id=flavor.get('id')),
+                 status=404)
+        db_lb = self.lb_repo.get(db_api.get_session(), id=lb_id)
+        self.assertEqual(constants.NIL_UUID, db_lb.flavor_id)
+
+    def test_delete_locks_the_flavor_without_serializable(self):
+        # Percona XtraDB Cluster refuses SERIALIZABLE in its strict mode;
+        # the flavor row is locked instead.
+        flavor = self.create_flavor('name1', 'description', self.fp.get('id'),
+                                    True)
+        connection = mock.patch.object(
+            orm.Session, 'connection', autospec=True,
+            side_effect=orm.Session.connection)
+        lock = mock.patch.object(
+            orm.Query, 'with_for_update', autospec=True,
+            side_effect=orm.Query.with_for_update)
+        with connection as connection, lock as lock:
+            self.delete(self.FLAVOR_PATH.format(flavor_id=flavor.get('id')))
+        locked = [call.args[0].column_descriptions[0]['entity']
+                  for call in lock.call_args_list]
+        self.assertIn(db_models.Flavor, locked)
+        for call in connection.call_args_list:
+            options = call.kwargs.get('execution_options') or {}
+            self.assertNotIn('isolation_level', options)
 
     @mock.patch('octavia.db.repositories.FlavorRepository.delete')
     def test_delete_exception(self, mock_delete):
