@@ -1,0 +1,8 @@
+---
+fixes:
+  - |
+    Fixed the taskflow log filter raising ``IndexError`` or ``KeyError`` for
+    log messages without positional arguments. With taskflow 6.5.0 and later
+    this terminated the controller worker's conductor on a transient job
+    board failure, such as a Redis timeout, instead of letting it back off
+    and retry.
