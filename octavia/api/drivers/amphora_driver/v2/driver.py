@@ -173,9 +173,9 @@ class AmphoraProviderDriver(driver_base.ProviderDriver):
             lb_dict['enabled'] = lb_dict.pop('admin_state_up')
         # Put the qos_policy_id back under the vip element the controller
         # expects
-        vip_qos_policy_id = lb_dict.pop('vip_qos_policy_id', None)
         lb_dict.pop(consts.LOADBALANCER_ID)
-        if vip_qos_policy_id:
+        if 'vip_qos_policy_id' in lb_dict.keys():
+            vip_qos_policy_id = lb_dict.pop('vip_qos_policy_id')
             vip_dict = {"qos_policy_id": vip_qos_policy_id}
             lb_dict["vip"] = vip_dict
 

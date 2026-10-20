@@ -151,6 +151,21 @@ class TestAmphoraDriver(base.TestRpc):
                    consts.LOAD_BALANCER_UPDATES: lb_dict}
         mock_cast.assert_called_with({}, 'update_load_balancer', **payload)
 
+    @mock.patch('oslo_messaging.RPCClient.cast')
+    def test_loadbalancer_update_unset_qos(self, mock_cast):
+        qos_policy_id = uuidutils.generate_uuid()
+        old_provider_lb = driver_dm.LoadBalancer(
+            loadbalancer_id=self.sample_data.lb_id,
+            vip_qos_policy_id=qos_policy_id)
+        provider_lb = driver_dm.LoadBalancer(
+            loadbalancer_id=self.sample_data.lb_id,
+            vip_qos_policy_id=None)
+        lb_dict = {'vip': {'qos_policy_id': None}}
+        self.amp_driver.loadbalancer_update(old_provider_lb, provider_lb)
+        payload = {consts.ORIGINAL_LOADBALANCER: old_provider_lb.to_dict(),
+                   consts.LOAD_BALANCER_UPDATES: lb_dict}
+        mock_cast.assert_called_with({}, 'update_load_balancer', **payload)
+
     # Listener
     @mock.patch('oslo_messaging.RPCClient.cast')
     def test_listener_create(self, mock_cast):

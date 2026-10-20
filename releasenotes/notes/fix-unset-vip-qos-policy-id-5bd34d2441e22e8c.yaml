@@ -1,0 +1,5 @@
+---
+fixes:
+  - |
+    Fixed an issue where unsetting ``vip_qos_policy_id`` on a load balancer
+    update did not remove the QoS policy from the amphora VRRP ports.

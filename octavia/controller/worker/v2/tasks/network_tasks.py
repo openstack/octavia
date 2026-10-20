@@ -864,7 +864,7 @@ class ApplyQos(BaseNetworkTask):
             return
         if update_dict and update_dict.get(constants.VIP):
             vip_dict = update_dict[constants.VIP]
-            if vip_dict.get(constants.QOS_POLICY_ID):
+            if constants.QOS_POLICY_ID in vip_dict:
                 qos_policy_id = vip_dict[constants.QOS_POLICY_ID]
 
         self._apply_qos_on_vrrp_ports(loadbalancer, amps_data, qos_policy_id)
