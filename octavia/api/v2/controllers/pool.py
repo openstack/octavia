@@ -216,13 +216,25 @@ class PoolsController(base.BaseController):
         context = pecan_request.context.get('octavia_context')
         listener = None
         with context.session.begin():
-            if pool.loadbalancer_id:
-                pool.project_id, provider = self._get_lb_project_id_provider(
-                    context.session, pool.loadbalancer_id)
-            elif pool.listener_id:
+            if pool.listener_id:
                 listener = self.repositories.listener.get(
                     context.session, id=pool.listener_id)
+                if not listener:
+                    raise exceptions.NotFound(
+                        resource=data_models.Listener._name(),
+                        id=pool.listener_id)
+                if (pool.loadbalancer_id and
+                        pool.loadbalancer_id != listener.load_balancer_id):
+                    # The listener is not on the named load balancer.
+                    # Treat it the same as "not found" rather than leaking
+                    # whether a listener with this ID exists on some other
+                    # (possibly foreign) load balancer/project.
+                    raise exceptions.NotFound(
+                        resource=data_models.Listener._name(),
+                        id=pool.listener_id)
                 pool.loadbalancer_id = listener.load_balancer_id
+
+            if pool.loadbalancer_id:
                 pool.project_id, provider = self._get_lb_project_id_provider(
                     context.session, pool.loadbalancer_id)
             else:
