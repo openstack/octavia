@@ -425,6 +425,17 @@ class Repositories:
         if not success:
             return success
         for listener_id in listener_ids:
+            # Defense in depth: only lock/update listeners that actually
+            # belong to the load balancer we just locked above. This
+            # guards against a caller accidentally (or maliciously, see
+            # bug 2171383) passing a listener_id that belongs to a
+            # different load balancer, and returns a clean 404 instead of
+            # mutating an unrelated listener or raising an unhandled
+            # error for an unknown listener_id.
+            listener_db = self.listener.get_orm(session, id=listener_id)
+            if not listener_db or listener_db.load_balancer_id != lb_id:
+                raise exceptions.NotFound(
+                    resource=data_models.Listener._name(), id=listener_id)
             self.listener.update(session, listener_id,
                                  provisioning_status=listener_prov_status)
         if pool_id:
@@ -1086,7 +1097,8 @@ class ListenerRepository(BaseRepository):
                            filter_by(id=listener_id).subquery())
             pool_db = (session.query(models.Pool).
                        filter_by(id=pool_id).
-                       filter(models.LoadBalancer.id.in_(lb_subquery)).first())
+                       filter(models.Pool.load_balancer_id.in_(
+                           lb_subquery)).first())
         elif lb_id:
             pool_db = (session.query(models.Pool).
                        filter_by(id=pool_id).
