@@ -432,6 +432,9 @@ class MembersController(MemberController):
 
             old_member_uniques = {
                 (m.ip_address, m.protocol_port): m.id for m in old_members}
+            old_member_subnets = {
+                (m.ip_address, m.protocol_port): m.subnet_id
+                for m in old_members}
             new_member_uniques = [
                 (m.address, m.protocol_port) for m in members]
 
@@ -439,11 +442,16 @@ class MembersController(MemberController):
             new_members = []
             updated_members = []
             updated_member_uniques = set()
+            # Subnets of new members, and of updated members whose subnet
+            # changes, must be validated
+            subnets_to_validate = []
             for m in members:
                 key = (m.address, m.protocol_port)
                 if key not in old_member_uniques:
                     validate.ip_not_reserved(m.address)
                     new_members.append(m)
+                    if m.subnet_id:
+                        subnets_to_validate.append(m.subnet_id)
                 else:
                     m.id = old_member_uniques[key]
                     if key in updated_member_uniques:
@@ -454,6 +462,9 @@ class MembersController(MemberController):
                                      "same request."))
                     updated_member_uniques.add(key)
                     updated_members.append(m)
+                    if (m.subnet_id and
+                            m.subnet_id != old_member_subnets[key]):
+                        subnets_to_validate.append(m.subnet_id)
 
             # Find members that are deleted
             deleted_members = []
@@ -477,28 +488,25 @@ class MembersController(MemberController):
                 raise exceptions.QuotaException(
                     resource=data_models.Member._name())
 
-            provider_members = []
+            # NOTE(mnaser): In order to avoid hitting the Neutron API hard
+            # when creating many new members, we cache the
+            # validation results.
             valid_subnets = set()
+            for subnet_id in subnets_to_validate:
+                if subnet_id in valid_subnets:
+                    continue
+                # If the subnet does not exist,
+                # raise an exception and get out.
+                if not validate.subnet_exists(subnet_id, context=context):
+                    raise exceptions.NotFound(
+                        resource='Subnet', id=subnet_id)
+
+                # Mark the subnet as valid for future runs.
+                valid_subnets.add(subnet_id)
+
+            provider_members = []
             # Create new members
             for m in new_members:
-                # NOTE(mnaser): In order to avoid hitting the Neutron API hard
-                # when creating many new members, we cache the
-                # validation results. We also validate new
-                # members only since subnet ID is immutable.
-                # If the member doesn't have a subnet, or the subnet is
-                # already valid, move on. Run validate and add it to
-                # cache otherwise.
-                if m.subnet_id and m.subnet_id not in valid_subnets:
-                    # If the subnet does not exist,
-                    # raise an exception and get out.
-                    if not validate.subnet_exists(
-                            m.subnet_id, context=context):
-                        raise exceptions.NotFound(
-                            resource='Subnet', id=m.subnet_id)
-
-                    # Mark the subnet as valid for future runs.
-                    valid_subnets.add(m.subnet_id)
-
                 m = m.to_dict(render_unsets=False)
                 m['project_id'] = db_pool.project_id
                 created_member = self._graph_create(context.session, m)

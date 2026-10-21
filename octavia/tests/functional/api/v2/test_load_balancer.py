@@ -28,6 +28,7 @@ import octavia.common.context
 from octavia.common import data_models
 from octavia.common import exceptions
 from octavia.common import utils
+from octavia.common import validate
 from octavia.network import base as network_base
 from octavia.network import data_models as network_models
 from octavia.tests.functional.api.v2 import base
@@ -3529,6 +3530,63 @@ class TestLoadBalancerGraph(base.BaseAPITest):
         response = self.post(self.LBS_PATH, body)
         api_lb = response.json.get(self.root_tag)
         self._assert_graphs_equal(expected_lb, api_lb)
+
+    def _get_lb_body_with_member_subnet(self, subnet_id):
+        create_member, _ = self._get_member_bodies()
+        create_member['subnet_id'] = subnet_id
+        create_member2, _ = self._get_member_bodies(protocol_port=81)
+        create_member2['subnet_id'] = subnet_id
+        create_pool, _ = self._get_pool_bodies(
+            create_members=[create_member, create_member2])
+        create_listener, _ = self._get_listener_bodies(
+            create_default_pool_name=create_pool['name'])
+        create_lb, _ = self._get_lb_bodies(
+            create_listeners=[create_listener],
+            expected_listeners=[],
+            create_pools=[create_pool])
+        return self._build_body(create_lb)
+
+    def test_with_one_listener_one_member_with_subnet(self):
+        subnet_id = uuidutils.generate_uuid()
+        body = self._get_lb_body_with_member_subnet(subnet_id)
+        with mock.patch('octavia.common.validate.subnet_exists',
+                        wraps=validate.subnet_exists) as m_exists:
+            response = self.post(self.LBS_PATH, body)
+        api_lb = response.json.get(self.root_tag)
+        members = api_lb['pools'][0]['members']
+        self.assertEqual([subnet_id, subnet_id],
+                         [m['subnet_id'] for m in members])
+        # The subnet is validated only once for both members
+        member_calls = [c for c in m_exists.call_args_list
+                        if c.args and c.args[0] == subnet_id]
+        self.assertEqual([mock.call(subnet_id, context=mock.ANY)],
+                         member_calls)
+
+    @mock.patch('octavia.network.drivers.noop_driver.driver.'
+                'NoopNetworkDriver.delete_port')
+    def test_with_one_listener_one_member_bad_subnet(self, mock_delete_port):
+        subnet_id = uuidutils.generate_uuid()
+        body = self._get_lb_body_with_member_subnet(subnet_id)
+        # Without a port from the request the provider creates one for us
+        del body[self.root_tag]['vip_port_id']
+        real_subnet_exists = validate.subnet_exists
+
+        def subnet_exists(subnet_id_arg=None, context=None, **kwargs):
+            s_id = kwargs.get('subnet_id', subnet_id_arg)
+            if s_id == subnet_id:
+                raise exceptions.InvalidSubresource(resource='Subnet',
+                                                    id=s_id)
+            return real_subnet_exists(s_id, context=context)
+
+        with mock.patch('octavia.common.validate.subnet_exists',
+                        side_effect=subnet_exists):
+            response = self.post(self.LBS_PATH, body, status=400)
+        err_msg = f'Subnet {subnet_id} not found.'
+        self.assertEqual(err_msg, response.json.get('faultstring'))
+        # The VIP port created for the LB is cleaned up
+        mock_delete_port.assert_called_once()
+        lbs = self.get(self.LBS_PATH).json.get('loadbalancers')
+        self.assertEqual([], lbs)
 
     def test_with_one_listener_one_member_sriov(self):
         flavor_profile = self.create_flavor_profile(
