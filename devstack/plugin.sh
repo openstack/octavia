@@ -671,8 +671,6 @@ function octavia_cleanup {
     sudo rm -rf $OCTAVIA_DIR/bin/dual_ca
     sudo rm -rf $OCTAVIA_DIR/bin/single_ca
 
-    sudo rm -rf $NOVA_STATE_PATH $NOVA_AUTH_CACHE_DIR
-
     if [[ ${OCTAVIA_ENABLE_AMPHORAV2_JOBBOARD} == True ]]; then
         uninstall_redis
     fi
