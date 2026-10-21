@@ -339,10 +339,14 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
                 'tls_certificate_id': uuidutils.generate_uuid(),
                 'tls_enabled': False, 'tls_ciphers': None,
                 'tls_versions': None,
-                'alpn_protocols': None}
+                'alpn_protocols': None,
+                # The pool must be on the same load balancer as the
+                # listener it is being attached to (bug 2171383).
+                'load_balancer_id': self.load_balancer.id}
         pool_dm = self.repos.create_pool_on_load_balancer(
             self.session, pool, listener_id=self.listener.id)
         self.session.commit()
+        del pool['load_balancer_id']
         pool_dm_dict = pool_dm.to_dict()
         # These are not defined in the sample pool dict but will
         # be in the live data.
@@ -375,7 +379,10 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
                 'tls_enabled': False,
                 'tls_ciphers': None,
                 'tls_versions': None,
-                'alpn_protocols': None}
+                'alpn_protocols': None,
+                # The pool must be on the same load balancer as the
+                # listener it is being attached to (bug 2171383).
+                'load_balancer_id': self.load_balancer.id}
         sp = {'type': constants.SESSION_PERSISTENCE_HTTP_COOKIE,
               'cookie_name': 'cookie_monster',
               'pool_id': pool['id'],
@@ -385,6 +392,7 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
         pool_dm = self.repos.create_pool_on_load_balancer(
             self.session, pool, listener_id=self.listener.id)
         self.session.commit()
+        del pool['load_balancer_id']
         pool_dm_dict = pool_dm.to_dict()
         # These are not defined in the sample pool dict but will
         # be in the live data.
@@ -422,9 +430,13 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
                 'tags': ['test_tag'], 'tls_enabled': False,
                 'tls_ciphers': None,
                 'tls_versions': None,
-                'alpn_protocols': None}
+                'alpn_protocols': None,
+                # The pool must be on the same load balancer as the
+                # listener it is being attached to (bug 2171383).
+                'load_balancer_id': self.load_balancer.id}
         pool_dm = self.repos.create_pool_on_load_balancer(
             self.session, pool, listener_id=self.listener.id)
+        del pool['load_balancer_id']
         update_pool = {'protocol': constants.PROTOCOL_TCP, 'name': 'up_pool'}
         new_pool_dm = self.repos.update_pool_and_sp(
             self.session, pool_dm.id, update_pool)
@@ -460,7 +472,10 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
                 'tls_certificate_id': uuidutils.generate_uuid(),
                 'tls_enabled': False, 'tls_ciphers': None,
                 'tls_versions': None,
-                'alpn_protocols': None}
+                'alpn_protocols': None,
+                # The pool must be on the same load balancer as the
+                # listener it is being attached to (bug 2171383).
+                'load_balancer_id': self.load_balancer.id}
         sp = {'type': constants.SESSION_PERSISTENCE_HTTP_COOKIE,
               'cookie_name': 'cookie_monster',
               'pool_id': pool['id'],
@@ -469,6 +484,7 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
         pool.update({'session_persistence': sp})
         pool_dm = self.repos.create_pool_on_load_balancer(
             self.session, pool, listener_id=self.listener.id)
+        del pool['load_balancer_id']
         update_pool = {'protocol': constants.PROTOCOL_TCP, 'name': 'up_pool'}
         update_sp = {'type': constants.SESSION_PERSISTENCE_SOURCE_IP}
         update_pool.update({'session_persistence': update_sp})
@@ -504,7 +520,10 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
                 'enabled': True, 'operating_status': constants.ONLINE,
                 'provisioning_status': constants.ACTIVE,
                 'project_id': uuidutils.generate_uuid(),
-                'id': uuidutils.generate_uuid()}
+                'id': uuidutils.generate_uuid(),
+                # The pool must be on the same load balancer as the
+                # listener it is being attached to (bug 2171383).
+                'load_balancer_id': self.load_balancer.id}
         pool_dm = self.repos.create_pool_on_load_balancer(
             self.session, pool, listener_id=self.listener.id)
         self.session.commit()
@@ -530,7 +549,10 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
                 'enabled': True, 'operating_status': constants.ONLINE,
                 'provisioning_status': constants.ACTIVE,
                 'project_id': uuidutils.generate_uuid(),
-                'id': uuidutils.generate_uuid()}
+                'id': uuidutils.generate_uuid(),
+                # The pool must be on the same load balancer as the
+                # listener it is being attached to (bug 2171383).
+                'load_balancer_id': self.load_balancer.id}
         pool_dm = self.repos.create_pool_on_load_balancer(
             self.session, pool, listener_id=self.listener.id)
         update_pool = {'protocol': constants.PROTOCOL_TCP, 'name': 'up_pool',
@@ -547,7 +569,10 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
                 'enabled': True, 'operating_status': constants.ONLINE,
                 'provisioning_status': constants.PENDING_CREATE,
                 'project_id': uuidutils.generate_uuid(),
-                'id': uuidutils.generate_uuid()}
+                'id': uuidutils.generate_uuid(),
+                # The pool must be on the same load balancer as the
+                # listener it is being attached to (bug 2171383).
+                'load_balancer_id': self.load_balancer.id}
         sp = {'type': constants.SESSION_PERSISTENCE_HTTP_COOKIE,
               'cookie_name': 'cookie_monster',
               'pool_id': pool['id']}
@@ -572,9 +597,13 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
                 'provisioning_status': constants.ACTIVE,
                 'tls_enabled': False, 'tls_ciphers': None,
                 'tls_versions': None,
-                'alpn_protocols': None}
+                'alpn_protocols': None,
+                # The pool must be on the same load balancer as the
+                # listener it is being attached to (bug 2171383).
+                'load_balancer_id': self.load_balancer.id}
         pool_dm = self.repos.create_pool_on_load_balancer(
             self.session, pool, listener_id=self.listener.id)
+        del pool['load_balancer_id']
         update_pool = {'tls_certificate_id': uuidutils.generate_uuid()}
         new_pool_dm = self.repos.update_pool_and_sp(
             self.session, pool_dm.id, update_pool)
@@ -596,6 +625,86 @@ class AllRepositoriesTest(base.OctaviaDBTestBase):
         del pool_dm_dict['crl_container_id']
         pool.update(update_pool)
         self.assertEqual(pool, pool_dm_dict)
+
+    def test_lb_not_left_pending_update_on_listener_lb_mismatch(self):
+        # Regression test for the defense-in-depth fix for bug 2171383:
+        # test_and_set_lb_and_listeners_prov_status() first locks the load
+        # balancer (staging its provisioning_status to PENDING_UPDATE in
+        # the session) and only afterwards validates that each listener_id
+        # actually belongs to that load balancer, raising NotFound if not.
+        # This test confirms that the load balancer is NOT left stuck in
+        # PENDING_UPDATE once the caller rolls back the session on that
+        # exception -- which is what every real API controller caller does
+        # (see e.g. PoolsController.post()'s try/except/rollback wrapper).
+        #
+        # Note: self.load_balancer/other_lb/other_listener are
+        # octavia.common.data_models snapshots (as returned by
+        # repository.create()), not live SQLAlchemy ORM objects -- they
+        # never change after creation. So all assertions below re-fetch
+        # the current state with repository.get()/get_orm(), which always
+        # issues a fresh query (including picking up uncommitted, staged
+        # changes within the same open transaction).
+        other_lb = self.repos.load_balancer.create(
+            self.session, id=uuidutils.generate_uuid(),
+            project_id=self.FAKE_UUID_2, name="other_lb_name",
+            description="other_lb_description",
+            provisioning_status=constants.ACTIVE,
+            operating_status=constants.ONLINE, enabled=True)
+        other_listener = self.repos.listener.create(
+            self.session, id=uuidutils.generate_uuid(),
+            protocol=constants.PROTOCOL_HTTP, protocol_port=81,
+            enabled=True, provisioning_status=constants.ACTIVE,
+            operating_status=constants.ONLINE,
+            load_balancer_id=other_lb.id)
+        self.session.commit()
+
+        # self.load_balancer/self.listener are set up in setUp() and
+        # belong together. other_listener belongs to a DIFFERENT load
+        # balancer (other_lb). Ask to lock self.load_balancer while
+        # passing other_listener's id -- a mismatch that must be rejected.
+        self.assertRaises(
+            exceptions.NotFound,
+            self.repos.test_and_set_lb_and_listeners_prov_status,
+            self.session, self.load_balancer.id,
+            constants.PENDING_UPDATE, constants.PENDING_UPDATE,
+            listener_ids=[other_listener.id])
+
+        # Before any rollback, the load balancer's provisioning_status was
+        # already staged (and flushed within the still-open transaction)
+        # to PENDING_UPDATE by test_and_set_provisioning_status(), before
+        # the mismatched listener_id was ever noticed. This demonstrates
+        # exactly why every caller MUST roll back the session when this
+        # method raises -- otherwise the load balancer would be left
+        # locked in the database.
+        lb_during_txn = self.repos.load_balancer.get(
+            self.session, id=self.load_balancer.id)
+        self.assertEqual(constants.PENDING_UPDATE,
+                         lb_during_txn.provisioning_status)
+
+        # The unrelated listener was never touched at all: the mismatch
+        # is detected before its status is staged.
+        listener_during_txn = self.repos.listener.get(
+            self.session, id=other_listener.id)
+        self.assertEqual(constants.ACTIVE,
+                         listener_during_txn.provisioning_status)
+
+        # Simulate what every real API controller caller does on
+        # exception: roll back the session.
+        self.session.rollback()
+
+        # After rollback, the load balancer must NOT be left stuck in
+        # PENDING_UPDATE -- it must be restored to its original ACTIVE
+        # status in the database.
+        new_lb = self.repos.load_balancer.get(
+            self.session, id=self.load_balancer.id)
+        self.assertEqual(constants.ACTIVE, new_lb.provisioning_status)
+
+        # The unrelated listener on the other load balancer remains
+        # completely untouched.
+        new_other_listener = self.repos.listener.get(
+            self.session, id=other_listener.id)
+        self.assertEqual(constants.ACTIVE,
+                         new_other_listener.provisioning_status)
 
     def test_sqlite_transactions_broken(self):
         self.skipTest("SLQAlchemy/PySqlite transaction handling is broken. "
@@ -2831,6 +2940,58 @@ class TestListenerRepositoryTest(BaseRepositoryTest):
         self.session.commit()
         self.assertRaises(exceptions.NotFound, self.create_listener,
                           self.FAKE_UUID_1, 80, default_pool_id=pool.id)
+
+    def test_update_listener_default_pool_on_different_lb_raises_not_found(
+            self):
+        # Regression test for bug 2171383: ListenerRepository._pool_check()
+        # has two branches -- lb_id= (used by create(), exercised by
+        # test_create_listener_on_different_lb_than_default_pool above) and
+        # listener_id= (used by update(), when setting default_pool_id on
+        # an EXISTING listener). Before the fix, the listener_id= branch's
+        # query was a cartesian product with no actual join between Pool
+        # and LoadBalancer (`filter(models.LoadBalancer.id.in_(
+        # lb_subquery))` instead of `filter(models.Pool.load_balancer_id.
+        # in_(lb_subquery))`), so it accepted a pool belonging to ANY load
+        # balancer as long as the listener's own load balancer merely
+        # existed. This is the exact code path
+        # create_pool_on_load_balancer() -> listener.update(
+        # default_pool_id=...) hits when a pool POST names a
+        # listener_id, which is how bug 2171383 let an attacker attach a
+        # pool from one load balancer as the default_pool of a listener
+        # on a completely different (possibly foreign-project) load
+        # balancer.
+        listener = self.create_listener(self.FAKE_UUID_1, 80)
+
+        other_lb = self.lb_repo.create(
+            self.session, id=uuidutils.generate_uuid(),
+            project_id=self.FAKE_UUID_2, name="other_lb_name",
+            description="other_lb_description",
+            provisioning_status=constants.ACTIVE,
+            operating_status=constants.ONLINE, enabled=True)
+        self.session.commit()
+        other_lb_pool = self.pool_repo.create(
+            self.session, id=uuidutils.generate_uuid(),
+            project_id=self.FAKE_UUID_2, name="other_lb_pool",
+            description="pool on a different load balancer",
+            protocol=constants.PROTOCOL_HTTP,
+            lb_algorithm=constants.LB_ALGORITHM_ROUND_ROBIN,
+            provisioning_status=constants.ACTIVE,
+            operating_status=constants.ONLINE, enabled=True,
+            load_balancer_id=other_lb.id)
+        self.session.commit()
+
+        # listener belongs to self.load_balancer; other_lb_pool belongs to
+        # a DIFFERENT load balancer (other_lb). Updating listener's
+        # default_pool_id to point at other_lb_pool must be rejected by
+        # _pool_check()'s listener_id= branch.
+        self.assertRaises(
+            exceptions.NotFound, self.listener_repo.update,
+            self.session, listener.id, default_pool_id=other_lb_pool.id)
+
+        # The listener's default_pool_id must remain unset -- the
+        # rejected pool must not have been attached.
+        new_listener = self.listener_repo.get(self.session, id=listener.id)
+        self.assertIsNone(new_listener.default_pool_id)
 
     def test_create_2_sni_containers(self):
         listener = self.create_listener(self.FAKE_UUID_1, 80)
