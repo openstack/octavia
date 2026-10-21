@@ -891,6 +891,98 @@ class TestPool(base.BaseAPITest):
             lb_id=self.lb_id, listener_id=self.listener_id,
             pool_id=api_pool.get('id'))
 
+    def test_create_with_listener_on_other_lb(self):
+        # Regression test for bug 2171383: POST /v2/lbaas/pools with both
+        # loadbalancer_id and listener_id must not silently skip the check
+        # that the listener actually belongs to that load balancer. A pool
+        # created on lb2 must not be allowed to become the default_pool of
+        # a listener that lives on a completely different load balancer
+        # (self.lb_id), even within the same project.
+        lb2 = self.create_load_balancer(
+            uuidutils.generate_uuid(),
+            project_id=self.project_id).get('loadbalancer')
+        lb2_id = lb2.get('id')
+        self.set_lb_status(lb2_id)
+
+        self.create_pool(
+            lb2_id,
+            constants.PROTOCOL_HTTP,
+            constants.LB_ALGORITHM_ROUND_ROBIN,
+            listener_id=self.listener_id, status=404)
+
+        # The victim listener (on self.lb_id, a different load balancer)
+        # must be completely untouched by the rejected request.
+        listener = self.get_listener(self.listener_id).get('listener')
+        self.assertIsNone(listener.get('default_pool_id'))
+        self.assert_correct_status(
+            lb_id=self.lb_id, listener_id=self.listener_id,
+            lb_prov_status=constants.ACTIVE,
+            listener_prov_status=constants.ACTIVE)
+
+    def test_create_with_listener_other_project(self):
+        # Regression test for bug 2171383: a tenant must not be able to
+        # attach a pool created on their own load balancer as the
+        # default_pool of a listener belonging to a DIFFERENT project, by
+        # naming their own loadbalancer_id together with the victim's
+        # listener_id in a single POST.
+        other_project_id = uuidutils.generate_uuid()
+        victim_lb = self.create_load_balancer(
+            uuidutils.generate_uuid(),
+            project_id=other_project_id).get('loadbalancer')
+        victim_lb_id = victim_lb.get('id')
+        self.set_lb_status(victim_lb_id)
+        victim_listener = self.create_listener(
+            constants.PROTOCOL_HTTP, 80, victim_lb_id).get('listener')
+        victim_listener_id = victim_listener.get('id')
+        self.set_lb_status(victim_lb_id)
+
+        self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
+        auth_strategy = self.conf.conf.api_settings.get('auth_strategy')
+        self.conf.config(group='api_settings', auth_strategy=constants.TESTING)
+        override_credentials = {
+            'service_user_id': None,
+            'user_domain_id': None,
+            'is_admin_project': True,
+            'service_project_domain_id': None,
+            'service_project_id': None,
+            'roles': ['load-balancer_member', 'member'],
+            'user_id': None,
+            'is_admin': False,
+            'service_user_domain_id': None,
+            'project_domain_id': None,
+            'service_roles': [],
+            'project_id': self.project_id}
+        with mock.patch(
+                "oslo_context.context.RequestContext.to_policy_values",
+                return_value=override_credentials):
+            # Attacker (self.project_id) POSTs their own loadbalancer_id
+            # together with the victim's listener_id.
+            self.create_pool(
+                self.lb_id,
+                constants.PROTOCOL_HTTP,
+                constants.LB_ALGORITHM_ROUND_ROBIN,
+                listener_id=victim_listener_id, status=404)
+        self.conf.config(group='api_settings', auth_strategy=auth_strategy)
+
+        # The victim listener (different project, different load balancer)
+        # must be completely untouched by the rejected request.
+        listener = self.get_listener(victim_listener_id).get('listener')
+        self.assertIsNone(listener.get('default_pool_id'))
+        self.assert_correct_status(
+            lb_id=victim_lb_id, listener_id=victim_listener_id,
+            lb_prov_status=constants.ACTIVE,
+            listener_prov_status=constants.ACTIVE)
+
+    def test_create_with_bad_listener_id(self):
+        # Regression test for bug 2171383: when loadbalancer_id and a
+        # non-existent listener_id are both supplied, the API must return
+        # a clean 404, not fall through to an unhandled DB-level error.
+        self.create_pool(
+            self.lb_id,
+            constants.PROTOCOL_HTTP,
+            constants.LB_ALGORITHM_ROUND_ROBIN,
+            listener_id=uuidutils.generate_uuid(), status=404)
+
     def test_create_with_project_id(self):
         optionals = {
             'listener_id': self.listener_id,
