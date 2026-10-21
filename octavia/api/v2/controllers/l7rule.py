@@ -50,8 +50,12 @@ class L7RuleController(base.BaseController):
             db_l7rule = self._get_db_l7rule(context.session, id,
                                             show_deleted=False)
 
-        self._auth_validate_action(context, db_l7rule.project_id,
-                                   constants.RBAC_GET_ONE)
+            # Check the Policy ID of the L7 Rule in the DB
+            # matches the L7 Policy ID of the request
+            self._validate_l7policy_id(id, db_l7rule.l7policy_id)
+
+            self._auth_validate_action(context, db_l7rule.project_id,
+                                       constants.RBAC_GET_ONE)
 
         result = self._convert_db_to_type(
             db_l7rule, l7rule_types.L7RuleResponse)
@@ -199,6 +203,10 @@ class L7RuleController(base.BaseController):
 
         return db_rule
 
+    def _validate_l7policy_id(self, rule_id, db_rule_l7policy_id):
+        if db_rule_l7policy_id != self.l7policy_id:
+            raise exceptions.NotFound(resource='L7Rule', id=rule_id)
+
     @wsme_pecan.wsexpose(l7rule_types.L7RuleRootResponse,
                          wtypes.text, body=l7rule_types.L7RuleRootPUT,
                          status_code=200)
@@ -209,6 +217,11 @@ class L7RuleController(base.BaseController):
         with context.session.begin():
             db_l7rule = self._get_db_l7rule(context.session, id,
                                             show_deleted=False)
+
+            # Check the Policy ID of the L7 Rule in the DB
+            # matches the L7 Policy ID of the request
+            self._validate_l7policy_id(id, db_l7rule.l7policy_id)
+
             db_l7policy = self._get_db_l7policy(context.session,
                                                 self.l7policy_id,
                                                 show_deleted=False)
@@ -278,6 +291,10 @@ class L7RuleController(base.BaseController):
         with context.session.begin():
             db_l7rule = self._get_db_l7rule(context.session, id,
                                             show_deleted=False)
+
+            # Check the Policy ID of the L7 Rule in the DB
+            # matches the L7 Policy ID of the request
+            self._validate_l7policy_id(id, db_l7rule.l7policy_id)
 
             db_l7policy = self._get_db_l7policy(context.session,
                                                 self.l7policy_id,
