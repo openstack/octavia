@@ -125,6 +125,40 @@ class AllowedAddressPairsDriver(neutron_base.BaseNeutronDriver):
             raise base.PlugVIPException(message) from e
         return interface
 
+    def _cleanup_vrrp_port(self, amphora, port_id):
+        """Detach and delete a VRRP port after VIP setup failed."""
+        try:
+            self.compute.detach_port(compute_id=amphora.compute_id,
+                                     port_id=port_id)
+
+            port_detach_timeout = CONF.networking.port_detach_timeout
+            start = time.time()
+            while time.time() - start < port_detach_timeout:
+                plugged_port_ids = {
+                    interface.port_id for interface in
+                    self.get_plugged_networks(amphora.compute_id)}
+                if port_id not in plugged_port_ids:
+                    break
+                time.sleep(CONF.networking.retry_interval)
+            else:
+                LOG.warning("VRRP port %s is still attached to compute %s "
+                            "after %s seconds.", port_id, amphora.compute_id,
+                            port_detach_timeout)
+        except Exception:
+            LOG.exception('Failed to detach VRRP port %s from compute %s '
+                          'during cleanup.', port_id, amphora.compute_id)
+
+        try:
+            self.network_proxy.delete_port(port_id)
+            LOG.debug('Deleted base (VRRP) port %s after VIP plug failure.',
+                      port_id)
+        except os_exceptions.ResourceNotFound:
+            pass
+        except Exception:
+            LOG.exception('Failed to delete base (VRRP) port %s after VIP '
+                          'plug failure. This resource may need to be '
+                          'manually deleted.', port_id)
+
     def _add_vip_address_pairs(self, port_id, vip_address_list):
         try:
             self._add_allowed_address_pairs_to_port(port_id, vip_address_list)
@@ -504,32 +538,39 @@ class AllowedAddressPairsDriver(neutron_base.BaseNeutronDriver):
     def plug_aap_port(self, load_balancer, vip, amphora, subnet):
         interface = self._get_plugged_interface(
             amphora.compute_id, subnet.network_id, amphora.lb_network_ip)
-        if not interface:
-            interface = self._plug_amphora_vip(amphora, subnet, vip)
+        created_here = False
+        try:
+            if not interface:
+                interface = self._plug_amphora_vip(amphora, subnet, vip)
+                created_here = True
 
-        aap_address_list = [vip.ip_address]
-        for add_vip in load_balancer.additional_vips:
-            aap_address_list.append(add_vip.ip_address)
-        self._add_vip_address_pairs(interface.port_id, aap_address_list)
+            aap_address_list = [vip.ip_address]
+            for add_vip in load_balancer.additional_vips:
+                aap_address_list.append(add_vip.ip_address)
+            self._add_vip_address_pairs(interface.port_id, aap_address_list)
 
-        if self.sec_grp_enabled:
-            self._add_vip_security_group_to_port(load_balancer.id,
-                                                 interface.port_id,
-                                                 vip_sg_ids=vip.sg_ids)
-        vrrp_ip = None
-        for fixed_ip in interface.fixed_ips:
-            is_correct_subnet = fixed_ip.subnet_id == subnet.id
-            is_management_ip = fixed_ip.ip_address == amphora.lb_network_ip
-            if is_correct_subnet and not is_management_ip:
-                vrrp_ip = fixed_ip.ip_address
-                break
-        return data_models.Amphora(
-            id=amphora.id,
-            compute_id=amphora.compute_id,
-            vrrp_ip=vrrp_ip,
-            ha_ip=vip.ip_address,
-            vrrp_port_id=interface.port_id,
-            ha_port_id=vip.port_id)
+            if self.sec_grp_enabled:
+                self._add_vip_security_group_to_port(load_balancer.id,
+                                                     interface.port_id,
+                                                     vip_sg_ids=vip.sg_ids)
+            vrrp_ip = None
+            for fixed_ip in interface.fixed_ips:
+                is_correct_subnet = fixed_ip.subnet_id == subnet.id
+                is_management_ip = fixed_ip.ip_address == amphora.lb_network_ip
+                if is_correct_subnet and not is_management_ip:
+                    vrrp_ip = fixed_ip.ip_address
+                    break
+            return data_models.Amphora(
+                id=amphora.id,
+                compute_id=amphora.compute_id,
+                vrrp_ip=vrrp_ip,
+                ha_ip=vip.ip_address,
+                vrrp_port_id=interface.port_id,
+                ha_port_id=vip.port_id)
+        except Exception:
+            if created_here:
+                self._cleanup_vrrp_port(amphora, interface.port_id)
+            raise
 
     def _validate_fixed_ip(self, fixed_ips, subnet_id, ip_address):
         """Validate an IP address exists in a fixed_ips dict

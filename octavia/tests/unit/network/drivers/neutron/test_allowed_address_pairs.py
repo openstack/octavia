@@ -490,6 +490,93 @@ class TestAllowedAddressPairsDriver(base.TestCase):
                           lb, lb.vip, lb.amphorae[0], subnet)
         self.driver.network_proxy.delete_port.assert_called_once()
 
+    def _mock_new_vrrp_interface(self, port_id):
+        interface = network_models.Interface()
+        interface.port_id = port_id
+        self.driver._get_plugged_interface = mock.Mock(return_value=None)
+        self.driver._plug_amphora_vip = mock.Mock(return_value=interface)
+        self.driver.get_plugged_networks = mock.Mock(return_value=[])
+        return interface
+
+    def test_plug_aap_port_aap_failure_cleans_up_created_port(self):
+        lb = dmh.generate_load_balancer_tree()
+        subnet = network_models.Subnet(id=t_constants.MOCK_VIP_SUBNET_ID,
+                                       network_id=t_constants.MOCK_VIP_NET_ID)
+        port_id = 'new-vrrp-port'
+        self._mock_new_vrrp_interface(port_id)
+        self.driver.sec_grp_enabled = False
+        original_error = network_base.PlugVIPException('AAP update failed')
+        self.driver._add_vip_address_pairs = mock.Mock(
+            side_effect=original_error)
+
+        with self.assertRaises(network_base.PlugVIPException) as raised:
+            self.driver.plug_aap_port(lb, lb.vip, lb.amphorae[0], subnet)
+
+        self.assertIs(original_error, raised.exception)
+        self.driver.compute.detach_port.assert_called_once_with(
+            compute_id=lb.amphorae[0].compute_id, port_id=port_id)
+        self.driver.network_proxy.delete_port.assert_called_once_with(port_id)
+
+    def test_plug_aap_port_sg_failure_cleans_up_created_port(self):
+        lb = dmh.generate_load_balancer_tree()
+        subnet = network_models.Subnet(id=t_constants.MOCK_VIP_SUBNET_ID,
+                                       network_id=t_constants.MOCK_VIP_NET_ID)
+        port_id = 'new-vrrp-port'
+        self._mock_new_vrrp_interface(port_id)
+        self.driver.sec_grp_enabled = True
+        self.driver._add_vip_address_pairs = mock.Mock()
+        self.driver._add_vip_security_group_to_port = mock.Mock(
+            side_effect=network_base.PlugVIPException(
+                'security group update failed'))
+
+        self.assertRaises(
+            network_base.PlugVIPException, self.driver.plug_aap_port,
+            lb, lb.vip, lb.amphorae[0], subnet)
+
+        self.driver.compute.detach_port.assert_called_once_with(
+            compute_id=lb.amphorae[0].compute_id, port_id=port_id)
+        self.driver.network_proxy.delete_port.assert_called_once_with(port_id)
+
+    def test_plug_aap_port_existing_interface_is_not_cleaned_up_on_failure(
+            self):
+        lb = dmh.generate_load_balancer_tree()
+        subnet = network_models.Subnet(id=t_constants.MOCK_VIP_SUBNET_ID,
+                                       network_id=t_constants.MOCK_VIP_NET_ID)
+        interface = network_models.Interface()
+        interface.port_id = 'existing-vrrp-port'
+        self.driver._get_plugged_interface = mock.Mock(
+            return_value=interface)
+        self.driver._add_vip_address_pairs = mock.Mock(
+            side_effect=network_base.PlugVIPException('AAP update failed'))
+
+        self.assertRaises(
+            network_base.PlugVIPException, self.driver.plug_aap_port,
+            lb, lb.vip, lb.amphorae[0], subnet)
+
+        self.driver.compute.detach_port.assert_not_called()
+        self.driver.network_proxy.delete_port.assert_not_called()
+
+    def test_plug_aap_port_cleanup_failure_preserves_original_error(self):
+        lb = dmh.generate_load_balancer_tree()
+        subnet = network_models.Subnet(id=t_constants.MOCK_VIP_SUBNET_ID,
+                                       network_id=t_constants.MOCK_VIP_NET_ID)
+        port_id = 'new-vrrp-port'
+        self._mock_new_vrrp_interface(port_id)
+        self.driver.sec_grp_enabled = False
+        original_error = network_base.PlugVIPException('AAP update failed')
+        self.driver._add_vip_address_pairs = mock.Mock(
+            side_effect=original_error)
+        self.driver.compute.detach_port.side_effect = Exception(
+            'detach failed')
+        self.driver.network_proxy.delete_port.side_effect = Exception(
+            'delete failed')
+
+        with self.assertRaises(network_base.PlugVIPException) as raised:
+            self.driver.plug_aap_port(lb, lb.vip, lb.amphorae[0], subnet)
+
+        self.assertIs(original_error, raised.exception)
+        self.driver.network_proxy.delete_port.assert_called_once_with(port_id)
+
     def test_plug_aap_port_with_add_vips(self):
         additional_vips = [
             {'ip_address': t_constants.MOCK_IP_ADDRESS2,
