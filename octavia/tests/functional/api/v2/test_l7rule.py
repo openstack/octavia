@@ -105,6 +105,39 @@ class TestL7Rule(base.BaseAPITest):
         self.conf.config(group='api_settings', auth_strategy=auth_strategy)
         self.assertEqual(self.NOT_AUTHORIZED_BODY, response)
 
+    def test_get_with_wrong_l7policy(self):
+        """Regression test for bug 2171382.
+
+        GET must verify that the rule named in the URL actually belongs to
+        the l7policy named in the URL. Without that check, a rule can be
+        fetched through a different, real l7policy's URL within the same
+        project ("answers under the wrong path") instead of the request
+        being rejected with 404.
+
+        Note: unlike PUT/DELETE, GET already authorizes against the
+        rule's own project, so this does not leak data across tenants by
+        itself -- but the policy/rule relationship in the URL should
+        still be validated for consistency.
+        """
+        victim_rule = self.create_l7rule(
+            self.l7policy_id, constants.L7RULE_TYPE_PATH,
+            constants.L7RULE_COMPARE_TYPE_STARTS_WITH,
+            '/admin').get(self.root_tag)
+        victim_rule_id = victim_rule.get('id')
+        self.set_lb_status(self.lb_id)
+
+        # A second, real l7policy in the SAME project/listener that does
+        # NOT own the rule created above.
+        other_l7policy = self.create_l7policy(
+            self.listener_id, constants.L7POLICY_ACTION_REJECT).get(
+            'l7policy')
+        other_l7policy_id = other_l7policy.get('id')
+        self.set_lb_status(self.lb_id)
+
+        wrong_path = self.L7RULE_PATH.format(
+            l7policy_id=other_l7policy_id, l7rule_id=victim_rule_id)
+        self.get(wrong_path, status=404)
+
     def test_get_deleted_gives_404(self):
         api_l7rule = self.create_l7rule(
             self.l7policy_id, constants.L7RULE_TYPE_PATH,
@@ -960,6 +993,96 @@ class TestL7Rule(base.BaseAPITest):
             l7policy_prov_status=constants.ACTIVE,
             l7rule_prov_status=constants.ACTIVE)
 
+    def test_update_with_wrong_l7policy(self):
+        """Regression test for bug 2171382.
+
+        PUT must verify that the rule named in the URL actually belongs to
+        the l7policy named in the URL. Without that check, a tenant can
+        name their own (properly authorized) l7policy in the URL together
+        with another tenant's rule UUID, and the request is wrongly
+        accepted instead of rejected with 404.
+        """
+        # Victim: the rule lives under self.l7policy_id / self.lb_id,
+        # which belong to self.project_id.
+        victim_rule = self.create_l7rule(
+            self.l7policy_id, constants.L7RULE_TYPE_PATH,
+            constants.L7RULE_COMPARE_TYPE_STARTS_WITH,
+            '/admin').get(self.root_tag)
+        victim_rule_id = victim_rule.get('id')
+        self.set_lb_status(self.lb_id)
+
+        # Attacker: a different project with its own, fully separate
+        # load balancer / listener / l7policy.
+        attacker_project_id = uuidutils.generate_uuid()
+        attacker_lb = self.create_load_balancer(
+            uuidutils.generate_uuid(),
+            project_id=attacker_project_id).get('loadbalancer')
+        attacker_lb_id = attacker_lb.get('id')
+        self.set_lb_status(attacker_lb_id)
+        attacker_listener = self.create_listener(
+            constants.PROTOCOL_HTTP, 80, lb_id=attacker_lb_id).get(
+            'listener')
+        attacker_listener_id = attacker_listener.get('id')
+        self.set_lb_status(attacker_lb_id)
+        attacker_l7policy = self.create_l7policy(
+            attacker_listener_id, constants.L7POLICY_ACTION_REJECT).get(
+            'l7policy')
+        attacker_l7policy_id = attacker_l7policy.get('id')
+        self.set_lb_status(attacker_lb_id)
+
+        # The attacker sends PUT to their OWN l7policy's URL, but with the
+        # VICTIM's rule_id. The attacker is a legitimate, fully-authorized
+        # member of their own project/policy -- that is the whole point of
+        # the bug: authorization succeeds against the URL's (attacker's)
+        # policy, and the missing check is whether the loaded rule actually
+        # belongs to that policy.
+        attack_path = self.L7RULE_PATH.format(
+            l7policy_id=attacker_l7policy_id, l7rule_id=victim_rule_id)
+        new_l7rule = {'value': '/'}
+
+        self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
+        auth_strategy = self.conf.conf.api_settings.get('auth_strategy')
+        self.conf.config(group='api_settings', auth_strategy=constants.TESTING)
+        override_credentials = {
+            'service_user_id': None,
+            'user_domain_id': None,
+            'is_admin_project': True,
+            'service_project_domain_id': None,
+            'service_project_id': None,
+            'roles': ['load-balancer_member', 'member'],
+            'user_id': None,
+            'is_admin': False,
+            'service_user_domain_id': None,
+            'project_domain_id': None,
+            'service_roles': [],
+            'project_id': attacker_project_id}
+        with mock.patch(
+                "oslo_context.context.RequestContext.to_policy_values",
+                return_value=override_credentials):
+            self.put(attack_path, self._build_body(new_l7rule), status=404)
+        self.conf.config(group='api_settings', auth_strategy=auth_strategy)
+
+        # The victim's rule must be completely unaffected.
+        unaffected_rule = self.get(self.l7rule_path.format(
+            l7rule_id=victim_rule_id)).json.get(self.root_tag)
+        self.assertEqual('/admin', unaffected_rule.get('value'))
+        self.assert_correct_status(
+            lb_id=self.lb_id, listener_id=self.listener_id,
+            l7policy_id=self.l7policy_id, l7rule_id=victim_rule_id,
+            lb_prov_status=constants.ACTIVE,
+            listener_prov_status=constants.ACTIVE,
+            l7policy_prov_status=constants.ACTIVE,
+            l7rule_prov_status=constants.ACTIVE)
+
+        # The attacker's own (never legitimately touched) resources must
+        # also remain ACTIVE, not locked into PENDING_UPDATE.
+        self.assert_correct_status(
+            lb_id=attacker_lb_id, listener_id=attacker_listener_id,
+            l7policy_id=attacker_l7policy_id,
+            lb_prov_status=constants.ACTIVE,
+            listener_prov_status=constants.ACTIVE,
+            l7policy_prov_status=constants.ACTIVE)
+
     def test_bad_update(self):
         l7rule = self.create_l7rule(
             self.l7policy_id, constants.L7RULE_TYPE_PATH,
@@ -1168,6 +1291,95 @@ class TestL7Rule(base.BaseAPITest):
             listener_prov_status=constants.ACTIVE,
             l7policy_prov_status=constants.ACTIVE,
             l7rule_prov_status=constants.ACTIVE)
+
+    def test_delete_with_wrong_l7policy(self):
+        """Regression test for bug 2171382.
+
+        DELETE must verify that the rule named in the URL actually belongs
+        to the l7policy named in the URL. Without that check, a tenant can
+        name their own (properly authorized) l7policy in the URL together
+        with another tenant's rule UUID, and the rule is wrongly deleted
+        instead of the request being rejected with 404.
+        """
+        # Victim: the rule lives under self.l7policy_id / self.lb_id,
+        # which belong to self.project_id.
+        victim_rule = self.create_l7rule(
+            self.l7policy_id, constants.L7RULE_TYPE_PATH,
+            constants.L7RULE_COMPARE_TYPE_STARTS_WITH,
+            '/admin').get(self.root_tag)
+        victim_rule_id = victim_rule.get('id')
+        self.set_lb_status(self.lb_id)
+
+        # Attacker: a different project with its own, fully separate
+        # load balancer / listener / l7policy.
+        attacker_project_id = uuidutils.generate_uuid()
+        attacker_lb = self.create_load_balancer(
+            uuidutils.generate_uuid(),
+            project_id=attacker_project_id).get('loadbalancer')
+        attacker_lb_id = attacker_lb.get('id')
+        self.set_lb_status(attacker_lb_id)
+        attacker_listener = self.create_listener(
+            constants.PROTOCOL_HTTP, 80, lb_id=attacker_lb_id).get(
+            'listener')
+        attacker_listener_id = attacker_listener.get('id')
+        self.set_lb_status(attacker_lb_id)
+        attacker_l7policy = self.create_l7policy(
+            attacker_listener_id, constants.L7POLICY_ACTION_REJECT).get(
+            'l7policy')
+        attacker_l7policy_id = attacker_l7policy.get('id')
+        self.set_lb_status(attacker_lb_id)
+
+        # The attacker sends DELETE to their OWN l7policy's URL, but with
+        # the VICTIM's rule_id. The attacker is a legitimate, fully-
+        # authorized member of their own project/policy -- that is the
+        # whole point of the bug: authorization succeeds against the URL's
+        # (attacker's) policy, and the missing check is whether the loaded
+        # rule actually belongs to that policy.
+        attack_path = self.L7RULE_PATH.format(
+            l7policy_id=attacker_l7policy_id, l7rule_id=victim_rule_id)
+
+        self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
+        auth_strategy = self.conf.conf.api_settings.get('auth_strategy')
+        self.conf.config(group='api_settings', auth_strategy=constants.TESTING)
+        override_credentials = {
+            'service_user_id': None,
+            'user_domain_id': None,
+            'is_admin_project': True,
+            'service_project_domain_id': None,
+            'service_project_id': None,
+            'roles': ['load-balancer_member', 'member'],
+            'user_id': None,
+            'is_admin': False,
+            'service_user_domain_id': None,
+            'project_domain_id': None,
+            'service_roles': [],
+            'project_id': attacker_project_id}
+        with mock.patch(
+                "oslo_context.context.RequestContext.to_policy_values",
+                return_value=override_credentials):
+            self.delete(attack_path, status=404)
+        self.conf.config(group='api_settings', auth_strategy=auth_strategy)
+
+        # The victim's rule must still exist, completely unaffected.
+        unaffected_rule = self.get(self.l7rule_path.format(
+            l7rule_id=victim_rule_id)).json.get(self.root_tag)
+        self.assertEqual('/admin', unaffected_rule.get('value'))
+        self.assert_correct_status(
+            lb_id=self.lb_id, listener_id=self.listener_id,
+            l7policy_id=self.l7policy_id, l7rule_id=victim_rule_id,
+            lb_prov_status=constants.ACTIVE,
+            listener_prov_status=constants.ACTIVE,
+            l7policy_prov_status=constants.ACTIVE,
+            l7rule_prov_status=constants.ACTIVE)
+
+        # The attacker's own (never legitimately touched) resources must
+        # also remain ACTIVE, not locked into PENDING_UPDATE.
+        self.assert_correct_status(
+            lb_id=attacker_lb_id, listener_id=attacker_listener_id,
+            l7policy_id=attacker_l7policy_id,
+            lb_prov_status=constants.ACTIVE,
+            listener_prov_status=constants.ACTIVE,
+            l7policy_prov_status=constants.ACTIVE)
 
     def test_bad_delete(self):
         self.delete(self.l7rule_path.format(

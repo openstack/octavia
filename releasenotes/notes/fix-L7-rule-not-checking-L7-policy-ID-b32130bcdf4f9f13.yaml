@@ -1,0 +1,6 @@
+---
+security:
+  - |
+    Fixed an issue where the L7 Policy ID wasn't being checked for PUT/DELETE
+    requests for L7 Rules. This allowed a user to update or delete the L7 Rules
+    for another user provided they knew that user's L7 Rule ID
