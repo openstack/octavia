@@ -899,6 +899,37 @@ class TestUpdateHealthDb(base.TestCase):
                     operating_status=constants.ONLINE)
                 self.assertTrue(not self.member_repo.update.called)
 
+    def test_update_health_pool_restarting(self):
+        # When pool status is RESTARTING, pool and member statuses should not
+        # be updated in the DB to avoid false-positive errors during keepalived
+        # reload.
+        health = {
+            "id": self.FAKE_UUID_1,
+            "ver": 1,
+            "listeners": {
+                "listener-id-1": {"status": constants.OPEN, "pools": {
+                    "pool-id-1": {
+                        "status": constants.RESTARTING,
+                        "members": {
+                            "member-id-1": constants.RESTARTING}}}}},
+            "recv_time": time.time()
+        }
+
+        lb_ref = self._make_fake_lb_health_dict()
+        self.amphora_repo.get_lb_for_health_update.return_value = lb_ref
+
+        self.hm.update_health(health, '192.0.2.1')
+        self.assertTrue(self.amphora_health_repo.replace.called)
+
+        # Pool and member status should not be updated
+        self.pool_repo.update.assert_not_called()
+        self.member_repo.update.assert_not_called()
+
+        # LB status should be ONLINE (from listener), not ERROR
+        self.loadbalancer_repo.update.assert_any_call(
+            self.session_mock, self.FAKE_UUID_1,
+            operating_status=constants.ONLINE)
+
     def test_update_health_member_down(self):
 
         health = {
