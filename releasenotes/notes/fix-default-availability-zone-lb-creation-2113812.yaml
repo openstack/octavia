@@ -1,0 +1,14 @@
+---
+features:
+  - |
+    Added a new ``[api_settings] default_availability_zone`` configuration
+    option that allows operators to set a default Octavia availability zone
+    for new load balancers. When a load balancer is created without specifying
+    an availability zone, this configured default will be used if the
+    referenced availability zone exists and is enabled in Octavia.
+fixes:
+  - |
+    Fixed an issue where the load balancer's ``availability_zone`` field was
+    always set to None when no availability zone was explicitly specified
+    during creation, even when a default was intended.
+    (`bug 2113812 <https://bugs.launchpad.net/octavia/+bug/2113812>`__)

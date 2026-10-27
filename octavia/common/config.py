@@ -87,6 +87,13 @@ api_opts = [
                          }),
     cfg.StrOpt('default_provider_driver', default='amphora',
                help=_('Default provider driver.')),
+    cfg.StrOpt('default_availability_zone', default=None,
+               help=_('Default availability zone for new load balancers. '
+                      'This must reference an availability zone name '
+                      'created in the Octavia availability zone table. '
+                      'If not set, load balancers created without an '
+                      'explicit availability zone will have the field '
+                      'set to None.')),
     cfg.IntOpt('udp_connect_min_interval_health_monitor',
                default=3,
                help=_("The minimum health monitor delay interval for the "

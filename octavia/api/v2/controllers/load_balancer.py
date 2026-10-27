@@ -558,6 +558,33 @@ class LoadBalancersController(base.BaseController):
             flavor_dict = self._apply_flavor_to_lb_dict(lock_session, driver,
                                                         lb_dict)
 
+            # If no availability_zone specified, apply the default from config
+            if ('availability_zone' not in lb_dict or
+                    lb_dict['availability_zone'] is None):
+                default_az = CONF.api_settings.default_availability_zone
+                if default_az:
+                    # get() returns None when the availability zone does not
+                    # exist (it does not raise), so both the missing and the
+                    # disabled cases are handled explicitly below and logged
+                    # so a misconfiguration is visible to operators.
+                    az_obj = self.repositories.availability_zone.get(
+                        lock_session, name=default_az)
+                    if az_obj and az_obj.enabled:
+                        lb_dict['availability_zone'] = default_az
+                    elif az_obj:
+                        LOG.warning(
+                            'Configured [api_settings] '
+                            'default_availability_zone "%s" is disabled. The '
+                            'load balancer will be created without an '
+                            'availability zone.', default_az)
+                    else:
+                        LOG.warning(
+                            'Configured [api_settings] '
+                            'default_availability_zone "%s" does not exist in '
+                            'the Octavia availability zone table. The load '
+                            'balancer will be created without an availability '
+                            'zone.', default_az)
+
             az_dict = self._validate_and_return_az_dict(lock_session, driver,
                                                         lb_dict)
             # Validate the network as soon as we have the AZ data
