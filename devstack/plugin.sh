@@ -686,12 +686,17 @@ function octavia_cleanup {
 }
 
 function add_load-balancer_roles {
-    get_or_create_role load-balancer_observer
-    get_or_create_role load-balancer_global_observer
-    get_or_create_role load-balancer_member
-    get_or_create_role load-balancer_admin
-    get_or_create_role load-balancer_quota_admin
-    get_or_add_user_project_role load-balancer_member demo demo
+    # The keystone default roles policy is now the default and doesn't require
+    # the load-balancer_* roles. Only create them for the advanced or legacy
+    # RBAC policies that still rely on them.
+    if [[ "$OCTAVIA_USE_ADVANCED_RBAC" == "True" || "$OCTAVIA_USE_LEGACY_RBAC" == "True" ]]; then
+        get_or_create_role load-balancer_observer
+        get_or_create_role load-balancer_global_observer
+        get_or_create_role load-balancer_member
+        get_or_create_role load-balancer_admin
+        get_or_create_role load-balancer_quota_admin
+        get_or_add_user_project_role load-balancer_member demo demo
+    fi
 }
 
 function octavia_init {
