@@ -112,6 +112,7 @@ creating multiple policies with the same action.
    - 404
    - 409
    - 500
+   - 501
    - 503
 
 Request
@@ -258,6 +259,7 @@ This operation returns the updated L7 rule object with the
    - 404
    - 409
    - 500
+   - 501
 
 Request
 -------

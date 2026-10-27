@@ -171,6 +171,7 @@ the load balancer has a listener that uses ``allowed_cidrs``.
    - 403
    - 404
    - 500
+   - 501
    - 503
 
 Request
@@ -369,6 +370,7 @@ This operation returns the updated load balancer object with the
    - 404
    - 409
    - 500
+   - 501
 
 Request
 -------
@@ -629,6 +631,7 @@ rights.
    - 404
    - 409
    - 500
+   - 501
 
 Request
 -------

@@ -141,6 +141,7 @@ provisioning status.
    - 404
    - 409
    - 500
+   - 501
    - 503
 
 Request
@@ -302,6 +303,7 @@ This operation returns the updated member object with the
    - 404
    - 409
    - 500
+   - 501
 
 Request
 -------
@@ -402,6 +404,7 @@ members were correctly deleted. If the statuses are ``PENDING_UPDATE`` or
    - 404
    - 409
    - 500
+   - 501
    - 503
 
 Request
