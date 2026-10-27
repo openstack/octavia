@@ -17,6 +17,8 @@ from unittest import mock
 from oslo_config import cfg
 from oslo_config import fixture as oslo_fixture
 from oslo_utils import uuidutils
+from taskflow import retry
+from taskflow.types import failure
 import tenacity
 
 from octavia.common import constants
@@ -643,3 +645,59 @@ class TestComputeTasks(base.TestCase):
 
         # should not raise
         attach_port_obj.revert(amphora_dict, port_dict)
+
+
+class TestComputeRetry(base.TestCase):
+
+    def setUp(self):
+        super().setUp()
+        self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
+        self.conf.config(group="controller_worker", amp_active_retries=3)
+
+    def test_on_failure_no_outcome_recorded(self):
+        retry_ctrlr = compute_tasks.ComputeRetry(name="test_retry")
+
+        # taskflow can present an attempt with no recorded outcomes; the retry
+        # budget is the authority, so this must not be treated as terminal
+        result = retry_ctrlr.on_failure([(None, {})])
+
+        self.assertEqual(retry.RETRY, result)
+
+    def test_on_failure_attempts_exhausted(self):
+        retry_ctrlr = compute_tasks.ComputeRetry(name="test_retry")
+
+        history = [(None, {})] * 4
+
+        result = retry_ctrlr.on_failure(history)
+
+        self.assertEqual(retry.REVERT_ALL, result)
+
+    def test_on_failure_compute_wait_timeout(self):
+        retry_ctrlr = compute_tasks.ComputeRetry(name="test_retry")
+
+        exc = exceptions.ComputeWaitTimeoutException(id="test-compute-id")
+        history = [(None, {"task": failure.Failure.from_exception(exc)})]
+
+        result = retry_ctrlr.on_failure(history)
+
+        self.assertEqual(retry.RETRY, result)
+
+    def test_on_failure_missing_exc_info(self):
+        retry_ctrlr = compute_tasks.ComputeRetry(name="test_retry")
+
+        # a flow restored from persistence has no exception info
+        history = [(None, {"task": None})]
+
+        result = retry_ctrlr.on_failure(history)
+
+        self.assertEqual(retry.RETRY, result)
+
+    def test_on_failure_unrelated_exception(self):
+        retry_ctrlr = compute_tasks.ComputeRetry(name="test_retry")
+
+        history = [(None, {"task": failure.Failure.from_exception(
+            Exception("boom"))})]
+
+        result = retry_ctrlr.on_failure(history)
+
+        self.assertEqual(retry.REVERT_ALL, result)

@@ -1,0 +1,12 @@
+---
+fixes:
+  - |
+    Fixed ``ComputeRetry`` and ``AmpRetry`` discarding the configured retry
+    budget when taskflow presents a failed attempt with no recorded outcomes.
+    Both controllers placed every retry decision inside the loop over the
+    attempt's outcomes, so an empty mapping fell through to ``REVERT_ALL`` on
+    the first attempt, regardless of ``[controller_worker] amp_active_retries``
+    or ``[haproxy_amphora] connection_max_retries``. During amphora creation
+    this abandoned an instance that was already booting and left it allocated.
+    The retry budget is now the authority, matching
+    ``SleepingRetryTimesController``.
