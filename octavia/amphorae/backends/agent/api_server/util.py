@@ -79,6 +79,12 @@ def keepalived_lvs_cfg_path(listener_id):
                         f"lvs/octavia-keepalivedlvs-{str(listener_id)}.conf")
 
 
+def keepalived_lvs_last_action_ts_path(listener_id):
+    return os.path.join(CONF.haproxy_amphora.base_path,
+                        f"lvs/octavia-keepalivedlvs-{str(listener_id)}"
+                        ".last_action_ts")
+
+
 def haproxy_dir(lb_id):
     return os.path.join(CONF.haproxy_amphora.base_path, lb_id)
 
