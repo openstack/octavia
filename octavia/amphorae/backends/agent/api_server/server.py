@@ -43,9 +43,19 @@ LOG = logging.getLogger(__name__)
 
 
 # make the error pages all json
-def make_json_error(ex):
-    code = ex.code if isinstance(ex, exceptions.HTTPException) else 500
-    response = webob.Response(json={'error': str(ex), 'http_code': code})
+def make_json_error(ex, message=None):
+    if isinstance(ex, exceptions.HTTPException):
+        # If we have a response set in the exception
+        # we return that directly.
+        if ex.response is not None:
+            return ex.response
+        code = ex.code if ex.code else 500
+    else:
+        code = 500
+    body = {'error': str(ex), 'http_code': code}
+    if message:
+        body['message'] = message
+    response = webob.Response(json=body)
     response.status_code = code
     return response
 
@@ -146,10 +156,18 @@ class Server:
                               methods=['PUT'])
 
     def upload_haproxy_config(self, amphora_id, lb_id):
-        return self._loadbalancer.upload_haproxy_config(amphora_id, lb_id)
+        try:
+            return self._loadbalancer.upload_haproxy_config(amphora_id, lb_id)
+        except Exception as e:
+            return make_json_error(
+                ex=e, message='Unable to upload haproxy configuration')
 
     def upload_lvs_listener_config(self, amphora_id, listener_id):
-        return self._lvs_listener.upload_lvs_listener_config(listener_id)
+        try:
+            return self._lvs_listener.upload_lvs_listener_config(listener_id)
+        except Exception as e:
+            return make_json_error(
+                ex=e, message='Unable to upload LVS listener configuration')
 
     def get_haproxy_config(self, lb_id):
         return self._loadbalancer.get_haproxy_config(lb_id)
@@ -184,13 +202,21 @@ class Server:
             other_listeners=lvs_listeners)
 
     def upload_certificate(self, lb_id, filename):
-        return self._loadbalancer.upload_certificate(lb_id, filename)
+        try:
+            return self._loadbalancer.upload_certificate(lb_id, filename)
+        except Exception as e:
+            return make_json_error(
+                ex=e, message='Unable to upload certificate')
 
     def get_certificate_md5(self, lb_id, filename):
         return self._loadbalancer.get_certificate_md5(lb_id, filename)
 
     def delete_certificate(self, lb_id, filename):
-        return self._loadbalancer.delete_certificate(lb_id, filename)
+        try:
+            return self._loadbalancer.delete_certificate(lb_id, filename)
+        except Exception as e:
+            return make_json_error(
+                ex=e, message='Unable to delete certificate')
 
     def plug_vip(self, vip):
         # Catch any issues with the subnet info json
@@ -228,10 +254,18 @@ class Server:
                                        port_info.get('is_sriov'))
 
     def upload_cert(self):
-        return certificate_update.upload_server_cert()
+        try:
+            return certificate_update.upload_server_cert()
+        except Exception as e:
+            return make_json_error(
+                ex=e, message='Unable to upload server certificate')
 
     def upload_vrrp_config(self):
-        return self._keepalived.upload_keepalived_config()
+        try:
+            return self._keepalived.upload_keepalived_config()
+        except Exception as e:
+            return make_json_error(
+                ex=e, message='Unable to upload keepalived configuration')
 
     def manage_service_vrrp(self, action):
         return self._keepalived.manager_keepalived_service(action)

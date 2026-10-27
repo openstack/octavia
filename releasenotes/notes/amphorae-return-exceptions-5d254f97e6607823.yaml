@@ -1,0 +1,15 @@
+---
+upgrade:
+  - |
+    HTTP 500 responses from the Amphora agent now include additional exception
+    details, improving error visibility from the controller worker logs (fixes
+    `bug #2085090 <https://bugs.launchpad.net/octavia/+bug/2085090>`__).
+
+    To benefit from this change, the Amphora image must be rebuilt and rotated.
+fixes:
+  - |
+    Fixes `bug #2085090 <https://bugs.launchpad.net/octavia/+bug/2085090>`__ by
+    enhancing HTTP 500 responses from the Amphora agent. On failure, responses
+    now include exception details sent to the controller worker instead of an
+    empty HTTP 500, making it easier for operators to understand and diagnose
+    errors.

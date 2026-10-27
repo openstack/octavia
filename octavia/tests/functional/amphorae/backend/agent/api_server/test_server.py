@@ -132,7 +132,8 @@ class TestServerTestCase(base.TestCase):
 
         # exception writing
         m = self.useFixture(test_utils.OpenFixture(file_name)).mock_open
-        m.side_effect = IOError()  # open crashes
+        io_exc = OSError('error')
+        m.side_effect = io_exc
         with mock.patch('os.open'), mock.patch.object(
                 os, 'fdopen', m), mock.patch('distro.id') as mock_distro_id:
             mock_distro_id.return_value = distro
@@ -145,6 +146,10 @@ class TestServerTestCase(base.TestCase):
                                          '/loadbalancer/amp_123/123/haproxy',
                                          data='test')
             self.assertEqual(500, rv.status_code)
+            self.assertEqual(
+                {'message': 'Unable to upload haproxy configuration',
+                 'error': str(io_exc), 'http_code': 500},
+                jsonutils.loads(rv.data.decode('utf-8')))
 
         # check if files get created
         mock_exists.return_value = False
@@ -213,6 +218,38 @@ class TestServerTestCase(base.TestCase):
             mock_rename.assert_called_with(
                 '/var/lib/octavia/123/haproxy.cfg.new',
                 '/var/lib/octavia/123/haproxy.cfg.new-failed')
+
+    @mock.patch(
+        'octavia.amphorae.backends.agent.api_server.keepalivedlvs.'
+        'KeepalivedLvs.upload_lvs_listener_config')
+    def test_upload_lvs_listener_config(self, mock_upload):
+        # happy path
+        mock_upload.return_value = webob.Response(status=200)
+
+        rv = self.ubuntu_app.put(
+            '/' + api_server.VERSION +
+            '/listeners/amp_123/listener_123/udp_listener',
+            data='test')
+        self.assertEqual(200, rv.status_code)
+        mock_upload.assert_called_once_with('listener_123')
+
+        # exception path
+        exc = OSError('upload failed')
+        mock_upload.side_effect = exc
+
+        rv = self.ubuntu_app.put(
+            '/' + api_server.VERSION +
+            '/listeners/amp_123/listener_123/udp_listener',
+            data='test')
+
+        self.assertEqual(500, rv.status_code)
+        self.assertEqual(
+            {
+                'message': 'Unable to upload LVS listener configuration',
+                'error': str(exc),
+                'http_code': 500
+            },
+            jsonutils.loads(rv.data.decode('utf-8')))
 
     def test_ubuntu_start(self):
         self._test_start(consts.UBUNTU)
@@ -686,6 +723,24 @@ class TestServerTestCase(base.TestCase):
         mock_remove.assert_called_once_with(
             '/var/lib/octavia/certs/123/test.pem')
 
+        # exception removing
+        io_exc = OSError('error')
+        mock_remove.side_effect = io_exc
+        mock_exists.side_effect = [True]
+        if distro == consts.UBUNTU:
+            rv = self.ubuntu_app.delete(
+                '/' + api_server.VERSION +
+                '/loadbalancer/123/certificates/test.pem')
+        elif distro == consts.CENTOS:
+            rv = self.centos_app.delete(
+                '/' + api_server.VERSION +
+                '/loadbalancer/123/certificates/test.pem')
+        self.assertEqual(500, rv.status_code)
+        self.assertEqual(
+            {'message': 'Unable to delete certificate',
+             'error': str(io_exc), 'http_code': 500},
+            jsonutils.loads(rv.data.decode('utf-8')))
+
     def test_ubuntu_get_certificate_md5(self):
         self._test_get_certificate_md5(consts.UBUNTU)
 
@@ -810,6 +865,27 @@ class TestServerTestCase(base.TestCase):
             handle.write.assert_called_once_with(octavia_utils.b('TestTest'))
             mock_makedir.assert_called_once_with('/var/lib/octavia/certs/123')
 
+        # exception writing
+        file_name = '/var/lib/octavia/certs/123/test.pem'
+        m = self.useFixture(test_utils.OpenFixture(file_name)).mock_open
+        io_exc = OSError('error')
+        m.side_effect = io_exc
+        with mock.patch('os.open'), mock.patch.object(
+                os, 'fdopen', m), mock.patch('distro.id') as mock_distro_id:
+            mock_distro_id.return_value = distro
+            api_path = (
+                '/' + api_server.VERSION +
+                '/loadbalancer/123/certificates/test.pem')
+            if distro == consts.UBUNTU:
+                rv = self.ubuntu_app.put(api_path, data='test')
+            elif distro == consts.CENTOS:
+                rv = self.centos_app.put(api_path, data='test')
+            self.assertEqual(500, rv.status_code)
+            self.assertEqual(
+                {'message': 'Unable to upload certificate',
+                 'error': str(io_exc), 'http_code': 500},
+                jsonutils.loads(rv.data.decode('utf-8')))
+
     def test_ubuntu_upload_server_certificate(self):
         self._test_upload_server_certificate(consts.UBUNTU)
 
@@ -832,6 +908,24 @@ class TestServerTestCase(base.TestCase):
             handle = m()
             handle.write.assert_any_call(octavia_utils.b('TestT'))
             handle.write.assert_any_call(octavia_utils.b('est'))
+
+        # exception writing
+        io_exc = OSError('error')
+        m.side_effect = io_exc
+        with mock.patch('os.open'), mock.patch.object(
+                os, 'fdopen', m), mock.patch('distro.id') as mock_distro_id:
+            mock_distro_id.return_value = distro
+            if distro == consts.UBUNTU:
+                rv = self.ubuntu_app.put('/' + api_server.VERSION +
+                                         '/certificate', data='test')
+            elif distro == consts.CENTOS:
+                rv = self.centos_app.put('/' + api_server.VERSION +
+                                         '/certificate', data='test')
+            self.assertEqual(500, rv.status_code)
+            self.assertEqual(
+                {'message': 'Unable to upload server certificate',
+                 'error': str(io_exc), 'http_code': 500},
+                jsonutils.loads(rv.data.decode('utf-8')))
 
     def _check_centos_files(self, handle):
         handle.write.assert_any_call(
@@ -2646,6 +2740,21 @@ class TestServerTestCase(base.TestCase):
             self.assertEqual(200, rv.status_code)
             mock_vrrp_check.assert_called_once_with(None,
                                                     consts.AMP_ACTION_START)
+        # exception writing
+        io_exc = OSError('error')
+        m.side_effect = io_exc
+        with mock.patch('os.open'), mock.patch.object(os, 'fdopen', m):
+            if distro == consts.UBUNTU:
+                rv = self.ubuntu_app.put('/' + api_server.VERSION +
+                                         '/vrrp/upload', data='test')
+            elif distro == consts.CENTOS:
+                rv = self.centos_app.put('/' + api_server.VERSION +
+                                         '/vrrp/upload', data='test')
+            self.assertEqual(500, rv.status_code)
+            self.assertEqual(
+                {'message': 'Unable to upload keepalived configuration',
+                 'error': str(io_exc), 'http_code': 500},
+                jsonutils.loads(rv.data.decode('utf-8')))
 
     def test_ubuntu_manage_service_vrrp(self):
         self._test_manage_service_vrrp(consts.UBUNTU)
