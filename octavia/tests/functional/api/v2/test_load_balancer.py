@@ -3830,6 +3830,72 @@ class TestLoadBalancerGraph(base.BaseAPITest):
         api_lb = response.json.get(self.root_tag)
         self._assert_graphs_equal(expected_lb, api_lb)
 
+    @mock.patch('octavia.network.drivers.noop_driver.driver.'
+                'NoopNetworkDriver.delete_port')
+    def test_vip_port_deleted_on_graph_create_failure(self, mock_delete_port):
+        create_pool1, expected_pool1 = self._get_pool_bodies()
+        create_pool2, expected_pool2 = self._get_pool_bodies()
+        create_listener, expected_listener = self._get_listener_bodies(
+            create_default_pool_name=create_pool1['name'])
+        create_lb, _ = self._get_lb_bodies(
+            create_listeners=[create_listener],
+            expected_listeners=[expected_listener],
+            create_pools=[create_pool1, create_pool2])
+        # Without a port from the request the provider creates one for us
+        del create_lb['vip_port_id']
+        body = self._build_body(create_lb)
+        self.post(self.LBS_PATH, body, status=400)
+        mock_delete_port.assert_called_once()
+
+    @mock.patch('octavia.api.drivers.noop_driver.driver.'
+                'NoopProviderDriver.create_vip_port')
+    @mock.patch('octavia.network.drivers.noop_driver.driver.'
+                'NoopNetworkDriver.delete_port')
+    def test_additional_vip_ports_deleted_on_graph_create_failure(
+            self, mock_delete_port, mock_create_vip_port):
+        create_pool1, expected_pool1 = self._get_pool_bodies()
+        create_pool2, expected_pool2 = self._get_pool_bodies()
+        create_listener, expected_listener = self._get_listener_bodies(
+            create_default_pool_name=create_pool1['name'])
+        add_subnet_id = uuidutils.generate_uuid()
+        create_lb, _ = self._get_lb_bodies(
+            create_listeners=[create_listener],
+            expected_listeners=[expected_listener],
+            create_pools=[create_pool1, create_pool2],
+            additional_vips=[{'subnet_id': add_subnet_id}])
+        del create_lb['vip_port_id']
+        for add_vip in create_lb['additional_vips']:
+            add_vip.pop('port_id', None)
+        vip_port_id = uuidutils.generate_uuid()
+        add_vip_port_id = uuidutils.generate_uuid()
+        mock_create_vip_port.return_value = (
+            {'vip_address': '198.51.100.10',
+             'vip_port_id': vip_port_id,
+             'vip_subnet_id': create_lb['vip_subnet_id']},
+            [{'ip_address': '198.51.100.11',
+              'port_id': add_vip_port_id,
+              'subnet_id': add_subnet_id}])
+        body = self._build_body(create_lb)
+        self.post(self.LBS_PATH, body, status=400)
+        self.assertEqual([mock.call(vip_port_id), mock.call(add_vip_port_id)],
+                         mock_delete_port.call_args_list)
+
+    @mock.patch('octavia.network.drivers.noop_driver.driver.'
+                'NoopNetworkDriver.delete_port')
+    def test_user_vip_port_kept_on_graph_create_failure(
+            self, mock_delete_port):
+        create_pool1, expected_pool1 = self._get_pool_bodies()
+        create_pool2, expected_pool2 = self._get_pool_bodies()
+        create_listener, expected_listener = self._get_listener_bodies(
+            create_default_pool_name=create_pool1['name'])
+        create_lb, _ = self._get_lb_bodies(
+            create_listeners=[create_listener],
+            expected_listeners=[expected_listener],
+            create_pools=[create_pool1, create_pool2])
+        body = self._build_body(create_lb)
+        self.post(self.LBS_PATH, body, status=400)
+        mock_delete_port.assert_not_called()
+
     def test_db_create_failure(self):
         create_listener, expected_listener = self._get_listener_bodies()
         create_lb, _ = self._get_lb_bodies([create_listener],
