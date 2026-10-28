@@ -245,7 +245,6 @@ function octavia_configure {
     iniset $OCTAVIA_CONF controller_worker amp_image_tag ${OCTAVIA_AMP_IMAGE_TAG}
     iniset $OCTAVIA_CONF controller_worker amp_timezone $(readlink -e /etc/localtime | sed "s/\/usr\/share\/zoneinfo\///")
 
-    iniuncomment $OCTAVIA_CONF health_manager heartbeat_key
     iniset $OCTAVIA_CONF health_manager heartbeat_key ${OCTAVIA_HEALTH_KEY}
 
     iniset $OCTAVIA_CONF house_keeping amphora_expiry_age ${OCTAVIA_AMP_EXPIRY_AGE}
@@ -255,18 +254,6 @@ function octavia_configure {
 
     iniset $OCTAVIA_CONF oslo_messaging rpc_thread_pool_size 2
     iniset $OCTAVIA_CONF oslo_messaging topic octavia_prov
-
-    # Uncomment other default options
-    iniuncomment $OCTAVIA_CONF haproxy_amphora base_path
-    iniuncomment $OCTAVIA_CONF haproxy_amphora base_cert_dir
-    iniuncomment $OCTAVIA_CONF haproxy_amphora connection_max_retries
-    iniuncomment $OCTAVIA_CONF haproxy_amphora connection_retry_interval
-    iniuncomment $OCTAVIA_CONF haproxy_amphora rest_request_conn_timeout
-    iniuncomment $OCTAVIA_CONF haproxy_amphora rest_request_read_timeout
-    iniuncomment $OCTAVIA_CONF controller_worker amp_active_retries
-    iniuncomment $OCTAVIA_CONF controller_worker amp_active_wait_sec
-    iniuncomment $OCTAVIA_CONF controller_worker workers
-    iniuncomment $OCTAVIA_CONF controller_worker loadbalancer_topology
 
     iniset $OCTAVIA_CONF controller_worker loadbalancer_topology ${OCTAVIA_LB_TOPOLOGY}
 
