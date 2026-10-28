@@ -49,7 +49,7 @@ assert_equal_with_false_re = re.compile(
 mutable_default_args = re.compile(r"^\s*def .+\((.+=\{\}|.+=\[\])")
 revert_must_have_kwargs_re = re.compile(
     r'[ ]*def revert\(.+,[ ](?!\*\*kwargs)\w+\):')
-untranslated_exception_re = re.compile(r"raise (?:\w*)\((.*)\)")
+untranslated_exception_re = re.compile(r"raise (?:\w+\.)*\w+\((.*)\)")
 no_eventlet_re = re.compile(r'(import|from)\s+[(]?eventlet')
 no_line_continuation_backslash_re = re.compile(r'.*(\\)\n')
 no_logging_re = re.compile(r'(import|from)\s+[(]?logging')

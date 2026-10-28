@@ -84,7 +84,8 @@ class UDPStatusGetter:
                                      rlimit)
             break  # just used the first addr getaddrinfo finds
         if self.sock is None:
-            raise exceptions.NetworkConfig("unable to find suitable socket")
+            raise exceptions.NetworkConfig(  # noqa: O342
+                "unable to find suitable socket")
 
     def dorecv(self, *args, **kw):
         """Waits for a UDP heart beat to be sent.

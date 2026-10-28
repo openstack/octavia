@@ -67,7 +67,7 @@ class BarbicanCertManager(cert_mgr.CertManager):
         LOG.info("Storing certificate secret '%s' in Barbican.", name)
 
         if private_key_passphrase:
-            raise exceptions.CertificateStorageException(
+            raise exceptions.CertificateStorageException(  # noqa: O342
                 "Passphrase protected PKCS12 certificates are not supported.")
 
         x509_cert = x509.load_pem_x509_certificate(certificate)
