@@ -1,6 +1,5 @@
 # settings for octavia devstack plugin
 
-OCTAVIA=${OCTAVIA:-"octavia"}
 OCTAVIA_DIR=${OCTAVIA_DIR:-"${DEST}/octavia"}
 DISKIMAGE_BUILDER_REPO_URL=${DISKIMAGE_BUILDER_REPO_URL:-${GIT_BASE}/openstack/diskimage-builder.git}
 DISKIMAGE_BUILDER_REPO_REF=${DISKIMAGE_BUILDER_REPO_REF:-master}

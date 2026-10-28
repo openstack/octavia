@@ -136,7 +136,7 @@ function build_octavia_worker_image {
 }
 
 function create_octavia_accounts {
-    create_service_user $OCTAVIA
+    create_service_user octavia
 
     # Increase the octavia account secgroups quota
     # This is imporant for concurrent tempest testing
@@ -774,7 +774,7 @@ function _configure_tempest {
 }
 
 # check for service enabled
-if is_service_enabled $OCTAVIA; then
+if is_service_enabled octavia; then
     if [ $OCTAVIA_NODE == 'main' ] || [ $OCTAVIA_NODE == 'standalone' ] ; then # main-ha node stuff only
         if ! is_service_enabled $NEUTRON_ANY; then
             die "The neutron-api/q-svc service must be enabled to use $OCTAVIA"
@@ -817,7 +817,7 @@ fi
 
 if [[ "$1" == "unstack" ]]; then
     # Shut down Octavia services
-    if is_service_enabled $OCTAVIA; then
+    if is_service_enabled octavia; then
         echo_summary "Stopping octavia"
         octavia_stop
     fi
@@ -825,7 +825,7 @@ fi
 
 if [[ "$1" == "clean" ]]; then
     # Remember clean.sh first calls unstack.sh
-    if is_service_enabled $OCTAVIA; then
+    if is_service_enabled octavia; then
         echo_summary "Cleaning up octavia"
         octavia_cleanup
     fi
