@@ -1,0 +1,9 @@
+---
+security:
+  - |
+    Fixed a gap in the validation of member subnets. When creating a fully
+    populated load balancer, or when updating the subnet of an existing
+    member with the batch member update API, Octavia did not check that the
+    user had access to the member subnet. A user who knew the ID of a subnet
+    they could not access could make Octavia plug an amphora into it. These
+    requests are now rejected if the subnet is not visible to the user.
