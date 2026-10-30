@@ -1,0 +1,13 @@
+---
+security:
+  - |
+    Fixed Bug 2171383 where Pool POST requests that supplied both
+    ``loadbalancer_id`` and ``listener_id`` never loaded or validated the
+    listener UUID was owned by the caller. The API now validates that a
+    supplied ``listener_id`` belongs to the named (or implied)
+    ``loadbalancer_id`` and returns ``404`` otherwise. Two related
+    defense-in-depth issues in the database layer were also fixed: a
+    missing join in the pool/load balancer sanity check that could accept
+    a pool from an unrelated load balancer, and a provisioning status
+    update that could lock an unrelated listener.
+
