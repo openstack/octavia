@@ -1,0 +1,6 @@
+---
+fixes:
+  - |
+    Fixed a leak of base (VRRP) ports when allowed address pair or security
+    group configuration fails while plugging the VIP to an amphora. Ports
+    created by the failed operation are now detached and deleted.
