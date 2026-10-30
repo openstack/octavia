@@ -740,6 +740,16 @@ class LoadBalancersController(base.BaseController):
                     detail="Pool '{name}' was referenced but no full "
                            "definition was found.".format(name=pool_ref))
 
+        # Make sure the user can access the subnets of the members
+        context = pecan_request.context.get('octavia_context')
+        valid_subnets = set()
+        for p in pools:
+            for m in p.get('members') or []:
+                subnet_id = m.get('subnet_id')
+                if subnet_id and subnet_id not in valid_subnets:
+                    validate.subnet_exists(subnet_id, context=context)
+                    valid_subnets.add(subnet_id)
+
         # Check quotas for pools.
         if pools and self.repositories.check_quota_met(
                 session, data_models.Pool, db_lb.project_id,
