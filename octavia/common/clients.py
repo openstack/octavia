@@ -105,29 +105,36 @@ class NeutronAuth:
     def get_user_neutron_client(cls, context):
         """Get neutron client for request user.
 
-        It's possible that the token in the context is a trust scoped
-        which can't be used to initialize a keystone session.
-        We directly use the token and endpoint_url to initialize neutron
-        client.
+        Unless [neutron] endpoint_override is set, the endpoint comes from
+        the request user's catalog, as the service identity's one may point to
+        a neutron that does not accept the user's token. Without a user
+        catalog (e.g. include_service_catalog disabled in keystonemiddleware),
+        the service identity's catalog is used.
         The returned Connection must be closed explicitly after use to
         avoid leaking sockets.
         """
-        sess = keystone.KeystoneSession('neutron').get_session()
-        kwargs = {}
-        neutron_endpoint = CONF.neutron.endpoint_override
-        if neutron_endpoint is None:
-            endpoint_data = sess.get_endpoint_data(
-                service_type=(CONF.neutron.service_type or 'network'),
-                interface=CONF.neutron.valid_interfaces,
-                region_name=CONF.neutron.region_name)
-            neutron_endpoint = endpoint_data.catalog_url
+        if context.service_catalog:
+            user_auth = context.get_auth_plugin()
+        else:
+            neutron_endpoint = CONF.neutron.endpoint_override
+            if neutron_endpoint is None:
+                sess = keystone.KeystoneSession('neutron').get_session()
+                endpoint_data = sess.get_endpoint_data(
+                    service_type=(CONF.neutron.service_type or 'network'),
+                    interface=CONF.neutron.valid_interfaces,
+                    region_name=CONF.neutron.region_name)
+                neutron_endpoint = endpoint_data.catalog_url
+            # The token may be trust scoped, which can't be used to
+            # initialize a keystone session.
+            user_auth = token_endpoint.Token(neutron_endpoint,
+                                             context.auth_token)
 
+        kwargs = {}
         neutron_cafile = getattr(CONF.neutron, "cafile", None)
         insecure = getattr(CONF.neutron, "insecure", False)
         kwargs['verify'] = not insecure
         if neutron_cafile is not None and not insecure:
             kwargs['verify'] = neutron_cafile
-        user_auth = token_endpoint.Token(neutron_endpoint, context.auth_token)
         user_sess = session.Session(auth=user_auth, **kwargs)
 
         conn = openstack.connection.Connection(

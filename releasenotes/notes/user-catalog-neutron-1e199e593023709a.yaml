@@ -1,0 +1,12 @@
+---
+fixes:
+  - |
+    Visibility checks of user-provided networks, subnets and ports, done when
+    ``[networking] allow_invisible_resource_usage`` is ``False``, now use the
+    neutron endpoint of the requesting user's service catalog. The endpoint
+    was taken from the catalog of Octavia's service user, which may point to a
+    neutron that rejects the user's token, so the resources were reported as
+    not found. Octavia's service catalog is still used when the request has
+    no service catalog, for instance when ``include_service_catalog`` is
+    disabled in ``[keystone_authtoken]``. See `LP#2170577
+    <https://bugs.launchpad.net/octavia/+bug/2170577>`_.

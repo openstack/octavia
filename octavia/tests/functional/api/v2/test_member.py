@@ -1668,6 +1668,8 @@ class TestMemberUserNeutron(base.BaseAPITest):
         self.conf.config(group='controller_worker',
                          network_driver='allowed_address_pairs_driver')
         self.conf.config(group='neutron', valid_interfaces=['internal'])
+        self.conf.config(group='api_settings',
+                         auth_strategy=constants.KEYSTONE)
         self.useFixture(fixtures.MockPatch(
             'octavia.common.clients.NeutronAuth.get_neutron_client'))
 
@@ -1697,6 +1699,8 @@ class TestMemberUserNeutron(base.BaseAPITest):
                              'ip_version': 4}})
         self.headers = {
             'X-Auth-Token': 'user-token',
+            'X-Project-Id': self.project_id,
+            'X-Roles': 'load-balancer_member,member',
             'X-Service-Catalog': jsonutils.dumps([{
                 'type': 'network',
                 'name': 'neutron',
@@ -1708,15 +1712,50 @@ class TestMemberUserNeutron(base.BaseAPITest):
                                  'protocol_port': 80,
                                  'subnet_id': self.subnet_id})
 
-        # FIXME: the user token is sent to the neutron of the service
-        # identity's catalog, which rejects it, and the subnet looks missing.
-        # https://bugs.launchpad.net/octavia/+bug/2170577
-        response = self.post(self.members_path, body, headers=self.headers,
-                             status=400)
+        self.post(self.members_path, body, headers=self.headers)
 
-        self.assertIn(f'Subnet {self.subnet_id} not found',
-                      response.json['faultstring'])
+        self.assertFalse(self.service_neutron.called)
+        self.assertEqual(
+            'user-token',
+            self.user_neutron.last_request.headers['X-Auth-Token'])
+
+    def test_create_without_user_catalog_uses_service_catalog(self):
+        body = self._build_body({'address': '192.0.2.1',
+                                 'protocol_port': 80,
+                                 'subnet_id': self.subnet_id})
+        del self.headers['X-Service-Catalog']
+
+        self.post(self.members_path, body, headers=self.headers, status=400)
+
+        self.assertFalse(self.user_neutron.called)
         self.assertEqual(
             'user-token',
             self.service_neutron.last_request.headers['X-Auth-Token'])
+
+    def test_create_with_invalid_user_catalog(self):
+        body = self._build_body({'address': '192.0.2.1',
+                                 'protocol_port': 80,
+                                 'subnet_id': self.subnet_id})
+        for catalog in ('{', '{}', 'null', '[' * 2000):
+            self.headers['X-Service-Catalog'] = catalog
+
+            self.post(self.members_path, body, headers=self.headers,
+                      status=400)
+
+        self.assertTrue(self.service_neutron.called)
         self.assertFalse(self.user_neutron.called)
+
+    def test_create_ignores_user_catalog_without_keystone(self):
+        self.conf.config(group='api_settings',
+                         auth_strategy=constants.NOAUTH)
+        body = self._build_body({'address': '192.0.2.1',
+                                 'protocol_port': 80,
+                                 'subnet_id': self.subnet_id})
+
+        self.post(self.members_path, body, headers=self.headers, status=400)
+
+        self.assertFalse(self.user_neutron.called)
+        self.assertTrue(self.service_neutron.called)
+
+    def test_unauthenticated_path_with_invalid_user_catalog(self):
+        self.app.get('/', headers={'X-Service-Catalog': '[' * 2000})
