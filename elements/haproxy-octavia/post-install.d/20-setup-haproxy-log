@@ -10,3 +10,85 @@ if \$programname startswith 'haproxy' then /var/log/haproxy.log
 &~
 EOF
 fi
+
+# Rotate the haproxy log daily, or sooner when it grows past maxsize, so a
+# busy load balancer cannot fill the amphora disk. The root disk grows to
+# the flavor disk at first boot and each base OS uses a different amount of
+# it, so the sizes are set from the free space at first boot.
+cat > /usr/local/sbin/octavia-haproxy-logrotate <<'SCRIPT'
+#!/bin/bash
+
+set -eu
+set -o pipefail
+umask 022
+
+conf=/etc/logrotate.d/haproxy
+marker="# Sized at first boot by octavia-haproxy-logrotate"
+if grep -qxF "$marker" "$conf" 2>/dev/null; then
+    exit 0
+fi
+
+avail_kb=$(df --output=avail -k /var/log | tail -n 1 | tr -d ' ')
+if [[ ! "$avail_kb" =~ ^[0-9]+$ ]]; then
+    echo "Unexpected free disk space value: $avail_kb" >&2
+    exit 1
+fi
+budget=$(( avail_kb / 1024 ))
+
+# The current log, the uncompressed .1 and the compressed logs (at least 4x
+# smaller) stay under half of the free space. Files are at most 1G so that
+# compressing one stays quick; larger disks keep more files instead.
+maxsize=$(( budget / 8 ))
+maxsize=$(( maxsize < 10 ? 10 : maxsize > 1024 ? 1024 : maxsize ))
+rotate=$(( (budget / 2 - 2 * maxsize) * 4 / maxsize ))
+rotate=$(( rotate < 2 ? 2 : rotate > 500 ? 500 : rotate ))
+
+# Red Hat enables dateext globally. It names rotated logs by day, so a second
+# rotation on the same day fails; nodateext uses numbered names instead.
+# The marker goes last, so a partly written file is sized again next boot.
+cat > "$conf" <<EOF
+/var/log/haproxy.log {
+    daily
+    nodateext
+    maxsize ${maxsize}M
+    rotate ${rotate}
+    missingok
+    notifempty
+    compress
+    delaycompress
+    postrotate
+        systemctl kill -s HUP rsyslog.service >/dev/null 2>&1 || true
+    endscript
+}
+$marker
+EOF
+SCRIPT
+chmod 0755 /usr/local/sbin/octavia-haproxy-logrotate
+
+# cloud-init grows the root disk in cloud-init.service.
+cat > /etc/systemd/system/octavia-haproxy-logrotate.service <<EOF
+[Unit]
+Description=Size the haproxy log rotation from the amphora disk
+After=cloud-init.service
+Before=logrotate.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/octavia-haproxy-logrotate
+
+[Install]
+WantedBy=multi-user.target
+EOF
+systemctl enable octavia-haproxy-logrotate.service
+
+# logrotate runs from a daily systemd timer, so maxsize alone would only be
+# checked once a day. Check every minute instead. Red Hat's timer also adds
+# a random delay of up to an hour, so turn that off.
+mkdir -p /etc/systemd/system/logrotate.timer.d
+cat > /etc/systemd/system/logrotate.timer.d/octavia.conf <<EOF
+[Timer]
+OnCalendar=
+OnCalendar=minutely
+AccuracySec=10s
+RandomizedDelaySec=0
+EOF
