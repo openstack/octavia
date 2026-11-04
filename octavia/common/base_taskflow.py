@@ -87,8 +87,10 @@ class FilteredJob(Job):
 class JobDetailsFilter(log.logging.Filter):
     def filter(self, record):
         # If the first arg is a Job, convert it now to a string with our custom
-        # method
-        if isinstance(record.args[0], Job):
+        # method. args is empty for a message without arguments and a dict
+        # for one with a single mapping argument.
+        if (isinstance(record.args, tuple) and record.args and
+                isinstance(record.args[0], Job)):
             arg0 = record.args[0]
             record.args = (FilteredJob.__str__(arg0),) + record.args[1:]
         return True

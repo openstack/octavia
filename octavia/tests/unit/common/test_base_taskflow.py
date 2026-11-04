@@ -17,6 +17,7 @@ from unittest import mock
 
 from oslo_config import cfg
 from oslo_config import fixture as oslo_fixture
+from oslo_log import log
 from taskflow import engines as tf_engines
 from taskflow.jobs.base import Job
 
@@ -235,3 +236,14 @@ class TestJobDetailsFilter(base.TestCase):
 
         ret = log_filter.filter(record)
         self.assertTrue(ret)
+
+    def test_filter_without_positional_args(self):
+        log_filter = base_taskflow.JobDetailsFilter()
+
+        for args in ((), ({'key': 'value'},)):
+            record = log.logging.LogRecord('taskflow', log.logging.ERROR,
+                                           __file__, 1, 'message', args, None)
+            args_before = record.args
+
+            self.assertTrue(log_filter.filter(record))
+            self.assertEqual(args_before, record.args)
