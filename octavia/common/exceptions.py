@@ -442,6 +442,14 @@ class MemberSRIOVDisabled(APIException):
     code = 400
 
 
+class HealthMessageBadHeader(OctaviaException):
+    message = _('Received invalid message header for health message')
+
+
+class HealthMessageIncomplete(OctaviaException):
+    message = _('Connection broken before full health message was read')
+
+
 class VIPAddressConflict(APIException):
     msg = _('The VIP IP address is already in use: %(msg)s')
     code = 409

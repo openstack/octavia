@@ -15,6 +15,7 @@
 import binascii
 import random
 import socket
+import struct
 import time
 from unittest import mock
 
@@ -24,6 +25,8 @@ from oslo_db import exception as db_exc
 from oslo_utils import uuidutils
 import sqlalchemy
 
+from octavia.amphorae.drivers.health import heartbeat_base
+from octavia.amphorae.drivers.health import heartbeat_tcp
 from octavia.amphorae.drivers.health import heartbeat_udp
 from octavia.common import constants
 from octavia.common import data_models
@@ -54,8 +57,7 @@ class TestException(Exception):
         return repr(self.value)
 
 
-class TestHeartbeatUDP(base.TestCase):
-
+class TestHeartbeatBase(base.TestCase):
     def setUp(self):
         super().setUp()
         self.conf = oslo_fixture.Config(cfg.CONF)
@@ -75,6 +77,8 @@ class TestHeartbeatUDP(base.TestCase):
             request_errors=random.randrange(1000000000),
             received_time=float(random.randrange(1000000000)))
 
+
+class TestHeartbeatUpdate(TestHeartbeatBase):
     @mock.patch('octavia.statistics.stats_base.update_stats_via_driver')
     def test_update_stats_v1(self, mock_stats_base):
         health = {
@@ -101,7 +105,7 @@ class TestHeartbeatUDP(base.TestCase):
             'recv_time': self.listener_stats.received_time
         }
 
-        heartbeat_udp.update_stats(health)
+        heartbeat_base.update_stats(health)
 
         mock_stats_base.assert_called_once_with(
             [self.listener_stats], deltas=False)
@@ -137,7 +141,7 @@ class TestHeartbeatUDP(base.TestCase):
             'recv_time': self.listener_stats.received_time
         }
 
-        heartbeat_udp.update_stats(health)
+        heartbeat_base.update_stats(health)
 
         mock_stats_base.assert_called_once_with(
             [self.listener_stats], deltas=False)
@@ -173,11 +177,13 @@ class TestHeartbeatUDP(base.TestCase):
             'recv_time': self.listener_stats.received_time
         }
 
-        heartbeat_udp.update_stats(health)
+        heartbeat_base.update_stats(health)
 
         mock_stats_base.assert_called_once_with(
             [self.listener_stats], deltas=True)
 
+
+class TestHeartbeatUDP(TestHeartbeatBase):
     @mock.patch('socket.getaddrinfo')
     @mock.patch('socket.socket')
     def test_update(self, mock_socket, mock_getaddrinfo):
@@ -267,7 +273,7 @@ class TestHeartbeatUDP(base.TestCase):
         mock_health_executor.submit.assert_has_calls(
             [mock.call(getter.health_updater.update_health, {'id': 1}, 2)])
         mock_stats_executor.submit.assert_has_calls(
-            [mock.call(heartbeat_udp.update_stats, {'id': 1})])
+            [mock.call(heartbeat_base.update_stats, {'id': 1})])
 
     @mock.patch('socket.getaddrinfo')
     @mock.patch('socket.socket')
@@ -293,6 +299,244 @@ class TestHeartbeatUDP(base.TestCase):
         self.assertFalse(mock_submit.called)
 
 
+class TestHeartbeatTCP(TestHeartbeatBase):
+    def _sample_message(self):
+        # key = 'TEST' msg = {"testkey": "TEST"}
+        sample_msg = ('78daab562a492d2ec94ead54b252500a710d0e5'
+                      '1aa050041b506245806e5c1971e79951818394e'
+                      'a6e71ad989ff950945f9573f4ab6f83e25db8ed7')
+        bin_msg = binascii.unhexlify(sample_msg)
+        header = struct.pack(">II", constants.AMP_HEARTBEAT_HEADER,
+                             len(bin_msg))
+        return header, bin_msg
+
+    @mock.patch('socket.getaddrinfo')
+    @mock.patch('socket.socket')
+    def test_update(self, mock_socket, mock_getaddrinfo):
+        socket_mock = mock.MagicMock()
+        mock_socket.return_value = socket_mock
+        mock_getaddrinfo.return_value = [FAKE_ADDRINFO]
+        bind_mock = mock.MagicMock()
+        socket_mock.bind = bind_mock
+
+        getter = heartbeat_tcp.TCPStatusGetter()
+
+        mock_getaddrinfo.assert_called_with(IP, PORT, 0, socket.SOCK_STREAM)
+        self.assertEqual((IP, PORT), getter.sockaddr)
+        mock_socket.assert_called_with(socket.AF_INET, socket.SOCK_STREAM)
+        bind_mock.assert_called_once_with((IP, PORT))
+        socket_mock.listen.assert_called_once()
+
+        self.conf.config(group="health_manager", sock_rlimit=RLIMIT)
+        mock_getaddrinfo.return_value = [FAKE_ADDRINFO, FAKE_ADDRINFO]
+        getter.update(KEY, IP, PORT)
+
+    @mock.patch('socket.getaddrinfo')
+    @mock.patch('socket.socket')
+    def test_dorecv(self, mock_socket, mock_getaddrinfo):
+        socket_mock = mock.MagicMock()
+        mock_socket.return_value = socket_mock
+        mock_getaddrinfo.return_value = [range(1, 6)]
+        accept_mock = mock.MagicMock()
+        conn_sock = mock.MagicMock()
+        socket_mock.accept = accept_mock
+        accept_mock.return_value = (conn_sock, ('192.0.2.1', 2))
+        recv_mock = mock.MagicMock()
+        conn_sock.recv = recv_mock
+
+        getter = heartbeat_tcp.TCPStatusGetter()
+
+        header, bin_msg = self._sample_message()
+        recv_mock.side_effect = [header, bin_msg]
+
+        (obj, srcaddr) = getter.dorecv()
+        self.assertEqual('192.0.2.1', srcaddr)
+        self.assertIsNotNone(obj.pop('recv_time'))
+        self.assertEqual({"testkey": "TEST"}, obj)
+
+    @mock.patch('socket.getaddrinfo')
+    @mock.patch('socket.socket')
+    def test_dorecv_split_header(self, mock_socket, mock_getaddrinfo):
+        socket_mock = mock.MagicMock()
+        mock_socket.return_value = socket_mock
+        mock_getaddrinfo.return_value = [range(1, 6)]
+        accept_mock = mock.MagicMock()
+        conn_sock = mock.MagicMock()
+        socket_mock.accept = accept_mock
+        accept_mock.return_value = (conn_sock, ('192.0.2.1', 2))
+        recv_mock = mock.MagicMock()
+        conn_sock.recv = recv_mock
+
+        getter = heartbeat_tcp.TCPStatusGetter()
+
+        header, bin_msg = self._sample_message()
+        recv_mock.side_effect = [header[:4], header[4:], bin_msg]
+
+        (obj, srcaddr) = getter.dorecv()
+        self.assertEqual('192.0.2.1', srcaddr)
+        self.assertIsNotNone(obj.pop('recv_time'))
+        self.assertEqual({"testkey": "TEST"}, obj)
+
+    @mock.patch('socket.getaddrinfo')
+    @mock.patch('socket.socket')
+    def test_dorecv_split_message(self, mock_socket, mock_getaddrinfo):
+        socket_mock = mock.MagicMock()
+        mock_socket.return_value = socket_mock
+        mock_getaddrinfo.return_value = [range(1, 6)]
+        accept_mock = mock.MagicMock()
+        conn_sock = mock.MagicMock()
+        socket_mock.accept = accept_mock
+        accept_mock.return_value = (conn_sock, ('192.0.2.1', 2))
+        recv_mock = mock.MagicMock()
+        conn_sock.recv = recv_mock
+
+        getter = heartbeat_tcp.TCPStatusGetter()
+
+        header, bin_msg = self._sample_message()
+        recv_mock.side_effect = [header, bin_msg[:5], bin_msg[5:]]
+
+        (obj, srcaddr) = getter.dorecv()
+        self.assertEqual('192.0.2.1', srcaddr)
+        self.assertIsNotNone(obj.pop('recv_time'))
+        self.assertEqual({"testkey": "TEST"}, obj)
+
+    @mock.patch('socket.getaddrinfo')
+    @mock.patch('socket.socket')
+    def test_dorecv_bad_header(self, mock_socket, mock_getaddrinfo):
+        socket_mock = mock.MagicMock()
+        mock_socket.return_value = socket_mock
+        mock_getaddrinfo.return_value = [range(1, 6)]
+        accept_mock = mock.MagicMock()
+        conn_sock = mock.MagicMock()
+        socket_mock.accept = accept_mock
+        accept_mock.return_value = (conn_sock, ('192.0.2.1', 2))
+        recv_mock = mock.MagicMock()
+        conn_sock.recv = recv_mock
+
+        getter = heartbeat_tcp.TCPStatusGetter()
+
+        _, bin_msg = self._sample_message()
+        # bad first 4 bytes
+        bad_header = struct.pack(">II", 0, len(bin_msg))
+        recv_mock.side_effect = [bad_header, bin_msg]
+        self.assertRaises(exceptions.HealthMessageBadHeader, getter.dorecv)
+        recv_mock.reset_mock()
+
+        # bad length field (too small)
+        bad_header = struct.pack(">II", constants.AMP_HEARTBEAT_HEADER, 1)
+        recv_mock.side_effect = [bad_header, bin_msg]
+        self.assertRaises(exceptions.HealthMessageBadHeader, getter.dorecv)
+        recv_mock.reset_mock()
+
+        # bad length field (too big)
+        bad_header = struct.pack(">II", constants.AMP_HEARTBEAT_HEADER,
+                                 20_000_000)
+        recv_mock.side_effect = [bad_header, bin_msg]
+        self.assertRaises(exceptions.HealthMessageBadHeader, getter.dorecv)
+        recv_mock.reset_mock()
+
+    @mock.patch('socket.getaddrinfo')
+    @mock.patch('socket.socket')
+    def test_dorecv_short_input(self, mock_socket, mock_getaddrinfo):
+        socket_mock = mock.MagicMock()
+        mock_socket.return_value = socket_mock
+        mock_getaddrinfo.return_value = [range(1, 6)]
+        accept_mock = mock.MagicMock()
+        conn_sock = mock.MagicMock()
+        socket_mock.accept = accept_mock
+        accept_mock.return_value = (conn_sock, ('192.0.2.1', 2))
+        recv_mock = mock.MagicMock()
+        conn_sock.recv = recv_mock
+
+        getter = heartbeat_tcp.TCPStatusGetter()
+
+        # header complete, message incomplete
+        header, bin_msg = self._sample_message()
+        recv_mock.side_effect = [header, bin_msg[:5], []]
+        self.assertRaises(exceptions.HealthMessageIncomplete, getter.dorecv)
+        recv_mock.reset_mock()
+
+        # header incomplete
+        header, bin_msg = self._sample_message()
+        recv_mock.side_effect = [header[:4], []]
+        self.assertRaises(exceptions.HealthMessageIncomplete, getter.dorecv)
+        recv_mock.reset_mock()
+
+    @mock.patch('octavia.amphorae.backends.health_daemon.status_message.'
+                'unwrap_envelope')
+    @mock.patch('socket.getaddrinfo')
+    @mock.patch('socket.socket')
+    def test_dorecv_bad_packet(self, mock_socket, mock_getaddrinfo,
+                               mock_unwrap):
+        socket_mock = mock.MagicMock()
+        mock_socket.return_value = socket_mock
+        mock_getaddrinfo.return_value = [range(1, 6)]
+        accept_mock = mock.MagicMock()
+        conn_sock = mock.MagicMock()
+        socket_mock.accept = accept_mock
+        accept_mock.return_value = (conn_sock, ('192.0.2.1', 2))
+        recv_mock = mock.MagicMock()
+        conn_sock.recv = recv_mock
+
+        mock_unwrap.side_effect = Exception('boom')
+
+        getter = heartbeat_tcp.TCPStatusGetter()
+
+        header, bin_msg = self._sample_message()
+        recv_mock.side_effect = [header, bin_msg]
+
+        self.assertRaises(exceptions.InvalidHMACException, getter.dorecv)
+
+    @mock.patch('socket.getaddrinfo')
+    @mock.patch('socket.socket')
+    def test_check(self, mock_socket, mock_getaddrinfo):
+        socket_mock = mock.MagicMock()
+        mock_socket.return_value = socket_mock
+        mock_getaddrinfo.return_value = [range(1, 6)]
+        mock_dorecv = mock.Mock()
+        mock_health_executor = mock.Mock()
+        mock_stats_executor = mock.Mock()
+        mock_health_updater = mock.Mock()
+
+        getter = heartbeat_tcp.TCPStatusGetter()
+        getter.dorecv = mock_dorecv
+        mock_dorecv.side_effect = [(dict(id=FAKE_ID), 2)]
+        getter.health_executor = mock_health_executor
+        getter.stats_executor = mock_stats_executor
+        getter.health_updater = mock_health_updater
+
+        getter.check()
+        getter.health_executor.shutdown()
+        getter.stats_executor.shutdown()
+        mock_health_executor.submit.assert_has_calls(
+            [mock.call(getter.health_updater.update_health, {'id': 1}, 2)])
+        mock_stats_executor.submit.assert_has_calls(
+            [mock.call(heartbeat_base.update_stats, {'id': 1})])
+
+    @mock.patch('socket.getaddrinfo')
+    @mock.patch('socket.socket')
+    def test_socket_except(self, mock_socket, mock_getaddrinfo):
+        self.assertRaises(exceptions.NetworkConfig,
+                          heartbeat_tcp.TCPStatusGetter)
+
+    @mock.patch('concurrent.futures.ThreadPoolExecutor.submit')
+    @mock.patch('socket.getaddrinfo')
+    @mock.patch('socket.socket')
+    def test_check_exception(self, mock_socket, mock_getaddrinfo, mock_submit):
+        self.mock_socket = mock_socket
+        self.mock_getaddrinfo = mock_getaddrinfo
+        self.mock_getaddrinfo.return_value = [range(1, 6)]
+
+        mock_dorecv = mock.Mock()
+        getter = heartbeat_tcp.TCPStatusGetter()
+
+        getter.dorecv = mock_dorecv
+        mock_dorecv.side_effect = exceptions.InvalidHMACException
+
+        getter.check()
+        self.assertFalse(mock_submit.called)
+
+
 class TestUpdateHealthDb(base.TestCase):
     FAKE_UUID_1 = uuidutils.generate_uuid()
 
@@ -305,7 +549,7 @@ class TestUpdateHealthDb(base.TestCase):
         self.session_mock = mock.MagicMock()
         self.mock_session.return_value = self.session_mock
 
-        self.hm = heartbeat_udp.UpdateHealthDb()
+        self.hm = heartbeat_base.UpdateHealthDb()
         self.amphora_repo = mock.MagicMock()
         self.amphora_health_repo = mock.MagicMock()
         self.listener_repo = mock.MagicMock()

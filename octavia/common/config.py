@@ -328,6 +328,13 @@ health_manager_opts = [
                        '192.168.0.1:5555'),
                 mutable=True,
                 default=[]),
+    cfg.IntOpt('heartbeat_use_tcp_threshold',
+               help=_('Send the heartbeat message via TCP instead of UDP '
+                      'if the payload is larger than the configured value. '
+                      'Set to -1 (default) to always use UDP. '
+                      'Set to 0 to always use TCP. '),
+               mutable=True,
+               default=-1),
     cfg.IntOpt('heartbeat_interval',
                default=10,
                mutable=True,

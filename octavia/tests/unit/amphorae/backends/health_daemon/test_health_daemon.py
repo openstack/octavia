@@ -186,13 +186,13 @@ class TestHealthDaemon(base.TestCase):
     @mock.patch('octavia.amphorae.backends.health_daemon.'
                 'health_daemon.build_stats_message')
     @mock.patch('octavia.amphorae.backends.health_daemon.'
-                'health_sender.UDPStatusSender')
-    def test_run_sender(self, mock_UDPStatusSender, mock_build_msg,
+                'health_sender.StatusSender')
+    def test_run_sender(self, mock_StatusSender, mock_build_msg,
                         mock_reload_cfg, mock_sleep, mock_isfile, mock_kill):
         sender_mock = mock.MagicMock()
         dosend_mock = mock.MagicMock()
         sender_mock.dosend = dosend_mock
-        mock_UDPStatusSender.return_value = sender_mock
+        mock_StatusSender.return_value = sender_mock
         mock_build_msg.side_effect = ['TEST']
 
         mock_isfile.return_value = False

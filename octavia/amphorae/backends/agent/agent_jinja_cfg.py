@@ -50,6 +50,8 @@ class AgentJinjaTemplater:
              'controller_list': CONF.health_manager.controller_ip_port_list,
              'debug': CONF.debug,
              'haproxy_cmd': CONF.haproxy_amphora.haproxy_cmd,
+             'heartbeat_use_tcp_threshold':
+                CONF.health_manager.heartbeat_use_tcp_threshold,
              'heartbeat_interval': CONF.health_manager.heartbeat_interval,
              'heartbeat_key': CONF.health_manager.heartbeat_key,
              'agent_tls_protocol': CONF.amphora_agent.agent_tls_protocol,

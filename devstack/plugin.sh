@@ -411,6 +411,7 @@ function create_mgmt_network_interface {
         sudo nft insert rule inet octavia o-hm0-incoming iifname "o-hm0" counter log drop
         sudo nft insert rule inet octavia o-hm0-incoming iifname "o-hm0" meta l4proto ipv6-icmp counter accept
         sudo nft insert rule inet octavia o-hm0-incoming iifname "o-hm0" udp dport $OCTAVIA_HM_LISTEN_PORT counter accept
+        sudo nft insert rule inet octavia o-hm0-incoming iifname "o-hm0" tcp dport $OCTAVIA_HM_LISTEN_PORT counter accept
         sudo nft insert rule inet octavia o-hm0-incoming iifname "o-hm0" udp dport $OCTAVIA_AMP_LOG_ADMIN_PORT counter accept
         sudo nft insert rule inet octavia o-hm0-incoming iifname "o-hm0" udp dport $OCTAVIA_AMP_LOG_TENANT_PORT counter accept
         sudo nft insert rule inet octavia o-hm0-incoming iifname "o-hm0" ct state related,established accept
@@ -419,10 +420,12 @@ function create_mgmt_network_interface {
             # Allow the required IPv6 ICMP messages
             sudo ip6tables -I INPUT -i o-hm0 -p ipv6-icmp -j ACCEPT
             sudo ip6tables -I INPUT -i o-hm0 -p udp --dport $OCTAVIA_HM_LISTEN_PORT -j ACCEPT
+            sudo ip6tables -I INPUT -i o-hm0 -p tcp --dport $OCTAVIA_HM_LISTEN_PORT -j ACCEPT
             sudo ip6tables -I INPUT -i o-hm0 -p udp --dport $OCTAVIA_AMP_LOG_ADMIN_PORT -j ACCEPT
             sudo ip6tables -I INPUT -i o-hm0 -p udp --dport $OCTAVIA_AMP_LOG_TENANT_PORT -j ACCEPT
         else
             sudo iptables -I INPUT -i o-hm0 -p udp --dport $OCTAVIA_HM_LISTEN_PORT -j ACCEPT
+            sudo iptables -I INPUT -i o-hm0 -p tcp --dport $OCTAVIA_HM_LISTEN_PORT -j ACCEPT
             sudo iptables -I INPUT -i o-hm0 -p udp --dport $OCTAVIA_AMP_LOG_ADMIN_PORT -j ACCEPT
             sudo iptables -I INPUT -i o-hm0 -p udp --dport $OCTAVIA_AMP_LOG_TENANT_PORT -j ACCEPT
         fi
@@ -475,10 +478,12 @@ function build_mgmt_network {
     if [ $SERVICE_IP_VERSION == '6' ] ; then
         openstack security group rule create --protocol ipv6-icmp --ethertype IPv6 --remote-ip ::/0 lb-health-mgr-sec-grp
         openstack security group rule create --protocol udp --dst-port $OCTAVIA_HM_LISTEN_PORT --ethertype IPv6 --remote-ip ::/0 lb-health-mgr-sec-grp
+        openstack security group rule create --protocol tcp --dst-port $OCTAVIA_HM_LISTEN_PORT --ethertype IPv6 --remote-ip ::/0 lb-health-mgr-sec-grp
         openstack security group rule create --protocol udp --dst-port $OCTAVIA_AMP_LOG_ADMIN_PORT --ethertype IPv6 --remote-ip ::/0 lb-health-mgr-sec-grp
         openstack security group rule create --protocol udp --dst-port $OCTAVIA_AMP_LOG_TENANT_PORT --ethertype IPv6 --remote-ip ::/0 lb-health-mgr-sec-grp
     else
         openstack security group rule create --protocol udp --dst-port $OCTAVIA_HM_LISTEN_PORT lb-health-mgr-sec-grp
+        openstack security group rule create --protocol tcp --dst-port $OCTAVIA_HM_LISTEN_PORT lb-health-mgr-sec-grp
         openstack security group rule create --protocol udp --dst-port $OCTAVIA_AMP_LOG_ADMIN_PORT lb-health-mgr-sec-grp
         openstack security group rule create --protocol udp --dst-port $OCTAVIA_AMP_LOG_TENANT_PORT lb-health-mgr-sec-grp
     fi

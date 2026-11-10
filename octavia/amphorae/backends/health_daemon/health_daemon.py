@@ -106,7 +106,7 @@ def list_sock_stat_files(hadir=None):
 
 def run_sender(cmd_queue):
     LOG.info('Health Manager Sender starting.')
-    sender = health_sender.UDPStatusSender()
+    sender = health_sender.StatusSender()
 
     keepalived_cfg_path = util.keepalived_cfg_path()
     keepalived_pid_path = util.keepalived_pid_path()

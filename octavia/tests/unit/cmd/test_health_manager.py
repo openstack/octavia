@@ -14,6 +14,9 @@
 import signal
 from unittest import mock
 
+from oslo_config import cfg
+from oslo_config import fixture as oslo_fixture
+
 from octavia.cmd import health_manager
 from octavia.tests.unit import base
 
@@ -26,15 +29,15 @@ class TestHealthManagerCMD(base.TestCase):
     @mock.patch('multiprocessing.Event')
     @mock.patch('octavia.amphorae.drivers.health.'
                 'heartbeat_udp.UDPStatusGetter')
-    def test_hm_listener(self, mock_getter,
-                         mock_event):
+    def test_hm_listener_udp(self, mock_getter,
+                             mock_event):
         mock_event.is_set.side_effect = [False, False, True]
         getter_mock = mock.MagicMock()
         check_mock = mock.MagicMock()
         getter_mock.check = check_mock
         getter_mock.check.side_effect = [None, Exception('break')]
         mock_getter.return_value = getter_mock
-        health_manager.hm_listener(mock_event)
+        health_manager.hm_listener_udp(mock_event)
         mock_getter.assert_called_once()
         self.assertEqual(2, getter_mock.check.call_count)
 
@@ -58,17 +61,41 @@ class TestHealthManagerCMD(base.TestCase):
     @mock.patch('octavia.cmd.health_manager.multiproc')
     @mock.patch('octavia.common.service.prepare_service')
     def test_main(self, mock_service, mock_multiprocessing):
-        mock_listener_proc = mock.MagicMock()
+        mock_listener_udp_proc = mock.MagicMock()
         mock_health_proc = mock.MagicMock()
 
         mock_multiprocessing.Process.side_effect = [
-            mock_listener_proc, mock_health_proc]
+            mock_listener_udp_proc, mock_health_proc]
 
         health_manager.main()
 
-        mock_listener_proc.start.assert_called_once_with()
+        mock_listener_udp_proc.start.assert_called_once_with()
         mock_health_proc.start.assert_called_once_with()
-        mock_listener_proc.join.assert_called_once_with()
+        mock_listener_udp_proc.join.assert_called_once_with()
+        mock_health_proc.join.assert_called_once_with()
+
+    @mock.patch('octavia.cmd.health_manager.multiproc')
+    @mock.patch('octavia.common.service.prepare_service')
+    def test_main_with_tcp(self, mock_service, mock_multiprocessing):
+        self.conf = self.useFixture(oslo_fixture.Config(cfg.CONF))
+        self.conf.config(group='health_manager',
+                         heartbeat_use_tcp_threshold=1500)
+
+        mock_listener_udp_proc = mock.MagicMock()
+        mock_listener_tcp_proc = mock.MagicMock()
+        mock_health_proc = mock.MagicMock()
+
+        mock_multiprocessing.Process.side_effect = [mock_listener_udp_proc,
+                                                    mock_listener_tcp_proc,
+                                                    mock_health_proc]
+
+        health_manager.main()
+
+        mock_listener_udp_proc.start.assert_called_once_with()
+        mock_listener_tcp_proc.start.assert_called_once_with()
+        mock_health_proc.start.assert_called_once_with()
+        mock_listener_udp_proc.join.assert_called_once_with()
+        mock_listener_tcp_proc.join.assert_called_once_with()
         mock_health_proc.join.assert_called_once_with()
 
     @mock.patch('os.kill')
@@ -76,20 +103,20 @@ class TestHealthManagerCMD(base.TestCase):
     @mock.patch('octavia.common.service.prepare_service')
     def test_main_keyboard_interrupt(self, mock_service, mock_multiprocessing,
                                      mock_kill):
-        mock_listener_proc = mock.MagicMock()
+        mock_listener_udp_proc = mock.MagicMock()
         mock_health_proc = mock.MagicMock()
         mock_join = mock.MagicMock()
         mock_join.side_effect = [KeyboardInterrupt, None]
-        mock_listener_proc.join = mock_join
+        mock_listener_udp_proc.join = mock_join
 
         mock_multiprocessing.Process.side_effect = [
-            mock_listener_proc, mock_health_proc]
+            mock_listener_udp_proc, mock_health_proc]
 
         health_manager.main()
 
-        mock_listener_proc.start.assert_called_once_with()
+        mock_listener_udp_proc.start.assert_called_once_with()
         mock_health_proc.start.assert_called_once_with()
-        self.assertEqual(2, mock_listener_proc.join.call_count)
+        self.assertEqual(2, mock_listener_udp_proc.join.call_count)
         mock_health_proc.join.assert_called_once_with()
         mock_kill.assert_called_once_with(mock_health_proc.pid,
                                           signal.SIGINT)
@@ -97,9 +124,13 @@ class TestHealthManagerCMD(base.TestCase):
     @mock.patch('os.kill')
     @mock.patch('oslo_config.cfg.CONF.mutate_config_files')
     def test_handle_mutate_config(self, mock_mutate, mock_kill):
-        health_manager._handle_mutate_config(1, 2)
+        health_manager._handle_mutate_config([1, 2, 3])
 
         mock_mutate.assert_called_once()
 
-        calls = [mock.call(1, signal.SIGHUP), mock.call(2, signal.SIGHUP)]
+        calls = [
+            mock.call(1, signal.SIGHUP),
+            mock.call(2, signal.SIGHUP),
+            mock.call(3, signal.SIGHUP),
+        ]
         mock_kill.assert_has_calls(calls)

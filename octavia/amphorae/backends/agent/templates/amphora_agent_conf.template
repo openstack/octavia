@@ -28,6 +28,9 @@ administrative_log_facility = {{ administrative_log_facility }}
 
 [health_manager]
 controller_ip_port_list = {{ controller_list|join(', ') }}
+{% if heartbeat_use_tcp_threshold >= 0 -%}
+heartbeat_use_tcp_threshold = {{ heartbeat_use_tcp_threshold }}
+{% endif -%}
 heartbeat_interval = {{ heartbeat_interval }}
 heartbeat_key = {{ heartbeat_key }}
 
