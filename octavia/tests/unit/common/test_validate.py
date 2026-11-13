@@ -396,7 +396,7 @@ class TestValidations(base.TestCase):
         net_id3 = uuidutils.generate_uuid()
         self.conf.config(group="networking",
                          denylist_vip_networks=[net_id1, net_id2])
-        validate.network_allowed_by_config(net_id3)
+        validate.network_denylist_by_config(net_id3)
         self.assertRaises(
             exceptions.ValidationException,
             validate.network_denylist_by_config, net_id1)
