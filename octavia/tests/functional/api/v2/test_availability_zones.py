@@ -18,10 +18,13 @@ from oslo_utils import uuidutils
 
 from oslo_config import cfg
 from oslo_config import fixture as oslo_fixture
+from sqlalchemy import orm
 
 from octavia.common import constants
 import octavia.common.context
 from octavia.common import exceptions
+from octavia.db import api as db_api
+from octavia.db import models as db_models
 from octavia.tests.functional.api.v2 import base
 
 
@@ -563,6 +566,38 @@ class TestAvailabilityZones(base.BaseAPITest):
         response = self.get(self.AZ_PATH.format(
             az_name=az.get('name'))).json.get(self.root_tag)
         self.assertEqual('name1', response.get('name'))
+
+    def test_delete_used_only_by_deleted_lbs(self):
+        az = self.create_availability_zone(
+            'name1', 'description', self.azp.get('id'), True)
+        lb = self.create_load_balancer(
+            uuidutils.generate_uuid(), name='lb1',
+            project_id=uuidutils.generate_uuid(),
+            availability_zone=az.get('name'),
+            admin_state_up=False).get('loadbalancer')
+        self.set_lb_status(lb.get('id'), status=constants.DELETED)
+        self.delete(self.AZ_PATH.format(az_name=az.get('name')))
+        self.get(self.AZ_PATH.format(az_name=az.get('name')), status=404)
+        db_lb = self.lb_repo.get(db_api.get_session(), id=lb.get('id'))
+        self.assertEqual(constants.NIL_UUID, db_lb.availability_zone)
+
+    def test_delete_locks_the_zone_without_serializable(self):
+        az = self.create_availability_zone(
+            'name1', 'description', self.azp.get('id'), True)
+        connection = mock.patch.object(
+            orm.Session, 'connection', autospec=True,
+            side_effect=orm.Session.connection)
+        lock = mock.patch.object(
+            orm.Query, 'with_for_update', autospec=True,
+            side_effect=orm.Query.with_for_update)
+        with connection as connection, lock as lock:
+            self.delete(self.AZ_PATH.format(az_name=az.get('name')))
+        locked = [call.args[0].column_descriptions[0]['entity']
+                  for call in lock.call_args_list]
+        self.assertIn(db_models.AvailabilityZone, locked)
+        for call in connection.call_args_list:
+            options = call.kwargs.get('execution_options') or {}
+            self.assertNotIn('isolation_level', options)
 
     @mock.patch('octavia.db.repositories.AvailabilityZoneRepository.delete')
     def test_delete_exception(self, mock_delete):

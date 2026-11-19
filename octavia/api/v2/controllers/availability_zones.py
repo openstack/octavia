@@ -181,9 +181,9 @@ class AvailabilityZonesController(base.BaseController):
         if availability_zone_name == constants.NIL_UUID:
             raise exceptions.NotFound(resource='Availability Zone',
                                       id=constants.NIL_UUID)
+        # The repository locks the availability zone row, see flavors.
         serial_session = db_api.get_session()
-        serial_session.connection(
-            execution_options={'isolation_level': 'SERIALIZABLE'})
+        serial_session.begin()
         try:
             self.repositories.availability_zone.delete(
                 serial_session, name=availability_zone_name)

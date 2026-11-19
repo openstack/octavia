@@ -1,0 +1,9 @@
+---
+fixes:
+  - |
+    Deleting a flavor or an availability zone no longer fails with an
+    internal error on Percona XtraDB Cluster in its default strict mode,
+    which refuses the SERIALIZABLE isolation the delete asked for. The
+    row being deleted is now locked with SELECT ... FOR UPDATE instead;
+    a flavor or availability zone still in use by a load balancer is
+    refused as before.
